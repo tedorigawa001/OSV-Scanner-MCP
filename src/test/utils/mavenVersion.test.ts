@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareMavenVersions, mavenVersionSeries } from "./mavenVersion.js";
+import { compareMavenVersions, mavenVersionSeries } from "../../utils/mavenVersion.js";
 
 function expectEqual(a: string, b: string): void {
   expect(compareMavenVersions(a, b), `${a} == ${b}`).toBe(0);
@@ -155,7 +155,7 @@ describe("compareMavenVersions (Maven本家テストコーパス)", () => {
   });
 });
 
-// このプロジェクト固有の要件(DESIGN_TODO.md 実機確認の実例)
+// このプロジェクト固有の要件(docs/DESIGN_TODO.md 実機確認の実例)
 describe("compareMavenVersions (OSV-Scanner-MCP要件)", () => {
   it("semverが扱えないMaven特有の接尾辞", () => {
     expectEqual("2.17.1-RELEASE", "2.17.1");

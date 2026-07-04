@@ -1,7 +1,7 @@
 /**
  * `scan_java_project`ツールの出力スキーマと、OSV-Scanner JSON出力からの変換。
  *
- * DESIGN_TODO.mdの実機調査で確定した方針:
+ * docs/DESIGN_TODO.mdの実機調査で確定した方針:
  * - 脆弱性のグルーピングは`packages[].groups[]`(1エントリ=1脆弱性)をそのまま活用し、
  *   独自グルーピングは持たない
  * - `max_severity`は空文字列のケースが実在する(CVE-2015-6420で確認)ため、

@@ -4,7 +4,7 @@
  * npmの`semver`は`2.17.1-RELEASE`のようなMaven特有の接尾辞を正しく扱えないため、
  * Maven本家の`org.apache.maven.artifact.versioning.ComparableVersion`の
  * アルゴリズムをTypeScriptに移植したもの。suggest_fixの3段階Tier
- * フォールバック(DESIGN_TODO.md参照)の前提部品。
+ * フォールバック(docs/DESIGN_TODO.md参照)の前提部品。
  *
  * 仕様の要点:
  * - `.`と`-`でトークン分割。数字⇔文字の境界でも暗黙に分割される

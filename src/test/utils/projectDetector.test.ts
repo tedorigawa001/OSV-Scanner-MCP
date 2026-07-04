@@ -2,8 +2,8 @@ import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { ScanToolError } from "../errors.js";
-import { detectJavaProject } from "./projectDetector.js";
+import { ScanToolError } from "../../errors.js";
+import { detectJavaProject } from "../../utils/projectDetector.js";
 
 const POM = "<project/>";
 const tempDirs: string[] = [];

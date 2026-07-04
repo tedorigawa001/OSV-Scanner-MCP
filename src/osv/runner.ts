@@ -1,7 +1,7 @@
 /**
  * OSV-Scannerの実行ラッパー。
  *
- * セキュリティ設計(DESIGN_TODO.md):
+ * セキュリティ設計(docs/DESIGN_TODO.md):
  * - シェルを経由しない`spawn`+引数配列で実行(コマンドインジェクション対策)
  * - OSV-Scannerへ渡す引数は固定リストのみ。呼び出し側から任意フラグは注入できない
  *   (対象パスは位置引数1つだけで、projectDetectorでrealpath解決済みの絶対パスを渡す)

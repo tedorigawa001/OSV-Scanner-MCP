@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseOsvScanOutput } from "./scanReport.js";
+import { parseOsvScanOutput } from "../../osv/scanReport.js";
 
 /**
- * DESIGN_TODO.mdの実機確認(pom.xml: log4j-core 2.14.1 / commons-collections 3.2.1 /
+ * docs/DESIGN_TODO.mdの実機確認(pom.xml: log4j-core 2.14.1 / commons-collections 3.2.1 /
  * jackson-databind 2.17.0)で観測した構造を縮約したフィクスチャ。
  * - log4j: 複数リリース系統のfixedが混在
  * - commons-collections: max_severityが空文字列
