@@ -40,7 +40,7 @@ export async function findOsvScannerBinary(
   return null;
 }
 
-/** 方式Cの案内メッセージ。バイナリ未検出時にそのままユーザーへ返す。 */
+/** インストール案内メッセージ。バイナリ未検出かつ自動ダウンロード不可のときに返す。 */
 export function installGuidance(env: NodeJS.ProcessEnv = process.env): string {
   const explicit = env[OSV_SCANNER_PATH_ENV];
   const envNote =
@@ -52,17 +52,47 @@ export function installGuidance(env: NodeJS.ProcessEnv = process.env): string {
     "  - Homebrew: brew install osv-scanner",
     "  - Go: go install github.com/google/osv-scanner/v2/cmd/osv-scanner@latest",
     "  - 公式リリース: https://github.com/google/osv-scanner/releases (取得後はチェックサム検証を推奨)",
+    `  - または環境変数 ${AUTO_DOWNLOAD_ENV} の無効化(=0)を解除すると、検証済み公式バイナリを自動ダウンロードします`,
     envNote,
   ].join("\n");
 }
 
-/** バイナリのパスを返す。見つからなければ案内メッセージ付きのScanToolErrorを投げる。 */
+export const AUTO_DOWNLOAD_ENV = "OSV_MCP_AUTO_DOWNLOAD";
+
+function isAutoDownloadEnabled(env: NodeJS.ProcessEnv): boolean {
+  const value = env[AUTO_DOWNLOAD_ENV]?.trim().toLowerCase();
+  return value !== "0" && value !== "false";
+}
+
+export interface ResolveOsvScannerOptions {
+  /** テスト用の注入ポイント。省略時はensureOsvScannerDownloaded */
+  downloadFn?: () => Promise<string>;
+}
+
+/**
+ * バイナリのパスを解決する。
+ * 探索順: OSV_SCANNER_PATH(明示指定時はダウンロードにフォールバックしない)
+ * → PATH → 自動ダウンロード(チェックサム検証付き、OSV_MCP_AUTO_DOWNLOAD=0で無効化)。
+ * どれも不可なら案内メッセージ付きのScanToolErrorを投げる。
+ */
 export async function resolveOsvScannerBinary(
   env: NodeJS.ProcessEnv = process.env,
+  options: ResolveOsvScannerOptions = {},
 ): Promise<string> {
   const binary = await findOsvScannerBinary(env);
-  if (binary === null) {
-    throw new ScanToolError("binary_not_found", installGuidance(env));
+  if (binary !== null) {
+    return binary;
   }
-  return binary;
+
+  const explicit = env[OSV_SCANNER_PATH_ENV];
+  const explicitlySpecified = explicit !== undefined && explicit.trim() !== "";
+  // 明示指定が無効な場合は、意図しないバイナリの使用を避けるためダウンロードしない
+  if (!explicitlySpecified && isAutoDownloadEnabled(env)) {
+    const download =
+      options.downloadFn ??
+      (async () => (await import("./binaryDownloader.js")).ensureOsvScannerDownloaded());
+    return download();
+  }
+
+  throw new ScanToolError("binary_not_found", installGuidance(env));
 }

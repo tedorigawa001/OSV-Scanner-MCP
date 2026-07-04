@@ -29,7 +29,11 @@ export type ScanToolErrorKind =
   /** 指定されたIDの脆弱性がOSVデータベースに存在しない */
   | "vulnerability_not_found"
   /** OSV APIへのリクエストが失敗した(ネットワークエラー・タイムアウト・非2xx) */
-  | "api_request_failed";
+  | "api_request_failed"
+  /** OSV-Scannerバイナリのダウンロードに失敗した(未対応プラットフォーム含む) */
+  | "binary_download_failed"
+  /** ダウンロードしたバイナリのチェックサムが埋め込み値と一致しない */
+  | "binary_checksum_mismatch";
 
 export class ScanToolError extends Error {
   constructor(

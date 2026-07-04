@@ -158,8 +158,11 @@ describe("binaryManager", () => {
     expect(await findOsvScannerBinary(badEnv)).toBeNull();
   });
 
-  it("見つからなければ案内メッセージ付きのbinary_not_found", async () => {
-    const env = { PATH: "/nonexistent-dir-for-test" } as NodeJS.ProcessEnv;
+  it("見つからず自動ダウンロードも無効なら案内メッセージ付きのbinary_not_found", async () => {
+    const env = {
+      PATH: "/nonexistent-dir-for-test",
+      OSV_MCP_AUTO_DOWNLOAD: "0",
+    } as NodeJS.ProcessEnv;
     const error = await resolveOsvScannerBinary(env).then(
       () => null,
       (e: unknown) => e,
@@ -168,6 +171,38 @@ describe("binaryManager", () => {
     expect((error as ScanToolError).kind).toBe("binary_not_found");
     expect((error as ScanToolError).message).toContain("brew install osv-scanner");
     expect(installGuidance(env)).toContain(OSV_SCANNER_PATH_ENV);
+  });
+
+  it("見つからなければ自動ダウンロードにフォールバックする(デフォルト有効)", async () => {
+    const env = { PATH: "/nonexistent-dir-for-test" } as NodeJS.ProcessEnv;
+    let downloadCalled = false;
+    const resolved = await resolveOsvScannerBinary(env, {
+      downloadFn: async () => {
+        downloadCalled = true;
+        return "/cache/osv-scanner";
+      },
+    });
+    expect(downloadCalled).toBe(true);
+    expect(resolved).toBe("/cache/osv-scanner");
+  });
+
+  it("OSV_SCANNER_PATHが無効な場合は自動ダウンロードせずbinary_not_found", async () => {
+    const env = {
+      PATH: "/nonexistent-dir-for-test",
+      [OSV_SCANNER_PATH_ENV]: "/no/such/binary",
+    } as NodeJS.ProcessEnv;
+    let downloadCalled = false;
+    const error = await resolveOsvScannerBinary(env, {
+      downloadFn: async () => {
+        downloadCalled = true;
+        return "/cache/osv-scanner";
+      },
+    }).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(downloadCalled).toBe(false);
+    expect((error as ScanToolError).kind).toBe("binary_not_found");
   });
 
   it("resolveOsvScannerBinaryは見つかったバイナリのパスを返す", async () => {
