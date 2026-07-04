@@ -98,7 +98,8 @@ export async function fetchOsvRecord(
   }
 
   const body = await response.text();
-  if (body.length > maxBytes) {
+  // 文字数(UTF-16単位)ではなくUTF-8バイト数で判定する(マルチバイト本文のズレ防止)
+  if (Buffer.byteLength(body, "utf8") > maxBytes) {
     throw new ScanToolError(
       "output_too_large",
       `OSV APIのレスポンスがサイズ上限(${maxBytes}バイト)を超えました`,
