@@ -99,6 +99,10 @@ describe("compareMavenVersions (Maven本家テストコーパス)", () => {
     expectEqual("1x", "1.0.0-x");
     expectEqual("1.0x", "1.0-x");
     expectEqual("1.0.0x", "1.0.0-x");
+    // 先頭・連続セパレータの空トークンはゼロとして補完される
+    expectEqual(".1", "0.1");
+    expectEqual("1..2", "1.0.2");
+    expectEqual("-1", "0-1");
   });
 
   it("修飾子のエイリアスと略記の同値", () => {

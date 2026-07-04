@@ -115,6 +115,12 @@ describe("runOsvScan", () => {
       "scan_failed",
     );
   });
+
+  it("シグナルで強制終了された場合もscan_failed(signal情報付き)", async () => {
+    const bin = await makeFakeBinary("fake-killed", `kill -KILL $$`);
+    const error = await expectScanError(runOsvScan(projectDir, { binaryPath: bin }), "scan_failed");
+    expect(error.message).toContain("SIGKILL");
+  });
 });
 
 describe("binaryManager", () => {
@@ -149,5 +155,12 @@ describe("binaryManager", () => {
     expect((error as ScanToolError).kind).toBe("binary_not_found");
     expect((error as ScanToolError).message).toContain("brew install osv-scanner");
     expect(installGuidance(env)).toContain(OSV_SCANNER_PATH_ENV);
+  });
+
+  it("環境変数が無効なパスを指す場合は案内メッセージでその旨を伝える", () => {
+    const env = { [OSV_SCANNER_PATH_ENV]: "/no/such/binary" } as NodeJS.ProcessEnv;
+    const guidance = installGuidance(env);
+    expect(guidance).toContain("/no/such/binary");
+    expect(guidance).toContain("実行可能ファイルを指していません");
   });
 });

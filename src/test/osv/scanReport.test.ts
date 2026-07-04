@@ -288,6 +288,7 @@ describe("parseOsvScanOutput (不正・欠損データへの耐性)", () => {
                 { ids: ["GHSA-1"], max_severity: "abc" },
                 { ids: ["GHSA-2"], max_severity: "99" },
                 { ids: ["GHSA-3"], max_severity: "3.1" },
+                { ids: ["GHSA-4"], max_severity: "-1" },
               ],
             },
           ],
@@ -295,7 +296,26 @@ describe("parseOsvScanOutput (不正・欠損データへの耐性)", () => {
       ],
     });
     const severities = report.packages[0]!.vulnerabilities.map((v) => v.severity);
-    // low(3.1)が先、unknown2件は末尾
-    expect(severities).toEqual(["low", "unknown", "unknown"]);
+    // low(3.1)が先、unknown3件は末尾
+    expect(severities).toEqual(["low", "unknown", "unknown", "unknown"]);
+  });
+
+  it("GHSAが無くCVEのみのグループは代表ID自体をcveとして扱う", () => {
+    const report = parseOsvScanOutput({
+      results: [
+        {
+          packages: [
+            {
+              package: { name: "a:a", version: "1.0", ecosystem: "Maven" },
+              groups: [{ ids: ["CVE-2024-0001"], aliases: [], max_severity: "5.0" }],
+            },
+          ],
+        },
+      ],
+    });
+    const vuln = report.packages[0]!.vulnerabilities[0]!;
+    expect(vuln.id).toBe("CVE-2024-0001");
+    expect(vuln.cve).toBe("CVE-2024-0001");
+    expect(vuln.aliases).toEqual([]);
   });
 });
