@@ -10,6 +10,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { handleExplainVulnerability } from "./tools/explainVulnerability.js";
 import { handleScanJavaProject } from "./tools/scanJavaProject.js";
 import { handleSuggestFix } from "./tools/suggestFix.js";
 
@@ -61,6 +62,25 @@ server.registerTool(
   },
   async ({ project_path }) =>
     handleSuggestFix({ project_path }, { allowedRoot: process.env[ALLOWED_ROOT_ENV] }),
+);
+
+server.registerTool(
+  "explain_vulnerability",
+  {
+    title: "脆弱性の詳細説明の取得",
+    description:
+      "指定したGHSA-IDまたはCVE-IDの脆弱性の詳細をOSVデータベース(api.osv.dev)から取得して返す。" +
+      "説明(details)・CVSSベクトル・影響を受けるパッケージとバージョン範囲・参照リンク(アドバイザリや修正コミット)が含まれる。" +
+      "scan_java_projectやsuggest_fixの結果に含まれるIDをそのまま渡せる。スキャンは実行しない。",
+    inputSchema: {
+      vulnerability_id: z
+        .string()
+        .min(3)
+        .max(100)
+        .describe("脆弱性のID(例: GHSA-jfh8-c2jp-5v3q、CVE-2021-44228)"),
+    },
+  },
+  async ({ vulnerability_id }) => handleExplainVulnerability({ vulnerability_id }),
 );
 
 const transport = new StdioServerTransport();

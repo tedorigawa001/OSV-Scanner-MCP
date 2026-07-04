@@ -21,7 +21,13 @@ export type ScanToolErrorKind =
   /** OSV-Scannerの出力がサイズ上限を超えた(DoS対策) */
   | "output_too_large"
   /** OSV-Scannerの出力がJSONとして解釈できない */
-  | "invalid_output";
+  | "invalid_output"
+  /** 脆弱性IDの形式が不正(URL組み立てに使うため厳格に検証する) */
+  | "invalid_vulnerability_id"
+  /** 指定されたIDの脆弱性がOSVデータベースに存在しない */
+  | "vulnerability_not_found"
+  /** OSV APIへのリクエストが失敗した(ネットワークエラー・タイムアウト・非2xx) */
+  | "api_request_failed";
 
 export class ScanToolError extends Error {
   constructor(

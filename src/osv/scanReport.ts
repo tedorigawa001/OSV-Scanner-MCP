@@ -14,6 +14,7 @@
  */
 
 import { compareMavenVersions } from "../utils/mavenVersion.js";
+import { asArray, asRecord, asString, asStrings } from "../utils/unknownJson.js";
 
 export type SeverityLevel = "critical" | "high" | "medium" | "low" | "unknown";
 
@@ -64,26 +65,6 @@ function severityFromScore(score: number | null): SeverityLevel {
   if (score >= CVSS_HIGH) return "high";
   if (score >= CVSS_MEDIUM) return "medium";
   return "low";
-}
-
-// --- 外部JSON用の防御的アクセサ(形式不正でも例外を投げない) ---
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function asArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-function asString(value: unknown): string | null {
-  return typeof value === "string" ? value : null;
-}
-
-function asStrings(value: unknown): string[] {
-  return asArray(value).filter((v): v is string => typeof v === "string");
 }
 
 /** `max_severity`をCVSSスコアに変換する。空文字・非数値・範囲外はnull(unknown扱い)。 */
