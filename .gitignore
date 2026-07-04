@@ -1,5 +1,8 @@
 node_modules/
 dist/
 coverage/
+
+# 投稿用ドラフト(リポジトリ管理外)
+docs/qiita-article.md
 *.log
 .DS_Store
