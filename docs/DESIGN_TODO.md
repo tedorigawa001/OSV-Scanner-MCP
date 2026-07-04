@@ -150,8 +150,8 @@ CVEごとに以下の優先順で修正版を探索する。
 - [x] Claude Desktop設定ファイルへの登録手順をREADMEに明記 → README.md作成時に記載(2026-07-04)。Claude Code(`claude mcp add`)の手順も併記
 
 ### 5. Gradle対応(MVP後)
-- [ ] build.gradle / build.gradle.kts の検出ロジック
-- [ ] lockfile方式 vs ビルド実行方式の比較
+- [x] build.gradle / build.gradle.kts の検出ロジック → `projectDetector.ts`で対応(2026-07-04)。gradle.lockfile / buildscript-gradle.lockfileをマニフェストとして検出。build.gradle系はあるがlockfileが無い場合は`gradle_lockfile_missing`エラーで生成手順(`./gradlew dependencies --write-locks`)を案内
+- [x] lockfile方式 vs ビルド実行方式の比較 → **lockfile方式で確定**。ビルド実行方式はbuild.gradle自体が任意コードとして実行されるため、信頼できない入力パスを扱うMCPサーバーのセキュリティ設計と相容れない。OSV-Scanner 2.4.0がgradle.lockfileをネイティブ解釈し、ecosystemも同じ「Maven」のためレポート整形・suggest_fixは無変更で動作(実機確認済み)。エラーkindは`no_pom_found`→`no_manifest_found`にリネーム(npm公開前のため互換性影響なし)
 
 ## セキュリティ考慮事項 【重要・継続確認】
 

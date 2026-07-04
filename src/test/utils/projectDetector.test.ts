@@ -50,7 +50,7 @@ describe("detectJavaProject", () => {
     const dir = await makeTempDir();
     await mkdir(path.join(dir, "target"), { recursive: true });
     await writeFile(path.join(dir, "target", "pom.xml"), POM);
-    await expectScanError(detectJavaProject(dir), "no_pom_found");
+    await expectScanError(detectJavaProject(dir), "no_manifest_found");
   });
 
   it("pom.xmlファイルのパスを直接受け付ける", async () => {
@@ -61,9 +61,9 @@ describe("detectJavaProject", () => {
     expect(project.manifests).toEqual(["pom.xml"]);
   });
 
-  it("pom.xml以外のファイル指定はエラー", async () => {
+  it("対応外のファイル指定はエラー", async () => {
     const dir = await makeTempDir();
-    const filePath = path.join(dir, "build.gradle");
+    const filePath = path.join(dir, "readme.txt");
     await writeFile(filePath, "");
     await expectScanError(detectJavaProject(filePath), "project_not_found");
   });
@@ -73,9 +73,66 @@ describe("detectJavaProject", () => {
     await expectScanError(detectJavaProject("  "), "project_not_found");
   });
 
-  it("pom.xmlが無いディレクトリはno_pom_found", async () => {
+  it("対応マニフェストが無いディレクトリはno_manifest_found", async () => {
     const dir = await makeTempDir();
-    await expectScanError(detectJavaProject(dir), "no_pom_found");
+    await expectScanError(detectJavaProject(dir), "no_manifest_found");
+  });
+
+  it("gradle.lockfileを検出する(buildscript-gradle.lockfileも)", async () => {
+    const dir = await makeTempDir();
+    await writeFile(path.join(dir, "gradle.lockfile"), "a:b:1.0=runtimeClasspath\n");
+    await writeFile(path.join(dir, "buildscript-gradle.lockfile"), "empty=classpath\n");
+    const project = await detectJavaProject(dir);
+    expect(project.manifests.sort()).toEqual(["buildscript-gradle.lockfile", "gradle.lockfile"]);
+  });
+
+  it("MavenとGradleの混在プロジェクトは両方のマニフェストを返す", async () => {
+    const dir = await makeTempDir();
+    await writeFile(path.join(dir, "pom.xml"), POM);
+    await mkdir(path.join(dir, "gradle-module"));
+    await writeFile(path.join(dir, "gradle-module", "gradle.lockfile"), "a:b:1.0=runtimeClasspath\n");
+    const project = await detectJavaProject(dir);
+    expect(project.manifests.sort()).toEqual(["gradle-module/gradle.lockfile", "pom.xml"]);
+  });
+
+  it("build.gradleはあるがlockfileが無い場合は生成手順を案内する", async () => {
+    const dir = await makeTempDir();
+    await writeFile(path.join(dir, "build.gradle"), "plugins { id 'java' }\n");
+    const error = await detectJavaProject(dir).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(ScanToolError);
+    expect((error as ScanToolError).kind).toBe("gradle_lockfile_missing");
+    expect((error as ScanToolError).message).toContain("--write-locks");
+  });
+
+  it("build.gradle.kts / settings.gradle でもGradleプロジェクトとして認識する", async () => {
+    for (const name of ["build.gradle.kts", "settings.gradle"]) {
+      const dir = await makeTempDir();
+      await writeFile(path.join(dir, name), "");
+      await expectScanError(detectJavaProject(dir), "gradle_lockfile_missing");
+    }
+  });
+
+  it("gradle.lockfileのパスを直接受け付ける", async () => {
+    const dir = await makeTempDir();
+    const lockPath = path.join(dir, "gradle.lockfile");
+    await writeFile(lockPath, "a:b:1.0=runtimeClasspath\n");
+    const project = await detectJavaProject(lockPath);
+    expect(project.manifests).toEqual(["gradle.lockfile"]);
+  });
+
+  it("build.gradleのパス直接指定はディレクトリとして解決される(lockfile無しなら案内)", async () => {
+    const dir = await makeTempDir();
+    const buildPath = path.join(dir, "build.gradle");
+    await writeFile(buildPath, "");
+    await expectScanError(detectJavaProject(buildPath), "gradle_lockfile_missing");
+
+    // lockfileがあれば正常に解決される
+    await writeFile(path.join(dir, "gradle.lockfile"), "a:b:1.0=runtimeClasspath\n");
+    const project = await detectJavaProject(buildPath);
+    expect(project.manifests).toEqual(["gradle.lockfile"]);
   });
 
   it("allowedRoot配下なら許可、外ならエラー", async () => {
@@ -126,6 +183,6 @@ describe("detectJavaProject", () => {
     const elsewhere = await makeTempDir();
     await writeFile(path.join(elsewhere, "pom.xml"), POM);
     await symlink(elsewhere, path.join(dir, "linked"));
-    await expectScanError(detectJavaProject(dir), "no_pom_found");
+    await expectScanError(detectJavaProject(dir), "no_manifest_found");
   });
 });

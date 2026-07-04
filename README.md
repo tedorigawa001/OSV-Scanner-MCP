@@ -2,7 +2,7 @@
 
 Google製 [OSV-Scanner](https://github.com/google/osv-scanner) をラップするMCPサーバーです。Claude等のMCPクライアントから「このJavaプロジェクトの脆弱性をチェックして」と自然言語で依頼するだけで、依存ライブラリの既知の脆弱性(CVE / GHSA)を深刻度順のレポートで取得できます。
 
-> **ステータス**: MVP開発中。現在はMaven(pom.xml)プロジェクトのみ対応しています。
+> **ステータス**: MVP完成。Maven(pom.xml)と Gradle(gradle.lockfile / lockfile方式)に対応しています。
 
 ## 特徴
 
@@ -70,7 +70,9 @@ Java(Maven)プロジェクトをスキャンし、既知の脆弱性レポート
 
 | パラメータ | 型 | 説明 |
 |---|---|---|
-| `project_path` | string | スキャン対象のプロジェクトディレクトリまたはpom.xmlの絶対パス |
+| `project_path` | string | スキャン対象のプロジェクトディレクトリ、または pom.xml / gradle.lockfile の絶対パス |
+
+> **Gradleプロジェクトについて**: 本ツールは**lockfile方式**のみ対応です(ビルド実行方式は build.gradle の任意コード実行を伴うため、セキュリティ上の理由から採用していません)。`gradle.lockfile` が無い場合は `./gradlew dependencies --write-locks` で生成してください(依存ロック未設定の場合は `build.gradle` に `dependencyLocking { lockAllConfigurations() }` の追加が必要です)。
 
 **出力(成功時)**
 
@@ -167,8 +169,8 @@ Java(Maven)プロジェクトをスキャンし、既知の脆弱性レポート
 ```json
 {
   "error": {
-    "kind": "no_pom_found",
-    "message": "pom.xmlが見つかりません(深さ3まで探索): /path/to/project。MVPではMavenプロジェクトのみ対応しています"
+    "kind": "no_manifest_found",
+    "message": "対応マニフェスト(pom.xml / gradle.lockfile)が見つかりません(深さ3まで探索): /path/to/project"
   }
 }
 ```
@@ -177,7 +179,8 @@ Java(Maven)プロジェクトをスキャンし、既知の脆弱性レポート
 |---|---|
 | `binary_not_found` | OSV-Scannerが見つからない(インストール案内をmessageに含む) |
 | `project_not_found` | 指定パスが存在しない・ディレクトリ/pom.xmlでない |
-| `no_pom_found` | プロジェクト内にpom.xmlが見つからない |
+| `no_manifest_found` | 対応マニフェスト(pom.xml / gradle.lockfile)が見つからない |
+| `gradle_lockfile_missing` | Gradleプロジェクトだがgradle.lockfileが無い(生成手順をmessageで案内) |
 | `path_outside_allowed_root` | `OSV_MCP_ALLOWED_ROOT` の外を指している |
 | `no_packages_found` | スキャン対象パッケージなし(依存関係が未定義のpom.xml等) |
 | `scan_failed` | OSV-Scannerが異常終了(stderr抜粋を`detail`に含む) |
@@ -215,7 +218,7 @@ npm run build             # dist/ へビルド
 - [x] `explain_vulnerability` ツール: 脆弱性の詳細説明(OSV API経由)
 - [x] npmパッケージ化(`npx osv-scanner-mcp`)
 - [ ] OSV-Scannerバイナリの自動ダウンロード(チェックサム検証付き)
-- [ ] Gradle対応
+- [x] Gradle対応(lockfile方式)
 
 ## ライセンス
 

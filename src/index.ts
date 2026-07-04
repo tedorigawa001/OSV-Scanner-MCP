@@ -28,12 +28,12 @@ server.registerTool(
     description:
       "Java(Maven)プロジェクトをGoogle OSV-Scannerでスキャンし、依存ライブラリの既知の脆弱性(CVE/GHSA)を深刻度順のJSONレポートで返す。" +
       "レポートにはパッケージごとの脆弱性一覧(CVSSスコア・5段階深刻度・修正版バージョン)とサマリ集計が含まれる。" +
-      "現在はMaven(pom.xml)のみ対応。",
+      "Maven(pom.xml)とGradle(gradle.lockfile)に対応。",
     inputSchema: {
       project_path: z
         .string()
         .min(1)
-        .describe("スキャン対象のプロジェクトディレクトリまたはpom.xmlの絶対パス"),
+        .describe("スキャン対象のプロジェクトディレクトリ、またはpom.xml/gradle.lockfileの絶対パス"),
     },
   },
   async ({ project_path }) =>
@@ -52,12 +52,12 @@ server.registerTool(
       "現在のバージョンに最も近いリリース系統の修正版を優先する3段階フォールバック" +
       "(same_minor: 同一major.minor系統内 → major_internal: 同一メジャー内 → cross_major: メジャーアップグレード)で選定し、" +
       "推奨バージョン・アップグレード距離(upgrade_tier)・CVEごとの修正版を返す。" +
-      "修正版が存在しないCVEはunfixedとして明示する。現在はMaven(pom.xml)のみ対応。",
+      "修正版が存在しないCVEはunfixedとして明示する。Maven(pom.xml)とGradle(gradle.lockfile)に対応。",
     inputSchema: {
       project_path: z
         .string()
         .min(1)
-        .describe("スキャン対象のプロジェクトディレクトリまたはpom.xmlの絶対パス"),
+        .describe("スキャン対象のプロジェクトディレクトリ、またはpom.xml/gradle.lockfileの絶対パス"),
     },
   },
   async ({ project_path }) =>

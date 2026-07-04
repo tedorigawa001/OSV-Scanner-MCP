@@ -8,8 +8,10 @@ export type ScanToolErrorKind =
   | "binary_not_found"
   /** 指定パスが存在しない・ディレクトリ/pom.xmlでない */
   | "project_not_found"
-  /** プロジェクト内にpom.xmlが見つからない */
-  | "no_pom_found"
+  /** プロジェクト内に対応マニフェスト(pom.xml / gradle.lockfile)が見つからない */
+  | "no_manifest_found"
+  /** build.gradleはあるがgradle.lockfileが無い(lockfile方式のため生成が必要) */
+  | "gradle_lockfile_missing"
   /** 許可されたルートディレクトリの外を指している(パストラバーサル対策) */
   | "path_outside_allowed_root"
   /** OSV-Scannerがスキャン対象パッケージを検出できなかった(exit 128) */
