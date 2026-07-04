@@ -3,8 +3,22 @@
   "version": "0.1.0",
   "description": "MCP server that wraps Google's OSV-Scanner to scan Java projects for known vulnerabilities",
   "type": "module",
-  "private": true,
   "license": "Apache-2.0",
+  "author": "tedorigawa001",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "osv",
+    "osv-scanner",
+    "vulnerability",
+    "security",
+    "maven",
+    "java",
+    "sca"
+  ],
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tedorigawa001/OSV-Scanner-MCP.git"
@@ -20,9 +34,11 @@
     "osv-scanner-mcp": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run typecheck && npm test"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
