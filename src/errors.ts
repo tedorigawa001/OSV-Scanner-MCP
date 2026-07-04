@@ -1,0 +1,36 @@
+/**
+ * スキャン処理全体で使う型付きエラー。
+ * MCPツール層はこの`kind`を見てエラーレスポンスの形式に変換する想定。
+ */
+
+export type ScanToolErrorKind =
+  /** OSV-Scannerバイナリが見つからない(方式C: インストール案内を返す) */
+  | "binary_not_found"
+  /** 指定パスが存在しない・ディレクトリ/pom.xmlでない */
+  | "project_not_found"
+  /** プロジェクト内にpom.xmlが見つからない */
+  | "no_pom_found"
+  /** 許可されたルートディレクトリの外を指している(パストラバーサル対策) */
+  | "path_outside_allowed_root"
+  /** OSV-Scannerがスキャン対象パッケージを検出できなかった(exit 128) */
+  | "no_packages_found"
+  /** OSV-Scannerが異常終了した */
+  | "scan_failed"
+  /** スキャンがタイムアウトした */
+  | "scan_timeout"
+  /** OSV-Scannerの出力がサイズ上限を超えた(DoS対策) */
+  | "output_too_large"
+  /** OSV-Scannerの出力がJSONとして解釈できない */
+  | "invalid_output";
+
+export class ScanToolError extends Error {
+  constructor(
+    readonly kind: ScanToolErrorKind,
+    message: string,
+    /** stderr抜粋などの補足情報(外部由来テキストのため上限付きで格納すること) */
+    readonly detail?: string,
+  ) {
+    super(message);
+    this.name = "ScanToolError";
+  }
+}
