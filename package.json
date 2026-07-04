@@ -4,6 +4,15 @@
   "description": "MCP server that wraps Google's OSV-Scanner to scan Java projects for known vulnerabilities",
   "type": "module",
   "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tedorigawa001/OSV-Scanner-MCP.git"
+  },
+  "homepage": "https://github.com/tedorigawa001/OSV-Scanner-MCP#readme",
+  "bugs": {
+    "url": "https://github.com/tedorigawa001/OSV-Scanner-MCP/issues"
+  },
   "engines": {
     "node": ">=20.19"
   },

@@ -145,7 +145,7 @@ CVEごとに以下の優先順で修正版を探索する。
 
 ### 4. 配布方法
 - [ ] npmパッケージ化(`npx osv-scanner-mcp`)
-- [ ] Claude Desktop設定ファイルへの登録手順をREADMEに明記
+- [x] Claude Desktop設定ファイルへの登録手順をREADMEに明記 → README.md作成時に記載(2026-07-04)。Claude Code(`claude mcp add`)の手順も併記
 
 ### 5. Gradle対応(MVP後)
 - [ ] build.gradle / build.gradle.kts の検出ロジック
