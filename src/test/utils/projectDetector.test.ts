@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -105,6 +105,20 @@ describe("detectJavaProject", () => {
       detectJavaProject(link, { allowedRoot: root }),
       "path_outside_allowed_root",
     );
+  });
+
+  it("権限不足で読めないディレクトリはスキップして探索を続ける", async () => {
+    const dir = await makeTempDir();
+    await writeFile(path.join(dir, "pom.xml"), POM);
+    const locked = path.join(dir, "locked");
+    await mkdir(locked);
+    await chmod(locked, 0o000);
+    try {
+      const project = await detectJavaProject(dir);
+      expect(project.manifests).toEqual(["pom.xml"]);
+    } finally {
+      await chmod(locked, 0o755); // クリーンアップできるよう権限を戻す
+    }
   });
 
   it("pom.xml探索でシンボリックリンクのディレクトリは辿らない", async () => {

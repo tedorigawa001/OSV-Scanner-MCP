@@ -116,6 +116,19 @@ describe("runOsvScan", () => {
     );
   });
 
+  it("binaryPath省略時はOSV_SCANNER_PATH環境変数から解決する", async () => {
+    const bin = await makeFakeBinary("env-resolved", `echo '{"results":[]}'; exit 0`);
+    const previous = process.env[OSV_SCANNER_PATH_ENV];
+    process.env[OSV_SCANNER_PATH_ENV] = bin;
+    try {
+      const report = await runOsvScan(projectDir);
+      expect(report.vulnerability_count).toBe(0);
+    } finally {
+      if (previous === undefined) delete process.env[OSV_SCANNER_PATH_ENV];
+      else process.env[OSV_SCANNER_PATH_ENV] = previous;
+    }
+  });
+
   it("シグナルで強制終了された場合もscan_failed(signal情報付き)", async () => {
     const bin = await makeFakeBinary("fake-killed", `kill -KILL $$`);
     const error = await expectScanError(runOsvScan(projectDir, { binaryPath: bin }), "scan_failed");
@@ -155,6 +168,12 @@ describe("binaryManager", () => {
     expect((error as ScanToolError).kind).toBe("binary_not_found");
     expect((error as ScanToolError).message).toContain("brew install osv-scanner");
     expect(installGuidance(env)).toContain(OSV_SCANNER_PATH_ENV);
+  });
+
+  it("resolveOsvScannerBinaryは見つかったバイナリのパスを返す", async () => {
+    const bin = await makeFakeBinary("osv-scanner", `exit 0`);
+    const env = { PATH: binDir } as NodeJS.ProcessEnv;
+    expect(await resolveOsvScannerBinary(env)).toBe(bin);
   });
 
   it("環境変数が無効なパスを指す場合は案内メッセージでその旨を伝える", () => {

@@ -104,7 +104,46 @@ Java(Maven)プロジェクトをスキャンし、既知の脆弱性レポート
 - `fixed_versions` はMaven優先順位で昇順。複数のリリース系統(例: 2.12系バックポートと2.15系)が混在することがあります。空配列は「修正版が存在しない」ことを意味します
 - `severity_score` が取得できない脆弱性は `null` / `"unknown"` として扱います
 
-**出力(エラー時)**
+### `suggest_fix`
+
+スキャンを実行し、脆弱なパッケージごとに**推奨アップグレードバージョン**を提案します。単純な最大バージョンではなく、現在のバージョンに最も近いリリース系統の修正版を3段階フォールバックで選定します:
+
+| Tier | 意味 |
+|---|---|
+| `same_minor` | 現在と同じ major.minor 系統内の修正版(最小の変更で済む) |
+| `major_internal` | 同一メジャー内の修正版(マイナーバージョンアップが必要) |
+| `cross_major` | メジャーアップグレードが必要(破壊的変更の可能性あり) |
+
+**入力**: `scan_java_project` と同じ(`project_path`)
+
+**出力(成功時)**
+
+```json
+{
+  "project_dir": "/path/to/project",
+  "manifests": ["pom.xml"],
+  "vulnerable_package_count": 4,
+  "unfixed_vulnerability_count": 1,
+  "suggestions": [
+    {
+      "package": "org.apache.logging.log4j:log4j-core",
+      "current_version": "2.14.1",
+      "ecosystem": "Maven",
+      "recommended_upgrade": "2.25.4",
+      "upgrade_tier": "major_internal",
+      "upgrade_note": "2.14系統向けの修正版は存在しない。同一メジャー(2.x)内では2.25.4が7件のCVEを解消する最小版",
+      "per_cve_detail": [
+        { "id": "GHSA-jfh8-c2jp-5v3q", "cve": "CVE-2021-44228", "severity": "critical", "fixed_in": "2.15.0", "tier": "major_internal" }
+      ]
+    }
+  ]
+}
+```
+
+- `recommended_upgrade` は「修正可能な全CVEを解消できる最小バージョン」(CVEごとのTier結果の最大値)
+- 修正版が存在しない(または現在より新しい修正版がない)CVEは `tier: "unfixed"` として明示し、推奨計算から除外します。全CVEがunfixedの場合 `recommended_upgrade` は `null`
+
+**出力(エラー時)** — 両ツール共通
 
 `isError: true` とともに、機械判読可能な `kind` を含むJSONを返します:
 
@@ -152,7 +191,7 @@ npm run build             # dist/ へビルド
 
 ## ロードマップ
 
-- [ ] `suggest_fix` ツール: 現在のバージョンに最も近い系統の修正版を提案(3段階Tierフォールバック)
+- [x] `suggest_fix` ツール: 現在のバージョンに最も近い系統の修正版を提案(3段階Tierフォールバック)
 - [ ] `explain_vulnerability` ツール: 脆弱性の詳細説明
 - [ ] npmパッケージ化(`npx osv-scanner-mcp`)
 - [ ] OSV-Scannerバイナリの自動ダウンロード(チェックサム検証付き)

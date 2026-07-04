@@ -300,6 +300,47 @@ describe("parseOsvScanOutput (不正・欠損データへの耐性)", () => {
     expect(severities).toEqual(["low", "unknown", "unknown", "unknown"]);
   });
 
+  it("オブジェクトでないgroupエントリはスキップする", () => {
+    const report = parseOsvScanOutput({
+      results: [
+        {
+          packages: [
+            {
+              package: { name: "a:a", version: "1.0", ecosystem: "Maven" },
+              groups: ["junk", null, 42, { ids: ["GHSA-valid"], max_severity: "5.0" }],
+            },
+          ],
+        },
+      ],
+    });
+    expect(report.vulnerability_count).toBe(1);
+    expect(report.packages[0]!.vulnerabilities[0]!.id).toBe("GHSA-valid");
+  });
+
+  it("スコア同点のパッケージは名前順、脆弱性はID順で安定ソートされる", () => {
+    const report = parseOsvScanOutput({
+      results: [
+        {
+          packages: [
+            {
+              package: { name: "z:z", version: "1.0", ecosystem: "Maven" },
+              groups: [{ ids: ["GHSA-z"], max_severity: "5.0" }],
+            },
+            {
+              package: { name: "a:a", version: "1.0", ecosystem: "Maven" },
+              groups: [
+                { ids: ["GHSA-b"], max_severity: "5.0" },
+                { ids: ["GHSA-a"], max_severity: "5.0" },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(report.packages.map((p) => p.name)).toEqual(["a:a", "z:z"]);
+    expect(report.packages[0]!.vulnerabilities.map((v) => v.id)).toEqual(["GHSA-a", "GHSA-b"]);
+  });
+
   it("GHSAが無くCVEのみのグループは代表ID自体をcveとして扱う", () => {
     const report = parseOsvScanOutput({
       results: [

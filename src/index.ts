@@ -11,6 +11,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { handleScanJavaProject } from "./tools/scanJavaProject.js";
+import { handleSuggestFix } from "./tools/suggestFix.js";
 
 export const ALLOWED_ROOT_ENV = "OSV_MCP_ALLOWED_ROOT";
 
@@ -39,6 +40,27 @@ server.registerTool(
       { project_path },
       { allowedRoot: process.env[ALLOWED_ROOT_ENV] },
     ),
+);
+
+server.registerTool(
+  "suggest_fix",
+  {
+    title: "脆弱性を解消する推奨アップグレードの提案",
+    description:
+      "Java(Maven)プロジェクトをスキャンし、脆弱な依存パッケージごとに推奨アップグレードバージョンを提案する。" +
+      "現在のバージョンに最も近いリリース系統の修正版を優先する3段階フォールバック" +
+      "(same_minor: 同一major.minor系統内 → major_internal: 同一メジャー内 → cross_major: メジャーアップグレード)で選定し、" +
+      "推奨バージョン・アップグレード距離(upgrade_tier)・CVEごとの修正版を返す。" +
+      "修正版が存在しないCVEはunfixedとして明示する。現在はMaven(pom.xml)のみ対応。",
+    inputSchema: {
+      project_path: z
+        .string()
+        .min(1)
+        .describe("スキャン対象のプロジェクトディレクトリまたはpom.xmlの絶対パス"),
+    },
+  },
+  async ({ project_path }) =>
+    handleSuggestFix({ project_path }, { allowedRoot: process.env[ALLOWED_ROOT_ENV] }),
 );
 
 const transport = new StdioServerTransport();
