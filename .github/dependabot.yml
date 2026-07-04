@@ -1,0 +1,15 @@
+# 依存パッケージの自動更新(docs/DESIGN_TODO.md セキュリティ考慮事項・運用面)
+#
+# 注意: OSV-Scannerバイナリのピン留めバージョン(src/osv/binaryDownloader.ts)は
+# npm依存ではないためDependabotの対象外。バージョンを上げる際は
+# PINNED_OSV_SCANNER_VERSION と埋め込みSHA256チェックサムを手動で更新すること。
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
