@@ -1,8 +1,12 @@
 # OSV-Scanner-MCP
 
+[![npm version](https://img.shields.io/npm/v/osv-scanner-mcp)](https://www.npmjs.com/package/osv-scanner-mcp)
+[![license](https://img.shields.io/npm/l/osv-scanner-mcp)](LICENSE)
+[![node](https://img.shields.io/node/v/osv-scanner-mcp)](package.json)
+
 Google製 [OSV-Scanner](https://github.com/google/osv-scanner) をラップするMCPサーバーです。Claude等のMCPクライアントから「このJavaプロジェクトの脆弱性をチェックして」と自然言語で依頼するだけで、依存ライブラリの既知の脆弱性(CVE / GHSA)を深刻度順のレポートで取得できます。
 
-> **ステータス**: MVP完成。Maven(pom.xml)と Gradle(gradle.lockfile / lockfile方式)に対応しています。
+> **ステータス**: [npmで公開中](https://www.npmjs.com/package/osv-scanner-mcp)(`npx -y osv-scanner-mcp`)。Maven(pom.xml)と Gradle(gradle.lockfile / lockfile方式)に対応しています。
 
 ## 特徴
 
