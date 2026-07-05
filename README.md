@@ -1,5 +1,6 @@
 # OSV-Scanner-MCP
 
+[![CI](https://github.com/tedorigawa001/OSV-Scanner-MCP/actions/workflows/ci.yml/badge.svg)](https://github.com/tedorigawa001/OSV-Scanner-MCP/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/osv-scanner-mcp)](https://www.npmjs.com/package/osv-scanner-mcp)
 [![license](https://img.shields.io/npm/l/osv-scanner-mcp)](LICENSE)
 [![node](https://img.shields.io/node/v/osv-scanner-mcp)](package.json)

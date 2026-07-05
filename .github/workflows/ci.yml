@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 毎週月曜 09:00 JST(00:00 UTC): 依存関係に新規公開された脆弱性を定期検出
+    - cron: "0 0 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test & Build (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  osv-scan:
+    name: Vulnerability scan (OSV-Scanner)
+    permissions:
+      contents: read
+      actions: read
+      security-events: write # SARIF を Code Scanning にアップロードするため
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.3.8
+    with:
+      scan-args: |-
+        --lockfile=package-lock.json
