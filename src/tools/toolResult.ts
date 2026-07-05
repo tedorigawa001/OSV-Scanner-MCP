@@ -8,6 +8,7 @@
  */
 
 import { ScanToolError } from "../errors.js";
+import { sanitizeExternalText } from "../utils/externalText.js";
 
 /** MCPのCallToolResultと互換の最小形 */
 export interface ToolResult {
@@ -26,12 +27,15 @@ export function jsonResult(payload: unknown, isError = false): ToolResult {
 /** 捕捉した例外をエラーレスポンスに変換する。 */
 export function errorResult(error: unknown): ToolResult {
   if (error instanceof ScanToolError) {
+    // detailはstderr抜粋等の外部由来テキスト(unknownJsonのアクセサを通らない経路)、
+    // messageもユーザー入力のパス等を含みうるため、両方をサニタイズして返す
+    const detail = error.detail !== undefined ? sanitizeExternalText(error.detail) : undefined;
     return jsonResult(
       {
         error: {
           kind: error.kind,
-          message: error.message,
-          ...(error.detail !== undefined && error.detail !== "" ? { detail: error.detail } : {}),
+          message: sanitizeExternalText(error.message),
+          ...(detail !== undefined && detail !== "" ? { detail } : {}),
         },
       },
       true,

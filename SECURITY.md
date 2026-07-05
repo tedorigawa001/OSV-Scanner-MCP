@@ -42,3 +42,4 @@ If you discover a security vulnerability in this project, please report it priva
 - 入力パスの正規化・境界チェック(シンボリックリンク解決込み)
 - バイナリ自動ダウンロードのピン留め+埋め込みSHA256検証
 - タイムアウト・出力サイズ上限(DoS対策)、外部由来テキストの構造化とサイズ制限
+- 外部由来テキストのサニタイズ(制御文字・ゼロ幅文字・双方向制御文字・Unicodeタグ文字の除去。プロンプトインジェクションの不可視化手口への対策)
