@@ -6,7 +6,7 @@
 
 Google製 [OSV-Scanner](https://github.com/google/osv-scanner) をラップするMCPサーバーです。Claude等のMCPクライアントから「このJavaプロジェクトの脆弱性をチェックして」と自然言語で依頼するだけで、依存ライブラリの既知の脆弱性(CVE / GHSA)を深刻度順のレポートで取得できます。
 
-> **ステータス**: [npmで公開中](https://www.npmjs.com/package/osv-scanner-mcp)(`npx -y osv-scanner-mcp`)。Maven(pom.xml)と Gradle(gradle.lockfile / lockfile方式)に対応しています。
+> **ステータス**: [npmで公開中](https://www.npmjs.com/package/osv-scanner-mcp)(`npx -y osv-scanner-mcp`)。Maven(pom.xml)と Gradle(gradle.lockfile / lockfile方式)に対応しています。MCPクライアントは Claude Code / Claude Desktop / Codex CLI / Antigravity / VS Code(GitHub Copilot)での利用手順を用意しています。
 
 ## 特徴
 
@@ -39,6 +39,59 @@ claude mcp add osv-scanner -- npx -y osv-scanner-mcp
 {
   "mcpServers": {
     "osv-scanner": {
+      "command": "npx",
+      "args": ["-y", "osv-scanner-mcp"]
+    }
+  }
+}
+```
+
+### Codex CLI への登録
+
+```bash
+codex mcp add osv-scanner -- npx -y osv-scanner-mcp
+```
+
+または `~/.codex/config.toml` に追加:
+
+```toml
+[mcp_servers.osv-scanner]
+command = "npx"
+args = ["-y", "osv-scanner-mcp"]
+startup_timeout_sec = 60   # 初回のnpxパッケージ取得に備えて延長
+tool_timeout_sec = 300     # 既定60秒。バイナリ自動ダウンロード+スキャン(既定120秒)を見込んで延長
+```
+
+> **注意**: CodexのMCPツール実行タイムアウトは既定60秒です。本サーバーはスキャンのタイムアウトが既定120秒のため、初回のOSV-Scanner自動ダウンロードや大きめのプロジェクトのスキャンでは既定値のままだとCodex側が先にタイムアウトします。上記のように `tool_timeout_sec` の延長を推奨します。
+
+### Antigravity への登録
+
+エージェントパネルの **MCP Servers → Manage MCP Servers → View raw config** で開く `mcp_config.json` に追加(Claude Desktopと同じ形式):
+
+```json
+{
+  "mcpServers": {
+    "osv-scanner": {
+      "command": "npx",
+      "args": ["-y", "osv-scanner-mcp"]
+    }
+  }
+}
+```
+
+### VS Code(GitHub Copilot)への登録
+
+```bash
+code --add-mcp '{"name":"osv-scanner","command":"npx","args":["-y","osv-scanner-mcp"]}'
+```
+
+またはワークスペースの `.vscode/mcp.json` に追加(コマンドパレットの **MCP: Add Server** からも設定可能):
+
+```json
+{
+  "servers": {
+    "osv-scanner": {
+      "type": "stdio",
       "command": "npx",
       "args": ["-y", "osv-scanner-mcp"]
     }
