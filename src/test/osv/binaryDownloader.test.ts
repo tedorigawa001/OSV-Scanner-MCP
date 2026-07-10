@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -107,6 +107,25 @@ describe("ensureOsvScannerDownloaded", () => {
     );
     expect(fetchCount).toBe(1);
     expect(await readFile(restored)).toEqual(FAKE_BINARY);
+  });
+
+  it("旧版が広い権限で作った既存キャッシュディレクトリも0700に締める", async () => {
+    const isolated = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-dl-perm-"));
+    try {
+      // 旧版の挙動を再現: 0755でディレクトリを作成し、バイナリをキャッシュ済みにする
+      const versionDir = path.join(isolated, `v${PINNED_OSV_SCANNER_VERSION}`);
+      await mkdir(versionDir, { recursive: true, mode: 0o755 });
+      await chmod(isolated, 0o755);
+      await chmod(versionDir, 0o755);
+      await writeFile(path.join(versionDir, "osv-scanner_darwin_arm64"), FAKE_BINARY);
+
+      // キャッシュヒット経路でも権限が締まる
+      await ensureOsvScannerDownloaded(options({ cacheDir: isolated }));
+      expect((await stat(isolated)).mode & 0o777).toBe(0o700);
+      expect((await stat(versionDir)).mode & 0o777).toBe(0o700);
+    } finally {
+      await rm(isolated, { recursive: true, force: true });
+    }
   });
 
   it("チェックサム不一致はbinary_checksum_mismatchでバイナリを配置しない", async () => {

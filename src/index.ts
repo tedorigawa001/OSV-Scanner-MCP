@@ -4,7 +4,9 @@
  *
  * 環境変数:
  * - OSV_SCANNER_PATH: 使用するosv-scannerバイナリの明示指定(省略時はPATHから探索)
- * - OSV_MCP_ALLOWED_ROOT: 指定時、このディレクトリ配下以外のスキャンを拒否する
+ * - OSV_MCP_ALLOWED_ROOT: 指定時、このディレクトリ配下以外のスキャンを拒否する(設定を推奨)
+ * - OSV_MCP_REQUIRE_ALLOWED_ROOT: 1/true指定時、OSV_MCP_ALLOWED_ROOT未設定なら起動を拒否する
+ * - OSV_MCP_MAX_CONCURRENT_SCANS: 同時実行スキャン数の上限(デフォルト2)
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -13,12 +15,30 @@ import { z } from "zod";
 import { handleExplainVulnerability } from "./tools/explainVulnerability.js";
 import { handleScanJavaProject } from "./tools/scanJavaProject.js";
 import { handleSuggestFix } from "./tools/suggestFix.js";
+import {
+  ALLOWED_ROOT_ENV,
+  allowedRootStartupError,
+  allowedRootStartupWarning,
+} from "./utils/startupConfig.js";
 
-export const ALLOWED_ROOT_ENV = "OSV_MCP_ALLOWED_ROOT";
+export { ALLOWED_ROOT_ENV };
 
+// fail-closed: 運用モードで許可ルートが未設定なら、ツールを一切公開せず終了する
+const startupError = allowedRootStartupError();
+if (startupError !== null) {
+  console.error(`osv-scanner-mcp: ${startupError}`);
+  process.exit(1);
+}
+// 互換性のため未設定でも起動は続けるが、残余リスクをstderrで可視化する
+const startupWarning = allowedRootStartupWarning();
+if (startupWarning !== null) {
+  console.error(`osv-scanner-mcp: [警告] ${startupWarning}`);
+}
+
+// NOTE: リリース時はpackage.jsonのversionと同じ値に更新すること
 const server = new McpServer({
   name: "osv-scanner-mcp",
-  version: "0.1.0",
+  version: "0.1.1",
 });
 
 server.registerTool(

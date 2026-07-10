@@ -134,6 +134,29 @@ describe("runOsvScan", () => {
     const error = await expectScanError(runOsvScan(projectDir, { binaryPath: bin }), "scan_failed");
     expect(error.message).toContain("SIGKILL");
   });
+
+  it("同時実行数が上限に達したらtoo_many_concurrent_scansで即時エラー", async () => {
+    const bin = await makeFakeBinary("fake-busy", `sleep 2; echo '{"results":[]}'; exit 0`);
+    const first = runOsvScan(projectDir, { binaryPath: bin, maxConcurrentScans: 1 });
+    // 1件目が走っている間の2件目は待たされず即時エラーになる
+    const error = await expectScanError(
+      runOsvScan(projectDir, { binaryPath: bin, maxConcurrentScans: 1 }),
+      "too_many_concurrent_scans",
+    );
+    expect(error.message).toContain("1件まで");
+    await expect(first).resolves.toMatchObject({ vulnerability_count: 0 });
+  }, 10_000);
+
+  it("スキャン完了後(エラー時含む)はスロットが解放され再実行できる", async () => {
+    const failing = await makeFakeBinary("fake-slot-fail", `echo 'boom' >&2; exit 127`);
+    await expectScanError(
+      runOsvScan(projectDir, { binaryPath: failing, maxConcurrentScans: 1 }),
+      "scan_failed",
+    );
+    const ok = await makeFakeBinary("fake-slot-ok", `echo '{"results":[]}'; exit 0`);
+    const report = await runOsvScan(projectDir, { binaryPath: ok, maxConcurrentScans: 1 });
+    expect(report.vulnerability_count).toBe(0);
+  });
 });
 
 describe("binaryManager", () => {

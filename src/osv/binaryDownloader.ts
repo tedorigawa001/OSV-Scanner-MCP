@@ -11,7 +11,7 @@
  * - キャッシュ済みバイナリも使用のたびに再検証する(キャッシュ改ざん対策)
  */
 
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -149,6 +149,13 @@ export async function ensureOsvScannerDownloaded(
   const versionDir = path.join(cacheDir, `v${PINNED_OSV_SCANNER_VERSION}`);
   const targetPath = path.join(versionDir, assetName);
 
+  // キャッシュディレクトリは所有者のみアクセス可(0700)にする。
+  // mkdirのmodeは新規作成時しか効かないため、旧版が広い権限で作った
+  // 既存ディレクトリも明示的なchmodで締める(キャッシュヒット時も毎回)
+  await mkdir(versionDir, { recursive: true, mode: 0o700 });
+  await chmod(cacheDir, 0o700);
+  await chmod(versionDir, 0o700);
+
   // キャッシュ済みでも毎回検証する(改ざん・破損したキャッシュは再ダウンロード)
   if (await verifyFile(targetPath, expected)) {
     return targetPath;
@@ -170,11 +177,12 @@ export async function ensureOsvScannerDownloaded(
     );
   }
 
-  // 検証合格後に初めて実行権限を付与し、アトミックに配置する
-  await mkdir(versionDir, { recursive: true });
-  const tempPath = `${targetPath}.download-${process.pid}`;
+  // 検証合格後に初めて実行権限を付与し、アトミックに配置する。
+  // 一時ファイル名はランダム+排他作成(wx)で同時ダウンロードやシンボリック
+  // リンクの差し込みと競合しないようにする
+  const tempPath = `${targetPath}.download-${randomBytes(8).toString("hex")}`;
   try {
-    await writeFile(tempPath, buffer, { mode: 0o600 });
+    await writeFile(tempPath, buffer, { mode: 0o600, flag: "wx" });
     await chmod(tempPath, 0o755);
     await rename(tempPath, targetPath);
   } catch (error) {

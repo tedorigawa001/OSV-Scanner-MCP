@@ -20,6 +20,8 @@ export type ScanToolErrorKind =
   | "scan_failed"
   /** スキャンがタイムアウトした */
   | "scan_timeout"
+  /** 同時実行スキャン数が上限に達している(リソース枯渇対策) */
+  | "too_many_concurrent_scans"
   /** OSV-Scannerの出力がサイズ上限を超えた(DoS対策) */
   | "output_too_large"
   /** OSV-Scannerの出力がJSONとして解釈できない */

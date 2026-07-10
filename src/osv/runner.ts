@@ -23,9 +23,30 @@ export interface RunOsvScanOptions {
   timeoutMs?: number;
   /** stdoutの上限バイト数。デフォルト32MB(実測: 依存3件のpom.xmlで約195KB) */
   maxOutputBytes?: number;
+  /** 同時実行スキャン数の上限。省略時はOSV_MCP_MAX_CONCURRENT_SCANS→デフォルト2 */
+  maxConcurrentScans?: number;
 }
 
 const DEFAULT_TIMEOUT_MS = 120_000;
+
+/**
+ * 同時実行スキャン数の上限(CPU・メモリ・ネットワーク枯渇対策)。
+ * MCPクライアントは並列リクエストを送れるため、osv-scannerプロセスが
+ * 無制限に増えないようプロセス全体でカウントし、超過は待たせず即時エラーにする。
+ */
+const DEFAULT_MAX_CONCURRENT_SCANS = 2;
+const MAX_CONCURRENT_SCANS_ENV = "OSV_MCP_MAX_CONCURRENT_SCANS";
+const MAX_CONCURRENT_SCANS_CEILING = 16;
+
+let activeScans = 0;
+
+function maxConcurrentScansFromEnv(): number {
+  const raw = process.env[MAX_CONCURRENT_SCANS_ENV];
+  if (raw === undefined || raw.trim() === "") return DEFAULT_MAX_CONCURRENT_SCANS;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1) return DEFAULT_MAX_CONCURRENT_SCANS;
+  return Math.min(parsed, MAX_CONCURRENT_SCANS_CEILING);
+}
 const DEFAULT_MAX_OUTPUT_BYTES = 32 * 1024 * 1024;
 /** エラー詳細に含めるstderrの上限(外部由来テキストをそのまま膨らませない) */
 const MAX_STDERR_DETAIL_BYTES = 8 * 1024;
@@ -126,6 +147,25 @@ function execOsvScanner(
 export async function runOsvScan(
   projectDir: string,
   options: RunOsvScanOptions = {},
+): Promise<ScanReport> {
+  const limit = options.maxConcurrentScans ?? maxConcurrentScansFromEnv();
+  if (activeScans >= limit) {
+    throw new ScanToolError(
+      "too_many_concurrent_scans",
+      `同時実行できるスキャンは${limit}件までです(現在${activeScans}件実行中)。実行中のスキャン完了後に再試行してください`,
+    );
+  }
+  activeScans++;
+  try {
+    return await runOsvScanUnguarded(projectDir, options);
+  } finally {
+    activeScans--;
+  }
+}
+
+async function runOsvScanUnguarded(
+  projectDir: string,
+  options: RunOsvScanOptions,
 ): Promise<ScanReport> {
   const binaryPath = options.binaryPath ?? (await resolveOsvScannerBinary());
   const result = await execOsvScanner(
