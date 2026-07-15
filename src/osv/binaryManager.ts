@@ -58,10 +58,16 @@ export function installGuidance(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 export const AUTO_DOWNLOAD_ENV = "OSV_MCP_AUTO_DOWNLOAD";
+export const PREFER_DOWNLOAD_ENV = "OSV_MCP_PREFER_DOWNLOAD";
 
 function isAutoDownloadEnabled(env: NodeJS.ProcessEnv): boolean {
   const value = env[AUTO_DOWNLOAD_ENV]?.trim().toLowerCase();
   return value !== "0" && value !== "false";
+}
+
+function isPreferDownloadEnabled(env: NodeJS.ProcessEnv): boolean {
+  const value = env[PREFER_DOWNLOAD_ENV]?.trim().toLowerCase();
+  return value === "1" || value === "true" || value === "yes";
 }
 
 export interface ResolveOsvScannerOptions {
@@ -73,19 +79,26 @@ export interface ResolveOsvScannerOptions {
  * バイナリのパスを解決する。
  * 探索順: OSV_SCANNER_PATH(明示指定時はダウンロードにフォールバックしない)
  * → PATH → 自動ダウンロード(チェックサム検証付き、OSV_MCP_AUTO_DOWNLOAD=0で無効化)。
+ * OSV_MCP_PREFER_DOWNLOAD=1 の場合はPATH探索をスキップし、チェックサム検証済みの
+ * 自動ダウンロードを優先する(PATH汚染による偽バイナリ実行の防止。明示指定は引き続き最優先)。
  * どれも不可なら案内メッセージ付きのScanToolErrorを投げる。
  */
 export async function resolveOsvScannerBinary(
   env: NodeJS.ProcessEnv = process.env,
   options: ResolveOsvScannerOptions = {},
 ): Promise<string> {
-  const binary = await findOsvScannerBinary(env);
-  if (binary !== null) {
-    return binary;
-  }
-
   const explicit = env[OSV_SCANNER_PATH_ENV];
   const explicitlySpecified = explicit !== undefined && explicit.trim() !== "";
+
+  // PATH上のバイナリはチェックサム検証を経ていないため、運用ではスキップ可能にする
+  const skipPathLookup = !explicitlySpecified && isPreferDownloadEnabled(env);
+  if (!skipPathLookup) {
+    const binary = await findOsvScannerBinary(env);
+    if (binary !== null) {
+      return binary;
+    }
+  }
+
   // 明示指定が無効な場合は、意図しないバイナリの使用を避けるためダウンロードしない
   if (!explicitlySpecified && isAutoDownloadEnabled(env)) {
     const download =

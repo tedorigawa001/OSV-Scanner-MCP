@@ -228,6 +228,55 @@ describe("binaryManager", () => {
     expect((error as ScanToolError).kind).toBe("binary_not_found");
   });
 
+  it("OSV_MCP_PREFER_DOWNLOAD=1ならPATH上のバイナリを使わず検証済みダウンロードを優先する", async () => {
+    await makeFakeBinary("osv-scanner", `exit 0`);
+    const env = {
+      PATH: binDir, // PATH上に有効なバイナリがあってもスキップされる
+      OSV_MCP_PREFER_DOWNLOAD: "1",
+    } as NodeJS.ProcessEnv;
+    let downloadCalled = false;
+    const resolved = await resolveOsvScannerBinary(env, {
+      downloadFn: async () => {
+        downloadCalled = true;
+        return "/cache/osv-scanner";
+      },
+    });
+    expect(downloadCalled).toBe(true);
+    expect(resolved).toBe("/cache/osv-scanner");
+  });
+
+  it("PREFER_DOWNLOAD有効でもOSV_SCANNER_PATHの明示指定が最優先", async () => {
+    const explicit = await makeFakeBinary("custom-scanner", `exit 0`);
+    const env = {
+      OSV_MCP_PREFER_DOWNLOAD: "1",
+      [OSV_SCANNER_PATH_ENV]: explicit,
+    } as NodeJS.ProcessEnv;
+    let downloadCalled = false;
+    const resolved = await resolveOsvScannerBinary(env, {
+      downloadFn: async () => {
+        downloadCalled = true;
+        return "/cache/osv-scanner";
+      },
+    });
+    expect(downloadCalled).toBe(false);
+    expect(resolved).toBe(explicit);
+  });
+
+  it("PREFER_DOWNLOAD有効+AUTO_DOWNLOAD無効はPATHにフォールバックせずbinary_not_found", async () => {
+    await makeFakeBinary("osv-scanner", `exit 0`);
+    const env = {
+      PATH: binDir,
+      OSV_MCP_PREFER_DOWNLOAD: "1",
+      OSV_MCP_AUTO_DOWNLOAD: "0",
+    } as NodeJS.ProcessEnv;
+    const error = await resolveOsvScannerBinary(env).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(ScanToolError);
+    expect((error as ScanToolError).kind).toBe("binary_not_found");
+  });
+
   it("resolveOsvScannerBinaryは見つかったバイナリのパスを返す", async () => {
     const bin = await makeFakeBinary("osv-scanner", `exit 0`);
     const env = { PATH: binDir } as NodeJS.ProcessEnv;

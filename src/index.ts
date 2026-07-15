@@ -7,6 +7,8 @@
  * - OSV_MCP_ALLOWED_ROOT: 指定時、このディレクトリ配下以外のスキャンを拒否する(設定を推奨)
  * - OSV_MCP_REQUIRE_ALLOWED_ROOT: 1/true指定時、OSV_MCP_ALLOWED_ROOT未設定なら起動を拒否する
  * - OSV_MCP_MAX_CONCURRENT_SCANS: 同時実行スキャン数の上限(デフォルト2)
+ * - OSV_MCP_AUTO_DOWNLOAD: 0/false指定時、バイナリの自動ダウンロードを無効化
+ * - OSV_MCP_PREFER_DOWNLOAD: 1/true指定時、PATH上のバイナリを使わず検証済み自動ダウンロードを優先
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
