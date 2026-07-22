@@ -1,6 +1,6 @@
 {
   "name": "osv-scanner-mcp",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "MCP server that wraps Google's OSV-Scanner to scan Java projects for known vulnerabilities",
   "type": "module",
   "license": "Apache-2.0",
