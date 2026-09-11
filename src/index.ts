@@ -74,7 +74,8 @@ server.registerTool(
       "現在のバージョンに最も近いリリース系統の修正版を優先する3段階フォールバック" +
       "(same_minor: 同一major.minor系統内 → major_internal: 同一メジャー内 → cross_major: メジャーアップグレード)で選定し、" +
       "推奨バージョン・アップグレード距離(upgrade_tier)・CVEごとの修正版を返す。" +
-      "修正版が存在しないCVEはunfixedとして明示する。Maven(pom.xml)とGradle(gradle.lockfile)に対応。",
+      "候補を全修正対象CVEの影響範囲と照合し、情報不足の場合は推奨を保留する。" +
+      "現在より新しい修正版候補のないCVEはunfixedとして別表示し、推奨先での判定も返す。Maven(pom.xml)とGradle(gradle.lockfile)に対応。",
     inputSchema: {
       project_path: z
         .string()

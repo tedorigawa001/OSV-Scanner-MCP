@@ -10,13 +10,14 @@
  *   Tier 2 (major_internal): 同一メジャー内の最小の修正版(マイナーバージョンアップ)
  *   Tier 3 (cross_major):    全体最小の修正版(メジャーアップグレード、破壊的変更の可能性)
  *
- * パッケージ全体の推奨(recommended_upgrade)は全CVEのTier結果の最大値
- * (= すべての修正可能なCVEを解消できる最小バージョン)。
+ * パッケージ全体の候補を全修正対象CVEの影響範囲と照合して推奨する。
+ * 判定不能な候補は推奨しない。
  * 現在より新しい修正版が存在しないCVEはunfixedとして明示し、推奨計算から除外する。
  */
 
 import { compareMavenVersions, mavenVersionSeries } from "../utils/mavenVersion.js";
 import type { ScanReportPackage, SeverityLevel } from "./scanReport.js";
+import { candidateStatus } from "./affectedVersions.js";
 
 export type UpgradeTier = "same_minor" | "major_internal" | "cross_major";
 
@@ -25,21 +26,23 @@ export interface CveFixDetail {
   id: string;
   cve: string | null;
   severity: SeverityLevel;
-  /** このCVEを解消できる最小の修正版。null = 現在より新しい修正版が存在しない */
+  /** このCVEの修正版候補。最終推奨先での判定はrecommended_statusを参照 */
   fixed_in: string | null;
   tier: UpgradeTier | "unfixed";
+  recommended_status?: "affected" | "not_affected" | "unknown" | "not_evaluated";
 }
 
 export interface PackageUpgradeSuggestion {
   package: string;
   current_version: string;
   ecosystem: string;
-  /** 修正可能な全CVEを解消できる最小バージョン。null = 修正可能なCVEがない */
+  /** 既知の修正版候補のうち影響範囲を検証できた版。null = 検証済み候補なし */
   recommended_upgrade: string | null;
   /** recommended_upgradeと現在バージョンの系統関係 */
   upgrade_tier: UpgradeTier | null;
   upgrade_note: string;
   per_cve_detail: CveFixDetail[];
+  verification: "verified" | "no_verified_candidate";
 }
 
 type Series = { major: number; minor: number };
@@ -85,26 +88,25 @@ function buildNote(
   unfixedCount: number,
 ): string {
   if (recommended === null) {
-    return `全${unfixedCount}件のCVEに現在より新しい修正版が存在しない(unfixed)`;
+    return `全${unfixedCount}件のCVEに現在より新しい修正版候補がない(unfixed)。修正版情報の欠落を含む可能性があります`;
   }
   const label = currentSeries !== null ? `${currentSeries.major}.${currentSeries.minor}` : null;
   let note: string;
   switch (tier) {
     case "same_minor":
-      note = `現在の${label}系統内の${recommended}で、修正版が存在する${fixableCount}件のCVEをすべて解消できる`;
+      note = `現在の${label}系統内の候補${recommended}を推奨`;
       break;
     case "major_internal":
-      note = `${label}系統向けの修正版は存在しない。同一メジャー(${currentSeries!.major}.x)内では${recommended}が${fixableCount}件のCVEを解消する最小版`;
+      note = `同一メジャー(${currentSeries!.major}.x)内の候補${recommended}を推奨`;
       break;
     default:
       note =
         label !== null
-          ? `同一メジャー(${currentSeries!.major}.x)内に修正版が存在しない。${recommended}へのメジャーアップグレードが必要(破壊的変更の可能性あり)`
-          : `現在バージョンの系統を判定できないため、全体最小の修正版${recommended}を提示`;
+          ? `候補${recommended}へのメジャーアップグレードを推奨(破壊的変更の可能性あり)`
+          : `現在バージョンの系統を判定できないため、検証済み候補${recommended}を提示`;
   }
-  if (unfixedCount > 0) {
-    note += `。残り${unfixedCount}件は修正版が存在せず、このアップグレードでは解消されない`;
-  }
+  note += `。取得済みの影響範囲に基づき修正対象${fixableCount}件のCVEの範囲外と確認しました。全公開版の最小性や未検出の脆弱性がないことは保証しません`;
+  if (unfixedCount > 0) note += `。残り${unfixedCount}件は現在より新しい修正版候補がなく、修正対象から除外しています。recommended_statusを確認してください`;
   return note;
 }
 
@@ -135,12 +137,24 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgrade
       fixed_in: pick.version,
       tier: pick.tier,
     });
-    if (recommended === null || compareMavenVersions(pick.version, recommended) > 0) {
-      recommended = pick.version;
-    }
   }
 
   const fixableCount = details.length - unfixedCount;
+  const targets = pkg.vulnerabilities.filter((_, i) => details[i]!.fixed_in !== null);
+  const candidates = [...new Set(targets.flatMap(v => v.fixed_versions))]
+    .filter(v => compareMavenVersions(v, pkg.version) > 0)
+    .sort(compareMavenVersions);
+  const tierOrder: UpgradeTier[] = ["same_minor", "major_internal", "cross_major"];
+  recommended = null;
+  for (const tier of tierOrder) {
+    const candidate = candidates.find(v => classifyTier(currentSeries, v) === tier &&
+      targets.every(target => candidateStatus(target.affected_versions, v) === "not_affected"));
+    if (candidate !== undefined) { recommended = candidate; break; }
+  }
+  for (let i = 0; i < details.length; i++) {
+    details[i]!.recommended_status = recommended === null ? "not_evaluated" :
+      candidateStatus(pkg.vulnerabilities[i]!.affected_versions, recommended);
+  }
   // 推奨バージョン自体のTierは「現在バージョンとの系統関係」で再分類する
   // (per-CVEのTierの寄せ集めではなく、実際に行うアップグレードの距離を表す)
   const upgradeTier = recommended !== null ? classifyTier(currentSeries, recommended) : null;
@@ -151,8 +165,11 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgrade
     ecosystem: pkg.ecosystem,
     recommended_upgrade: recommended,
     upgrade_tier: upgradeTier,
-    upgrade_note: buildNote(currentSeries, recommended, upgradeTier, fixableCount, unfixedCount),
+    upgrade_note: recommended === null && fixableCount > 0
+      ? "既知の修正版候補から、全修正対象CVEの影響範囲外と確認できる版が見つかりません。情報不足・未対応の範囲形式を含む場合も推奨を保留します。"
+      : buildNote(currentSeries, recommended, upgradeTier, fixableCount, unfixedCount),
     per_cve_detail: details,
+    verification: recommended === null ? "no_verified_candidate" : "verified",
   };
 }
 

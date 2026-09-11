@@ -15,6 +15,7 @@
 
 import { compareMavenVersions } from "../utils/mavenVersion.js";
 import { asArray, asRecord, asString, asStrings } from "../utils/unknownJson.js";
+import { extractAffectedVersions, type AffectedVersionEvidence } from "./affectedVersions.js";
 
 export type SeverityLevel = "critical" | "high" | "medium" | "low" | "unknown";
 
@@ -32,6 +33,7 @@ export interface ScanReportVulnerability {
   summary: string | null;
   /** 修正版バージョン(Maven優先順位で昇順)。複数リリース系統が混在しうる。空=未修正 */
   fixed_versions: string[];
+  affected_versions?: AffectedVersionEvidence;
 }
 
 export interface ScanReportPackage {
@@ -105,6 +107,7 @@ function extractSummary(vulnDetails: Record<string, unknown>[]): string | null {
 function extractFixedVersions(
   vulnDetails: Record<string, unknown>[],
   packageName: string,
+  ecosystem: string,
 ): string[] {
   const versions = new Set<string>();
   for (const detail of vulnDetails) {
@@ -112,8 +115,9 @@ function extractFixedVersions(
       const affected = asRecord(affectedRaw);
       if (!affected) continue;
       const affectedName = asString(asRecord(affected.package)?.name);
-      if (affectedName !== null && affectedName !== packageName) continue;
+      if (affectedName !== packageName || asString(asRecord(affected.package)?.ecosystem) !== ecosystem) continue;
       for (const rangeRaw of asArray(affected.ranges)) {
+        if (asRecord(rangeRaw)?.type !== "ECOSYSTEM" || ecosystem !== "Maven") continue;
         for (const eventRaw of asArray(asRecord(rangeRaw)?.events)) {
           const fixed = asString(asRecord(eventRaw)?.fixed);
           if (fixed !== null && fixed !== "") versions.add(fixed);
@@ -186,7 +190,8 @@ export function parseOsvScanOutput(raw: unknown): ScanReport {
           severity_score: score,
           severity: severityFromScore(score),
           summary: extractSummary(vulnDetails),
-          fixed_versions: extractFixedVersions(vulnDetails, name),
+          fixed_versions: extractFixedVersions(vulnDetails, name, ecosystem),
+          affected_versions: extractAffectedVersions(vulnDetails, ids, name, ecosystem),
         });
       }
     }

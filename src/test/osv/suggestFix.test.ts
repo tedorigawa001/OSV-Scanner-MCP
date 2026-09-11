@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ScanReportPackage, ScanReportVulnerability } from "../../osv/scanReport.js";
 import { suggestUpgradeForPackage, suggestUpgrades } from "../../osv/suggestFix.js";
+import { compareMavenVersions } from "../../utils/mavenVersion.js";
+import { parseOsvScanOutput } from "../../osv/scanReport.js";
 
 function vuln(
   id: string,
@@ -16,6 +18,12 @@ function vuln(
     severity,
     summary: null,
     fixed_versions: fixedVersions,
+    affected_versions: {
+      complete: true,
+      versions: [],
+      // Legacy selection tests assume no reintroduction after the first fix.
+      intervals: [{ introduced: "0", end: [...fixedVersions].sort(compareMavenVersions)[0] ?? null, inclusive: false }],
+    },
   };
 }
 
@@ -28,6 +36,39 @@ function pkg(
 }
 
 describe("suggestUpgradeForPackage", () => {
+  it("別系統で再び影響を受ける候補を除外する(スキャンJSONから通して検証)", () => {
+    const result = parseOsvScanOutput({ results: [{ packages: [{
+      package: { name: "a:a", ecosystem: "Maven", version: "1.0.0" },
+      groups: [{ ids: ["A"] }, { ids: ["B"] }],
+      vulnerabilities: [
+        { id: "A", affected: [{ package: { name: "a:a", ecosystem: "Maven" }, ranges: [{
+          type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "1.0.1" }, { introduced: "2.0.0" }, { fixed: "2.0.5" }],
+        }] }] },
+        { id: "B", affected: [{ package: { name: "a:a", ecosystem: "Maven" }, ranges: [{
+          type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "2.0.0" }],
+        }] }] },
+      ],
+    }] }] });
+    const suggestion = suggestUpgradeForPackage(result.packages[0]!);
+    expect(suggestion.recommended_upgrade).toBe("2.0.5");
+    expect(suggestion.verification).toBe("verified");
+    expect(suggestion.per_cve_detail.every(v => v.recommended_status === "not_affected")).toBe(true);
+  });
+
+  it("影響範囲が欠落した場合、fixedだけで安全と判定しない", () => {
+    const v = vuln("A", null, ["1.0.1"]);
+    delete v.affected_versions;
+    const result = suggestUpgradeForPackage(pkg("a:a", "1.0.0", [v]));
+    expect(result.recommended_upgrade).toBeNull();
+    expect(result.verification).toBe("no_verified_candidate");
+  });
+
+  it("全候補が別CVEの影響範囲内なら推奨を保留する", () => {
+    const a = vuln("A", null, ["1.0.1"]);
+    a.affected_versions!.intervals.push({ introduced: "2.0.0", end: null, inclusive: false });
+    const b = vuln("B", null, ["2.0.0"]);
+    expect(suggestUpgradeForPackage(pkg("a:a", "1.0.0", [a, b])).recommended_upgrade).toBeNull();
+  });
   it("設計メモの確定例: log4j-core 2.14.1は2.25.4/major_internalになる", () => {
     // 実スキャン(2026-07-04)で取得したfixed_versionsをそのまま使用
     const log4j = pkg("org.apache.logging.log4j:log4j-core", "2.14.1", [
@@ -44,7 +85,7 @@ describe("suggestUpgradeForPackage", () => {
     // 2.14系統向けの修正版は存在しない → 同一メジャー内の最大 2.25.4
     expect(suggestion.recommended_upgrade).toBe("2.25.4");
     expect(suggestion.upgrade_tier).toBe("major_internal");
-    expect(suggestion.upgrade_note).toContain("2.14系統向けの修正版は存在しない");
+    expect(suggestion.upgrade_note).toContain("同一メジャー");
     expect(suggestion.upgrade_note).toContain("2.25.4");
 
     // CVEごとのTier: 2.14.1より古いバックポート(2.3.x/2.12.x)は候補にならない
@@ -98,7 +139,7 @@ describe("suggestUpgradeForPackage", () => {
     expect(suggestion.recommended_upgrade).toBe("2.15.0");
     const tiers = Object.fromEntries(suggestion.per_cve_detail.map((d) => [d.id, d.tier]));
     expect(tiers).toEqual({ "GHSA-1": "unfixed", "GHSA-2": "unfixed", "GHSA-3": "major_internal" });
-    expect(suggestion.upgrade_note).toContain("残り2件は修正版が存在せず");
+    expect(suggestion.upgrade_note).toContain("残り2件は現在より新しい修正版候補がなく");
   });
 
   it("全CVEがunfixedならrecommended_upgradeはnull", () => {

@@ -205,7 +205,8 @@ Java(Maven)プロジェクトをスキャンし、既知の脆弱性レポート
       "ecosystem": "Maven",
       "recommended_upgrade": "2.25.4",
       "upgrade_tier": "major_internal",
-      "upgrade_note": "2.14系統向けの修正版は存在しない。同一メジャー(2.x)内では2.25.4が7件のCVEを解消する最小版",
+      "verification": "verified",
+      "upgrade_note": "取得済みの影響範囲に基づき修正対象CVEの範囲外と確認した候補です",
       "per_cve_detail": [
         { "id": "GHSA-jfh8-c2jp-5v3q", "cve": "CVE-2021-44228", "severity": "critical", "fixed_in": "2.15.0", "tier": "major_internal" }
       ]
@@ -214,8 +215,10 @@ Java(Maven)プロジェクトをスキャンし、既知の脆弱性レポート
 }
 ```
 
-- `recommended_upgrade` は「修正可能な全CVEを解消できる最小バージョン」(CVEごとのTier結果の最大値)
-- 修正版が存在しない(または現在より新しい修正版がない)CVEは `tier: "unfixed"` として明示し、推奨計算から除外します。全CVEがunfixedの場合 `recommended_upgrade` は `null`
+- `recommended_upgrade` は既知の修正版を候補に、修正対象の全CVEの影響範囲外と確認できたものを3段階Tier順・バージョン昇順で選びます。CVEごとの修正版の最大値を単純に採用せず、別系統で再び影響を受ける候補も除外します。全公開版の中での最小性や未検出の脆弱性がないことは保証しません。
+- MavenのOSV `ECOSYSTEM` 範囲(`introduced` / `fixed` / `last_affected` / 上限なし)を照合します。`versions` に明示された影響も確認します。範囲欠落・不正・未対応形式・`limit` による不完全な情報では安全と推定せず、候補を検証できなければ `recommended_upgrade: null`、`verification: "no_verified_candidate"` を返します。
+- 推奨時は `verification: "verified"`、CVEごとの `recommended_status` は `affected` / `not_affected` / `unknown` です。推奨保留時は `not_evaluated` になります。`per_cve_detail.fixed_in` は各CVE単独の候補であり、最終推奨先の判定は `recommended_status` を参照してください。
+- 現在より新しい修正版候補がないCVEは `tier: "unfixed"` として推奨の修正対象から除外します(情報欠落を含む場合があります)。除外したCVEも推奨先で判定し、その状態を表示します。全CVEがunfixedの場合も `recommended_upgrade` は `null` です。
 
 ### `explain_vulnerability`
 
