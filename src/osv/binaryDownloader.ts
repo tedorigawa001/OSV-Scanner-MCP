@@ -16,6 +16,7 @@ import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises"
 import os from "node:os";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
+import { readResponseBytes } from "../utils/readResponseBytes.js";
 
 /** ピン留めするOSV-Scannerのバージョン。更新時は下のチェックサムも必ず更新すること */
 export const PINNED_OSV_SCANNER_VERSION = "2.4.0";
@@ -103,21 +104,18 @@ async function downloadAsset(
       `OSV-Scannerのダウンロードに失敗しました(HTTP ${response.status}): ${url}`,
     );
   }
-  const contentLength = Number(response.headers.get("content-length") ?? "0");
-  if (contentLength > MAX_BINARY_BYTES) {
-    throw new ScanToolError(
+  try {
+    return await readResponseBytes(response, MAX_BINARY_BYTES, new ScanToolError(
       "binary_download_failed",
       `ダウンロードサイズが上限(${MAX_BINARY_BYTES}バイト)を超えています`,
-    );
-  }
-  const buffer = Buffer.from(await response.arrayBuffer());
-  if (buffer.byteLength > MAX_BINARY_BYTES) {
+    ));
+  } catch (error) {
+    if (error instanceof ScanToolError) throw error;
     throw new ScanToolError(
       "binary_download_failed",
-      `ダウンロードサイズが上限(${MAX_BINARY_BYTES}バイト)を超えています`,
+      "OSV-Scannerのダウンロード本文を受信できませんでした",
     );
   }
-  return buffer;
 }
 
 /**

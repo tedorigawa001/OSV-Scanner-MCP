@@ -10,6 +10,7 @@
  */
 
 import { ScanToolError } from "../errors.js";
+import { readResponseBytes } from "../utils/readResponseBytes.js";
 
 export interface FetchOsvRecordOptions {
   /** デフォルト15秒 */
@@ -89,20 +90,18 @@ export async function fetchOsvRecord(
     );
   }
 
-  const contentLength = Number(response.headers.get("content-length") ?? "0");
-  if (contentLength > maxBytes) {
-    throw new ScanToolError(
+  let body: string;
+  try {
+    const bytes = await readResponseBytes(response, maxBytes, new ScanToolError(
       "output_too_large",
       `OSV APIのレスポンスがサイズ上限(${maxBytes}バイト)を超えました`,
-    );
-  }
-
-  const body = await response.text();
-  // 文字数(UTF-16単位)ではなくUTF-8バイト数で判定する(マルチバイト本文のズレ防止)
-  if (Buffer.byteLength(body, "utf8") > maxBytes) {
+    ));
+    body = new TextDecoder().decode(bytes);
+  } catch (error) {
+    if (error instanceof ScanToolError) throw error;
     throw new ScanToolError(
-      "output_too_large",
-      `OSV APIのレスポンスがサイズ上限(${maxBytes}バイト)を超えました`,
+      "api_request_failed",
+      "OSV APIのレスポンス本文を受信できませんでした",
     );
   }
 

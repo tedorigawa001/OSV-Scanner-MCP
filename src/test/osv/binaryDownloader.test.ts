@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -59,6 +59,52 @@ describe("assetNameForPlatform", () => {
 });
 
 describe("ensureOsvScannerDownloaded", () => {
+  it.each([undefined, "1", "209715201"])("cancels oversized downloads without placement (header: %s)", async (length) => {
+    const isolated = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-dl-size-"));
+    try {
+      let reads = 0;
+      let cancelled = false;
+      // Reuse a chunk so the test need not allocate a 200 MiB fixture.
+      const chunk = new Uint8Array(1024 * 1024);
+      const body = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          reads++;
+          if (reads <= 202) controller.enqueue(chunk);
+          else controller.close();
+        },
+        cancel() { cancelled = true; },
+      }, { highWaterMark: 0 });
+      const error = await expectScanError(ensureOsvScannerDownloaded(options({
+        cacheDir: isolated,
+        fetchFn: async () => new Response(body, {
+          headers: length === undefined ? {} : { "content-length": length },
+        }),
+      })), "binary_download_failed");
+      expect(error.message).toContain("209715200");
+      expect(reads).toBe(length === "209715201" ? 0 : 201);
+      expect(cancelled).toBe(true);
+      expect(body.locked).toBe(false);
+      expect(await readdir(path.join(isolated, `v${PINNED_OSV_SCANNER_VERSION}`))).toEqual([]);
+    } finally {
+      await rm(isolated, { recursive: true, force: true });
+    }
+  });
+
+  it("maps interrupted bodies to binary_download_failed without placement", async () => {
+    const isolated = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-dl-body-"));
+    try {
+      await expectScanError(ensureOsvScannerDownloaded(options({
+        cacheDir: isolated,
+        fetchFn: async () => new Response(new ReadableStream<Uint8Array>({
+          pull(controller) { controller.error(new TypeError("connection reset")); },
+        })),
+      })), "binary_download_failed");
+      expect(await readdir(path.join(isolated, `v${PINNED_OSV_SCANNER_VERSION}`))).toEqual([]);
+    } finally {
+      await rm(isolated, { recursive: true, force: true });
+    }
+  });
+
   it("ダウンロード→検証→実行権限付きで配置し、正しいURLを参照する", async () => {
     let requestedUrl = "";
     const binPath = await ensureOsvScannerDownloaded(
