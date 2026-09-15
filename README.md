@@ -12,6 +12,7 @@ Google製 [OSV-Scanner](https://github.com/google/osv-scanner) をラップす�
 ## 特徴
 
 - **ワンショットスキャン**: `scan_java_project` ツールにプロジェクトパスを渡すだけで、検出→スキャン→整形済みレポートまで一気に返します
+- **JAR/WAR実体スキャン**: `scan_java_artifact` ツールで、lockfileが無い・shaded/fat JARしか手元にないプロジェクトでもアーカイブ内メタデータから既知の脆弱性を検出します(ベストエフォート同定であることを明示するcoverage情報付き)
 - **深刻度順のレポート**: パッケージごとに脆弱性をCVSSスコア順に整理し、5段階の深刻度ラベル(critical / high / medium / low / unknown)とサマリ集計付きで返します
 - **修正版の提示**: 各脆弱性の `fixed_versions` をMavenバージョン優先順位規則で正しくソートして含めます(`2.17.1-RELEASE` のようなsemver非対応の表記にも対応)
 - **セキュリティ第一の設計**: シェル非経由の実行・引数ホワイトリスト・パス正規化と境界チェック・タイムアウト/出力サイズ上限を実装段階から組み込んでいます
@@ -324,6 +325,7 @@ npm run build             # dist/ へビルド
 - [x] npmパッケージ化(`npx osv-scanner-mcp`)
 - [x] OSV-Scannerバイナリの自動ダウンロード(チェックサム検証付き)
 - [x] Gradle対応(lockfile方式)
+- [x] `scan_java_artifact` ツール: JAR/WAR実体スキャン(lockfileが無い・shaded/fat JARのみのプロジェクト向け)
 
 ## ライセンス
 
