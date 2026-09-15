@@ -4,7 +4,7 @@
  * セキュリティ設計(docs/DESIGN_TODO.md):
  * - シェルを経由しない`spawn`+引数配列で実行(コマンドインジェクション対策)
  * - OSV-Scannerへ渡す引数は固定リストのみ。呼び出し側から任意フラグは注入できない
- *   (対象パスは位置引数1つだけで、projectDetectorでrealpath解決済みの絶対パスを渡す)
+ *   (プロジェクトは検証済みディレクトリ1つ、実体スキャンは列挙済みのJAR/WAR絶対パスだけを渡す)
  * - タイムアウトと出力サイズ上限を設ける(ハング・巨大出力によるDoS対策)
  *
  * 終了コード(2.4.0で実機確認):
@@ -53,6 +53,10 @@ const MAX_STDERR_DETAIL_BYTES = 8 * 1024;
 
 /** OSV-Scannerに渡す固定引数。ここに無いオプションは一切使わない(ホワイトリスト) */
 const FIXED_SCAN_ARGS = ["scan", "source", "-r", "--format", "json"] as const;
+const FIXED_ARTIFACT_ARGS = [
+  "scan", "source", "--format", "json", "--all-packages", "--no-ignore",
+  "--experimental-no-default-plugins", "--experimental-plugins", "java/archive",
+] as const;
 
 const EXIT_NO_VULNS = 0;
 const EXIT_VULNS_FOUND = 1;
@@ -67,12 +71,15 @@ interface RawScanResult {
 
 function execOsvScanner(
   binaryPath: string,
-  projectDir: string,
+  targetPaths: readonly string[],
   timeoutMs: number,
   maxOutputBytes: number,
+  artifactMode: boolean,
 ): Promise<RawScanResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(binaryPath, [...FIXED_SCAN_ARGS, projectDir], {
+    const child = spawn(binaryPath, [
+      ...(artifactMode ? FIXED_ARTIFACT_ARGS : FIXED_SCAN_ARGS), ...targetPaths,
+    ], {
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -148,6 +155,25 @@ export async function runOsvScan(
   projectDir: string,
   options: RunOsvScanOptions = {},
 ): Promise<ScanReport> {
+  return parseOsvScanOutput(await runScan([projectDir], options, false));
+}
+
+/** Accept only the exact absolute files enumerated by detectJavaArtifacts. */
+export async function runOsvArtifactScan(
+  artifactPaths: readonly string[],
+  options: RunOsvScanOptions = {},
+): Promise<unknown> {
+  if (artifactPaths.length === 0) {
+    throw new ScanToolError("no_scannable_artifacts", "No JAR/WAR archives selected");
+  }
+  return runScan(artifactPaths, options, true);
+}
+
+async function runScan(
+  targetPaths: readonly string[],
+  options: RunOsvScanOptions,
+  artifactMode: boolean,
+): Promise<unknown> {
   const limit = options.maxConcurrentScans ?? maxConcurrentScansFromEnv();
   if (activeScans >= limit) {
     throw new ScanToolError(
@@ -157,33 +183,39 @@ export async function runOsvScan(
   }
   activeScans++;
   try {
-    return await runOsvScanUnguarded(projectDir, options);
+    return await runOsvScanUnguarded(targetPaths, options, artifactMode);
   } finally {
     activeScans--;
   }
 }
 
 async function runOsvScanUnguarded(
-  projectDir: string,
+  targetPaths: readonly string[],
   options: RunOsvScanOptions,
-): Promise<ScanReport> {
+  artifactMode: boolean,
+): Promise<unknown> {
   const binaryPath = options.binaryPath ?? (await resolveOsvScannerBinary());
   const result = await execOsvScanner(
     binaryPath,
-    projectDir,
+    targetPaths,
     options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
+    artifactMode,
   );
 
-  if (result.exitCode === EXIT_NO_PACKAGES) {
+  if (result.exitCode === EXIT_NO_PACKAGES && !artifactMode) {
     throw new ScanToolError(
       "no_packages_found",
-      `OSV-Scannerがスキャン対象のパッケージを検出できませんでした: ${projectDir}(pom.xmlに依存関係が定義されているか確認してください)`,
+      `OSV-Scannerがスキャン対象のパッケージを検出できませんでした: ${targetPaths[0]}(pom.xmlに依存関係が定義されているか確認してください)`,
       result.stderr,
     );
   }
 
-  if (result.exitCode !== EXIT_NO_VULNS && result.exitCode !== EXIT_VULNS_FOUND) {
+  if (artifactMode && result.exitCode === EXIT_NO_PACKAGES && result.stdout.trim() === "") {
+    return { results: [] };
+  }
+  if (result.exitCode !== EXIT_NO_VULNS && result.exitCode !== EXIT_VULNS_FOUND &&
+      !(artifactMode && result.exitCode === EXIT_NO_PACKAGES)) {
     const status =
       result.exitCode !== null ? `exit code ${result.exitCode}` : `signal ${result.signal}`;
     throw new ScanToolError(
@@ -203,5 +235,5 @@ async function runOsvScanUnguarded(
       result.stdout.slice(0, 1000),
     );
   }
-  return parseOsvScanOutput(parsed);
+  return parsed;
 }

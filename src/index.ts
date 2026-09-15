@@ -16,6 +16,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { handleExplainVulnerability } from "./tools/explainVulnerability.js";
 import { handleScanJavaProject } from "./tools/scanJavaProject.js";
+import { handleScanJavaArtifact } from "./tools/scanJavaArtifact.js";
 import { handleSuggestFix } from "./tools/suggestFix.js";
 import {
   ALLOWED_ROOT_ENV,
@@ -104,6 +105,23 @@ server.registerTool(
     },
   },
   async ({ vulnerability_id }) => handleExplainVulnerability({ vulnerability_id }),
+);
+
+server.registerTool(
+  "scan_java_artifact",
+  {
+    title: "JAR/WAR実体の脆弱性スキャン",
+    description:
+      "JAR/WARファイルまたはディレクトリ内の実体をスキャンする。ビルドやJavaコードの実行は行わない。" +
+      "メタデータによるベストエフォート同定のため、coverageと同定不能ファイルを必ず確認すること。" +
+      "completenessは常にincomplete。検出0件でも安全性や全依存の同定を保証しない。",
+    inputSchema: {
+      artifact_path: z.string().min(1).describe("JAR/WARファイル、または探索するディレクトリの絶対パス"),
+    },
+  },
+  async ({ artifact_path }) => handleScanJavaArtifact(
+    { artifact_path }, { allowedRoot: process.env[ALLOWED_ROOT_ENV] },
+  ),
 );
 
 const transport = new StdioServerTransport();

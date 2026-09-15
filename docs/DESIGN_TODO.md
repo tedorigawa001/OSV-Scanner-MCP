@@ -1,6 +1,6 @@
 # OSV-Scanner-MCP 設計メモ / 残課題
 
-最終更新: 2026-07-15(JAR実体スキャンの設計メモを追加)
+最終更新: 2026-09-15(JAR/WAR実体スキャンを実装、合成アーカイブでMCP経由の実機検証)
 
 ## 決定済み事項
 
@@ -213,10 +213,12 @@ lockfileが無い・shaded JARしか手元に無いプロジェクトへの対�
 
 ### 残タスク
 
-- [ ] `scan_java_artifact` の入出力スキーマ最終化(上記方針をzodスキーマに落とす)
-- [ ] runner.tsのプラグイン引数対応(固定リストの分岐)+ projectDetector相当のJAR列挙実装
-- [ ] suggest_fixをアーティファクトスキャン結果にも対応させるか判断(GAVが取れていれば理論上は無変更で動くはず)
+- [x] `scan_java_artifact` の入力Zodスキーマとcoverage先頭の出力を実装(2026-09-15)。WARを含む外側アーカイブ単位の3状態を返し、全体のcompletenessは常にincomplete
+- [x] runner.tsのプラグイン引数対応+上限付きJAR/WAR列挙を実装。列挙済み絶対パスだけを渡し、default pluginsを無効化、`--all-packages`で既知脆弱性のないパッケージも取得。`unknown:unknown`等は同定不能として扱う
+- [x] suggest_fixは今回の実装では既存のマニフェスト方式専用を維持。アーティファクトへの拡張は別途検討
 - [ ] 実プロジェクトのfat JAR(Spring Boot等)・shaded JARでの実機検証
+
+実装時の検証: ピン留め済み2.4.0で合成JAR、WAR内の`WEB-INF/lib`、Boot形式の`BOOT-INF/lib`、同定済み・既知脆弱性なし、メタデータなしの5ファイルをMCP経由で確認。`--all-packages`では同定不能のプレースホルダーも出力されるため、source.pathの存在だけでなくMaven座標の有効性を確認する。実プロジェクト由来の成果物での検証は上記のとおり未完了。
 
 ## 次のアクション候補
 

@@ -178,6 +178,33 @@ Java(Maven)プロジェクトをスキャンし、既知の脆弱性レポート
 - `fixed_versions` はMaven優先順位で昇順。複数のリリース系統(例: 2.12系バックポートと2.15系)が混在することがあります。空配列は「修正版が存在しない」ことを意味します
 - `severity_score` が取得できない脆弱性は `null` / `"unknown"` として扱います
 
+### `scan_java_artifact`
+
+JAR/WARファイルの実体をスキャンします。既存のマニフェスト方式とは別ツールです。
+
+```json
+{ "artifact_path": "/absolute/path/to/application.war" }
+```
+
+`artifact_path` はJAR/WARファイル、または探索するディレクトリの絶対パスです。
+ディレクトリ指定では `target` や `build` も探索します。`.git`、`node_modules`、`.idea`、`.vscode` と探索中のシンボリックリンクは除外します。
+探索上限は深さ8・100ファイル・10,000エントリです。上限に達して探索を完了できない場合は、結果を黙って省略せず `artifact_search_limit_exceeded` を返します。対象を絞って再実行してください。
+`OSV_MCP_ALLOWED_ROOT` による制限も適用されます。
+
+OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJARもスキャナー側で解析します。Javaコードやビルドは実行しません。
+識別にはアーカイブ内メタデータを用いるため、除去済みメタデータやshaded/minimized JAR内の依存を見落とす場合があります。
+
+**出力の読み方:**
+
+- 先頭の `coverage` に `jars_found`、`jars_identified`、`unidentified_jars` を返します。件数はWARも含む、ファイルシステム上で列挙した外側のアーカイブ単位です。ネストJARの総数ではありません。
+- `artifacts[].status` は `identified_with_vulnerabilities` / `identified_without_known_vulnerabilities` / `unidentified` の3値です。「同定済み」は少なくとも1件のMaven座標を取得できた意味であり、全依存の同定ではありません。
+- `coverage.completeness` は常に `incomplete`。`identified_vulnerability_count: 0` は安全性の保証ではありません。
+- `packages` は同定できた脆弱なパッケージの詳細です。複数アーカイブに含まれる同一パッケージ・脆弱性は全体集計では重複排除します。
+- JAR/WARが無い場合は `no_scannable_artifacts`、全件同定不能の場合は警告を含む成功レポートです。
+
+`suggest_fix` は引き続きマニフェスト方式専用です。experimentalプラグインを使うため、OSV-Scannerのピン留めバージョン更新時には、フラグとJAR/WARの出力形式も再検証してください。
+信頼できないアーカイブの展開はOSV-Scannerのネイティブ処理に依存します。タイムアウト・出力上限はありますが、OSレベルのメモリ制限やサンドボックスを提供するものではありません。
+
 ### `suggest_fix`
 
 スキャンを実行し、脆弱なパッケージごとに**推奨アップグレードバージョン**を提案します。単純な最大バージョンではなく、現在のバージョンに最も近いリリース系統の修正版を3段階フォールバックで選定します:

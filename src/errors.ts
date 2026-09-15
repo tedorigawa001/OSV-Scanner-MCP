@@ -10,6 +10,10 @@ export type ScanToolErrorKind =
   | "project_not_found"
   /** プロジェクト内に対応マニフェスト(pom.xml / gradle.lockfile)が見つからない */
   | "no_manifest_found"
+  /** No JAR/WAR files were found in the selected scope. */
+  | "no_scannable_artifacts"
+  /** Artifact discovery exceeded a bounded traversal limit. */
+  | "artifact_search_limit_exceeded"
   /** build.gradleはあるがgradle.lockfileが無い(lockfile方式のため生成が必要) */
   | "gradle_lockfile_missing"
   /** 許可されたルートディレクトリの外を指している(パストラバーサル対策) */

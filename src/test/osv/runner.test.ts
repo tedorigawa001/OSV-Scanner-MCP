@@ -9,7 +9,7 @@ import {
   OSV_SCANNER_PATH_ENV,
   resolveOsvScannerBinary,
 } from "../../osv/binaryManager.js";
-import { runOsvScan } from "../../osv/runner.js";
+import { runOsvArtifactScan, runOsvScan } from "../../osv/runner.js";
 
 let binDir: string;
 let projectDir: string;
@@ -57,6 +57,19 @@ async function expectScanError(promise: Promise<unknown>, kind: string): Promise
 }
 
 describe("runOsvScan", () => {
+  it.each([false, true])("shares concurrency slots with artifact scans (artifact first: %s)", async (artifactFirst) => {
+    const bin = await makeFakeBinary("fake-shared-slot", `sleep 1; echo '{"results":[]}'; exit 0`);
+    const opts = { binaryPath: bin, maxConcurrentScans: 1 };
+    const artifactPath = path.join(projectDir, "fixture.jar");
+    const first = artifactFirst ? runOsvArtifactScan([artifactPath], opts) : runOsvScan(projectDir, opts);
+    try {
+      await expectScanError(artifactFirst ? runOsvScan(projectDir, opts) : runOsvArtifactScan([artifactPath], opts),
+        "too_many_concurrent_scans");
+    } finally {
+      await first;
+    }
+  });
+
   it("exit 1(脆弱性あり)のJSONをレポートに変換する", async () => {
     const bin = await makeFakeBinary("fake-vulns", `echo '${VULN_JSON}'; exit 1`);
     const report = await runOsvScan(projectDir, { binaryPath: bin });
