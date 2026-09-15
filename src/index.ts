@@ -41,7 +41,7 @@ if (startupWarning !== null) {
 // NOTE: リリース時はpackage.jsonのversionと同じ値に更新すること
 const server = new McpServer({
   name: "osv-scanner-mcp",
-  version: "0.1.12",
+  version: "0.2.0",
 });
 
 server.registerTool(
