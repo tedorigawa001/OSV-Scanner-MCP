@@ -17,6 +17,7 @@ import { z } from "zod";
 import { handleExplainVulnerability } from "./tools/explainVulnerability.js";
 import { handleScanJavaProject } from "./tools/scanJavaProject.js";
 import { handleScanJavaArtifact } from "./tools/scanJavaArtifact.js";
+import { handleScanSbom } from "./tools/scanSbom.js";
 import { handleSuggestFix } from "./tools/suggestFix.js";
 import {
   ALLOWED_ROOT_ENV,
@@ -41,7 +42,7 @@ if (startupWarning !== null) {
 // NOTE: リリース時はpackage.jsonのversionと同じ値に更新すること
 const server = new McpServer({
   name: "osv-scanner-mcp",
-  version: "0.2.0",
+  version: "0.3.0",
 });
 
 server.registerTool(
@@ -121,6 +122,23 @@ server.registerTool(
   },
   async ({ artifact_path }) => handleScanJavaArtifact(
     { artifact_path }, { allowedRoot: process.env[ALLOWED_ROOT_ENV] },
+  ),
+);
+
+server.registerTool(
+  "scan_sbom",
+  {
+    title: "SBOMの脆弱性スキャン",
+    description:
+      "CycloneDX 1.4/1.5/1.6またはSPDX 2.2/2.3のJSON SBOMから識別できる依存をスキャンする。" +
+      "ビルドやJARの実行は行わない。入力は16MiB以下のローカルファイル。" +
+      "SBOMの網羅性・鮮度・実成果物との一致は未検証であり、検出0件でも安全性を保証しない。",
+    inputSchema: {
+      sbom_path: z.string().min(1).describe("CycloneDX/SPDX JSON SBOMファイルの絶対パス"),
+    },
+  },
+  async ({ sbom_path }) => handleScanSbom(
+    { sbom_path }, { allowedRoot: process.env[ALLOWED_ROOT_ENV] },
   ),
 );
 

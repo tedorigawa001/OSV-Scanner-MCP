@@ -5,6 +5,7 @@
  * - シェルを経由しない`spawn`+引数配列で実行(コマンドインジェクション対策)
  * - OSV-Scannerへ渡す引数は固定リストのみ。呼び出し側から任意フラグは注入できない
  *   (プロジェクトは検証済みディレクトリ1つ、実体スキャンは列挙済みのJAR/WAR絶対パスだけを渡す)
+ * - SBOMは検証・サイズ制限済みの専用一時コピー1つだけを渡す
  * - タイムアウトと出力サイズ上限を設ける(ハング・巨大出力によるDoS対策)
  *
  * 終了コード(2.4.0で実機確認):
@@ -57,6 +58,12 @@ const FIXED_ARTIFACT_ARGS = [
   "scan", "source", "--format", "json", "--all-packages", "--no-ignore",
   "--experimental-no-default-plugins", "--experimental-plugins", "java/archive",
 ] as const;
+const FIXED_SBOM_ARGS = [
+  "scan", "source", "--format", "json", "--all-packages", "--no-ignore",
+  "--experimental-no-default-plugins", "--experimental-plugins", "sbom",
+] as const;
+type ScanMode = "project" | "artifact" | "sbom";
+const SCAN_ARGS = { project: FIXED_SCAN_ARGS, artifact: FIXED_ARTIFACT_ARGS, sbom: FIXED_SBOM_ARGS };
 
 const EXIT_NO_VULNS = 0;
 const EXIT_VULNS_FOUND = 1;
@@ -74,11 +81,11 @@ function execOsvScanner(
   targetPaths: readonly string[],
   timeoutMs: number,
   maxOutputBytes: number,
-  artifactMode: boolean,
+  mode: ScanMode,
 ): Promise<RawScanResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(binaryPath, [
-      ...(artifactMode ? FIXED_ARTIFACT_ARGS : FIXED_SCAN_ARGS), ...targetPaths,
+      ...SCAN_ARGS[mode], ...targetPaths,
     ], {
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
@@ -155,7 +162,7 @@ export async function runOsvScan(
   projectDir: string,
   options: RunOsvScanOptions = {},
 ): Promise<ScanReport> {
-  return parseOsvScanOutput(await runScan([projectDir], options, false));
+  return parseOsvScanOutput(await runScan([projectDir], options, "project"));
 }
 
 /** Accept only the exact absolute files enumerated by detectJavaArtifacts. */
@@ -166,13 +173,18 @@ export async function runOsvArtifactScan(
   if (artifactPaths.length === 0) {
     throw new ScanToolError("no_scannable_artifacts", "No JAR/WAR archives selected");
   }
-  return runScan(artifactPaths, options, true);
+  return runScan(artifactPaths, options, "artifact");
+}
+
+/** Scan only the private, validated snapshot prepared by handleScanSbom. */
+export async function runOsvSbomScan(snapshotPath: string, options: RunOsvScanOptions = {}): Promise<unknown> {
+  return runScan([snapshotPath], options, "sbom");
 }
 
 async function runScan(
   targetPaths: readonly string[],
   options: RunOsvScanOptions,
-  artifactMode: boolean,
+  mode: ScanMode,
 ): Promise<unknown> {
   const limit = options.maxConcurrentScans ?? maxConcurrentScansFromEnv();
   if (activeScans >= limit) {
@@ -183,7 +195,7 @@ async function runScan(
   }
   activeScans++;
   try {
-    return await runOsvScanUnguarded(targetPaths, options, artifactMode);
+    return await runOsvScanUnguarded(targetPaths, options, mode);
   } finally {
     activeScans--;
   }
@@ -192,7 +204,7 @@ async function runScan(
 async function runOsvScanUnguarded(
   targetPaths: readonly string[],
   options: RunOsvScanOptions,
-  artifactMode: boolean,
+  mode: ScanMode,
 ): Promise<unknown> {
   const binaryPath = options.binaryPath ?? (await resolveOsvScannerBinary());
   const result = await execOsvScanner(
@@ -200,10 +212,10 @@ async function runOsvScanUnguarded(
     targetPaths,
     options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
-    artifactMode,
+    mode,
   );
 
-  if (result.exitCode === EXIT_NO_PACKAGES && !artifactMode) {
+  if (result.exitCode === EXIT_NO_PACKAGES && mode === "project") {
     throw new ScanToolError(
       "no_packages_found",
       `OSV-Scannerがスキャン対象のパッケージを検出できませんでした: ${targetPaths[0]}(pom.xmlに依存関係が定義されているか確認してください)`,
@@ -211,11 +223,11 @@ async function runOsvScanUnguarded(
     );
   }
 
-  if (artifactMode && result.exitCode === EXIT_NO_PACKAGES && result.stdout.trim() === "") {
+  if (mode !== "project" && result.exitCode === EXIT_NO_PACKAGES && result.stdout.trim() === "") {
     return { results: [] };
   }
   if (result.exitCode !== EXIT_NO_VULNS && result.exitCode !== EXIT_VULNS_FOUND &&
-      !(artifactMode && result.exitCode === EXIT_NO_PACKAGES)) {
+      !(mode !== "project" && result.exitCode === EXIT_NO_PACKAGES)) {
     const status =
       result.exitCode !== null ? `exit code ${result.exitCode}` : `signal ${result.signal}`;
     throw new ScanToolError(

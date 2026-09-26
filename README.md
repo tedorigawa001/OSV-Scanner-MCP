@@ -13,6 +13,7 @@ Google製 [OSV-Scanner](https://github.com/google/osv-scanner) をラップす�
 
 - **ワンショットスキャン**: `scan_java_project` ツールにプロジェクトパスを渡すだけで、検出→スキャン→整形済みレポートまで一気に返します
 - **JAR/WAR実体スキャン**: `scan_java_artifact` ツールで、lockfileが無い・shaded/fat JARしか手元にないプロジェクトでもアーカイブ内メタデータから既知の脆弱性を検出します(ベストエフォート同定であることを明示するcoverage情報付き)
+- **SBOM入力スキャン**: `scan_sbom` ツールでCycloneDX/SPDXのJSON SBOMに記録された依存を検査します。SBOMの網羅性や実成果物との一致は未検証であることを明示します
 - **深刻度順のレポート**: パッケージごとに脆弱性をCVSSスコア順に整理し、5段階の深刻度ラベル(critical / high / medium / low / unknown)とサマリ集計付きで返します
 - **修正版の提示**: 各脆弱性の `fixed_versions` をMavenバージョン優先順位規則で正しくソートして含めます(`2.17.1-RELEASE` のようなsemver非対応の表記にも対応)
 - **セキュリティ第一の設計**: シェル非経由の実行・引数ホワイトリスト・パス正規化と境界チェック・タイムアウト/出力サイズ上限を実装段階から組み込んでいます
@@ -205,6 +206,30 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 
 `suggest_fix` は引き続きマニフェスト方式専用です。experimentalプラグインを使うため、OSV-Scannerのピン留めバージョン更新時には、フラグとJAR/WARの出力形式も再検証してください。
 信頼できないアーカイブの展開はOSV-Scannerのネイティブ処理に依存します。タイムアウト・出力上限はありますが、OSレベルのメモリ制限やサンドボックスを提供するものではありません。
+
+### `scan_sbom`
+
+既存のSBOMに記録された依存をOSV-Scannerで照会します。SBOMの生成、ビルド、JARの実行は行いません。
+
+```json
+{ "sbom_path": "/absolute/path/to/release-sbom.json" }
+```
+
+- **対応形式**: UTF-8 JSONのCycloneDX 1.4 / 1.5 / 1.6、SPDX 2.2 / 2.3。XML、SPDX tag-value、SPDX 3は未対応です。
+- **入力**: 16MiB以下のローカル通常ファイルの絶対パス。ファイル名は任意で、内容から形式を判別します。CycloneDXは`components`、SPDXは`packages`配列が必要です。形式・主要構造の確認であり、仕様全体のJSON Schema検証ではありません。
+- **識別情報**: CycloneDXの`components[].purl`、SPDXの`packages[].externalRefs`にバージョン付きPackage URLを含めてください。例: `pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1`。詳細は[OSV-Scanner公式ドキュメント](https://github.com/google/osv-scanner/blob/main/docs/scan-source.md)を参照してください。
+- **安全な読み込み**: 許可ルートと読み込み中のサイズ上限を確認し、権限制限付きの一時コピーだけをスキャンします。元ファイルは変更せず、一時コピーは成功・失敗ともに削除します。
+
+出力の先頭に`coverage`を返します。
+
+- `identified_package_count`: スキャナーが識別した、名前・バージョン・エコシステムの重複を除いたパッケージ数。既知脆弱性がないものも含みます。
+- `unidentified_packages`: スキャナー出力に存在したものの、バージョン等が不足しているパッケージ。スキャナー自体が読み飛ばした項目は列挙できないため、この配列が空でも全件検査を意味しません。
+- `status`: 識別できたものがあれば`packages_identified`、なければ`no_packages_identified`。
+- `completeness` / `artifact_match`: ともに`not_verified`。SBOMの依存網羅性や、実際のJARと同一ビルドのものかは自動検証しません。
+
+`sbom`には元ファイルのパス・形式・仕様バージョン・スキャンに用いた入力バイト列のSHA256を返します。`identified_vulnerability_count`と`packages`には識別できた依存の検出結果を返します。**検出0件は「安全」の保証ではありません。** メタデータのないJARを補完するには、そのビルドに対応する正確なSBOMを別途用意してください。
+
+不正JSONは`invalid_sbom`、未対応形式は`unsupported_sbom_format`、入力上限超過は`sbom_too_large`、存在しない・読み取れないファイルは`sbom_not_found`です。空のSBOMや識別できるパッケージがないSBOMは、警告付きの成功レポートになります。既存ツールと同じタイムアウト・出力上限・同時実行枠を使用します。
 
 ### `suggest_fix`
 

@@ -14,6 +14,14 @@ export type ScanToolErrorKind =
   | "no_scannable_artifacts"
   /** Artifact discovery exceeded a bounded traversal limit. */
   | "artifact_search_limit_exceeded"
+  /** SBOM input is missing, not a regular file, or unreadable. */
+  | "sbom_not_found"
+  /** SBOM input is malformed or has an invalid document structure. */
+  | "invalid_sbom"
+  /** SBOM format/version is not supported by this tool. */
+  | "unsupported_sbom_format"
+  /** SBOM input exceeds the byte limit. */
+  | "sbom_too_large"
   /** build.gradleはあるがgradle.lockfileが無い(lockfile方式のため生成が必要) */
   | "gradle_lockfile_missing"
   /** 許可されたルートディレクトリの外を指している(パストラバーサル対策) */

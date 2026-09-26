@@ -9,7 +9,7 @@ import {
   OSV_SCANNER_PATH_ENV,
   resolveOsvScannerBinary,
 } from "../../osv/binaryManager.js";
-import { runOsvArtifactScan, runOsvScan } from "../../osv/runner.js";
+import { runOsvArtifactScan, runOsvScan, runOsvSbomScan } from "../../osv/runner.js";
 
 let binDir: string;
 let projectDir: string;
@@ -57,6 +57,18 @@ async function expectScanError(promise: Promise<unknown>, kind: string): Promise
 }
 
 describe("runOsvScan", () => {
+  it.each([false, true])("shares concurrency slots with SBOM scans (SBOM first: %s)", async (sbomFirst) => {
+    const bin = await makeFakeBinary("fake-sbom-slot", `sleep 1; echo '{"results":[]}'; exit 0`);
+    const opts = { binaryPath: bin, maxConcurrentScans: 1 };
+    const sbomPath = path.join(projectDir, "input.cdx.json");
+    const first = sbomFirst ? runOsvSbomScan(sbomPath, opts) : runOsvScan(projectDir, opts);
+    try {
+      await expectScanError(sbomFirst ? runOsvScan(projectDir, opts) : runOsvSbomScan(sbomPath, opts), "too_many_concurrent_scans");
+    } finally {
+      await first;
+    }
+  });
+
   it.each([false, true])("shares concurrency slots with artifact scans (artifact first: %s)", async (artifactFirst) => {
     const bin = await makeFakeBinary("fake-shared-slot", `sleep 1; echo '{"results":[]}'; exit 0`);
     const opts = { binaryPath: bin, maxConcurrentScans: 1 };
