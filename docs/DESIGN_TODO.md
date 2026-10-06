@@ -1,6 +1,6 @@
 # OSV-Scanner-MCP 設計メモ / 残課題
 
-最終更新: 2026-09-15(JAR/WAR実体スキャンを実装、合成アーカイブでMCP経由の実機検証)
+最終更新: 2026-10-07(バックログ節を新設: ネットワーク通信先の透明化、JS/Python/Goへの拡大)
 
 ## 決定済み事項
 
@@ -176,7 +176,7 @@ MCPサーバーは「外部プロセス実行」「ファイルシステムア�
 
 ### 権限の最小化
 - [ ] MCPサーバープロセスに必要以上のファイルシステム権限を与えない
-- [ ] ネットワークアクセスはOSV-Scannerの照会先(OSV API等)に限定されることを明示し、README等でユーザーに透明性を提供
+- [ ] ネットワークアクセスはOSV-Scannerの照会先(OSV API等)に限定されることを明示し、README等でユーザーに透明性を提供 → 2026-10-07の実機確認でpom.xml/requirements.txtのスキャンはdeps.devにも接続すると判明。バックログB1で対応
 
 ### 運用面
 - [x] 依存パッケージの自動更新(Dependabot等)をリポジトリに設定 → `.github/dependabot.yml`(npm週次、devDependenciesはグループ化)(2026-07-04)。OSV-Scannerのピン留めバージョンは対象外のため手動更新(binaryDownloader.tsのコメントに手順記載)
@@ -191,7 +191,7 @@ lockfileが無い・shaded JARしか手元に無いプロジェクトへの対�
 - `osv-scanner scan source --experimental-plugins java/archive <path>` で **JAR内の `META-INF/maven/<g>/<a>/pom.properties` からGAVを復元してスキャンできる**ことを確認(合成JAR: log4j-core 2.14.1 → Log4Shell含む7件検出)
 - 中身はOSV-SCALIBRの `java/archive` 抽出器。Spring Boot fat JAR(`BOOT-INF/lib`)・WARのネストJARも再帰展開する
 - **重要な発見: 同定不能JARは出力から無言で消える**。メタデータなしJAR単体では `"results": []`(エラーでも警告でもない)。混在ディレクトリでは同定できたJARだけが `results[]` に載り、不能JARは存在の痕跡すらない。**カバレッジ追跡はMCP側の責務**
-- 検出限界: pom.properties が手がかりのすべて。maven-shade-plugin はデフォルトで依存のpom.propertiesを同梱したままにするので通常のshaded JARは拾えるが、`minimizeJar`/フィルタでメタデータ除去済みのJARは同定不能(偽陰性)。Trivyはここを SHA1→GAV の事前構築DB(trivy-java-db、数百MB級)で埋めるが、同梱は非現実的。Maven Central Search APIへのハッシュ照会は「照会先はapi.osv.devのみ」という現行のプライバシー特性を崩すため採用しない
+- 検出限界: pom.properties が手がかりのすべて。maven-shade-plugin はデフォルトで依存のpom.propertiesを同梱したままにするので通常のshaded JARは拾えるが、`minimizeJar`/フィルタでメタデータ除去済みのJARは同定不能(偽陰性)。Trivyはここを SHA1→GAV の事前構築DB(trivy-java-db、数百MB級)で埋めるが、同梱は非現実的。Maven Central Search APIへのハッシュ照会は「照会先はapi.osv.devのみ」という現行のプライバシー特性を崩すため採用しない(注: 2026-10-07の実機確認で、pom.xmlのスキャンは既にdeps.devにも接続していると判明。バックログB1参照)
 
 ### ツール設計方針
 
@@ -230,9 +230,53 @@ lockfileが無い・shaded JARしか手元に無いプロジェクトへの対�
 - 外部の`osv-scanner-dummy-project`でCycloneDX Maven plugin 2.9.3によるSBOM生成とMaven Shade 3.6.2によるfat JAR生成を検証。7依存の元JAR SHA-256がSBOMと一致し、5,683クラスのバイト列がfat JARと一致。両入力のMCPスキャンで17件の脆弱性識別子・対象パッケージが一致した(件数は照会時点のOSVデータに依存)
 - この照合はアプリケーションクラスやrelocation/minimizeのないテスト用成果物に限定。署名・モジュール記述子・その他リソースは対象外で、製品のcoverage保証は変更しない。外部検証スクリプトはnpm配布物に含めない
 
-## 次のアクション候補
+## バックログ(2026-10-07)
 
-1. **Maven形式バージョンコンパレータの実装**(3段階Tierアルゴリズムの前提部品、最優先)
-2. `scan_java_project`の出力スキーマを、OSV-Scannerの`groups`構造をベースに確定
-3. `package.json` / `tsconfig.json` の初期セットアップ(ローカル環境で実施)
-4. セキュリティ項目のうち「コマンドインジェクション対策」は実装の最初期段階から組み込む(後付けが難しいため)
+着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
+
+### B1. ネットワーク通信先の透明化(v0.3.3、最優先)
+
+**背景(2026-10-07 実機確認、osv-scanner v2.4.0)**: ログ用のCONNECTプロキシ経由で接続先ホスト名を記録した(TLSの中身は見ていない)。READMEの「照会先はOSVデータベースのみ」は**公開中の版でも事実と異なる**。
+
+| スキャン対象 | 接続先 | 推移的依存の補完 |
+|---|---|---|
+| `pom.xml`(現行の`scan_java_project`。MCP経由でも確認) | `api.osv.dev` + `api.deps.dev` | あり |
+| `requirements.txt` | `api.osv.dev` + `api.deps.dev` | あり |
+| `gradle.lockfile` / `package-lock.json` / `go.mod` | `api.osv.dev` のみ | なし |
+| `pom.xml` + `--no-resolve` | `api.osv.dev` のみ | なし(直接依存のみ) |
+| `pom.xml` + `--data-source native` | `api.osv.dev` + `repo.maven.apache.org` + **pom.xmlの`<repositories>`に書かれた任意のURL** | あり |
+
+- 推移的依存の解決のため、宣言された依存の名前・バージョン(社内パッケージ名を含む)がdeps.devへ送られると考えられる(通信内容は暗号化のため推定)
+- `--data-source native` はスキャン対象が指定した任意ホストへ接続する(SSRF相当)。**採用禁止**
+- `--no-resolve` は通信先をOSVのみにできるが、pom.xmlでは推移的依存がすべて欠落し検出漏れが大きく増える
+
+**タスク**:
+- [ ] README・SECURITY.mdのネットワーク記述を事実どおりに修正(pom.xml/requirements.txtではdeps.devへ依存の名前とバージョンが送られる。lockfile方式なら送られない)
+- [ ] 環境変数(案: `OSV_MCP_NO_REMOTE_RESOLUTION=1`)で `--no-resolve` を付与。既定は現行動作(互換性維持)。検出漏れとのトレードオフと、社内パッケージ名を出したくない場合はlockfile方式を使う回避策をREADMEに記載
+- [ ] 固定引数に `--data-source native` が含まれないことをテストで保証
+
+### B2. 対象エコシステムの拡大(JavaScript / Python / Go)
+
+**確定した方針(2026-10-07)**:
+- ツール構成: 汎用の `scan_project`(lockfileを自動判別し、Java含む全エコシステムを一括スキャン)を新設。既存の `scan_java_project` 等は互換性のため維持。言語別ツールの増設はしない
+- 検出はlockfile方式で統一(`npm install`/`pip install`は任意コード実行を伴うため採用しない。Gradleと同じ判断)
+- `requirements.txt` は受け付けるが、バージョン未固定・範囲指定の行をcoverageで明示する
+
+**実機確認で判明した前提(2026-10-07、osv-scanner v2.4.0)**:
+- スキャン自体は現行のまま3言語とも動作する(エコシステム名は `npm` / `PyPI` / `Go`)。Java固有なのは検出(`projectDetector.ts`)とバージョン比較・推奨(`mavenVersion.ts` / `affectedVersions.ts` / `suggestFix.ts`)
+- OSVの影響範囲の型: npmは`SEMVER`(一部`ECOSYSTEM`)、Goは`SEMVER`のみ、PyPIは`ECOSYSTEM`+`GIT`。**現行の`affectedVersions.ts`は`ECOSYSTEM`以外を情報不足とみなすため、3言語ともsuggest_fixが全件推奨保留になる**
+- `requirements.txt`: バージョン未固定の行(`flask`)は出力から無言で消える。`Jinja2>=2.0`は下限`2.0`を使用中バージョンとみなす(誤検知の原因)
+- npmの開発用依存には `dependency_groups: ["dev"]` が付く
+- Goは`v`なしの版で返る。`go.mod`のスキャンでは標準ライブラリ(stdlib)が報告されない
+
+**段階計画**:
+- [ ] 詳細設計メモの作成(B1完了後)
+- [ ] v0.4.0: `scan_project`(3言語の検出、`.venv`/`site-packages`/`vendor`の除外、lockfile欠如時の案内エラー、requirements.txtのcoverage明示、エコシステム別集計・dev依存表示)。suggest_fixはJava以外を「未対応」と明示的に返す
+- [ ] v0.5.0: suggest_fixのnpm/Go対応(semver比較、`SEMVER`範囲の検証、0.x系のマイナー更新を破壊的変更として扱う、Goのv2以上はモジュールパス変更を注記)
+- [ ] v0.6.0: suggest_fixのPython対応(PEP 440比較、`ECOSYSTEM`範囲がある場合の`GIT`範囲の無視)、直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)
+- [ ] 以降: Goバイナリスキャン(ビルド情報からstdlibの版も取得でき、go.modで拾えないstdlibの脆弱性を補える)
+
+### B3. 既存の未完了項目
+
+- [ ] JAR実体スキャン: 実プロジェクトのfat JAR・shaded JARでの実機検証(上記「JAR実体スキャン」節の残タスク)
+- [ ] 権限の最小化: MCPサーバープロセスに必要以上のファイルシステム権限を与えない(上記「セキュリティ考慮事項」節)
