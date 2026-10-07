@@ -51,8 +51,10 @@ export interface PackageUpgradeSuggestion {
   /** 推奨がプレリリース版の場合だけtrue(正式版の候補では全件を解消できない) */
   recommended_is_prerelease?: true;
   upgrade_note: string;
-  /** npm・Go: 推奨版への更新方法(推移的依存の場合を含む) */
+  /** npm・Go・PyPI: 推奨版への更新方法(推移的依存の場合を含む) */
   update_hint?: string;
+  /** requirements.txtの下限(`>=X`等)を現在の版とみなしてスキャンした。推奨は「下限の引き上げ」の意味になる */
+  version_is_lower_bound?: true;
   per_cve_detail: CveFixDetail[];
   verification: "verified" | "no_verified_candidate" | "unsupported_ecosystem" | "unparseable_version";
 }
@@ -66,6 +68,9 @@ const UPDATE_HINTS: Record<string, string> = {
   Go:
     "go get <module>@<version>で更新します(推移的依存もgo.modのrequireに追加されて更新されます)。" +
     "Goではv2以上のメジャーは別のモジュールパス(/v2等)として別パッケージ扱いのため、新しいメジャー系列の修正版はここに含まれません",
+  PyPI:
+    "requirements.txtの版の指定、またはpyproject.toml・Pipfileの指定を更新し、lockfile(poetry.lock・uv.lock等)を再生成します。" +
+    "推移的依存の場合は、pipの制約ファイル(-c)や、uv・Poetry等の上書き設定で版を指定します",
 };
 
 /** Goの疑似バージョン(タグのないコミット): 末尾がタイムスタンプ14桁-コミットハッシュ12桁 */
@@ -153,6 +158,10 @@ function buildNote(
     }
     if (unfixedCount > 0) note += `。残り${unfixedCount}件は現在より新しい修正版候補がなく、修正対象から除外しています。recommended_statusを確認してください`;
   }
+  if (pkg.version_is_lower_bound) {
+    note += `。現在の版(${pkg.version})はrequirements.txtの下限(>=・~=)で、実際にインストールされる版とは異なる可能性があります。` +
+      "推奨は下限をその版以上に引き上げる意味です";
+  }
   if (pkg.ecosystem === "Go" && GO_PSEUDO_VERSION.test(pkg.version)) {
     note += "。現在の版は疑似バージョン(タグのないコミット)です";
   }
@@ -202,6 +211,7 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgrade
         (unparseableCount > 0 ? `${unparseableCount}件のCVEは修正版の記載をバージョンとして解釈できないため(tier: unparseable_fix)、推奨を保留しています。` : "")
       : buildNote(scheme, pkg, recommended, upgradeTier, fixableCount, unfixedCount),
     ...hintFields(pkg.ecosystem),
+    ...(pkg.version_is_lower_bound ? { version_is_lower_bound: true as const } : {}),
     per_cve_detail: details,
     verification: recommended === null ? "no_verified_candidate" : "verified",
   };

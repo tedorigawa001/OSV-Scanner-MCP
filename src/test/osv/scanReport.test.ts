@@ -430,12 +430,32 @@ describe("parseOsvScanOutput: Maven以外のfixed_versions", () => {
     ])).toEqual(["2.11.3"]);
   });
 
-  it("比較器のないエコシステム(PyPI等)は重複を除いてOSVの記載順のまま返す", () => {
+  it("PyPIはPEP 440の優先順位で並べる(v0.5.0以前は記載順)", () => {
     expect(single("PyPI", "urllib3", [
       { type: "ECOSYSTEM", events: [{ introduced: "2.0.0" }, { fixed: "2.0.7" }] },
       { type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "1.26.18" }] },
       { type: "ECOSYSTEM", events: [{ introduced: "2.0.0" }, { fixed: "2.0.7" }] },
-    ])).toEqual(["2.0.7", "1.26.18"]);
+      { type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "1.26.18rc1" }] },
+    ])).toEqual(["1.26.18rc1", "1.26.18", "2.0.7"]);
+  });
+
+  it("比較器のないエコシステム(crates.io等)は重複を除いてOSVの記載順のまま返す", () => {
+    expect(single("crates.io", "smallvec", [
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "9.9.9" }] },
+      { type: "ECOSYSTEM", events: [{ introduced: "1.0.0" }, { fixed: "1.6.1" }] },
+      { type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "0.6.14" }] },
+    ])).toEqual(["1.6.1", "0.6.14"]);
+  });
+
+  it("PyPIの名前はPEP 503の正規化で照合する", () => {
+    const report = parseOsvScanOutput({
+      results: [{ source: { path: "/work/lock" }, packages: [{
+        package: { name: "zope-interface", version: "4.0.0", ecosystem: "PyPI" },
+        groups: [{ ids: ["PYSEC-x"], aliases: [], max_severity: "5.0" }],
+        vulnerabilities: [{ id: "PYSEC-x", affected: [{ package: { name: "Zope.Interface", ecosystem: "PyPI" }, ranges: [{ type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "5.0.0" }] }] }] }],
+      }] }],
+    });
+    expect(report.packages[0]!.vulnerabilities[0]!.fixed_versions).toEqual(["5.0.0"]);
   });
 
   it("MavenはこれまでどおりECOSYSTEM型だけを集める", () => {

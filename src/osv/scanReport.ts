@@ -15,7 +15,7 @@
 
 import { asArray, asRecord, asString, asStrings } from "../utils/unknownJson.js";
 import { extractAffectedVersions, type AffectedVersionEvidence } from "./affectedVersions.js";
-import { sortVersions, versionRangeTypes } from "./versionScheme.js";
+import { samePackageName, sortVersions, versionRangeTypes } from "./versionScheme.js";
 
 export type SeverityLevel = "critical" | "high" | "medium" | "low" | "unknown";
 
@@ -49,6 +49,11 @@ export interface ScanReportPackage {
    * lockfileの形式によって欠落・不正確なため(pnpmは付かず、pdmはoptionalになる)、優先度判定には使わない
    */
   dependency_groups?: string[];
+  /**
+   * requirements.txtの`>=X` / `~=X`の行から、osv-scannerが下限Xを使用中の版とみなしてスキャンした
+   * (scan_project・suggest_fixが付ける。実際にインストールされる版とは異なりうる)
+   */
+  version_is_lower_bound?: true;
   /** 深刻度の高い順(unknownは末尾) */
   vulnerabilities: ScanReportVulnerability[];
 }
@@ -127,7 +132,7 @@ function extractFixedVersions(
       const affected = asRecord(affectedRaw);
       if (!affected) continue;
       const affectedName = asString(asRecord(affected.package)?.name);
-      if (affectedName !== packageName || asString(asRecord(affected.package)?.ecosystem) !== ecosystem) continue;
+      if (affectedName === null || !samePackageName(affectedName, packageName, ecosystem) || asString(asRecord(affected.package)?.ecosystem) !== ecosystem) continue;
       for (const rangeRaw of asArray(affected.ranges)) {
         const type = asString(asRecord(rangeRaw)?.type);
         if (type === null || !rangeTypes.has(type)) continue;

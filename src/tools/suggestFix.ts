@@ -1,8 +1,8 @@
 /**
  * `suggest_fix`ツールのハンドラ。
  * scan_projectと同じ検出・スキャンを実行し、脆弱なパッケージごとの
- * 推奨アップグレードバージョン(3段階Tier)を返す。推奨はMaven・npm・Goに対応し、
- * それ以外(PyPI等)はunsupported_ecosystemとして返す。
+ * 推奨アップグレードバージョン(3段階Tier)を返す。推奨はMaven・npm・Go・PyPIに対応し、
+ * それ以外はunsupported_ecosystemとして返す。
  */
 
 import { isRemoteResolutionDisabled } from "../osv/runner.js";
@@ -14,7 +14,7 @@ import {
   type ScanJavaProjectArgs,
   type ScanJavaProjectOptions,
 } from "./scanJavaProject.js";
-import { buildCoverage, scanFromSnapshot, TRANSITIVE_OMITTED_WARNING } from "./scanProject.js";
+import { buildCoverage, markLowerBounds, scanFromSnapshot, TRANSITIVE_OMITTED_WARNING } from "./scanProject.js";
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
 export async function handleSuggestFix(
@@ -25,7 +25,7 @@ export async function handleSuggestFix(
     const project = await detectProject(args.project_path, { allowedRoot: options.allowedRoot });
     const noRemoteResolution = isRemoteResolutionDisabled(options);
     const report = await scanFromSnapshot(project, { ...options, noRemoteResolution });
-    const suggestions = suggestUpgrades(report.packages);
+    const suggestions = suggestUpgrades(markLowerBounds(project, report.packages));
     const unfixedVulnerabilities = suggestions.reduce(
       (sum, s) => sum + s.per_cve_detail.filter((d) => d.tier === "unfixed").length,
       0,

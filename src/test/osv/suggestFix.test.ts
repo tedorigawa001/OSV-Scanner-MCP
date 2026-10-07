@@ -182,12 +182,12 @@ describe("suggestUpgrades", () => {
 });
 
 describe("未対応エコシステム(回帰: v0.3.3でnpmの脆弱性を修正版なしと誤表示)", () => {
-  it("未対応のエコシステム(PyPI)は推奨を出さず、unfixedではなくunsupportedとして返す", () => {
+  it("未対応のエコシステム(RubyGems)は推奨を出さず、unfixedではなくunsupportedとして返す", () => {
     const pypiPkg: ScanReportPackage = {
-      name: "urllib3",
-      version: "1.23",
-      ecosystem: "PyPI",
-      vulnerabilities: [vuln("PYSEC-2019-133", "CVE-2019-11324", ["1.24.2"])],
+      name: "rack",
+      version: "2.2.3",
+      ecosystem: "RubyGems",
+      vulnerabilities: [vuln("GHSA-x", "CVE-2022-1", ["2.2.4"])],
     };
     const suggestion = suggestUpgradeForPackage(pypiPkg);
     expect(suggestion.verification).toBe("unsupported_ecosystem");
@@ -200,7 +200,7 @@ describe("未対応エコシステム(回帰: v0.3.3でnpmの脆弱性を修正�
   it("Mavenと混在しても、Mavenの推奨は従来どおり算出する", () => {
     const [maven, pypi] = suggestUpgrades([
       pkg("a:a", "2.14.1", [vuln("GHSA-m", "CVE-2021-1", ["2.15.0"])]),
-      { name: "urllib3", version: "1.23", ecosystem: "PyPI", vulnerabilities: [vuln("PYSEC-n", null, [])] },
+      { name: "rack", version: "2.2.3", ecosystem: "RubyGems", vulnerabilities: [vuln("GHSA-n", null, [])] },
     ]);
     expect(maven!.recommended_upgrade).toBe("2.15.0");
     expect("update_hint" in maven!).toBe(false);
@@ -362,5 +362,46 @@ describe("npm・Goの推奨(v0.5.0、実データの期待値)", () => {
     expect(s.verification).toBe("unparseable_version");
     expect(s.per_cve_detail.map((d) => d.tier)).toEqual(["unsupported"]);
     expect(s.upgrade_note).toContain("解釈できない");
+  });
+});
+
+describe("PyPIの推奨(v0.6.0、実データの形)", () => {
+  const eco = (introduced: string, fixed: string): { type: string; events: Record<string, string>[] } => ({ type: "ECOSYSTEM", events: [{ introduced }, { fixed }] });
+
+  it("requests 2.19.0: 正規形でない値も扱い、同一メジャー内の候補を推奨してupdate_hintを付ける", () => {
+    const s = suggestFromScan("PyPI", "requests", "2.19.0", [
+      { id: "PYSEC-2018-28", ranges: [eco("0", "2.20.0")] },
+      { id: "PYSEC-2023-74", ranges: [eco("2.3.0", "2.31.0")] },
+      { id: "GHSA-9wx4-h78v-vm56", ranges: [eco("0", "2.32.0")] },
+    ]);
+    expect([s.recommended_upgrade, s.upgrade_tier, s.verification]).toEqual(["2.32.0", "major_internal", "verified"]);
+    expect(s.update_hint).toContain("pyproject.toml");
+  });
+
+  it("正式版で解消できればrc版より正式版、post版は正式版として扱う", () => {
+    // 修正版がrc版しかなければrc版を推奨して明示する
+    const s = suggestFromScan("PyPI", "pkg", "1.0", [{ id: "A", ranges: [eco("0", "1.1rc1")] }]);
+    expect([s.recommended_upgrade, s.recommended_is_prerelease]).toEqual(["1.1rc1", true]);
+    // post版は正式版(プレリリース扱いしない)
+    const p = suggestFromScan("PyPI", "pkg", "1.0", [{ id: "A", ranges: [eco("0", "1.0.post1")] }]);
+    expect([p.recommended_upgrade, p.upgrade_tier, "recommended_is_prerelease" in p]).toEqual(["1.0.post1", "same_minor", false]);
+    const t = suggestFromScan("PyPI", "pkg", "1.0", [{ id: "A", ranges: [eco("0", "1.0.post1")] }, { id: "B", ranges: [eco("0", "1.1rc1")] }, { id: "C", ranges: [eco("0", "1.1")] }]);
+    expect([t.recommended_upgrade, "recommended_is_prerelease" in t]).toEqual(["1.1", false]);
+  });
+
+  it("0.x系のマイナー更新とepochの変更はcross_major", () => {
+    expect(suggestFromScan("PyPI", "fastapi", "0.99.0", [{ id: "A", ranges: [eco("0", "0.109.1")] }]).upgrade_tier).toBe("cross_major");
+    expect(suggestFromScan("PyPI", "pkg", "1.2", [{ id: "A", ranges: [eco("0", "1!1.0")] }]).upgrade_tier).toBe("cross_major");
+  });
+
+  it("下限でスキャンした版は、推奨が下限の引き上げであることを示す", () => {
+    const report = parseOsvScanOutput({ results: [{ source: { path: "/x" }, packages: [{
+      package: { name: "jinja2", version: "2.0", ecosystem: "PyPI" },
+      groups: [{ ids: ["A"], aliases: [], max_severity: "7.5" }],
+      vulnerabilities: [{ id: "A", affected: [{ package: { name: "jinja2", ecosystem: "PyPI" }, ranges: [eco("0", "2.11.3")] }] }],
+    }] }] });
+    const s = suggestUpgradeForPackage({ ...report.packages[0]!, version_is_lower_bound: true });
+    expect(s.version_is_lower_bound).toBe(true);
+    expect(s.upgrade_note).toContain("下限をその版以上に引き上げる");
   });
 });

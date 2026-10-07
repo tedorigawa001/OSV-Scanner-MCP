@@ -168,7 +168,7 @@ describe("handleSuggestFix: npm・Go対応(v0.5.0)", () => {
     }],
   });
 
-  it("scan_projectと同じ検出でJava以外のlockfileも対象にし、npm・Goの推奨を返す(PyPIは未対応と明示)", async () => {
+  it("scan_projectと同じ検出でJava以外のlockfileも対象にし、npm・Go・PyPIの推奨を返す", async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-fix-mixed-"));
     try {
       await writeFile(path.join(dir, "pom.xml"), "<project/>");
@@ -200,9 +200,35 @@ describe("handleSuggestFix: npm・Go対応(v0.5.0)", () => {
         Maven: ["2.15.0", "major_internal", "verified"],
         npm: ["4.17.21", "same_minor", "verified"],
         Go: ["0.3.8", "same_minor", "verified"],
-        PyPI: [null, null, "unsupported_ecosystem"],
+        PyPI: ["1.24.2", "major_internal", "verified"],
       });
       expect(payload.unfixed_vulnerability_count).toBe(0);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("handleSuggestFix: PyPI(v0.6.0)", () => {
+  it("requirements.txtの下限(>=)でスキャンした依存は、version_is_lower_boundと注記を付ける", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-fix-lower-"));
+    try {
+      await writeFile(path.join(dir, "requirements.txt"), "Jinja2>=2.0\nrequests==2.19.0\n");
+      const json = JSON.stringify({ results: [{ source: { path: "/x/requirements.txt" }, packages: [
+        ["jinja2", "2.0", "2.11.3"], ["requests", "2.19.0", "2.20.0"],
+      ].map(([name, version, fixed]) => ({
+        package: { name, version, ecosystem: "PyPI" },
+        groups: [{ ids: [`PYSEC-${name}`], aliases: [], max_severity: "7.5" }],
+        vulnerabilities: [{ id: `PYSEC-${name}`, affected: [{ package: { name, ecosystem: "PyPI" }, ranges: [{ type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed }] }] }] }],
+      })) }] });
+      const bin = await makeFakeBinary("lower", `echo '${json}'; exit 1`);
+      const payload = parsePayload(await handleSuggestFix({ project_path: dir }, { binaryPath: bin }));
+      const byName = Object.fromEntries((payload.suggestions as { package: string; recommended_upgrade: string; version_is_lower_bound?: true; upgrade_note: string }[])
+        .map((s) => [s.package, s]));
+      expect(byName.jinja2!.recommended_upgrade).toBe("2.11.3");
+      expect(byName.jinja2!.version_is_lower_bound).toBe(true);
+      expect(byName.jinja2!.upgrade_note).toContain("下限");
+      expect("version_is_lower_bound" in byName.requests!).toBe(false);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

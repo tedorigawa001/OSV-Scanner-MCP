@@ -564,7 +564,13 @@ npm・Goと同じ規則(1.0以上はmajor.minor、0.xのマイナー更新と0.0
   - (レビュー指摘)当初は解釈できない修正版しか無いCVEを`unfixed`にして修正対象から外していたため、別CVEの修正版だけで`verified`の推奨を出しえた(現在1.0.0、CVE-Aの修正版`13.0`、CVE-Bの修正版`1.0.1`で1.0.1を推奨)。「修正版の記載がない・現在以下」(`unfixed`)と「修正版を解釈できない」(`unparseable_fix`)を区別し、後者は修正対象に残して推奨を保留する。両方が混在する回帰テストを追加
   - suggest_fixの検出・スキャンを`scan_project`と共通化(`scanFromSnapshot`・`buildCoverage`を共有)。`skipped_manifests`/`scope_warning`は`coverage`に統合。requirements.txtも対象になるため、deps.devへの送信はscan_projectと同じ
   - 実バイナリでMCP経由の確認: lodash 4.17.20→4.18.0(major_internal)、minimist→1.2.6、golang.org/x/text 0.3.0→0.39.0(cross_major)、golang.org/x/netの疑似バージョン→0.56.0(注記付き)、next 15.5.0→15.5.24(canaryではなく正式版)、express→4.20.0、jwt/v4→4.5.2。docker/dockerは不完全な範囲を含むため保留(既知の制限どおり)。log4j 2.14.1→2.25.4は不変
-- [ ] v0.6.0: suggest_fixのPython対応(PEP 440比較、`ECOSYSTEM`範囲がある場合の`GIT`範囲の無視)
+- [x] v0.6.0: suggest_fixのPython対応(PEP 440比較、`ECOSYSTEM`範囲がある場合の`GIT`範囲の無視) → 実装済み(2026-10-07)。実装時の判断:
+  - `pep440Version.ts`: PyPA `packaging`と同じ正規化・比較。packagingのテストの順序一覧を移植し、さらにpipに同梱のpackaging 26.2と乱数で生成した1,500件・20,000組の比較で差分ゼロを確認
+  - Tierはnpm・Goと共通の`classifyCaret`(epochの変更もcross_major)。`samePackageName`でPyPIの名前をPEP 503で照合(`fixed_versions`の抽出と影響範囲の両方)
+  - **実データの検証で判明**: PYSECのレコードは1つの範囲に複数の区間を版の順でなく並べる(`introduced 2.0.0 → fixed 2.0.6, introduced 0 → fixed 1.26.17`)。v0.5.0までの検証は記載順を前提に「前の終点より小さい始点」を不正として情報不足にしていたため、DjangoやUrllib3の推奨がすべて保留になった。OSVの仕様(Evaluationの`sorted(range.events)`、並び順は推奨のみ)に合わせ、eventsを版の順に並べてから区間にする。同じ版では終点を始点より前に置き(その版を影響ありとみなす安全側)、並べても始点と終点が交互にならない範囲(重なり・始点のない終点)は曖昧なため情報不足のまま。全エコシステムに適用し、Maven・npm・Goの既存の期待値(3構成)はv0.5.0と出力のハッシュが一致
+  - suggest_fixでも`markLowerBounds`を適用し、下限でスキャンした依存に`version_is_lower_bound`と注記を付ける
+  - 実バイナリでMCP経由の確認(requirements.txt、`--no-resolve`): requests 2.19.0→2.33.0、urllib3 1.23→2.8.0、jinja2 2.10→3.1.6、django 3.2.0→5.2.17、pillow 8.0.0→12.3.0、fastapi 0.65.0→0.109.1(0.x規則でcross_major)、torch 2.5.0→2.13.0、flask>=1.0→3.1.3(下限の注記)。推奨先をOSV APIに直接照会し、8件は既知の脆弱性0件
+- [ ] (v0.6.0の検証で判明)推奨先に、現在の版には該当しない新しい脆弱性がありうる。例: cryptography 3.2→49.0.0(cross_major)は、44.0.0で混入し50.0.0で修正された2件(GHSA-g6cj-pr64-35w5等)に該当する。スキャンは現在の版の脆弱性しか知らないため検出できない(「未検出の脆弱性がないことは保証しない」の具体例)。対策案: 推奨候補をapi.osv.devに照会し、既知の脆弱性がある候補を避ける(送信先・送信内容はスキャンと同じ。公開版の名前と版のみ)。照会回数の上限と、照会失敗時の扱いを決めて実装する
 - [ ] v0.7.0: 直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)。v0.6.0から分離(2026-10-07) → 詳細設計メモ作成済み(2026-10-07、上記「suggest_fix PyPI対応・直接/推移的依存の区別(v0.6.0)詳細設計メモ」)
 - [ ] 以降: Goバイナリスキャン(ビルド情報からstdlibの版も取得でき、go.modで拾えないstdlibの脆弱性を補える)
 

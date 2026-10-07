@@ -89,11 +89,11 @@ function ecosystemBreakdown(project: DetectedProject, packages: readonly ScanRep
 }
 
 /** `>=X` / `~=X` の行は、osv-scannerが下限Xを使用中の版とみなしてスキャンしている */
-function markLowerBounds(project: DetectedProject, packages: readonly ScanReportPackage[]) {
+export function markLowerBounds(project: DetectedProject, packages: readonly ScanReportPackage[]): ScanReportPackage[] {
   return packages.map((pkg) =>
     pkg.ecosystem === "PyPI" &&
     project.lowerBounds.some((lb) => lb.name === normalizePypiName(pkg.name) && lb.version === pkg.version)
-      ? { ...pkg, version_is_lower_bound: true }
+      ? { ...pkg, version_is_lower_bound: true as const }
       : pkg,
   );
 }
