@@ -76,8 +76,10 @@ describe("handleScanSbom", () => {
     { script: "console.log('not json')", kind: "invalid_output", opts: {} },
     { script: "console.log('{}')", kind: "invalid_output", opts: {} },
     { script: "console.log('x'.repeat(10000))", kind: "output_too_large", opts: { maxOutputBytes: 100 } },
-    { script: "setTimeout(() => {}, 30000)", kind: "scan_timeout", opts: { timeoutMs: 1000 } },
-  ])("cleans snapshots on $kind", async ({ script, kind, opts }) => {
+    // 偽スキャナーは起動直後にreceiptを書く。全テストの並列実行中はNodeの起動に1秒以上かかることがあり、
+    // receiptを書く前にタイムアウトで止められて失敗した(v0.7.0の作業中に2回発生)ため、起動に十分な時間を取る
+    { script: "setTimeout(() => {}, 30000)", kind: "scan_timeout", opts: { timeoutMs: 3000 } },
+  ])("cleans snapshots on $kind", { timeout: 15000 }, async ({ script, kind, opts }) => {
     const binaryPath = await fake(script);
     const response = await handleScanSbom({ sbom_path: file }, { binaryPath, ...opts });
     expect(response.isError).toBe(true);
