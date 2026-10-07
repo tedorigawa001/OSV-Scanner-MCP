@@ -73,64 +73,64 @@ const TIER_ORDER: readonly UpgradeTier[] = ["same_minor", "major_internal", "cro
 
 const UPDATE_HINTS: Record<string, string> = {
   npm:
-    "直接依存ならpackage.jsonの指定を更新します。推移的依存の場合は、それを要求している直接依存の更新か、" +
-    "ルートのpackage.jsonのoverrides(ルートのプロジェクトでのみ有効)で版を指定します",
+    "For a direct dependency, update the version in package.json. For a transitive dependency, update the direct dependency that requires it, " +
+    "or set the version with overrides in the root package.json (effective only in the root project)",
   Go:
-    "go get <module>@<version>で更新します(推移的依存もgo.modのrequireに追加されて更新されます)。" +
-    "Goではv2以上のメジャーは別のモジュールパス(/v2等)として別パッケージ扱いのため、新しいメジャー系列の修正版はここに含まれません",
+    "Update with go get <module>@<version> (a transitive dependency is added to the require block of go.mod and updated as well). " +
+    "In Go, major versions 2 and later use a different module path (/v2 and so on) and are separate packages, so fixes in a newer major line are not included here",
   PyPI:
-    "requirements.txtの版の指定、またはpyproject.toml・Pipfileの指定を更新し、lockfile(poetry.lock・uv.lock等)を再生成します。" +
-    "推移的依存の場合は、pipの制約ファイル(-c)や、uv・Poetry等の上書き設定で版を指定します",
+    "Update the version in requirements.txt, pyproject.toml, or Pipfile, and regenerate the lockfile (poetry.lock, uv.lock, and so on). " +
+    "For a transitive dependency, set the version with a pip constraints file (-c) or the override settings of uv, Poetry, and similar tools",
 };
 
 /** Goの疑似バージョン(タグのないコミット): 末尾がタイムスタンプ14桁-コミットハッシュ12桁 */
 const GO_PSEUDO_VERSION = /(?:^|[.-])\d{14}-[0-9a-f]{12}(?:\+|$)/;
 
 const GO_MAJOR_NOTE =
-  "Goではv2以上のメジャーは別のモジュールパス(/v2等)として別パッケージ扱いのため、新しいメジャー系列の修正版はここに含まれません";
+  "In Go, major versions 2 and later use a different module path (/v2 and so on) and are separate packages, so fixes in a newer major line are not included here";
 
 /**
  * 推奨版への更新方法。直接/推移的依存の別が分かれば具体化し、分からなければ(unknown・mixed)両方を案内する
  */
 function updateHint(pkg: ScanReportPackage): string | undefined {
   const relation = pkg.dependency_relation;
-  const by = pkg.introduced_by?.join("、");
+  const by = pkg.introduced_by?.join(", ");
   switch (pkg.ecosystem) {
     case "npm":
       if (relation === "direct") {
-        return `直接依存です。${pkg.declared_in?.join("、") ?? "package.json"}の指定を更新します` +
-          (by ? `。${by}からも推移的に要求されているため、それらの更新が必要な場合もあります` : "");
+        return `Direct dependency. Update the version in ${pkg.declared_in?.join(", ") ?? "package.json"}` +
+          (by ? `. It is also required transitively by ${by}, which may need to be updated as well` : "");
       }
       if (relation === "transitive") {
-        return `推移的依存です。${by ? `要求している直接依存(${by})` : "要求している直接依存"}を、推奨版以上を要求する版に更新します。` +
-          "直接依存の更新で直らない場合は、ルートのpackage.jsonのoverrides(ルートのプロジェクトでのみ有効)で版を指定します";
+        return `Transitive dependency. Update ${by ? `the direct dependency that requires it (${by})` : "the direct dependency that requires it"} to a version that requires the recommended version or later. ` +
+          "If updating the direct dependency does not fix it, set the version with overrides in the root package.json (effective only in the root project)";
       }
       return UPDATE_HINTS.npm;
     case "Go": {
       if (pkg.replaced_in_go_mod) {
-        return `go.modのreplaceで置き換えているため、requireではなくreplaceの版を更新します。${GO_MAJOR_NOTE}`;
+        return `This module is replaced by a replace directive in go.mod, so update the version in replace instead of require. ${GO_MAJOR_NOTE}`;
       }
-      if (relation === "direct") return `直接依存です。go get <module>@<version>で更新します。${GO_MAJOR_NOTE}`;
+      if (relation === "direct") return `Direct dependency. Update with go get <module>@<version>. ${GO_MAJOR_NOTE}`;
       if (relation === "transitive") {
-        return "間接依存(go.modの// indirect)です。go get <module>@<version>でgo.modの版を引き上げられます" +
-          `(依存元のモジュールの更新で解消できる場合もあります)。${GO_MAJOR_NOTE}`;
+        return "Indirect dependency (// indirect in go.mod). go get <module>@<version> raises its version in go.mod " +
+          `(updating the module that depends on it may also fix it). ${GO_MAJOR_NOTE}`;
       }
       return UPDATE_HINTS.Go;
     }
     case "Maven":
       if (relation === "direct") {
-        return "直接依存です。pom.xmlの<dependency>の版を更新します。版を親POMの<dependencyManagement>・プロパティ・BOMで管理している場合は、そちらを更新します";
+        return "Direct dependency. Update the version in the <dependency> of pom.xml. If the version is managed by <dependencyManagement> in a parent POM, a property, or a BOM, update it there";
       }
       if (relation === "transitive") {
-        return "推移的依存です。pom.xmlの<dependencyManagement>で推奨版を指定して上書きする(Mavenの依存の調停で優先されます)か、それを要求している直接依存を更新します";
+        return "Transitive dependency. Override the version with the recommended version in <dependencyManagement> of pom.xml (it takes precedence in Maven's dependency mediation), or update the direct dependency that requires it";
       }
       return undefined; // gradle.lockfile等: 判定できないため具体的な案内はしない(従来どおり)
     case "PyPI":
       if (relation === "direct") {
-        return "直接依存です。requirements.txtの版の指定、またはpyproject.toml・Pipfileの指定を更新し、lockfileを再生成します";
+        return "Direct dependency. Update the version in requirements.txt, pyproject.toml, or Pipfile, and regenerate the lockfile";
       }
       if (relation === "transitive") {
-        return "推移的依存です。それを要求している直接依存の更新か、pipの制約ファイル(-c)、uv・Poetry等の上書き設定で版を指定します";
+        return "Transitive dependency. Update the direct dependency that requires it, or set the version with a pip constraints file (-c) or the override settings of uv, Poetry, and similar tools";
       }
       return UPDATE_HINTS.PyPI;
     default:
@@ -172,9 +172,9 @@ function notEvaluatedSuggestion(
     upgrade_tier: null,
     upgrade_note:
       (verification === "unsupported_ecosystem"
-        ? `${pkg.ecosystem}の修正版推奨には未対応です(修正版の有無は判定していません)。`
-        : `現在の版(${pkg.version})をバージョンとして解釈できないため、修正版の推奨を判定していません(git・ローカルパス等の依存の可能性があります)。`) +
-      "各脆弱性の修正版はfixed_versions(scan_project)またはexplain_vulnerabilityで確認してください",
+        ? `Upgrade recommendations are not supported for ${pkg.ecosystem} (whether fixed versions exist was not evaluated). `
+        : `The current version (${pkg.version}) cannot be parsed as a version, so no upgrade was evaluated (it may be a git or local path dependency). `) +
+      "Check the fixed versions of each vulnerability in fixed_versions (scan_project) or with explain_vulnerability",
     per_cve_detail: pkg.vulnerabilities.map((vuln) => ({
       id: vuln.id,
       cve: vuln.cve,
@@ -210,34 +210,34 @@ function buildNote(
 ): string {
   let note: string;
   if (recommended === null) {
-    note = `全${unfixedCount}件のCVEに現在より新しい修正版候補がない(unfixed)。修正版情報の欠落を含む可能性があります`;
+    note = `None of the ${unfixedCount} CVEs has a fixed version newer than the current one (unfixed). The fix information may be incomplete`;
   } else {
     const label = scheme.seriesLabel(pkg.version);
     switch (tier) {
       case "same_minor":
-        note = `現在の${label}系統内の候補${recommended}を推奨`;
+        note = `Recommends ${recommended} within the current ${label} release line`;
         break;
       case "major_internal":
-        note = `同一メジャー(${label!.split(".")[0]}.x)内の候補${recommended}を推奨`;
+        note = `Recommends ${recommended} within the same major version (${label!.split(".")[0]}.x)`;
         break;
       default:
-        if (label === null) note = `現在バージョンの系統を判定できないため、検証済み候補${recommended}を提示`;
+        if (label === null) note = `The release line of the current version cannot be determined, so the verified candidate ${recommended} is given`;
         else if (label.startsWith("0.") && scheme.seriesLabel(recommended)?.startsWith("0.")) {
-          note = `候補${recommended}への更新を推奨(0.x系のため、マイナー更新でも破壊的変更の可能性あり)`;
-        } else note = `候補${recommended}へのメジャーアップグレードを推奨(破壊的変更の可能性あり)`;
+          note = `Recommends upgrading to ${recommended} (in 0.x, even a minor update may include breaking changes)`;
+        } else note = `Recommends a major upgrade to ${recommended} (may include breaking changes)`;
     }
-    note += `。取得済みの影響範囲に基づき修正対象${fixableCount}件のCVEの範囲外と確認しました。全公開版の最小性や未検出の脆弱性がないことは保証しません`;
+    note += `. Based on the affected ranges retrieved, it is outside the ranges of all ${fixableCount} CVEs to fix. It is not guaranteed to be the smallest such published version or free of undetected vulnerabilities`;
     if (scheme.isPrerelease(recommended)) {
-      note += "。正式版の候補では全件を解消できないため、プレリリース版を推奨しています。正式版の公開を確認してください";
+      note += ". No stable candidate fixes every vulnerability, so a pre-release is recommended. Check whether a stable release is available";
     }
-    if (unfixedCount > 0) note += `。残り${unfixedCount}件は現在より新しい修正版候補がなく、修正対象から除外しています。recommended_statusを確認してください`;
+    if (unfixedCount > 0) note += `. The remaining ${unfixedCount} CVEs have no fixed version newer than the current one and are excluded from the fix. Check recommended_status`;
   }
   if (pkg.version_is_lower_bound) {
-    note += `。現在の版(${pkg.version})はrequirements.txtの下限(>=・~=)で、実際にインストールされる版とは異なる可能性があります。` +
-      "推奨は下限をその版以上に引き上げる意味です";
+    note += `. The current version (${pkg.version}) is the lower bound in requirements.txt (>= or ~=) and may differ from the installed version. ` +
+      "The recommendation means raising the lower bound to at least that version";
   }
   if (pkg.ecosystem === "Go" && GO_PSEUDO_VERSION.test(pkg.version)) {
-    note += "。現在の版は疑似バージョン(タグのないコミット)です";
+    note += ". The current version is a pseudo-version (an untagged commit)";
   }
   return note;
 }
@@ -303,8 +303,8 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage, context: Sugges
     upgrade_tier: upgradeTier,
     ...(recommended !== null && scheme.isPrerelease(recommended) ? { recommended_is_prerelease: true as const } : {}),
     upgrade_note: recommended === null && fixableCount > 0
-      ? "既知の修正版候補から、全修正対象CVEの影響範囲外と確認できる版が見つかりません。情報不足・未対応の範囲形式を含む場合も推奨を保留します。" +
-        (unparseableCount > 0 ? `${unparseableCount}件のCVEは修正版の記載をバージョンとして解釈できないため(tier: unparseable_fix)、推奨を保留しています。` : "")
+      ? "No known fixed version could be confirmed to be outside the affected ranges of every CVE to fix. The recommendation is also withheld when the data are insufficient or use unsupported range types." +
+        (unparseableCount > 0 ? ` ${unparseableCount} CVEs list fixed versions that cannot be parsed as versions (tier: unparseable_fix), so the recommendation is withheld.` : "")
       : buildNote(scheme, pkg, recommended, upgradeTier, fixableCount, unfixedCount),
     ...hintFields(pkg),
     ...(pkg.version_is_lower_bound ? { version_is_lower_bound: true as const } : {}),

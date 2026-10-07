@@ -36,13 +36,18 @@ export interface SafeReadOptions {
 const OPEN_FLAGS = constants.O_RDONLY | (constants.O_NONBLOCK ?? 0) | (constants.O_NOFOLLOW ?? 0);
 
 const MESSAGES: Record<SafeReadFailure, string> = {
-  not_found: "ファイルを開けません",
-  denied: "Nodeの権限モデル(--permission)で読み取りが許可されていません",
-  not_regular: "通常のファイルではありません(名前付きパイプ・デバイス等)",
-  too_large: "サイズが上限を超えています",
-  outside: "スキャン範囲の外のファイルです",
-  changed: "検査中にファイルが差し替えられました",
+  not_found: "the file cannot be opened",
+  denied: "reading is not allowed by the Node permission model (--permission)",
+  not_regular: "not a regular file (named pipe, device, and so on)",
+  too_large: "the file exceeds the size limit",
+  outside: "the file is outside the scan scope",
+  changed: "the file was replaced while it was being checked",
 };
+
+/** 単独の理由として示すときに先頭を大文字にする(MESSAGESは文中に埋め込めるよう小文字で始まる) */
+export function capitalizeReason(message: string): string {
+  return message.charAt(0).toUpperCase() + message.slice(1);
+}
 
 function failure(kind: SafeReadFailure): SafeReadError {
   return { ok: false, failure: kind, message: MESSAGES[kind] };

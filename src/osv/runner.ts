@@ -155,7 +155,7 @@ function execOsvScanner(
       fail(
         new ScanToolError(
           "scan_timeout",
-          `OSV-Scannerが${Math.round(timeoutMs / 1000)}秒以内に完了しませんでした`,
+          `OSV-Scanner did not complete within ${Math.round(timeoutMs / 1000)} seconds`,
         ),
       );
     }, timeoutMs);
@@ -166,7 +166,7 @@ function execOsvScanner(
         fail(
           new ScanToolError(
             "output_too_large",
-            `OSV-Scannerの出力がサイズ上限(${maxOutputBytes}バイト)を超えました`,
+            `The OSV-Scanner output exceeded the size limit (${maxOutputBytes} bytes)`,
           ),
         );
         return;
@@ -181,7 +181,7 @@ function execOsvScanner(
     });
 
     child.on("error", (error) => {
-      fail(new ScanToolError("scan_failed", `OSV-Scannerを起動できませんでした: ${error.message}`));
+      fail(new ScanToolError("scan_failed", `Could not start OSV-Scanner: ${error.message}`));
     });
 
     child.on("close", (exitCode, signal) => {
@@ -209,7 +209,7 @@ export async function runOsvScan(
   options: RunOsvScanOptions = {},
 ): Promise<ScanReport> {
   if (targets.length === 0) {
-    throw new ScanToolError("no_manifest_found", "スキャン対象のマニフェストがありません");
+    throw new ScanToolError("no_manifest_found", "No manifest to scan");
   }
   return parseOsvScanOutput(await runScan(buildProjectTargetArgs(targets), options, "project"));
 }
@@ -240,7 +240,7 @@ async function runScan(
   if (activeScans >= limit) {
     throw new ScanToolError(
       "too_many_concurrent_scans",
-      `同時実行できるスキャンは${limit}件までです(現在${activeScans}件実行中)。実行中のスキャン完了後に再試行してください`,
+      `The concurrent scan limit (${limit}) has been reached (${activeScans} running). Try again after the running scans finish`,
     );
   }
   activeScans++;
@@ -268,7 +268,7 @@ async function runOsvScanUnguarded(
   if (result.exitCode === EXIT_NO_PACKAGES && mode === "project") {
     throw new ScanToolError(
       "no_packages_found",
-      "OSV-Scannerがスキャン対象のパッケージを検出できませんでした(マニフェストに依存関係が定義されているか確認してください)",
+      "OSV-Scanner found no packages to scan (check that the manifests declare dependencies)",
       result.stderr,
     );
   }
@@ -282,7 +282,7 @@ async function runOsvScanUnguarded(
       result.exitCode !== null ? `exit code ${result.exitCode}` : `signal ${result.signal}`;
     throw new ScanToolError(
       "scan_failed",
-      `OSV-Scannerが異常終了しました(${status})`,
+      `OSV-Scanner exited abnormally (${status})`,
       result.stderr,
     );
   }
@@ -293,7 +293,7 @@ async function runOsvScanUnguarded(
   } catch {
     throw new ScanToolError(
       "invalid_output",
-      "OSV-Scannerの出力をJSONとして解釈できませんでした",
+      "Could not parse the OSV-Scanner output as JSON",
       result.stdout.slice(0, 1000),
     );
   }

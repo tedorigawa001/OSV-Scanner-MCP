@@ -126,14 +126,14 @@ describe.skipIf(!supportsPermission)("Nodeの権限モデル(--permission)で起
     const flags = allow().filter((flag) => !flag.includes("scanner.cjs"));
     const { payload, stderr } = await scanUnderPermission(project, flags);
     expect(payload.error.kind).toBe("permission_denied");
-    expect(stderr).toContain("OSV_SCANNER_PATHの読み取りが許可されていません");
+    expect(stderr).toContain("Reading OSV_SCANNER_PATH is not allowed");
   }, 60_000);
 
   it("欠けている許可(一時ディレクトリへの書き込み・子プロセス)を起動時にstderrで警告する", async () => {
     const flags = allow().filter((flag) => !flag.startsWith("--allow-fs-write") && flag !== "--allow-child-process");
     const { payload, stderr } = await scanUnderPermission(project, flags);
-    expect(stderr).toContain("一時ディレクトリへの書き込みが許可されていません");
-    expect(stderr).toContain("子プロセスの起動が許可されていません");
+    expect(stderr).toContain("Writing to the temporary directory is not allowed");
+    expect(stderr).toContain("Starting child processes is not allowed");
     // スキャンは失敗するが、内部エラーではなく許可の付け方が分かるエラーになる
     expect(payload.error.kind).toBe("permission_denied");
   }, 60_000);

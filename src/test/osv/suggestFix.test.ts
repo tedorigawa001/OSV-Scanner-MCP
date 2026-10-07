@@ -85,7 +85,7 @@ describe("suggestUpgradeForPackage", () => {
     // 2.14系統向けの修正版は存在しない → 同一メジャー内の最大 2.25.4
     expect(suggestion.recommended_upgrade).toBe("2.25.4");
     expect(suggestion.upgrade_tier).toBe("major_internal");
-    expect(suggestion.upgrade_note).toContain("同一メジャー");
+    expect(suggestion.upgrade_note).toContain("same major version");
     expect(suggestion.upgrade_note).toContain("2.25.4");
 
     // CVEごとのTier: 2.14.1より古いバックポート(2.3.x/2.12.x)は候補にならない
@@ -103,7 +103,7 @@ describe("suggestUpgradeForPackage", () => {
     expect(suggestion.per_cve_detail[0]!.tier).toBe("same_minor");
     expect(suggestion.recommended_upgrade).toBe("2.14.2");
     expect(suggestion.upgrade_tier).toBe("same_minor");
-    expect(suggestion.upgrade_note).toContain("現在の2.14系統内");
+    expect(suggestion.upgrade_note).toContain("within the current 2.14 release line");
   });
 
   it("Tier 3: 同一メジャー内に修正版がなければメジャーアップグレードを明示する", () => {
@@ -112,8 +112,8 @@ describe("suggestUpgradeForPackage", () => {
     );
     expect(suggestion.recommended_upgrade).toBe("2.0.0");
     expect(suggestion.upgrade_tier).toBe("cross_major");
-    expect(suggestion.upgrade_note).toContain("メジャーアップグレード");
-    expect(suggestion.upgrade_note).toContain("破壊的変更");
+    expect(suggestion.upgrade_note).toContain("major upgrade");
+    expect(suggestion.upgrade_note).toContain("breaking changes");
   });
 
   it("複数CVEの推奨は「全CVEを解消できる最小バージョン」(Tier結果の最大)", () => {
@@ -139,7 +139,7 @@ describe("suggestUpgradeForPackage", () => {
     expect(suggestion.recommended_upgrade).toBe("2.15.0");
     const tiers = Object.fromEntries(suggestion.per_cve_detail.map((d) => [d.id, d.tier]));
     expect(tiers).toEqual({ "GHSA-1": "unfixed", "GHSA-2": "unfixed", "GHSA-3": "major_internal" });
-    expect(suggestion.upgrade_note).toContain("残り2件は現在より新しい修正版候補がなく");
+    expect(suggestion.upgrade_note).toContain("The remaining 2 CVEs have no fixed version newer than the current one");
   });
 
   it("全CVEがunfixedならrecommended_upgradeはnull", () => {
@@ -148,7 +148,7 @@ describe("suggestUpgradeForPackage", () => {
     );
     expect(suggestion.recommended_upgrade).toBeNull();
     expect(suggestion.upgrade_tier).toBeNull();
-    expect(suggestion.upgrade_note).toContain("全2件");
+    expect(suggestion.upgrade_note).toContain("None of the 2 CVEs");
     expect(suggestion.upgrade_note).toContain("unfixed");
   });
 
@@ -158,7 +158,7 @@ describe("suggestUpgradeForPackage", () => {
     );
     expect(suggestion.recommended_upgrade).toBe("1.2.3");
     expect(suggestion.upgrade_tier).toBe("cross_major");
-    expect(suggestion.upgrade_note).toContain("系統を判定できない");
+    expect(suggestion.upgrade_note).toContain("release line of the current version cannot be determined");
   });
 
   it("Maven優先順位で比較する(2.9.0 < 2.10.0、修飾子付きも正しく扱う)", () => {
@@ -193,7 +193,7 @@ describe("未対応エコシステム(回帰: v0.3.3でnpmの脆弱性を修正�
     expect(suggestion.verification).toBe("unsupported_ecosystem");
     expect(suggestion.recommended_upgrade).toBeNull();
     expect(suggestion.per_cve_detail.map((d) => d.tier)).toEqual(["unsupported"]);
-    expect(suggestion.upgrade_note).toContain("未対応");
+    expect(suggestion.upgrade_note).toContain("not supported");
     expect(suggestion.upgrade_note).not.toContain("unfixed");
   });
 
@@ -272,7 +272,7 @@ describe("npm・Goの推奨(v0.5.0、実データの期待値)", () => {
     ]);
     expect([s.recommended_upgrade, s.upgrade_tier]).toEqual(["0.39.0", "cross_major"]);
     expect(s.per_cve_detail.map((d) => d.tier)).toEqual(["same_minor", "same_minor", "same_minor", "cross_major"]);
-    expect(s.upgrade_note).toContain("0.x系のため、マイナー更新でも破壊的変更の可能性あり");
+    expect(s.upgrade_note).toContain("in 0.x, even a minor update may include breaking changes");
     expect(s.update_hint).toContain("/v2");
   });
 
@@ -300,7 +300,7 @@ describe("npm・Goの推奨(v0.5.0、実データの期待値)", () => {
     const s = suggestFromScan("npm", "next", "15.5.0", [{ id: "GHSA-a", ranges: [range("15.0.0", "15.6.0-canary.61")] }]);
     expect(s.recommended_upgrade).toBe("15.6.0-canary.61");
     expect(s.recommended_is_prerelease).toBe(true);
-    expect(s.upgrade_note).toContain("プレリリース版を推奨");
+    expect(s.upgrade_note).toContain("a pre-release is recommended");
   });
 
   it("SemVerとして解釈できない範囲(docker/dockerのGHSA)を含むと推奨を保留する", () => {
@@ -323,7 +323,7 @@ describe("npm・Goの推奨(v0.5.0、実データの期待値)", () => {
     expect(s.recommended_upgrade).toBeNull();
     expect(s.verification).toBe("no_verified_candidate");
     expect(Object.fromEntries(s.per_cve_detail.map((d) => [d.id, d.tier]))).toEqual({ "GHSA-a": "unparseable_fix", "GHSA-b": "same_minor" });
-    expect(s.upgrade_note).toContain("解釈できない");
+    expect(s.upgrade_note).toContain("cannot be parsed");
     // 解釈できない修正版だけの場合も「修正版なし」とは言わない
     const only = suggestFromScan("npm", "pkg", "1.0.0", [{ id: "GHSA-a", ranges: [range("0", "13.0")] }]);
     expect([only.recommended_upgrade, only.verification, only.per_cve_detail[0]!.tier]).toEqual([null, "no_verified_candidate", "unparseable_fix"]);
@@ -354,14 +354,14 @@ describe("npm・Goの推奨(v0.5.0、実データの期待値)", () => {
       { id: "GO-c", ranges: [range("0", "0.7.0")] },
     ]);
     expect([t.recommended_upgrade, t.upgrade_tier]).toEqual(["0.7.0", "cross_major"]);
-    expect(t.upgrade_note).toContain("疑似バージョン");
+    expect(t.upgrade_note).toContain("pseudo-version");
   });
 
   it("現在の版を解釈できない場合はunparseable_versionとし、unfixedに数えない", () => {
     const s = suggestFromScan("npm", "local-pkg", "file:../local", [{ id: "GHSA-a", ranges: [range("0", "1.0.0")] }]);
     expect(s.verification).toBe("unparseable_version");
     expect(s.per_cve_detail.map((d) => d.tier)).toEqual(["unsupported"]);
-    expect(s.upgrade_note).toContain("解釈できない");
+    expect(s.upgrade_note).toContain("cannot be parsed");
   });
 });
 
@@ -402,15 +402,15 @@ describe("PyPIの推奨(v0.6.0、実データの形)", () => {
     }] }] });
     const s = suggestUpgradeForPackage({ ...report.packages[0]!, version_is_lower_bound: true });
     expect(s.version_is_lower_bound).toBe(true);
-    expect(s.upgrade_note).toContain("下限をその版以上に引き上げる");
+    expect(s.upgrade_note).toContain("raising the lower bound to at least that version");
   });
 });
 
 describe("Mavenのupdate_hint(pom.xmlの直接/推移的依存)", () => {
   it("直接依存はpom.xml(親POM・BOM)の版、推移的依存は<dependencyManagement>での上書きを案内し、unknownでは付けない", () => {
     const base = pkg("org.apache.logging.log4j:log4j-core", "2.14.1", [vuln("GHSA-x", "CVE-2021-44228", ["2.15.0"])]);
-    expect(suggestUpgradeForPackage({ ...base, dependency_relation: "direct" }).update_hint).toContain("<dependency>の版を更新");
-    expect(suggestUpgradeForPackage({ ...base, dependency_relation: "transitive" }).update_hint).toContain("<dependencyManagement>で推奨版を指定");
+    expect(suggestUpgradeForPackage({ ...base, dependency_relation: "direct" }).update_hint).toContain("Update the version in the <dependency>");
+    expect(suggestUpgradeForPackage({ ...base, dependency_relation: "transitive" }).update_hint).toContain("Override the version with the recommended version in <dependencyManagement>");
     expect("update_hint" in suggestUpgradeForPackage({ ...base, dependency_relation: "unknown" })).toBe(false);
   });
 });

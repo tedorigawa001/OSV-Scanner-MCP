@@ -36,12 +36,12 @@ export function isAccessDenied(error: unknown): error is Error & { permission?: 
 /** 権限モデルの拒否を、許可の付け方が分かるエラーにする */
 export function permissionDeniedError(error: Error & { permission?: string; resource?: string }): ScanToolError {
   const resource = typeof error.resource === "string" ? `: ${error.resource}` : "";
-  const kind = error.permission === "FileSystemWrite" ? "書き込み(--allow-fs-write)" : error.permission === "ChildProcess"
-    ? "子プロセスの起動(--allow-child-process)" : "読み取り(--allow-fs-read)";
+  const kind = error.permission === "FileSystemWrite" ? "Writing (--allow-fs-write)" : error.permission === "ChildProcess"
+    ? "Starting child processes (--allow-child-process)" : "Reading (--allow-fs-read)";
   return new ScanToolError(
     "permission_denied",
-    `Nodeの権限モデル(--permission)で${kind}が許可されていません${resource}。` +
-      "スキャン対象・一時ディレクトリ(シンボリックリンクの解決前と解決後の両方のパス)・osv-scannerのキャッシュへの許可が必要です(READMEの「権限を絞って起動する」を参照)",
+    `${kind} is not allowed by the Node permission model (--permission)${resource}. ` +
+      "The scan targets, the temporary directory (both its symlinked and resolved paths), and the osv-scanner cache must be allowed (see \"Running with restricted permissions\" in the README)",
   );
 }
 
@@ -51,7 +51,7 @@ export async function resolveExistingPath(inputPath: string): Promise<string> {
   } catch (error) {
     // Nodeの権限モデルの拒否を「存在しない」と誤って伝えない
     if (isAccessDenied(error)) throw permissionDeniedError(error);
-    throw new ScanToolError("project_not_found", `指定されたパスが存在しません: ${inputPath}`);
+    throw new ScanToolError("project_not_found", `The path does not exist: ${inputPath}`);
   }
 }
 
@@ -65,7 +65,7 @@ export function assertInsideAllowedRoot(resolvedDir: string, allowedRootReal: st
   if (!isInsideDir(allowedRootReal, resolvedDir)) {
     throw new ScanToolError(
       "path_outside_allowed_root",
-      `指定されたパスは許可されたディレクトリ(${allowedRootReal})の外にあります`,
+      `The path is outside the allowed directory (${allowedRootReal})`,
     );
   }
 }
@@ -73,8 +73,8 @@ export function assertInsideAllowedRoot(resolvedDir: string, allowedRootReal: st
 function searchLimitError(reason: string): ScanToolError {
   return new ScanToolError(
     "manifest_search_limit_exceeded",
-    `マニフェスト探索が上限(${reason})に達したため、スキャンを中止しました。` +
-      "結果の欠落を避けるため途中までの結果は返しません。より狭いディレクトリ、またはマニフェストを直接指定してください",
+    `The scan was stopped because the manifest search reached its limit (${reason}). ` +
+      "Partial results are not returned, to avoid silently missing dependencies. Specify a narrower directory or the manifest itself",
   );
 }
 
@@ -98,7 +98,7 @@ export async function walkProjectFiles(
   let currentLevel = [rootDir];
 
   for (let depth = 1; currentLevel.length > 0; depth++) {
-    if (depth > limits.maxDepth) throw searchLimitError(`深さ${limits.maxDepth}`);
+    if (depth > limits.maxDepth) throw searchLimitError(`depth ${limits.maxDepth}`);
     const nextLevel: string[] = [];
     for (const dir of currentLevel) {
       let entries;
@@ -110,10 +110,10 @@ export async function walkProjectFiles(
         continue; // 読めないディレクトリはスキップ(OSの権限不足等)
       }
       for (const entry of entries) {
-        if (++visited > limits.maxEntries) throw searchLimitError(`${limits.maxEntries}エントリ`);
+        if (++visited > limits.maxEntries) throw searchLimitError(`${limits.maxEntries} entries`);
         if (entry.isFile()) {
           if (onFile(path.relative(rootDir, path.join(dir, entry.name)), entry.name)) {
-            if (++manifests > limits.maxManifests) throw searchLimitError(`マニフェスト${limits.maxManifests}件`);
+            if (++manifests > limits.maxManifests) throw searchLimitError(`${limits.maxManifests} manifests`);
           }
         } else if (entry.isDirectory() && !skippedDirs.has(entry.name)) {
           // isDirectory()はシンボリックリンクに対してfalseを返すため、リンクは自然に除外される

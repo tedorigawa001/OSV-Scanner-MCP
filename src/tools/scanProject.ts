@@ -27,15 +27,15 @@ import { dependencyResolution, withScopeNotes, type ScanJavaProjectArgs, type Sc
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
 export const TRANSITIVE_OMITTED_WARNING =
-  "OSV_MCP_NO_REMOTE_RESOLUTIONの設定により、マニフェスト(pom.xml / requirements.txt)からの推移的依存の解決を省略しています。" +
-  "lockfile(package-lock.json / poetry.lock / go.mod / gradle.lockfile等)に記録された依存は対象ですが、" +
-  "pom.xml・requirements.txtに直接記載された依存の先にある推移的依存の脆弱性は含まれません。" +
-  "検出0件でも推移的依存の安全性は確認できていません";
+  "Because OSV_MCP_NO_REMOTE_RESOLUTION is set, transitive dependencies of manifests (pom.xml / requirements.txt) were not resolved. " +
+  "Dependencies recorded in lockfiles (package-lock.json / poetry.lock / go.mod / gradle.lockfile and so on) are covered, " +
+  "but vulnerabilities in the transitive dependencies of the dependencies listed directly in pom.xml or requirements.txt are not included. " +
+  "Zero findings does not confirm that the transitive dependencies are safe";
 
 const INCOMPLETE_WARNING =
-  "一部の依存はスキャンされていないか、版を推測してスキャンしています" +
-  "(lockfile_missing / unpinned_requirements / unscannable_requirements / skipped_filesを参照)。" +
-  "検出0件でも、それらの依存の安全性は確認できていません";
+  "Some dependencies were not scanned, or were scanned at an assumed version " +
+  "(see lockfile_missing / unpinned_requirements / unscannable_requirements / skipped_files). " +
+  "Zero findings does not confirm that those dependencies are safe";
 
 /** coverageの各一覧の上限(巨大なrequirements.txtで応答を膨らませない) */
 const MAX_COVERAGE_ITEMS = 200;
@@ -210,7 +210,7 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
       if (project.manifests.length === 0) {
         throw new ScanToolError(
           skipped.every((s) => s.kind === "outside_allowed_root") ? "path_outside_allowed_root" : "no_manifest_found",
-          `スキャンできるlockfile・マニフェストがありません(${project.skippedFiles.map((s) => `${s.path}: ${s.reason}`).join(" / ")})`,
+          `No lockfile or manifest can be scanned (${project.skippedFiles.map((s) => `${s.path}: ${s.reason}`).join(" / ")})`,
         );
       }
     }

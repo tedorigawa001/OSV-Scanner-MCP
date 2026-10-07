@@ -13,9 +13,9 @@ import { ScanSnapshot, snapshotManifests } from "../utils/scanSnapshot.js";
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
 const TRANSITIVE_OMITTED_WARNING =
-  "OSV_MCP_NO_REMOTE_RESOLUTIONの設定により、マニフェスト(pom.xml)からの推移的依存の解決を省略しています。" +
-  "lockfile(gradle.lockfile)に記録された依存は対象ですが、pom.xmlに直接記載された依存の先にある推移的依存の脆弱性は含まれません。" +
-  "検出0件でも推移的依存の安全性は確認できていません";
+  "Because OSV_MCP_NO_REMOTE_RESOLUTION is set, transitive dependencies of manifests (pom.xml) were not resolved. " +
+  "Dependencies recorded in lockfiles (gradle.lockfile) are covered, but vulnerabilities in the transitive dependencies of the dependencies listed directly in pom.xml are not included. " +
+  "Zero findings does not confirm that the transitive dependencies are safe";
 
 /**
  * 推移的依存の解決状態。無効時に「検出0件」を安全と誤読されないよう応答の先頭付近に置く。
@@ -28,8 +28,8 @@ export function dependencyResolution(noRemoteResolution: boolean, warning = TRAN
 }
 
 const SKIPPED_MANIFESTS_WARNING =
-  "一部のマニフェストをスキャン対象から外したか、親POMを含めずにスキャンしました(skipped_manifests / incomplete_manifestsを参照)。" +
-  "それらの依存の脆弱性は結果に含まれないため、検出0件でも安全とは判断しないでください";
+  "Some manifests were excluded from the scan, or scanned without their parent POM (see skipped_manifests / incomplete_manifests). " +
+  "Vulnerabilities in those dependencies are not included, so do not conclude that the project is safe even with zero findings";
 
 type ManifestNote = { path: string; reason: string };
 
@@ -59,8 +59,8 @@ export async function withScopeNotes<T>(notes: readonly ManifestNote[], scan: ()
     if (!(error instanceof ScanToolError) || error.kind !== "no_packages_found" || notes.length === 0) throw error;
     throw new ScanToolError(
       error.kind,
-      `${error.message}。ただし次のマニフェストはスキャン対象から外したか、親POMを含めずにスキャンしたため、` +
-        `検出0件でも安全とは判断しないでください: ${notes.map((n) => `${n.path}: ${n.reason}`).join(" / ")}`,
+      `${error.message}. However, the following manifests were excluded from the scan or scanned without their parent POM, ` +
+        `so do not conclude that the project is safe: ${notes.map((n) => `${n.path}: ${n.reason}`).join(" / ")}`,
       error.detail,
     );
   }
@@ -89,7 +89,7 @@ export async function scanJavaManifests(
       const details = skippedRelative.map((s) => `${s.path}: ${s.reason}`).join(" / ");
       throw new ScanToolError(
         skipped.every((s) => s.kind === "outside_allowed_root") ? "path_outside_allowed_root" : "no_manifest_found",
-        `スキャンできるマニフェストがありません(${details})`,
+        `No manifest can be scanned (${details})`,
       );
     }
     const originals = new Map(targets.map((copy, i) => [copy.path, scanned[i]!.path]));

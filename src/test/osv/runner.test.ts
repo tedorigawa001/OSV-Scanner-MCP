@@ -262,7 +262,7 @@ describe("runOsvScan", () => {
       runOsvScan(manifests, { binaryPath: bin, maxConcurrentScans: 1 }),
       "too_many_concurrent_scans",
     );
-    expect(error.message).toContain("1件まで");
+    expect(error.message).toContain("limit (1)");
     await expect(first).resolves.toMatchObject({ vulnerability_count: 0 });
   }, 10_000);
 
@@ -406,6 +406,6 @@ describe("binaryManager", () => {
     const env = { [OSV_SCANNER_PATH_ENV]: "/no/such/binary" } as NodeJS.ProcessEnv;
     const guidance = installGuidance(env);
     expect(guidance).toContain("/no/such/binary");
-    expect(guidance).toContain("実行可能ファイルを指していません");
+    expect(guidance).toContain("does not point to an executable file");
   });
 });

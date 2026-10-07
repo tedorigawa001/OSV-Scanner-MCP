@@ -45,7 +45,7 @@ if (startupError !== null) {
 // 互換性のため未設定でも起動は続けるが、残余リスクをstderrで可視化する
 const startupWarning = allowedRootStartupWarning();
 if (startupWarning !== null) {
-  console.error(`osv-scanner-mcp: [警告] ${startupWarning}`);
+  console.error(`osv-scanner-mcp: [warning] ${startupWarning}`);
 }
 // Nodeの権限モデル(--permission)で起動された場合、必要な許可が欠けていればstderrで知らせる(起動は続ける)
 {
@@ -62,7 +62,7 @@ if (startupWarning !== null) {
     cacheDir: scannerPath ? undefined : defaultCacheDir(),
     scannerPath: scannerPath || undefined,
   })) {
-    console.error(`osv-scanner-mcp: [警告] ${warning}`);
+    console.error(`osv-scanner-mcp: [warning] ${warning}`);
   }
 }
 
@@ -75,20 +75,20 @@ const server = new McpServer({
 server.registerTool(
   "scan_project",
   {
-    title: "プロジェクトの依存の脆弱性スキャン(Java / JavaScript / Python / Go)",
+    title: "Scan project dependencies for vulnerabilities (Java / JavaScript / Python / Go)",
     description:
-      "プロジェクト内のlockfile・マニフェストを検出し、依存ライブラリの既知の脆弱性(CVE/GHSA)をまとめてスキャンする。" +
-      "対応: Java(pom.xml / gradle.lockfile)、JavaScript(package-lock.json / npm-shrinkwrap.json / yarn.lock / pnpm-lock.yaml / bun.lock)、" +
-      "Python(poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt)、Go(go.mod)。" +
-      "パッケージマネージャーやビルドは実行しない。" +
-      "応答先頭のcoverageを必ず確認すること: lockfileが無いマニフェスト、バージョン未固定のrequirements行、スキャン対象から外したファイルを示す。" +
-      "各パッケージのdependency_relationは直接依存(direct)か推移的依存(transitive)か(package-lock.json・go.mod・requirements.txt・pom.xmlで判定。それ以外はunknown)。" +
-      "coverage.complete=falseの場合は、検出0件でも安全とは判断しないこと。修正版の推奨(suggest_fix)はJava・JavaScript・Python・Goに対応。",
+      "Detects the lockfiles and manifests in a project and scans the dependencies for known vulnerabilities (CVE/GHSA). " +
+      "Supported: Java (pom.xml / gradle.lockfile), JavaScript (package-lock.json / npm-shrinkwrap.json / yarn.lock / pnpm-lock.yaml / bun.lock), " +
+      "Python (poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt), Go (go.mod). " +
+      "Package managers and builds are never run. " +
+      "Always check coverage at the top of the response: it lists manifests without a lockfile, requirements lines without a pinned version, and excluded files. " +
+      "Each package's dependency_relation tells whether it is a direct or transitive dependency (determined for package-lock.json, go.mod, requirements.txt, and pom.xml; unknown otherwise). " +
+      "If coverage.complete is false, do not conclude that the project is safe even with zero findings. Upgrade recommendations (suggest_fix) are available for Java, JavaScript, Python, and Go.",
     inputSchema: {
       project_path: z
         .string()
         .min(1)
-        .describe("スキャン対象のプロジェクトディレクトリ、または対応するlockfile・マニフェストの絶対パス"),
+        .describe("Absolute path to the project directory, or to a supported lockfile or manifest"),
     },
   },
   async ({ project_path }) =>
@@ -98,17 +98,17 @@ server.registerTool(
 server.registerTool(
   "scan_java_project",
   {
-    title: "Javaプロジェクトの脆弱性スキャン",
+    title: "Scan a Java project for vulnerabilities",
     description:
-      "Java(Maven)プロジェクトをGoogle OSV-Scannerでスキャンし、依存ライブラリの既知の脆弱性(CVE/GHSA)を深刻度順のJSONレポートで返す。" +
-      "レポートにはパッケージごとの脆弱性一覧(CVSSスコア・5段階深刻度・修正版バージョン)とサマリ集計が含まれる。" +
-      "Maven(pom.xml)とGradle(gradle.lockfile)に対応。" +
-      "dependency_resolution.warningがある場合は推移的依存がスキャン対象外のため、検出0件でも安全とは判断しないこと。",
+      "Scans a Java (Maven) project with Google OSV-Scanner and returns the known vulnerabilities (CVE/GHSA) in its dependencies as a JSON report sorted by severity. " +
+      "The report lists the vulnerabilities per package (CVSS score, five severity levels, fixed versions) with summary counts. " +
+      "Supports Maven (pom.xml) and Gradle (gradle.lockfile). " +
+      "If dependency_resolution.warning is present, transitive dependencies were not scanned, so do not conclude that the project is safe even with zero findings.",
     inputSchema: {
       project_path: z
         .string()
         .min(1)
-        .describe("スキャン対象のプロジェクトディレクトリ、またはpom.xml/gradle.lockfileの絶対パス"),
+        .describe("Absolute path to the project directory, or to a pom.xml / gradle.lockfile"),
     },
   },
   async ({ project_path }) =>
@@ -121,22 +121,26 @@ server.registerTool(
 server.registerTool(
   "suggest_fix",
   {
-    title: "脆弱性を解消する推奨アップグレードの提案",
+    title: "Recommend upgrades that fix vulnerabilities",
     description:
-      "scan_projectと同じ検出でプロジェクトをスキャンし、脆弱な依存パッケージごとに推奨アップグレードバージョンを提案する。" +
-      "推奨はJava(Maven / Gradle)・JavaScript(npm)・Python(PyPI)・Goに対応。" +
-      "現在のバージョンに最も近いリリース系統の修正版を優先する3段階フォールバック" +
-      "(same_minor: 同一系統内 → major_internal: 同一メジャー内 → cross_major: メジャーアップグレード)で選定し、" +
-      "推奨バージョン・アップグレード距離(upgrade_tier)・CVEごとの修正版を返す。npm・Go・PyPIでは0.x系のマイナー更新もcross_major(破壊的変更の可能性)。requirements.txtの下限(>=)でスキャンした依存はversion_is_lower_boundを付け、推奨は下限の引き上げを意味する。直接/推移的依存の別(dependency_relation、npmはintroduced_by・declared_in)に応じて更新方法(update_hint)を示す。推奨先はapi.osv.devに照会し、現在の版には該当しない既知の脆弱性があれば避けて選び直す(結果はcandidate_check。has_known_vulnerabilities・failed・skippedの場合は推奨先の安全性が確認できていない。conflictは判定の食い違いで推奨を保留)。" +
-      "候補を全修正対象CVEの影響範囲と照合し、情報不足の場合は推奨を保留する。プレリリース版は正式版で解消できない場合だけ推奨し、recommended_is_prereleaseを付ける。" +
-      "現在より新しい修正版候補のないCVEはunfixedとして別表示し、推奨先での判定も返す。" +
-      "応答のcoverageを必ず確認すること(complete=falseなら提案に含まれない依存がある)。" +
-      "dependency_resolution.warningがある場合は推移的依存の脆弱性が提案に含まれない。",
+      "Scans the project with the same detection as scan_project and recommends an upgrade version for each vulnerable package. " +
+      "Recommendations are available for Java (Maven / Gradle), JavaScript (npm), Python (PyPI), and Go. " +
+      "The fixed version closest to the current release line is chosen with a three-tier fallback " +
+      "(same_minor: same release line -> major_internal: same major version -> cross_major: major upgrade), " +
+      "and the response gives the recommended version, the upgrade distance (upgrade_tier), and the fixed version per CVE. For npm, Go, and PyPI, a minor update within 0.x is also cross_major (may include breaking changes). " +
+      "Dependencies scanned at a requirements.txt lower bound (>=) are marked version_is_lower_bound, and the recommendation then means raising the lower bound. " +
+      "update_hint explains how to upgrade, depending on whether the package is a direct or transitive dependency (dependency_relation; for npm also introduced_by and declared_in). " +
+      "The recommended version is checked against api.osv.dev, and versions with known vulnerabilities that do not affect the current version are avoided (result in candidate_check; " +
+      "with has_known_vulnerabilities, failed, or skipped, the recommended version has not been confirmed safe; conflict means the data disagreed and the recommendation is withheld). " +
+      "Candidates are checked against the affected ranges of every vulnerability to fix, and the recommendation is withheld when the data are insufficient. Pre-releases are recommended only when no stable version fixes everything, and are marked recommended_is_prerelease. " +
+      "CVEs with no fixed version newer than the current one are reported separately as unfixed, together with their status at the recommended version. " +
+      "Always check coverage in the response (if complete is false, some dependencies are not included in the suggestions). " +
+      "If dependency_resolution.warning is present, vulnerabilities in transitive dependencies are not included.",
     inputSchema: {
       project_path: z
         .string()
         .min(1)
-        .describe("スキャン対象のプロジェクトディレクトリ、または対応するlockfile・マニフェストの絶対パス"),
+        .describe("Absolute path to the project directory, or to a supported lockfile or manifest"),
     },
   },
   async ({ project_path }) =>
@@ -146,17 +150,17 @@ server.registerTool(
 server.registerTool(
   "explain_vulnerability",
   {
-    title: "脆弱性の詳細説明の取得",
+    title: "Explain a vulnerability",
     description:
-      "指定したGHSA-IDまたはCVE-IDの脆弱性の詳細をOSVデータベース(api.osv.dev)から取得して返す。" +
-      "説明(details)・CVSSベクトル・影響を受けるパッケージとバージョン範囲・参照リンク(アドバイザリや修正コミット)が含まれる。" +
-      "scan_java_projectやsuggest_fixの結果に含まれるIDをそのまま渡せる。スキャンは実行しない。",
+      "Fetches the details of a vulnerability by GHSA or CVE ID from the OSV database (api.osv.dev). " +
+      "Includes the description (details), CVSS vectors, affected packages and version ranges, and reference links (advisories and fix commits). " +
+      "IDs from the results of the scan tools and suggest_fix can be passed as they are. No scan is run.",
     inputSchema: {
       vulnerability_id: z
         .string()
         .min(3)
         .max(100)
-        .describe("脆弱性のID(例: GHSA-jfh8-c2jp-5v3q、CVE-2021-44228)"),
+        .describe("Vulnerability ID (for example GHSA-jfh8-c2jp-5v3q or CVE-2021-44228)"),
     },
   },
   async ({ vulnerability_id }) => handleExplainVulnerability({ vulnerability_id }),
@@ -165,14 +169,14 @@ server.registerTool(
 server.registerTool(
   "scan_java_artifact",
   {
-    title: "JAR/WAR実体の脆弱性スキャン",
+    title: "Scan JAR/WAR archives for vulnerabilities",
     description:
-      "JAR/WARファイルまたはディレクトリ内の実体をスキャンする。ビルドやJavaコードの実行は行わない。" +
-      "メタデータによるベストエフォート同定のため、coverageと同定不能ファイルを必ず確認すること。" +
-      "pom.propertiesのないJARは座標を推測し、groupIdの誤りで既知の脆弱性を取りこぼしうる(coverage.inferred_coordinates、status: inferred_only)。" +
-      "completenessは常にincomplete。検出0件でも安全性や全依存の同定を保証しない。",
+      "Scans JAR/WAR files, or the archives in a directory. No build is run and no Java code is executed. " +
+      "Identification is best effort, based on metadata, so always check coverage and the unidentified files. " +
+      "For JARs without pom.properties the coordinates are inferred, and a wrong groupId can hide known vulnerabilities (coverage.inferred_coordinates, status: inferred_only). " +
+      "completeness is always incomplete. Zero findings guarantees neither safety nor that every dependency was identified.",
     inputSchema: {
-      artifact_path: z.string().min(1).describe("JAR/WARファイル、または探索するディレクトリの絶対パス"),
+      artifact_path: z.string().min(1).describe("Absolute path to a JAR/WAR file, or to a directory to search"),
     },
   },
   async ({ artifact_path }) => handleScanJavaArtifact(
@@ -183,13 +187,13 @@ server.registerTool(
 server.registerTool(
   "scan_sbom",
   {
-    title: "SBOMの脆弱性スキャン",
+    title: "Scan an SBOM for vulnerabilities",
     description:
-      "CycloneDX 1.4/1.5/1.6またはSPDX 2.2/2.3のJSON SBOMから識別できる依存をスキャンする。" +
-      "ビルドやJARの実行は行わない。入力は16MiB以下のローカルファイル。" +
-      "SBOMの網羅性・鮮度・実成果物との一致は未検証であり、検出0件でも安全性を保証しない。",
+      "Scans the dependencies that can be identified in a CycloneDX 1.4/1.5/1.6 or SPDX 2.2/2.3 JSON SBOM. " +
+      "No build is run and no JAR is executed. The input is a local file of 16 MiB or less. " +
+      "The SBOM's completeness, freshness, and match with the actual artifacts are not verified, so zero findings does not guarantee safety.",
     inputSchema: {
-      sbom_path: z.string().min(1).describe("CycloneDX/SPDX JSON SBOMファイルの絶対パス"),
+      sbom_path: z.string().min(1).describe("Absolute path to a CycloneDX/SPDX JSON SBOM file"),
     },
   },
   async ({ sbom_path }) => handleScanSbom(
@@ -202,7 +206,7 @@ installShutdownHandlers();
 // 前回の異常終了で残った一時ディレクトリの掃除。起動を遅らせないよう待たない
 removeStaleTempDirs().then(
   (removed) => {
-    if (removed > 0) console.error(`osv-scanner-mcp: 前回の終了時に残った一時ディレクトリを${removed}件削除しました`);
+    if (removed > 0) console.error(`osv-scanner-mcp: removed ${removed} temporary director${removed === 1 ? "y" : "ies"} left from a previous run`);
   },
   () => { /* 掃除の失敗で起動を止めない */ },
 );

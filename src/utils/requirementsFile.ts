@@ -20,7 +20,7 @@
 import { realpath } from "node:fs/promises";
 import path from "node:path";
 import { isInsideDir } from "./projectWalk.js";
-import { readRegularFile } from "./safeRead.js";
+import { readRegularFile, capitalizeReason } from "./safeRead.js";
 
 const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_INCLUDE_DEPTH = 5;
@@ -123,12 +123,12 @@ function classifyRequirement(file: string, line: number, content: string, out: C
   const withoutMarker = content.split(";")[0]!;
   const requirement = withoutMarker.replace(/\s--?[A-Za-z].*$/, "").trim();
   if (/\s@\s/.test(requirement) || URL_SCHEME.test(requirement) || /^[./~]/.test(requirement) || requirement.includes("/")) {
-    reference("URL・パス指定の依存はスキャンされません");
+    reference("Dependencies given as URLs or paths are not scanned");
     return;
   }
   const match = NAME_AND_SPEC.exec(requirement);
   if (!match) {
-    reference("解釈できない行です");
+    reference("The line cannot be interpreted");
     return;
   }
   const name = match[1]!;
@@ -143,12 +143,12 @@ function classifyRequirement(file: string, line: number, content: string, out: C
     const op = parsed[1]!;
     const version = parsed[2]!;
     if ((op === "==" || op === "===") && !version.includes("*")) {
-      if (!SAFE_VERSION.test(version)) return reference("解釈できない版の指定です");
+      if (!SAFE_VERSION.test(version)) return reference("The version specifier cannot be interpreted");
       out.entries.push(`${name}==${version}`);
       return;
     }
     if (op === ">=" || op === "~=") {
-      if (!SAFE_VERSION.test(version)) return reference("解釈できない版の指定です");
+      if (!SAFE_VERSION.test(version)) return reference("The version specifier cannot be interpreted");
       // osv-scannerは下限を使用中の版とみなしてスキャンする(実機確認)。その挙動を保ち、印を付けて報告する
       out.entries.push(`${name}${op}${version}`);
       out.issues.push({ file, line, name, specifier, kind: "lower_bound" });
@@ -173,22 +173,22 @@ async function include(
     out.references.push({ file, line, text: content, reason });
   };
   const cleaned = target.trim().replace(/^["']|["']$/g, "");
-  if (URL_SCHEME.test(cleaned)) return reference("URLの取り込みは展開しません");
-  if (depth >= MAX_INCLUDE_DEPTH) return reference(`取り込みの深さが上限(${MAX_INCLUDE_DEPTH})を超えています`);
+  if (URL_SCHEME.test(cleaned)) return reference("Includes from URLs are not expanded");
+  if (depth >= MAX_INCLUDE_DEPTH) return reference(`The include depth exceeds the limit (${MAX_INCLUDE_DEPTH})`);
   let resolved: string;
   try {
     resolved = await realpath(path.resolve(path.dirname(file), cleaned));
   } catch {
-    return reference("取り込み先が存在しません");
+    return reference("The included file does not exist");
   }
-  if (!isInsideDir(projectDir, resolved)) return reference("取り込み先がプロジェクトディレクトリの外のため展開しません");
+  if (!isInsideDir(projectDir, resolved)) return reference("The included file is outside the project directory and is not expanded");
   if (out.visited.has(resolved)) return; // 循環
-  if (out.visited.size >= MAX_FILES) return reference(`取り込みファイルが上限(${MAX_FILES}件)を超えています`);
+  if (out.visited.size >= MAX_FILES) return reference(`The number of included files exceeds the limit (${MAX_FILES})`);
   let failure: string | null;
   try {
     failure = await analyze(resolved, projectDir, depth + 1, out, context);
   } catch {
-    failure = "取り込み先を読み込めません";
+    failure = "The included file cannot be read";
   }
   if (failure !== null) reference(failure);
 }
@@ -224,11 +224,11 @@ async function readText(
       return {
         ok: false,
         reason: budgetLimited
-          ? "requirements.txtの解析量の合計が上限を超えたため読みませんでした"
-          : `サイズが上限(${MAX_FILE_BYTES}バイト)を超えています`,
+          ? "Not read because the total amount of requirements.txt analysis exceeded the limit"
+          : `The file exceeds the size limit (${MAX_FILE_BYTES} bytes)`,
       };
     }
-    return { ok: false, reason: result.message };
+    return { ok: false, reason: capitalizeReason(result.message) };
   }
   context.remainingBytes -= result.bytes.length;
   const text = result.bytes.toString("utf8");
@@ -255,16 +255,16 @@ async function analyze(
       continue;
     }
     if (INCLUDE_CONSTRAINT.test(content)) {
-      out.references.push({ file, line, text: content, reason: "制約ファイルは適用していません" });
+      out.references.push({ file, line, text: content, reason: "Constraint files are not applied" });
       continue;
     }
     if (EDITABLE.test(content)) {
-      out.references.push({ file, line, text: content, reason: "編集可能インストール(-e)はスキャンされません" });
+      out.references.push({ file, line, text: content, reason: "Editable installs (-e) are not scanned" });
       continue;
     }
     if (content.startsWith("-")) {
       if (!HARMLESS_OPTION.test(content)) {
-        out.references.push({ file, line, text: content, reason: "解釈できないオプションです" });
+        out.references.push({ file, line, text: content, reason: "The option cannot be interpreted" });
       }
       continue;
     }
@@ -288,7 +288,7 @@ export async function analyzeRequirementsFile(
   try {
     reason = await analyze(await realpath(file), projectDir, 0, out, context);
   } catch {
-    reason = "読み込めません";
+    reason = "The file cannot be read";
   }
   if (reason !== null) return { ok: false, reason };
   return { ok: true, entries: out.entries, issues: out.issues, references: out.references, lowerBounds: out.lowerBounds };

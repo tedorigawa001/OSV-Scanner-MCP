@@ -72,7 +72,7 @@ describe("親POMの連鎖の検証(スナップショット経由)", () => {
   ])("$label が許可ルートの外を指せば除外理由を返す", async ({ files, target }) => {
     const base = await makeTree(files);
     const reason = await checkPom(path.join(base, target), path.join(base, "root"));
-    expect(reason).toContain("許可ルート(OSV_MCP_ALLOWED_ROOT)の外");
+    expect(reason).toContain("outside the allowed root (OSV_MCP_ALLOWED_ROOT)");
   });
 
   it("シンボリックリンク経由で外を指す場合も除外する", async () => {
@@ -83,7 +83,7 @@ describe("親POMの連鎖の検証(スナップショット経由)", () => {
 
   it("評価できないrelativePath(プロパティ参照)は確認できないため除外する", async () => {
     const base = await makeTree({ "root/proj/pom.xml": pom(parent("<relativePath>${parent.dir}/pom.xml</relativePath>")) });
-    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("解釈できない");
+    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("cannot be interpreted");
   });
 
   it("循環する親の連鎖は上限で停止して除外する", async () => {
@@ -91,7 +91,7 @@ describe("親POMの連鎖の検証(スナップショット経由)", () => {
       "root/a/pom.xml": pom(parent("<relativePath>../b/pom.xml</relativePath>")),
       "root/b/pom.xml": pom(parent("<relativePath>../a/pom.xml</relativePath>")),
     });
-    expect(await checkPom(path.join(base, "root/a/pom.xml"), path.join(base, "root"))).toContain("上限");
+    expect(await checkPom(path.join(base, "root/a/pom.xml"), path.join(base, "root"))).toContain("limit");
   });
 });
 
@@ -149,13 +149,13 @@ describe("parentRelativePath: osv-scanner(Go)のXML解釈に合わせる(回帰)
 
   it("回帰: <m:parent>で許可ルートの外を参照するpom.xmlを除外する", async () => {
     const base = await makeTree({ "outside/pom.xml": pom(), "root/proj/pom.xml": doc(`<m:parent>${gav}${rel}</m:parent>`) });
-    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("許可ルート");
+    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("allowed root");
   });
 
   it("UTF-8として読めないpom.xmlは解釈できないため除外する", async () => {
     const base = await makeTree({ "root/proj/pom.xml": "" });
     await writeFile(path.join(base, "root/proj/pom.xml"), Buffer.from([0x3c, 0x70, 0xff, 0xfe, 0x3e]));
-    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("解釈できない");
+    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("cannot be interpreted");
   });
 });
 

@@ -62,10 +62,10 @@ const GRADLE_BUILD_FILENAMES = new Set([
 ]);
 
 const GRADLE_LOCKFILE_GUIDANCE =
-  "Gradleプロジェクトを検出しましたが、gradle.lockfileがありません。" +
-  "本ツールはlockfile方式のみ対応しています(ビルド実行方式はbuild.gradleの任意コード実行を伴うため非対応)。" +
-  "`./gradlew dependencies --write-locks` でlockfileを生成してから再実行してください" +
-  "(依存ロックが未設定の場合は build.gradle に dependencyLocking { lockAllConfigurations() } の追加が必要です)";
+  "A Gradle project was detected, but there is no gradle.lockfile. " +
+  "This tool supports only the lockfile approach (running the build would execute arbitrary code in build.gradle). " +
+  "Generate the lockfile with `./gradlew dependencies --write-locks` and try again " +
+  "(if dependency locking is not configured, add dependencyLocking { lockAllConfigurations() } to build.gradle)";
 
 function buildResult(
   projectDir: string,
@@ -89,7 +89,7 @@ export async function detectJavaProject(
   options: DetectJavaProjectOptions = {},
 ): Promise<DetectedJavaProject> {
   if (typeof inputPath !== "string" || inputPath.trim() === "") {
-    throw new ScanToolError("project_not_found", "スキャン対象のパスが指定されていません");
+    throw new ScanToolError("project_not_found", "No path to scan was given");
   }
 
   const resolved = await resolveExistingPath(inputPath);
@@ -114,7 +114,7 @@ export async function detectJavaProject(
   } else {
     throw new ScanToolError(
       "project_not_found",
-      `指定されたパスはディレクトリでも対応マニフェスト(pom.xml / gradle.lockfile)でもありません: ${inputPath}`,
+      `The path is neither a directory nor a supported manifest (pom.xml / gradle.lockfile): ${inputPath}`,
     );
   }
 
@@ -138,7 +138,7 @@ export async function detectJavaProject(
     }
     throw new ScanToolError(
       "no_manifest_found",
-      `対応マニフェスト(pom.xml / gradle.lockfile)が見つかりません: ${projectDir}`,
+      `No supported manifest (pom.xml / gradle.lockfile) was found: ${projectDir}`,
     );
   }
 

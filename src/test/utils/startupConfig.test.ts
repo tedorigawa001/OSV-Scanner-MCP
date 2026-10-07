@@ -26,7 +26,7 @@ describe("allowedRootStartupError", () => {
   it("REQUIRE有効+ALLOWED_ROOT未設定はエラーメッセージを返す", () => {
     const error = allowedRootStartupError({ [REQUIRE_ALLOWED_ROOT_ENV]: "1" });
     expect(error).toContain(ALLOWED_ROOT_ENV);
-    expect(error).toContain("起動を中止");
+    expect(error).toContain("will not start");
   });
 
   it("REQUIRE有効+ALLOWED_ROOTが空白のみもエラー", () => {
@@ -52,7 +52,7 @@ describe("allowedRootStartupWarning", () => {
   it("ALLOWED_ROOT未設定なら推奨設定を促す警告を返す", () => {
     const warning = allowedRootStartupWarning({});
     expect(warning).toContain(ALLOWED_ROOT_ENV);
-    expect(warning).toContain("任意の絶対パス");
+    expect(warning).toContain("any absolute path");
   });
 
   it("ALLOWED_ROOT設定済みならnull(警告なし)", () => {

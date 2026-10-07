@@ -51,14 +51,14 @@ export function installGuidance(env: NodeJS.ProcessEnv = process.env): string {
   const explicit = env[OSV_SCANNER_PATH_ENV];
   const envNote =
     explicit !== undefined && explicit.trim() !== ""
-      ? `環境変数 ${OSV_SCANNER_PATH_ENV}(${explicit})が実行可能ファイルを指していません。パスを確認してください。`
-      : `インストール済みの場合は、環境変数 ${OSV_SCANNER_PATH_ENV} でバイナリのパスを指定することもできます。`;
+      ? `The environment variable ${OSV_SCANNER_PATH_ENV} (${explicit}) does not point to an executable file. Check the path.`
+      : `If it is already installed, you can also set the binary path with the environment variable ${OSV_SCANNER_PATH_ENV}.`;
   return [
-    "OSV-Scannerが見つかりません。以下のいずれかの方法でインストールしてください:",
+    "OSV-Scanner was not found. Install it in one of the following ways:",
     "  - Homebrew: brew install osv-scanner",
     "  - Go: go install github.com/google/osv-scanner/v2/cmd/osv-scanner@latest",
-    "  - 公式リリース: https://github.com/google/osv-scanner/releases (取得後はチェックサム検証を推奨)",
-    `  - または環境変数 ${AUTO_DOWNLOAD_ENV} の無効化(=0)を解除すると、検証済み公式バイナリを自動ダウンロードします`,
+    "  - Official releases: https://github.com/google/osv-scanner/releases (verifying the checksum after downloading is recommended)",
+    `  - Or remove ${AUTO_DOWNLOAD_ENV}=0 to download the verified official binary automatically`,
     envNote,
   ].join("\n");
 }

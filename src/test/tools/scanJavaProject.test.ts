@@ -155,7 +155,7 @@ describe("handleScanJavaProject: 推移的依存の解決状態の伝播", () =>
     const { payload, args } = await scanWith(env, option);
     const resolution = payload.dependency_resolution as { transitive_resolution: string; warning?: string };
     expect(resolution.transitive_resolution).toBe("disabled");
-    expect(resolution.warning).toContain("推移的依存の脆弱性は含まれません");
+    expect(resolution.warning).toContain("vulnerabilities in the transitive dependencies");
     expect(args).toContain("--no-resolve");
     // 検出0件を安全と誤読されないよう、件数より前に置く
     const keys = Object.keys(payload);
@@ -195,8 +195,8 @@ describe("handleScanJavaProject: 推移的依存の解決状態の伝播", () =>
       expect(args.some((a) => a === real || a.endsWith(`:${path.join(real, "pom.xml")}`))).toBe(false);
       const resolution = payload.dependency_resolution as { transitive_resolution: string; warning?: string };
       expect(resolution.transitive_resolution).toBe("disabled");
-      expect(resolution.warning).toContain("推移的依存の脆弱性は含まれません");
-      expect(resolution.warning).toContain("lockfile(gradle.lockfile)に記録された依存は対象");
+      expect(resolution.warning).toContain("vulnerabilities in the transitive dependencies");
+      expect(resolution.warning).toContain("Dependencies recorded in lockfiles (gradle.lockfile) are covered");
       expect(args).toContain("--no-resolve");
     } finally {
       await rm(mixedDir, { recursive: true, force: true });
@@ -225,8 +225,8 @@ describe("handleScanJavaProject: 親POMが許可ルートの外を参照するpo
       );
       const payload = parsePayload(result);
       expect(payload.manifests).toEqual(["pom.xml"]);
-      expect(payload.skipped_manifests).toEqual([{ path: "bad/pom.xml", reason: expect.stringContaining("許可ルート") }]);
-      expect(payload.scope_warning).toContain("検出0件でも");
+      expect(payload.skipped_manifests).toEqual([{ path: "bad/pom.xml", reason: expect.stringContaining("allowed root") }]);
+      expect(payload.scope_warning).toContain("findings");
       const keys = Object.keys(payload);
       expect(keys.indexOf("scope_warning")).toBeLessThan(keys.indexOf("vulnerability_count"));
       const args = (await readFile(argsFile, "utf8")).split("\n");

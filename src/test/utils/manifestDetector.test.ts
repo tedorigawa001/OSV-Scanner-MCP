@@ -136,7 +136,7 @@ describe("detectProject: lockfileの無いマニフェスト", () => {
     });
     const [entry] = (await detectProject(dir)).lockfileMissing;
     expect(entry).toMatchObject({ path: "tools/cli/package.json", ecosystem: "npm", status: "missing" });
-    expect(entry!.hint).toContain("収録されていません");
+    expect(entry!.hint).toContain("Not included in the lockfile");
   });
 
   it.each([
@@ -147,7 +147,7 @@ describe("detectProject: lockfileの無いマニフェスト", () => {
     const dir = await makeProject(files);
     const [entry] = (await detectProject(dir)).lockfileMissing;
     expect(entry).toMatchObject({ ecosystem, status: "unconfirmed" });
-    expect(entry!.hint).toContain("確認できません");
+    expect(entry!.hint).toContain("Cannot confirm");
   });
 
   it("別のディレクトリのlockfileや別エコシステムのlockfileでは満たされない", async () => {
@@ -188,7 +188,7 @@ describe("detectProject: requirements.txtの取り込み", () => {
     expect(project.targets.map((t) => path.basename(t.path))).toEqual(["package-lock.json"]);
     expect(project.requirementsCopies).toEqual([{ path: "evil/requirements.txt", entries: ["flask==1.0"] }]);
     expect(project.requirementReferences.map((r) => r.reason)).toEqual([
-      expect.stringContaining("プロジェクトディレクトリの外"),
+      expect.stringContaining("outside the project directory"),
     ]);
   });
 

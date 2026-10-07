@@ -51,7 +51,7 @@ describe("checkRecommendedCandidates", () => {
     const { suggestions, queried } = await check([pkg], {});
     expect(suggestions[0]).toMatchObject({ recommended_upgrade: "1.5.0", candidate_check: "clean", verification: "verified" });
     expect(queried).toEqual([{ name: "x", ecosystem: "npm", version: "1.5.0" }]);
-    expect(suggestions[0]!.upgrade_note).not.toContain("OSVに照会");
+    expect(suggestions[0]!.upgrade_note).not.toContain("checked against OSV");
   });
 
   it("推奨先に新しい脆弱性があれば、その修正版を候補に加えて選び直す(cryptography 3.2→49.0.0→50.0.0と同じ形)", async () => {
@@ -61,7 +61,7 @@ describe("checkRecommendedCandidates", () => {
     expect(queried.map((q) => q.version)).toEqual(["1.5.0", "1.6.0"]);
     const s = suggestions[0]!;
     expect(s).toMatchObject({ recommended_upgrade: "1.6.0", upgrade_tier: "major_internal", candidate_check: "clean" });
-    expect(s.upgrade_note).toContain("1.5.0は1件の既知の脆弱性に該当");
+    expect(s.upgrade_note).toContain("1.5.0 is affected by 1 known vulnerability");
     // per_cve_detailはスキャンした(現在の版の)脆弱性だけ。最終的な推奨先で判定する
     expect(s.per_cve_detail.map((d) => [d.id, d.recommended_status])).toEqual([["GHSA-a", "not_affected"]]);
   });
@@ -71,7 +71,7 @@ describe("checkRecommendedCandidates", () => {
     expect(suggestions[0]).toMatchObject({
       recommended_upgrade: "1.5.0", candidate_check: "has_known_vulnerabilities", recommended_known_vulnerabilities: ["GHSA-open"],
     });
-    expect(suggestions[0]!.upgrade_note).toContain("避けられる修正版の候補が見つかりませんでした");
+    expect(suggestions[0]!.upgrade_note).toContain("No fixed version that avoids them was found");
   });
 
   it("スキャンで既に知っている脆弱性に該当と返った場合(範囲情報の食い違い)は、その候補を除外する", async () => {
@@ -85,7 +85,7 @@ describe("checkRecommendedCandidates", () => {
     const s = suggestions[0]!;
     expect(s).toMatchObject({ recommended_upgrade: null, upgrade_tier: null, candidate_check: "conflict", verification: "no_verified_candidate" });
     expect(s.per_cve_detail.map((d) => d.recommended_status)).toEqual(["not_evaluated", "not_evaluated"]);
-    expect(s.upgrade_note).toContain("範囲情報の食い違い");
+    expect(s.upgrade_note).toContain("the range data disagree");
     expect(s.upgrade_note).toContain("CVE-2026-1");
     expect("recommended_known_vulnerabilities" in s).toBe(false);
   });
@@ -100,7 +100,7 @@ describe("checkRecommendedCandidates", () => {
       "x@1.7.0": [record("GHSA-c", "x", [range("0", "1.8.0")]), record("GHSA-new", "x", [range("1.6.0", "1.9.0")])],
     });
     expect(res.suggestions[0]).toMatchObject({ recommended_upgrade: "1.9.0", candidate_check: "clean" });
-    expect(res.suggestions[0]!.upgrade_note).toContain("1.7.0は2件の既知の脆弱性に該当");
+    expect(res.suggestions[0]!.upgrade_note).toContain("1.7.0 is affected by 2 known vulnerabilities");
   });
 
   it.each([
@@ -123,7 +123,7 @@ describe("checkRecommendedCandidates", () => {
   ])("照会の失敗(%s)でも推奨は出し、failedと注記を付ける(ツール全体をエラーにしない)", async (_label, failure) => {
     const { suggestions } = await check([pkg], { "x@1.5.0": failure as Error | number });
     expect(suggestions[0]).toMatchObject({ recommended_upgrade: "1.5.0", candidate_check: "failed", verification: "verified" });
-    expect(suggestions[0]!.upgrade_note).toContain("照会に失敗");
+    expect(suggestions[0]!.upgrade_note).toContain("check of the recommended version failed");
   });
 
   it("照会回数の上限: 合計を超えたパッケージと、1パッケージの上限で照会していない選び直しはskipped", async () => {

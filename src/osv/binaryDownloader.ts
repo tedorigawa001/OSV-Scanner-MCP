@@ -100,26 +100,26 @@ async function downloadAsset(
     throw new ScanToolError(
       "binary_download_failed",
       isTimeout
-        ? `OSV-Scannerのダウンロードが${Math.round(timeoutMs / 1000)}秒以内に完了しませんでした`
-        : "OSV-Scannerのダウンロードに失敗しました(ネットワークを確認してください)",
+        ? `The OSV-Scanner download did not complete within ${Math.round(timeoutMs / 1000)} seconds`
+        : "The OSV-Scanner download failed (check the network)",
     );
   }
   if (!response.ok) {
     throw new ScanToolError(
       "binary_download_failed",
-      `OSV-Scannerのダウンロードに失敗しました(HTTP ${response.status}): ${url}`,
+      `The OSV-Scanner download failed (HTTP ${response.status}): ${url}`,
     );
   }
   try {
     return await readResponseBytes(response, MAX_BINARY_BYTES, new ScanToolError(
       "binary_download_failed",
-      `ダウンロードサイズが上限(${MAX_BINARY_BYTES}バイト)を超えています`,
+      `The download exceeds the size limit (${MAX_BINARY_BYTES} bytes)`,
     ));
   } catch (error) {
     if (error instanceof ScanToolError) throw error;
     throw new ScanToolError(
       "binary_download_failed",
-      "OSV-Scannerのダウンロード本文を受信できませんでした",
+      "Could not receive the OSV-Scanner download body",
     );
   }
 }
@@ -137,7 +137,7 @@ export async function ensureOsvScannerDownloaded(
   if (assetName === null) {
     throw new ScanToolError(
       "binary_download_failed",
-      `このプラットフォーム(${options.platform ?? process.platform}/${options.arch ?? process.arch})向けのOSV-Scanner公式バイナリが存在しません。手動でインストールし、環境変数OSV_SCANNER_PATHで指定してください`,
+      `There is no official OSV-Scanner binary for this platform (${options.platform ?? process.platform}/${options.arch ?? process.arch}). Install it manually and set the OSV_SCANNER_PATH environment variable`,
     );
   }
   const checksums = options.checksums ?? ASSET_CHECKSUMS;
@@ -145,7 +145,7 @@ export async function ensureOsvScannerDownloaded(
   if (expected === undefined) {
     throw new ScanToolError(
       "binary_download_failed",
-      `${assetName}の埋め込みチェックサムがありません(パッケージの更新が必要です)`,
+      `No embedded checksum for ${assetName} (the package needs to be updated)`,
     );
   }
 
@@ -166,7 +166,7 @@ export async function ensureOsvScannerDownloaded(
   }
 
   const url = `https://github.com/google/osv-scanner/releases/download/v${PINNED_OSV_SCANNER_VERSION}/${assetName}`;
-  console.error(`osv-scanner-mcp: OSV-Scanner v${PINNED_OSV_SCANNER_VERSION} をダウンロード中... (${url})`);
+  console.error(`osv-scanner-mcp: downloading OSV-Scanner v${PINNED_OSV_SCANNER_VERSION}... (${url})`);
   const buffer = await downloadAsset(
     url,
     options.fetchFn ?? fetch,
@@ -177,7 +177,7 @@ export async function ensureOsvScannerDownloaded(
   if (actual !== expected) {
     throw new ScanToolError(
       "binary_checksum_mismatch",
-      `ダウンロードしたOSV-Scannerのチェックサムが一致しません(改ざんまたは破損の可能性)。expected=${expected} actual=${actual}`,
+      `The checksum of the downloaded OSV-Scanner does not match (possible tampering or corruption). expected=${expected} actual=${actual}`,
     );
   }
 
@@ -193,9 +193,9 @@ export async function ensureOsvScannerDownloaded(
     await rm(tempPath, { force: true });
     throw new ScanToolError(
       "binary_download_failed",
-      `OSV-Scannerの配置に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to install OSV-Scanner: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
-  console.error(`osv-scanner-mcp: 検証済みバイナリを配置しました: ${targetPath}`);
+  console.error(`osv-scanner-mcp: installed the verified binary: ${targetPath}`);
   return targetPath;
 }

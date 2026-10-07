@@ -61,7 +61,7 @@ describe("ScanSnapshot", () => {
         projectDir: path.join(base, "root/proj"),
         allowedRootReal: path.join(base, "root"),
       });
-      expect(skipped[0]?.reason).toContain("スキャン範囲の外に出る");
+      expect(skipped[0]?.reason).toContain("leads outside the scan scope");
     } finally {
       await snapshot.cleanup();
     }
@@ -83,7 +83,7 @@ describe("ScanSnapshot", () => {
       expect(result.targets).toHaveLength(1);
       // 親を含めずにスキャンしたことを欠落として返す
       expect(result.incomplete).toEqual([
-        { path: path.join(base, "root/proj/pom.xml"), reason: expect.stringContaining("通常のファイルではありません") },
+        { path: path.join(base, "root/proj/pom.xml"), reason: expect.stringContaining("not a regular file") },
       ]);
     } finally {
       await snapshot.cleanup();
@@ -103,7 +103,7 @@ describe("ScanSnapshot", () => {
       });
       expect(targets).toHaveLength(1);
       expect(skipped).toEqual([]);
-      expect(incomplete).toEqual([{ path: path.join(base, "root/mod/pom.xml"), reason: expect.stringContaining("サイズが上限を超えています") }]);
+      expect(incomplete).toEqual([{ path: path.join(base, "root/mod/pom.xml"), reason: expect.stringContaining("the file exceeds the size limit") }]);
     } finally {
       await snapshot.cleanup();
     }
@@ -134,7 +134,7 @@ describe("ScanSnapshot", () => {
         allowedRootReal: undefined,
       });
       expect(targets).toHaveLength(1);
-      expect(incomplete[0]?.reason).toContain("解釈できない");
+      expect(incomplete[0]?.reason).toContain("cannot be interpreted");
     } finally {
       await snapshot.cleanup();
     }
@@ -215,7 +215,7 @@ describe("親POMの欠落の応答への反映(回帰)", () => {
     const payload = JSON.parse(result.content[0]!.text) as { coverage: { complete: boolean; manifests: unknown[]; skipped_files: { path: string; reason: string }[] } };
     expect(payload.coverage.complete).toBe(false);
     expect(payload.coverage.manifests).toHaveLength(1);
-    expect(payload.coverage.skipped_files).toEqual([{ path: "pom.xml", reason: expect.stringContaining("親POMを含めずにスキャンしました") }]);
+    expect(payload.coverage.skipped_files).toEqual([{ path: "pom.xml", reason: expect.stringContaining("scanned without") }]);
   });
 
   it.each(["scan_project", "scan_java_project"])("%s: 子に依存が無く「パッケージなし」になる場合も、エラーに親POMの欠落を含める", async (tool) => {
@@ -232,7 +232,7 @@ describe("親POMの欠落の応答への反映(回帰)", () => {
     );
     const payload = JSON.parse(result.content[0]!.text) as { error: { kind: string; message: string } };
     expect(payload.error.kind).toBe("no_packages_found");
-    expect(payload.error.message).toContain("pom.xml: 親POM(relativePath: ../pipe)を読めないため");
+    expect(payload.error.message).toContain("pom.xml: The parent POM (relativePath: ../pipe) cannot be read");
   });
 
   it.each(["scan_project", "scan_java_project"])("%s: スキャナーのエラーの詳細に一時ディレクトリのパスを出さず、元のパスに戻す", async (tool) => {
@@ -265,7 +265,7 @@ process.exit(127);`);
     const payload = JSON.parse(result.content[0]!.text) as Record<string, unknown>;
     expect(payload.manifests).toEqual(["pom.xml"]);
     expect("skipped_manifests" in payload).toBe(false);
-    expect(payload.incomplete_manifests).toEqual([{ path: "pom.xml", reason: expect.stringContaining("親POMを含めずにスキャンしました") }]);
+    expect(payload.incomplete_manifests).toEqual([{ path: "pom.xml", reason: expect.stringContaining("scanned without") }]);
     expect(payload.scope_warning).toEqual(expect.stringContaining("incomplete_manifests"));
   });
 });

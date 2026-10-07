@@ -109,7 +109,7 @@ describe("handleScanProject", () => {
     expect(await readFile(copiesFile, "utf8")).toBe("requests==2.19.0\n");
     expect(p.coverage.complete).toBe(false);
     expect(p.coverage.unscannable_requirements).toEqual([
-      expect.objectContaining({ text: "- r ../outside.txt", reason: expect.stringContaining("外") }),
+      expect.objectContaining({ text: "- r ../outside.txt", reason: expect.stringContaining("outside") }),
     ]);
   });
 
@@ -161,7 +161,7 @@ describe("handleScanProject", () => {
     const { bin } = await fakeScanner({ results: [] });
     const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin, noRemoteResolution: false }));
     expect(p.coverage.complete).toBe(false);
-    expect(p.coverage.warning).toContain("検出0件でも");
+    expect(p.coverage.warning).toContain("findings");
     expect(p.coverage.lockfile_missing.map((m: any) => m.path)).toEqual(["svc/package.json"]);
     expect(p.coverage.unpinned_requirements.map((i: any) => `${i.file}:${i.line}:${i.name}:${i.kind}`)).toEqual([
       "py/requirements.txt:1:Jinja2:lower_bound",
@@ -248,7 +248,7 @@ describe("handleScanProject: 親POMが許可ルートの外を参照するpom.xm
     ));
     expect(p.coverage.complete).toBe(false);
     expect(p.coverage.manifests.map((m: any) => m.path)).toEqual(["package-lock.json"]);
-    expect(p.coverage.skipped_files).toEqual([{ path: "pom.xml", reason: expect.stringContaining("許可ルート") }]);
+    expect(p.coverage.skipped_files).toEqual([{ path: "pom.xml", reason: expect.stringContaining("allowed root") }]);
     expect((await readFile(argsFile, "utf8")).includes("pom.xml:")).toBe(false);
   });
 });

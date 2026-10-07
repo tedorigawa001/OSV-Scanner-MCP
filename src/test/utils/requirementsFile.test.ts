@@ -101,8 +101,8 @@ describe("analyzeRequirementsFile: 行の分類(osv-scanner v2.4.0の実機確�
     const result = await analyzeIn(dir);
     expect(result.entries).toEqual(["flask==1.0"]);
     expect(result.references.map((r) => [r.text, r.reason])).toEqual([
-      ["--unknown-option x", "解釈できないオプションです"],
-      ["bad==1.0$x", "解釈できない版の指定です"],
+      ["--unknown-option x", "The option cannot be interpreted"],
+      ["bad==1.0$x", "The version specifier cannot be interpreted"],
     ]);
   });
 
@@ -143,13 +143,13 @@ describe("analyzeRequirementsFile: 取り込み", () => {
     const result = await analyzeIn(projectDir);
     expect(result.entries).toEqual(["flask==1.0"]);
     expect(result.references).toHaveLength(1);
-    expect(result.references[0]!.reason).toContain("外");
+    expect(result.references[0]!.reason).toContain("outside");
   });
 
   it.each([
     { label: "URL", content: "-r https://example.invalid/reqs.txt\n", reason: "URL" },
-    { label: "存在しない取り込み先", content: "-r missing.txt\n", reason: "存在しません" },
-    { label: "制約ファイル", content: "-c constraints.txt\n", reason: "制約ファイル" },
+    { label: "存在しない取り込み先", content: "-r missing.txt\n", reason: "does not exist" },
+    { label: "制約ファイル", content: "-c constraints.txt\n", reason: "Constraint files" },
   ])("$label は展開せず理由付きで報告する", async ({ content, reason }) => {
     const dir = await makeProject({ "requirements.txt": content, "constraints.txt": "flask==1.0\n" });
     const result = await analyzeIn(dir);
@@ -163,7 +163,7 @@ describe("analyzeRequirementsFile: 取り込み", () => {
     await symlink(path.join(parent, "outside.txt"), path.join(projectDir, "link.txt"));
     const result = await analyzeIn(projectDir);
     expect(result.entries).toEqual([]);
-    expect(result.references[0]!.reason).toContain("外");
+    expect(result.references[0]!.reason).toContain("outside");
   });
 
   it("プロジェクト内を指す絶対パスの取り込みは展開する", async () => {
@@ -184,7 +184,7 @@ describe("analyzeRequirementsFile: 取り込み", () => {
     const dir = await makeProject(files);
     const result = await analyzeIn(dir);
     expect(result.entries).toEqual([]);
-    expect(result.references.some((r) => r.reason.includes("深さ"))).toBe(true);
+    expect(result.references.some((r) => r.reason.includes("include depth"))).toBe(true);
   });
 
   it("元ファイルのサイズが上限を超える場合はファイルごと外す", async () => {
@@ -208,7 +208,7 @@ describe("analyzeRequirementsFile: 読み込みの共有と上限(回帰)", () =
     expect((await analyzeRequirementsFile(path.join(dir, "a.txt"), dir, context)).ok).toBe(true);
     const second = await analyzeRequirementsFile(path.join(dir, "b.txt"), dir, context);
     expect(second.ok).toBe(false);
-    expect(!second.ok && second.reason).toContain("上限");
+    expect(!second.ok && second.reason).toContain("limit");
   });
 
   it("回帰: 取り込み先が名前付きパイプでも処理が止まらない", async () => {
@@ -219,6 +219,6 @@ describe("analyzeRequirementsFile: 読み込みの共有と上限(回帰)", () =
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error("処理が止まった")), 3000)),
     ]);
     expect(ok(result).entries).toEqual(["flask==1.0"]);
-    expect(ok(result).references[0]!.reason).toContain("通常のファイルではありません");
+    expect(ok(result).references[0]!.reason).toContain("Not a regular file");
   });
 });

@@ -34,29 +34,29 @@ export function permissionModelWarnings(
   const inside = (dir: string) => path.join(dir, "x"); // ディレクトリ配下の読み書きの許可を確かめる
   const warnings: string[] = [];
   if (!permission.has("child")) {
-    warnings.push("子プロセスの起動が許可されていません。osv-scannerを実行できません(--allow-child-process)");
+    warnings.push("Starting child processes is not allowed, so osv-scanner cannot run (--allow-child-process)");
   }
   const tmpDirs = [...new Set([input.tmpDir, input.tmpDirReal])];
   const unreadableTmp = tmpDirs.filter((dir) => !permission.has("fs.read", inside(dir)));
   if (unreadableTmp.length > 0) {
     warnings.push(
-      `一時ディレクトリの読み取りが許可されていません: ${unreadableTmp.join(", ")}` +
-        "(シンボリックリンクの解決前と解決後の両方のパスに--allow-fs-readが必要です)",
+      `Reading the temporary directory is not allowed: ${unreadableTmp.join(", ")} ` +
+        "(--allow-fs-read is needed for both the symlinked and the resolved path)",
     );
   }
   if (!permission.has("fs.write", inside(input.tmpDirReal))) {
-    warnings.push(`一時ディレクトリへの書き込みが許可されていません: ${input.tmpDirReal}(--allow-fs-write)`);
+    warnings.push(`Writing to the temporary directory is not allowed: ${input.tmpDirReal} (--allow-fs-write)`);
   }
   if (input.allowedRoot !== undefined && !permission.has("fs.read", inside(input.allowedRoot))) {
-    warnings.push(`OSV_MCP_ALLOWED_ROOTの読み取りが許可されていません: ${input.allowedRoot}(--allow-fs-read)`);
+    warnings.push(`Reading OSV_MCP_ALLOWED_ROOT is not allowed: ${input.allowedRoot} (--allow-fs-read)`);
   }
   if (input.scannerPath !== undefined && !permission.has("fs.read", input.scannerPath)) {
-    warnings.push(`OSV_SCANNER_PATHの読み取りが許可されていません: ${input.scannerPath}(--allow-fs-read)`);
+    warnings.push(`Reading OSV_SCANNER_PATH is not allowed: ${input.scannerPath} (--allow-fs-read)`);
   }
   if (input.cacheDir !== undefined && !permission.has("fs.write", inside(input.cacheDir))) {
     warnings.push(
-      `osv-scannerのキャッシュへの書き込みが許可されていません: ${input.cacheDir}` +
-        "(自動ダウンロードを使う場合は--allow-fs-writeと--allow-fs-read、使わない場合はOSV_SCANNER_PATHを指定)",
+      `Writing to the osv-scanner cache is not allowed: ${input.cacheDir} ` +
+        "(to use the automatic download, add --allow-fs-write and --allow-fs-read; otherwise set OSV_SCANNER_PATH)",
     );
   }
   return warnings;

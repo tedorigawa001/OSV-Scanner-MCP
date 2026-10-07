@@ -39,7 +39,7 @@ export function validateVulnerabilityId(id: string): string {
   if (!OSV_ID_PATTERN.test(trimmed)) {
     throw new ScanToolError(
       "invalid_vulnerability_id",
-      "脆弱性IDの形式が不正です。GHSA-xxxx-xxxx-xxxx または CVE-YYYY-NNNN 形式のIDを指定してください",
+      "Invalid vulnerability ID. Specify an ID such as GHSA-xxxx-xxxx-xxxx or CVE-YYYY-NNNN",
     );
   }
   return trimmed;
@@ -68,25 +68,25 @@ export async function fetchOsvRecord(
     throw new ScanToolError(
       "api_request_failed",
       isTimeout
-        ? `OSV APIへのリクエストが${Math.round(timeoutMs / 1000)}秒以内に完了しませんでした`
-        : "OSV APIへの接続に失敗しました(ネットワークを確認してください)",
+        ? `The OSV API request did not complete within ${Math.round(timeoutMs / 1000)} seconds`
+        : "Could not connect to the OSV API (check the network)",
     );
   }
 
   if (response.status === 404) {
     // OSVの正規IDはGHSA等であり、CVE-IDはエイリアス解決できない場合がある
     const hint = validatedId.toUpperCase().startsWith("CVE-")
-      ? "。CVE-IDで見つからない場合は、スキャン結果のid(GHSA-ID)で照会してください"
+      ? ". If a CVE ID is not found, query with the id (GHSA ID) from the scan results"
       : "";
     throw new ScanToolError(
       "vulnerability_not_found",
-      `指定されたIDの脆弱性がOSVデータベースに見つかりません: ${validatedId}${hint}`,
+      `No vulnerability with this ID was found in the OSV database: ${validatedId}${hint}`,
     );
   }
   if (!response.ok) {
     throw new ScanToolError(
       "api_request_failed",
-      `OSV APIがエラーを返しました(HTTP ${response.status})`,
+      `The OSV API returned an error (HTTP ${response.status})`,
     );
   }
 
@@ -94,14 +94,14 @@ export async function fetchOsvRecord(
   try {
     const bytes = await readResponseBytes(response, maxBytes, new ScanToolError(
       "output_too_large",
-      `OSV APIのレスポンスがサイズ上限(${maxBytes}バイト)を超えました`,
+      `The OSV API response exceeded the size limit (${maxBytes} bytes)`,
     ));
     body = new TextDecoder().decode(bytes);
   } catch (error) {
     if (error instanceof ScanToolError) throw error;
     throw new ScanToolError(
       "api_request_failed",
-      "OSV APIのレスポンス本文を受信できませんでした",
+      "Could not receive the OSV API response body",
     );
   }
 
@@ -110,7 +110,7 @@ export async function fetchOsvRecord(
   } catch {
     throw new ScanToolError(
       "api_request_failed",
-      "OSV APIのレスポンスをJSONとして解釈できませんでした",
+      "Could not parse the OSV API response as JSON",
     );
   }
 }
@@ -123,7 +123,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 function malformed(): ScanToolError {
-  return new ScanToolError("api_request_failed", "OSV APIのレスポンスの形式が想定と異なります");
+  return new ScanToolError("api_request_failed", "The OSV API response has an unexpected format");
 }
 
 async function readJsonBody(response: Response, maxBytes: number): Promise<unknown> {
@@ -131,17 +131,17 @@ async function readJsonBody(response: Response, maxBytes: number): Promise<unkno
   try {
     const bytes = await readResponseBytes(response, maxBytes, new ScanToolError(
       "output_too_large",
-      `OSV APIのレスポンスがサイズ上限(${maxBytes}バイト)を超えました`,
+      `The OSV API response exceeded the size limit (${maxBytes} bytes)`,
     ));
     body = new TextDecoder().decode(bytes);
   } catch (error) {
     if (error instanceof ScanToolError) throw error;
-    throw new ScanToolError("api_request_failed", "OSV APIのレスポンス本文を受信できませんでした");
+    throw new ScanToolError("api_request_failed", "Could not receive the OSV API response body");
   }
   try {
     return JSON.parse(body);
   } catch {
-    throw new ScanToolError("api_request_failed", "OSV APIのレスポンスをJSONとして解釈できませんでした");
+    throw new ScanToolError("api_request_failed", "Could not parse the OSV API response as JSON");
   }
 }
 
@@ -178,12 +178,12 @@ export async function queryOsvPackageVersion(
       throw new ScanToolError(
         "api_request_failed",
         isTimeout
-          ? `OSV APIへのリクエストが${Math.round(timeoutMs / 1000)}秒以内に完了しませんでした`
-          : "OSV APIへの接続に失敗しました(ネットワークを確認してください)",
+          ? `The OSV API request did not complete within ${Math.round(timeoutMs / 1000)} seconds`
+          : "Could not connect to the OSV API (check the network)",
       );
     }
     if (!response.ok) {
-      throw new ScanToolError("api_request_failed", `OSV APIがエラーを返しました(HTTP ${response.status})`);
+      throw new ScanToolError("api_request_failed", `The OSV API returned an error (HTTP ${response.status})`);
     }
     // 不正な応答を「該当なし」と読まない: ルート・各レコード・ページトークンの型を検証し、違えば失敗とする
     const body = await readJsonBody(response, maxBytes);
@@ -194,5 +194,5 @@ export async function queryOsvPackageVersion(
     if (body.next_page_token === undefined || body.next_page_token === "") return vulns;
     pageToken = body.next_page_token;
   }
-  throw new ScanToolError("api_request_failed", `OSV APIの応答が${MAX_QUERY_PAGES}ページを超えました`);
+  throw new ScanToolError("api_request_failed", `The OSV API response exceeded ${MAX_QUERY_PAGES} pages`);
 }

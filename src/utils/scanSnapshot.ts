@@ -20,7 +20,7 @@ import type { ManifestTarget } from "./manifestFormats.js";
 import { decodePomBytes, parentRelativePath } from "./pomParent.js";
 import { SNAPSHOT_DIR_PREFIX, trackTempDir } from "./processCleanup.js";
 import { isInsideDir } from "./projectWalk.js";
-import { copyRegularFile, type SafeReadError } from "./safeRead.js";
+import { capitalizeReason, copyRegularFile, type SafeReadError } from "./safeRead.js";
 
 const DEFAULT_MAX_TOTAL_BYTES = 2 * 1024 * 1024 * 1024;
 const MAX_POM_BYTES = 10 * 1024 * 1024;
@@ -81,7 +81,7 @@ export class ScanSnapshot {
   restorePaths(text: string): string {
     let restored = text;
     for (const [mirroredRoot, root] of this.mirroredRoots) restored = restored.split(mirroredRoot + path.sep).join(root);
-    return restored.split(this.dir).join("<一時コピー>");
+    return restored.split(this.dir).join("<temporary copy>");
   }
 
   /** スキャナーのエラーに一時ディレクトリのパスを出さない(応答のパスは常に元のファイルを指す) */
@@ -110,7 +110,7 @@ export class ScanSnapshot {
       if (result.failure === "too_large" && remaining < maxBytes) {
         throw new ScanToolError(
           "scan_input_too_large",
-          `スキャン対象ファイルの合計サイズが上限(${this.maxTotalBytes}バイト)を超えるため、スキャンを中止しました。対象を絞って再実行してください`,
+          `The scan was stopped because the total size of the files to scan exceeds the limit (${this.maxTotalBytes} bytes). Narrow the target and try again`,
         );
       }
       return result;
@@ -145,8 +145,8 @@ export class ScanSnapshot {
 }
 
 const UNPARSEABLE =
-  "親POMの指定を確実に解釈できないため(親要素の重複、CDATA・DOCTYPE、プロパティ参照、UTF-8以外の文字コード等)、" +
-  "許可ルート内か確認できずスキャン対象から外しました";
+  "The parent POM reference cannot be interpreted with certainty (duplicate parent elements, CDATA, DOCTYPE, property references, an encoding other than UTF-8, and so on), " +
+  "so it could not be confirmed to be inside the allowed root and the file was excluded from the scan";
 
 interface PomContext {
   projectDir: string;
@@ -165,7 +165,7 @@ async function snapshotPom(
   context: PomContext,
 ): Promise<{ ok: true; path: string; incomplete?: string } | { ok: false; reason: string; kind: SnapshotSkip["kind"] }> {
   const copied = await snapshot.copy(pomPath, context.projectDir, MAX_POM_BYTES);
-  if (!copied.ok) return { ok: false, reason: copied.message, kind: "unreadable" };
+  if (!copied.ok) return { ok: false, reason: capitalizeReason(copied.message), kind: "unreadable" };
   const first = { ok: true as const, path: copied.path };
   const partial = (reason: string) => ({ ...first, incomplete: reason });
   const restricted = context.allowedRootReal !== undefined;
@@ -178,7 +178,7 @@ async function snapshotPom(
     if (relativePath === undefined) {
       return restricted
         ? { ok: false, reason: UNPARSEABLE, kind: "unreadable" }
-        : partial("親POMの指定を確実に解釈できないため、親POMを含めずにスキャンしました。親から継承する依存が結果に含まれない可能性があります");
+        : partial("The parent POM reference cannot be interpreted with certainty, so the file was scanned without its parent POM. Dependencies inherited from the parent may be missing from the results");
     }
 
     // Goのfilepath.Joinと同じ規則で結合する(絶対パスも連結し、..はルートで止まる)
@@ -186,7 +186,7 @@ async function snapshotPom(
     if (!isInsideDir(snapshot.treeRoot, inCopy)) {
       // ..を重ねるとスナップショットの外(本物のファイルシステム)に届くため、コピーではなく元のファイルが読まれる
       return restricted
-        ? { ok: false, reason: `親POM(relativePath: ${relativePath})の参照がスキャン範囲の外に出るため、スキャン対象から外しました`, kind: "outside_allowed_root" }
+        ? { ok: false, reason: `The parent POM reference (relativePath: ${relativePath}) leads outside the scan scope, so the file was excluded from the scan`, kind: "outside_allowed_root" }
         : first;
     }
     let candidate = path.join(path.dirname(current), relativePath);
@@ -196,7 +196,7 @@ async function snapshotPom(
       // 参照先が無い: 元の配置でもosv-scannerは親を読まないため、欠落ではない
       const code = (error as NodeJS.ErrnoException).code;
       if (code === "ENOENT" || code === "ENOTDIR") return first;
-      return partial(`親POM(relativePath: ${relativePath})を確認できないため、親POMを含めずにスキャンしました。親から継承する依存が結果に含まれない可能性があります`);
+      return partial(`The parent POM (relativePath: ${relativePath}) could not be checked, so the file was scanned without it. Dependencies inherited from the parent may be missing from the results`);
     }
     const parent = await snapshot.copy(candidate, context.allowedRootReal, MAX_POM_BYTES);
     if (!parent.ok) {
@@ -204,24 +204,24 @@ async function snapshotPom(
         return {
           ok: false,
           reason:
-            `親POM(relativePath: ${relativePath})が許可ルート(OSV_MCP_ALLOWED_ROOT)の外を参照しているため、スキャン対象から外しました` +
-            "(親のGAVが一致しなければosv-scannerは読みませんが、境界の外のため確認せず除外します)",
+            `The parent POM (relativePath: ${relativePath}) is outside the allowed root (OSV_MCP_ALLOWED_ROOT), so the file was excluded from the scan ` +
+            "(osv-scanner does not read a parent whose GAV does not match, but files outside the boundary are excluded without checking)",
           kind: "outside_allowed_root",
         };
       }
-      if (parent.failure === "changed") return { ok: false, reason: `親POMの${parent.message}`, kind: "unreadable" };
+      if (parent.failure === "changed") return { ok: false, reason: `Parent POM: ${parent.message}`, kind: "unreadable" };
       // 読めない・通常のファイルでない・サイズ超過等: コピーしないため、osv-scannerも読まない
       return partial(
-        `親POM(relativePath: ${relativePath})を読めないため(${parent.message})、親POMを含めずにスキャンしました。` +
-          "親から継承する依存が結果に含まれない可能性があります(親のGAVが一致しない場合はもともと読まれません)",
+        `The parent POM (relativePath: ${relativePath}) cannot be read (${parent.message}), so the file was scanned without it. ` +
+          "Dependencies inherited from the parent may be missing from the results (a parent whose GAV does not match is not read anyway)",
       );
     }
     current = candidate;
     currentCopy = parent.path;
   }
   return restricted
-    ? { ok: false, reason: `親POMの連鎖が上限(${MAX_PARENT_DEPTH}段)を超えています`, kind: "unreadable" }
-    : partial(`親POMの連鎖が上限(${MAX_PARENT_DEPTH}段)を超えるため、それより上の親POMを含めずにスキャンしました`);
+    ? { ok: false, reason: `The parent POM chain exceeds the limit (${MAX_PARENT_DEPTH} levels)`, kind: "unreadable" }
+    : partial(`The parent POM chain exceeds the limit (${MAX_PARENT_DEPTH} levels), so parents beyond it were not included in the scan`);
 }
 
 /**
@@ -249,7 +249,7 @@ export async function snapshotManifests(
     }
     const result = await snapshot.copy(target.path, context.projectDir);
     if (result.ok) copies.push({ path: result.path, format: target.format });
-    else skipped.push({ path: target.path, reason: result.message, kind: "unreadable" });
+    else skipped.push({ path: target.path, reason: capitalizeReason(result.message), kind: "unreadable" });
   }
   return { targets: copies, skipped, incomplete };
 }

@@ -112,7 +112,7 @@ describe("handleSuggestFix: 推移的依存の解決状態の伝播", () => {
     const payload = parsePayload(result);
     const resolution = payload.dependency_resolution as { transitive_resolution: string; warning?: string };
     expect(resolution.transitive_resolution).toBe("disabled");
-    expect(resolution.warning).toContain("推移的依存の脆弱性は含まれません");
+    expect(resolution.warning).toContain("vulnerabilities in the transitive dependencies");
     expect((await readFile(argsFile, "utf8")).split("\n")).toContain("--no-resolve");
     const keys = Object.keys(payload);
     expect(keys.indexOf("dependency_resolution")).toBeLessThan(keys.indexOf("suggestions"));
@@ -131,7 +131,7 @@ describe("handleSuggestFix: 推移的依存の解決状態の伝播", () => {
       expect([...(payload.manifests as string[])].sort()).toEqual(["a/b/c/pom.xml", "gradle.lockfile"]);
       const resolution = payload.dependency_resolution as { transitive_resolution: string; warning?: string };
       expect(resolution.transitive_resolution).toBe("disabled");
-      expect(resolution.warning).toContain("推移的依存の脆弱性は含まれません");
+      expect(resolution.warning).toContain("vulnerabilities in the transitive dependencies");
     } finally {
       await rm(mixedDir, { recursive: true, force: true });
     }
@@ -227,7 +227,7 @@ describe("handleSuggestFix: PyPI(v0.6.0)", () => {
         .map((s) => [s.package, s]));
       expect(byName.jinja2!.recommended_upgrade).toBe("2.11.3");
       expect(byName.jinja2!.version_is_lower_bound).toBe(true);
-      expect(byName.jinja2!.upgrade_note).toContain("下限");
+      expect(byName.jinja2!.upgrade_note).toContain("lower bound");
       expect("version_is_lower_bound" in byName.requests!).toBe(false);
     } finally {
       await rm(dir, { recursive: true, force: true });

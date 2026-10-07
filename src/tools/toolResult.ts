@@ -46,7 +46,7 @@ export function errorResult(error: unknown): ToolResult {
   if (isAccessDenied(error)) return errorResult(permissionDeniedError(error));
   // 想定外の例外はスタックトレース等の内部情報をクライアントへ返さない
   return jsonResult(
-    { error: { kind: "internal_error", message: "予期しないエラーが発生しました" } },
+    { error: { kind: "internal_error", message: "An unexpected error occurred" } },
     true,
   );
 }

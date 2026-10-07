@@ -35,8 +35,8 @@ export function allowedRootStartupError(
   if (!isTruthy(env[REQUIRE_ALLOWED_ROOT_ENV])) return null;
   if (allowedRootFromEnv(env) !== undefined) return null;
   return (
-    `${REQUIRE_ALLOWED_ROOT_ENV}が有効ですが、${ALLOWED_ROOT_ENV}が未設定のため起動を中止します。` +
-    `スキャンを許可するルートディレクトリを${ALLOWED_ROOT_ENV}に設定してください`
+    `${REQUIRE_ALLOWED_ROOT_ENV} is enabled but ${ALLOWED_ROOT_ENV} is not set, so the server will not start. ` +
+    `Set ${ALLOWED_ROOT_ENV} to the root directory that may be scanned`
   );
 }
 
@@ -49,8 +49,8 @@ export function allowedRootStartupWarning(
 ): string | null {
   if (allowedRootFromEnv(env) !== undefined) return null;
   return (
-    `${ALLOWED_ROOT_ENV}が未設定のため、任意の絶対パスをスキャンできる状態です。` +
-    `プロジェクト置き場のルートを${ALLOWED_ROOT_ENV}に設定することを推奨します` +
-    `(未設定時に起動を拒否するには${REQUIRE_ALLOWED_ROOT_ENV}=1)`
+    `${ALLOWED_ROOT_ENV} is not set, so any absolute path can be scanned. ` +
+    `Setting ${ALLOWED_ROOT_ENV} to the root of your projects is recommended ` +
+    `(set ${REQUIRE_ALLOWED_ROOT_ENV}=1 to refuse to start when it is not set)`
   );
 }

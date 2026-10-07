@@ -132,8 +132,8 @@ function withheld(suggestion: PackageUpgradeSuggestion, candidate: string): Pack
     recommended_upgrade: null,
     upgrade_tier: null,
     upgrade_note:
-      `候補${candidate}は、スキャンした脆弱性の範囲外と判定しましたが、OSVはその脆弱性に該当すると返しました(範囲情報の食い違い)。` +
-      "安全と確認できる候補がないため推奨を保留します",
+      `Candidate ${candidate} was evaluated as outside the ranges of the scanned vulnerabilities, but OSV reports that it is affected by them (the range data disagree). ` +
+      "No candidate could be confirmed safe, so the recommendation is withheld",
     per_cve_detail: suggestion.per_cve_detail.map((detail) => ({ ...detail, recommended_status: "not_evaluated" as const })),
     verification: "no_verified_candidate",
   };
@@ -143,30 +143,30 @@ function applyResult(result: CheckResult): PackageUpgradeSuggestion {
   const { suggestion, status, knownVulnerabilities, rejected } = result;
   const notes: string[] = [];
   if (rejected.length > 0) {
-    const found = rejected.map((r) => `${r.version}は${r.count}件の既知の脆弱性に該当`).join("、");
+    const found = rejected.map((r) => `${r.version} is affected by ${r.count} known ${r.count === 1 ? "vulnerability" : "vulnerabilities"}`).join(", ");
     notes.push(
       suggestion.recommended_upgrade !== null
-        ? `推奨先をOSVに照会し、${found}するため、${suggestion.recommended_upgrade}を推奨しています(現在の版には該当しない脆弱性を含む)`
-        : `推奨先をOSVに照会し、${found}するため候補から外しました`,
+        ? `The recommended version was checked against OSV: ${found}, so ${suggestion.recommended_upgrade} is recommended instead (including vulnerabilities that do not affect the current version)`
+        : `The recommended version was checked against OSV: ${found}, so it was dropped from the candidates`,
     );
   }
   if (status === "conflict") {
     // 理由はwithheldの注記に含めた。推奨しかけた版で該当と返った脆弱性はrecommended_known_vulnerabilitiesではなく注記に示す
-    notes.push(`OSVが該当と返した脆弱性: ${knownVulnerabilities!.join("、")}`);
+    notes.push(`Vulnerabilities reported by OSV: ${knownVulnerabilities!.join(", ")}`);
   } else if (status === "has_known_vulnerabilities") {
     notes.push(
-      `推奨先の${suggestion.recommended_upgrade}は、OSVで${knownVulnerabilities!.length}件の既知の脆弱性(recommended_known_vulnerabilities)に該当します。` +
-        "これらを避けられる修正版の候補が見つかりませんでした",
+      `According to OSV, the recommended version ${suggestion.recommended_upgrade} is affected by ${knownVulnerabilities!.length} known ${knownVulnerabilities!.length === 1 ? "vulnerability" : "vulnerabilities"} (recommended_known_vulnerabilities). ` +
+        "No fixed version that avoids them was found",
     );
   } else if (status === "failed") {
-    notes.push("推奨先のOSV照会に失敗したため、推奨先に現在の版には該当しない既知の脆弱性がないことは確認できていません");
+    notes.push("The OSV check of the recommended version failed, so it is not confirmed that the recommended version is free of known vulnerabilities that do not affect the current version");
   } else if (status === "skipped") {
-    notes.push("照会回数の上限のため、推奨先のOSV照会を行っていません(推奨先の既知の脆弱性は未確認)");
+    notes.push("The query limit was reached, so the recommended version was not checked against OSV (its known vulnerabilities are unconfirmed)");
   }
   const { per_cve_detail, verification, ...rest } = suggestion;
   return {
     ...rest,
-    upgrade_note: [suggestion.upgrade_note, ...notes].join("。"),
+    upgrade_note: [suggestion.upgrade_note, ...notes].map((note) => note.replace(/\.$/, "")).join(". "),
     candidate_check: status,
     ...(status === "has_known_vulnerabilities" ? { recommended_known_vulnerabilities: knownVulnerabilities!.map(sanitizeExternalText) } : {}),
     per_cve_detail,

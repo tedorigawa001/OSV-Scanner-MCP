@@ -186,7 +186,7 @@ describe("ensureOsvScannerDownloaded", () => {
         ),
         "binary_checksum_mismatch",
       );
-      expect(error.message).toContain("改ざんまたは破損");
+      expect(error.message).toContain("possible tampering or corruption");
       // 検証に失敗したバイナリはキャッシュに残らない
       const target = path.join(
         isolated,

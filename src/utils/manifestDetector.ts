@@ -68,14 +68,14 @@ const LOCK_GROUP_ECOSYSTEM: Record<LockGroup, Ecosystem> = { npm: "npm", pypi: "
 
 const LOCKFILE_HINTS: Record<LockGroup, string> = {
   npm:
-    "lockfileがありません。信頼できる環境で `npm install --package-lock-only --ignore-scripts`" +
-    "(yarn / pnpm / bunの場合は各ツールのlockfile生成)を実行してから再スキャンしてください",
+    "No lockfile. Run `npm install --package-lock-only --ignore-scripts` in a trusted environment " +
+    "(for yarn / pnpm / bun, generate the lockfile with that tool), then scan again",
   pypi:
-    "lockfile(poetry.lock / uv.lock / Pipfile.lock / pdm.lock)またはバージョンを固定したrequirements.txtがありません。" +
-    "信頼できる環境で生成してから再スキャンしてください(生成時にビルドスクリプトが実行される場合があります)",
+    "No lockfile (poetry.lock / uv.lock / Pipfile.lock / pdm.lock) or requirements.txt with pinned versions. " +
+    "Generate one in a trusted environment, then scan again (generating it may run build scripts)",
   gradle:
-    "gradle.lockfileがありません。信頼できる環境で `./gradlew dependencies --write-locks` を実行してから再スキャンしてください" +
-    "(依存ロック未設定の場合は build.gradle に dependencyLocking { lockAllConfigurations() } の追加が必要です)",
+    "No gradle.lockfile. Run `./gradlew dependencies --write-locks` in a trusted environment, then scan again " +
+    "(if dependency locking is not configured, add dependencyLocking { lockAllConfigurations() } to build.gradle)",
 };
 
 const SKIPPED_DIRS = new Set([
@@ -241,11 +241,11 @@ async function findLockfileMissing(
     const lockfiles = candidates.map((m) => m.path).join(", ");
     missing.push(
       confirmedAbsent
-        ? { ...base, status: "missing", hint: `上位のlockfile(${lockfiles})には収録されていません。${LOCKFILE_HINTS[marker.group]}` }
+        ? { ...base, status: "missing", hint: `Not included in the lockfile in a parent directory (${lockfiles}). ${LOCKFILE_HINTS[marker.group]}` }
         : {
             ...base,
             status: "unconfirmed",
-            hint: `上位のlockfile(${lockfiles})に収録されているか確認できません。workspaceのメンバーでない場合は、${LOCKFILE_HINTS[marker.group]}`,
+            hint: `Cannot confirm that it is included in the lockfile in a parent directory (${lockfiles}). If it is not a workspace member: ${LOCKFILE_HINTS[marker.group]}`,
           },
     );
   }
@@ -295,7 +295,7 @@ async function finalize(
     ];
     throw new ScanToolError(
       "no_manifest_found",
-      `スキャンできるlockfile・マニフェストが見つかりません: ${projectDir}` +
+      `No lockfile or manifest that can be scanned was found: ${projectDir}` +
         (details.length > 0 ? `(${details.join(" / ")})` : ""),
     );
   }
@@ -308,7 +308,7 @@ async function finalize(
  */
 export async function detectProject(inputPath: string, options: DetectProjectOptions = {}): Promise<DetectedProject> {
   if (typeof inputPath !== "string" || inputPath.trim() === "") {
-    throw new ScanToolError("project_not_found", "スキャン対象のパスが指定されていません");
+    throw new ScanToolError("project_not_found", "No path to scan was given");
   }
   const resolved = await resolveExistingPath(inputPath);
   const stats = await stat(resolved);
@@ -323,7 +323,7 @@ export async function detectProject(inputPath: string, options: DetectProjectOpt
   } else {
     throw new ScanToolError(
       "project_not_found",
-      `指定されたパスはディレクトリでも対応するlockfile・マニフェストでもありません: ${inputPath}`,
+      `The path is neither a directory nor a supported lockfile or manifest: ${inputPath}`,
     );
   }
   const allowedRootReal = options.allowedRoot !== undefined ? await resolveExistingPath(options.allowedRoot) : undefined;
