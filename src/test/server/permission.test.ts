@@ -93,7 +93,13 @@ const allow = () => [
   "--allow-child-process",
 ];
 
-describe("Nodeの権限モデル(--permission)で起動したサーバー", () => {
+/**
+ * `--permission`はNode 22.13・23.5以降のフラグ。Node 20は実験的な`--experimental-permission`で挙動も異なるため、
+ * このE2Eは`--permission`を持つNodeでだけ行う(CIのNode 20で「bad option: --permission」により失敗した)
+ */
+const supportsPermission = process.allowedNodeEnvironmentFlags.has("--permission");
+
+describe.skipIf(!supportsPermission)("Nodeの権限モデル(--permission)で起動したサーバー", () => {
   it("許可した範囲のスキャンはスナップショット方式のまま動き、一時ディレクトリを残さない", async () => {
     const { payload } = await scanUnderPermission(project, allow());
     expect(payload.error).toBeUndefined();
