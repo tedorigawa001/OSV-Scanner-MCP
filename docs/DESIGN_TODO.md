@@ -341,6 +341,88 @@ Node側で各行を分類してから渡す(pipは使わない。サイズ上限
 - 取り込みの検証で外したrequirements.txtの、取り込み以外の行をスキャンすべきか(部分スキャンを許すか)
 - `--lockfile`で個別に渡したpom.xmlが、親POMやモジュールを`-r`の場合と同じく解決するか(マルチモジュールの実プロジェクトで確認)
 
+## suggest_fix npm/Go対応(v0.5.0)詳細設計メモ(2026-10-07)
+
+### 実データの調査結果(2026-10-07、api.osv.dev)
+
+利用者の多いnpm 43パッケージ(脆弱性550件)とGo 27モジュール(947件)のOSVレコードを取得し、対象パッケージの`affected`エントリを集計した。
+
+| 項目 | npm | Go |
+|---|---|---|
+| 範囲の型 | SEMVER 877 / ECOSYSTEM 1 / 範囲なし 1 | SEMVER 1166 / ECOSYSTEM 6 |
+| GIT型 | 0 | 0 |
+| `last_affected` | 18 | 24 |
+| 同じパッケージに複数の`affected`エントリ | 186 | 118 |
+| プレリリースの修正版(`fixed`) | 16(`5.0.0-beta.3`、`15.6.0-canary.61`等) | 118(ほぼ疑似バージョン `0.0.0-20180925071336-cf3bd585ca2a`) |
+| ビルドメタデータ | 0 | 34(`20.10.14+incompatible`) |
+| SemVerとして解釈できない値 | 1(next: `introduced: "13.0"`) | 7(docker/dockerのGHSA: `19.03.9`、`17.06.0-ce`) |
+
+結論:
+- 比較器はSemantic Versioning 2.0.0の優先順位(ビルドメタデータは無視)で足りる。npm・GoともECOSYSTEM型の順序もSemVerと同じため、両方の型を受け付ける
+- GIT型は対象のエコシステムに現れないため、無視の規則はv0.6.0(PyPI)で扱う。現れた場合は従来どおり情報不足とする
+- SemVerとして解釈できない値を含むレコードは情報不足として扱う(推奨を保留する安全側)。docker/dockerはGO-のレコードが正しくてもGHSA側の`19.03.9`で保留になる。既知の制限として記録し、別名レコードの選び方は実例が増えてから検討する
+- プレリリース・疑似バージョンの修正版が候補に普通に混じる。そのまま「最小の検証済み候補」を選ぶとcanary版を推奨してしまう
+
+### 実装中の不具合(公開中のv0.4.0・v0.4.1)
+
+`scan_project`の`fixed_versions`がnpm・Go・PyPIで常に空になる。`extractFixedVersions`がMavenのECOSYSTEM型だけを集めているため(Javaのみの時代の名残)。READMEは「空配列は修正版が存在しないことを意味する」と説明しているため、lodash 4.17.20(4.17.21で修正)を「修正版なし」と読ませてしまう(実機で確認)。suggest_fixはMaven以外を`unsupported_ecosystem`にしているため影響しない。
+
+### 段階計画(2026-10-07 確定: v0.4.2を先に出す)
+
+- **v0.4.2(修正リリース)**: `fixed_versions`の不具合修正
+  - SemVer比較器(`src/utils/semverVersion.ts`)を追加し、エコシステムごとの比較を`src/osv/versionScheme.ts`にまとめる(Maven: `mavenVersion.ts`、npm・Go: SemVer、その他: 比較なし)
+  - `extractFixedVersions`: Maven・npm・GoはECOSYSTEM/SEMVER型の`fixed`を集めて比較器で昇順に並べる。PyPI等の比較器がないエコシステムはECOSYSTEM型の`fixed`を重複除去してOSVの記載順のまま返す(並び順は保証しない旨をREADMEに書く)。GIT型(コミットハッシュ)は集めない
+  - READMEの`fixed_versions`の説明を修正する(空配列の意味、並び順を保証する範囲)
+  - 完了条件: lodash・minimist・golang.org/x/textの修正版が`scan_project`の応答に入ることをMCP経由で確認する
+- **v0.5.0**: suggest_fixのnpm/Go対応(以下)
+
+### バージョン比較(`versionScheme.ts`)
+
+エコシステムごとに次の操作を提供する: `parse`(解釈できなければnull)、`compare`、`series`(系統)、`isPrerelease`。
+
+- SemVer: `MAJOR.MINOR.PATCH[-pre][+build]`を厳密に解釈する。数値部の先頭ゼロは不正。優先順位はsemver.org 11節のとおり(数値の識別子は数値で比較、英数字は辞書順、数値の識別子は英数字より小さい、識別子が多いほうが大きい)。ビルドメタデータは比較で無視するため、`20.10.14+incompatible`と`20.10.14`は等しい
+- 先頭の`v`は防御的に1文字だけ受け付ける(osv-scannerとOSVはGoの版を`v`なしで返すが、念のため)
+- Goの疑似バージョン(`0.0.0-20190101120000-abcdef`、`1.3.1-0.20190301021747-ccb9e902956d`)はSemVerのプレリリースとして正しく並ぶため、特別扱いは表示(注記)だけにする
+- テスト: semver.org仕様の例と、Goの`golang.org/x/mod/semver`・node-semverのテストケース(移植前にライセンスを確認し、出典を明記)
+
+### 影響範囲の検証(`affectedVersions.ts`)
+
+- 比較を`versionScheme`経由にする。受け付ける範囲の型: MavenはECOSYSTEM、npm・GoはSEMVERとECOSYSTEM。それ以外はこれまでどおり情報不足(`complete: false`)
+- `introduced`・`fixed`・`last_affected`・`limit`・`versions[]`のいずれかが解釈できない場合は情報不足とし、その区間は判定に使わない(候補を「影響なし」と言えなくなるだけで、誤って安全と判定する方向には倒れない)
+
+### 推奨の選び方(`suggestFix.ts`)
+
+- 系統の判定をエコシステム別にする。npm・Go(SemVer)では、npmの`^`(キャレット)が互換とみなす範囲を「同じ系統」とする:
+  - 1.0.0以上: 従来どおり(`same_minor` / `major_internal` / `cross_major`)
+  - 0.x(0.1以上): 同じ`0.minor`内なら`same_minor`。マイナーが変わる更新は`cross_major`(破壊的変更の可能性)。`major_internal`は発生しない
+  - 0.0.x: どの変更も`cross_major`
+  - 実データでの例: golang.org/x/text 0.3.0は、3件が0.3.8(`same_minor`)で直るが、GO-2026-5970は0.39.0でしか直らないため、推奨は0.39.0(`cross_major`)になる
+- **プレリリースの扱い**(2026-10-07 推奨案で確定): 候補の順位を「正式版 → Tier順 → 版の昇順」とし、正式版の候補で全件を解消できない場合だけプレリリース・疑似バージョンを推奨して`recommended_is_prerelease: true`を付ける。同じTierのプレリリースより、上のTierの正式版を優先する(canary版より正式版のメジャー更新を勧める)
+- 現在の版を解釈できない場合(npmのgit依存・`file:`依存など)は推奨を出さず、新しい`verification: "unparseable_version"`を返す。CVEは`unfixed`に数えない
+- 注記の追加:
+  - Go: v2以上は別のモジュールパス(`/v2`等)でOSV上も別パッケージになるため、新しいメジャー系列の修正版は候補に含まれない。修正版候補がない(unfixed)場合とcross_majorの場合に付ける
+  - Go: 現在が疑似バージョン(タグのないコミット)である旨
+  - 推移的依存の場合: npmは直接依存の更新か`overrides`(ルートの`package.json`でのみ有効)、Goは`go get <module>@<version>`で直接requireに加える。直接/推移的の区別はv0.6.0のため、v0.5.0では条件付きの一般的な注記にとどめる
+- PyPIは`unsupported_ecosystem`のまま(v0.6.0)
+
+### suggest_fixの検出範囲と応答(2026-10-07 推奨案で確定)
+
+- 検出を`detectJavaProject`から`scan_project`と同じ`detectProject`に切り替え、スナップショット経由のスキャン(`scanFromSnapshot`)を共有する。Java専用ツール(`scan_java_project`)は変更しない
+- 応答: 既存の`project_dir`・`manifests`・`dependency_resolution`・件数・`suggestions`は維持し、`scan_project`と同じ`coverage`を件数より前に追加する。`skipped_manifests`と`scope_warning`は`coverage.skipped_files`と`coverage.warning`に統合して廃止する
+- 利用者から見た変更: Javaプロジェクトに同居するnpm・Go・Pythonのlockfileもsuggest_fixの対象になる(PyPIは`unsupported_ecosystem`として表示)
+- ツールの説明文(suggest_fix・scan_project)とREADMEの「Javaのみ」を更新する
+- 実装時に確認: Gradleのビルドファイル(`build.gradle`)を直接指定した場合の扱いが`detectProject`と`detectJavaProject`で同じか
+
+### 完了条件とテスト
+
+- 単体: SemVer比較器、0.x・0.0.xの系統判定、プレリリースの順位、解釈できない値での情報不足、Goの`+incompatible`
+- 実データの期待値(MCP経由、実バイナリ):
+  - lodash 4.17.20 → 4.18.0(`major_internal`。4.17.21・4.17.23では4.18.0で直る2件が残る)
+  - minimist 1.2.5 → 1.2.6(`same_minor`。0.2.4の区間は現在より古いため候補外)
+  - golang.org/x/text 0.3.0 → 0.39.0(`cross_major`、0.x規則)
+  - npmのcanary版が修正版に含まれるパッケージ(next等)で正式版が推奨されること
+  - Mavenの既存の期待値(log4j 2.14.1 → 2.25.4)が変わらないこと
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
@@ -396,7 +478,8 @@ Node側で各行を分類してから渡す(pipは使わない。サイズ上限
   - (レビュー指摘P1)当初は事前解析で取り込み先を検証してから元のrequirements.txtを渡していたが、osv-scannerは`- r ../x.txt`(空白入り)も取り込みとしてたどる一方、事前解析は未知のオプションとして無視しており、範囲外の内容が結果に入りcompleteにもなった。**解釈のずれがそのまま迂回になる構造**のため、元ファイルを渡すのをやめ、解釈できた依存の行だけを`名前==版`等に正規化して専用の一時ディレクトリ(`mkdtemp`、`0600`・`wx`、成功・失敗とも削除)に書いたコピーをスキャンする方式に変更(`scan_sbom`と同じ考え方)。コピーには取り込み・オプションを含めないため、osv-scannerがたどれる参照が存在しない。解釈できないオプション・版は無視せず`unscannable_requirements`に理由付きで記録
   - (レビュー指摘P2)osv-scanner 2.4.0は`--requirement`と`-c`をたどらない(実機確認。たどるのは`-r`系のみ)。取り込みは本サーバーがプロジェクト内のものだけ展開してコピーに含める(`--requirement`も確実にスキャンされる)。外・存在しない・URL・深さ5超・50ファイル超の取り込みと制約ファイル(`-c`、適用しない)は、ファイルごと外さず該当行を`unscannable_requirements`に記録し、残りはスキャンする(コピーに取り込み指定が無いため安全)。`skipped_files`は元ファイル自体が読めない・1MiB超の場合のみ
   - (レビュー指摘P3)当初は上位に同じエコシステムのlockfileがあれば充足扱いにしていたが、workspace設定の無いルートのlockfileで独立した子の欠落を隠していた。上位のlockfileだけの場合は、package-lock.json(v2以降)の`packages`に子のディレクトリが収録されていることを確認できたときだけ充足とし、未収録なら`status: "missing"`、確認できない形式(yarn.lock、Python系、gradle等)なら`status: "unconfirmed"`で報告
-- [ ] v0.5.0: suggest_fixのnpm/Go対応(semver比較、`SEMVER`範囲の検証、0.x系のマイナー更新を破壊的変更として扱う、Goのv2以上はモジュールパス変更を注記)
+- [ ] v0.4.2: `scan_project`の`fixed_versions`がnpm・Go・PyPIで常に空になる不具合の修正(上記「suggest_fix npm/Go対応(v0.5.0)詳細設計メモ」参照)
+- [ ] v0.5.0: suggest_fixのnpm/Go対応(semver比較、`SEMVER`範囲の検証、0.x系のマイナー更新を破壊的変更として扱う、Goのv2以上はモジュールパス変更を注記) → 詳細設計メモ作成済み(2026-10-07)
 - [ ] v0.6.0: suggest_fixのPython対応(PEP 440比較、`ECOSYSTEM`範囲がある場合の`GIT`範囲の無視)、直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)
 - [ ] 以降: Goバイナリスキャン(ビルド情報からstdlibの版も取得でき、go.modで拾えないstdlibの脆弱性を補える)
 
