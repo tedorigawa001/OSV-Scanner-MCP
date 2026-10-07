@@ -21,6 +21,7 @@ import { handleScanProject } from "./tools/scanProject.js";
 import { handleScanJavaArtifact } from "./tools/scanJavaArtifact.js";
 import { handleScanSbom } from "./tools/scanSbom.js";
 import { handleSuggestFix } from "./tools/suggestFix.js";
+import { installShutdownHandlers, removeStaleTempDirs } from "./utils/processCleanup.js";
 import {
   ALLOWED_ROOT_ENV,
   allowedRootFromEnv,
@@ -170,6 +171,16 @@ server.registerTool(
   async ({ sbom_path }) => handleScanSbom(
     { sbom_path }, { allowedRoot: allowedRootFromEnv() },
   ),
+);
+
+// シグナル・stdinの終了時に一時ディレクトリと実行中のosv-scannerを片付ける(接続前に登録する)
+installShutdownHandlers();
+// 前回の異常終了で残った一時ディレクトリの掃除。起動を遅らせないよう待たない
+removeStaleTempDirs().then(
+  (removed) => {
+    if (removed > 0) console.error(`osv-scanner-mcp: 前回の終了時に残った一時ディレクトリを${removed}件削除しました`);
+  },
+  () => { /* 掃除の失敗で起動を止めない */ },
 );
 
 const transport = new StdioServerTransport();

@@ -10,6 +10,7 @@
  *   requirements.txt等も読み、その`-r ../x.txt`の取り込みでスキャン範囲の外のファイルを読むため
  * - SBOMは検証・サイズ制限済みの専用一時コピー1つだけを渡す
  * - タイムアウトと出力サイズ上限を設ける(ハング・巨大出力によるDoS対策)
+ * - サーバーの終了時に実行中のプロセスを残さない(processCleanup.tsに登録し、終了時にSIGKILL)
  *
  * 終了コード(2.4.0で実機確認):
  *   0 = スキャン成功・脆弱性なし / 1 = スキャン成功・脆弱性あり / 128 = 対象パッケージなし
@@ -19,6 +20,7 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import { isManifestFormat, type ManifestTarget } from "../utils/manifestFormats.js";
+import { trackChildProcess } from "../utils/processCleanup.js";
 import { resolveOsvScannerBinary } from "./binaryManager.js";
 import { parseOsvScanOutput, type ScanReport } from "./scanReport.js";
 
@@ -133,6 +135,7 @@ function execOsvScanner(
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
     });
+    trackChildProcess(child);
 
     const stdoutChunks: Buffer[] = [];
     const stderrChunks: Buffer[] = [];
