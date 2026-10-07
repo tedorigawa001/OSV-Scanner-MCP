@@ -611,6 +611,58 @@ suggest_fixの推奨は、スキャンで分かった脆弱性(現在の版に�
 - 照会は`handleSuggestFix`(ツール層)で行い、`suggestUpgradeForPackage`は同期・純粋なまま残す(テスト容易性)
 - テスト: fetchを差し替えた単体テスト(新しい脆弱性→修正版への切り替え、既知の脆弱性の食い違い、修正版のない新しい脆弱性、失敗・タイムアウト・上限・ページ、無効化)と、実APIでのMCP経由の確認(cryptography 3.2→50.0.0、他の推奨は不変)
 
+## pom.xmlの直接/推移的依存の区別 詳細設計メモ(2026-10-08)
+
+v0.7.0では、親POM・BOM・プロファイル・プロパティの解釈を自前で行うと osv-scanner の解釈とずれる(v0.4.0の親POMの境界の迂回と同じ型の問題)ため、pom.xmlを`unknown`にしていた。
+
+### 実データの確認(2026-10-08、osv-scanner v2.4.0、`--data-source deps.dev`)
+
+親POM(`<dependencies>`と`<dependencyManagement>`)、プロパティ参照のgroupId、testスコープ、optional、`activeByDefault`のプロファイル、版を書かず依存管理から版を得る依存を含むpom.xmlを`--all-packages`でスキャンした。
+
+- **osv-scannerは同じpom.xmlを2つの`results[]`に分けて報告し、`source.type`で区別できる**
+  - `type: "lockfile"`: pom.xml(と親POM)に**宣言された依存**。親POMの`<dependencies>`(commons-collections)、プロパティを展開したgroupId(log4j-core)、testスコープ(`dependency_groups: ["test"]`)、optional、`activeByDefault`のプロファイルの依存(commons-text。版は親の`<dependencyManagement>`から)を含む。`<dependencyManagement>`にあるだけの依存は含まない
+  - `type: "unknown"`: deps.devで解決された**推移的依存**(jackson-annotations、commons-lang3、log4j-api)
+- 宣言もされ、推移的にも要求される依存(jackson-core)は`"lockfile"`の側だけに現れる(重複しない)
+- `--no-resolve`では`"lockfile"`の側だけになる(宣言された依存だけをスキャンするため正しい)
+- requirements.txtも同じ形(書いた`requests`が`"lockfile"`、deps.devで解決された`certifi`・`chardet`・`idna`・`urllib3`が`"unknown"`)。v0.7.0の自前の判定(コピーに書いた行)と一致する
+- osv-scannerの出力には、推移的依存を要求している直接依存(依存グラフ)も、宣言した場所(子か親POMか)も含まれない
+
+### 方針(2026-10-08 推奨案で確定)
+
+**osv-scannerの`source.type`で判定する**(pom.xmlを自前では解析しない)。
+
+- 直接依存の範囲が osv-scanner の解釈(親POM・プロファイル・プロパティ・依存管理)と常に一致する。自前で解釈すると、v0.4.0の親POMの件と同じく解釈のずれが判定の誤りになる
+- 文書化された仕様ではないため、osv-scannerのピン留めを更新するときに再確認する(B5の監査と同じ扱い。`binaryDownloader.ts`の注記に追記)。想定外の形(pom.xmlの結果に`"lockfile"`・`"unknown"`以外の`type`がある等)のときは`unknown`にする(誤って直接依存と言わない)
+- 代替案(採らない): pom.xmlの`<dependencies>`を自前で解析する。親POMの連鎖・プロファイルの有効化条件・プロパティ展開・BOMを osv-scanner と同じに再現する必要があり、ずれの余地が大きい
+
+### 判定の規則
+
+- pom.xmlのスキャン元(スナップショットのコピー)について、`type: "lockfile"`の結果に現れたパッケージは`direct`、`type: "unknown"`の結果だけに現れたパッケージは`transitive`
+- 同じpom.xmlの両方に現れた場合は`direct`(実データでは重複しないが、防御的に)
+- それ以外の`type`、`type`がない場合は`unknown`
+- requirements.txtはv0.7.0の自前の判定のまま(実データで`source.type`と一致することを確認済み。判定の根拠を増やさない)
+- gradle.lockfileは解決済みの全依存の一覧で直接/推移的の情報がないため`unknown`のまま
+
+### 対応付け
+
+- `parseOsvScanOutput`がパッケージごとに保持するスキャン元(`packageSources`、応答には出さない)を、パスだけでなく`source.type`も持つ形にする
+- 関係の判定(`RelationLookup`)にスキャン元の`type`を渡し、pom.xmlの判定はそれだけで行う(ファイルは読まない)
+
+### 出力とupdate_hint
+
+- `dependency_relation`をMavenのパッケージ(pom.xml由来)にも付ける。`introduced_by`・`declared_in`は付けない(osv-scannerの出力から分からない)
+- `update_hint`(Maven、suggest_fix):
+  - 直接依存: pom.xmlの`<dependency>`の版を更新する。版を親POMの`<dependencyManagement>`・プロパティ・BOMで管理している場合は、そちらを更新する
+  - 推移的依存: `<dependencyManagement>`で版を指定して上書きする(Mavenの依存の調停で優先される)か、それを要求している直接依存を更新する
+  - `unknown`(gradle.lockfile等): 現行の一般的な案内
+- 現行のMavenの`update_hint`は無い(npm・Go・PyPIだけ)。Mavenにも付ける
+
+### 完了条件とテスト
+
+- 単体: `source.type`ごとの判定、両方に現れる場合、想定外の`type`、requirements.txt・package-lock.json等の既存の判定が変わらないこと
+- 実バイナリ(MCP経由): 上記の構成で、jackson-databind・jackson-core・commons-collections・commons-text・log4j-core・snakeyamlが`direct`、jackson-annotations・commons-lang3・log4j-apiが`transitive`。`--no-resolve`でも宣言された依存が`direct`
+- `scan_java_project`の応答は変えない(v0.7.0と同じく`scan_project`・`suggest_fix`だけ)
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
