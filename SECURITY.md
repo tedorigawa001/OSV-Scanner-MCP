@@ -1,47 +1,46 @@
-# セキュリティポリシー / Security Policy
+# Security Policy
 
-## 脆弱性の報告 / Reporting a Vulnerability
+## Reporting a Vulnerability
 
-本プロジェクト(OSV-Scanner-MCP)に脆弱性を発見した場合は、**公開Issueではなく**、GitHubのプライベート脆弱性報告(Security Advisories)から報告してください:
+If you discover a security vulnerability in this project (OSV-Scanner-MCP), please report it privately through GitHub Security Advisories — **do not open a public issue**:
 
 **https://github.com/tedorigawa001/OSV-Scanner-MCP/security/advisories/new**
 
-If you discover a security vulnerability in this project, please report it privately via GitHub Security Advisories (link above) — **do not open a public issue**.
+Please include as much of the following as you can:
 
-報告の際は、可能な範囲で以下を含めてください:
+- Affected versions
+- Steps to reproduce (a proof of concept)
+- The expected impact (what an attacker could do)
 
-- 影響を受けるバージョン
-- 再現手順(PoC)
-- 想定される影響(何ができてしまうか)
+## How Reports Are Handled
 
-## 対応方針
+- Acknowledgement of the report: we aim to respond **within 7 days**
+- Fix and release: prioritized by severity; details are kept private until a fixed version is published
+- If you would like to be credited, please let us know
 
-- 報告の受領確認: **7日以内**を目標
-- 修正とリリース: 深刻度に応じて優先対応し、修正版公開まで詳細は非公開のままとします
-- 報告者のクレジット掲載を希望される場合はその旨お知らせください
+## Supported Versions
 
-## サポート対象バージョン / Supported Versions
-
-| バージョン | サポート |
+| Version | Supported |
 |---|---|
-| 最新リリース(latest) | ✅ |
-| それ以前 | ❌(最新版への更新をお願いします) |
+| Latest release | ✅ |
+| Earlier versions | ❌ (please update to the latest version) |
 
-## スコープについて
+## Scope
 
-本プロジェクトが対象とするのは**MCPサーバー自体**の脆弱性です(例: コマンドインジェクション、パストラバーサル、チェックサム検証の回避、プロンプトインジェクション耐性の欠陥など)。以下は本プロジェクトのスコープ外のため、各報告先へお願いします:
+This project covers vulnerabilities in **the MCP server itself** (for example command injection, path traversal, bypassing checksum verification, or weaknesses against prompt injection). The following are out of scope; please report them to the respective projects:
 
-- **OSV-Scanner本体**の脆弱性 → [google/osv-scanner](https://github.com/google/osv-scanner/security)
-- **脆弱性データの誤り**(誤検出・深刻度の疑義など)→ [OSVデータベース](https://github.com/google/osv.dev)または各アドバイザリの発行元
+- Vulnerabilities in **OSV-Scanner itself** → [google/osv-scanner](https://github.com/google/osv-scanner/security)
+- **Errors in vulnerability data** (false positives, disputed severity, and so on) → the [OSV database](https://github.com/google/osv.dev) or the publisher of the advisory
 
-## 本プロジェクトのセキュリティ設計
+## Security Design of This Project
 
-実装済みの対策(詳細は[README](README.md#セキュリティ設計)参照):
+Implemented measures (see the [README](README.md#security-design) for details):
 
-- シェル非経由のプロセス実行と引数ホワイトリスト
-- 入力パスの正規化・境界チェック(シンボリックリンク解決込み)。OSV-Scannerにはディレクトリを渡さず、検出したマニフェストだけを個別に渡す(v0.3.3以前は、同じディレクトリの `requirements.txt` の取り込み指定によりスキャン範囲の外のファイルが読まれた)。requirements.txtは元ファイルを渡さず、解釈できた依存の行だけを書いた専用コピーをスキャンする(取り込み指定はコピーに含めない)。pom.xmlの親POMの連鎖が `OSV_MCP_ALLOWED_ROOT` の外を参照する場合は、そのpom.xmlをスキャン対象から外す(v0.3.4以前は範囲外の親POMが読まれた)
-- スナップショット方式: OSV-Scannerには元のファイルを渡さず、安全に1回だけ読んだ内容を専用の一時ディレクトリへコピーしてスキャンし、検査もコピーに対して行う(検査後の差し替えの影響を受けない。v0.4.0以前は検査と読み込みの間にファイルを差し替えると範囲外の内容を読ませられた)。読み込みは末尾のシンボリックリンクをたどらず、名前付きパイプ等は読まず(v0.4.0以前は親POMが名前付きパイプを参照すると処理が止まった)、読み終えた後に差し替えと境界を確認する。一時ディレクトリはサーバーの終了時(シグナル・stdinの終了)にも削除し、実行中のOSV-Scannerを止める(v0.7.0以前はスキャン中にSIGTERM等で終了すると、元のファイルのコピーを含む一時ディレクトリが残った)。本サーバー自身の解析も同じファイルは1回だけ読み、読む量に上限を設ける(v0.4.0以前はworkspaceの収録確認でlockfileを繰り返し解析した)
-- バイナリ自動ダウンロードのピン留め+埋め込みSHA256検証(`OSV_MCP_PREFER_DOWNLOAD=1` でPATH上の未検証バイナリを使わない運用も可能)
-- タイムアウト・出力サイズ上限(DoS対策)、外部由来テキストの構造化とサイズ制限
-- 外部由来テキストのサニタイズ(制御文字・ゼロ幅文字・双方向制御文字・Unicodeタグ文字の除去。プロンプトインジェクションの不可視化手口への対策)
-- 通信先の固定と明示: `pom.xml` のスキャンでは推移的依存の解決のため deps.dev(`api.deps.dev`)に依存の名前とバージョンが送られます。`OSV_MCP_NO_REMOTE_RESOLUTION=1` で deps.dev への送信を止められます(推移的依存の検出と引き換え。応答の `dependency_resolution` に明示)。脆弱性照会のため、パッケージの名前とバージョンはどの設定でも `api.osv.dev` に送られます。`suggest_fix` は推奨先を `api.osv.dev` に照会します(送るのはスキャンで照会済みのパッケージ名と、公開されている修正版の版。`OSV_MCP_NO_CANDIDATE_CHECK=1` で無効化)。スキャン対象が指定する任意のリポジトリへ接続するモードは使いません(詳細は[README](README.md#通信先とプライバシー))
+- Processes are run without a shell, with an argument allowlist
+- Input paths are normalized and checked against the boundary (after resolving symbolic links). OSV-Scanner never receives a directory, only the detected manifests, one by one (in v0.3.3 and earlier, an include directive in a `requirements.txt` in the same directory could make it read files outside the scan scope). `requirements.txt` files are not passed as they are; a private copy containing only the dependency lines that could be interpreted is scanned (the copy contains no include directives). A `pom.xml` whose parent POM chain references a file outside `OSV_MCP_ALLOWED_ROOT` is excluded from the scan (in v0.3.4 and earlier, parent POMs outside the scope were read)
+- Snapshots: OSV-Scanner never receives the original files. Their contents are read safely once, copied into a private temporary directory, and both the checks and the scan run on the copies, so replacing files after the check has no effect (in v0.4.0 and earlier, replacing a file between the check and the read could make the scanner read content outside the scope). Reads refuse a symbolic link at the final path component and anything that is not a regular file, such as a named pipe (in v0.4.0 and earlier, a parent POM pointing to a named pipe could stall the server), and the path and boundary are checked again after reading. The temporary directories are also deleted when the server is terminated (by a signal or by stdin closing), and running OSV-Scanner processes are stopped (in v0.7.0 and earlier, terminating the server with SIGTERM or similar during a scan left behind a temporary directory containing copies of the original files). The server's own analysis also reads each file only once, with a limit on the total amount read (in v0.4.0 and earlier, the lockfile was parsed repeatedly while checking npm workspace membership)
+- The automatically downloaded binary is pinned and verified against an embedded SHA256 checksum (`OSV_MCP_PREFER_DOWNLOAD=1` avoids unverified binaries on `PATH`)
+- Timeouts and output size limits (against denial of service); text from external sources is returned as structured, length-limited data
+- Text from external sources is sanitized (control characters, zero-width characters, bidirectional control characters, and Unicode tag characters are removed, against invisible prompt injection)
+- Optional restricted permissions: the server can run under Node's permission model (`--permission`), reports denied access as `permission_denied`, and warns about missing permissions at startup. osv-scanner runs as a child process and is not restricted by the permission model (see [Running with restricted permissions](README.md#running-with-restricted-permissions))
+- Fixed and documented network destinations: scanning `pom.xml` or `requirements.txt` sends the names and versions of the dependencies to deps.dev (`api.deps.dev`) to resolve transitive dependencies. `OSV_MCP_NO_REMOTE_RESOLUTION=1` stops sending data to deps.dev (at the cost of not detecting transitive dependencies; this is stated in `dependency_resolution` in the responses). In every configuration, package names and versions are sent to `api.osv.dev` for the vulnerability lookup. `suggest_fix` checks recommended versions against `api.osv.dev` (sending only package names already queried during the scan and published fixed versions; disable with `OSV_MCP_NO_CANDIDATE_CHECK=1`). The mode that connects to arbitrary repositories specified by the scanned project is never used (see [Network destinations and privacy](README.md#network-destinations-and-privacy))
