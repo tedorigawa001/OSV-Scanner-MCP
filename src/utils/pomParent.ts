@@ -47,7 +47,10 @@ function decodeEntities(text: string): string | undefined {
  * 判断を誤ると範囲外を読ませるので、複数のparent/relativePath、CDATA、DOCTYPE、閉じていないタグなど、
  * Goと同じ解釈を保証できない構文は解釈できない(undefined)として扱う。
  */
-export function parentRelativePath(xml: string): string | null | undefined {
+export function parentRelativePath(source: string): string | null | undefined {
+  // XML 1.0の行末処理: 解析前にCRLF・単独のCRをLFへ正規化する(Goのデコーダーも同じ)。
+  // 正規化しないと、検査側は"a\rb"を探して存在しないと判断し、osv-scannerは"a\nb"を読む
+  const xml = source.replace(/\r\n?/g, "\n");
   const stack: string[] = [];
   let parents = 0;
   let relativePaths = 0;
@@ -115,7 +118,11 @@ export function parentRelativePath(xml: string): string | null | undefined {
   const decoded = decodeEntities(relativeText!);
   // プロパティ参照(${...})は評価できない
   if (decoded === undefined || decoded.includes("${")) return undefined;
-  return decoded.trim();
+  const trimmed = decoded.replace(/^[ \t\n]+|[ \t\n]+$/g, "");
+  // 制御文字・通常の空白以外の空白・書式文字は、文字の正規化や前後の空白の除去の細部
+  // (JSとGoで扱いが異なる)で参照先がずれうるため、解釈できないものとして除外する
+  if (/[\p{Cc}\p{Cf}\u0085]|(?! )\p{Z}/u.test(trimmed)) return undefined;
+  return trimmed;
 }
 
 /** UTF-8として厳密に読む。不正なバイト列・NULを含む場合はnull(Goと同じ解釈を保証できない) */

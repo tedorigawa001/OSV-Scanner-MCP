@@ -143,3 +143,40 @@ describe("parentRelativePath: osv-scanner(Go)のXML解釈に合わせる(回帰)
     expect(await pomParentOutsideRoot(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("解釈できない");
   });
 });
+
+describe("parentRelativePath: 改行の正規化と文字の制限(回帰)", () => {
+  const gav = "<groupId>g</groupId><artifactId>p</artifactId><version>1</version>";
+  const doc = (relativePath: string) =>
+    `<project><parent>${gav}<relativePath>${relativePath}</relativePath></parent></project>`;
+
+  it("CRLF・単独のCRで改行した文書も通常どおり解析する", () => {
+    const xml = `<project>\r\n  <parent>\r\n    ${gav}\r    <relativePath>../parent/pom.xml</relativePath>\r\n  </parent>\r\n</project>\r\n`;
+    expect(parentRelativePath(xml)).toBe("../parent/pom.xml");
+  });
+
+  it.each([
+    { label: "CR(XMLの行末処理でLFになる)", value: "../../outside/a\rb/pom.xml" },
+    { label: "CRLF", value: "../../outside/a\r\nb/pom.xml" },
+    { label: "LF", value: "../../outside/a\nb/pom.xml" },
+    { label: "タブ", value: "../../outside/a\tb/pom.xml" },
+    { label: "末尾のNBSP(Goの空白除去では消える)", value: "../../outside/pom.xml " },
+    { label: "BOM(JSのtrimでは消える)", value: "﻿../../outside/pom.xml" },
+    { label: "NEL", value: "../../outside/pom.xml\u0085" },
+    { label: "行区切り", value: "../../outside/pom.xml " },
+    { label: "ゼロ幅スペース", value: "../../out​side/pom.xml" },
+  ])("パスに$labelを含む場合は解釈できない", ({ value }) => {
+    expect(parentRelativePath(doc(value))).toBeUndefined();
+  });
+
+  it("通常の空白や日本語のディレクトリ名は許可する", () => {
+    expect(parentRelativePath(doc("../親 モジュール/pom.xml"))).toBe("../親 モジュール/pom.xml");
+  });
+
+  it("回帰: relativePathのCRで、改行を含む名前の許可ルート外のディレクトリを参照するpom.xmlを除外する", async () => {
+    const base = await makeTree({
+      "outside/a\nb/pom.xml": pom(),
+      "root/proj/pom.xml": `<project><parent>${gav}<relativePath>../../outside/a\rb/pom.xml</relativePath></parent></project>`,
+    });
+    expect(await pomParentOutsideRoot(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).not.toBeNull();
+  });
+});
