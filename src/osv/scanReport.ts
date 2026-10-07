@@ -164,19 +164,31 @@ interface MutablePackage {
   version: string;
   ecosystem: string;
   groups: Set<string>;
+  /** スキャン元のキー(パスとsource.typeの組。sourceListと対応) */
   sources: Set<string>;
+  sourceList: PackageSource[];
   vulns: Map<string, ScanReportVulnerability>;
 }
 
 /**
- * パッケージごとのスキャン元ファイル(osv-scannerの`results[].source.path`)。
+ * スキャン元: osv-scannerの`results[].source`のパスと種類。
+ * osv-scanner 2.4.0は同じpom.xml・requirements.txtを、宣言された依存(`type: "lockfile"`)と、
+ * deps.devで解決された推移的依存(`type: "unknown"`)の2つの結果に分けて報告する(直接/推移的の判定に使う)
+ */
+export interface PackageSource {
+  path: string;
+  type: string | null;
+}
+
+/**
+ * パッケージごとのスキャン元ファイル(osv-scannerの`results[].source.path`と`type`)。
  * 応答のJSONには出さない(既存の応答を変えない)ため、パッケージのオブジェクトをキーに別に持つ。
  * 直接/推移的依存の判定(dependencyRelations.ts)が、どのlockfileの依存かを知るために使う
  */
-const packageSourceMap = new WeakMap<ScanReportPackage, readonly string[]>();
+const packageSourceMap = new WeakMap<ScanReportPackage, readonly PackageSource[]>();
 
 /** parseOsvScanOutputが返したパッケージのスキャン元ファイル。それ以外のオブジェクトは空 */
-export function packageSources(pkg: ScanReportPackage): readonly string[] {
+export function packageSources(pkg: ScanReportPackage): readonly PackageSource[] {
   return packageSourceMap.get(pkg) ?? [];
 }
 
@@ -194,6 +206,7 @@ export function parseOsvScanOutput(raw: unknown): ScanReport {
     if (!result) continue;
 
     const sourcePath = asString(asRecord(result.source)?.path);
+    const sourceType = asString(asRecord(result.source)?.type);
     if (sourcePath !== null && !sourceFiles.includes(sourcePath)) {
       sourceFiles.push(sourcePath);
     }
@@ -211,10 +224,14 @@ export function parseOsvScanOutput(raw: unknown): ScanReport {
       const key = `${ecosystem}:${name}@${version}`;
       let entry = packageMap.get(key);
       if (!entry) {
-        entry = { name, version, ecosystem, groups: new Set(), sources: new Set(), vulns: new Map() };
+        entry = { name, version, ecosystem, groups: new Set(), sources: new Set(), sourceList: [], vulns: new Map() };
         packageMap.set(key, entry);
       }
-      if (sourcePath !== null) entry.sources.add(sourcePath);
+      const sourceKey = JSON.stringify([sourcePath, sourceType]);
+      if (sourcePath !== null && !entry.sources.has(sourceKey)) {
+        entry.sources.add(sourceKey);
+        entry.sourceList.push({ path: sourcePath, type: sourceType });
+      }
       for (const group of asStrings(pkgObj.dependency_groups)) entry.groups.add(group);
 
       const details = asArray(pkgObj.vulnerabilities);
@@ -279,7 +296,7 @@ function buildReport(sourceFiles: string[], packageMap: Map<string, MutablePacka
         ...(entry.groups.size > 0 ? { dependency_groups: [...entry.groups].sort() } : {}),
         vulnerabilities,
       };
-      packageSourceMap.set(pkg, [...entry.sources]);
+      packageSourceMap.set(pkg, entry.sourceList);
       return pkg;
     })
     .sort(

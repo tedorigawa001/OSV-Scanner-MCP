@@ -405,3 +405,12 @@ describe("PyPIの推奨(v0.6.0、実データの形)", () => {
     expect(s.upgrade_note).toContain("下限をその版以上に引き上げる");
   });
 });
+
+describe("Mavenのupdate_hint(pom.xmlの直接/推移的依存)", () => {
+  it("直接依存はpom.xml(親POM・BOM)の版、推移的依存は<dependencyManagement>での上書きを案内し、unknownでは付けない", () => {
+    const base = pkg("org.apache.logging.log4j:log4j-core", "2.14.1", [vuln("GHSA-x", "CVE-2021-44228", ["2.15.0"])]);
+    expect(suggestUpgradeForPackage({ ...base, dependency_relation: "direct" }).update_hint).toContain("<dependency>の版を更新");
+    expect(suggestUpgradeForPackage({ ...base, dependency_relation: "transitive" }).update_hint).toContain("<dependencyManagement>で推奨版を指定");
+    expect("update_hint" in suggestUpgradeForPackage({ ...base, dependency_relation: "unknown" })).toBe(false);
+  });
+});

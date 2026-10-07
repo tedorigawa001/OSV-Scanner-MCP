@@ -22,8 +22,11 @@ export interface RelationInfo {
   replaced?: true;
 }
 
-/** ファイルごとの判定。null = このファイルでは判定できない(すべてunknown) */
-export type RelationLookup = ((name: string, version: string) => RelationInfo) | null;
+/**
+ * ファイルごとの判定。null = このファイルでは判定できない(すべてunknown)。
+ * sourceTypeはosv-scannerの`results[].source.type`(pom.xmlの判定に使う。他の形式は使わない)
+ */
+export type RelationLookup = ((name: string, version: string, sourceType?: string | null) => RelationInfo) | null;
 
 /** たどる依存の辺の上限(巨大・悪意あるlockfileで処理が膨らまないように) */
 export const MAX_DEPENDENCY_EDGES = 2_000_000;
@@ -242,6 +245,17 @@ export function goModRelations(text: string): RelationLookup {
     if (relation === undefined) return UNKNOWN;
     return replaced.has(`${name}@${version}`) || replacedLocal.has(name) ? { relation, replaced: true } : { relation };
   };
+}
+
+/**
+ * pom.xmlの依存の関係を、osv-scannerの`source.type`で判定する(pom.xmlは自前で解析しない)。
+ * osv-scanner 2.4.0は同じpom.xmlを、宣言された依存(親POM・プロファイル・プロパティ・依存管理をosv-scannerが解釈したもの)を
+ * `type: "lockfile"`、deps.devで解決された推移的依存を`type: "unknown"`の結果に分けて報告する(実データで確認)。
+ * 文書化された仕様ではないため、想定外のtypeはunknownにする(osv-scannerのピン留め更新時に再確認する)。
+ */
+export function pomRelations(): RelationLookup {
+  return (_name, _version, sourceType) =>
+    sourceType === "lockfile" ? { relation: "direct" } : sourceType === "unknown" ? { relation: "transitive" } : UNKNOWN;
 }
 
 /** PEP 503の正規化 */

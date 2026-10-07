@@ -663,6 +663,8 @@ v0.7.0では、親POM・BOM・プロファイル・プロパティの解釈を�
 - 実バイナリ(MCP経由): 上記の構成で、jackson-databind・jackson-core・commons-collections・commons-text・log4j-core・snakeyamlが`direct`、jackson-annotations・commons-lang3・log4j-apiが`transitive`。`--no-resolve`でも宣言された依存が`direct`
 - `scan_java_project`の応答は変えない(v0.7.0と同じく`scan_project`・`suggest_fix`だけ)
 
+**実装済み(2026-10-08)**: `parseOsvScanOutput`がスキャン元を`{path, type}`で保持し(応答には出さない)、`pomRelations`が`source.type`で判定。同じファイルの複数の結果は、ファイルごとに直接依存を優先して1つにまとめる(要らない`mixed`を出さない)。Mavenの`update_hint`を追加(`unknown`では付けない)。`binaryDownloader.ts`のピン留めの注記に再確認の対象として追記。実バイナリでMCP経由の確認: 上記の構成で期待値どおり(解決あり・なし)。npm・Go・PyPIとMavenの推奨はv0.8.0と出力のハッシュが一致(5構成)、`scan_java_project`の応答は不変
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。

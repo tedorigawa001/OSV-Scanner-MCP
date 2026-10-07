@@ -21,7 +21,9 @@ import { readResponseBytes } from "../utils/readResponseBytes.js";
 /**
  * ピン留めするOSV-Scannerのバージョン。更新時は下のチェックサムも必ず更新すること。
  * 範囲外の読み込みを防ぐ検証はこの版の挙動に合わせているため、更新時は
- * docs/DESIGN_TODO.md「B5」の監査と、requirements.txt・親POMの解釈の実機確認をやり直すこと
+ * docs/DESIGN_TODO.md「B5」の監査と、requirements.txt・親POMの解釈の実機確認をやり直すこと。
+ * pom.xmlの直接/推移的依存の判定(dependencyRelations.tsのpomRelations)も、この版が同じpom.xmlを
+ * source.type "lockfile"(宣言された依存)と"unknown"(deps.devで解決された推移的依存)に分けて報告する挙動に依存するため再確認すること
  */
 export const PINNED_OSV_SCANNER_VERSION = "2.4.0";
 

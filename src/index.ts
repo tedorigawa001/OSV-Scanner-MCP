@@ -60,7 +60,7 @@ server.registerTool(
       "Python(poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt)、Go(go.mod)。" +
       "パッケージマネージャーやビルドは実行しない。" +
       "応答先頭のcoverageを必ず確認すること: lockfileが無いマニフェスト、バージョン未固定のrequirements行、スキャン対象から外したファイルを示す。" +
-      "各パッケージのdependency_relationは直接依存(direct)か推移的依存(transitive)か(package-lock.json・go.mod・requirements.txtで判定。それ以外はunknown)。" +
+      "各パッケージのdependency_relationは直接依存(direct)か推移的依存(transitive)か(package-lock.json・go.mod・requirements.txt・pom.xmlで判定。それ以外はunknown)。" +
       "coverage.complete=falseの場合は、検出0件でも安全とは判断しないこと。修正版の推奨(suggest_fix)はJava・JavaScript・Python・Goに対応。",
     inputSchema: {
       project_path: z

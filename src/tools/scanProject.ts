@@ -13,6 +13,7 @@ import {
   combineRelations,
   goModRelations,
   npmLockRelations,
+  pomRelations,
   requirementsRelations,
   type RelationInfo,
   type RelationLookup,
@@ -145,6 +146,8 @@ export async function buildRelationLookups(
           const text = read.bytes.toString("utf8");
           lookup = format === "go.mod" ? goModRelations(text) : npmLockRelations(JSON.parse(text));
         }
+      } else if (format === "pom.xml") {
+        lookup = pomRelations(); // ファイルは読まず、osv-scannerのsource.typeで判定する
       } else if (format === "requirements.txt" && entries !== undefined) {
         lookup = requirementsRelations(entries);
       }
@@ -159,14 +162,19 @@ export async function buildRelationLookups(
 /** パッケージに直接/推移的依存の別を付ける。項目は脆弱性の一覧より前に置く */
 function annotateRelations(packages: readonly ScanReportPackage[], lookups: ReadonlyMap<string, SourceRelations>): ScanReportPackage[] {
   return packages.map((pkg) => {
-    const infos: RelationInfo[] = [];
+    // 同じファイルが複数の結果に分かれる(pom.xml・requirements.txtの宣言と推移的依存)ため、ファイルごとに1つにまとめる。
+    // 同じファイルで直接依存と判定された結果があれば直接依存とする
+    const byFile = new Map<string, RelationInfo>();
     const declaredIn = new Set<string>();
+    const rank = { direct: 2, transitive: 1, unknown: 0 } as const;
     for (const source of packageSources(pkg)) {
-      const entry = lookups.get(source);
-      const info = entry?.lookup ? entry.lookup(pkg.name, pkg.version) : { relation: "unknown" as const };
-      infos.push(info);
+      const entry = lookups.get(source.path);
+      const info = entry?.lookup ? entry.lookup(pkg.name, pkg.version, source.type) : { relation: "unknown" as const };
+      const previous = byFile.get(source.path);
+      if (previous === undefined || rank[info.relation] > rank[previous.relation]) byFile.set(source.path, info);
       for (const manifest of info.declaredIn ?? []) declaredIn.add(path.join(entry!.lockDir, manifest));
     }
+    const infos = [...byFile.values()];
     const { relation, introducedBy, replaced } = combineRelations(infos);
     const { vulnerabilities, ...rest } = pkg;
     return {

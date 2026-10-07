@@ -220,7 +220,8 @@ api.osv.dev と deps.dev はどちらも Google が運営するサービスで�
   - `package-lock.json`(v2以降): ルートとworkspaceのpackage.jsonの依存を、Nodeの解決規則(入れ子の `node_modules` から上位へ)で解決したものが直接依存、そこからたどれるものが推移的依存です。直接依存には宣言しているpackage.jsonを `declared_in` に、推移的依存にはそれを要求している直接依存の名前を `introduced_by`(最大10件、超えた分は `introduced_by_omitted`)に示します。直接依存でもあり他の依存からも要求される版は `direct` とし、`introduced_by` も付けます
   - `go.mod`: `// indirect` の無い `require` が直接依存です。`replace` で置き換えているモジュールには `replaced_in_go_mod: true` を付けます(OSV-Scannerは置換先のパスと版で報告します)
   - `requirements.txt`: ファイルに書かれた依存が直接依存、deps.devで解決された依存が推移的依存です
-  - 上記以外の形式(`pom.xml`、`gradle.lockfile`、`yarn.lock`、`pnpm-lock.yaml`、`bun.lock`、`poetry.lock`、`uv.lock`、`Pipfile.lock`、`pdm.lock`)と、lockfileVersion 1・どこからも要求されていないエントリは `unknown` です。複数のlockfileで判定が異なる場合は `mixed` です
+  - `pom.xml`: OSV-Scannerは、`pom.xml`(と親POM)に宣言された依存と、deps.devで解決された推移的依存を別々の結果(`source.type` が `lockfile` / `unknown`)に分けて報告するため、それで判定します(親POM・プロファイル・プロパティ・依存管理の解釈はOSV-Scannerと同じになります)。`introduced_by` / `declared_in` は付きません。この判定はOSV-Scannerの文書化されていない出力の形に依存するため、想定外の形の場合は `unknown` にします
+  - 上記以外の形式(`gradle.lockfile`、`yarn.lock`、`pnpm-lock.yaml`、`bun.lock`、`poetry.lock`、`uv.lock`、`Pipfile.lock`、`pdm.lock`)と、lockfileVersion 1・どこからも要求されていないエントリは `unknown` です。複数のlockfileで判定が異なる場合は `mixed` です
 - `dependency_groups` はOSV-Scannerが付けた依存グループ(例: `dev`)の生の値です。lockfileの形式によって欠落・不正確なため(pnpmでは付かず、pdmでは `optional` になる等)、参考情報として扱ってください
 - 修正版の推奨(`suggest_fix`)はJava・JavaScript・Python・Goに対応しています
 
@@ -387,7 +388,7 @@ npm・Go・PyPIの「同じ系統」は、npmの `^`(キャレット)が互換�
 - プレリリース版(`5.0.0-beta.3`、`15.6.0-canary.61`、Goの疑似バージョン、PyPIの `rc`・`dev` 版。post版は正式版扱い)は、正式版の候補では全CVEを解消できない場合だけ推奨し、`recommended_is_prerelease: true` を付けます。同じTierのプレリリースより、上のTierの正式版を優先します。
 - 推奨時は `verification: "verified"`、CVEごとの `recommended_status` は `affected` / `not_affected` / `unknown` です。推奨保留時は `not_evaluated` になります。`per_cve_detail.fixed_in` は各CVE単独の候補であり、最終推奨先の判定は `recommended_status` を参照してください。
 - 現在より新しい修正版候補がないCVEは `tier: "unfixed"` として推奨の修正対象から除外します(情報欠落を含む場合があります)。除外したCVEも推奨先で判定し、その状態を表示します。全CVEがunfixedの場合も `recommended_upgrade` は `null` です。修正版の記載はあるがバージョンとして解釈できないCVE(SemVerでない `13.0` 等)は `tier: "unparseable_fix"` とし、修正版が無いとは扱わず修正対象に残すため、推奨は保留(`no_verified_candidate`)になります。
-- npm・Go・PyPIの提案には更新方法の `update_hint` を付けます。PyPIでは、requirements.txtやpyproject.toml・Pipfileの指定を更新してlockfileを再生成し、推移的依存はpipの制約ファイル(`-c`)やuv・Poetryの上書き設定で版を指定します。推移的依存の場合、npmでは要求している直接依存の更新か、ルートの `package.json` の `overrides`(ルートのプロジェクトでのみ有効)で版を指定します。Goでは `go get <module>@<version>` で更新できます。Goのv2以上のメジャーは別のモジュールパス(`/v2` 等)としてOSV上も別パッケージになるため、新しいメジャー系列の修正版は候補に含まれません。現在の版が疑似バージョン(タグのないコミット)の場合は `upgrade_note` に示します。
+- npm・Go・PyPIの提案には更新方法の `update_hint` を付けます。PyPIでは、requirements.txtやpyproject.toml・Pipfileの指定を更新してlockfileを再生成し、推移的依存はpipの制約ファイル(`-c`)やuv・Poetryの上書き設定で版を指定します。Maven(`pom.xml` 由来)では、直接依存は `<dependency>` の版(親POM・プロパティ・BOMで管理していればそちら)、推移的依存は `<dependencyManagement>` での上書きを案内します。推移的依存の場合、npmでは要求している直接依存の更新か、ルートの `package.json` の `overrides`(ルートのプロジェクトでのみ有効)で版を指定します。Goでは `go get <module>@<version>` で更新できます。Goのv2以上のメジャーは別のモジュールパス(`/v2` 等)としてOSV上も別パッケージになるため、新しいメジャー系列の修正版は候補に含まれません。現在の版が疑似バージョン(タグのないコミット)の場合は `upgrade_note` に示します。
 - **推奨先のOSV照会**: 推奨はスキャンで分かった脆弱性(現在の版に該当するもの)の範囲だけで検証しているため、推奨先に現在の版には該当しない新しい脆弱性がありえます(例: cryptography 3.2 の推奨候補 49.0.0 は、44.0.0 で混入し 50.0.0 で修正された2件に該当)。そこで推奨先を `api.osv.dev` に照会し、該当する脆弱性があれば、それも避けるよう修正版を候補に加えて選び直します(この例では 50.0.0 を推奨し、`upgrade_note` に理由を示します)。結果は `candidate_check` に示します:
   - `clean`: 推奨先に該当する既知の脆弱性はありません
   - `has_known_vulnerabilities`: 避けられる修正版の候補が見つからず、推奨先が既知の脆弱性に該当します(`recommended_known_vulnerabilities` にID)

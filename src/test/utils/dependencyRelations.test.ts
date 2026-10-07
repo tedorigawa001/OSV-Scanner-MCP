@@ -3,6 +3,7 @@ import {
   combineRelations,
   goModRelations,
   npmLockRelations,
+  pomRelations,
   requirementsRelations,
   type RelationLookup,
 } from "../../utils/dependencyRelations.js";
@@ -155,5 +156,19 @@ describe("combineRelations", () => {
       { relation: "transitive", introducedBy: new Set(["a", "c"]), replaced: true },
     ]);
     expect(merged).toEqual({ relation: "transitive", introducedBy: ["a", "b", "c"], declaredIn: [], replaced: true });
+  });
+});
+
+describe("pomRelations", () => {
+  it("osv-scannerのsource.typeで判定する(lockfile=宣言された依存、unknown=deps.devで解決された推移的依存)", () => {
+    const lookup = pomRelations()!;
+    expect(lookup("g:a", "1.0", "lockfile").relation).toBe("direct");
+    expect(lookup("g:a", "1.0", "unknown").relation).toBe("transitive");
+  });
+  it("想定外のtype・typeなしはunknown(直接依存と誤って言わない)", () => {
+    const lookup = pomRelations()!;
+    expect(lookup("g:a", "1.0", "sbom").relation).toBe("unknown");
+    expect(lookup("g:a", "1.0", null).relation).toBe("unknown");
+    expect(lookup("g:a", "1.0").relation).toBe("unknown");
   });
 });

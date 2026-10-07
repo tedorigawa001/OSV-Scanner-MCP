@@ -117,6 +117,14 @@ function updateHint(pkg: ScanReportPackage): string | undefined {
       }
       return UPDATE_HINTS.Go;
     }
+    case "Maven":
+      if (relation === "direct") {
+        return "直接依存です。pom.xmlの<dependency>の版を更新します。版を親POMの<dependencyManagement>・プロパティ・BOMで管理している場合は、そちらを更新します";
+      }
+      if (relation === "transitive") {
+        return "推移的依存です。pom.xmlの<dependencyManagement>で推奨版を指定して上書きする(Mavenの依存の調停で優先されます)か、それを要求している直接依存を更新します";
+      }
+      return undefined; // gradle.lockfile等: 判定できないため具体的な案内はしない(従来どおり)
     case "PyPI":
       if (relation === "direct") {
         return "直接依存です。requirements.txtの版の指定、またはpyproject.toml・Pipfileの指定を更新し、lockfileを再生成します";

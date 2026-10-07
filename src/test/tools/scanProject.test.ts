@@ -325,3 +325,51 @@ describe("buildRelationLookups: 読み込みの上限", () => {
     expect(lookups.get(path.join(dir, "go.mod"))!.lookup!("example.com/a", "1.0.0").relation).toBe("direct");
   });
 });
+
+describe("handleScanProject: pom.xmlの直接/推移的依存の区別", () => {
+  /** osv-scanner 2.4.0と同じく、pom.xmlを宣言(lockfile)と推移的依存(unknown)の2つの結果に分けて返す偽osv-scanner */
+  async function pomScanner(declared: unknown[], transitive: unknown[], other: Record<string, unknown[]> = {}): Promise<string> {
+    const bin = path.join(binDir, `osv-pom-${Math.random().toString(36).slice(2)}.cjs`);
+    await writeFile(bin, `#!${process.execPath}
+const args = process.argv.slice(2);
+const results = args.filter((a, i) => args[i - 1] === "--lockfile").flatMap((a) => {
+  const format = a.slice(0, a.indexOf(":"));
+  const file = a.slice(a.indexOf(":") + 1);
+  if (format !== "pom.xml") return [{ source: { path: file, type: "lockfile" }, packages: (${JSON.stringify(other)})[format] ?? [] }];
+  return [
+    { source: { path: file, type: "lockfile" }, packages: ${JSON.stringify(declared)} },
+    { source: { path: file, type: "unknown" }, packages: ${JSON.stringify(transitive)} },
+  ];
+});
+console.log(JSON.stringify({ results }));
+process.exit(1);`);
+    await chmod(bin, 0o755);
+    return bin;
+  }
+
+  it("source.typeがlockfileの結果は直接依存、unknownの結果は推移的依存。脆弱性より前に付ける", async () => {
+    const dir = await makeProject({ "pom.xml": "<project/>" });
+    const bin = await pomScanner(
+      [pkg("Maven", "com.fasterxml.jackson.core:jackson-databind", "2.9.8"), pkg("Maven", "org.apache.logging.log4j:log4j-core", "2.14.1")],
+      [pkg("Maven", "org.apache.logging.log4j:log4j-api", "2.14.1")],
+    );
+    const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin }));
+    const byName = Object.fromEntries((p.packages as Record<string, unknown>[]).map((x) => [String(x.name).split(":")[1], x]));
+    expect(byName["jackson-databind"]!.dependency_relation).toBe("direct");
+    expect(byName["log4j-core"]!.dependency_relation).toBe("direct");
+    expect(byName["log4j-api"]!.dependency_relation).toBe("transitive");
+    expect("introduced_by" in byName["log4j-api"]!).toBe(false);
+    expect("declared_in" in byName["jackson-databind"]!).toBe(false);
+    const keys = Object.keys(byName["log4j-api"]!);
+    expect(keys.indexOf("dependency_relation")).toBeLessThan(keys.indexOf("vulnerabilities"));
+  });
+
+  it("同じpom.xmlの両方の結果に現れたら直接依存。gradle.lockfileと両方にあればmixed", async () => {
+    const dir = await makeProject({ "pom.xml": "<project/>", "sub/gradle.lockfile": "g:b:1.0=runtimeClasspath\n" });
+    const both = pkg("Maven", "g:a", "1.0");
+    const bin = await pomScanner([both, pkg("Maven", "g:b", "1.0")], [both], { "gradle.lockfile": [pkg("Maven", "g:b", "1.0")] });
+    const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin }));
+    const byName = Object.fromEntries((p.packages as Record<string, unknown>[]).map((x) => [x.name, x.dependency_relation]));
+    expect(byName).toEqual({ "g:a": "direct", "g:b": "mixed" });
+  });
+});
