@@ -497,6 +497,68 @@ npm・Goと同じ規則(1.0以上はmajor.minor、0.xのマイナー更新と0.0
 - 実データの期待値(MCP経由、実バイナリ): requests 2.19.0・urllib3 1.23・jinja2 2.10・django 3.2.0の推奨と、各CVEの`recommended_status`。PyTorchのような不正な境界値は保留
 - Maven・npm・Goの既存の期待値が変わらないこと(`versions[]`の規則変更で変わるものは理由を確認する)
 
+## 直接/推移的依存の区別(v0.7.0)詳細設計メモ(2026-10-07)
+
+v0.6.0の設計メモ(上記)で確定した方針(JSONと行形式のみ解析、pom.xmlは当面対象外)の詳細。
+
+### 実データの確認結果(2026-10-07、npm 11・osv-scanner v2.4.0)
+
+`npm install --package-lock-only --ignore-scripts`で、workspace・別名・入れ子を含むpackage-lock.json(v3)を生成してスキャンした。
+
+- ルートの`packages[""]`に`dependencies`・`devDependencies`・`workspaces`。workspaceは`packages/sub`(本体)と`node_modules/sub`(`link: true`、`resolved: "packages/sub"`)の2つのキー
+- 別名(`"old-lodash": "npm:lodash@4.17.15"`)は`node_modules/old-lodash`に`name: "lodash"`。osv-scannerは本来の名前で`lodash 4.17.15`と報告する
+- 同じ名前の別の版は入れ子に置かれる(`node_modules/qs` 6.7.0はexpress経由、`packages/sub/node_modules/qs` 6.5.2はworkspaceの直接依存)。osv-scannerは名前と版の組ごとに1件で報告する
+- osv-scannerは開発用依存に`dependency_groups: ["dev"]`を付ける(既存の出力のまま)
+- go.mod: `// indirect`の付いたrequireも報告される。`replace`は適用後の版で報告され(`golang.org/x/text`→`0.3.5`)、パスを変える`replace`は置換先のパスで報告される(`golang.org/x/text => github.com/golang/text`は`github.com/golang/text 0.3.2`)
+- requirements.txt: deps.devで解決された依存(`requests==2.19.0`に対する`idna`・`urllib3`)はファイルに書かれていない名前として報告される。`--no-resolve`では書いた依存だけ
+
+### 判定の規則
+
+ファイル(スナップショットのコピー)ごとに、名前と版の組の関係を判定する。
+
+- **package-lock.json(v2以降)**
+  - 起点: ルート(`""`)とworkspace(`node_modules/`で始まらないキー)。起点の`dependencies`・`devDependencies`・`optionalDependencies`・`peerDependencies`を、Nodeの解決規則(`<起点>/node_modules/<名前>`から上位の`node_modules`へ順に探す。`link: true`は`resolved`のworkspaceへ)で解決したエントリが**直接依存**
+  - 直接依存から`dependencies`・`optionalDependencies`・`peerDependencies`をたどって到達するエントリが**推移的依存**。経由した直接依存の名前を`introduced_by`に集める(別名は依存のキー名ではなく本来の名前)
+  - エントリの名前は`name`があればそれ、なければキーの最後の`node_modules/`以降(`@scope/name`を含む)
+  - 同じ名前と版のエントリが直接依存でもあり推移的にも到達する場合は`direct`とし、`introduced_by`も付ける(直接依存を更新しても、他の経路の同じ版が残りうるため)
+  - どの起点からも到達しないエントリ(extraneous)は`unknown`
+  - lockfileVersion 1(依存の木だけでルートの直接依存の一覧がない)は`unknown`
+- **go.mod**: `require`のうち`// indirect`の付かないものが`direct`、付くものが`transitive`。`replace`で置換されたモジュールは置換先のパスにも同じ関係を当てる(osv-scannerは置換先のパスで報告する)。`introduced_by`はgo.modだけでは分からないため付けない
+- **requirements.txt**: 本サーバーが書いたコピーの行(取り込みを展開した行を含む)の名前が`direct`(PEP 503で照合)、それ以外の名前(deps.devで解決された依存)が`transitive`
+- **それ以外の形式**(pom.xml、gradle.lockfile、yarn.lock、pnpm-lock.yaml、bun.lock、poetry.lock、uv.lock、Pipfile.lock、pdm.lock): `unknown`
+
+### スキャン結果との対応付け
+
+- osv-scannerの`results[].source.path`(スナップショットのコピーのパス)とパッケージの組を、パッケージごとに保持する。現行の`parseOsvScanOutput`はファイルをまたいで集約するため、応答に出ない形(シンボルのキー)でパッケージごとのスキャン元を残す(`scan_java_project`等の既存の応答は変えない)
+- 複数のファイルに現れるパッケージは、ファイルごとの判定がすべて同じならその値、異なれば`mixed`。`introduced_by`はファイルをまたいで合わせる
+
+### 出力(2026-10-07 推奨案で確定)
+
+`scan_project`の`packages[]`と`suggest_fix`の`suggestions[]`に次を加える。`scan_java_project`・`scan_sbom`・`scan_java_artifact`は変えない。
+
+- `dependency_relation`: `direct` / `transitive` / `mixed` / `unknown`(すべてのパッケージに付ける。値がないと「直接依存」と誤読されうるため、判定できない形式も`unknown`と明示)
+- `introduced_by`(npmのみ): その版を推移的に要求している直接依存の名前。最大10件、超えた分は`introduced_by_omitted`に件数
+- `declared_in`(npmの直接依存のみ): 直接依存として宣言しているpackage.json(`package.json`、`packages/sub/package.json`)。workspaceの直接依存をどこで更新すればよいかを示す
+- `update_hint`(suggest_fix)を関係に応じて具体化する:
+  - npmの直接依存: `declared_in`の指定を更新
+  - npmの推移的依存: `introduced_by`の直接依存を更新する。直らない場合はルートのpackage.jsonの`overrides`(ルートのプロジェクトでのみ有効)
+  - Goの`// indirect`: `go get <module>@<version>`(go.modの`// indirect`のrequireが更新される)。`replace`で置換されている場合は`replace`の版を更新する
+  - PyPIの推移的依存: 制約ファイル(`-c`)、またはuv・Poetryの上書き設定
+  - `unknown`・`mixed`: 現行の一般的な案内(直接・推移的の両方を記載)
+
+### 上限と安全性
+
+- 解析対象はスナップショットのコピー(検証済み・サイズ上限内)だけ。元のファイルは読まない
+- package-lock.jsonは1ファイル1回だけ解析し、解析する合計サイズに上限を設ける(`LockfileKeyCache`と同じ256MiB)。上限を超えたファイルは`unknown`にする(スキャン自体は続ける)
+- 依存のたどりは訪問済みのエントリを記録して循環で止める。たどる辺の総数にも上限を設け(例: 200万)、超えたら`unknown`
+- 出力する名前・パスは`sanitizeExternalText`を通す
+
+### 完了条件とテスト
+
+- 単体: Nodeの解決規則(入れ子・上位への探索・scope付き名前・link)、別名、workspace、直接かつ推移的、extraneous、lockfileVersion 1、循環、上限、go.modの`// indirect`・`replace`(パスの変更を含む)・単一行と括弧のrequire、requirements.txtの取り込み展開、複数ファイルでの`mixed`
+- 実データ(上記のlockfile、MCP経由、実バイナリ): express・lodash(両方の版)・minimist・node-fetch・qs 6.5.2が`direct`(`declared_in`付き)、qs 6.7.0・body-parser・cookie・path-to-regexp・send・serve-staticが`transitive`で`introduced_by: ["express"]`。go.modとrequirements.txtも上記の期待値どおり
+- `scan_java_project`等の既存の応答が変わらないこと
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
@@ -571,7 +633,7 @@ npm・Goと同じ規則(1.0以上はmajor.minor、0.xのマイナー更新と0.0
   - suggest_fixでも`markLowerBounds`を適用し、下限でスキャンした依存に`version_is_lower_bound`と注記を付ける
   - 実バイナリでMCP経由の確認(requirements.txt、`--no-resolve`): requests 2.19.0→2.33.0、urllib3 1.23→2.8.0、jinja2 2.10→3.1.6、django 3.2.0→5.2.17、pillow 8.0.0→12.3.0、fastapi 0.65.0→0.109.1(0.x規則でcross_major)、torch 2.5.0→2.13.0、flask>=1.0→3.1.3(下限の注記)。推奨先をOSV APIに直接照会し、8件は既知の脆弱性0件
 - [ ] (v0.6.0の検証で判明)推奨先に、現在の版には該当しない新しい脆弱性がありうる。例: cryptography 3.2→49.0.0(cross_major)は、44.0.0で混入し50.0.0で修正された2件(GHSA-g6cj-pr64-35w5等)に該当する。スキャンは現在の版の脆弱性しか知らないため検出できない(「未検出の脆弱性がないことは保証しない」の具体例)。対策案: 推奨候補をapi.osv.devに照会し、既知の脆弱性がある候補を避ける(送信先・送信内容はスキャンと同じ。公開版の名前と版のみ)。照会回数の上限と、照会失敗時の扱いを決めて実装する
-- [ ] v0.7.0: 直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)。v0.6.0から分離(2026-10-07) → 詳細設計メモ作成済み(2026-10-07、上記「suggest_fix PyPI対応・直接/推移的依存の区別(v0.6.0)詳細設計メモ」)
+- [ ] v0.7.0: 直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)。v0.6.0から分離(2026-10-07) → 詳細設計メモ作成済み(上記「直接/推移的依存の区別(v0.7.0)詳細設計メモ」) → 詳細設計メモ作成済み(2026-10-07、上記「suggest_fix PyPI対応・直接/推移的依存の区別(v0.6.0)詳細設計メモ」)
 - [ ] 以降: Goバイナリスキャン(ビルド情報からstdlibの版も取得でき、go.modで拾えないstdlibの脆弱性を補える)
 
 ### B4. pom.xmlの親POM(`<parent><relativePath>`)によるスキャン範囲外の読み込み(v0.4.0で対応)
