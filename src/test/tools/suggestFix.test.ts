@@ -149,3 +149,62 @@ describe("handleSuggestFix: 推移的依存の解決状態の伝播", () => {
     }
   });
 });
+
+describe("handleSuggestFix: npm・Go対応(v0.5.0)", () => {
+  // Maven・npm・Go・PyPIの脆弱なパッケージを1件ずつ含むスキャン結果
+  const MIXED_JSON = JSON.stringify({
+    results: [{
+      source: { path: "/x/lock" },
+      packages: [
+        ["Maven", "a:a", "2.14.1", "ECOSYSTEM", "2.15.0"],
+        ["npm", "lodash", "4.17.20", "SEMVER", "4.17.21"],
+        ["Go", "golang.org/x/text", "0.3.0", "SEMVER", "0.3.8"],
+        ["PyPI", "urllib3", "1.23", "ECOSYSTEM", "1.24.2"],
+      ].map(([ecosystem, name, version, type, fixed]) => ({
+        package: { name, version, ecosystem },
+        groups: [{ ids: [`GHSA-${name}`], aliases: [], max_severity: "7.5" }],
+        vulnerabilities: [{ id: `GHSA-${name}`, affected: [{ package: { name, ecosystem }, ranges: [{ type, events: [{ introduced: "0" }, { fixed }] }] }] }],
+      })),
+    }],
+  });
+
+  it("scan_projectと同じ検出でJava以外のlockfileも対象にし、npm・Goの推奨を返す(PyPIは未対応と明示)", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-fix-mixed-"));
+    try {
+      await writeFile(path.join(dir, "pom.xml"), "<project/>");
+      await mkdir(path.join(dir, "web"));
+      await writeFile(path.join(dir, "web", "package-lock.json"), '{"lockfileVersion":3,"packages":{}}');
+      await mkdir(path.join(dir, "svc"));
+      await writeFile(path.join(dir, "svc", "go.mod"), "module example.com/svc\n");
+      await writeFile(path.join(dir, "svc", "package.json"), "{}"); // lockfileが無い → coverageに出る
+      const argsFile = path.join(binDir, "mixed-args.txt");
+      const bin = await makeFakeBinary("mixed", `printf '%s\\n' "$@" > '${argsFile}'; echo '${MIXED_JSON}'; exit 1`);
+      const payload = parsePayload(await handleSuggestFix({ project_path: dir }, { binaryPath: bin }));
+
+      expect([...(payload.manifests as string[])].sort()).toEqual(["pom.xml", "svc/go.mod", "web/package-lock.json"]);
+      const lockfiles = (await readFile(argsFile, "utf8")).split("\n").filter((a) => a.includes(":/"));
+      expect(lockfiles.map((a) => a.slice(0, a.indexOf(":"))).sort()).toEqual(["go.mod", "package-lock.json", "pom.xml"]);
+      // coverageを件数より前に置く
+      const coverage = payload.coverage as { complete: boolean; lockfile_missing: { path: string }[] };
+      expect(coverage.complete).toBe(false);
+      expect(coverage.lockfile_missing.map((m) => m.path)).toEqual(["svc/package.json"]);
+      const keys = Object.keys(payload);
+      expect(keys.indexOf("coverage")).toBeLessThan(keys.indexOf("vulnerable_package_count"));
+      expect("skipped_manifests" in payload).toBe(false);
+
+      const byEcosystem = Object.fromEntries(
+        (payload.suggestions as { ecosystem: string; recommended_upgrade: string | null; upgrade_tier: string | null; verification: string }[])
+          .map((s) => [s.ecosystem, [s.recommended_upgrade, s.upgrade_tier, s.verification]]),
+      );
+      expect(byEcosystem).toEqual({
+        Maven: ["2.15.0", "major_internal", "verified"],
+        npm: ["4.17.21", "same_minor", "verified"],
+        Go: ["0.3.8", "same_minor", "verified"],
+        PyPI: [null, null, "unsupported_ecosystem"],
+      });
+      expect(payload.unfixed_vulnerability_count).toBe(0);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});

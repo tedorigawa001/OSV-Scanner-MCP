@@ -7,7 +7,7 @@
 
 Google製 [OSV-Scanner](https://github.com/google/osv-scanner) をラップするMCPサーバーです。Claude等のMCPクライアントから「このプロジェクトの脆弱性をチェックして」と自然言語で依頼するだけで、依存ライブラリの既知の脆弱性(CVE / GHSA)を深刻度順のレポートで取得できます。
 
-> **ステータス**: [npmで公開中](https://www.npmjs.com/package/osv-scanner-mcp)(`npx -y osv-scanner-mcp`)。Java(Maven / Gradle)、JavaScript(npm / yarn / pnpm / bun)、Python(Poetry / uv / Pipenv / PDM / requirements.txt)、Go のlockfileに対応しています(修正版の推奨はJavaのみ)。MCPクライアントは Claude Code / Claude Desktop / Codex CLI / Antigravity / VS Code(GitHub Copilot)での利用手順を用意しています。
+> **ステータス**: [npmで公開中](https://www.npmjs.com/package/osv-scanner-mcp)(`npx -y osv-scanner-mcp`)。Java(Maven / Gradle)、JavaScript(npm / yarn / pnpm / bun)、Python(Poetry / uv / Pipenv / PDM / requirements.txt)、Go のlockfileに対応しています(修正版の推奨はJava・JavaScript・Go)。MCPクライアントは Claude Code / Claude Desktop / Codex CLI / Antigravity / VS Code(GitHub Copilot)での利用手順を用意しています。
 
 ## 特徴
 
@@ -142,7 +142,7 @@ osv-scanner v2.4.0 で接続先を実機確認した結果です(2026-10-07)。
 | 操作 | 接続先 | 送られる情報 |
 |---|---|---|
 | `pom.xml` のスキャン(`scan_project` / `scan_java_project` / `suggest_fix`) | `api.osv.dev`、**`api.deps.dev`** | パッケージの名前とバージョン。deps.dev には推移的依存の解決のため、`pom.xml` に宣言された依存(社内パッケージを含む)の名前とバージョンが送られます |
-| `requirements.txt` のスキャン(`scan_project`) | `api.osv.dev`、**`api.deps.dev`** | `pom.xml` と同じく、推移的依存の解決のため記載された依存の名前とバージョンが deps.dev に送られます。`--index-url` 等に書かれた取得先へは接続しません |
+| `requirements.txt` のスキャン(`scan_project` / `suggest_fix`) | `api.osv.dev`、**`api.deps.dev`** | `pom.xml` と同じく、推移的依存の解決のため記載された依存の名前とバージョンが deps.dev に送られます。`--index-url` 等に書かれた取得先へは接続しません |
 | lockfileのスキャン(`gradle.lockfile`、`package-lock.json` 等のnpm系、`poetry.lock` 等のPython系、`go.mod`) | `api.osv.dev` | パッケージの名前とバージョン(lockfileに全依存が記載済みのため、解決のための外部接続はしません) |
 | `scan_java_artifact` / `scan_sbom` | `api.osv.dev` | 同定できたパッケージの名前とバージョン |
 | `explain_vulnerability` | `api.osv.dev` | 指定した脆弱性ID |
@@ -212,7 +212,7 @@ api.osv.dev と deps.dev はどちらも Google が運営するサービスで�
   - 各一覧は200件までで、超えた分の件数を `omitted_items` に返します
 - `ecosystem_breakdown` は、脆弱性0件のエコシステムも含めて「スキャンした」ことを示します
 - `dependency_groups` はOSV-Scannerが付けた依存グループ(例: `dev`)の生の値です。lockfileの形式によって欠落・不正確なため(pnpmでは付かず、pdmでは `optional` になる等)、参考情報として扱ってください
-- 修正版の推奨(`suggest_fix`)は現在Javaのみ対応です
+- 修正版の推奨(`suggest_fix`)はJava・JavaScript・Goに対応しています(Pythonは未対応)
 
 ### `scan_java_project`
 
@@ -333,23 +333,26 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 
 ### `suggest_fix`
 
-スキャンを実行し、脆弱なパッケージごとに**推奨アップグレードバージョン**を提案します。単純な最大バージョンではなく、現在のバージョンに最も近いリリース系統の修正版を3段階フォールバックで選定します:
+`scan_project` と同じ検出・スキャンを実行し、脆弱なパッケージごとに**推奨アップグレードバージョン**を提案します。推奨はJava(Maven / Gradle)・JavaScript(npm)・Goに対応し、Python(PyPI)は未対応です。単純な最大バージョンではなく、現在のバージョンに最も近いリリース系統の修正版を3段階フォールバックで選定します:
 
 | Tier | 意味 |
 |---|---|
-| `same_minor` | 現在と同じ major.minor 系統内の修正版(最小の変更で済む) |
+| `same_minor` | 現在と同じ系統内の修正版(最小の変更で済む) |
 | `major_internal` | 同一メジャー内の修正版(マイナーバージョンアップが必要) |
 | `cross_major` | メジャーアップグレードが必要(破壊的変更の可能性あり) |
 
-**入力**: `scan_java_project` と同じ(`project_path`)
+npm・Goの「同じ系統」は、npmの `^`(キャレット)が互換とみなす範囲です。1.0.0以上は Maven と同じく major.minor 単位ですが、0.x では同じ `0.minor` 内だけを同じ系統とし、マイナー更新(`0.3` → `0.4`)は `cross_major`、0.0.x ではどの更新も `cross_major` として扱います(SemVerでは0.xの更新は互換を保証しないため)。
+
+**入力**: `scan_project` と同じ(`project_path`)
 
 **出力(成功時)**
 
 ```json
 {
   "project_dir": "/path/to/project",
-  "manifests": ["pom.xml"],
+  "manifests": ["pom.xml", "web/package-lock.json"],
   "dependency_resolution": { "transitive_resolution": "enabled" },
+  "coverage": { "complete": true, "manifests": [ ... ], "lockfile_missing": [], "unpinned_requirements": [], "unscannable_requirements": [], "skipped_files": [] },
   "vulnerable_package_count": 4,
   "unfixed_vulnerability_count": 1,
   "suggestions": [
@@ -370,10 +373,13 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 ```
 
 - `recommended_upgrade` は既知の修正版を候補に、修正対象の全CVEの影響範囲外と確認できたものを3段階Tier順・バージョン昇順で選びます。CVEごとの修正版の最大値を単純に採用せず、別系統で再び影響を受ける候補も除外します。全公開版の中での最小性や未検出の脆弱性がないことは保証しません。
-- MavenのOSV `ECOSYSTEM` 範囲(`introduced` / `fixed` / `last_affected` / 上限なし)を照合します。`versions` に明示された影響も確認します。範囲欠落・不正・未対応形式・`limit` による不完全な情報では安全と推定せず、候補を検証できなければ `recommended_upgrade: null`、`verification: "no_verified_candidate"` を返します。
+- OSVの影響範囲(`introduced` / `fixed` / `last_affected` / 上限なし)を照合します。MavenはMavenの優先順位で `ECOSYSTEM` 範囲を、npm・GoはSemantic Versioningの優先順位で `SEMVER` / `ECOSYSTEM` 範囲を使います。`versions` に明示された影響も確認します。範囲欠落・不正・未対応形式(`GIT` 等)・`limit` による不完全な情報や、SemVerとして解釈できない版(一部のGHSAに残る `19.03.9` のような表記)を含む場合は安全と推定せず、候補を検証できなければ `recommended_upgrade: null`、`verification: "no_verified_candidate"` を返します。
+- プレリリース版(`5.0.0-beta.3`、`15.6.0-canary.61`、Goの疑似バージョン)は、正式版の候補では全CVEを解消できない場合だけ推奨し、`recommended_is_prerelease: true` を付けます。同じTierのプレリリースより、上のTierの正式版を優先します。
 - 推奨時は `verification: "verified"`、CVEごとの `recommended_status` は `affected` / `not_affected` / `unknown` です。推奨保留時は `not_evaluated` になります。`per_cve_detail.fixed_in` は各CVE単独の候補であり、最終推奨先の判定は `recommended_status` を参照してください。
-- 現在より新しい修正版候補がないCVEは `tier: "unfixed"` として推奨の修正対象から除外します(情報欠落を含む場合があります)。除外したCVEも推奨先で判定し、その状態を表示します。全CVEがunfixedの場合も `recommended_upgrade` は `null` です。
-- 修正版の推奨はMavenのみ対応です。Maven以外のパッケージは `verification: "unsupported_ecosystem"`、CVEごとの `tier: "unsupported"` を返し、`unfixed` には数えません(修正版の有無は判定していないため。修正版は `scan_project` の `fixed_versions` や `explain_vulnerability` で確認できます)。
+- 現在より新しい修正版候補がないCVEは `tier: "unfixed"` として推奨の修正対象から除外します(情報欠落を含む場合があります)。除外したCVEも推奨先で判定し、その状態を表示します。全CVEがunfixedの場合も `recommended_upgrade` は `null` です。修正版の記載はあるがバージョンとして解釈できないCVE(SemVerでない `13.0` 等)は `tier: "unparseable_fix"` とし、修正版が無いとは扱わず修正対象に残すため、推奨は保留(`no_verified_candidate`)になります。
+- npm・Goの提案には更新方法の `update_hint` を付けます。推移的依存の場合、npmでは要求している直接依存の更新か、ルートの `package.json` の `overrides`(ルートのプロジェクトでのみ有効)で版を指定します。Goでは `go get <module>@<version>` で更新できます。Goのv2以上のメジャーは別のモジュールパス(`/v2` 等)としてOSV上も別パッケージになるため、新しいメジャー系列の修正版は候補に含まれません。現在の版が疑似バージョン(タグのないコミット)の場合は `upgrade_note` に示します。
+- Python(PyPI)など推奨に未対応のエコシステムは `verification: "unsupported_ecosystem"`、現在の版をバージョンとして解釈できない場合(npmのgit・ローカルパス依存等)は `verification: "unparseable_version"` を返し、どちらもCVEごとの `tier: "unsupported"` として `unfixed` には数えません(修正版の有無は判定していないため。修正版は `scan_project` の `fixed_versions` や `explain_vulnerability` で確認できます)。
+- 応答の `coverage` は `scan_project` と同じです。lockfileの無いマニフェストや外したファイルがあれば `complete: false` になり、それらの依存は提案に含まれません。v0.4.2以前の `skipped_manifests` / `scope_warning` は `coverage.skipped_files` / `coverage.warning` に統合しました。
 
 ### `explain_vulnerability`
 
@@ -458,7 +464,7 @@ npm run build             # dist/ へビルド
 - [x] Gradle対応(lockfile方式)
 - [x] `scan_java_artifact` ツール: JAR/WAR実体スキャン(lockfileが無い・shaded/fat JARのみのプロジェクト向け)
 - [x] `scan_project` ツール: Java / JavaScript / Python / Go のlockfileをまとめてスキャン
-- [ ] `suggest_fix` のJavaScript / Go対応(semver)
+- [x] `suggest_fix` のJavaScript / Go対応(semver)
 - [ ] `suggest_fix` のPython対応(PEP 440)、直接/推移的依存の区別
 
 ## ライセンス

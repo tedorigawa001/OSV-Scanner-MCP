@@ -1,5 +1,5 @@
-import { compareMavenVersions } from "../utils/mavenVersion.js";
 import { asArray, asRecord, asString } from "../utils/unknownJson.js";
+import { versionRangeTypes, versionSchemeFor } from "./versionScheme.js";
 
 export interface AffectedInterval {
   introduced: string;
@@ -13,11 +13,19 @@ export interface AffectedVersionEvidence {
   versions: string[];
 }
 
-/** Preserve uncertainty: unsupported or malformed ranges cannot prove a candidate safe. */
+/**
+ * Preserve uncertainty: unsupported or malformed ranges cannot prove a candidate safe.
+ * 比較・範囲の型はエコシステム別(versionScheme.ts)。比較器のないエコシステムは常に情報不足。
+ * 解釈できない版(SemVerでない値等)を含む範囲は判定に使わず、情報不足とする。
+ */
 export function extractAffectedVersions(
   details: Record<string, unknown>[], ids: string[], name: string, ecosystem: string,
 ): AffectedVersionEvidence {
-  const evidence: AffectedVersionEvidence = { complete: ecosystem === "Maven", intervals: [], versions: [] };
+  const scheme = versionSchemeFor(ecosystem);
+  const rangeTypes = versionRangeTypes(ecosystem);
+  const evidence: AffectedVersionEvidence = { complete: scheme !== null, intervals: [], versions: [] };
+  const valid = (value: string) => scheme?.isValid(value) ?? false;
+  const compare = (a: string, b: string) => scheme?.compare(a, b) ?? 0;
   if (ids.length === 0 || ids.some(id => !details.some(d => d.id === id))) evidence.complete = false;
   for (const detail of details) {
     let matched = false;
@@ -32,7 +40,7 @@ export function extractAffectedVersions(
       if (affected?.versions !== undefined && !Array.isArray(affected.versions)) evidence.complete = false;
       for (const version of asArray(affected?.versions)) {
         const value = asString(version);
-        if (!value) evidence.complete = false;
+        if (!value || !valid(value)) evidence.complete = false;
         else evidence.versions.push(value);
       }
       const ranges = asArray(affected?.ranges);
@@ -40,11 +48,14 @@ export function extractAffectedVersions(
       if (ranges.length === 0) evidence.complete = false;
       for (const rawRange of ranges) {
         const range = asRecord(rawRange);
-        if (range?.type !== "ECOSYSTEM") { evidence.complete = false; continue; }
+        const type = asString(range?.type);
+        if (range === null || type === null || !rangeTypes.has(type)) { evidence.complete = false; continue; }
         const events = asArray(range.events);
         let start: string | null = null;
         let previousEnd: string | null = null;
         let previousInclusive = false;
+        /** この区間の境界に解釈できない版がある(区間を判定に使わない) */
+        let startInvalid = false;
         if (events.length === 0) evidence.complete = false;
         for (const rawEvent of events) {
           const event = asRecord(rawEvent);
@@ -54,25 +65,28 @@ export function extractAffectedVersions(
           if (keys.length !== 1 || !value || !["introduced", "fixed", "last_affected", "limit"].includes(kind!)) {
             evidence.complete = false; continue;
           }
+          const invalid = !(kind === "introduced" && value === "0") && !valid(value);
+          if (invalid) evidence.complete = false;
           if (kind === "introduced") {
-            if (start !== null || (previousEnd !== null && (value === "0" ||
-              compareMavenVersions(value, previousEnd) < 0 ||
-              (previousInclusive && compareMavenVersions(value, previousEnd) === 0)))) evidence.complete = false;
+            if (start !== null || (!invalid && previousEnd !== null && (value === "0" ||
+              compare(value, previousEnd) < 0 ||
+              (previousInclusive && compare(value, previousEnd) === 0)))) evidence.complete = false;
             start = value;
+            startInvalid = invalid;
           } else {
             if (start === null) { evidence.complete = false; continue; }
             const inclusive = kind === "last_affected";
-            if (start !== "0" && (compareMavenVersions(start, value) > 0 ||
-              (!inclusive && compareMavenVersions(start, value) === 0))) evidence.complete = false;
-            evidence.intervals.push({ introduced: start, end: value, inclusive });
+            if (!invalid && !startInvalid && start !== "0" && (compare(start, value) > 0 ||
+              (!inclusive && compare(start, value) === 0))) evidence.complete = false;
+            if (!invalid && !startInvalid) evidence.intervals.push({ introduced: start, end: value, inclusive });
             // limit bounds known affected versions, but is not evidence of a fix beyond it.
             if (kind === "limit") evidence.complete = false;
-            previousEnd = value;
+            previousEnd = invalid ? null : value;
             previousInclusive = inclusive;
             start = null;
           }
         }
-        if (start !== null) evidence.intervals.push({ introduced: start, end: null, inclusive: false });
+        if (start !== null && !startInvalid) evidence.intervals.push({ introduced: start, end: null, inclusive: false });
       }
     }
     if (!matched) evidence.complete = false;
@@ -81,11 +95,15 @@ export function extractAffectedVersions(
   return evidence;
 }
 
-export function candidateStatus(evidence: AffectedVersionEvidence | undefined, version: string): "affected" | "not_affected" | "unknown" {
-  if (!evidence) return "unknown";
-  if (evidence.versions.some(v => compareMavenVersions(v, version) === 0) || evidence.intervals.some(r =>
-    (r.introduced === "0" || compareMavenVersions(version, r.introduced) >= 0) &&
-    (r.end === null || compareMavenVersions(version, r.end) < 0 ||
-      (r.inclusive && compareMavenVersions(version, r.end) === 0)))) return "affected";
+export function candidateStatus(
+  evidence: AffectedVersionEvidence | undefined, version: string, ecosystem: string,
+): "affected" | "not_affected" | "unknown" {
+  const scheme = versionSchemeFor(ecosystem);
+  if (!evidence || scheme === null || !scheme.isValid(version)) return "unknown";
+  const compare = scheme.compare;
+  if (evidence.versions.some(v => compare(v, version) === 0) || evidence.intervals.some(r =>
+    (r.introduced === "0" || compare(version, r.introduced) >= 0) &&
+    (r.end === null || compare(version, r.end) < 0 ||
+      (r.inclusive && compare(version, r.end) === 0)))) return "affected";
   return evidence.complete ? "not_affected" : "unknown";
 }

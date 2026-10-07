@@ -182,14 +182,14 @@ describe("suggestUpgrades", () => {
 });
 
 describe("未対応エコシステム(回帰: v0.3.3でnpmの脆弱性を修正版なしと誤表示)", () => {
-  it("Maven以外は推奨を出さず、unfixedではなくunsupportedとして返す", () => {
-    const npmPkg: ScanReportPackage = {
-      name: "lodash",
-      version: "4.17.20",
-      ecosystem: "npm",
-      vulnerabilities: [vuln("GHSA-35jh-r3h4-6jhm", "CVE-2021-23337", [])],
+  it("未対応のエコシステム(PyPI)は推奨を出さず、unfixedではなくunsupportedとして返す", () => {
+    const pypiPkg: ScanReportPackage = {
+      name: "urllib3",
+      version: "1.23",
+      ecosystem: "PyPI",
+      vulnerabilities: [vuln("PYSEC-2019-133", "CVE-2019-11324", ["1.24.2"])],
     };
-    const suggestion = suggestUpgradeForPackage(npmPkg);
+    const suggestion = suggestUpgradeForPackage(pypiPkg);
     expect(suggestion.verification).toBe("unsupported_ecosystem");
     expect(suggestion.recommended_upgrade).toBeNull();
     expect(suggestion.per_cve_detail.map((d) => d.tier)).toEqual(["unsupported"]);
@@ -198,11 +198,169 @@ describe("未対応エコシステム(回帰: v0.3.3でnpmの脆弱性を修正�
   });
 
   it("Mavenと混在しても、Mavenの推奨は従来どおり算出する", () => {
-    const [maven, npm] = suggestUpgrades([
+    const [maven, pypi] = suggestUpgrades([
       pkg("a:a", "2.14.1", [vuln("GHSA-m", "CVE-2021-1", ["2.15.0"])]),
-      { name: "lodash", version: "4.17.20", ecosystem: "npm", vulnerabilities: [vuln("GHSA-n", null, [])] },
+      { name: "urllib3", version: "1.23", ecosystem: "PyPI", vulnerabilities: [vuln("PYSEC-n", null, [])] },
     ]);
     expect(maven!.recommended_upgrade).toBe("2.15.0");
-    expect(npm!.verification).toBe("unsupported_ecosystem");
+    expect("update_hint" in maven!).toBe(false);
+    expect("recommended_is_prerelease" in maven!).toBe(false);
+    expect(pypi!.verification).toBe("unsupported_ecosystem");
+  });
+});
+
+/** osv-scannerの出力(1パッケージ)からレポートを通して提案を作る。rangesは実データ(api.osv.dev)の形 */
+function suggestFromScan(
+  ecosystem: string,
+  name: string,
+  version: string,
+  vulns: { id: string; ranges: { type?: string; events: Record<string, string>[] }[] }[],
+) {
+  const report = parseOsvScanOutput({
+    results: [{
+      source: { path: "/work/lock" },
+      packages: [{
+        package: { name, version, ecosystem },
+        groups: vulns.map((v) => ({ ids: [v.id], aliases: [], max_severity: "7.5" })),
+        vulnerabilities: vulns.map((v) => ({
+          id: v.id,
+          affected: [{ package: { name, ecosystem }, ranges: v.ranges.map((r) => ({ type: "SEMVER", ...r })) }],
+        })),
+      }],
+    }],
+  });
+  return suggestUpgradeForPackage(report.packages[0]!);
+}
+
+const range = (introduced: string, fixed: string): { events: Record<string, string>[] } => ({ events: [{ introduced }, { fixed }] });
+
+describe("npm・Goの推奨(v0.5.0、実データの期待値)", () => {
+  it("lodash 4.17.20 → 4.18.0(major_internal)。4.17.21・4.17.23では4.18.0で直る2件が残る", () => {
+    const s = suggestFromScan("npm", "lodash", "4.17.20", [
+      { id: "GHSA-29mw-wpgm-hmr9", ranges: [range("4.0.0", "4.17.21")] },
+      { id: "GHSA-35jh-r3h4-6jhm", ranges: [range("0", "4.17.21")] },
+      { id: "GHSA-f23m-r3pf-42rh", ranges: [range("0", "4.18.0")] },
+      { id: "GHSA-r5fr-rjxr-66jc", ranges: [range("4.0.0", "4.18.0")] },
+      { id: "GHSA-xxjr-mmjv-4gpg", ranges: [range("4.0.0", "4.17.23")] },
+    ]);
+    expect(s.verification).toBe("verified");
+    expect(s.recommended_upgrade).toBe("4.18.0");
+    expect(s.upgrade_tier).toBe("major_internal");
+    expect(Object.fromEntries(s.per_cve_detail.map((d) => [d.id, `${d.fixed_in}/${d.tier}/${d.recommended_status}`]))).toEqual({
+      "GHSA-29mw-wpgm-hmr9": "4.17.21/same_minor/not_affected",
+      "GHSA-35jh-r3h4-6jhm": "4.17.21/same_minor/not_affected",
+      "GHSA-f23m-r3pf-42rh": "4.18.0/major_internal/not_affected",
+      "GHSA-r5fr-rjxr-66jc": "4.18.0/major_internal/not_affected",
+      "GHSA-xxjr-mmjv-4gpg": "4.17.23/same_minor/not_affected",
+    });
+    expect(s.update_hint).toContain("overrides");
+  });
+
+  it("minimist 1.2.5 → 1.2.6(same_minor)。現在より古い0.2.4の区間は候補にしない", () => {
+    const s = suggestFromScan("npm", "minimist", "1.2.5", [
+      { id: "GHSA-xvch-5gv4-984h", ranges: [range("1.0.0", "1.2.6"), range("0", "0.2.4")] },
+    ]);
+    expect([s.recommended_upgrade, s.upgrade_tier]).toEqual(["1.2.6", "same_minor"]);
+  });
+
+  it("golang.org/x/text 0.3.0 → 0.39.0(0.x系のマイナー更新はcross_major)", () => {
+    const s = suggestFromScan("Go", "golang.org/x/text", "0.3.0", [
+      { id: "GO-2020-0015", ranges: [range("0", "0.3.3")] },
+      { id: "GO-2021-0113", ranges: [range("0", "0.3.7")] },
+      { id: "GO-2022-1059", ranges: [range("0", "0.3.8")] },
+      { id: "GO-2026-5970", ranges: [range("0", "0.39.0")] },
+    ]);
+    expect([s.recommended_upgrade, s.upgrade_tier]).toEqual(["0.39.0", "cross_major"]);
+    expect(s.per_cve_detail.map((d) => d.tier)).toEqual(["same_minor", "same_minor", "same_minor", "cross_major"]);
+    expect(s.upgrade_note).toContain("0.x系のため、マイナー更新でも破壊的変更の可能性あり");
+    expect(s.update_hint).toContain("/v2");
+  });
+
+  it("0.0.xはパッチ更新もcross_major", () => {
+    const s = suggestFromScan("npm", "tiny", "0.0.3", [{ id: "GHSA-a", ranges: [range("0", "0.0.4")] }]);
+    expect([s.recommended_upgrade, s.upgrade_tier]).toEqual(["0.0.4", "cross_major"]);
+  });
+
+  it("プレリリースの修正版があっても、正式版で解消できれば正式版を推奨する(上のTierの正式版を優先)", () => {
+    const s = suggestFromScan("npm", "express", "4.17.1", [
+      { id: "GHSA-a", ranges: [range("0", "4.20.0"), range("5.0.0-alpha.1", "5.0.0-beta.3")] },
+    ]);
+    expect(s.recommended_upgrade).toBe("4.20.0");
+    expect("recommended_is_prerelease" in s).toBe(false);
+    const t = suggestFromScan("npm", "pkg", "1.2.0", [{ id: "GHSA-b", ranges: [range("0", "1.2.5-rc.1")] }, { id: "GHSA-c", ranges: [range("0", "1.3.0")] }]);
+    // 1.2.5-rc.1(same_minorのプレリリース)より1.3.0(major_internalの正式版)を優先する
+    expect([t.recommended_upgrade, t.upgrade_tier]).toEqual(["1.3.0", "major_internal"]);
+    expect(t.per_cve_detail.map((d) => d.fixed_in)).toEqual(["1.2.5-rc.1", "1.3.0"]);
+    // 1つのCVEに正式版とプレリリースの修正版がある場合、CVEごとの修正版も正式版を優先する
+    const u = suggestFromScan("npm", "pkg", "1.2.0", [{ id: "GHSA-d", ranges: [range("0", "1.2.5-rc.1"), range("1.2.5", "1.3.0")] }]);
+    expect(u.per_cve_detail[0]!.fixed_in).toBe("1.3.0");
+  });
+
+  it("正式版の候補で解消できない場合だけプレリリースを推奨し、recommended_is_prereleaseを付ける", () => {
+    const s = suggestFromScan("npm", "next", "15.5.0", [{ id: "GHSA-a", ranges: [range("15.0.0", "15.6.0-canary.61")] }]);
+    expect(s.recommended_upgrade).toBe("15.6.0-canary.61");
+    expect(s.recommended_is_prerelease).toBe(true);
+    expect(s.upgrade_note).toContain("プレリリース版を推奨");
+  });
+
+  it("SemVerとして解釈できない範囲(docker/dockerのGHSA)を含むと推奨を保留する", () => {
+    const s = suggestFromScan("Go", "github.com/docker/docker", "19.3.0", [{ id: "GHSA-a", ranges: [range("0", "19.03.9")] }]);
+    expect(s.verification).toBe("no_verified_candidate");
+    expect(s.recommended_upgrade).toBeNull();
+    const t = suggestFromScan("Go", "github.com/docker/docker", "20.10.14+incompatible", [
+      { id: "GO-a", ranges: [range("0", "20.10.24+incompatible")] },
+      { id: "GHSA-b", ranges: [range("0", "20.10.24+incompatible"), range("17.0.0", "19.03.9")] },
+    ]);
+    expect([t.recommended_upgrade, t.verification]).toEqual([null, "no_verified_candidate"]);
+  });
+
+  it("回帰: 解釈できない修正版のCVEをunfixedとして外さず、別CVEの修正版だけで推奨しない", () => {
+    // 現在1.0.0、CVE-Aの修正版は13.0(SemVerでない)、CVE-Bの修正版は1.0.1
+    const s = suggestFromScan("npm", "pkg", "1.0.0", [
+      { id: "GHSA-a", ranges: [range("0", "13.0")] },
+      { id: "GHSA-b", ranges: [range("0", "1.0.1")] },
+    ]);
+    expect(s.recommended_upgrade).toBeNull();
+    expect(s.verification).toBe("no_verified_candidate");
+    expect(Object.fromEntries(s.per_cve_detail.map((d) => [d.id, d.tier]))).toEqual({ "GHSA-a": "unparseable_fix", "GHSA-b": "same_minor" });
+    expect(s.upgrade_note).toContain("解釈できない");
+    // 解釈できない修正版だけの場合も「修正版なし」とは言わない
+    const only = suggestFromScan("npm", "pkg", "1.0.0", [{ id: "GHSA-a", ranges: [range("0", "13.0")] }]);
+    expect([only.recommended_upgrade, only.verification, only.per_cve_detail[0]!.tier]).toEqual([null, "no_verified_candidate", "unparseable_fix"]);
+    expect(only.upgrade_note).not.toContain("unfixed)");
+    // 修正版の記載が無い・現在以下のCVEは従来どおりunfixedとして外し、残りで推奨する
+    const old = suggestFromScan("npm", "pkg", "1.0.0", [
+      { id: "GHSA-c", ranges: [range("0", "0.9.0")] },
+      { id: "GHSA-b", ranges: [range("0", "1.0.1")] },
+    ]);
+    expect(old.recommended_upgrade).toBe("1.0.1");
+    expect(Object.fromEntries(old.per_cve_detail.map((d) => [d.id, d.tier]))).toEqual({ "GHSA-c": "unfixed", "GHSA-b": "same_minor" });
+  });
+
+  it("Goの+incompatibleを比較で扱い、疑似バージョンの現在版には注記を付ける", () => {
+    const s = suggestFromScan("Go", "github.com/docker/docker", "20.10.14+incompatible", [
+      { id: "GO-a", ranges: [range("0", "20.10.24+incompatible")] },
+    ]);
+    expect([s.recommended_upgrade, s.upgrade_tier]).toEqual(["20.10.24+incompatible", "same_minor"]);
+    // 同じ版が+incompatibleの有無で両方載る(実データ)場合、現在の版と同じ形を推奨する
+    for (const ranges of [[range("0", "20.10.24"), range("0", "20.10.24+incompatible")], [range("0", "20.10.24+incompatible"), range("0", "20.10.24")]]) {
+      const both = suggestFromScan("Go", "github.com/docker/docker", "20.10.14+incompatible", [{ id: "GO-x", ranges }]);
+      expect([both.recommended_upgrade, both.per_cve_detail[0]!.fixed_in]).toEqual(["20.10.24+incompatible", "20.10.24+incompatible"]);
+      const plain = suggestFromScan("Go", "github.com/moby/moby", "20.10.14", [{ id: "GO-y", ranges }]);
+      expect(plain.recommended_upgrade).toBe("20.10.24");
+    }
+    const t = suggestFromScan("Go", "golang.org/x/net", "0.0.0-20190101120000-abcdef123456", [
+      { id: "GO-b", ranges: [range("0", "0.0.0-20190813141303-74dc4d7220e7")] },
+      { id: "GO-c", ranges: [range("0", "0.7.0")] },
+    ]);
+    expect([t.recommended_upgrade, t.upgrade_tier]).toEqual(["0.7.0", "cross_major"]);
+    expect(t.upgrade_note).toContain("疑似バージョン");
+  });
+
+  it("現在の版を解釈できない場合はunparseable_versionとし、unfixedに数えない", () => {
+    const s = suggestFromScan("npm", "local-pkg", "file:../local", [{ id: "GHSA-a", ranges: [range("0", "1.0.0")] }]);
+    expect(s.verification).toBe("unparseable_version");
+    expect(s.per_cve_detail.map((d) => d.tier)).toEqual(["unsupported"]);
+    expect(s.upgrade_note).toContain("解釈できない");
   });
 });

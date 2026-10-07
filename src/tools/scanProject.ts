@@ -16,7 +16,7 @@ import { ScanSnapshot, snapshotManifests } from "../utils/scanSnapshot.js";
 import { dependencyResolution, withScopeNotes, type ScanJavaProjectArgs, type ScanJavaProjectOptions } from "./scanJavaProject.js";
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
-const TRANSITIVE_OMITTED_WARNING =
+export const TRANSITIVE_OMITTED_WARNING =
   "OSV_MCP_NO_REMOTE_RESOLUTIONの設定により、マニフェスト(pom.xml / requirements.txt)からの推移的依存の解決を省略しています。" +
   "lockfile(package-lock.json / poetry.lock / go.mod / gradle.lockfile等)に記録された依存は対象ですが、" +
   "pom.xml・requirements.txtに直接記載された依存の先にある推移的依存の脆弱性は含まれません。" +
@@ -34,7 +34,7 @@ function capped<T>(items: readonly T[]): { items: T[]; omitted: number } {
   return { items: items.slice(0, MAX_COVERAGE_ITEMS), omitted: Math.max(0, items.length - MAX_COVERAGE_ITEMS) };
 }
 
-function buildCoverage(project: DetectedProject) {
+export function buildCoverage(project: DetectedProject) {
   const rel = (file: string) => sanitizeExternalText(path.relative(project.projectDir, file));
   const lockfileMissing = capped(project.lockfileMissing);
   const unpinned = capped(project.requirementIssues);
@@ -99,15 +99,12 @@ function markLowerBounds(project: DetectedProject, packages: readonly ScanReport
 }
 
 /**
- * requirements.txtは検証済みの正規化行だけを専用の一時ディレクトリに書いてスキャンする
- * (元ファイルの取り込み指定をosv-scannerにたどらせない)。成功・失敗とも削除する。
- */
-/**
  * 元のファイルはosv-scannerに渡さず、スナップショット(scanSnapshot.ts)のコピーをスキャンする。
  * lockfile・pom.xml(親POMの連鎖を含む)は安全に読んだ内容のコピー、requirements.txtは
  * 検証済みの正規化行だけを書いたコピー。コピーできず外したファイルはskippedFilesに記録する。
+ * スナップショットは成功・失敗とも削除する。suggest_fixも同じスキャンを使う。
  */
-async function scanFromSnapshot(project: DetectedProject, options: RunOsvScanOptions): Promise<ScanReport> {
+export async function scanFromSnapshot(project: DetectedProject, options: RunOsvScanOptions): Promise<ScanReport> {
   const snapshot = await ScanSnapshot.create();
   try {
     const { targets, skipped, incomplete } = await snapshotManifests(snapshot, project.targets, {

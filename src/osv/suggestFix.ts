@@ -6,20 +6,22 @@
  * 最大バージョンではなく「現在のバージョンに最も近い系統の修正版」を優先して提案する。
  *
  * CVEごとの探索順:
- *   Tier 1 (same_minor):     現在と同じmajor.minor系統内の修正版(最小の変更で済む)
+ *   Tier 1 (same_minor):     現在と同じ系統内の修正版(最小の変更で済む)
  *   Tier 2 (major_internal): 同一メジャー内の最小の修正版(マイナーバージョンアップ)
  *   Tier 3 (cross_major):    全体最小の修正版(メジャーアップグレード、破壊的変更の可能性)
+ * 系統の判定はエコシステム別(versionScheme.ts)。npm・Goは0.xのマイナー更新もcross_major。
  *
  * パッケージ全体の候補を全修正対象CVEの影響範囲と照合して推奨する。
  * 判定不能な候補は推奨しない。
  * 現在より新しい修正版が存在しないCVEはunfixedとして明示し、推奨計算から除外する。
+ * プレリリース(canary版・Goの疑似バージョン等)は、正式版の候補で解消できない場合だけ推奨する。
  */
 
-import { compareMavenVersions, mavenVersionSeries } from "../utils/mavenVersion.js";
 import type { ScanReportPackage, SeverityLevel } from "./scanReport.js";
 import { candidateStatus } from "./affectedVersions.js";
+import { versionSchemeFor, type UpgradeTier, type VersionScheme } from "./versionScheme.js";
 
-export type UpgradeTier = "same_minor" | "major_internal" | "cross_major";
+export type { UpgradeTier } from "./versionScheme.js";
 
 export interface CveFixDetail {
   /** 脆弱性の代表ID(通常はGHSA-ID) */
@@ -28,8 +30,13 @@ export interface CveFixDetail {
   severity: SeverityLevel;
   /** このCVEの修正版候補。最終推奨先での判定はrecommended_statusを参照 */
   fixed_in: string | null;
-  /** unsupported: 修正版推奨に未対応のエコシステム(修正版の有無は判定していない) */
-  tier: UpgradeTier | "unfixed" | "unsupported";
+  /**
+   * unfixed: 現在より新しい修正版の記載がない
+   * unparseable_fix: 修正版の記載はあるが、バージョンとして解釈できない(例: SemVerでない`13.0`)。
+   *   修正版が無いとは言えないため修正対象に残し、推奨を保留する
+   * unsupported: 修正版推奨に未対応のエコシステム、または現在の版を解釈できない(修正版の有無は判定していない)
+   */
+  tier: UpgradeTier | "unfixed" | "unparseable_fix" | "unsupported";
   recommended_status?: "affected" | "not_affected" | "unknown" | "not_evaluated";
 }
 
@@ -41,20 +48,43 @@ export interface PackageUpgradeSuggestion {
   recommended_upgrade: string | null;
   /** recommended_upgradeと現在バージョンの系統関係 */
   upgrade_tier: UpgradeTier | null;
+  /** 推奨がプレリリース版の場合だけtrue(正式版の候補では全件を解消できない) */
+  recommended_is_prerelease?: true;
   upgrade_note: string;
+  /** npm・Go: 推奨版への更新方法(推移的依存の場合を含む) */
+  update_hint?: string;
   per_cve_detail: CveFixDetail[];
-  verification: "verified" | "no_verified_candidate" | "unsupported_ecosystem";
+  verification: "verified" | "no_verified_candidate" | "unsupported_ecosystem" | "unparseable_version";
 }
 
-/** バージョン比較・影響範囲の検証が対応済みのエコシステム */
-const SUPPORTED_ECOSYSTEMS = new Set(["Maven"]);
+const TIER_ORDER: readonly UpgradeTier[] = ["same_minor", "major_internal", "cross_major"];
+
+const UPDATE_HINTS: Record<string, string> = {
+  npm:
+    "直接依存ならpackage.jsonの指定を更新します。推移的依存の場合は、それを要求している直接依存の更新か、" +
+    "ルートのpackage.jsonのoverrides(ルートのプロジェクトでのみ有効)で版を指定します",
+  Go:
+    "go get <module>@<version>で更新します(推移的依存もgo.modのrequireに追加されて更新されます)。" +
+    "Goではv2以上のメジャーは別のモジュールパス(/v2等)として別パッケージ扱いのため、新しいメジャー系列の修正版はここに含まれません",
+};
+
+/** Goの疑似バージョン(タグのないコミット): 末尾がタイムスタンプ14桁-コミットハッシュ12桁 */
+const GO_PSEUDO_VERSION = /(?:^|[.-])\d{14}-[0-9a-f]{12}(?:\+|$)/;
+
+function hintFields(ecosystem: string): { update_hint?: string } {
+  const hint = UPDATE_HINTS[ecosystem];
+  return hint === undefined ? {} : { update_hint: hint };
+}
 
 /**
- * 未対応エコシステムは推奨を出さず、CVEをunfixedにも数えない。
- * 修正版の抽出がMaven専用のため、そのまま処理すると修正版のある脆弱性を
- * 「修正版なし」と誤表示する(v0.3.3で確認した不具合)。
+ * 未対応エコシステム・解釈できない現在の版は推奨を出さず、CVEをunfixedにも数えない。
+ * 修正版の抽出がMaven専用だった頃、そのまま処理すると修正版のある脆弱性を
+ * 「修正版なし」と誤表示した(v0.3.3で確認した不具合)。
  */
-function unsupportedEcosystemSuggestion(pkg: ScanReportPackage): PackageUpgradeSuggestion {
+function notEvaluatedSuggestion(
+  pkg: ScanReportPackage,
+  verification: "unsupported_ecosystem" | "unparseable_version",
+): PackageUpgradeSuggestion {
   return {
     package: pkg.name,
     current_version: pkg.version,
@@ -62,8 +92,10 @@ function unsupportedEcosystemSuggestion(pkg: ScanReportPackage): PackageUpgradeS
     recommended_upgrade: null,
     upgrade_tier: null,
     upgrade_note:
-      `${pkg.ecosystem}の修正版推奨には未対応です(修正版の有無は判定していません)。` +
-      "各脆弱性の修正版はexplain_vulnerabilityで確認してください",
+      (verification === "unsupported_ecosystem"
+        ? `${pkg.ecosystem}の修正版推奨には未対応です(修正版の有無は判定していません)。`
+        : `現在の版(${pkg.version})をバージョンとして解釈できないため、修正版の推奨を判定していません(git・ローカルパス等の依存の可能性があります)。`) +
+      "各脆弱性の修正版はfixed_versions(scan_project)またはexplain_vulnerabilityで確認してください",
     per_cve_detail: pkg.vulnerabilities.map((vuln) => ({
       id: vuln.id,
       cve: vuln.cve,
@@ -71,124 +103,92 @@ function unsupportedEcosystemSuggestion(pkg: ScanReportPackage): PackageUpgradeS
       fixed_in: null,
       tier: "unsupported" as const,
     })),
-    verification: "unsupported_ecosystem",
+    verification,
   };
 }
 
-type Series = { major: number; minor: number };
-
-function classifyTier(currentSeries: Series | null, candidate: string): UpgradeTier {
-  const candidateSeries = mavenVersionSeries(candidate);
-  if (currentSeries === null || candidateSeries === null) return "cross_major";
-  if (currentSeries.major !== candidateSeries.major) return "cross_major";
-  if (currentSeries.minor !== candidateSeries.minor) return "major_internal";
-  return "same_minor";
-}
-
 /**
- * 1つのCVEに対する修正版をTierフォールバックで選ぶ。
- * 現在バージョンより新しい修正版が存在しなければnull(unfixed)。
+ * 現在より新しい候補を推奨の優先順に並べる: 正式版 → Tier順 → 版の昇順。
+ * (同じTierのプレリリースより、上のTierの正式版を優先する)
+ * 優先順位が等しい版(Goの`23.0.3`と`23.0.3+incompatible`)は、ビルドメタデータの有無が現在の版と同じものを先にする。
+ * `/vN`の無いモジュールパスでv2以上を使うには`+incompatible`付きの指定が必要なため。
  */
-function pickFixForCve(
-  currentVersion: string,
-  currentSeries: Series | null,
-  fixedVersions: readonly string[],
-): { version: string; tier: UpgradeTier } | null {
-  // 現在以下の修正版は別ブランチ向けバックポート(現在も影響を受けたまま)なので除外
-  const candidates = fixedVersions
-    .filter((v) => compareMavenVersions(v, currentVersion) > 0)
-    .sort(compareMavenVersions);
-  if (candidates.length === 0) return null;
-
-  if (currentSeries !== null) {
-    for (const tier of ["same_minor", "major_internal"] as const) {
-      const found = candidates.find((v) => classifyTier(currentSeries, v) === tier);
-      if (found !== undefined) return { version: found, tier };
-    }
-  }
-  const version = candidates[0]!;
-  return { version, tier: classifyTier(currentSeries, version) };
+function rankCandidates(scheme: VersionScheme, current: string, versions: Iterable<string>): string[] {
+  const rank = (v: string) => (scheme.isPrerelease(v) ? TIER_ORDER.length : 0) + TIER_ORDER.indexOf(scheme.classify(current, v));
+  const buildMismatch = (v: string) => (v.includes("+") === current.includes("+") ? 0 : 1);
+  return [...new Set(versions)]
+    .filter((v) => scheme.isValid(v) && scheme.compare(v, current) > 0)
+    .sort((a, b) => rank(a) - rank(b) || scheme.compare(a, b) || buildMismatch(a) - buildMismatch(b));
 }
 
 function buildNote(
-  currentSeries: Series | null,
+  scheme: VersionScheme,
+  pkg: ScanReportPackage,
   recommended: string | null,
   tier: UpgradeTier | null,
   fixableCount: number,
   unfixedCount: number,
 ): string {
-  if (recommended === null) {
-    return `全${unfixedCount}件のCVEに現在より新しい修正版候補がない(unfixed)。修正版情報の欠落を含む可能性があります`;
-  }
-  const label = currentSeries !== null ? `${currentSeries.major}.${currentSeries.minor}` : null;
   let note: string;
-  switch (tier) {
-    case "same_minor":
-      note = `現在の${label}系統内の候補${recommended}を推奨`;
-      break;
-    case "major_internal":
-      note = `同一メジャー(${currentSeries!.major}.x)内の候補${recommended}を推奨`;
-      break;
-    default:
-      note =
-        label !== null
-          ? `候補${recommended}へのメジャーアップグレードを推奨(破壊的変更の可能性あり)`
-          : `現在バージョンの系統を判定できないため、検証済み候補${recommended}を提示`;
+  if (recommended === null) {
+    note = `全${unfixedCount}件のCVEに現在より新しい修正版候補がない(unfixed)。修正版情報の欠落を含む可能性があります`;
+  } else {
+    const label = scheme.seriesLabel(pkg.version);
+    switch (tier) {
+      case "same_minor":
+        note = `現在の${label}系統内の候補${recommended}を推奨`;
+        break;
+      case "major_internal":
+        note = `同一メジャー(${label!.split(".")[0]}.x)内の候補${recommended}を推奨`;
+        break;
+      default:
+        if (label === null) note = `現在バージョンの系統を判定できないため、検証済み候補${recommended}を提示`;
+        else if (label.startsWith("0.") && scheme.seriesLabel(recommended)?.startsWith("0.")) {
+          note = `候補${recommended}への更新を推奨(0.x系のため、マイナー更新でも破壊的変更の可能性あり)`;
+        } else note = `候補${recommended}へのメジャーアップグレードを推奨(破壊的変更の可能性あり)`;
+    }
+    note += `。取得済みの影響範囲に基づき修正対象${fixableCount}件のCVEの範囲外と確認しました。全公開版の最小性や未検出の脆弱性がないことは保証しません`;
+    if (scheme.isPrerelease(recommended)) {
+      note += "。正式版の候補では全件を解消できないため、プレリリース版を推奨しています。正式版の公開を確認してください";
+    }
+    if (unfixedCount > 0) note += `。残り${unfixedCount}件は現在より新しい修正版候補がなく、修正対象から除外しています。recommended_statusを確認してください`;
   }
-  note += `。取得済みの影響範囲に基づき修正対象${fixableCount}件のCVEの範囲外と確認しました。全公開版の最小性や未検出の脆弱性がないことは保証しません`;
-  if (unfixedCount > 0) note += `。残り${unfixedCount}件は現在より新しい修正版候補がなく、修正対象から除外しています。recommended_statusを確認してください`;
+  if (pkg.ecosystem === "Go" && GO_PSEUDO_VERSION.test(pkg.version)) {
+    note += "。現在の版は疑似バージョン(タグのないコミット)です";
+  }
   return note;
 }
 
 /** 1パッケージ分のアップグレード提案を組み立てる。 */
 export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgradeSuggestion {
-  if (!SUPPORTED_ECOSYSTEMS.has(pkg.ecosystem)) return unsupportedEcosystemSuggestion(pkg);
-  const currentSeries = mavenVersionSeries(pkg.version);
-  const details: CveFixDetail[] = [];
-  let recommended: string | null = null;
-  let unfixedCount = 0;
+  const scheme = versionSchemeFor(pkg.ecosystem);
+  if (scheme === null) return notEvaluatedSuggestion(pkg, "unsupported_ecosystem");
+  if (!scheme.isValid(pkg.version)) return { ...notEvaluatedSuggestion(pkg, "unparseable_version"), ...hintFields(pkg.ecosystem) };
 
-  for (const vuln of pkg.vulnerabilities) {
-    const pick = pickFixForCve(pkg.version, currentSeries, vuln.fixed_versions);
-    if (pick === null) {
-      unfixedCount++;
-      details.push({
-        id: vuln.id,
-        cve: vuln.cve,
-        severity: vuln.severity,
-        fixed_in: null,
-        tier: "unfixed",
-      });
-      continue;
-    }
-    details.push({
+  const details: CveFixDetail[] = pkg.vulnerabilities.map((vuln) => {
+    const fix = rankCandidates(scheme, pkg.version, vuln.fixed_versions)[0];
+    return {
       id: vuln.id,
       cve: vuln.cve,
       severity: vuln.severity,
-      fixed_in: pick.version,
-      tier: pick.tier,
-    });
-  }
-
+      fixed_in: fix ?? null,
+      tier: fix !== undefined ? scheme.classify(pkg.version, fix)
+        : vuln.fixed_versions.some((v) => !scheme.isValid(v)) ? "unparseable_fix" : "unfixed",
+    };
+  });
+  const unfixedCount = details.filter((d) => d.tier === "unfixed").length;
+  const unparseableCount = details.filter((d) => d.tier === "unparseable_fix").length;
   const fixableCount = details.length - unfixedCount;
-  const targets = pkg.vulnerabilities.filter((_, i) => details[i]!.fixed_in !== null);
-  const candidates = [...new Set(targets.flatMap(v => v.fixed_versions))]
-    .filter(v => compareMavenVersions(v, pkg.version) > 0)
-    .sort(compareMavenVersions);
-  const tierOrder: UpgradeTier[] = ["same_minor", "major_internal", "cross_major"];
-  recommended = null;
-  for (const tier of tierOrder) {
-    const candidate = candidates.find(v => classifyTier(currentSeries, v) === tier &&
-      targets.every(target => candidateStatus(target.affected_versions, v) === "not_affected"));
-    if (candidate !== undefined) { recommended = candidate; break; }
-  }
+  // 解釈できない修正版のCVEも修正対象に残す。その影響範囲は情報不足のため、どの候補も検証できず推奨を保留する
+  const targets = pkg.vulnerabilities.filter((_, i) => details[i]!.tier !== "unfixed");
+  const candidates = rankCandidates(scheme, pkg.version, targets.flatMap((v) => v.fixed_versions));
+  const recommended = candidates.find((v) =>
+    targets.every((target) => candidateStatus(target.affected_versions, v, pkg.ecosystem) === "not_affected")) ?? null;
   for (let i = 0; i < details.length; i++) {
     details[i]!.recommended_status = recommended === null ? "not_evaluated" :
-      candidateStatus(pkg.vulnerabilities[i]!.affected_versions, recommended);
+      candidateStatus(pkg.vulnerabilities[i]!.affected_versions, recommended, pkg.ecosystem);
   }
-  // 推奨バージョン自体のTierは「現在バージョンとの系統関係」で再分類する
-  // (per-CVEのTierの寄せ集めではなく、実際に行うアップグレードの距離を表す)
-  const upgradeTier = recommended !== null ? classifyTier(currentSeries, recommended) : null;
+  const upgradeTier = recommended !== null ? scheme.classify(pkg.version, recommended) : null;
 
   return {
     package: pkg.name,
@@ -196,9 +196,12 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgrade
     ecosystem: pkg.ecosystem,
     recommended_upgrade: recommended,
     upgrade_tier: upgradeTier,
+    ...(recommended !== null && scheme.isPrerelease(recommended) ? { recommended_is_prerelease: true as const } : {}),
     upgrade_note: recommended === null && fixableCount > 0
-      ? "既知の修正版候補から、全修正対象CVEの影響範囲外と確認できる版が見つかりません。情報不足・未対応の範囲形式を含む場合も推奨を保留します。"
-      : buildNote(currentSeries, recommended, upgradeTier, fixableCount, unfixedCount),
+      ? "既知の修正版候補から、全修正対象CVEの影響範囲外と確認できる版が見つかりません。情報不足・未対応の範囲形式を含む場合も推奨を保留します。" +
+        (unparseableCount > 0 ? `${unparseableCount}件のCVEは修正版の記載をバージョンとして解釈できないため(tier: unparseable_fix)、推奨を保留しています。` : "")
+      : buildNote(scheme, pkg, recommended, upgradeTier, fixableCount, unfixedCount),
+    ...hintFields(pkg.ecosystem),
     per_cve_detail: details,
     verification: recommended === null ? "no_verified_candidate" : "verified",
   };

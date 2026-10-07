@@ -482,7 +482,14 @@ Node側で各行を分類してから渡す(pipは使わない。サイズ上限
   - (レビュー指摘、v0.4.2に同梱)存在する親POMをスナップショットへコピーできない場合(10MiB超・FIFO・末尾のシンボリックリンク等)に、子のpom.xmlを黙って完全扱いにしていた(v0.4.1で混入)。子はスキャンし、`incomplete_manifests`(scan_projectは`coverage.skipped_files`、complete=false)で欠落の可能性を示す。子に依存が無く`no_packages_found`になる場合もエラーに理由を含める(実バイナリで確認)。親POMが存在しない(ENOENT)場合は元の配置でも読まれないため報告しない
   - (レビュー指摘)コピーの書き込みで`bytesWritten`を確認せず、部分書き込みで欠損しうる → 書き切るまで繰り返す。SemVerの数値のプレリリース識別子を`Number`にしていたため2^53超で同値になる → `BigInt`で比較
   - (検証中に発見)スキャナーのエラーの`detail`(stderr)に一時ディレクトリのパスが出ていた → 元のパスに戻す
-- [ ] v0.5.0: suggest_fixのnpm/Go対応(semver比較、`SEMVER`範囲の検証、0.x系のマイナー更新を破壊的変更として扱う、Goのv2以上はモジュールパス変更を注記) → 詳細設計メモ作成済み(2026-10-07)
+- [x] v0.5.0: suggest_fixのnpm/Go対応(semver比較、`SEMVER`範囲の検証、0.x系のマイナー更新を破壊的変更として扱う、Goのv2以上はモジュールパス変更を注記) → 実装済み(2026-10-07)。実装時の判断:
+  - `versionScheme.ts`にエコシステム別の操作(`isValid`・`compare`・`isPrerelease`・`classify`・`seriesLabel`)をまとめ、`affectedVersions.ts`と`suggestFix.ts`はそれ経由で比較する。Mavenは`isPrerelease`を常にfalseにして従来の推奨を変えない(v0.4.2と出力のハッシュが一致)
+  - 解釈できない版を含む区間は判定に使わず情報不足にする。`candidateStatus`はエコシステムを引数で受ける(`affected_versions`は応答に出るため、証拠にフィールドを足さない)
+  - 候補の順位: 正式版 → Tier → 版の昇順 → ビルドメタデータの有無が現在と同じもの。実データでGoの修正版に`23.0.3`と`23.0.3+incompatible`が並び、優先順位が等しいため、`/vN`の無いモジュールで使えない形を推奨しうることが判明して追加
+  - 現在の版を解釈できない場合は`verification: "unparseable_version"`(CVEは`tier: "unsupported"`)。npm・Goには`update_hint`(overrides・`go get`・`/vN`の注記)を付け、Mavenの出力は変えない
+  - (レビュー指摘)当初は解釈できない修正版しか無いCVEを`unfixed`にして修正対象から外していたため、別CVEの修正版だけで`verified`の推奨を出しえた(現在1.0.0、CVE-Aの修正版`13.0`、CVE-Bの修正版`1.0.1`で1.0.1を推奨)。「修正版の記載がない・現在以下」(`unfixed`)と「修正版を解釈できない」(`unparseable_fix`)を区別し、後者は修正対象に残して推奨を保留する。両方が混在する回帰テストを追加
+  - suggest_fixの検出・スキャンを`scan_project`と共通化(`scanFromSnapshot`・`buildCoverage`を共有)。`skipped_manifests`/`scope_warning`は`coverage`に統合。requirements.txtも対象になるため、deps.devへの送信はscan_projectと同じ
+  - 実バイナリでMCP経由の確認: lodash 4.17.20→4.18.0(major_internal)、minimist→1.2.6、golang.org/x/text 0.3.0→0.39.0(cross_major)、golang.org/x/netの疑似バージョン→0.56.0(注記付き)、next 15.5.0→15.5.24(canaryではなく正式版)、express→4.20.0、jwt/v4→4.5.2。docker/dockerは不完全な範囲を含むため保留(既知の制限どおり)。log4j 2.14.1→2.25.4は不変
 - [ ] v0.6.0: suggest_fixのPython対応(PEP 440比較、`ECOSYSTEM`範囲がある場合の`GIT`範囲の無視)、直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)
 - [ ] 以降: Goバイナリスキャン(ビルド情報からstdlibの版も取得でき、go.modで拾えないstdlibの脆弱性を補える)
 

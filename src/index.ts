@@ -58,7 +58,7 @@ server.registerTool(
       "Python(poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt)、Go(go.mod)。" +
       "パッケージマネージャーやビルドは実行しない。" +
       "応答先頭のcoverageを必ず確認すること: lockfileが無いマニフェスト、バージョン未固定のrequirements行、スキャン対象から外したファイルを示す。" +
-      "coverage.complete=falseの場合は、検出0件でも安全とは判断しないこと。修正版の推奨(suggest_fix)は現在Javaのみ対応。",
+      "coverage.complete=falseの場合は、検出0件でも安全とは判断しないこと。修正版の推奨(suggest_fix)はJava・JavaScript・Goに対応(Pythonは未対応)。",
     inputSchema: {
       project_path: z
         .string()
@@ -98,18 +98,20 @@ server.registerTool(
   {
     title: "脆弱性を解消する推奨アップグレードの提案",
     description:
-      "Java(Maven)プロジェクトをスキャンし、脆弱な依存パッケージごとに推奨アップグレードバージョンを提案する。" +
+      "scan_projectと同じ検出でプロジェクトをスキャンし、脆弱な依存パッケージごとに推奨アップグレードバージョンを提案する。" +
+      "推奨はJava(Maven / Gradle)・JavaScript(npm)・Goに対応し、Python(PyPI)はunsupported_ecosystemとして返す。" +
       "現在のバージョンに最も近いリリース系統の修正版を優先する3段階フォールバック" +
-      "(same_minor: 同一major.minor系統内 → major_internal: 同一メジャー内 → cross_major: メジャーアップグレード)で選定し、" +
-      "推奨バージョン・アップグレード距離(upgrade_tier)・CVEごとの修正版を返す。" +
-      "候補を全修正対象CVEの影響範囲と照合し、情報不足の場合は推奨を保留する。" +
-      "現在より新しい修正版候補のないCVEはunfixedとして別表示し、推奨先での判定も返す。Maven(pom.xml)とGradle(gradle.lockfile)に対応。" +
+      "(same_minor: 同一系統内 → major_internal: 同一メジャー内 → cross_major: メジャーアップグレード)で選定し、" +
+      "推奨バージョン・アップグレード距離(upgrade_tier)・CVEごとの修正版を返す。npm・Goでは0.x系のマイナー更新もcross_major(破壊的変更の可能性)。" +
+      "候補を全修正対象CVEの影響範囲と照合し、情報不足の場合は推奨を保留する。プレリリース版は正式版で解消できない場合だけ推奨し、recommended_is_prereleaseを付ける。" +
+      "現在より新しい修正版候補のないCVEはunfixedとして別表示し、推奨先での判定も返す。" +
+      "応答のcoverageを必ず確認すること(complete=falseなら提案に含まれない依存がある)。" +
       "dependency_resolution.warningがある場合は推移的依存の脆弱性が提案に含まれない。",
     inputSchema: {
       project_path: z
         .string()
         .min(1)
-        .describe("スキャン対象のプロジェクトディレクトリ、またはpom.xml/gradle.lockfileの絶対パス"),
+        .describe("スキャン対象のプロジェクトディレクトリ、または対応するlockfile・マニフェストの絶対パス"),
     },
   },
   async ({ project_path }) =>
