@@ -423,6 +423,80 @@ Node側で各行を分類してから渡す(pipは使わない。サイズ上限
   - npmのcanary版が修正版に含まれるパッケージ(next等)で正式版が推奨されること
   - Mavenの既存の期待値(log4j 2.14.1 → 2.25.4)が変わらないこと
 
+## suggest_fix PyPI対応・直接/推移的依存の区別(v0.6.0)詳細設計メモ(2026-10-07)
+
+### 実データの調査結果(2026-10-07、api.osv.dev・osv-scanner v2.4.0)
+
+利用者の多いPyPI 49パッケージ(脆弱性3,356件。PYSEC 1,693 / GHSA 1,660)のOSVレコードを取得し、対象パッケージの`affected`エントリを集計した。
+
+| 項目 | 件数 |
+|---|---|
+| 範囲の型: ECOSYSTEMのみ | 4,357 |
+| 範囲の型: ECOSYSTEM + GIT | 402(約8.5%) |
+| 範囲の型: GITのみ / 範囲なし | 3 / 4 |
+| `versions[]`あり | 4,736(ほぼ全件) |
+| `last_affected` | 154 |
+| プレリリースの`fixed` / `introduced` | 207 / 313(`3.2a1`等) |
+| post版 / epoch | 2 / 0 |
+| 正規形でないがPEP 440として正しい値 | 21(Djangoの`1.8c1`、TensorFlowの`2.8.0-rc0`) |
+| PEP 440として不正な範囲の値 | 13(PyTorchの`last_affected: "2.6.0-cu124"`、`"2.6.0-NA"`) |
+
+- `versions[]`には`v2.5.2`(先頭の`v`)のほか、GitリポジトリのタグがそのままPEP 440でない値として入る(`0.9-doduo`、`ciflow/periodic/317eeb8`、`nightly-binary`等)。ECOSYSTEM+GITのエントリは全件`versions[]`を持つ
+- osv-scannerはPyPIの名前を小文字に正規化して返し(`Jinja2`→`jinja2`、`PyYAML`→`pyyaml`)、OSVレコード側の名前と一致した
+- **osv-scannerの出力には直接/推移的の区別がない**(パッケージごとの項目は`name`・`version`・`ecosystem`と`groups`・`vulnerabilities`のみ)。区別するには本サーバーがlockfile・マニフェストを解析する必要がある
+
+### 段階計画(2026-10-07 推奨案で確定)
+
+独立した2つの機能のため分けてリリースする。
+
+- **v0.6.0**: suggest_fixのPyPI対応(PEP 440、GIT範囲の扱い、`versions[]`の扱い、下限スキャンの注記)
+- **v0.7.0**: 直接/推移的依存の区別(`scan_project`・`suggest_fix`の両方)
+
+### PEP 440の比較(`src/utils/pep440Version.ts`)
+
+- PEP 440の正規化に従って解釈する: 大文字小文字の無視、先頭の`v`、epoch(`1!`)、リリース番号(末尾のゼロは比較で無視: `1.0` = `1.0.0`)、プレリリース(`a`/`b`/`rc`と別表記`alpha`/`beta`/`c`/`pre`/`preview`、区切り文字`.`/`-`/`_`の省略・番号の省略)、post版(`.post1`、`-1`、`rev`/`r`)、dev版(`.dev1`)、ローカル版(`+cu124`)
+- 優先順位: epoch → リリース番号 → `1.0.dev1` < `1.0a1.dev1` < `1.0a1` < `1.0a1.post1` < `1.0b1` < `1.0rc1` < `1.0` < `1.0.post1.dev1` < `1.0.post1`。ローカル版は同じ公開版より後で、区切りごとに数値は数値として、英字は辞書順で比べ、数値は英字より大きい
+- プレリリースの判定: プレリリース・dev版を持つ版(post版は正式版扱い)。v0.5.0と同じく、正式版で解消できない場合だけ推奨して`recommended_is_prerelease`を付ける
+- 解釈できない値(`2.6.0-cu124`、`0.9-doduo`)はnull
+- テスト: PyPA `packaging`(Apache-2.0 または BSD-2-Clause。本プロジェクトはApache-2.0)のバージョン比較テストのケースを移植し、出典を明記する
+
+### Tierの判定(2026-10-07 推奨案で確定)
+
+npm・Goと同じ規則(1.0以上はmajor.minor、0.xのマイナー更新と0.0.xの更新は`cross_major`)を使う。PyPIにはnpmのキャレットのような共通の互換規則はないが、0.x系でマイナー更新が破壊的変更になるパッケージが実在する(FastAPI等)ため、破壊的変更の可能性を少なく見積もらない側に倒す。epochが変わる更新も`cross_major`。日付ベースの版(certifiの`2023.7.22`→`2024.2.2`)は年が変わると`cross_major`になる(安全側)。
+
+### 影響範囲の扱い(`affectedVersions.ts`)
+
+- PyPIのECOSYSTEM範囲をPEP 440で比較する
+- **GIT範囲**: 同じaffectedエントリにECOSYSTEM範囲があればGIT範囲は無視する(コミット単位の範囲で、リリース版の判定はECOSYSTEM範囲と`versions[]`が担う)。GIT範囲しかないエントリは従来どおり情報不足
+- **`versions[]`の解釈できない値は無視する**(2026-10-07 確定): `versions[]`は「この版は影響を受ける」という等価判定にだけ使う。PEP 440として解釈できない文字列(Gitのタグ名等)は、解釈できる候補と等しくなりえないため、無視しても候補の判定は変わらない。現行(v0.5.0)の規則はこれを情報不足として扱うため、そのままPyPIに適用すると`versions[]`にタグ名が混じるレコードの推奨がすべて保留になる。npm・Goにも同じ規則を適用する(結果が保留から推奨に変わりうるのは、`versions[]`に不正値がある場合だけ)
+- 範囲の境界(`introduced`・`fixed`・`last_affected`)の解釈できない値は従来どおり情報不足(PyTorchの`2.6.0-cu124`のレコードは推奨保留。既知の制限)
+- 名前の照合はPEP 503の正規化(小文字化、`-`・`_`・`.`の連続を`-`)で比較する(実データでは完全一致したが防御的に)
+
+### 推奨の選び方
+
+- 現行の順位(正式版 → Tier → 版 → ビルドメタデータ)をそのまま使う。PEP 440のローカル版(`+cu124`)はビルドメタデータと同じ扱い(現在の版と有無が同じものを優先)
+- **下限でスキャンした依存**: requirements.txtの`>=X`・`~=X`の行は、osv-scannerが下限Xを使用中の版とみなしてスキャンしている(`version_is_lower_bound`)。この場合の推奨は「下限をY以上に引き上げる」意味になるため、`upgrade_note`にその旨を明記する(実際にインストールされる版は異なる可能性がある)
+- `update_hint`(PyPI): requirements.txtの版の指定、またはpyproject.toml・Pipfileの指定を更新してlockfileを再生成する。推移的依存は`pip`の制約ファイル(`-c`)や、uv・Poetryの上書き設定で版を指定する
+
+### 直接/推移的依存の区別(v0.7.0、2026-10-07 推奨案で確定)
+
+- osv-scannerの出力にないため、本サーバーがスナップショットのコピーを解析する(新しい外部依存は追加しない)
+- 対象: JSONと行形式のみ。YAML・TOMLのパーサーは追加しない
+  - `package-lock.json`(v2以降): ルートとworkspaceの`dependencies`等に書かれた名前で、`node_modules/<名前>`の版と一致するものを直接依存とする。推移的依存には、Nodeの解決規則(入れ子の`node_modules`から上位へ探す)で依存関係をたどり、それを要求している直接依存の名前(`introduced_by`、件数上限付き)を付ける
+  - `go.mod`: `require`のうち`// indirect`のないものが直接依存
+  - `requirements.txt`: 本サーバーが書いたコピーの行が直接依存。それ以外(deps.devで解決された依存)は推移的
+  - `pom.xml`: 当面は対象外(候補: `<dependencies>`の名前で判定できるが、親POM・BOMの依存管理を含めて別途検討)
+  - それ以外(yarn.lock、pnpm-lock.yaml、bun.lock、poetry.lock、uv.lock、Pipfile.lock、pdm.lock、gradle.lockfile): `unknown`
+- 出力: パッケージごとに`dependency_relation`(`direct` / `transitive` / `mixed`(lockfileによって異なる) / `unknown`)。npmの推移的依存には`introduced_by`。`update_hint`は区別に応じて具体化する
+- 同じ名前・版が複数のlockfileに現れるため、スキャン結果のパッケージにスキャン元のファイルを保持する(現行は`source_files`をレポート全体でしか持たない)
+- 解析は同じファイルを1回だけ、上限付きで行う(`LockfileKeyCache`と同じ考え方)
+
+### 完了条件とテスト(v0.6.0)
+
+- 単体: PEP 440の正規化と比較(`packaging`のテストケース)、Tier、GIT範囲の無視、`versions[]`の不正値の無視、下限スキャンの注記
+- 実データの期待値(MCP経由、実バイナリ): requests 2.19.0・urllib3 1.23・jinja2 2.10・django 3.2.0の推奨と、各CVEの`recommended_status`。PyTorchのような不正な境界値は保留
+- Maven・npm・Goの既存の期待値が変わらないこと(`versions[]`の規則変更で変わるものは理由を確認する)
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
@@ -490,7 +564,8 @@ Node側で各行を分類してから渡す(pipは使わない。サイズ上限
   - (レビュー指摘)当初は解釈できない修正版しか無いCVEを`unfixed`にして修正対象から外していたため、別CVEの修正版だけで`verified`の推奨を出しえた(現在1.0.0、CVE-Aの修正版`13.0`、CVE-Bの修正版`1.0.1`で1.0.1を推奨)。「修正版の記載がない・現在以下」(`unfixed`)と「修正版を解釈できない」(`unparseable_fix`)を区別し、後者は修正対象に残して推奨を保留する。両方が混在する回帰テストを追加
   - suggest_fixの検出・スキャンを`scan_project`と共通化(`scanFromSnapshot`・`buildCoverage`を共有)。`skipped_manifests`/`scope_warning`は`coverage`に統合。requirements.txtも対象になるため、deps.devへの送信はscan_projectと同じ
   - 実バイナリでMCP経由の確認: lodash 4.17.20→4.18.0(major_internal)、minimist→1.2.6、golang.org/x/text 0.3.0→0.39.0(cross_major)、golang.org/x/netの疑似バージョン→0.56.0(注記付き)、next 15.5.0→15.5.24(canaryではなく正式版)、express→4.20.0、jwt/v4→4.5.2。docker/dockerは不完全な範囲を含むため保留(既知の制限どおり)。log4j 2.14.1→2.25.4は不変
-- [ ] v0.6.0: suggest_fixのPython対応(PEP 440比較、`ECOSYSTEM`範囲がある場合の`GIT`範囲の無視)、直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)
+- [ ] v0.6.0: suggest_fixのPython対応(PEP 440比較、`ECOSYSTEM`範囲がある場合の`GIT`範囲の無視)
+- [ ] v0.7.0: 直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)。v0.6.0から分離(2026-10-07) → 詳細設計メモ作成済み(2026-10-07、上記「suggest_fix PyPI対応・直接/推移的依存の区別(v0.6.0)詳細設計メモ」)
 - [ ] 以降: Goバイナリスキャン(ビルド情報からstdlibの版も取得でき、go.modで拾えないstdlibの脆弱性を補える)
 
 ### B4. pom.xmlの親POM(`<parent><relativePath>`)によるスキャン範囲外の読み込み(v0.4.0で対応)
