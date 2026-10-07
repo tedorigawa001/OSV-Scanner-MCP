@@ -420,6 +420,29 @@ Node側で各行を分類してから渡す(pipは使わない。サイズ上限
   - (レビュー指摘P1)当初は正規表現で「最初の`<parent>`」を探していたが、`<m:parent>`を親なしと判断し、osv-scannerは範囲外の親POMを読んだ(complete=trueにもなった)。追加の実機確認で、osv-scanner(Goのencoding/xml)は要素を**名前空間・接頭辞に関係なくローカル名で照合**し(`<m:parent>`、別名前空間の`<x:parent>`、`<parent xmlns="別">`、`<m:relativePath>`も読む)、**ルート直下の`parent`だけ**を対象にし(入れ子のおとりは無視)、**重複すると後のものが有効**、文字参照・CDATAは展開、前後の空白は除去、大文字の`<Parent>`は読まないことを確認。正規表現をやめ、先頭から順に読む小さなXMLパーサーに置き換えてGoの解釈に合わせた。外部のXMLパーサーは使わない(重複・CDATAの扱いが別のずれを生みうるため)。同じ解釈を保証できない構文(ルート直下のparent・relativePathの重複、CDATA・DOCTYPE、未知の実体参照、プロパティ参照、閉じていないタグ、UTF-8以外)は除外。11通りの書き方すべてで、実バイナリでもMCP経由で範囲外の依存が混入しないことを確認
   - (レビュー指摘P1)自作パーサーがXML 1.0の行末処理(解析前にCRLF・CRをLFへ正規化)をしておらず、`relativePath`にCRを書くと、検査側は`a\rb`を探して「参照先なし」と判断し、osv-scannerは`a\nb`(改行を含む名前の許可ルート外のディレクトリ)の親POMを読んだ。解析前の正規化を追加。あわせて、文字の正規化や前後の空白の除去の細部(JSの`trim`とGoで扱いが異なる: U+FEFF・U+0085等)で参照先がずれる余地を残さないよう、`relativePath`に制御文字・通常の空白以外の空白・書式文字が含まれる場合は解釈できないものとして除外(通常の空白・日本語のディレクトリ名は許可)。実バイナリでMCP経由の解消と、CRLFで書かれた正当なpom.xmlが従来どおりスキャンされることを確認
 
+### B5. ローカル参照によるスキャン範囲外の読み込みの監査(2026-10-07、osv-scanner v2.4.0)
+
+requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerがファイル内のローカル参照をたどり、範囲外を読む)が他の形式にないか、v0.4.0の公開前に実機で監査した。範囲外のディレクトリに各形式のマニフェスト(npm: `lodash@4.17.20`、Python: `Jinja2==2.0`、Maven: `log4j-core@2.14.1`)を置き、それが結果に現れるかで判定(`--data-source deps.dev`の既定と`--no-resolve`の両方)。
+
+| 形式 | ローカル参照 | 範囲外の読み込み |
+|---|---|---|
+| package-lock.json | `link: true`、`file:`(resolved) | なし |
+| yarn.lock | `file:`、`link:` | なし |
+| pnpm-lock.yaml | `link:`、`file:`(directory)、範囲外のimporter | なし |
+| bun.lock | `file:`、範囲外のworkspace | なし |
+| poetry.lock | `source.type = "directory"` | なし |
+| uv.lock | `directory`、`editable` | なし |
+| Pipfile.lock | `path`、`editable` | なし |
+| pdm.lock | `path` | なし |
+| go.mod | `replace => ../path` | なし(パス名がパッケージ名として出るだけ) |
+| pom.xml | `<modules>`、`file://`のリポジトリ(Maven構成を配置)、BOMの`scope=import` | なし |
+| requirements.txt | `-r`(相対パス) | **あり**(v0.3.4で元ファイルを渡さない方式、v0.4.0で専用コピー方式で対処) |
+| pom.xml | `<parent><relativePath>` | **あり**(v0.4.0で許可ルートの検証で対処。`<packaging>pom</packaging>`の親だけが読まれる) |
+
+- 陽性対照: 同じ判定方法で、requirements.txtの`-r`と親POMの範囲外の読み込みを検出できることを確認
+- 限界: 結果に影響しない読み込み(読んだが使わない)は検出できない(ファイル単位の監視は管理者権限が必要なため未実施)
+- **osv-scannerのピン留めバージョンを更新するときは、この監査と、requirements.txtの取り込み・親POMの解釈(名前空間・重複・改行等)の実機確認をやり直すこと**
+
 ### B3. 既存の未完了項目
 
 - [ ] JAR実体スキャン: 実プロジェクトのfat JAR・shaded JARでの実機検証(上記「JAR実体スキャン」節の残タスク)

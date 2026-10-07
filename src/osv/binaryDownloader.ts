@@ -18,7 +18,11 @@ import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import { readResponseBytes } from "../utils/readResponseBytes.js";
 
-/** ピン留めするOSV-Scannerのバージョン。更新時は下のチェックサムも必ず更新すること */
+/**
+ * ピン留めするOSV-Scannerのバージョン。更新時は下のチェックサムも必ず更新すること。
+ * 範囲外の読み込みを防ぐ検証はこの版の挙動に合わせているため、更新時は
+ * docs/DESIGN_TODO.md「B5」の監査と、requirements.txt・親POMの解釈の実機確認をやり直すこと
+ */
 export const PINNED_OSV_SCANNER_VERSION = "2.4.0";
 
 /**
