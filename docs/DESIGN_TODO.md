@@ -934,3 +934,5 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 
 - [x] JAR実体スキャン: 実プロジェクトのfat JAR・shaded JARでの実機検証(上記「JAR実体スキャン」節の残タスク) → 検証済み(上記「B3 詳細設計メモ」、2026-10-08)。推測の座標の区別と、`affected_versions`の応答からの除外を実装(v0.10.0)
 - [x] 権限の最小化: MCPサーバープロセスに必要以上のファイルシステム権限を与えない(上記「セキュリティ考慮事項」節) → 実装済み(上記「B3 詳細設計メモ」、v0.10.0)。Nodeの権限モデルでの動作、`permission_denied`、起動時の警告、READMEの「権限を絞って起動する」。E2Eテスト(`src/test/server/permission.test.ts`)で、許可内のスキャンの成功・許可外のパスとOSV_SCANNER_PATHの拒否の表示・欠けた許可の警告を確認。実装中に、OSV_SCANNER_PATHの読み取りの拒否が`binary_not_found`になる箇所も見つけて修正
+  - (レビュー指摘)`scan_java_artifact`・`scan_sbom`の入力パスの解決とSBOMの読み込みで、権限モデルの拒否を`project_not_found`・`sbom_not_found`に変換していた。各所で拒否を保持して`permission_denied`にし、E2Eの回帰テストを追加。あわせて、ディレクトリ探索で権限モデルに拒否されたディレクトリを黙って飛ばしていた箇所もエラーにした
+  - (レビュー指摘)推測の座標だけのアーカイブでも、脆弱性が見つかると`identified_with_vulnerabilities`になり`jars_identified`に数えていた。同定の確度と検出件数を分け、脆弱性の有無に関係なく`inferred_only`にする(件数は`identified_vulnerability_count`に示す)

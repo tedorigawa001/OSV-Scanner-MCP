@@ -103,6 +103,16 @@ describe("推測された座標(B3の実物の検証で判明)", () => {
     expect(report.coverage.unidentified_jars).toEqual([{ path: "/grpc-netty-shaded.jar", hint: expect.stringContaining("inferred coordinates") }]);
   });
 
+  it("回帰: 推測の座標だけのアーカイブは、脆弱性が見つかってもinferred_onlyのまま同定数に数えず、件数は示す", () => {
+    const report = buildArtifactReport({ results: [
+      result("/old-shaded.jar", [coord("jar:grpc-netty-shaded", "1.30.0", true)]),
+    ] }, ["/old-shaded.jar"]);
+    expect(report.artifacts[0]).toMatchObject({ status: "inferred_only", identified_vulnerability_count: 1 });
+    expect(report.coverage.jars_identified).toBe(0);
+    expect(report.coverage.unidentified_jars[0]!.hint).toContain("inferred coordinates");
+    expect(report.identified_vulnerability_count).toBe(1);
+  });
+
   it("推測の座標がなければ一覧を出さない(既存の応答を変えない)", () => {
     const report = buildArtifactReport({ results: [result("/ok.jar", [coord("org.example:a", "1.0")])] }, ["/ok.jar"]);
     expect("inferred_coordinates" in report.coverage).toBe(false);

@@ -1,6 +1,7 @@
 import { opendir, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
+import { isAccessDenied, permissionDeniedError } from "./projectWalk.js";
 
 export interface DetectJavaArtifactsOptions {
   allowedRoot?: string;
@@ -28,7 +29,9 @@ export async function detectJavaArtifacts(
   let targetPath: string;
   try {
     targetPath = await realpath(inputPath);
-  } catch {
+  } catch (error) {
+    // Nodeの権限モデルの拒否を「存在しない」と誤って伝えない
+    if (isAccessDenied(error)) throw permissionDeniedError(error);
     throw new ScanToolError("project_not_found", `Path does not exist: ${inputPath}`);
   }
   if (options.allowedRoot !== undefined) {

@@ -36,6 +36,8 @@ beforeEach(async () => {
   const lock = JSON.stringify({ name: "app", lockfileVersion: 3, packages: { "": { name: "app", dependencies: { a: "1.0.0" } }, "node_modules/a": { version: "1.0.0" } } });
   await writeFile(path.join(project, "package-lock.json"), lock);
   await writeFile(path.join(outside, "package-lock.json"), lock);
+  await writeFile(path.join(outside, "app.jar"), "PK");
+  await writeFile(path.join(outside, "bom.cdx.json"), JSON.stringify({ bomFormat: "CycloneDX", specVersion: "1.5", components: [] }));
 });
 afterEach(async () => {
   server?.kill("SIGKILL");
@@ -52,7 +54,9 @@ async function fakeScanner(): Promise<string> {
 }
 
 /** 権限モデルで起動し、scan_projectを1回呼んで応答と標準エラー出力を返す */
-async function scanUnderPermission(target: string, flags: string[]): Promise<{ payload: Record<string, any>; stderr: string }> {
+async function scanUnderPermission(
+  target: string, flags: string[], tool = "scan_project", argName = "project_path",
+): Promise<{ payload: Record<string, any>; stderr: string }> {
   const child = spawn(process.execPath, ["--permission", ...flags, path.join(distDir, "index.js")], {
     env: { ...process.env, TMPDIR: tmp, OSV_SCANNER_PATH: await fakeScanner(), OSV_MCP_ALLOWED_ROOT: project, OSV_MCP_AUTO_DOWNLOAD: "0" },
     stdio: ["pipe", "pipe", "pipe"],
@@ -67,7 +71,7 @@ async function scanUnderPermission(target: string, flags: string[]): Promise<{ p
     protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "permission-test", version: "0" },
   } });
   send({ jsonrpc: "2.0", method: "notifications/initialized" });
-  send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "scan_project", arguments: { project_path: target } } });
+  send({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: tool, arguments: { [argName]: target } } });
   const deadline = Date.now() + 20_000;
   for (;;) {
     const line = stdout.split("\n").find((l) => l.includes('"id":2'));
@@ -101,6 +105,15 @@ describe("Nodeの権限モデル(--permission)で起動したサーバー", () =
     const { payload } = await scanUnderPermission(outside, allow());
     expect(payload.error.kind).toBe("permission_denied");
     expect(payload.error.message).toContain("--allow-fs-read");
+  }, 60_000);
+
+  it.each([
+    ["scan_java_artifact", "artifact_path", "app.jar"],
+    ["scan_java_artifact", "artifact_path", ""],
+    ["scan_sbom", "sbom_path", "bom.cdx.json"],
+  ])("回帰: %s(%s=%s)でも、読み取りを許可していないパスはproject_not_found・sbom_not_foundではなくpermission_deniedにする", async (tool, argName, file) => {
+    const { payload } = await scanUnderPermission(file === "" ? outside : path.join(outside, file), allow(), tool, argName);
+    expect(payload.error.kind).toBe("permission_denied");
   }, 60_000);
 
   it("回帰: OSV_SCANNER_PATHの読み取りを許可していない場合も、binary_not_foundではなくpermission_deniedにする", async () => {

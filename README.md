@@ -345,7 +345,7 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 **出力の読み方:**
 
 - 先頭の `coverage` に `jars_found`、`jars_identified`、`unidentified_jars` を返します。件数はWARも含む、ファイルシステム上で列挙した外側のアーカイブ単位です。ネストJARの総数ではありません。
-- `artifacts[].status` は `identified_with_vulnerabilities` / `identified_without_known_vulnerabilities` / `inferred_only` / `unidentified` の4値です。「同定済み」は少なくとも1件のMaven座標を取得できた意味であり、全依存の同定ではありません。`inferred_only` は推測した座標(下記)だけで同定したアーカイブで、`jars_identified` に数えず `unidentified_jars` に理由付きで示します。
+- `artifacts[].status` は `identified_with_vulnerabilities` / `identified_without_known_vulnerabilities` / `inferred_only` / `unidentified` の4値です。「同定済み」は少なくとも1件のMaven座標を取得できた意味であり、全依存の同定ではありません。`inferred_only` は推測した座標(下記)だけで同定したアーカイブで、脆弱性が見つかった場合も含め `jars_identified` に数えず、`unidentified_jars` に理由付きで示します(検出件数は `identified_vulnerability_count` に示します。推測の誤ったgroupIdで他の脆弱性を取りこぼしている可能性があるため)。
 - **推測した座標**: `pom.properties` を含まないJAR(Spring Frameworkの本体JARなど)について、OSV-Scannerはファイル名等からMaven座標を推測し、groupIdを誤ることがあります(例: `spring-beans:spring-beans`。正しくは `org.springframework:spring-beans`)。誤った座標はOSVで照合されず、**既知の脆弱性を取りこぼします**(実例: zipkin-server 2.23.2 のfat JARに含まれる spring-beans 5.3.2 のSpring4Shell(CVE-2022-22965)は検出されません)。groupIdに `.` を含まない座標を推測とみなし、`coverage.inferred_coordinates`(件数・一覧・警告)と、該当パッケージの `coordinates_inferred: true` で示します。`commons-io:commons-io` のような古い形式の正しい座標も含まれます(安全側)。`.` を含む誤った推測(`com.sun.jna:jna` 等)は区別できません。正確な結果には、ビルド元のlockfile・`pom.xml` を `scan_project` でスキャンしてください
 - `coverage.completeness` は常に `incomplete`。`identified_vulnerability_count: 0` は安全性の保証ではありません。
 - `packages` は同定できた脆弱なパッケージの詳細です。複数アーカイブに含まれる同一パッケージ・脆弱性は全体集計では重複排除します。

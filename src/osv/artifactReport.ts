@@ -57,12 +57,13 @@ export function buildArtifactReport(raw: unknown, artifactPaths: readonly string
   const artifacts = artifactPaths.map((file) => {
     const packages = byPath.get(file);
     const perFile = parseOsvScanOutput({ results: [{ packages: packages ?? [] }] });
-    // 推測の座標だけで同定したアーカイブは「同定済み・既知の脆弱性なし」と誤読させないよう別の状態にする
+    // 推測の座標だけで同定したアーカイブは、脆弱性の有無に関係なく「同定済み」にしない(同定の確度と検出件数を分ける)。
+    // 脆弱性が見つかっても、推測の誤ったgroupIdで他の脆弱性を取りこぼしている可能性がある
     const inferredOnly = packages !== undefined && packages.every((raw) => isInferredCoordinate(coordinateOf(raw).name));
     return {
       path: sanitizeExternalText(file),
-      status: packages === undefined ? "unidentified" : perFile.vulnerability_count > 0
-        ? "identified_with_vulnerabilities" : inferredOnly ? "inferred_only" : "identified_without_known_vulnerabilities",
+      status: packages === undefined ? "unidentified" : inferredOnly ? "inferred_only" : perFile.vulnerability_count > 0
+        ? "identified_with_vulnerabilities" : "identified_without_known_vulnerabilities",
       identified_vulnerability_count: perFile.vulnerability_count,
     };
   });

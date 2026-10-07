@@ -104,8 +104,10 @@ export async function walkProjectFiles(
       let entries;
       try {
         entries = await readdir(dir, { withFileTypes: true });
-      } catch {
-        continue; // 読めないディレクトリはスキップ(権限不足等)
+      } catch (error) {
+        // Nodeの権限モデルの拒否は、スキャン範囲を黙って欠落させずにエラーにする
+        if (isAccessDenied(error)) throw permissionDeniedError(error);
+        continue; // 読めないディレクトリはスキップ(OSの権限不足等)
       }
       for (const entry of entries) {
         if (++visited > limits.maxEntries) throw searchLimitError(`${limits.maxEntries}エントリ`);

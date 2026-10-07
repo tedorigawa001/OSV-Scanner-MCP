@@ -3,6 +3,7 @@ import { constants } from "node:fs";
 import { open, realpath } from "node:fs/promises";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
+import { isAccessDenied, permissionDeniedError } from "./projectWalk.js";
 import { verifyOpenedFile } from "./safeRead.js";
 import { asRecord } from "./unknownJson.js";
 
@@ -30,7 +31,9 @@ export async function loadSbom(inputPath: string, options: SbomInputOptions = {}
   let sourcePath: string;
   try {
     sourcePath = await realpath(inputPath);
-  } catch {
+  } catch (error) {
+    // Nodeの権限モデルの拒否を「存在しない」と誤って伝えない
+    if (isAccessDenied(error)) throw permissionDeniedError(error);
     throw new ScanToolError("sbom_not_found", "The specified SBOM file does not exist");
   }
   if (options.allowedRoot !== undefined) {
@@ -73,6 +76,7 @@ export async function loadSbom(inputPath: string, options: SbomInputOptions = {}
     if (problem !== null) throw new ScanToolError("sbom_not_found", "The SBOM file was replaced while it was being read");
   } catch (error) {
     if (error instanceof ScanToolError) throw error;
+    if (isAccessDenied(error)) throw permissionDeniedError(error);
     throw new ScanToolError("sbom_not_found", "The specified SBOM file could not be read");
   }
   let raw: unknown;
