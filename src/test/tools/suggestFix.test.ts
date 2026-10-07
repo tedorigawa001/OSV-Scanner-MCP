@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -98,5 +98,54 @@ describe("handleSuggestFix", () => {
     expect(result.isError).toBe(true);
     const payload = parsePayload(result) as { error: { kind: string } };
     expect(payload.error.kind).toBe("project_not_found");
+  });
+});
+
+describe("handleSuggestFix: 推移的依存の解決状態の伝播", () => {
+  it("無効化時は応答に警告を含め、スキャナーに--no-resolveを渡す", async () => {
+    const argsFile = path.join(binDir, "suggest-args.txt");
+    const bin = await makeFakeBinary(
+      "rec-suggest",
+      `printf '%s\\n' "$@" > '${argsFile}'; echo '{"results":[]}'; exit 0`,
+    );
+    const result = await handleSuggestFix({ project_path: projectDir }, { binaryPath: bin, noRemoteResolution: true });
+    const payload = parsePayload(result);
+    const resolution = payload.dependency_resolution as { transitive_resolution: string; warning?: string };
+    expect(resolution.transitive_resolution).toBe("disabled");
+    expect(resolution.warning).toContain("推移的依存の脆弱性は含まれません");
+    expect((await readFile(argsFile, "utf8")).split("\n")).toContain("--no-resolve");
+    const keys = Object.keys(payload);
+    expect(keys.indexOf("dependency_resolution")).toBeLessThan(keys.indexOf("suggestions"));
+  });
+
+  it("回帰: 直下のgradle.lockfileと探索深さ外のa/b/c/pom.xmlの構成でも警告を付ける", async () => {
+    const mixedDir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-fix-deep-pom-"));
+    try {
+      await writeFile(path.join(mixedDir, "gradle.lockfile"), "a:a:1.0=runtimeClasspath\nempty=\n");
+      await mkdir(path.join(mixedDir, "a", "b", "c"), { recursive: true });
+      await writeFile(path.join(mixedDir, "a", "b", "c", "pom.xml"), "<project/>");
+      const bin = await makeFakeBinary("ok-deep", `echo '{"results":[]}'; exit 0`);
+      const payload = parsePayload(
+        await handleSuggestFix({ project_path: mixedDir }, { binaryPath: bin, noRemoteResolution: true }),
+      );
+      expect(payload.manifests).toEqual(["gradle.lockfile"]);
+      const resolution = payload.dependency_resolution as { transitive_resolution: string; warning?: string };
+      expect(resolution.transitive_resolution).toBe("disabled");
+      expect(resolution.warning).toContain("推移的依存の脆弱性は含まれません");
+    } finally {
+      await rm(mixedDir, { recursive: true, force: true });
+    }
+  });
+
+  it("既定では解決有効と表示する", async () => {
+    const bin = await makeFakeBinary("ok-default", `echo '{"results":[]}'; exit 0`);
+    const previous = process.env.OSV_MCP_NO_REMOTE_RESOLUTION;
+    delete process.env.OSV_MCP_NO_REMOTE_RESOLUTION;
+    try {
+      const payload = parsePayload(await handleSuggestFix({ project_path: projectDir }, { binaryPath: bin }));
+      expect(payload.dependency_resolution).toEqual({ transitive_resolution: "enabled" });
+    } finally {
+      if (previous !== undefined) process.env.OSV_MCP_NO_REMOTE_RESOLUTION = previous;
+    }
   });
 });

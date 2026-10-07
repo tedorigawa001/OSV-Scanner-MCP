@@ -43,3 +43,4 @@ If you discover a security vulnerability in this project, please report it priva
 - バイナリ自動ダウンロードのピン留め+埋め込みSHA256検証(`OSV_MCP_PREFER_DOWNLOAD=1` でPATH上の未検証バイナリを使わない運用も可能)
 - タイムアウト・出力サイズ上限(DoS対策)、外部由来テキストの構造化とサイズ制限
 - 外部由来テキストのサニタイズ(制御文字・ゼロ幅文字・双方向制御文字・Unicodeタグ文字の除去。プロンプトインジェクションの不可視化手口への対策)
+- 通信先の固定と明示: `pom.xml` のスキャンでは推移的依存の解決のため deps.dev(`api.deps.dev`)に依存の名前とバージョンが送られます。`OSV_MCP_NO_REMOTE_RESOLUTION=1` で deps.dev への送信を止められます(推移的依存の検出と引き換え。応答の `dependency_resolution` に明示)。脆弱性照会のため、パッケージの名前とバージョンはどの設定でも `api.osv.dev` に送られます。スキャン対象が指定する任意のリポジトリへ接続するモードは使いません(詳細は[README](README.md#通信先とプライバシー))

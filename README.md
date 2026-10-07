@@ -25,7 +25,7 @@ Google製 [OSV-Scanner](https://github.com/google/osv-scanner) をラップす�
   - 手動インストール済みのバイナリ(PATH上または `OSV_SCANNER_PATH` 指定)があればそちらを優先します
   - 自動ダウンロードを無効化する場合は `OSV_MCP_AUTO_DOWNLOAD=0`
   - PATH上のバイナリを使わず常に検証済み自動ダウンロードを使う場合は `OSV_MCP_PREFER_DOWNLOAD=1`(運用環境向け)
-- スキャン時(OSV-Scanner経由)および `explain_vulnerability` 実行時に `api.osv.dev` へのネットワークアクセスが発生します(照会先はOSVデータベースのみ)
+- スキャン時と `explain_vulnerability` 実行時にネットワークアクセスが発生します。照会先はOSVデータベース(`api.osv.dev`)ですが、**`pom.xml` のスキャンでは推移的依存を解決するため deps.dev(`api.deps.dev`)にも接続します**。詳細と無効化の方法は[通信先とプライバシー](#通信先とプライバシー)を参照してください
 
 ## セットアップ
 
@@ -123,6 +123,7 @@ npm run build
 | `OSV_MCP_MAX_CONCURRENT_SCANS` | 同時実行できるスキャン数の上限(デフォルト `2`、最大 `16`)。超過したリクエストは待たずに即時エラーになります |
 | `OSV_MCP_AUTO_DOWNLOAD` | `0` または `false` でバイナリの自動ダウンロードを無効化(デフォルト有効) |
 | `OSV_MCP_PREFER_DOWNLOAD` | `1` または `true` 指定時、PATH上のosv-scannerを使わず、チェックサム検証済みの自動ダウンロードバイナリを常に使用します(PATH汚染による偽バイナリ実行の防止。`OSV_SCANNER_PATH` の明示指定は引き続き最優先) |
+| `OSV_MCP_NO_REMOTE_RESOLUTION` | `1` または `true` 指定時、`pom.xml` の推移的依存を deps.dev で解決しません。**止まるのは deps.dev への送信だけで、脆弱性照会のためパッケージの名前とバージョンは引き続き `api.osv.dev` に送られます**。推移的依存の脆弱性は検出できなくなり、その旨が応答の `dependency_resolution.warning` に示されます。詳細は[通信先とプライバシー](#通信先とプライバシー) |
 
 > **推奨**: `OSV_MCP_ALLOWED_ROOT` は未設定でも動作しますが、その場合は任意の絶対パスをスキャンできてしまいます。悪意ある指示(プロンプトインジェクション)経由で意図しないディレクトリをスキャンさせられる経路を塞ぐため、プロジェクト置き場のルート(例: `~/projects`)を設定しておくことを推奨します。各クライアントの設定で `"env": {"OSV_MCP_ALLOWED_ROOT": "/Users/you/projects"}` のように渡せます(Codex CLIのTOMLでは `[mcp_servers.osv-scanner.env]` セクション)。
 
@@ -130,6 +131,25 @@ npm run build
 > - `OSV_MCP_ALLOWED_ROOT=/スキャン対象のルート` — スキャン範囲の境界を固定
 > - `OSV_MCP_REQUIRE_ALLOWED_ROOT=1` — 境界未設定なら起動を拒否(fail-closed)
 > - `OSV_SCANNER_PATH=/管理者所有の絶対パス` または `OSV_MCP_PREFER_DOWNLOAD=1` — PATH解決に依存せず、実行するバイナリを固定
+>
+> 依存の情報をどこに送るかは[通信先とプライバシー](#通信先とプライバシー)を確認してください。どの設定でも、脆弱性照会のためパッケージの名前とバージョンは `api.osv.dev` に送られます。
+
+### 通信先とプライバシー
+
+osv-scanner v2.4.0 で接続先を実機確認した結果です(2026-10-07)。
+
+| 操作 | 接続先 | 送られる情報 |
+|---|---|---|
+| `pom.xml` のスキャン(`scan_java_project` / `suggest_fix`) | `api.osv.dev`、**`api.deps.dev`** | パッケージの名前とバージョン。deps.dev には推移的依存の解決のため、`pom.xml` に宣言された依存(社内パッケージを含む)の名前とバージョンが送られます |
+| `gradle.lockfile` のスキャン | `api.osv.dev` | パッケージの名前とバージョン(lockfileに全依存が記載済みのため、解決のための外部接続はしません) |
+| `scan_java_artifact` / `scan_sbom` | `api.osv.dev` | 同定できたパッケージの名前とバージョン |
+| `explain_vulnerability` | `api.osv.dev` | 指定した脆弱性ID |
+| バイナリの自動ダウンロード(初回のみ) | GitHub(公式Releases) | なし(ピン留めしたバージョンのバイナリを取得) |
+
+api.osv.dev と deps.dev はどちらも Google が運営するサービスです。**どの設定でも、スキャンしたパッケージの名前とバージョンは脆弱性照会のため `api.osv.dev` に送られます**(オフラインでの照会には対応していません)。
+
+- **deps.dev への送信を止めたい場合**: `OSV_MCP_NO_REMOTE_RESOLUTION=1` を設定すると、`pom.xml` の推移的依存を解決しなくなり、接続先は `api.osv.dev` だけになります。止まるのは deps.dev への送信だけで、OSV への送信は続きます。また `pom.xml` に直接書いた依存しかスキャンされず、**推移的依存の脆弱性を見落とします**。この状態は `scan_java_project` / `suggest_fix` の応答の `dependency_resolution` に `transitive_resolution: "disabled"` と警告で示されるので、検出0件と区別できます。推移的依存も含めて deps.dev を使わずにスキャンするには、Gradleのlockfile方式(`gradle.lockfile`)を使ってください
+- **任意の取得先には接続しません**: osv-scanner の `--data-source native` モードは、スキャン対象の `pom.xml` の `<repositories>` に書かれた任意のURLへ接続します(悪意あるpom.xmlで攻撃者のサーバーへ通信させられる)。本サーバーはこのモードを使わず、`deps.dev` を明示指定しています
 
 ## 提供ツール
 
@@ -151,6 +171,7 @@ Java(Maven)プロジェクトをスキャンし、既知の脆弱性レポート
 {
   "project_dir": "/path/to/project",
   "manifests": ["pom.xml"],
+  "dependency_resolution": { "transitive_resolution": "enabled" },
   "source_files": ["/path/to/project/pom.xml"],
   "vulnerable_package_count": 4,
   "vulnerability_count": 14,
@@ -249,6 +270,7 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 {
   "project_dir": "/path/to/project",
   "manifests": ["pom.xml"],
+  "dependency_resolution": { "transitive_resolution": "enabled" },
   "vulnerable_package_count": 4,
   "unfixed_vulnerability_count": 1,
   "suggestions": [
@@ -329,6 +351,7 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 - **パストラバーサル対策**: 入力パスは `realpath` でシンボリックリンク解決後に境界チェック。pom.xml探索ではシンボリックリンクを辿りません
 - **DoS対策**: タイムアウト・stdout上限・stderr抜粋上限を設定。スキャン結果は防御的にパースし、形式不正でも例外を投げません。同時実行スキャン数も上限(デフォルト2)を設け、並列リクエストによるプロセスの無制限起動を防ぎます
 - **fail-closedな運用モード**: `OSV_MCP_REQUIRE_ALLOWED_ROOT=1` で、スキャン許可ルート未設定時にサーバーの起動自体を拒否できます
+- **通信先の固定と明示**: osv-scannerの依存解決先は `deps.dev` を明示指定し、スキャン対象のpom.xmlが指定する任意のリポジトリへ接続するモード(`--data-source native`)は使いません(テストで保証)。通信先の一覧と、deps.devへの送信を止める `OSV_MCP_NO_REMOTE_RESOLUTION=1` は[通信先とプライバシー](#通信先とプライバシー)を参照
 - **情報漏えい対策**: 想定外の例外はスタックトレース等を含めず `internal_error` に丸めます。外部由来のテキスト(脆弱性summary等)は長さ上限付きの「データ」として構造化して返します
 - **プロンプトインジェクション対策**: OSVデータベース由来のテキスト(summary / details / ID等)とOSV-Scannerのstderrは、LLMクライアントへ返す前にサニタイズします。制御文字(ANSIエスケープ含む)・ゼロ幅文字・双方向制御文字(RLO等)・Unicodeタグ文字(不可視のテキスト密輸)・行区切り(U+2028/2029)を除去し、NFC正規化を適用。外部データの読み取りアクセサを単一のサニタイズ境界にすることで適用漏れを防いでいます
 

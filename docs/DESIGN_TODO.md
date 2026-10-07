@@ -251,9 +251,12 @@ lockfileが無い・shaded JARしか手元に無いプロジェクトへの対�
 - `--no-resolve` は通信先をOSVのみにできるが、pom.xmlでは推移的依存がすべて欠落し検出漏れが大きく増える
 
 **タスク**:
-- [ ] README・SECURITY.mdのネットワーク記述を事実どおりに修正(pom.xml/requirements.txtではdeps.devへ依存の名前とバージョンが送られる。lockfile方式なら送られない)
-- [ ] 環境変数(案: `OSV_MCP_NO_REMOTE_RESOLUTION=1`)で `--no-resolve` を付与。既定は現行動作(互換性維持)。検出漏れとのトレードオフと、社内パッケージ名を出したくない場合はlockfile方式を使う回避策をREADMEに記載
-- [ ] 固定引数に `--data-source native` が含まれないことをテストで保証
+- [x] README・SECURITY.mdのネットワーク記述を事実どおりに修正(pom.xml/requirements.txtではdeps.devへ依存の名前とバージョンが送られる。lockfile方式なら送られない) → READMEに「通信先とプライバシー」節を新設。JAR/WAR・SBOMスキャンはapi.osv.devのみと実機確認(2026-10-07)
+- [x] 環境変数(案: `OSV_MCP_NO_REMOTE_RESOLUTION=1`)で `--no-resolve` を付与。既定は現行動作(互換性維持)。検出漏れとのトレードオフと、社内パッケージ名を出したくない場合はlockfile方式を使う回避策をREADMEに記載 → projectモードのみに付与(artifact/sbomは外部解決をしないため)。MCP経由で接続先がapi.osv.devのみになり、推移的依存(jackson-core)が抜けることを確認
+- [x] 固定引数に `--data-source native` が含まれないことをテストで保証 → 既定値の変更に備え `--data-source deps.dev` も明示指定
+- [x] (レビュー指摘)`OSV_MCP_NO_REMOTE_RESOLUTION` が止めるのはdeps.devへの送信だけで、OSVへのパッケージ名・バージョン送信は続くことを明記
+- [x] (レビュー指摘)推移的依存を省略したことを応答に反映。`scan_java_project` / `suggest_fix` の先頭付近に `dependency_resolution`(`transitive_resolution: enabled/disabled`、無効時は警告)を追加。無効化の判断はツール側で1回だけ行い、スキャナー引数と応答の両方に同じ値を使う(伝播をテストで確認)
+- [x] (レビュー指摘)当初は警告をマニフェスト一覧にpom.xmlがある場合だけ付けていたが、一覧の探索は深さ3まででosv-scannerの`-r`(深さ無制限)と範囲が一致せず、深い階層のpom.xmlで警告が漏れた。無効時は「マニフェストからの推移的依存の解決を省略。lockfileに記録された依存は対象」という条件付きの警告を常に返すよう変更し、直下gradle.lockfile+`a/b/c/pom.xml`構成の回帰テストを両ツールに追加
 
 ### B2. 対象エコシステムの拡大(JavaScript / Python / Go)
 

@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -9,7 +9,13 @@ import {
   OSV_SCANNER_PATH_ENV,
   resolveOsvScannerBinary,
 } from "../../osv/binaryManager.js";
-import { runOsvArtifactScan, runOsvScan, runOsvSbomScan } from "../../osv/runner.js";
+import {
+  buildOsvScanArgs,
+  runOsvArtifactScan,
+  runOsvScan,
+  runOsvSbomScan,
+  type ScanMode,
+} from "../../osv/runner.js";
 
 let binDir: string;
 let projectDir: string;
@@ -55,6 +61,57 @@ async function expectScanError(promise: Promise<unknown>, kind: string): Promise
   expect((error as ScanToolError).kind).toBe(kind);
   return error as ScanToolError;
 }
+
+describe("osv-scannerへの引数", () => {
+  const modes: ScanMode[] = ["project", "artifact", "sbom"];
+
+  it("どのモードでも --data-source native を使わない(pom.xmlの<repositories>の任意URLへ接続するため)", () => {
+    for (const mode of modes) {
+      for (const noRemoteResolution of [false, true]) {
+        const args = buildOsvScanArgs(mode, noRemoteResolution);
+        expect(args).not.toContain("native");
+        const i = args.indexOf("--data-source");
+        if (i !== -1) expect(args[i + 1]).toBe("deps.dev");
+      }
+    }
+  });
+
+  it("projectモードはdeps.devを明示し、指定時だけ --no-resolve を付ける", () => {
+    expect(buildOsvScanArgs("project", false)).toEqual(
+      ["scan", "source", "-r", "--format", "json", "--data-source", "deps.dev"],
+    );
+    expect(buildOsvScanArgs("project", true)).toContain("--no-resolve");
+  });
+
+  it("artifact/sbomモードには --no-resolve を付けない(外部解決を行わないため)", () => {
+    for (const mode of ["artifact", "sbom"] as const) {
+      expect(buildOsvScanArgs(mode, true)).toEqual(buildOsvScanArgs(mode, false));
+    }
+  });
+
+  it.each([
+    { env: undefined, option: undefined, expected: false },
+    { env: "1", option: undefined, expected: true },
+    { env: "TRUE", option: undefined, expected: true },
+    { env: "0", option: undefined, expected: false },
+    { env: "1", option: false, expected: false },
+  ])("OSV_MCP_NO_REMOTE_RESOLUTION=$env, option=$option → --no-resolve: $expected", async ({ env, option, expected }) => {
+    const argsFile = path.join(binDir, "recorded-args.txt");
+    const bin = await makeFakeBinary("fake-args", `printf '%s\\n' "$@" > '${argsFile}'; echo '{"results":[]}'; exit 0`);
+    const previous = process.env.OSV_MCP_NO_REMOTE_RESOLUTION;
+    if (env === undefined) delete process.env.OSV_MCP_NO_REMOTE_RESOLUTION;
+    else process.env.OSV_MCP_NO_REMOTE_RESOLUTION = env;
+    try {
+      await runOsvScan(projectDir, { binaryPath: bin, noRemoteResolution: option });
+    } finally {
+      if (previous === undefined) delete process.env.OSV_MCP_NO_REMOTE_RESOLUTION;
+      else process.env.OSV_MCP_NO_REMOTE_RESOLUTION = previous;
+    }
+    const recorded = (await readFile(argsFile, "utf8")).trim().split("\n");
+    expect(recorded.includes("--no-resolve")).toBe(expected);
+    expect(recorded.at(-1)).toBe(projectDir);
+  });
+});
 
 describe("runOsvScan", () => {
   it.each([false, true])("shares concurrency slots with SBOM scans (SBOM first: %s)", async (sbomFirst) => {

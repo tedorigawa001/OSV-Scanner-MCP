@@ -26,6 +26,8 @@ export interface RunOsvScanOptions {
   maxOutputBytes?: number;
   /** 同時実行スキャン数の上限。省略時はOSV_MCP_MAX_CONCURRENT_SCANS→デフォルト2 */
   maxConcurrentScans?: number;
+  /** trueでマニフェストの推移的依存の外部解決(deps.dev)を行わない。省略時はOSV_MCP_NO_REMOTE_RESOLUTION */
+  noRemoteResolution?: boolean;
 }
 
 const DEFAULT_TIMEOUT_MS = 120_000;
@@ -52,8 +54,27 @@ const DEFAULT_MAX_OUTPUT_BYTES = 32 * 1024 * 1024;
 /** エラー詳細に含めるstderrの上限(外部由来テキストをそのまま膨らませない) */
 const MAX_STDERR_DETAIL_BYTES = 8 * 1024;
 
-/** OSV-Scannerに渡す固定引数。ここに無いオプションは一切使わない(ホワイトリスト) */
-const FIXED_SCAN_ARGS = ["scan", "source", "-r", "--format", "json"] as const;
+const NO_REMOTE_RESOLUTION_ENV = "OSV_MCP_NO_REMOTE_RESOLUTION";
+
+function noRemoteResolutionFromEnv(): boolean {
+  const value = process.env[NO_REMOTE_RESOLUTION_ENV]?.trim().toLowerCase();
+  return value === "1" || value === "true" || value === "yes";
+}
+
+/** 外部解決を無効にするか。スキャン引数と応答の表示が食い違わないよう、呼び出し側で一度だけ決める */
+export function isRemoteResolutionDisabled(options: RunOsvScanOptions = {}): boolean {
+  return options.noRemoteResolution ?? noRemoteResolutionFromEnv();
+}
+
+/**
+ * OSV-Scannerに渡す固定引数。ここに無いオプションは一切使わない(ホワイトリスト)
+ *
+ * pom.xml/requirements.txtの推移的依存はapi.deps.devで解決される(2.4.0で実機確認)。
+ * `--data-source native` はスキャン対象pom.xmlの<repositories>に書かれた任意のURLへ
+ * 接続するため使わない。既定値の変更に備えてdeps.devを明示する。
+ */
+const FIXED_SCAN_ARGS = ["scan", "source", "-r", "--format", "json", "--data-source", "deps.dev"] as const;
+const NO_RESOLVE_ARG = "--no-resolve";
 const FIXED_ARTIFACT_ARGS = [
   "scan", "source", "--format", "json", "--all-packages", "--no-ignore",
   "--experimental-no-default-plugins", "--experimental-plugins", "java/archive",
@@ -62,8 +83,15 @@ const FIXED_SBOM_ARGS = [
   "scan", "source", "--format", "json", "--all-packages", "--no-ignore",
   "--experimental-no-default-plugins", "--experimental-plugins", "sbom",
 ] as const;
-type ScanMode = "project" | "artifact" | "sbom";
+export type ScanMode = "project" | "artifact" | "sbom";
 const SCAN_ARGS = { project: FIXED_SCAN_ARGS, artifact: FIXED_ARTIFACT_ARGS, sbom: FIXED_SBOM_ARGS };
+
+/** 外部解決を行うのはマニフェストを読むprojectモードだけ(artifact/sbomはOSV照会のみ) */
+export function buildOsvScanArgs(mode: ScanMode, noRemoteResolution: boolean): string[] {
+  const args: string[] = [...SCAN_ARGS[mode]];
+  if (mode === "project" && noRemoteResolution) args.push(NO_RESOLVE_ARG);
+  return args;
+}
 
 const EXIT_NO_VULNS = 0;
 const EXIT_VULNS_FOUND = 1;
@@ -81,11 +109,11 @@ function execOsvScanner(
   targetPaths: readonly string[],
   timeoutMs: number,
   maxOutputBytes: number,
-  mode: ScanMode,
+  scanArgs: readonly string[],
 ): Promise<RawScanResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(binaryPath, [
-      ...SCAN_ARGS[mode], ...targetPaths,
+      ...scanArgs, ...targetPaths,
     ], {
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
@@ -212,7 +240,7 @@ async function runOsvScanUnguarded(
     targetPaths,
     options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
-    mode,
+    buildOsvScanArgs(mode, isRemoteResolutionDisabled(options)),
   );
 
   if (result.exitCode === EXIT_NO_PACKAGES && mode === "project") {

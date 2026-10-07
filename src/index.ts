@@ -9,6 +9,7 @@
  * - OSV_MCP_MAX_CONCURRENT_SCANS: 同時実行スキャン数の上限(デフォルト2)
  * - OSV_MCP_AUTO_DOWNLOAD: 0/false指定時、バイナリの自動ダウンロードを無効化
  * - OSV_MCP_PREFER_DOWNLOAD: 1/true指定時、PATH上のバイナリを使わず検証済み自動ダウンロードを優先
+ * - OSV_MCP_NO_REMOTE_RESOLUTION: 1/true指定時、pom.xmlの推移的依存をdeps.devで解決しない
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -52,7 +53,8 @@ server.registerTool(
     description:
       "Java(Maven)プロジェクトをGoogle OSV-Scannerでスキャンし、依存ライブラリの既知の脆弱性(CVE/GHSA)を深刻度順のJSONレポートで返す。" +
       "レポートにはパッケージごとの脆弱性一覧(CVSSスコア・5段階深刻度・修正版バージョン)とサマリ集計が含まれる。" +
-      "Maven(pom.xml)とGradle(gradle.lockfile)に対応。",
+      "Maven(pom.xml)とGradle(gradle.lockfile)に対応。" +
+      "dependency_resolution.warningがある場合は推移的依存がスキャン対象外のため、検出0件でも安全とは判断しないこと。",
     inputSchema: {
       project_path: z
         .string()
@@ -77,7 +79,8 @@ server.registerTool(
       "(same_minor: 同一major.minor系統内 → major_internal: 同一メジャー内 → cross_major: メジャーアップグレード)で選定し、" +
       "推奨バージョン・アップグレード距離(upgrade_tier)・CVEごとの修正版を返す。" +
       "候補を全修正対象CVEの影響範囲と照合し、情報不足の場合は推奨を保留する。" +
-      "現在より新しい修正版候補のないCVEはunfixedとして別表示し、推奨先での判定も返す。Maven(pom.xml)とGradle(gradle.lockfile)に対応。",
+      "現在より新しい修正版候補のないCVEはunfixedとして別表示し、推奨先での判定も返す。Maven(pom.xml)とGradle(gradle.lockfile)に対応。" +
+      "dependency_resolution.warningがある場合は推移的依存の脆弱性が提案に含まれない。",
     inputSchema: {
       project_path: z
         .string()

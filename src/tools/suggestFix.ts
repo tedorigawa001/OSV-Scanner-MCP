@@ -4,10 +4,14 @@
  * 推奨アップグレードバージョン(3段階Tier)を返す。
  */
 
-import { runOsvScan } from "../osv/runner.js";
+import { isRemoteResolutionDisabled, runOsvScan } from "../osv/runner.js";
 import { suggestUpgrades } from "../osv/suggestFix.js";
 import { detectJavaProject } from "../utils/projectDetector.js";
-import type { ScanJavaProjectArgs, ScanJavaProjectOptions } from "./scanJavaProject.js";
+import {
+  dependencyResolution,
+  type ScanJavaProjectArgs,
+  type ScanJavaProjectOptions,
+} from "./scanJavaProject.js";
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
 export async function handleSuggestFix(
@@ -18,7 +22,8 @@ export async function handleSuggestFix(
     const project = await detectJavaProject(args.project_path, {
       allowedRoot: options.allowedRoot,
     });
-    const report = await runOsvScan(project.projectDir, options);
+    const noRemoteResolution = isRemoteResolutionDisabled(options);
+    const report = await runOsvScan(project.projectDir, { ...options, noRemoteResolution });
     const suggestions = suggestUpgrades(report.packages);
     const unfixedVulnerabilities = suggestions.reduce(
       (sum, s) => sum + s.per_cve_detail.filter((d) => d.tier === "unfixed").length,
@@ -27,6 +32,7 @@ export async function handleSuggestFix(
     return jsonResult({
       project_dir: project.projectDir,
       manifests: project.manifests,
+      dependency_resolution: dependencyResolution(noRemoteResolution),
       vulnerable_package_count: suggestions.length,
       unfixed_vulnerability_count: unfixedVulnerabilities,
       suggestions,
