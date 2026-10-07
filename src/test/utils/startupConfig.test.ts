@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ALLOWED_ROOT_ENV,
   REQUIRE_ALLOWED_ROOT_ENV,
+  allowedRootFromEnv,
   allowedRootStartupError,
   allowedRootStartupWarning,
 } from "../../utils/startupConfig.js";
@@ -62,5 +63,19 @@ describe("allowedRootStartupWarning", () => {
 
   it("空白のみの設定は未設定と同様に警告する", () => {
     expect(allowedRootStartupWarning({ [ALLOWED_ROOT_ENV]: "  " })).not.toBeNull();
+  });
+});
+
+describe("allowedRootFromEnv", () => {
+  it("空文字・空白のみは未設定(undefined)として扱う(起動時の警告と判定をそろえる)", () => {
+    for (const value of [undefined, "", "  ", "\t\n"]) {
+      expect(allowedRootFromEnv({ [ALLOWED_ROOT_ENV]: value })).toBeUndefined();
+      // 未設定と判定するなら、起動時は「未設定」の警告になる
+      expect(allowedRootStartupWarning({ [ALLOWED_ROOT_ENV]: value })).not.toBeNull();
+    }
+  });
+
+  it("値があればそのまま返す", () => {
+    expect(allowedRootFromEnv({ [ALLOWED_ROOT_ENV]: "/home/user/projects" })).toBe("/home/user/projects");
   });
 });

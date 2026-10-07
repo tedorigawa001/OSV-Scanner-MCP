@@ -17,14 +17,23 @@ function isTruthy(value: string | undefined): boolean {
 }
 
 /**
+ * 許可ルートの設定値。空文字・空白のみは未設定(undefined)として扱う。
+ * 起動時の検証とツールへの受け渡しで判定がずれないよう、必ずこの関数で読む
+ * (空文字をそのまま渡すと`path.resolve("")`=起動ディレクトリが許可ルートになっていた)。
+ */
+export function allowedRootFromEnv(env: Record<string, string | undefined> = process.env): string | undefined {
+  const allowedRoot = env[ALLOWED_ROOT_ENV];
+  return allowedRoot !== undefined && allowedRoot.trim() !== "" ? allowedRoot : undefined;
+}
+
+/**
  * 起動を拒否すべき設定不備があればエラーメッセージを返す。問題なければnull。
  */
 export function allowedRootStartupError(
   env: Record<string, string | undefined> = process.env,
 ): string | null {
   if (!isTruthy(env[REQUIRE_ALLOWED_ROOT_ENV])) return null;
-  const allowedRoot = env[ALLOWED_ROOT_ENV];
-  if (allowedRoot !== undefined && allowedRoot.trim() !== "") return null;
+  if (allowedRootFromEnv(env) !== undefined) return null;
   return (
     `${REQUIRE_ALLOWED_ROOT_ENV}が有効ですが、${ALLOWED_ROOT_ENV}が未設定のため起動を中止します。` +
     `スキャンを許可するルートディレクトリを${ALLOWED_ROOT_ENV}に設定してください`
@@ -38,8 +47,7 @@ export function allowedRootStartupError(
 export function allowedRootStartupWarning(
   env: Record<string, string | undefined> = process.env,
 ): string | null {
-  const allowedRoot = env[ALLOWED_ROOT_ENV];
-  if (allowedRoot !== undefined && allowedRoot.trim() !== "") return null;
+  if (allowedRootFromEnv(env) !== undefined) return null;
   return (
     `${ALLOWED_ROOT_ENV}が未設定のため、任意の絶対パスをスキャンできる状態です。` +
     `プロジェクト置き場のルートを${ALLOWED_ROOT_ENV}に設定することを推奨します` +

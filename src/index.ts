@@ -23,6 +23,7 @@ import { handleScanSbom } from "./tools/scanSbom.js";
 import { handleSuggestFix } from "./tools/suggestFix.js";
 import {
   ALLOWED_ROOT_ENV,
+  allowedRootFromEnv,
   allowedRootStartupError,
   allowedRootStartupWarning,
 } from "./utils/startupConfig.js";
@@ -66,7 +67,7 @@ server.registerTool(
     },
   },
   async ({ project_path }) =>
-    handleScanProject({ project_path }, { allowedRoot: process.env[ALLOWED_ROOT_ENV] }),
+    handleScanProject({ project_path }, { allowedRoot: allowedRootFromEnv() }),
 );
 
 server.registerTool(
@@ -88,7 +89,7 @@ server.registerTool(
   async ({ project_path }) =>
     handleScanJavaProject(
       { project_path },
-      { allowedRoot: process.env[ALLOWED_ROOT_ENV] },
+      { allowedRoot: allowedRootFromEnv() },
     ),
 );
 
@@ -112,7 +113,7 @@ server.registerTool(
     },
   },
   async ({ project_path }) =>
-    handleSuggestFix({ project_path }, { allowedRoot: process.env[ALLOWED_ROOT_ENV] }),
+    handleSuggestFix({ project_path }, { allowedRoot: allowedRootFromEnv() }),
 );
 
 server.registerTool(
@@ -147,7 +148,7 @@ server.registerTool(
     },
   },
   async ({ artifact_path }) => handleScanJavaArtifact(
-    { artifact_path }, { allowedRoot: process.env[ALLOWED_ROOT_ENV] },
+    { artifact_path }, { allowedRoot: allowedRootFromEnv() },
   ),
 );
 
@@ -164,7 +165,7 @@ server.registerTool(
     },
   },
   async ({ sbom_path }) => handleScanSbom(
-    { sbom_path }, { allowedRoot: process.env[ALLOWED_ROOT_ENV] },
+    { sbom_path }, { allowedRoot: allowedRootFromEnv() },
   ),
 );
 
