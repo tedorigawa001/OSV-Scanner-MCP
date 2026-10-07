@@ -417,6 +417,7 @@ Node側で各行を分類してから渡す(pipは使わない。サイズ上限
   - `scan_java_project` / `suggest_fix`: 外したpom.xmlを`skipped_manifests`と`scope_warning`で件数より前に返す(外したものが無ければ出力しない=既存の出力は不変)。全件除外・直接指定は`path_outside_allowed_root`
   - `scan_project`: `coverage.skipped_files`に記録(completeはfalse)
   - 実バイナリでMCP経由で確認: 許可ルート内の親を持つサブモジュールは従来どおり親の依存を検出し、外を指す親のpom.xmlは除外され範囲外の依存が混入しない
+  - (レビュー指摘P1)当初は正規表現で「最初の`<parent>`」を探していたが、`<m:parent>`を親なしと判断し、osv-scannerは範囲外の親POMを読んだ(complete=trueにもなった)。追加の実機確認で、osv-scanner(Goのencoding/xml)は要素を**名前空間・接頭辞に関係なくローカル名で照合**し(`<m:parent>`、別名前空間の`<x:parent>`、`<parent xmlns="別">`、`<m:relativePath>`も読む)、**ルート直下の`parent`だけ**を対象にし(入れ子のおとりは無視)、**重複すると後のものが有効**、文字参照・CDATAは展開、前後の空白は除去、大文字の`<Parent>`は読まないことを確認。正規表現をやめ、先頭から順に読む小さなXMLパーサーに置き換えてGoの解釈に合わせた。外部のXMLパーサーは使わない(重複・CDATAの扱いが別のずれを生みうるため)。同じ解釈を保証できない構文(ルート直下のparent・relativePathの重複、CDATA・DOCTYPE、未知の実体参照、プロパティ参照、閉じていないタグ、UTF-8以外)は除外。11通りの書き方すべてで、実バイナリでもMCP経由で範囲外の依存が混入しないことを確認
 
 ### B3. 既存の未完了項目
 
