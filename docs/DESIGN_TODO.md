@@ -1,6 +1,6 @@
 # OSV-Scanner-MCP 設計メモ / 残課題
 
-最終更新: 2026-10-07(バックログ節を新設: ネットワーク通信先の透明化、JS/Python/Goへの拡大)
+最終更新: 2026-10-07(対象エコシステム拡大の詳細設計メモを追加。現行版の不具合3件をPhase 0として記載)
 
 ## 決定済み事項
 
@@ -230,6 +230,117 @@ lockfileが無い・shaded JARしか手元に無いプロジェクトへの対�
 - 外部の`osv-scanner-dummy-project`でCycloneDX Maven plugin 2.9.3によるSBOM生成とMaven Shade 3.6.2によるfat JAR生成を検証。7依存の元JAR SHA-256がSBOMと一致し、5,683クラスのバイト列がfat JARと一致。両入力のMCPスキャンで17件の脆弱性識別子・対象パッケージが一致した(件数は照会時点のOSVデータに依存)
 - この照合はアプリケーションクラスやrelocation/minimizeのないテスト用成果物に限定。署名・モジュール記述子・その他リソースは対象外で、製品のcoverage保証は変更しない。外部検証スクリプトはnpm配布物に含めない
 
+## 対象エコシステム拡大(JavaScript / Python / Go)詳細設計メモ(2026-10-07)
+
+バックログB2の詳細設計。確定方針(汎用`scan_project`の新設・既存ツール維持・lockfile方式・requirements.txtは欠けを明示して受け付ける)を前提とする。
+
+### 非目標
+
+- パッケージマネージャー・ビルドツールの実行(`npm install` / `pip install` / `uv lock` / `go build`等)。いずれも任意コード実行や外部取得を伴う。lockfileの生成は利用者が信頼できる環境で行う
+- Goの呼び出し解析(govulncheck相当。Goツールチェーンとモジュール取得が必要)
+- オフラインの脆弱性DB照会、言語別ツールの増設
+
+### 実機確認結果(2026-10-07、osv-scanner v2.4.0)
+
+**読み込めるファイル**(最小構成のフィクスチャで確認):
+
+| エコシステム | ファイル | 開発用依存の区別(`dependency_groups`) |
+|---|---|---|
+| npm | `package-lock.json` | あり(`dev`) |
+| npm | `npm-shrinkwrap.json` | 未確認(パッケージは読める) |
+| npm | `yarn.lock`(v1) | なし(形式に情報がない) |
+| npm | `pnpm-lock.yaml`(v9) | **なし**(devDependenciesに書いたパッケージも区別されない) |
+| npm | `bun.lock`(テキスト形式) | なし |
+| PyPI | `poetry.lock` | あり(`dev`) |
+| PyPI | `Pipfile.lock` | あり(`develop`→`dev`) |
+| PyPI | `uv.lock` | なし |
+| PyPI | `pdm.lock` | **不正確**(groups未記載のパッケージが`optional`になる) |
+| PyPI | `requirements.txt` | なし |
+| Go | `go.mod` | なし(`// indirect`も出力に現れない) |
+
+- `dependency_groups`は形式によって欠落・不正確なため、**生の値として表示するだけにし、優先度判定には使わない**
+- lockfileが無い場合: `package.json`だけ・`pyproject.toml`だけのディレクトリはexit 128(パッケージなし)。検出側で案内する必要がある
+- `go.mod`は`toolchain`指定があっても標準ライブラリ(stdlib)を報告しない
+- `-r`は`node_modules`配下のlockfileを拾わない
+- `--lockfile <形式>:<パス>`で、ファイルごとに解析形式を明示して個別にスキャンできる(pom.xmlも可。推移的依存の解決も`-r`と同じく行われる)
+- 通信先: lockfileはapi.osv.devのみ。`requirements.txt`はpom.xmlと同じくapi.deps.devで推移的依存を解決する(`--no-resolve`で止まる)。`--index-url` / `--extra-index-url`に書いた任意のURLへは接続しない(deps.devモード)
+- OSVの影響範囲の型: npmは`SEMVER`(一部`ECOSYSTEM`)、Goは`SEMVER`のみ、PyPIは`ECOSYSTEM`+`GIT`。パッケージ名はPyPIも小文字に正規化されて返り、OSVレコード側の名前と完全一致した(lodashのアドバイザリにはlodash-es等の別パッケージも並ぶため、名前の完全一致での絞り込みは必須)
+- `requirements.txt`: バージョン未固定の行は出力から消え、`>=2.0`は下限`2.0`を使用中バージョンとみなす。**`-r`による取り込みをたどり、相対パスならスキャン対象ディレクトリの外のファイルも読む**(絶対パスの取り込みはたどらない)
+
+**現行版(v0.3.3)の不具合**(上記の確認中に判明):
+
+1. **スキャン範囲の境界の迂回**: Java用ツールは`-r <ディレクトリ>`でスキャンするため、ディレクトリ内の`requirements.txt`も読む。`-r ../../outside/x.txt`を書いた`requirements.txt`を置くと、`OSV_MCP_ALLOWED_ROOT`の外のファイルが読まれ、`名前==バージョン`として解析できた行が結果に含まれ、api.osv.devへ送られる(MCP経由で再現)
+2. **suggest_fixの誤表示**: Javaプロジェクトにnpmのlockfileが同居すると、npmパッケージも結果に含まれる。修正版の抽出がMaven専用のため、修正版のあるnpmの脆弱性(lodash: 4.17.21で修正)を「現在より新しい修正版がない(unfixed)」と返す
+3. **範囲の不一致**: `manifests`(検出は深さ3まで)と実際のスキャン範囲(`-r`、深さ無制限・全エコシステム)が一致しない。B1のレビュー指摘(深い階層のpom.xml)と同根
+
+### 中核の設計判断: 検出したファイルだけを個別に渡す
+
+`-r <ディレクトリ>`をやめ、検出側(Node)が列挙したファイルだけを`--lockfile <形式>:<絶対パス>`で渡す。JAR実体スキャン(列挙済みの絶対パスだけを渡す)と同じ考え方で、**検出結果を唯一のスキャン範囲にする**。
+
+- 応答の`manifests`と実際のスキャン範囲が常に一致する(不具合3の根本解決)
+- Java用ツールは`pom.xml`と`gradle.lockfile`だけを渡すため、`requirements.txt`やnpmのlockfileはスキャンされない(不具合1・2はJava用ツールでは発生しなくなる)
+- 解析形式を明示するため、ファイル名からの推測に依存しない
+- 代わりに検出側の探索上限が実質的なスキャン範囲になる。深さ3では深い階層のMavenマルチモジュールを取りこぼすため、JAR列挙と同じく上限を引き上げ(深さ8程度)、**上限に達したら黙って打ち切らずエラーにする**(`artifact_search_limit_exceeded`と同様)
+
+### 検出(`projectDetector`の一般化)
+
+- 対象: 上表のファイル+既存のpom.xml/gradle.lockfile。同じディレクトリに複数のnpm系lockfileがあればすべて渡す(実際に使われているものを推測しない)
+- 除外ディレクトリ: 既存(`.git`、`node_modules`等)に加え、`.venv`、`venv`、`site-packages`、`__pycache__`、`.tox`、`vendor`
+- lockfileが無いマニフェスト(`package.json`、`pyproject.toml`、`Pipfile`): そのディレクトリをcoverageの`lockfile_missing`に記録し、生成コマンドを案内する(`npm install --package-lock-only --ignore-scripts`等。生成は利用者が信頼できる環境で行う旨を明記)
+- エラーと結果の線引き(JAR実体スキャンと同じ): 対応ファイルが1つも無ければエラー(`no_manifest_found`を流用)。一部だけ欠ける場合は成功レスポンスにcoverageで示す
+
+### requirements.txtの扱い
+
+Node側で各行を分類してから渡す(pipは使わない。サイズ上限付きの単純な行解析):
+
+- `名前==バージョン`: スキャン対象
+- 未固定・範囲指定(`>=`等): coverageの`unpinned_requirements`に記録。`>=`の行はosv-scannerが下限を使用中バージョンとみなすため、該当パッケージに`version_is_lower_bound: true`を付ける
+- `-e`・URL・VCS参照: スキャンできない依存としてcoverageに記録
+- **取り込み(`-r` / `--requirement` / `-c` / `--constraint`)**: 取り込み先を取り込み元からの相対パスとして解決し、realpath後に**プロジェクトディレクトリ内**であることを検証する(`OSV_MCP_ALLOWED_ROOT`未設定でも適用)。外を指す・存在しない・シンボリックリンク経由の場合は、そのrequirements.txtをスキャン対象から外し、coverageに理由を記録する。取り込みの連鎖も同様に検証し、深さとファイル数に上限を設ける
+- 推移的依存の解決(deps.dev)はpom.xmlと同じ扱い。`dependency_resolution`の警告文は「pom.xml / requirements.txt」に一般化する
+
+### suggest_fixの言語対応
+
+- バージョン比較をエコシステム別に差し替える。インターフェース: 比較・系統(major.minor)の抽出・破壊的変更の判定
+  - Maven: 既存の`mavenVersion.ts`
+  - npm・Go: Semantic Versioning 2.0.0の優先順位(プレリリースの扱い、ビルドメタデータは無視)。Goは`v`なしで返る版、疑似バージョン(`0.0.0-20190101-abcdef`)、`+incompatible`に対応
+  - PyPI: PEP 440(epoch、プレ/ポスト/開発版、ローカル版、正規化)。テストは公開されている参照実装のテストケースを移植する(移植前にライセンスを確認)
+- `affectedVersions.ts`: `SEMVER`型の範囲を検証対象に加える。`GIT`型はコミット単位でリリース版と無関係のため、同じaffectedエントリに`ECOSYSTEM`/`SEMVER`型があれば無視する(`GIT`型しか無ければ情報不足のまま)
+- `extractFixedVersions`: Maven限定の条件を外し、エコシステム別の比較で並べる
+- パッケージ名の照合: PyPIは防御的にPEP 503の正規化(小文字化、`-_.`の連続を`-`)で比較する
+- 破壊的変更の扱い: npm・Goでは0.x系のマイナー更新(`0.3`→`0.4`)も`cross_major`として扱う。Goのv2以上はモジュールパス自体が変わる(OSV上も別パッケージ)ため、その旨を注記に含める
+- 未対応エコシステム: `verification: "unsupported_ecosystem"`を返し、CVEを`unfixed`に数えない(不具合2の再発防止)
+- 直接/推移的依存の区別(v0.6.0): osv-scannerの出力には無い。独自解析が必要なため、JSON(package-lock.json)と行形式(go.mod、requirements.txt)に限定し、YAML/TOMLのパーサー追加は見送る。推移的依存への推奨は「親パッケージの更新」とし、npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に含める
+
+### 応答スキーマ(`scan_project`)
+
+誤要約対策の原則(JAR実体スキャン)を踏襲し、件数より前に範囲情報を置く:
+
+- `dependency_resolution`(B1と同じ)
+- `coverage`: `manifests`(ファイルごとのエコシステムと形式)、`lockfile_missing[]`、`unpinned_requirements[]`、`skipped_files[]`(取り込み先の検証失敗等、理由付き)。ファイル名・行内容は`sanitizeExternalText`を通す
+- `ecosystem_breakdown`: エコシステム別の件数
+- `packages[]`: 既存の項目に`dependency_groups`(生の値)、`version_is_lower_bound`を追加
+
+### 段階計画と完了条件
+
+- **Phase 0(v0.3.4、修正リリース)**: 既存ツールを「検出したファイルだけを個別に渡す」方式へ切り替え、探索上限の引き上げと上限到達時のエラー化。suggest_fixで非Mavenを`unsupported_ecosystem`にする。完了条件: 上記の不具合1〜3の再現手順を回帰テスト化し、MCP経由で解消を確認
+- **v0.4.0**: `scan_project`(全形式の検出、requirements.txtの行分類と取り込み検証、coverage、エコシステム別集計)。suggest_fixはJava以外を`unsupported_ecosystem`のまま
+- **v0.5.0**: suggest_fixのnpm/Go対応(semver比較、`SEMVER`範囲、0.x規則)
+- **v0.6.0**: suggest_fixのPyPI対応(PEP 440、`GIT`範囲の扱い)、直接/推移的依存の区別
+- **以降**: Goバイナリスキャン(ビルド情報からstdlibの版も取得できる)
+
+### テスト方針
+
+- 上表の各形式の最小フィクスチャ(正常系)と、lockfile欠如・取り込みの境界外・未固定行などの異常系
+- バージョン比較は各仕様の参照テストケース(semver仕様の例、Goの`golang.org/x/mod/semver`、PEP 440の参照実装)
+- MCP経由のE2Eと、接続先の記録(CONNECTプロキシでの確認手順をB1から再利用。npm配布物には含めない)
+
+### 未確認事項
+
+- `npm-shrinkwrap.json`の開発用依存の扱い、旧形式`bun.lockb`(バイナリ)の対応可否、yarn v2以降(berry)のlockfile
+- 取り込みの検証で外したrequirements.txtの、取り込み以外の行をスキャンすべきか(部分スキャンを許すか)
+- `--lockfile`で個別に渡したpom.xmlが、親POMやモジュールを`-r`の場合と同じく解決するか(マルチモジュールの実プロジェクトで確認)
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
@@ -273,7 +384,8 @@ lockfileが無い・shaded JARしか手元に無いプロジェクトへの対�
 - Goは`v`なしの版で返る。`go.mod`のスキャンでは標準ライブラリ(stdlib)が報告されない
 
 **段階計画**:
-- [ ] 詳細設計メモの作成(B1完了後)
+- [x] 詳細設計メモの作成(B1完了後) → 上記「対象エコシステム拡大 詳細設計メモ」節(2026-10-07)
+- [ ] **Phase 0(v0.3.4)**: 現行版の不具合3件(requirements.txtの取り込みによるスキャン範囲の境界の迂回、suggest_fixのnpm誤表示、manifestsとスキャン範囲の不一致)の修正。検出したファイルだけを`--lockfile`で個別に渡す方式へ切り替える
 - [ ] v0.4.0: `scan_project`(3言語の検出、`.venv`/`site-packages`/`vendor`の除外、lockfile欠如時の案内エラー、requirements.txtのcoverage明示、エコシステム別集計・dev依存表示)。suggest_fixはJava以外を「未対応」と明示的に返す
 - [ ] v0.5.0: suggest_fixのnpm/Go対応(semver比較、`SEMVER`範囲の検証、0.x系のマイナー更新を破壊的変更として扱う、Goのv2以上はモジュールパス変更を注記)
 - [ ] v0.6.0: suggest_fixのPython対応(PEP 440比較、`ECOSYSTEM`範囲がある場合の`GIT`範囲の無視)、直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)
