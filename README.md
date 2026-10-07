@@ -165,6 +165,8 @@ Java(Maven)プロジェクトをスキャンし、既知の脆弱性レポート
 
 > **Gradleプロジェクトについて**: 本ツールは**lockfile方式**のみ対応です(ビルド実行方式は build.gradle の任意コード実行を伴うため、セキュリティ上の理由から採用していません)。`gradle.lockfile` が無い場合は `./gradlew dependencies --write-locks` で生成してください(依存ロック未設定の場合は `build.gradle` に `dependencyLocking { lockAllConfigurations() }` の追加が必要です)。
 
+> **スキャン範囲**: ディレクトリを指定すると、配下の `pom.xml` / `gradle.lockfile` / `buildscript-gradle.lockfile` を深さに関係なく検出し、**検出したファイルだけ**をスキャンします(応答の `manifests` がそのままスキャン範囲です)。同じディレクトリにある `package-lock.json` や `requirements.txt` などJava以外のファイルはスキャンしません。`.git`、`node_modules`、`target`、`build`、`.idea`、`.vscode` とシンボリックリンクは探索しません。探索するエントリが20万件、またはマニフェストが1,000件を超える場合は、結果を黙って省略せず `manifest_search_limit_exceeded` を返します。`pom.xml` などのマニフェストを直接指定した場合は、ディレクトリを探索せず**そのファイルだけ**をスキャンします(上限に達した場合の回避手段としても使えます)。
+
 **出力(成功時)**
 
 ```json
@@ -294,6 +296,7 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 - MavenのOSV `ECOSYSTEM` 範囲(`introduced` / `fixed` / `last_affected` / 上限なし)を照合します。`versions` に明示された影響も確認します。範囲欠落・不正・未対応形式・`limit` による不完全な情報では安全と推定せず、候補を検証できなければ `recommended_upgrade: null`、`verification: "no_verified_candidate"` を返します。
 - 推奨時は `verification: "verified"`、CVEごとの `recommended_status` は `affected` / `not_affected` / `unknown` です。推奨保留時は `not_evaluated` になります。`per_cve_detail.fixed_in` は各CVE単独の候補であり、最終推奨先の判定は `recommended_status` を参照してください。
 - 現在より新しい修正版候補がないCVEは `tier: "unfixed"` として推奨の修正対象から除外します(情報欠落を含む場合があります)。除外したCVEも推奨先で判定し、その状態を表示します。全CVEがunfixedの場合も `recommended_upgrade` は `null` です。
+- 修正版の推奨はMavenのみ対応です。Maven以外のパッケージは `verification: "unsupported_ecosystem"`、CVEごとの `tier: "unsupported"` を返し、`unfixed` には数えません(修正版の有無は判定していないため。修正版は `explain_vulnerability` で確認できます)。
 
 ### `explain_vulnerability`
 
@@ -317,7 +320,7 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 {
   "error": {
     "kind": "no_manifest_found",
-    "message": "対応マニフェスト(pom.xml / gradle.lockfile)が見つかりません(深さ3まで探索): /path/to/project"
+    "message": "対応マニフェスト(pom.xml / gradle.lockfile)が見つかりません: /path/to/project"
   }
 }
 ```
@@ -327,6 +330,7 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 | `binary_not_found` | OSV-Scannerが見つからない(インストール案内をmessageに含む) |
 | `project_not_found` | 指定パスが存在しない・ディレクトリ/pom.xmlでない |
 | `no_manifest_found` | 対応マニフェスト(pom.xml / gradle.lockfile)が見つからない |
+| `manifest_search_limit_exceeded` | マニフェスト探索が上限(20万エントリ・1,000マニフェスト)に達した。より狭いディレクトリかマニフェストを直接指定する |
 | `binary_download_failed` | バイナリのダウンロード失敗(未対応プラットフォーム含む) |
 | `binary_checksum_mismatch` | ダウンロードしたバイナリのチェックサム不一致(改ざん/破損の可能性) |
 | `gradle_lockfile_missing` | Gradleプロジェクトだがgradle.lockfileが無い(生成手順をmessageで案内) |
@@ -348,7 +352,7 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 
 - **サプライチェーン対策**: バイナリの自動ダウンロードは公式GitHub Releasesに限定し、バージョンをピン留め。**パッケージに埋め込まれたSHA256チェックサム**で検証します(配布元のSHA256SUMSファイルは信用しないため、リリース側が改ざんされても検出可能)。検証合格まで実行権限を与えず、キャッシュ済みバイナリも使用のたびに再検証します。`OSV_MCP_PREFER_DOWNLOAD=1` でPATH上の未検証バイナリを使わない運用も選べます
 - **コマンドインジェクション対策**: シェルを経由しない `spawn` + 引数配列で実行。OSV-Scannerへの引数は固定リストのみで、可変部は検証済み絶対パス1つだけ
-- **パストラバーサル対策**: 入力パスは `realpath` でシンボリックリンク解決後に境界チェック。pom.xml探索ではシンボリックリンクを辿りません
+- **パストラバーサル対策**: 入力パスは `realpath` でシンボリックリンク解決後に境界チェック。pom.xml探索ではシンボリックリンクを辿りません。OSV-Scannerにはディレクトリを渡さず、検出したマニフェストだけを形式を明示して個別に渡します(ディレクトリを渡すと、OSV-Scannerが同じディレクトリの `requirements.txt` も読み、その取り込み指定 `-r ../x.txt` でスキャン範囲の外のファイルを読むため)
 - **DoS対策**: タイムアウト・stdout上限・stderr抜粋上限を設定。スキャン結果は防御的にパースし、形式不正でも例外を投げません。同時実行スキャン数も上限(デフォルト2)を設け、並列リクエストによるプロセスの無制限起動を防ぎます
 - **fail-closedな運用モード**: `OSV_MCP_REQUIRE_ALLOWED_ROOT=1` で、スキャン許可ルート未設定時にサーバーの起動自体を拒否できます
 - **通信先の固定と明示**: osv-scannerの依存解決先は `deps.dev` を明示指定し、スキャン対象のpom.xmlが指定する任意のリポジトリへ接続するモード(`--data-source native`)は使いません(テストで保証)。通信先の一覧と、deps.devへの送信を止める `OSV_MCP_NO_REMOTE_RESOLUTION=1` は[通信先とプライバシー](#通信先とプライバシー)を参照

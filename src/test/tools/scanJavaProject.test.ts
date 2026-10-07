@@ -1,4 +1,4 @@
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -153,15 +153,34 @@ describe("handleScanJavaProject: 推移的依存の解決状態の伝播", () =>
     expect(keys.indexOf("dependency_resolution")).toBeLessThan(keys.indexOf("vulnerability_count"));
   });
 
-  it("回帰: 直下のgradle.lockfileと探索深さ外のa/b/c/pom.xmlの構成でも警告を付ける", async () => {
+  it("回帰: pom.xmlの直接指定では、そのファイルだけをosv-scannerに渡す", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-tool-direct-"));
+    try {
+      await writeFile(path.join(dir, "pom.xml"), "<project/>");
+      await mkdir(path.join(dir, "child"), { recursive: true });
+      await writeFile(path.join(dir, "child", "pom.xml"), "<project/>");
+      const { payload, args } = await scanWith(undefined, undefined, path.join(dir, "pom.xml"));
+      expect(payload.manifests).toEqual(["pom.xml"]);
+      const lockfileArgs = args.filter((arg) => arg.startsWith("pom.xml:"));
+      expect(lockfileArgs).toEqual([`pom.xml:${path.join(await realpath(dir), "pom.xml")}`]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("回帰: 直下のgradle.lockfileとa/b/c/pom.xmlの構成で、深いpom.xmlも一覧とスキャン範囲に含め、警告を付ける", async () => {
     const mixedDir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-tool-deep-pom-"));
     try {
       await writeFile(path.join(mixedDir, "gradle.lockfile"), "a:a:1.0=runtimeClasspath\nempty=\n");
       await mkdir(path.join(mixedDir, "a", "b", "c"), { recursive: true });
       await writeFile(path.join(mixedDir, "a", "b", "c", "pom.xml"), "<project/>");
       const { payload, args } = await scanWith(undefined, true, mixedDir);
-      // 前提: 深いpom.xmlはマニフェスト一覧に現れない(osv-scannerの-rはスキャンする)
-      expect(payload.manifests).toEqual(["gradle.lockfile"]);
+      // 一覧とosv-scannerへ渡す範囲が一致する(ディレクトリは渡さない)
+      expect([...(payload.manifests as string[])].sort()).toEqual(["a/b/c/pom.xml", "gradle.lockfile"]);
+      const real = await realpath(mixedDir);
+      expect(args).toContain(`pom.xml:${path.join(real, "a", "b", "c", "pom.xml")}`);
+      expect(args).toContain(`gradle.lockfile:${path.join(real, "gradle.lockfile")}`);
+      expect(args).not.toContain(real);
       const resolution = payload.dependency_resolution as { transitive_resolution: string; warning?: string };
       expect(resolution.transitive_resolution).toBe("disabled");
       expect(resolution.warning).toContain("推移的依存の脆弱性は含まれません");

@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, mkdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -35,15 +35,38 @@ describe("detectJavaProject", () => {
     expect(project.manifests).toEqual(["pom.xml"]);
   });
 
-  it("サブモジュールのpom.xmlも深さ上限内で検出する", async () => {
+  it("深い階層のpom.xmlも検出し、絶対パスの一覧も返す(検出結果=スキャン範囲)", async () => {
     const dir = await makeTempDir();
     await writeFile(path.join(dir, "pom.xml"), POM);
     await mkdir(path.join(dir, "module-a"), { recursive: true });
     await writeFile(path.join(dir, "module-a", "pom.xml"), POM);
-    await mkdir(path.join(dir, "a", "b", "c", "d"), { recursive: true });
-    await writeFile(path.join(dir, "a", "b", "c", "d", "pom.xml"), POM); // 深さ5: 対象外
+    await mkdir(path.join(dir, "a", "b", "c", "d", "e", "f", "g", "h"), { recursive: true });
+    await writeFile(path.join(dir, "a", "b", "c", "d", "e", "f", "g", "h", "pom.xml"), POM); // 深さ9
     const project = await detectJavaProject(dir);
-    expect(project.manifests.sort()).toEqual(["module-a/pom.xml", "pom.xml"]);
+    expect([...project.manifests].sort()).toEqual(["a/b/c/d/e/f/g/h/pom.xml", "module-a/pom.xml", "pom.xml"]);
+    expect(project.manifestPaths).toEqual(project.manifests.map((m) => path.join(project.projectDir, m)));
+  });
+
+  it("requirements.txt等のJava以外のファイルは一覧に含めない", async () => {
+    const dir = await makeTempDir();
+    await writeFile(path.join(dir, "pom.xml"), POM);
+    await writeFile(path.join(dir, "requirements.txt"), "-r ../outside.txt\n");
+    await writeFile(path.join(dir, "package-lock.json"), "{}");
+    const project = await detectJavaProject(dir);
+    expect(project.manifests).toEqual(["pom.xml"]);
+  });
+
+  it.each([
+    { label: "エントリ数", options: { maxEntries: 3 } },
+    { label: "マニフェスト数", options: { maxManifests: 1 } },
+    { label: "深さ", options: { maxDepth: 2 } },
+  ])("探索上限($label)に達したら黙って打ち切らずエラーにする", async ({ options }) => {
+    const dir = await makeTempDir();
+    await writeFile(path.join(dir, "pom.xml"), POM);
+    await mkdir(path.join(dir, "m1", "deep"), { recursive: true });
+    await writeFile(path.join(dir, "m1", "pom.xml"), POM);
+    await writeFile(path.join(dir, "m1", "deep", "pom.xml"), POM);
+    await expectScanError(detectJavaProject(dir, options), "manifest_search_limit_exceeded");
   });
 
   it("target等のビルド成果物ディレクトリは探索しない", async () => {
@@ -59,6 +82,37 @@ describe("detectJavaProject", () => {
     await writeFile(pomPath, POM);
     const project = await detectJavaProject(pomPath);
     expect(project.manifests).toEqual(["pom.xml"]);
+  });
+
+  it("回帰: マニフェストの直接指定はそのファイル1件だけを返し、親ディレクトリを探索しない", async () => {
+    const dir = await makeTempDir();
+    await writeFile(path.join(dir, "pom.xml"), POM);
+    await mkdir(path.join(dir, "child"), { recursive: true });
+    await writeFile(path.join(dir, "child", "pom.xml"), POM);
+    // 探索上限エラーの案内どおり直接指定すれば、上限に関係なくスキャンできる
+    const project = await detectJavaProject(path.join(dir, "pom.xml"), { maxManifests: 1, maxEntries: 1 });
+    expect(project.manifests).toEqual(["pom.xml"]);
+    expect(project.manifestPaths).toEqual([path.join(await realpath(dir), "pom.xml")]);
+    // 同じ構成でディレクトリを指定した場合は上限エラーになる(対比)
+    await expectScanError(detectJavaProject(dir, { maxManifests: 1 }), "manifest_search_limit_exceeded");
+  });
+
+  it("gradle.lockfileの直接指定も、そのファイル1件だけを返す", async () => {
+    const dir = await makeTempDir();
+    await writeFile(path.join(dir, "gradle.lockfile"), "a:a:1.0=runtimeClasspath\nempty=\n");
+    await writeFile(path.join(dir, "pom.xml"), POM);
+    const project = await detectJavaProject(path.join(dir, "gradle.lockfile"));
+    expect(project.manifests).toEqual(["gradle.lockfile"]);
+  });
+
+  it("マニフェストの直接指定でもOSV_MCP_ALLOWED_ROOTの境界を検証する", async () => {
+    const root = await makeTempDir();
+    const outside = await makeTempDir();
+    await writeFile(path.join(outside, "pom.xml"), POM);
+    await expectScanError(
+      detectJavaProject(path.join(outside, "pom.xml"), { allowedRoot: root }),
+      "path_outside_allowed_root",
+    );
   });
 
   it("対応外のファイル指定はエラー", async () => {

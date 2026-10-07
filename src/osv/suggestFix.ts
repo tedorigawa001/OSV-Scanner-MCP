@@ -28,7 +28,8 @@ export interface CveFixDetail {
   severity: SeverityLevel;
   /** このCVEの修正版候補。最終推奨先での判定はrecommended_statusを参照 */
   fixed_in: string | null;
-  tier: UpgradeTier | "unfixed";
+  /** unsupported: 修正版推奨に未対応のエコシステム(修正版の有無は判定していない) */
+  tier: UpgradeTier | "unfixed" | "unsupported";
   recommended_status?: "affected" | "not_affected" | "unknown" | "not_evaluated";
 }
 
@@ -42,7 +43,36 @@ export interface PackageUpgradeSuggestion {
   upgrade_tier: UpgradeTier | null;
   upgrade_note: string;
   per_cve_detail: CveFixDetail[];
-  verification: "verified" | "no_verified_candidate";
+  verification: "verified" | "no_verified_candidate" | "unsupported_ecosystem";
+}
+
+/** バージョン比較・影響範囲の検証が対応済みのエコシステム */
+const SUPPORTED_ECOSYSTEMS = new Set(["Maven"]);
+
+/**
+ * 未対応エコシステムは推奨を出さず、CVEをunfixedにも数えない。
+ * 修正版の抽出がMaven専用のため、そのまま処理すると修正版のある脆弱性を
+ * 「修正版なし」と誤表示する(v0.3.3で確認した不具合)。
+ */
+function unsupportedEcosystemSuggestion(pkg: ScanReportPackage): PackageUpgradeSuggestion {
+  return {
+    package: pkg.name,
+    current_version: pkg.version,
+    ecosystem: pkg.ecosystem,
+    recommended_upgrade: null,
+    upgrade_tier: null,
+    upgrade_note:
+      `${pkg.ecosystem}の修正版推奨には未対応です(修正版の有無は判定していません)。` +
+      "各脆弱性の修正版はexplain_vulnerabilityで確認してください",
+    per_cve_detail: pkg.vulnerabilities.map((vuln) => ({
+      id: vuln.id,
+      cve: vuln.cve,
+      severity: vuln.severity,
+      fixed_in: null,
+      tier: "unsupported" as const,
+    })),
+    verification: "unsupported_ecosystem",
+  };
 }
 
 type Series = { major: number; minor: number };
@@ -112,6 +142,7 @@ function buildNote(
 
 /** 1パッケージ分のアップグレード提案を組み立てる。 */
 export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgradeSuggestion {
+  if (!SUPPORTED_ECOSYSTEMS.has(pkg.ecosystem)) return unsupportedEcosystemSuggestion(pkg);
   const currentSeries = mavenVersionSeries(pkg.version);
   const details: CveFixDetail[] = [];
   let recommended: string | null = null;

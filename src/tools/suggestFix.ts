@@ -23,7 +23,7 @@ export async function handleSuggestFix(
       allowedRoot: options.allowedRoot,
     });
     const noRemoteResolution = isRemoteResolutionDisabled(options);
-    const report = await runOsvScan(project.projectDir, { ...options, noRemoteResolution });
+    const report = await runOsvScan(project.manifestPaths, { ...options, noRemoteResolution });
     const suggestions = suggestUpgrades(report.packages);
     const unfixedVulnerabilities = suggestions.reduce(
       (sum, s) => sum + s.per_cve_detail.filter((d) => d.tier === "unfixed").length,

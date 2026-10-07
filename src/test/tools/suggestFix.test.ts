@@ -118,7 +118,7 @@ describe("handleSuggestFix: 推移的依存の解決状態の伝播", () => {
     expect(keys.indexOf("dependency_resolution")).toBeLessThan(keys.indexOf("suggestions"));
   });
 
-  it("回帰: 直下のgradle.lockfileと探索深さ外のa/b/c/pom.xmlの構成でも警告を付ける", async () => {
+  it("回帰: 直下のgradle.lockfileとa/b/c/pom.xmlの構成で、深いpom.xmlも一覧に含め、警告を付ける", async () => {
     const mixedDir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-fix-deep-pom-"));
     try {
       await writeFile(path.join(mixedDir, "gradle.lockfile"), "a:a:1.0=runtimeClasspath\nempty=\n");
@@ -128,7 +128,7 @@ describe("handleSuggestFix: 推移的依存の解決状態の伝播", () => {
       const payload = parsePayload(
         await handleSuggestFix({ project_path: mixedDir }, { binaryPath: bin, noRemoteResolution: true }),
       );
-      expect(payload.manifests).toEqual(["gradle.lockfile"]);
+      expect([...(payload.manifests as string[])].sort()).toEqual(["a/b/c/pom.xml", "gradle.lockfile"]);
       const resolution = payload.dependency_resolution as { transitive_resolution: string; warning?: string };
       expect(resolution.transitive_resolution).toBe("disabled");
       expect(resolution.warning).toContain("推移的依存の脆弱性は含まれません");

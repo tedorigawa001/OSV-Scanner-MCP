@@ -180,3 +180,29 @@ describe("suggestUpgrades", () => {
     expect(suggestions.map((s) => s.package)).toEqual(["a:critical-pkg", "b:low-pkg"]);
   });
 });
+
+describe("未対応エコシステム(回帰: v0.3.3でnpmの脆弱性を修正版なしと誤表示)", () => {
+  it("Maven以外は推奨を出さず、unfixedではなくunsupportedとして返す", () => {
+    const npmPkg: ScanReportPackage = {
+      name: "lodash",
+      version: "4.17.20",
+      ecosystem: "npm",
+      vulnerabilities: [vuln("GHSA-35jh-r3h4-6jhm", "CVE-2021-23337", [])],
+    };
+    const suggestion = suggestUpgradeForPackage(npmPkg);
+    expect(suggestion.verification).toBe("unsupported_ecosystem");
+    expect(suggestion.recommended_upgrade).toBeNull();
+    expect(suggestion.per_cve_detail.map((d) => d.tier)).toEqual(["unsupported"]);
+    expect(suggestion.upgrade_note).toContain("未対応");
+    expect(suggestion.upgrade_note).not.toContain("unfixed");
+  });
+
+  it("Mavenと混在しても、Mavenの推奨は従来どおり算出する", () => {
+    const [maven, npm] = suggestUpgrades([
+      pkg("a:a", "2.14.1", [vuln("GHSA-m", "CVE-2021-1", ["2.15.0"])]),
+      { name: "lodash", version: "4.17.20", ecosystem: "npm", vulnerabilities: [vuln("GHSA-n", null, [])] },
+    ]);
+    expect(maven!.recommended_upgrade).toBe("2.15.0");
+    expect(npm!.verification).toBe("unsupported_ecosystem");
+  });
+});

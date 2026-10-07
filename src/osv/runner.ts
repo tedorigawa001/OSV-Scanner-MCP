@@ -4,7 +4,10 @@
  * セキュリティ設計(docs/DESIGN_TODO.md):
  * - シェルを経由しない`spawn`+引数配列で実行(コマンドインジェクション対策)
  * - OSV-Scannerへ渡す引数は固定リストのみ。呼び出し側から任意フラグは注入できない
- *   (プロジェクトは検証済みディレクトリ1つ、実体スキャンは列挙済みのJAR/WAR絶対パスだけを渡す)
+ *   (プロジェクトは検出済みマニフェストを`--lockfile <形式>:<絶対パス>`で個別に、
+ *   実体スキャンは列挙済みのJAR/WAR絶対パスだけを渡す)
+ * - プロジェクトにディレクトリ(`-r`)を渡さない。osv-scannerがディレクトリ内の
+ *   requirements.txt等も読み、その`-r ../x.txt`の取り込みでスキャン範囲の外のファイルを読むため
  * - SBOMは検証・サイズ制限済みの専用一時コピー1つだけを渡す
  * - タイムアウトと出力サイズ上限を設ける(ハング・巨大出力によるDoS対策)
  *
@@ -13,6 +16,7 @@
  */
 
 import { spawn } from "node:child_process";
+import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import { resolveOsvScannerBinary } from "./binaryManager.js";
 import { parseOsvScanOutput, type ScanReport } from "./scanReport.js";
@@ -73,8 +77,22 @@ export function isRemoteResolutionDisabled(options: RunOsvScanOptions = {}): boo
  * `--data-source native` はスキャン対象pom.xmlの<repositories>に書かれた任意のURLへ
  * 接続するため使わない。既定値の変更に備えてdeps.devを明示する。
  */
-const FIXED_SCAN_ARGS = ["scan", "source", "-r", "--format", "json", "--data-source", "deps.dev"] as const;
+const FIXED_SCAN_ARGS = ["scan", "source", "--format", "json", "--data-source", "deps.dev"] as const;
 const NO_RESOLVE_ARG = "--no-resolve";
+
+/** 個別に渡せるマニフェスト。ファイル名をそのまま解析形式として明示する(2.4.0で実機確認) */
+const PROJECT_MANIFEST_FORMATS = new Set(["pom.xml", "gradle.lockfile", "buildscript-gradle.lockfile"]);
+
+/** 検出済みマニフェストを`--lockfile <形式>:<絶対パス>`の組にする。対象外のパスは渡さない */
+export function buildProjectTargetArgs(manifestPaths: readonly string[]): string[] {
+  return manifestPaths.flatMap((manifestPath) => {
+    const format = path.basename(manifestPath);
+    if (!PROJECT_MANIFEST_FORMATS.has(format) || !path.isAbsolute(manifestPath)) {
+      throw new Error(`Unsupported manifest path for project scan: ${manifestPath}`);
+    }
+    return ["--lockfile", `${format}:${manifestPath}`];
+  });
+}
 const FIXED_ARTIFACT_ARGS = [
   "scan", "source", "--format", "json", "--all-packages", "--no-ignore",
   "--experimental-no-default-plugins", "--experimental-plugins", "java/archive",
@@ -181,16 +199,19 @@ function execOsvScanner(
 }
 
 /**
- * projectDirをOSV-Scannerでスキャンし、整形済みレポートを返す。
+ * 検出済みマニフェストだけをOSV-Scannerでスキャンし、整形済みレポートを返す。
  *
- * @param projectDir スキャン対象ディレクトリ。**必ず`detectJavaProject`で検証済みの
- *   絶対パスを渡すこと**(このレイヤーではパス検証を行わない)
+ * @param manifestPaths **`detectJavaProject`が検出したマニフェストの絶対パス**
+ *   (このレイヤーではスキャン範囲の検証を行わない。ディレクトリは渡さない)
  */
 export async function runOsvScan(
-  projectDir: string,
+  manifestPaths: readonly string[],
   options: RunOsvScanOptions = {},
 ): Promise<ScanReport> {
-  return parseOsvScanOutput(await runScan([projectDir], options, "project"));
+  if (manifestPaths.length === 0) {
+    throw new ScanToolError("no_manifest_found", "スキャン対象のマニフェストがありません");
+  }
+  return parseOsvScanOutput(await runScan(manifestPaths, options, "project"));
 }
 
 /** Accept only the exact absolute files enumerated by detectJavaArtifacts. */
@@ -237,7 +258,7 @@ async function runOsvScanUnguarded(
   const binaryPath = options.binaryPath ?? (await resolveOsvScannerBinary());
   const result = await execOsvScanner(
     binaryPath,
-    targetPaths,
+    mode === "project" ? buildProjectTargetArgs(targetPaths) : targetPaths,
     options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
     buildOsvScanArgs(mode, isRemoteResolutionDisabled(options)),
@@ -246,7 +267,7 @@ async function runOsvScanUnguarded(
   if (result.exitCode === EXIT_NO_PACKAGES && mode === "project") {
     throw new ScanToolError(
       "no_packages_found",
-      `OSV-Scannerがスキャン対象のパッケージを検出できませんでした: ${targetPaths[0]}(pom.xmlに依存関係が定義されているか確認してください)`,
+      `OSV-Scannerがスキャン対象のパッケージを検出できませんでした(マニフェスト${targetPaths.length}件。pom.xmlに依存関係が定義されているか確認してください)`,
       result.stderr,
     );
   }

@@ -11,6 +11,7 @@ import {
 } from "../../osv/binaryManager.js";
 import {
   buildOsvScanArgs,
+  buildProjectTargetArgs,
   runOsvArtifactScan,
   runOsvScan,
   runOsvSbomScan,
@@ -19,6 +20,8 @@ import {
 
 let binDir: string;
 let projectDir: string;
+/** runOsvScanには検出済みマニフェストの絶対パスを渡す */
+let manifests: string[];
 
 /** 偽のosv-scannerスクリプトを作る。テストでは実バイナリの終了コード仕様を模倣する。 */
 async function makeFakeBinary(name: string, script: string): Promise<string> {
@@ -45,6 +48,8 @@ const VULN_JSON = JSON.stringify({
 beforeAll(async () => {
   binDir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-bin-"));
   projectDir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-proj-"));
+  manifests = [path.join(projectDir, "pom.xml")];
+  await writeFile(manifests[0]!, "<project/>");
 });
 
 afterAll(async () => {
@@ -78,10 +83,32 @@ describe("osv-scannerへの引数", () => {
 
   it("projectモードはdeps.devを明示し、指定時だけ --no-resolve を付ける", () => {
     expect(buildOsvScanArgs("project", false)).toEqual(
-      ["scan", "source", "-r", "--format", "json", "--data-source", "deps.dev"],
+      ["scan", "source", "--format", "json", "--data-source", "deps.dev"],
     );
     expect(buildOsvScanArgs("project", true)).toContain("--no-resolve");
   });
+
+  it("projectモードはディレクトリ(-r)を渡さない(requirements.txtの取り込みで範囲外を読むため)", () => {
+    for (const noRemoteResolution of [false, true]) {
+      expect(buildOsvScanArgs("project", noRemoteResolution)).not.toContain("-r");
+    }
+  });
+
+  it("マニフェストは形式を明示して1件ずつ渡す", () => {
+    expect(buildProjectTargetArgs(["/p/pom.xml", "/p/a/b/c/gradle.lockfile", "/p/odd:dir/buildscript-gradle.lockfile"]))
+      .toEqual([
+        "--lockfile", "pom.xml:/p/pom.xml",
+        "--lockfile", "gradle.lockfile:/p/a/b/c/gradle.lockfile",
+        "--lockfile", "buildscript-gradle.lockfile:/p/odd:dir/buildscript-gradle.lockfile",
+      ]);
+  });
+
+  it.each(["/p/requirements.txt", "/p/package-lock.json", "/p", "relative/pom.xml"])(
+    "対象外のパスは渡さない: %s",
+    (bad) => {
+      expect(() => buildProjectTargetArgs([bad])).toThrow();
+    },
+  );
 
   it("artifact/sbomモードには --no-resolve を付けない(外部解決を行わないため)", () => {
     for (const mode of ["artifact", "sbom"] as const) {
@@ -102,14 +129,15 @@ describe("osv-scannerへの引数", () => {
     if (env === undefined) delete process.env.OSV_MCP_NO_REMOTE_RESOLUTION;
     else process.env.OSV_MCP_NO_REMOTE_RESOLUTION = env;
     try {
-      await runOsvScan(projectDir, { binaryPath: bin, noRemoteResolution: option });
+      await runOsvScan(manifests, { binaryPath: bin, noRemoteResolution: option });
     } finally {
       if (previous === undefined) delete process.env.OSV_MCP_NO_REMOTE_RESOLUTION;
       else process.env.OSV_MCP_NO_REMOTE_RESOLUTION = previous;
     }
     const recorded = (await readFile(argsFile, "utf8")).trim().split("\n");
     expect(recorded.includes("--no-resolve")).toBe(expected);
-    expect(recorded.at(-1)).toBe(projectDir);
+    expect(recorded.slice(-2)).toEqual(["--lockfile", `pom.xml:${manifests[0]}`]);
+    expect(recorded).not.toContain(projectDir);
   });
 });
 
@@ -118,9 +146,9 @@ describe("runOsvScan", () => {
     const bin = await makeFakeBinary("fake-sbom-slot", `sleep 1; echo '{"results":[]}'; exit 0`);
     const opts = { binaryPath: bin, maxConcurrentScans: 1 };
     const sbomPath = path.join(projectDir, "input.cdx.json");
-    const first = sbomFirst ? runOsvSbomScan(sbomPath, opts) : runOsvScan(projectDir, opts);
+    const first = sbomFirst ? runOsvSbomScan(sbomPath, opts) : runOsvScan(manifests, opts);
     try {
-      await expectScanError(sbomFirst ? runOsvScan(projectDir, opts) : runOsvSbomScan(sbomPath, opts), "too_many_concurrent_scans");
+      await expectScanError(sbomFirst ? runOsvScan(manifests, opts) : runOsvSbomScan(sbomPath, opts), "too_many_concurrent_scans");
     } finally {
       await first;
     }
@@ -130,9 +158,9 @@ describe("runOsvScan", () => {
     const bin = await makeFakeBinary("fake-shared-slot", `sleep 1; echo '{"results":[]}'; exit 0`);
     const opts = { binaryPath: bin, maxConcurrentScans: 1 };
     const artifactPath = path.join(projectDir, "fixture.jar");
-    const first = artifactFirst ? runOsvArtifactScan([artifactPath], opts) : runOsvScan(projectDir, opts);
+    const first = artifactFirst ? runOsvArtifactScan([artifactPath], opts) : runOsvScan(manifests, opts);
     try {
-      await expectScanError(artifactFirst ? runOsvScan(projectDir, opts) : runOsvArtifactScan([artifactPath], opts),
+      await expectScanError(artifactFirst ? runOsvScan(manifests, opts) : runOsvArtifactScan([artifactPath], opts),
         "too_many_concurrent_scans");
     } finally {
       await first;
@@ -141,14 +169,14 @@ describe("runOsvScan", () => {
 
   it("exit 1(脆弱性あり)のJSONをレポートに変換する", async () => {
     const bin = await makeFakeBinary("fake-vulns", `echo '${VULN_JSON}'; exit 1`);
-    const report = await runOsvScan(projectDir, { binaryPath: bin });
+    const report = await runOsvScan(manifests, { binaryPath: bin });
     expect(report.vulnerability_count).toBe(1);
     expect(report.packages[0]!.vulnerabilities[0]!.cve).toBe("CVE-2020-1");
   });
 
   it("exit 0(脆弱性なし)は空レポートを返す", async () => {
     const bin = await makeFakeBinary("fake-clean", `echo '{"results":[]}'; exit 0`);
-    const report = await runOsvScan(projectDir, { binaryPath: bin });
+    const report = await runOsvScan(manifests, { binaryPath: bin });
     expect(report.vulnerability_count).toBe(0);
     expect(report.packages).toEqual([]);
   });
@@ -158,24 +186,24 @@ describe("runOsvScan", () => {
       "fake-nopkg",
       `echo 'No package sources found' >&2; exit 128`,
     );
-    await expectScanError(runOsvScan(projectDir, { binaryPath: bin }), "no_packages_found");
+    await expectScanError(runOsvScan(manifests, { binaryPath: bin }), "no_packages_found");
   });
 
   it("その他の終了コードはscan_failed(stderr抜粋をdetailに含む)", async () => {
     const bin = await makeFakeBinary("fake-fail", `echo 'something broke' >&2; exit 127`);
-    const error = await expectScanError(runOsvScan(projectDir, { binaryPath: bin }), "scan_failed");
+    const error = await expectScanError(runOsvScan(manifests, { binaryPath: bin }), "scan_failed");
     expect(error.detail).toContain("something broke");
   });
 
   it("JSONでない出力はinvalid_output", async () => {
     const bin = await makeFakeBinary("fake-notjson", `echo 'oops not json'; exit 0`);
-    await expectScanError(runOsvScan(projectDir, { binaryPath: bin }), "invalid_output");
+    await expectScanError(runOsvScan(manifests, { binaryPath: bin }), "invalid_output");
   });
 
   it("タイムアウトでプロセスを打ち切りscan_timeout", async () => {
     const bin = await makeFakeBinary("fake-slow", `sleep 30; echo '{"results":[]}'`);
     await expectScanError(
-      runOsvScan(projectDir, { binaryPath: bin, timeoutMs: 300 }),
+      runOsvScan(manifests, { binaryPath: bin, timeoutMs: 300 }),
       "scan_timeout",
     );
   });
@@ -186,14 +214,14 @@ describe("runOsvScan", () => {
       `head -c 100000 /dev/zero | tr '\\0' 'a'; exit 0`,
     );
     await expectScanError(
-      runOsvScan(projectDir, { binaryPath: bin, maxOutputBytes: 10_000 }),
+      runOsvScan(manifests, { binaryPath: bin, maxOutputBytes: 10_000 }),
       "output_too_large",
     );
   });
 
   it("バイナリが起動できなければscan_failed", async () => {
     await expectScanError(
-      runOsvScan(projectDir, { binaryPath: path.join(binDir, "does-not-exist") }),
+      runOsvScan(manifests, { binaryPath: path.join(binDir, "does-not-exist") }),
       "scan_failed",
     );
   });
@@ -203,7 +231,7 @@ describe("runOsvScan", () => {
     const previous = process.env[OSV_SCANNER_PATH_ENV];
     process.env[OSV_SCANNER_PATH_ENV] = bin;
     try {
-      const report = await runOsvScan(projectDir);
+      const report = await runOsvScan(manifests);
       expect(report.vulnerability_count).toBe(0);
     } finally {
       if (previous === undefined) delete process.env[OSV_SCANNER_PATH_ENV];
@@ -213,16 +241,16 @@ describe("runOsvScan", () => {
 
   it("シグナルで強制終了された場合もscan_failed(signal情報付き)", async () => {
     const bin = await makeFakeBinary("fake-killed", `kill -KILL $$`);
-    const error = await expectScanError(runOsvScan(projectDir, { binaryPath: bin }), "scan_failed");
+    const error = await expectScanError(runOsvScan(manifests, { binaryPath: bin }), "scan_failed");
     expect(error.message).toContain("SIGKILL");
   });
 
   it("同時実行数が上限に達したらtoo_many_concurrent_scansで即時エラー", async () => {
     const bin = await makeFakeBinary("fake-busy", `sleep 2; echo '{"results":[]}'; exit 0`);
-    const first = runOsvScan(projectDir, { binaryPath: bin, maxConcurrentScans: 1 });
+    const first = runOsvScan(manifests, { binaryPath: bin, maxConcurrentScans: 1 });
     // 1件目が走っている間の2件目は待たされず即時エラーになる
     const error = await expectScanError(
-      runOsvScan(projectDir, { binaryPath: bin, maxConcurrentScans: 1 }),
+      runOsvScan(manifests, { binaryPath: bin, maxConcurrentScans: 1 }),
       "too_many_concurrent_scans",
     );
     expect(error.message).toContain("1件まで");
@@ -232,11 +260,11 @@ describe("runOsvScan", () => {
   it("スキャン完了後(エラー時含む)はスロットが解放され再実行できる", async () => {
     const failing = await makeFakeBinary("fake-slot-fail", `echo 'boom' >&2; exit 127`);
     await expectScanError(
-      runOsvScan(projectDir, { binaryPath: failing, maxConcurrentScans: 1 }),
+      runOsvScan(manifests, { binaryPath: failing, maxConcurrentScans: 1 }),
       "scan_failed",
     );
     const ok = await makeFakeBinary("fake-slot-ok", `echo '{"results":[]}'; exit 0`);
-    const report = await runOsvScan(projectDir, { binaryPath: ok, maxConcurrentScans: 1 });
+    const report = await runOsvScan(manifests, { binaryPath: ok, maxConcurrentScans: 1 });
     expect(report.vulnerability_count).toBe(0);
   });
 });

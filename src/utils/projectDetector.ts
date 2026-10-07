@@ -11,7 +11,11 @@
  * `project_path`はLLM・ユーザー由来の信頼できない入力として扱う:
  * - `realpath`で正規化し、シンボリックリンクを解決した実体パスで判定する
  * - `allowedRoot`指定時は、解決後のパスがその配下にあることを検証する(パストラバーサル対策)
- * - マニフェスト探索は深さ・件数に上限を設け、シンボリックリンクのディレクトリは辿らない
+ * - マニフェスト探索はエントリ数・件数・深さに上限を設け、シンボリックリンクのディレクトリは辿らない
+ *
+ * 検出したマニフェストが、そのままOSV-Scannerのスキャン範囲になる(ディレクトリは渡さない)。
+ * そのため探索を深さで打ち切らず(Javaのソースツリーは深い)、上限に達した場合は
+ * 結果を黙って欠落させずにエラーにする。
  */
 
 import { readdir, realpath, stat } from "node:fs/promises";
@@ -23,18 +27,24 @@ export interface DetectedJavaProject {
   projectDir: string;
   /** projectDirからの相対パスで表したマニフェスト(pom.xml / gradle.lockfile)の一覧 */
   manifests: string[];
+  /** manifestsの絶対パス。OSV-Scannerにはこれだけを渡す(スキャン範囲=この一覧) */
+  manifestPaths: string[];
 }
 
 export interface DetectJavaProjectOptions {
   /** 指定時、解決後のパスがこのディレクトリ配下でなければエラー */
   allowedRoot?: string;
-  /** マニフェスト探索の最大深さ(projectDir直下=1)。デフォルト3 */
+  /** 探索の最大深さ(projectDir直下=1)。病的な入れ子への安全弁。デフォルト64 */
   maxDepth?: number;
+  /** 探索するエントリ(ファイル・ディレクトリ)の総数の上限。デフォルト200,000 */
+  maxEntries?: number;
+  /** マニフェスト件数の上限。デフォルト1,000 */
+  maxManifests?: number;
 }
 
-const DEFAULT_MAX_DEPTH = 3;
-/** 探索を打ち切るマニフェスト件数の上限(巨大モノレポでの暴走防止) */
-const MAX_MANIFESTS = 100;
+const DEFAULT_MAX_DEPTH = 64;
+const DEFAULT_MAX_ENTRIES = 200_000;
+const DEFAULT_MAX_MANIFESTS = 1_000;
 /** ビルド成果物・VCS等、マニフェスト探索でスキップするディレクトリ */
 const SKIPPED_DIRS = new Set([".git", "node_modules", "target", "build", ".idea", ".vscode"]);
 
@@ -82,13 +92,29 @@ interface ManifestSearchResult {
   gradleBuildFileFound: boolean;
 }
 
-/** 深さ・件数上限付きでマニフェストを探索する。シンボリックリンクは辿らない。 */
-async function findManifests(rootDir: string, maxDepth: number): Promise<ManifestSearchResult> {
+interface SearchLimits {
+  maxDepth: number;
+  maxEntries: number;
+  maxManifests: number;
+}
+
+function searchLimitError(reason: string): ScanToolError {
+  return new ScanToolError(
+    "manifest_search_limit_exceeded",
+    `マニフェスト探索が上限(${reason})に達したため、スキャンを中止しました。` +
+      "結果の欠落を避けるため途中までの結果は返しません。より狭いディレクトリ、またはpom.xml / gradle.lockfileを直接指定してください",
+  );
+}
+
+/** 上限付きでマニフェストを探索する。シンボリックリンクは辿らない。上限到達はエラー。 */
+async function findManifests(rootDir: string, limits: SearchLimits): Promise<ManifestSearchResult> {
   const manifests: string[] = [];
   let gradleBuildFileFound = false;
+  let visited = 0;
   let currentLevel = [rootDir];
 
-  for (let depth = 1; depth <= maxDepth && currentLevel.length > 0; depth++) {
+  for (let depth = 1; currentLevel.length > 0; depth++) {
+    if (depth > limits.maxDepth) throw searchLimitError(`深さ${limits.maxDepth}`);
     const nextLevel: string[] = [];
     for (const dir of currentLevel) {
       let entries;
@@ -98,9 +124,10 @@ async function findManifests(rootDir: string, maxDepth: number): Promise<Manifes
         continue; // 読めないディレクトリはスキップ(権限不足等)
       }
       for (const entry of entries) {
+        if (++visited > limits.maxEntries) throw searchLimitError(`${limits.maxEntries}エントリ`);
         if (entry.isFile() && MANIFEST_FILENAMES.has(entry.name)) {
+          if (manifests.length >= limits.maxManifests) throw searchLimitError(`マニフェスト${limits.maxManifests}件`);
           manifests.push(path.relative(rootDir, path.join(dir, entry.name)));
-          if (manifests.length >= MAX_MANIFESTS) return { manifests, gradleBuildFileFound };
         } else if (entry.isFile() && GRADLE_BUILD_FILENAMES.has(entry.name)) {
           gradleBuildFileFound = true;
         } else if (entry.isDirectory() && !SKIPPED_DIRS.has(entry.name)) {
@@ -130,15 +157,21 @@ export async function detectJavaProject(
   const resolved = await resolveExistingPath(inputPath);
   const stats = await stat(resolved);
 
+  // マニフェストの直接指定は、そのファイル1件だけをスキャン範囲にする。
+  // 親ディレクトリを探索しないため、探索上限エラーの回避手段として使える
+  if (stats.isFile() && MANIFEST_FILENAMES.has(path.basename(resolved))) {
+    const projectDir = path.dirname(resolved);
+    if (options.allowedRoot !== undefined) {
+      assertInsideAllowedRoot(projectDir, await resolveExistingPath(options.allowedRoot));
+    }
+    return { projectDir, manifests: [path.basename(resolved)], manifestPaths: [resolved] };
+  }
+
   let projectDir: string;
   if (stats.isDirectory()) {
     projectDir = resolved;
-  } else if (
-    stats.isFile() &&
-    (MANIFEST_FILENAMES.has(path.basename(resolved)) ||
-      GRADLE_BUILD_FILENAMES.has(path.basename(resolved)))
-  ) {
-    // build.gradle等の直接指定も受け付け、ディレクトリとして解決する
+  } else if (stats.isFile() && GRADLE_BUILD_FILENAMES.has(path.basename(resolved))) {
+    // build.gradle等の直接指定は、lockfileを探すためディレクトリとして解決する
     // (lockfileが無ければ後段でgradle_lockfile_missingの案内になる)
     projectDir = path.dirname(resolved);
   } else {
@@ -152,17 +185,24 @@ export async function detectJavaProject(
     assertInsideAllowedRoot(projectDir, await resolveExistingPath(options.allowedRoot));
   }
 
-  const maxDepth = options.maxDepth ?? DEFAULT_MAX_DEPTH;
-  const { manifests, gradleBuildFileFound } = await findManifests(projectDir, maxDepth);
+  const { manifests, gradleBuildFileFound } = await findManifests(projectDir, {
+    maxDepth: options.maxDepth ?? DEFAULT_MAX_DEPTH,
+    maxEntries: options.maxEntries ?? DEFAULT_MAX_ENTRIES,
+    maxManifests: options.maxManifests ?? DEFAULT_MAX_MANIFESTS,
+  });
   if (manifests.length === 0) {
     if (gradleBuildFileFound) {
       throw new ScanToolError("gradle_lockfile_missing", GRADLE_LOCKFILE_GUIDANCE);
     }
     throw new ScanToolError(
       "no_manifest_found",
-      `対応マニフェスト(pom.xml / gradle.lockfile)が見つかりません(深さ${maxDepth}まで探索): ${projectDir}`,
+      `対応マニフェスト(pom.xml / gradle.lockfile)が見つかりません: ${projectDir}`,
     );
   }
 
-  return { projectDir, manifests };
+  return {
+    projectDir,
+    manifests,
+    manifestPaths: manifests.map((manifest) => path.join(projectDir, manifest)),
+  };
 }

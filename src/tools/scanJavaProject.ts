@@ -44,7 +44,7 @@ export async function handleScanJavaProject(
       allowedRoot: options.allowedRoot,
     });
     const noRemoteResolution = isRemoteResolutionDisabled(options);
-    const report = await runOsvScan(project.projectDir, { ...options, noRemoteResolution });
+    const report = await runOsvScan(project.manifestPaths, { ...options, noRemoteResolution });
     return jsonResult({
       project_dir: project.projectDir,
       manifests: project.manifests,
