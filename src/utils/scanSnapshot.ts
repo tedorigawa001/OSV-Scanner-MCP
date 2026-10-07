@@ -9,6 +9,7 @@
  *   最悪でも親が見つからないだけ)
  * - `..`を重ねた参照でスナップショットの外(本物のファイルシステム)に出る親POMは除外する
  * - コピーの合計サイズに上限を設ける
+ * - サーバーがシグナル等で終了しても残さないよう、作成直後に後始末の対象へ登録する(processCleanup.ts)
  */
 
 import { mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
@@ -17,6 +18,7 @@ import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import type { ManifestTarget } from "./manifestFormats.js";
 import { decodePomBytes, parentRelativePath } from "./pomParent.js";
+import { SNAPSHOT_DIR_PREFIX, trackTempDir } from "./processCleanup.js";
 import { isInsideDir } from "./projectWalk.js";
 import { copyRegularFile, type SafeReadError } from "./safeRead.js";
 
@@ -50,11 +52,13 @@ export class ScanSnapshot {
   private constructor(
     readonly dir: string,
     private readonly maxTotalBytes: number,
+    private readonly untrack: () => void,
   ) {}
 
   static async create(maxTotalBytes = DEFAULT_MAX_TOTAL_BYTES): Promise<ScanSnapshot> {
-    const dir = await mkdtemp(path.join(await realpath(os.tmpdir()), "osv-mcp-snap-"));
-    return new ScanSnapshot(dir, maxTotalBytes);
+    const dir = await mkdtemp(path.join(await realpath(os.tmpdir()), SNAPSHOT_DIR_PREFIX));
+    // mkdtempの完了から登録までの間にシグナルの処理は割り込まない(同じ同期処理内で登録する)
+    return new ScanSnapshot(dir, maxTotalBytes, trackTempDir(dir));
   }
 
   /** 再現した配置のルート(実際のファイルシステムの"/"に相当) */
@@ -136,6 +140,7 @@ export class ScanSnapshot {
 
   async cleanup(): Promise<void> {
     await rm(this.dir, { recursive: true, force: true });
+    this.untrack();
   }
 }
 
