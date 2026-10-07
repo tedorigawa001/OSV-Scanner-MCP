@@ -16,6 +16,7 @@
 import { asArray, asRecord, asString, asStrings } from "../utils/unknownJson.js";
 import { extractAffectedVersions, type AffectedVersionEvidence } from "./affectedVersions.js";
 import { samePackageName, sortVersions, versionRangeTypes } from "./versionScheme.js";
+import type { DependencyRelation } from "../utils/dependencyRelations.js";
 
 export type SeverityLevel = "critical" | "high" | "medium" | "low" | "unknown";
 
@@ -54,6 +55,18 @@ export interface ScanReportPackage {
    * (scan_project・suggest_fixが付ける。実際にインストールされる版とは異なりうる)
    */
   version_is_lower_bound?: true;
+  /**
+   * 直接/推移的依存の別(scan_project・suggest_fixが付ける)。mixed = lockfileによって異なる、unknown = 判定できない形式
+   */
+  dependency_relation?: DependencyRelation;
+  /** npm: この版を推移的に要求している直接依存の名前(最大10件) */
+  introduced_by?: string[];
+  /** introduced_byから省いた件数 */
+  introduced_by_omitted?: number;
+  /** npm: 直接依存として宣言しているpackage.json(プロジェクトからの相対パス) */
+  declared_in?: string[];
+  /** Go: go.modのreplaceで置換している(requireの版を変えても効かない) */
+  replaced_in_go_mod?: true;
   /** 深刻度の高い順(unknownは末尾) */
   vulnerabilities: ScanReportVulnerability[];
 }
@@ -151,7 +164,20 @@ interface MutablePackage {
   version: string;
   ecosystem: string;
   groups: Set<string>;
+  sources: Set<string>;
   vulns: Map<string, ScanReportVulnerability>;
+}
+
+/**
+ * パッケージごとのスキャン元ファイル(osv-scannerの`results[].source.path`)。
+ * 応答のJSONには出さない(既存の応答を変えない)ため、パッケージのオブジェクトをキーに別に持つ。
+ * 直接/推移的依存の判定(dependencyRelations.ts)が、どのlockfileの依存かを知るために使う
+ */
+const packageSourceMap = new WeakMap<ScanReportPackage, readonly string[]>();
+
+/** parseOsvScanOutputが返したパッケージのスキャン元ファイル。それ以外のオブジェクトは空 */
+export function packageSources(pkg: ScanReportPackage): readonly string[] {
+  return packageSourceMap.get(pkg) ?? [];
 }
 
 /**
@@ -185,9 +211,10 @@ export function parseOsvScanOutput(raw: unknown): ScanReport {
       const key = `${ecosystem}:${name}@${version}`;
       let entry = packageMap.get(key);
       if (!entry) {
-        entry = { name, version, ecosystem, groups: new Set(), vulns: new Map() };
+        entry = { name, version, ecosystem, groups: new Set(), sources: new Set(), vulns: new Map() };
         packageMap.set(key, entry);
       }
+      if (sourcePath !== null) entry.sources.add(sourcePath);
       for (const group of asStrings(pkgObj.dependency_groups)) entry.groups.add(group);
 
       const details = asArray(pkgObj.vulnerabilities);
@@ -245,13 +272,15 @@ function buildReport(sourceFiles: string[], packageMap: Map<string, MutablePacka
         severityBreakdown[vuln.severity]++;
         vulnerabilityCount++;
       }
-      return {
+      const pkg: ScanReportPackage = {
         name: entry.name,
         version: entry.version,
         ecosystem: entry.ecosystem,
         ...(entry.groups.size > 0 ? { dependency_groups: [...entry.groups].sort() } : {}),
         vulnerabilities,
       };
+      packageSourceMap.set(pkg, [...entry.sources]);
+      return pkg;
     })
     .sort(
       (a, b) =>

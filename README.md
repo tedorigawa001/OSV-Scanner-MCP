@@ -200,7 +200,10 @@ api.osv.dev と deps.dev はどちらも Google が運営するサービスで�
   "vulnerable_package_count": 2,
   "vulnerability_count": 4,
   "severity_breakdown": { "critical": 0, "high": 2, "medium": 2, "low": 0, "unknown": 0 },
-  "packages": [{ "name": "minimist", "version": "1.2.5", "ecosystem": "npm", "dependency_groups": ["dev"], "vulnerabilities": [] }]
+  "packages": [
+    { "name": "minimist", "version": "1.2.5", "ecosystem": "npm", "dependency_groups": ["dev"], "dependency_relation": "direct", "declared_in": ["package.json"], "vulnerabilities": [] },
+    { "name": "qs", "version": "6.7.0", "ecosystem": "npm", "dependency_relation": "transitive", "introduced_by": ["express"], "vulnerabilities": [] }
+  ]
 }
 ```
 
@@ -211,6 +214,11 @@ api.osv.dev と deps.dev はどちらも Google が運営するサービスで�
   - `skipped_files`: スキャン対象から外したファイルと理由(requirements.txt自体が読めない・1MiBを超える場合、`pom.xml` の親POMが許可ルートの外を参照する場合)。親POMを読めず、親POMを含めずにスキャンした `pom.xml` もここに理由付きで示します([親POMの扱い](#親pomの扱い)を参照)
   - 各一覧は200件までで、超えた分の件数を `omitted_items` に返します
 - `ecosystem_breakdown` は、脆弱性0件のエコシステムも含めて「スキャンした」ことを示します
+- `dependency_relation` は直接依存(`direct`)か推移的依存(`transitive`)かを示します。OSV-Scannerの出力にはこの区別がないため、本サーバーがスキャンしたファイルのコピーを解析して判定します:
+  - `package-lock.json`(v2以降): ルートとworkspaceのpackage.jsonの依存を、Nodeの解決規則(入れ子の `node_modules` から上位へ)で解決したものが直接依存、そこからたどれるものが推移的依存です。直接依存には宣言しているpackage.jsonを `declared_in` に、推移的依存にはそれを要求している直接依存の名前を `introduced_by`(最大10件、超えた分は `introduced_by_omitted`)に示します。直接依存でもあり他の依存からも要求される版は `direct` とし、`introduced_by` も付けます
+  - `go.mod`: `// indirect` の無い `require` が直接依存です。`replace` で置き換えているモジュールには `replaced_in_go_mod: true` を付けます(OSV-Scannerは置換先のパスと版で報告します)
+  - `requirements.txt`: ファイルに書かれた依存が直接依存、deps.devで解決された依存が推移的依存です
+  - 上記以外の形式(`pom.xml`、`gradle.lockfile`、`yarn.lock`、`pnpm-lock.yaml`、`bun.lock`、`poetry.lock`、`uv.lock`、`Pipfile.lock`、`pdm.lock`)と、lockfileVersion 1・どこからも要求されていないエントリは `unknown` です。複数のlockfileで判定が異なる場合は `mixed` です
 - `dependency_groups` はOSV-Scannerが付けた依存グループ(例: `dev`)の生の値です。lockfileの形式によって欠落・不正確なため(pnpmでは付かず、pdmでは `optional` になる等)、参考情報として扱ってください
 - 修正版の推奨(`suggest_fix`)はJava・JavaScript・Python・Goに対応しています
 
@@ -378,6 +386,7 @@ npm・Go・PyPIの「同じ系統」は、npmの `^`(キャレット)が互換�
 - 推奨時は `verification: "verified"`、CVEごとの `recommended_status` は `affected` / `not_affected` / `unknown` です。推奨保留時は `not_evaluated` になります。`per_cve_detail.fixed_in` は各CVE単独の候補であり、最終推奨先の判定は `recommended_status` を参照してください。
 - 現在より新しい修正版候補がないCVEは `tier: "unfixed"` として推奨の修正対象から除外します(情報欠落を含む場合があります)。除外したCVEも推奨先で判定し、その状態を表示します。全CVEがunfixedの場合も `recommended_upgrade` は `null` です。修正版の記載はあるがバージョンとして解釈できないCVE(SemVerでない `13.0` 等)は `tier: "unparseable_fix"` とし、修正版が無いとは扱わず修正対象に残すため、推奨は保留(`no_verified_candidate`)になります。
 - npm・Go・PyPIの提案には更新方法の `update_hint` を付けます。PyPIでは、requirements.txtやpyproject.toml・Pipfileの指定を更新してlockfileを再生成し、推移的依存はpipの制約ファイル(`-c`)やuv・Poetryの上書き設定で版を指定します。推移的依存の場合、npmでは要求している直接依存の更新か、ルートの `package.json` の `overrides`(ルートのプロジェクトでのみ有効)で版を指定します。Goでは `go get <module>@<version>` で更新できます。Goのv2以上のメジャーは別のモジュールパス(`/v2` 等)としてOSV上も別パッケージになるため、新しいメジャー系列の修正版は候補に含まれません。現在の版が疑似バージョン(タグのないコミット)の場合は `upgrade_note` に示します。
+- 各提案には `scan_project` と同じ `dependency_relation`(と `introduced_by` / `declared_in` / `replaced_in_go_mod`)を付け、`update_hint` を直接/推移的依存の別に応じて具体化します(npmの推移的依存なら `introduced_by` の直接依存の更新と `overrides`、Goの `replace` ならreplaceの版の更新、等)。`unknown` / `mixed` の場合は両方の場合を案内します。
 - requirements.txtの `>=X` / `~=X` の行は、OSV-Scannerが下限Xを使用中の版とみなしてスキャンしています。この依存の提案には `version_is_lower_bound: true` を付け、推奨は「下限を推奨版以上に引き上げる」意味であること(実際にインストールされる版とは異なりうること)を `upgrade_note` に示します。
 - 推奨に未対応のエコシステム(SBOM由来のRubyGems等)は `verification: "unsupported_ecosystem"`、現在の版をバージョンとして解釈できない場合(npmのgit・ローカルパス依存等)は `verification: "unparseable_version"` を返し、どちらもCVEごとの `tier: "unsupported"` として `unfixed` には数えません(修正版の有無は判定していないため。修正版は `scan_project` の `fixed_versions` や `explain_vulnerability` で確認できます)。
 - 応答の `coverage` は `scan_project` と同じです。lockfileの無いマニフェストや外したファイルがあれば `complete: false` になり、それらの依存は提案に含まれません。v0.4.2以前の `skipped_manifests` / `scope_warning` は `coverage.skipped_files` / `coverage.warning` に統合しました。
@@ -467,7 +476,7 @@ npm run build             # dist/ へビルド
 - [x] `scan_project` ツール: Java / JavaScript / Python / Go のlockfileをまとめてスキャン
 - [x] `suggest_fix` のJavaScript / Go対応(semver)
 - [x] `suggest_fix` のPython対応(PEP 440)
-- [ ] 直接/推移的依存の区別
+- [x] 直接/推移的依存の区別(npm・Go・requirements.txt)
 
 ## ライセンス
 

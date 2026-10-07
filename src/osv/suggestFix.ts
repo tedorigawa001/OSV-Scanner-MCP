@@ -44,6 +44,12 @@ export interface PackageUpgradeSuggestion {
   package: string;
   current_version: string;
   ecosystem: string;
+  /** 直接/推移的依存の別と関連情報(scan_projectのpackagesと同じ。scan_project・suggest_fixが付ける) */
+  dependency_relation?: ScanReportPackage["dependency_relation"];
+  introduced_by?: string[];
+  introduced_by_omitted?: number;
+  declared_in?: string[];
+  replaced_in_go_mod?: true;
   /** 既知の修正版候補のうち影響範囲を検証できた版。null = 検証済み候補なし */
   recommended_upgrade: string | null;
   /** recommended_upgradeと現在バージョンの系統関係 */
@@ -76,9 +82,64 @@ const UPDATE_HINTS: Record<string, string> = {
 /** Goの疑似バージョン(タグのないコミット): 末尾がタイムスタンプ14桁-コミットハッシュ12桁 */
 const GO_PSEUDO_VERSION = /(?:^|[.-])\d{14}-[0-9a-f]{12}(?:\+|$)/;
 
-function hintFields(ecosystem: string): { update_hint?: string } {
-  const hint = UPDATE_HINTS[ecosystem];
+const GO_MAJOR_NOTE =
+  "Goではv2以上のメジャーは別のモジュールパス(/v2等)として別パッケージ扱いのため、新しいメジャー系列の修正版はここに含まれません";
+
+/**
+ * 推奨版への更新方法。直接/推移的依存の別が分かれば具体化し、分からなければ(unknown・mixed)両方を案内する
+ */
+function updateHint(pkg: ScanReportPackage): string | undefined {
+  const relation = pkg.dependency_relation;
+  const by = pkg.introduced_by?.join("、");
+  switch (pkg.ecosystem) {
+    case "npm":
+      if (relation === "direct") {
+        return `直接依存です。${pkg.declared_in?.join("、") ?? "package.json"}の指定を更新します` +
+          (by ? `。${by}からも推移的に要求されているため、それらの更新が必要な場合もあります` : "");
+      }
+      if (relation === "transitive") {
+        return `推移的依存です。${by ? `要求している直接依存(${by})` : "要求している直接依存"}を、推奨版以上を要求する版に更新します。` +
+          "直接依存の更新で直らない場合は、ルートのpackage.jsonのoverrides(ルートのプロジェクトでのみ有効)で版を指定します";
+      }
+      return UPDATE_HINTS.npm;
+    case "Go": {
+      if (pkg.replaced_in_go_mod) {
+        return `go.modのreplaceで置き換えているため、requireではなくreplaceの版を更新します。${GO_MAJOR_NOTE}`;
+      }
+      if (relation === "direct") return `直接依存です。go get <module>@<version>で更新します。${GO_MAJOR_NOTE}`;
+      if (relation === "transitive") {
+        return "間接依存(go.modの// indirect)です。go get <module>@<version>でgo.modの版を引き上げられます" +
+          `(依存元のモジュールの更新で解消できる場合もあります)。${GO_MAJOR_NOTE}`;
+      }
+      return UPDATE_HINTS.Go;
+    }
+    case "PyPI":
+      if (relation === "direct") {
+        return "直接依存です。requirements.txtの版の指定、またはpyproject.toml・Pipfileの指定を更新し、lockfileを再生成します";
+      }
+      if (relation === "transitive") {
+        return "推移的依存です。それを要求している直接依存の更新か、pipの制約ファイル(-c)、uv・Poetry等の上書き設定で版を指定します";
+      }
+      return UPDATE_HINTS.PyPI;
+    default:
+      return UPDATE_HINTS[pkg.ecosystem];
+  }
+}
+
+function hintFields(pkg: ScanReportPackage): { update_hint?: string } {
+  const hint = updateHint(pkg);
   return hint === undefined ? {} : { update_hint: hint };
+}
+
+/** スキャン結果に付いた直接/推移的依存の項目を提案にも写す(無ければ何も出さない) */
+function relationFields(pkg: ScanReportPackage) {
+  return {
+    ...(pkg.dependency_relation !== undefined ? { dependency_relation: pkg.dependency_relation } : {}),
+    ...(pkg.introduced_by !== undefined ? { introduced_by: pkg.introduced_by } : {}),
+    ...(pkg.introduced_by_omitted !== undefined ? { introduced_by_omitted: pkg.introduced_by_omitted } : {}),
+    ...(pkg.declared_in !== undefined ? { declared_in: pkg.declared_in } : {}),
+    ...(pkg.replaced_in_go_mod ? { replaced_in_go_mod: true as const } : {}),
+  };
 }
 
 /**
@@ -94,6 +155,7 @@ function notEvaluatedSuggestion(
     package: pkg.name,
     current_version: pkg.version,
     ecosystem: pkg.ecosystem,
+    ...relationFields(pkg),
     recommended_upgrade: null,
     upgrade_tier: null,
     upgrade_note:
@@ -172,7 +234,7 @@ function buildNote(
 export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgradeSuggestion {
   const scheme = versionSchemeFor(pkg.ecosystem);
   if (scheme === null) return notEvaluatedSuggestion(pkg, "unsupported_ecosystem");
-  if (!scheme.isValid(pkg.version)) return { ...notEvaluatedSuggestion(pkg, "unparseable_version"), ...hintFields(pkg.ecosystem) };
+  if (!scheme.isValid(pkg.version)) return { ...notEvaluatedSuggestion(pkg, "unparseable_version"), ...hintFields(pkg) };
 
   const details: CveFixDetail[] = pkg.vulnerabilities.map((vuln) => {
     const fix = rankCandidates(scheme, pkg.version, vuln.fixed_versions)[0];
@@ -203,6 +265,7 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgrade
     package: pkg.name,
     current_version: pkg.version,
     ecosystem: pkg.ecosystem,
+    ...relationFields(pkg),
     recommended_upgrade: recommended,
     upgrade_tier: upgradeTier,
     ...(recommended !== null && scheme.isPrerelease(recommended) ? { recommended_is_prerelease: true as const } : {}),
@@ -210,7 +273,7 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgrade
       ? "既知の修正版候補から、全修正対象CVEの影響範囲外と確認できる版が見つかりません。情報不足・未対応の範囲形式を含む場合も推奨を保留します。" +
         (unparseableCount > 0 ? `${unparseableCount}件のCVEは修正版の記載をバージョンとして解釈できないため(tier: unparseable_fix)、推奨を保留しています。` : "")
       : buildNote(scheme, pkg, recommended, upgradeTier, fixableCount, unfixedCount),
-    ...hintFields(pkg.ecosystem),
+    ...hintFields(pkg),
     ...(pkg.version_is_lower_bound ? { version_is_lower_bound: true as const } : {}),
     per_cve_detail: details,
     verification: recommended === null ? "no_verified_candidate" : "verified",

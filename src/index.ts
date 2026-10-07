@@ -58,6 +58,7 @@ server.registerTool(
       "Python(poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt)、Go(go.mod)。" +
       "パッケージマネージャーやビルドは実行しない。" +
       "応答先頭のcoverageを必ず確認すること: lockfileが無いマニフェスト、バージョン未固定のrequirements行、スキャン対象から外したファイルを示す。" +
+      "各パッケージのdependency_relationは直接依存(direct)か推移的依存(transitive)か(package-lock.json・go.mod・requirements.txtで判定。それ以外はunknown)。" +
       "coverage.complete=falseの場合は、検出0件でも安全とは判断しないこと。修正版の推奨(suggest_fix)はJava・JavaScript・Python・Goに対応。",
     inputSchema: {
       project_path: z
@@ -102,7 +103,7 @@ server.registerTool(
       "推奨はJava(Maven / Gradle)・JavaScript(npm)・Python(PyPI)・Goに対応。" +
       "現在のバージョンに最も近いリリース系統の修正版を優先する3段階フォールバック" +
       "(same_minor: 同一系統内 → major_internal: 同一メジャー内 → cross_major: メジャーアップグレード)で選定し、" +
-      "推奨バージョン・アップグレード距離(upgrade_tier)・CVEごとの修正版を返す。npm・Go・PyPIでは0.x系のマイナー更新もcross_major(破壊的変更の可能性)。requirements.txtの下限(>=)でスキャンした依存はversion_is_lower_boundを付け、推奨は下限の引き上げを意味する。" +
+      "推奨バージョン・アップグレード距離(upgrade_tier)・CVEごとの修正版を返す。npm・Go・PyPIでは0.x系のマイナー更新もcross_major(破壊的変更の可能性)。requirements.txtの下限(>=)でスキャンした依存はversion_is_lower_boundを付け、推奨は下限の引き上げを意味する。直接/推移的依存の別(dependency_relation、npmはintroduced_by・declared_in)に応じて更新方法(update_hint)を示す。" +
       "候補を全修正対象CVEの影響範囲と照合し、情報不足の場合は推奨を保留する。プレリリース版は正式版で解消できない場合だけ推奨し、recommended_is_prereleaseを付ける。" +
       "現在より新しい修正版候補のないCVEはunfixedとして別表示し、推奨先での判定も返す。" +
       "応答のcoverageを必ず確認すること(complete=falseなら提案に含まれない依存がある)。" +

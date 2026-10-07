@@ -2,7 +2,7 @@ import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:f
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { handleScanProject } from "../../tools/scanProject.js";
+import { buildRelationLookups, handleScanProject } from "../../tools/scanProject.js";
 import type { ToolResult } from "../../tools/toolResult.js";
 
 let binDir: string;
@@ -250,5 +250,78 @@ describe("handleScanProject: 親POMが許可ルートの外を参照するpom.xm
     expect(p.coverage.manifests.map((m: any) => m.path)).toEqual(["package-lock.json"]);
     expect(p.coverage.skipped_files).toEqual([{ path: "pom.xml", reason: expect.stringContaining("許可ルート") }]);
     expect((await readFile(argsFile, "utf8")).includes("pom.xml:")).toBe(false);
+  });
+});
+
+describe("handleScanProject: 直接/推移的依存の区別(v0.7.0)", () => {
+  /** 渡されたlockfile(コピー)ごとに、形式に応じたパッケージをsource.path付きで返す偽osv-scanner */
+  async function perSourceScanner(byFormat: Record<string, unknown[]>): Promise<string> {
+    const bin = path.join(binDir, `osv-per-source-${Math.random().toString(36).slice(2)}.cjs`);
+    await writeFile(bin, `#!${process.execPath}
+const args = process.argv.slice(2);
+const byFormat = ${JSON.stringify(byFormat)};
+const results = args.filter((a, i) => args[i - 1] === "--lockfile").map((a) => {
+  const format = a.slice(0, a.indexOf(":"));
+  const file = a.slice(a.indexOf(":") + 1);
+  const dir = require("node:path").basename(require("node:path").dirname(file));
+  return { source: { path: file }, packages: byFormat[format + ":" + dir] ?? byFormat[format] ?? [] };
+});
+console.log(JSON.stringify({ results }));
+process.exit(1);`);
+    await chmod(bin, 0o755);
+    return bin;
+  }
+
+  it("lockfileごとに判定し、introduced_by・declared_in・replaced_in_go_modを脆弱性より前に付ける", async () => {
+    const lock = (deps: Record<string, string>, extra: Record<string, unknown>) =>
+      JSON.stringify({ lockfileVersion: 3, packages: { "": { dependencies: deps }, ...extra } });
+    const dir = await makeProject({
+      "web/package-lock.json": lock({ express: "4.17.1" }, {
+        "node_modules/express": { version: "4.17.1", dependencies: { qs: "6.7.0" } },
+        "node_modules/qs": { version: "6.7.0" },
+      }),
+      "web/package.json": "{}",
+      "admin/package-lock.json": lock({ qs: "6.7.0" }, { "node_modules/qs": { version: "6.7.0" } }),
+      "admin/package.json": "{}",
+      "svc/go.mod": "module x\n\nrequire golang.org/x/net v0.1.0 // indirect\nreplace golang.org/x/net => golang.org/x/net v0.2.0\n",
+      "py/requirements.txt": "requests==2.19.0\n",
+      "pom.xml": "<project/>",
+    });
+    const bin = await perSourceScanner({
+      "package-lock.json:web": [pkg("npm", "express", "4.17.1"), pkg("npm", "qs", "6.7.0")],
+      "package-lock.json:admin": [pkg("npm", "qs", "6.7.0")],
+      "go.mod": [pkg("Go", "golang.org/x/net", "0.2.0")],
+      "requirements.txt": [pkg("PyPI", "requests", "2.19.0"), pkg("PyPI", "urllib3", "1.23.0")],
+      "pom.xml": [pkg("Maven", "g:a", "1.0")],
+    });
+    const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin }));
+    const byName = Object.fromEntries((p.packages as Record<string, unknown>[]).map((x) => [`${x.name}@${x.version}`, x]));
+    const pick = (x: Record<string, unknown>) => ({
+      relation: x.dependency_relation, by: x.introduced_by, in: x.declared_in, rep: x.replaced_in_go_mod,
+    });
+    expect(pick(byName["express@4.17.1"]!)).toEqual({ relation: "direct", by: undefined, in: ["web/package.json"], rep: undefined });
+    // webでは推移的、adminでは直接依存 → mixed。経由と宣言は合わせる
+    expect(pick(byName["qs@6.7.0"]!)).toEqual({ relation: "mixed", by: ["express"], in: ["admin/package.json"], rep: undefined });
+    expect(pick(byName["golang.org/x/net@0.2.0"]!)).toEqual({ relation: "transitive", by: undefined, in: undefined, rep: true });
+    expect(pick(byName["requests@2.19.0"]!).relation).toBe("direct");
+    expect(pick(byName["urllib3@1.23.0"]!).relation).toBe("transitive");
+    expect(pick(byName["g:a@1.0"]!).relation).toBe("unknown");
+    const keys = Object.keys(byName["qs@6.7.0"]!);
+    expect(keys.indexOf("dependency_relation")).toBeLessThan(keys.indexOf("vulnerabilities"));
+  });
+});
+
+describe("buildRelationLookups: 読み込みの上限", () => {
+  it("回帰: 予算を超えるlockfileは全体を読まずにunknownにし、予算内のファイルは判定する", async () => {
+    const lock = JSON.stringify({ lockfileVersion: 3, packages: { "": { dependencies: { a: "1" } }, "node_modules/a": { version: "1.0.0" } } });
+    const dir = await makeProject({ "small/package-lock.json": lock, "big/package-lock.json": lock + " ".repeat(10_000), "go.mod": "module x\nrequire example.com/a v1.0.0\n" });
+    const copies = ["small/package-lock.json", "big/package-lock.json", "go.mod"].map((rel) => ({
+      copy: path.join(dir, rel), format: rel.endsWith("go.mod") ? "go.mod" : "package-lock.json", originalRelative: rel,
+    }));
+    const lookups = await buildRelationLookups(copies, lock.length + 100);
+    expect(lookups.get(path.join(dir, "small/package-lock.json"))!.lookup!("a", "1.0.0").relation).toBe("direct");
+    expect(lookups.get(path.join(dir, "big/package-lock.json"))!.lookup).toBeNull();
+    // 予算の残り(100バイト未満)に収まるgo.modは判定する
+    expect(lookups.get(path.join(dir, "go.mod"))!.lookup!("example.com/a", "1.0.0").relation).toBe("direct");
   });
 });

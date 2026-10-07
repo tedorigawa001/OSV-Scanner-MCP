@@ -633,7 +633,13 @@ v0.6.0の設計メモ(上記)で確定した方針(JSONと行形式のみ解析�
   - suggest_fixでも`markLowerBounds`を適用し、下限でスキャンした依存に`version_is_lower_bound`と注記を付ける
   - 実バイナリでMCP経由の確認(requirements.txt、`--no-resolve`): requests 2.19.0→2.33.0、urllib3 1.23→2.8.0、jinja2 2.10→3.1.6、django 3.2.0→5.2.17、pillow 8.0.0→12.3.0、fastapi 0.65.0→0.109.1(0.x規則でcross_major)、torch 2.5.0→2.13.0、flask>=1.0→3.1.3(下限の注記)。推奨先をOSV APIに直接照会し、8件は既知の脆弱性0件
 - [ ] (v0.6.0の検証で判明)推奨先に、現在の版には該当しない新しい脆弱性がありうる。例: cryptography 3.2→49.0.0(cross_major)は、44.0.0で混入し50.0.0で修正された2件(GHSA-g6cj-pr64-35w5等)に該当する。スキャンは現在の版の脆弱性しか知らないため検出できない(「未検出の脆弱性がないことは保証しない」の具体例)。対策案: 推奨候補をapi.osv.devに照会し、既知の脆弱性がある候補を避ける(送信先・送信内容はスキャンと同じ。公開版の名前と版のみ)。照会回数の上限と、照会失敗時の扱いを決めて実装する
-- [ ] v0.7.0: 直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)。v0.6.0から分離(2026-10-07) → 詳細設計メモ作成済み(上記「直接/推移的依存の区別(v0.7.0)詳細設計メモ」) → 詳細設計メモ作成済み(2026-10-07、上記「suggest_fix PyPI対応・直接/推移的依存の区別(v0.6.0)詳細設計メモ」)
+- [x] v0.7.0: 直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)。v0.6.0から分離(2026-10-07) → 詳細設計メモ作成済み(上記「直接/推移的依存の区別(v0.7.0)詳細設計メモ」) → 実装済み(2026-10-07)。実装時の判断:
+  - パッケージごとのスキャン元は`WeakMap`で保持し(`packageSources`)、応答のJSONに出さない。`scan_java_project`等の応答は不変(パッケージのキーが変わらないことを確認)
+  - 判定は`scanFromSnapshot`内で、スナップショットを消す前にコピーを読んで行う。package-lock.jsonの解析は合計256MiBまで、たどる辺は200万まで。超えた・解析できないファイルは`unknown`(スキャンは続ける)
+  - Goは`replace`の置換元・置換先に`replaced_in_go_mod`を付け、`update_hint`でreplaceの版の更新を案内する(requireの版を変えても効かないため)。コメントが`indirect`だけか`indirect;`で始まる場合だけ間接依存(Goと同じ)
+  - (レビュー指摘)当初はreplaceを名前だけで照合し、版を限定したreplace(`replace a v1.0.0 => b v1.0.1`)をrequireの版(v1.2.0)が一致しなくても適用扱いにしていた。osv-scanner 2.4.0で、版を限定したreplaceはrequireの版が一致する場合だけ適用されることを確認し(一致しなければ元の版で報告)、Goと同じ規則(版を限定したものが優先、限定しないものは全版)で適用されたreplaceだけを判定するよう修正。`replaced_in_go_mod`は置換先の名前と版(ローカルディレクトリへの置換は置換元の名前)に付ける
+  - (レビュー指摘)判定用のlockfileを全体読み込みの後で予算と比較していたため、予算を超えて解析しないファイルもメモリに載せていた。`readRegularFile`で残りの予算を上限にし、読み込み前のサイズ確認と読み込み途中の打ち切りを行う(go.modも同じ予算に含める)
+  - 実バイナリでMCP経由の確認: 設計メモの期待値どおり(express・lodash 2版・minimist・node-fetch・qs 6.5.2が`direct`で`declared_in`付き、qs 6.7.0・body-parser・cookie・path-to-regexp・send・serve-staticが`transitive`で`introduced_by: ["express"]`、go.modの`// indirect`と`replace`、requirements.txtのidna・urllib3が`transitive`)。suggest_fixの推奨・注記・CVEごとの詳細は4構成でv0.6.0と出力のハッシュが一致 → 詳細設計メモ作成済み(2026-10-07、上記「suggest_fix PyPI対応・直接/推移的依存の区別(v0.6.0)詳細設計メモ」)
 - [ ] 以降: Goバイナリスキャン(ビルド情報からstdlibの版も取得でき、go.modで拾えないstdlibの脆弱性を補える)
 
 ### B4. pom.xmlの親POM(`<parent><relativePath>`)によるスキャン範囲外の読み込み(v0.4.0で対応)
