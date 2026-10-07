@@ -17,6 +17,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { handleExplainVulnerability } from "./tools/explainVulnerability.js";
 import { handleScanJavaProject } from "./tools/scanJavaProject.js";
+import { handleScanProject } from "./tools/scanProject.js";
 import { handleScanJavaArtifact } from "./tools/scanJavaArtifact.js";
 import { handleScanSbom } from "./tools/scanSbom.js";
 import { handleSuggestFix } from "./tools/suggestFix.js";
@@ -45,6 +46,28 @@ const server = new McpServer({
   name: "osv-scanner-mcp",
   version: "0.3.4",
 });
+
+server.registerTool(
+  "scan_project",
+  {
+    title: "プロジェクトの依存の脆弱性スキャン(Java / JavaScript / Python / Go)",
+    description:
+      "プロジェクト内のlockfile・マニフェストを検出し、依存ライブラリの既知の脆弱性(CVE/GHSA)をまとめてスキャンする。" +
+      "対応: Java(pom.xml / gradle.lockfile)、JavaScript(package-lock.json / npm-shrinkwrap.json / yarn.lock / pnpm-lock.yaml / bun.lock)、" +
+      "Python(poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt)、Go(go.mod)。" +
+      "パッケージマネージャーやビルドは実行しない。" +
+      "応答先頭のcoverageを必ず確認すること: lockfileが無いマニフェスト、バージョン未固定のrequirements行、スキャン対象から外したファイルを示す。" +
+      "coverage.complete=falseの場合は、検出0件でも安全とは判断しないこと。修正版の推奨(suggest_fix)は現在Javaのみ対応。",
+    inputSchema: {
+      project_path: z
+        .string()
+        .min(1)
+        .describe("スキャン対象のプロジェクトディレクトリ、または対応するlockfile・マニフェストの絶対パス"),
+    },
+  },
+  async ({ project_path }) =>
+    handleScanProject({ project_path }, { allowedRoot: process.env[ALLOWED_ROOT_ENV] }),
+);
 
 server.registerTool(
   "scan_java_project",

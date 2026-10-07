@@ -44,7 +44,7 @@ describe("detectJavaProject", () => {
     await writeFile(path.join(dir, "a", "b", "c", "d", "e", "f", "g", "h", "pom.xml"), POM); // 深さ9
     const project = await detectJavaProject(dir);
     expect([...project.manifests].sort()).toEqual(["a/b/c/d/e/f/g/h/pom.xml", "module-a/pom.xml", "pom.xml"]);
-    expect(project.manifestPaths).toEqual(project.manifests.map((m) => path.join(project.projectDir, m)));
+    expect(project.targets).toEqual(project.manifests.map((m) => ({ path: path.join(project.projectDir, m), format: "pom.xml" })));
   });
 
   it("requirements.txt等のJava以外のファイルは一覧に含めない", async () => {
@@ -92,7 +92,7 @@ describe("detectJavaProject", () => {
     // 探索上限エラーの案内どおり直接指定すれば、上限に関係なくスキャンできる
     const project = await detectJavaProject(path.join(dir, "pom.xml"), { maxManifests: 1, maxEntries: 1 });
     expect(project.manifests).toEqual(["pom.xml"]);
-    expect(project.manifestPaths).toEqual([path.join(await realpath(dir), "pom.xml")]);
+    expect(project.targets).toEqual([{ path: path.join(await realpath(dir), "pom.xml"), format: "pom.xml" }]);
     // 同じ構成でディレクトリを指定した場合は上限エラーになる(対比)
     await expectScanError(detectJavaProject(dir, { maxManifests: 1 }), "manifest_search_limit_exceeded");
   });
@@ -238,5 +238,44 @@ describe("detectJavaProject", () => {
     await writeFile(path.join(elsewhere, "pom.xml"), POM);
     await symlink(elsewhere, path.join(dir, "linked"));
     await expectScanError(detectJavaProject(dir), "no_manifest_found");
+  });
+});
+
+describe("detectJavaProject: 親POMが許可ルートの外を参照するpom.xml", () => {
+  const OUTSIDE_PARENT =
+    "<project><parent><groupId>g</groupId><artifactId>p</artifactId><version>1</version>" +
+    "<relativePath>../../outside/pom.xml</relativePath></parent><artifactId>a</artifactId></project>";
+
+  async function makeBase(): Promise<string> {
+    const base = await realpath(await makeTempDir());
+    await mkdir(path.join(base, "outside"), { recursive: true });
+    await writeFile(path.join(base, "outside", "pom.xml"), POM);
+    await mkdir(path.join(base, "root", "proj", "bad"), { recursive: true });
+    return base;
+  }
+
+  it("該当するpom.xmlだけスキャン対象から外し、理由を返す", async () => {
+    const base = await makeBase();
+    await writeFile(path.join(base, "root/proj/pom.xml"), POM);
+    await writeFile(path.join(base, "root/proj/bad/pom.xml"), OUTSIDE_PARENT.replace("../../outside", "../../../outside"));
+    const project = await detectJavaProject(path.join(base, "root/proj"), { allowedRoot: path.join(base, "root") });
+    expect(project.manifests).toEqual(["pom.xml"]);
+    expect(project.skipped).toEqual([{ path: "bad/pom.xml", reason: expect.stringContaining("許可ルート") }]);
+  });
+
+  it("全件除外ならpath_outside_allowed_root(直接指定も)", async () => {
+    const base = await makeBase();
+    await writeFile(path.join(base, "root/proj/pom.xml"), OUTSIDE_PARENT.replace("../../outside", "../../outside"));
+    const options = { allowedRoot: path.join(base, "root") };
+    await expectScanError(detectJavaProject(path.join(base, "root/proj"), options), "path_outside_allowed_root");
+    await expectScanError(detectJavaProject(path.join(base, "root/proj/pom.xml"), options), "path_outside_allowed_root");
+  });
+
+  it("許可ルート未設定なら除外しない", async () => {
+    const base = await makeBase();
+    await writeFile(path.join(base, "root/proj/pom.xml"), OUTSIDE_PARENT);
+    const project = await detectJavaProject(path.join(base, "root/proj"));
+    expect(project.manifests).toEqual(["pom.xml"]);
+    expect(project.skipped).toEqual([]);
   });
 });

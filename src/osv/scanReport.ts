@@ -40,6 +40,11 @@ export interface ScanReportPackage {
   name: string;
   version: string;
   ecosystem: string;
+  /**
+   * osv-scannerが付けた依存グループ(例: dev)の生の値。値がある場合だけ出力する。
+   * lockfileの形式によって欠落・不正確なため(pnpmは付かず、pdmはoptionalになる)、優先度判定には使わない
+   */
+  dependency_groups?: string[];
   /** 深刻度の高い順(unknownは末尾) */
   vulnerabilities: ScanReportVulnerability[];
 }
@@ -132,6 +137,7 @@ interface MutablePackage {
   name: string;
   version: string;
   ecosystem: string;
+  groups: Set<string>;
   vulns: Map<string, ScanReportVulnerability>;
 }
 
@@ -166,9 +172,10 @@ export function parseOsvScanOutput(raw: unknown): ScanReport {
       const key = `${ecosystem}:${name}@${version}`;
       let entry = packageMap.get(key);
       if (!entry) {
-        entry = { name, version, ecosystem, vulns: new Map() };
+        entry = { name, version, ecosystem, groups: new Set(), vulns: new Map() };
         packageMap.set(key, entry);
       }
+      for (const group of asStrings(pkgObj.dependency_groups)) entry.groups.add(group);
 
       const details = asArray(pkgObj.vulnerabilities);
       for (const groupRaw of asArray(pkgObj.groups)) {
@@ -225,7 +232,13 @@ function buildReport(sourceFiles: string[], packageMap: Map<string, MutablePacka
         severityBreakdown[vuln.severity]++;
         vulnerabilityCount++;
       }
-      return { name: entry.name, version: entry.version, ecosystem: entry.ecosystem, vulnerabilities };
+      return {
+        name: entry.name,
+        version: entry.version,
+        ecosystem: entry.ecosystem,
+        ...(entry.groups.size > 0 ? { dependency_groups: [...entry.groups].sort() } : {}),
+        vulnerabilities,
+      };
     })
     .sort(
       (a, b) =>

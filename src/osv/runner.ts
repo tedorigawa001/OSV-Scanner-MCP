@@ -18,6 +18,7 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
+import { isManifestFormat, type ManifestTarget } from "../utils/manifestFormats.js";
 import { resolveOsvScannerBinary } from "./binaryManager.js";
 import { parseOsvScanOutput, type ScanReport } from "./scanReport.js";
 
@@ -80,17 +81,13 @@ export function isRemoteResolutionDisabled(options: RunOsvScanOptions = {}): boo
 const FIXED_SCAN_ARGS = ["scan", "source", "--format", "json", "--data-source", "deps.dev"] as const;
 const NO_RESOLVE_ARG = "--no-resolve";
 
-/** 個別に渡せるマニフェスト。ファイル名をそのまま解析形式として明示する(2.4.0で実機確認) */
-const PROJECT_MANIFEST_FORMATS = new Set(["pom.xml", "gradle.lockfile", "buildscript-gradle.lockfile"]);
-
-/** 検出済みマニフェストを`--lockfile <形式>:<絶対パス>`の組にする。対象外のパスは渡さない */
-export function buildProjectTargetArgs(manifestPaths: readonly string[]): string[] {
-  return manifestPaths.flatMap((manifestPath) => {
-    const format = path.basename(manifestPath);
-    if (!PROJECT_MANIFEST_FORMATS.has(format) || !path.isAbsolute(manifestPath)) {
-      throw new Error(`Unsupported manifest path for project scan: ${manifestPath}`);
+/** 検出済みマニフェストを`--lockfile <形式>:<絶対パス>`の組にする。許可外の形式・相対パスは渡さない */
+export function buildProjectTargetArgs(targets: readonly ManifestTarget[]): string[] {
+  return targets.flatMap((target) => {
+    if (!isManifestFormat(target.format) || !path.isAbsolute(target.path)) {
+      throw new Error(`Unsupported manifest target for project scan: ${target.format}:${target.path}`);
     }
-    return ["--lockfile", `${format}:${manifestPath}`];
+    return ["--lockfile", `${target.format}:${target.path}`];
   });
 }
 const FIXED_ARTIFACT_ARGS = [
@@ -201,17 +198,17 @@ function execOsvScanner(
 /**
  * 検出済みマニフェストだけをOSV-Scannerでスキャンし、整形済みレポートを返す。
  *
- * @param manifestPaths **`detectJavaProject`が検出したマニフェストの絶対パス**
+ * @param targets **検出器(detectJavaProject / detectProject)が検出したマニフェスト**
  *   (このレイヤーではスキャン範囲の検証を行わない。ディレクトリは渡さない)
  */
 export async function runOsvScan(
-  manifestPaths: readonly string[],
+  targets: readonly ManifestTarget[],
   options: RunOsvScanOptions = {},
 ): Promise<ScanReport> {
-  if (manifestPaths.length === 0) {
+  if (targets.length === 0) {
     throw new ScanToolError("no_manifest_found", "スキャン対象のマニフェストがありません");
   }
-  return parseOsvScanOutput(await runScan(manifestPaths, options, "project"));
+  return parseOsvScanOutput(await runScan(buildProjectTargetArgs(targets), options, "project"));
 }
 
 /** Accept only the exact absolute files enumerated by detectJavaArtifacts. */
@@ -230,8 +227,9 @@ export async function runOsvSbomScan(snapshotPath: string, options: RunOsvScanOp
   return runScan([snapshotPath], options, "sbom");
 }
 
+/** targetArgs: projectモードは`--lockfile`の組、artifact/sbomモードは検証済みの絶対パス */
 async function runScan(
-  targetPaths: readonly string[],
+  targetArgs: readonly string[],
   options: RunOsvScanOptions,
   mode: ScanMode,
 ): Promise<unknown> {
@@ -244,21 +242,21 @@ async function runScan(
   }
   activeScans++;
   try {
-    return await runOsvScanUnguarded(targetPaths, options, mode);
+    return await runOsvScanUnguarded(targetArgs, options, mode);
   } finally {
     activeScans--;
   }
 }
 
 async function runOsvScanUnguarded(
-  targetPaths: readonly string[],
+  targetArgs: readonly string[],
   options: RunOsvScanOptions,
   mode: ScanMode,
 ): Promise<unknown> {
   const binaryPath = options.binaryPath ?? (await resolveOsvScannerBinary());
   const result = await execOsvScanner(
     binaryPath,
-    mode === "project" ? buildProjectTargetArgs(targetPaths) : targetPaths,
+    targetArgs,
     options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
     buildOsvScanArgs(mode, isRemoteResolutionDisabled(options)),
@@ -267,7 +265,7 @@ async function runOsvScanUnguarded(
   if (result.exitCode === EXIT_NO_PACKAGES && mode === "project") {
     throw new ScanToolError(
       "no_packages_found",
-      `OSV-Scannerがスキャン対象のパッケージを検出できませんでした(マニフェスト${targetPaths.length}件。pom.xmlに依存関係が定義されているか確認してください)`,
+      "OSV-Scannerがスキャン対象のパッケージを検出できませんでした(マニフェストに依存関係が定義されているか確認してください)",
       result.stderr,
     );
   }

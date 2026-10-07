@@ -191,3 +191,43 @@ describe("handleScanJavaProject: 推移的依存の解決状態の伝播", () =>
     }
   });
 });
+
+describe("handleScanJavaProject: 親POMが許可ルートの外を参照するpom.xml", () => {
+  it("外したマニフェストと警告を件数より前に返し、そのpom.xmlはスキャナーに渡さない", async () => {
+    const base = await realpath(await mkdtemp(path.join(os.tmpdir(), "osv-mcp-tool-parent-")));
+    try {
+      await mkdir(path.join(base, "outside"), { recursive: true });
+      await writeFile(path.join(base, "outside", "pom.xml"), "<project/>");
+      await mkdir(path.join(base, "root", "proj", "bad"), { recursive: true });
+      await writeFile(path.join(base, "root/proj/pom.xml"), "<project/>");
+      await writeFile(
+        path.join(base, "root/proj/bad/pom.xml"),
+        "<project><parent><groupId>g</groupId><artifactId>p</artifactId><version>1</version>" +
+          "<relativePath>../../../outside/pom.xml</relativePath></parent></project>",
+      );
+      const argsFile = path.join(binDir, "parent-args.txt");
+      const bin = await makeFakeBinary("rec-parent", `printf '%s\\n' "$@" > '${argsFile}'; echo '{"results":[]}'; exit 0`);
+      const result = await handleScanJavaProject(
+        { project_path: path.join(base, "root/proj") },
+        { binaryPath: bin, allowedRoot: path.join(base, "root") },
+      );
+      const payload = parsePayload(result);
+      expect(payload.manifests).toEqual(["pom.xml"]);
+      expect(payload.skipped_manifests).toEqual([{ path: "bad/pom.xml", reason: expect.stringContaining("許可ルート") }]);
+      expect(payload.scope_warning).toContain("検出0件でも");
+      const keys = Object.keys(payload);
+      expect(keys.indexOf("scope_warning")).toBeLessThan(keys.indexOf("vulnerability_count"));
+      const args = (await readFile(argsFile, "utf8")).split("\n");
+      expect(args.some((a) => a.includes("bad/pom.xml"))).toBe(false);
+    } finally {
+      await rm(base, { recursive: true, force: true });
+    }
+  });
+
+  it("外したものが無ければskipped_manifests・scope_warningを出力しない", async () => {
+    const bin = await makeFakeBinary("ok-noskip", `echo '{"results":[]}'; exit 0`);
+    const payload = parsePayload(await handleScanJavaProject({ project_path: projectDir }, { binaryPath: bin }));
+    expect("skipped_manifests" in payload).toBe(false);
+    expect("scope_warning" in payload).toBe(false);
+  });
+});

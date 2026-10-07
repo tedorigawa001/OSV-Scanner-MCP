@@ -1,0 +1,105 @@
+/**
+ * スキャン対象パスの検証と、上限付きのディレクトリ走査(Java用・汎用の検出で共有)。
+ *
+ * 検出したファイルがそのままOSV-Scannerのスキャン範囲になるため、走査は深さで打ち切らず
+ * (Javaのソースツリーは深い)、上限に達した場合は結果を黙って欠落させずにエラーにする。
+ */
+
+import { readdir, realpath } from "node:fs/promises";
+import path from "node:path";
+import { ScanToolError } from "../errors.js";
+
+export interface SearchLimitOptions {
+  /** 探索の最大深さ(起点直下=1)。病的な入れ子への安全弁。デフォルト64 */
+  maxDepth?: number;
+  /** 探索するエントリ(ファイル・ディレクトリ)の総数の上限。デフォルト200,000 */
+  maxEntries?: number;
+  /** マニフェスト件数の上限。デフォルト1,000 */
+  maxManifests?: number;
+}
+
+interface SearchLimits {
+  maxDepth: number;
+  maxEntries: number;
+  maxManifests: number;
+}
+
+const DEFAULT_MAX_DEPTH = 64;
+const DEFAULT_MAX_ENTRIES = 200_000;
+const DEFAULT_MAX_MANIFESTS = 1_000;
+
+export async function resolveExistingPath(inputPath: string): Promise<string> {
+  try {
+    return await realpath(path.resolve(inputPath));
+  } catch {
+    throw new ScanToolError("project_not_found", `指定されたパスが存在しません: ${inputPath}`);
+  }
+}
+
+/** targetがbaseDir自身またはその配下か(どちらも解決済みの絶対パス) */
+export function isInsideDir(baseDir: string, target: string): boolean {
+  const relative = path.relative(baseDir, target);
+  return relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+}
+
+export function assertInsideAllowedRoot(resolvedDir: string, allowedRootReal: string): void {
+  if (!isInsideDir(allowedRootReal, resolvedDir)) {
+    throw new ScanToolError(
+      "path_outside_allowed_root",
+      `指定されたパスは許可されたディレクトリ(${allowedRootReal})の外にあります`,
+    );
+  }
+}
+
+function searchLimitError(reason: string): ScanToolError {
+  return new ScanToolError(
+    "manifest_search_limit_exceeded",
+    `マニフェスト探索が上限(${reason})に達したため、スキャンを中止しました。` +
+      "結果の欠落を避けるため途中までの結果は返しません。より狭いディレクトリ、またはマニフェストを直接指定してください",
+  );
+}
+
+/**
+ * 上限付きで幅優先に走査し、ファイルごとにonFileを呼ぶ。シンボリックリンクは辿らない。
+ * onFileがtrueを返したファイルをマニフェストとして数え、上限到達はエラーにする。
+ */
+export async function walkProjectFiles(
+  rootDir: string,
+  options: SearchLimitOptions,
+  skippedDirs: ReadonlySet<string>,
+  onFile: (relativePath: string, name: string) => boolean,
+): Promise<void> {
+  const limits: SearchLimits = {
+    maxDepth: options.maxDepth ?? DEFAULT_MAX_DEPTH,
+    maxEntries: options.maxEntries ?? DEFAULT_MAX_ENTRIES,
+    maxManifests: options.maxManifests ?? DEFAULT_MAX_MANIFESTS,
+  };
+  let visited = 0;
+  let manifests = 0;
+  let currentLevel = [rootDir];
+
+  for (let depth = 1; currentLevel.length > 0; depth++) {
+    if (depth > limits.maxDepth) throw searchLimitError(`深さ${limits.maxDepth}`);
+    const nextLevel: string[] = [];
+    for (const dir of currentLevel) {
+      let entries;
+      try {
+        entries = await readdir(dir, { withFileTypes: true });
+      } catch {
+        continue; // 読めないディレクトリはスキップ(権限不足等)
+      }
+      for (const entry of entries) {
+        if (++visited > limits.maxEntries) throw searchLimitError(`${limits.maxEntries}エントリ`);
+        if (entry.isFile()) {
+          if (onFile(path.relative(rootDir, path.join(dir, entry.name)), entry.name)) {
+            if (++manifests > limits.maxManifests) throw searchLimitError(`マニフェスト${limits.maxManifests}件`);
+          }
+        } else if (entry.isDirectory() && !skippedDirs.has(entry.name)) {
+          // isDirectory()はシンボリックリンクに対してfalseを返すため、リンクは自然に除外される
+          nextLevel.push(path.join(dir, entry.name));
+        }
+      }
+    }
+    currentLevel = nextLevel;
+  }
+}

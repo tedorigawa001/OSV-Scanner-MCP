@@ -11,45 +11,48 @@
  * `project_path`はLLM・ユーザー由来の信頼できない入力として扱う:
  * - `realpath`で正規化し、シンボリックリンクを解決した実体パスで判定する
  * - `allowedRoot`指定時は、解決後のパスがその配下にあることを検証する(パストラバーサル対策)
- * - マニフェスト探索はエントリ数・件数・深さに上限を設け、シンボリックリンクのディレクトリは辿らない
+ * - 走査は上限付きで、シンボリックリンクのディレクトリは辿らない(projectWalk.ts)
  *
  * 検出したマニフェストが、そのままOSV-Scannerのスキャン範囲になる(ディレクトリは渡さない)。
- * そのため探索を深さで打ち切らず(Javaのソースツリーは深い)、上限に達した場合は
- * 結果を黙って欠落させずにエラーにする。
  */
 
-import { readdir, realpath, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
+import type { ManifestFormat, ManifestTarget } from "./manifestFormats.js";
+import { pomParentOutsideRoot } from "./pomParent.js";
+import {
+  assertInsideAllowedRoot,
+  resolveExistingPath,
+  walkProjectFiles,
+  type SearchLimitOptions,
+} from "./projectWalk.js";
 
 export interface DetectedJavaProject {
-  /** シンボリックリンク解決済みの絶対パス。OSV-Scannerにはこれを渡す */
+  /** シンボリックリンク解決済みの絶対パス */
   projectDir: string;
   /** projectDirからの相対パスで表したマニフェスト(pom.xml / gradle.lockfile)の一覧 */
   manifests: string[];
-  /** manifestsの絶対パス。OSV-Scannerにはこれだけを渡す(スキャン範囲=この一覧) */
-  manifestPaths: string[];
+  /** OSV-Scannerに渡す対象(スキャン範囲=この一覧) */
+  targets: ManifestTarget[];
+  /** 親POMが許可ルートの外を参照するため、スキャン対象から外したマニフェスト */
+  skipped: { path: string; reason: string }[];
 }
 
-export interface DetectJavaProjectOptions {
+export interface DetectJavaProjectOptions extends SearchLimitOptions {
   /** 指定時、解決後のパスがこのディレクトリ配下でなければエラー */
   allowedRoot?: string;
-  /** 探索の最大深さ(projectDir直下=1)。病的な入れ子への安全弁。デフォルト64 */
-  maxDepth?: number;
-  /** 探索するエントリ(ファイル・ディレクトリ)の総数の上限。デフォルト200,000 */
-  maxEntries?: number;
-  /** マニフェスト件数の上限。デフォルト1,000 */
-  maxManifests?: number;
 }
 
-const DEFAULT_MAX_DEPTH = 64;
-const DEFAULT_MAX_ENTRIES = 200_000;
-const DEFAULT_MAX_MANIFESTS = 1_000;
 /** ビルド成果物・VCS等、マニフェスト探索でスキップするディレクトリ */
 const SKIPPED_DIRS = new Set([".git", "node_modules", "target", "build", ".idea", ".vscode"]);
 
-/** OSV-Scannerがスキャンできるマニフェスト(実機確認済み) */
-const MANIFEST_FILENAMES = new Set(["pom.xml", "gradle.lockfile", "buildscript-gradle.lockfile"]);
+/** OSV-Scannerがスキャンできるマニフェスト(実機確認済み)。ファイル名がそのまま解析形式になる */
+const MANIFEST_FILENAMES: ReadonlySet<string> = new Set<ManifestFormat>([
+  "pom.xml",
+  "gradle.lockfile",
+  "buildscript-gradle.lockfile",
+]);
 
 /** Gradleプロジェクトの存在を示すが、それ自体はスキャンできないビルドファイル */
 const GRADLE_BUILD_FILENAMES = new Set([
@@ -65,80 +68,32 @@ const GRADLE_LOCKFILE_GUIDANCE =
   "`./gradlew dependencies --write-locks` でlockfileを生成してから再実行してください" +
   "(依存ロックが未設定の場合は build.gradle に dependencyLocking { lockAllConfigurations() } の追加が必要です)";
 
-async function resolveExistingPath(inputPath: string): Promise<string> {
-  try {
-    return await realpath(path.resolve(inputPath));
-  } catch {
-    throw new ScanToolError(
-      "project_not_found",
-      `指定されたパスが存在しません: ${inputPath}`,
-    );
+/** 親POMが許可ルートの外を参照するpom.xmlを除外して結果を組み立てる。全件除外ならエラー */
+async function buildResult(
+  projectDir: string,
+  detected: readonly string[],
+  allowedRootReal: string | undefined,
+): Promise<DetectedJavaProject> {
+  const manifests: string[] = [];
+  const skipped: { path: string; reason: string }[] = [];
+  for (const manifest of detected) {
+    const reason = path.basename(manifest) === "pom.xml"
+      ? await pomParentOutsideRoot(path.join(projectDir, manifest), allowedRootReal)
+      : null;
+    if (reason !== null) skipped.push({ path: manifest, reason });
+    else manifests.push(manifest);
   }
-}
-
-function assertInsideAllowedRoot(resolvedDir: string, allowedRootReal: string): void {
-  const relative = path.relative(allowedRootReal, resolvedDir);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+  if (manifests.length === 0) {
     throw new ScanToolError(
       "path_outside_allowed_root",
-      `指定されたパスは許可されたディレクトリ(${allowedRootReal})の外にあります`,
+      `スキャンできるマニフェストがありません(${skipped.map((s) => `${s.path}: ${s.reason}`).join(" / ")})`,
     );
   }
-}
-
-interface ManifestSearchResult {
-  manifests: string[];
-  /** lockfileの有無に関わらず、Gradleビルドファイルを見つけたか */
-  gradleBuildFileFound: boolean;
-}
-
-interface SearchLimits {
-  maxDepth: number;
-  maxEntries: number;
-  maxManifests: number;
-}
-
-function searchLimitError(reason: string): ScanToolError {
-  return new ScanToolError(
-    "manifest_search_limit_exceeded",
-    `マニフェスト探索が上限(${reason})に達したため、スキャンを中止しました。` +
-      "結果の欠落を避けるため途中までの結果は返しません。より狭いディレクトリ、またはpom.xml / gradle.lockfileを直接指定してください",
-  );
-}
-
-/** 上限付きでマニフェストを探索する。シンボリックリンクは辿らない。上限到達はエラー。 */
-async function findManifests(rootDir: string, limits: SearchLimits): Promise<ManifestSearchResult> {
-  const manifests: string[] = [];
-  let gradleBuildFileFound = false;
-  let visited = 0;
-  let currentLevel = [rootDir];
-
-  for (let depth = 1; currentLevel.length > 0; depth++) {
-    if (depth > limits.maxDepth) throw searchLimitError(`深さ${limits.maxDepth}`);
-    const nextLevel: string[] = [];
-    for (const dir of currentLevel) {
-      let entries;
-      try {
-        entries = await readdir(dir, { withFileTypes: true });
-      } catch {
-        continue; // 読めないディレクトリはスキップ(権限不足等)
-      }
-      for (const entry of entries) {
-        if (++visited > limits.maxEntries) throw searchLimitError(`${limits.maxEntries}エントリ`);
-        if (entry.isFile() && MANIFEST_FILENAMES.has(entry.name)) {
-          if (manifests.length >= limits.maxManifests) throw searchLimitError(`マニフェスト${limits.maxManifests}件`);
-          manifests.push(path.relative(rootDir, path.join(dir, entry.name)));
-        } else if (entry.isFile() && GRADLE_BUILD_FILENAMES.has(entry.name)) {
-          gradleBuildFileFound = true;
-        } else if (entry.isDirectory() && !SKIPPED_DIRS.has(entry.name)) {
-          // isDirectory()はシンボリックリンクに対してfalseを返すため、リンクは自然に除外される
-          nextLevel.push(path.join(dir, entry.name));
-        }
-      }
-    }
-    currentLevel = nextLevel;
-  }
-  return { manifests, gradleBuildFileFound };
+  const targets = manifests.map((manifest) => ({
+    path: path.join(projectDir, manifest),
+    format: path.basename(manifest) as ManifestFormat,
+  }));
+  return { projectDir, manifests, targets, skipped };
 }
 
 /**
@@ -161,10 +116,9 @@ export async function detectJavaProject(
   // 親ディレクトリを探索しないため、探索上限エラーの回避手段として使える
   if (stats.isFile() && MANIFEST_FILENAMES.has(path.basename(resolved))) {
     const projectDir = path.dirname(resolved);
-    if (options.allowedRoot !== undefined) {
-      assertInsideAllowedRoot(projectDir, await resolveExistingPath(options.allowedRoot));
-    }
-    return { projectDir, manifests: [path.basename(resolved)], manifestPaths: [resolved] };
+    const allowedRootReal = options.allowedRoot !== undefined ? await resolveExistingPath(options.allowedRoot) : undefined;
+    if (allowedRootReal !== undefined) assertInsideAllowedRoot(projectDir, allowedRootReal);
+    return buildResult(projectDir, [path.basename(resolved)], allowedRootReal);
   }
 
   let projectDir: string;
@@ -181,15 +135,20 @@ export async function detectJavaProject(
     );
   }
 
-  if (options.allowedRoot !== undefined) {
-    assertInsideAllowedRoot(projectDir, await resolveExistingPath(options.allowedRoot));
-  }
+  const allowedRootReal = options.allowedRoot !== undefined ? await resolveExistingPath(options.allowedRoot) : undefined;
+  if (allowedRootReal !== undefined) assertInsideAllowedRoot(projectDir, allowedRootReal);
 
-  const { manifests, gradleBuildFileFound } = await findManifests(projectDir, {
-    maxDepth: options.maxDepth ?? DEFAULT_MAX_DEPTH,
-    maxEntries: options.maxEntries ?? DEFAULT_MAX_ENTRIES,
-    maxManifests: options.maxManifests ?? DEFAULT_MAX_MANIFESTS,
+  const manifests: string[] = [];
+  let gradleBuildFileFound = false;
+  await walkProjectFiles(projectDir, options, SKIPPED_DIRS, (relativePath, name) => {
+    if (MANIFEST_FILENAMES.has(name)) {
+      manifests.push(relativePath);
+      return true;
+    }
+    if (GRADLE_BUILD_FILENAMES.has(name)) gradleBuildFileFound = true;
+    return false;
   });
+
   if (manifests.length === 0) {
     if (gradleBuildFileFound) {
       throw new ScanToolError("gradle_lockfile_missing", GRADLE_LOCKFILE_GUIDANCE);
@@ -200,9 +159,5 @@ export async function detectJavaProject(
     );
   }
 
-  return {
-    projectDir,
-    manifests,
-    manifestPaths: manifests.map((manifest) => path.join(projectDir, manifest)),
-  };
+  return buildResult(projectDir, manifests, allowedRootReal);
 }

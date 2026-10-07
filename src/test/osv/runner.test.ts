@@ -17,11 +17,12 @@ import {
   runOsvSbomScan,
   type ScanMode,
 } from "../../osv/runner.js";
+import type { ManifestTarget } from "../../utils/manifestFormats.js";
 
 let binDir: string;
 let projectDir: string;
 /** runOsvScanには検出済みマニフェストの絶対パスを渡す */
-let manifests: string[];
+let manifests: ManifestTarget[];
 
 /** 偽のosv-scannerスクリプトを作る。テストでは実バイナリの終了コード仕様を模倣する。 */
 async function makeFakeBinary(name: string, script: string): Promise<string> {
@@ -48,8 +49,8 @@ const VULN_JSON = JSON.stringify({
 beforeAll(async () => {
   binDir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-bin-"));
   projectDir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-proj-"));
-  manifests = [path.join(projectDir, "pom.xml")];
-  await writeFile(manifests[0]!, "<project/>");
+  manifests = [{ path: path.join(projectDir, "pom.xml"), format: "pom.xml" }];
+  await writeFile(manifests[0]!.path, "<project/>");
 });
 
 afterAll(async () => {
@@ -95,20 +96,28 @@ describe("osv-scannerへの引数", () => {
   });
 
   it("マニフェストは形式を明示して1件ずつ渡す", () => {
-    expect(buildProjectTargetArgs(["/p/pom.xml", "/p/a/b/c/gradle.lockfile", "/p/odd:dir/buildscript-gradle.lockfile"]))
-      .toEqual([
-        "--lockfile", "pom.xml:/p/pom.xml",
-        "--lockfile", "gradle.lockfile:/p/a/b/c/gradle.lockfile",
-        "--lockfile", "buildscript-gradle.lockfile:/p/odd:dir/buildscript-gradle.lockfile",
-      ]);
+    expect(buildProjectTargetArgs([
+      { path: "/p/pom.xml", format: "pom.xml" },
+      { path: "/p/a/b/c/gradle.lockfile", format: "gradle.lockfile" },
+      { path: "/p/odd:dir/buildscript-gradle.lockfile", format: "buildscript-gradle.lockfile" },
+      { path: "/p/web/npm-shrinkwrap.json", format: "package-lock.json" },
+      { path: "/p/py/requirements-dev.txt", format: "requirements.txt" },
+    ])).toEqual([
+      "--lockfile", "pom.xml:/p/pom.xml",
+      "--lockfile", "gradle.lockfile:/p/a/b/c/gradle.lockfile",
+      "--lockfile", "buildscript-gradle.lockfile:/p/odd:dir/buildscript-gradle.lockfile",
+      "--lockfile", "package-lock.json:/p/web/npm-shrinkwrap.json",
+      "--lockfile", "requirements.txt:/p/py/requirements-dev.txt",
+    ]);
   });
 
-  it.each(["/p/requirements.txt", "/p/package-lock.json", "/p", "relative/pom.xml"])(
-    "対象外のパスは渡さない: %s",
-    (bad) => {
-      expect(() => buildProjectTargetArgs([bad])).toThrow();
-    },
-  );
+  it.each([
+    { path: "/p/package.json", format: "package.json" },
+    { path: "/p/Cargo.lock", format: "Cargo.lock" },
+    { path: "relative/pom.xml", format: "pom.xml" },
+  ])("許可外の形式・相対パスは渡さない: $format:$path", (bad) => {
+    expect(() => buildProjectTargetArgs([bad as ManifestTarget])).toThrow();
+  });
 
   it("artifact/sbomモードには --no-resolve を付けない(外部解決を行わないため)", () => {
     for (const mode of ["artifact", "sbom"] as const) {
@@ -136,7 +145,7 @@ describe("osv-scannerへの引数", () => {
     }
     const recorded = (await readFile(argsFile, "utf8")).trim().split("\n");
     expect(recorded.includes("--no-resolve")).toBe(expected);
-    expect(recorded.slice(-2)).toEqual(["--lockfile", `pom.xml:${manifests[0]}`]);
+    expect(recorded.slice(-2)).toEqual(["--lockfile", `pom.xml:${manifests[0]!.path}`]);
     expect(recorded).not.toContain(projectDir);
   });
 });

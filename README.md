@@ -5,13 +5,14 @@
 [![license](https://img.shields.io/npm/l/osv-scanner-mcp)](LICENSE)
 [![node](https://img.shields.io/node/v/osv-scanner-mcp)](package.json)
 
-Google製 [OSV-Scanner](https://github.com/google/osv-scanner) をラップするMCPサーバーです。Claude等のMCPクライアントから「このJavaプロジェクトの脆弱性をチェックして」と自然言語で依頼するだけで、依存ライブラリの既知の脆弱性(CVE / GHSA)を深刻度順のレポートで取得できます。
+Google製 [OSV-Scanner](https://github.com/google/osv-scanner) をラップするMCPサーバーです。Claude等のMCPクライアントから「このプロジェクトの脆弱性をチェックして」と自然言語で依頼するだけで、依存ライブラリの既知の脆弱性(CVE / GHSA)を深刻度順のレポートで取得できます。
 
-> **ステータス**: [npmで公開中](https://www.npmjs.com/package/osv-scanner-mcp)(`npx -y osv-scanner-mcp`)。Maven(pom.xml)と Gradle(gradle.lockfile / lockfile方式)に対応しています。MCPクライアントは Claude Code / Claude Desktop / Codex CLI / Antigravity / VS Code(GitHub Copilot)での利用手順を用意しています。
+> **ステータス**: [npmで公開中](https://www.npmjs.com/package/osv-scanner-mcp)(`npx -y osv-scanner-mcp`)。Java(Maven / Gradle)、JavaScript(npm / yarn / pnpm / bun)、Python(Poetry / uv / Pipenv / PDM / requirements.txt)、Go のlockfileに対応しています(修正版の推奨はJavaのみ)。MCPクライアントは Claude Code / Claude Desktop / Codex CLI / Antigravity / VS Code(GitHub Copilot)での利用手順を用意しています。
 
 ## 特徴
 
-- **ワンショットスキャン**: `scan_java_project` ツールにプロジェクトパスを渡すだけで、検出→スキャン→整形済みレポートまで一気に返します
+- **複数言語のワンショットスキャン**: `scan_project` ツールにプロジェクトパスを渡すだけで、Java・JavaScript・Python・Goのlockfileを検出してまとめてスキャンします。lockfileが無い・バージョンが未固定などでスキャンできなかった依存は、応答先頭の `coverage` で明示します
+- **Javaプロジェクトのスキャン**: `scan_java_project` ツールでJava(Maven / Gradle)のマニフェストだけを対象に、検出→スキャン→整形済みレポートまで一気に返します
 - **JAR/WAR実体スキャン**: `scan_java_artifact` ツールで、lockfileが無い・shaded/fat JARしか手元にないプロジェクトでもアーカイブ内メタデータから既知の脆弱性を検出します(ベストエフォート同定であることを明示するcoverage情報付き)
 - **SBOM入力スキャン**: `scan_sbom` ツールでCycloneDX/SPDXのJSON SBOMに記録された依存を検査します。SBOMの網羅性や実成果物との一致は未検証であることを明示します
 - **深刻度順のレポート**: パッケージごとに脆弱性をCVSSスコア順に整理し、5段階の深刻度ラベル(critical / high / medium / low / unknown)とサマリ集計付きで返します
@@ -123,7 +124,7 @@ npm run build
 | `OSV_MCP_MAX_CONCURRENT_SCANS` | 同時実行できるスキャン数の上限(デフォルト `2`、最大 `16`)。超過したリクエストは待たずに即時エラーになります |
 | `OSV_MCP_AUTO_DOWNLOAD` | `0` または `false` でバイナリの自動ダウンロードを無効化(デフォルト有効) |
 | `OSV_MCP_PREFER_DOWNLOAD` | `1` または `true` 指定時、PATH上のosv-scannerを使わず、チェックサム検証済みの自動ダウンロードバイナリを常に使用します(PATH汚染による偽バイナリ実行の防止。`OSV_SCANNER_PATH` の明示指定は引き続き最優先) |
-| `OSV_MCP_NO_REMOTE_RESOLUTION` | `1` または `true` 指定時、`pom.xml` の推移的依存を deps.dev で解決しません。**止まるのは deps.dev への送信だけで、脆弱性照会のためパッケージの名前とバージョンは引き続き `api.osv.dev` に送られます**。推移的依存の脆弱性は検出できなくなり、その旨が応答の `dependency_resolution.warning` に示されます。詳細は[通信先とプライバシー](#通信先とプライバシー) |
+| `OSV_MCP_NO_REMOTE_RESOLUTION` | `1` または `true` 指定時、`pom.xml` と `requirements.txt` の推移的依存を deps.dev で解決しません。**止まるのは deps.dev への送信だけで、脆弱性照会のためパッケージの名前とバージョンは引き続き `api.osv.dev` に送られます**。推移的依存の脆弱性は検出できなくなり、その旨が応答の `dependency_resolution.warning` に示されます。詳細は[通信先とプライバシー](#通信先とプライバシー) |
 
 > **推奨**: `OSV_MCP_ALLOWED_ROOT` は未設定でも動作しますが、その場合は任意の絶対パスをスキャンできてしまいます。悪意ある指示(プロンプトインジェクション)経由で意図しないディレクトリをスキャンさせられる経路を塞ぐため、プロジェクト置き場のルート(例: `~/projects`)を設定しておくことを推奨します。各クライアントの設定で `"env": {"OSV_MCP_ALLOWED_ROOT": "/Users/you/projects"}` のように渡せます(Codex CLIのTOMLでは `[mcp_servers.osv-scanner.env]` セクション)。
 
@@ -140,18 +141,78 @@ osv-scanner v2.4.0 で接続先を実機確認した結果です(2026-10-07)。
 
 | 操作 | 接続先 | 送られる情報 |
 |---|---|---|
-| `pom.xml` のスキャン(`scan_java_project` / `suggest_fix`) | `api.osv.dev`、**`api.deps.dev`** | パッケージの名前とバージョン。deps.dev には推移的依存の解決のため、`pom.xml` に宣言された依存(社内パッケージを含む)の名前とバージョンが送られます |
-| `gradle.lockfile` のスキャン | `api.osv.dev` | パッケージの名前とバージョン(lockfileに全依存が記載済みのため、解決のための外部接続はしません) |
+| `pom.xml` のスキャン(`scan_project` / `scan_java_project` / `suggest_fix`) | `api.osv.dev`、**`api.deps.dev`** | パッケージの名前とバージョン。deps.dev には推移的依存の解決のため、`pom.xml` に宣言された依存(社内パッケージを含む)の名前とバージョンが送られます |
+| `requirements.txt` のスキャン(`scan_project`) | `api.osv.dev`、**`api.deps.dev`** | `pom.xml` と同じく、推移的依存の解決のため記載された依存の名前とバージョンが deps.dev に送られます。`--index-url` 等に書かれた取得先へは接続しません |
+| lockfileのスキャン(`gradle.lockfile`、`package-lock.json` 等のnpm系、`poetry.lock` 等のPython系、`go.mod`) | `api.osv.dev` | パッケージの名前とバージョン(lockfileに全依存が記載済みのため、解決のための外部接続はしません) |
 | `scan_java_artifact` / `scan_sbom` | `api.osv.dev` | 同定できたパッケージの名前とバージョン |
 | `explain_vulnerability` | `api.osv.dev` | 指定した脆弱性ID |
 | バイナリの自動ダウンロード(初回のみ) | GitHub(公式Releases) | なし(ピン留めしたバージョンのバイナリを取得) |
 
 api.osv.dev と deps.dev はどちらも Google が運営するサービスです。**どの設定でも、スキャンしたパッケージの名前とバージョンは脆弱性照会のため `api.osv.dev` に送られます**(オフラインでの照会には対応していません)。
 
-- **deps.dev への送信を止めたい場合**: `OSV_MCP_NO_REMOTE_RESOLUTION=1` を設定すると、`pom.xml` の推移的依存を解決しなくなり、接続先は `api.osv.dev` だけになります。止まるのは deps.dev への送信だけで、OSV への送信は続きます。また `pom.xml` に直接書いた依存しかスキャンされず、**推移的依存の脆弱性を見落とします**。この状態は `scan_java_project` / `suggest_fix` の応答の `dependency_resolution` に `transitive_resolution: "disabled"` と警告で示されるので、検出0件と区別できます。推移的依存も含めて deps.dev を使わずにスキャンするには、Gradleのlockfile方式(`gradle.lockfile`)を使ってください
+- **deps.dev への送信を止めたい場合**: `OSV_MCP_NO_REMOTE_RESOLUTION=1` を設定すると、`pom.xml` と `requirements.txt` の推移的依存を解決しなくなり、接続先は `api.osv.dev` だけになります。止まるのは deps.dev への送信だけで、OSV への送信は続きます。また直接書いた依存しかスキャンされず、**推移的依存の脆弱性を見落とします**。この状態は `scan_project` / `scan_java_project` / `suggest_fix` の応答の `dependency_resolution` に `transitive_resolution: "disabled"` と警告で示されるので、検出0件と区別できます。推移的依存も含めて deps.dev を使わずにスキャンするには、lockfile方式(`gradle.lockfile`、`poetry.lock` 等)を使ってください
 - **任意の取得先には接続しません**: osv-scanner の `--data-source native` モードは、スキャン対象の `pom.xml` の `<repositories>` に書かれた任意のURLへ接続します(悪意あるpom.xmlで攻撃者のサーバーへ通信させられる)。本サーバーはこのモードを使わず、`deps.dev` を明示指定しています
 
 ## 提供ツール
+
+### `scan_project`
+
+プロジェクト内のlockfile・マニフェストを検出し、Java / JavaScript / Python / Go の依存をまとめてスキャンします。パッケージマネージャーやビルドは実行しません。
+
+**入力**
+
+| パラメータ | 型 | 説明 |
+|---|---|---|
+| `project_path` | string | スキャン対象のプロジェクトディレクトリ、または対応するlockfile・マニフェストの絶対パス(直接指定したファイルはそれ1件だけをスキャン) |
+
+**対応ファイル**
+
+| エコシステム | ファイル |
+|---|---|
+| Java(Maven) | `pom.xml`、`gradle.lockfile`、`buildscript-gradle.lockfile` |
+| JavaScript(npm) | `package-lock.json`、`npm-shrinkwrap.json`、`yarn.lock`、`pnpm-lock.yaml`、`bun.lock`(テキスト形式) |
+| Python(PyPI) | `poetry.lock`、`uv.lock`、`Pipfile.lock`、`pdm.lock`、`requirements.txt`(`requirements-dev.txt` 等も) |
+| Go | `go.mod` |
+
+`.git`、`node_modules`、`target`、`build`、`.venv`、`venv`、`site-packages`、`__pycache__`、`.tox`、`vendor` とシンボリックリンクは探索しません。検出したファイルだけを形式を明示してOSV-Scannerに渡します(応答の `coverage.manifests` がそのままスキャン範囲です)。探索上限は `scan_java_project` と同じです。
+
+**requirements.txtは元のファイルをOSV-Scannerに渡しません**。本サーバーが解析し、解釈できた依存の行だけを `名前==版` 等の単純な形に直して専用の一時コピーに書き、それをスキャンします(スキャン後に削除)。OSV-Scannerは取り込み指定を独自に解釈してたどる(`- r ../x.txt` のような空白入りも取り込みとみなし、スキャン範囲の外のファイルを読む)ため、コピーには取り込み指定やオプションを一切含めません。取り込み(`-r` / `--requirement`)は、プロジェクトディレクトリ内の取り込み先だけを本サーバーが展開してコピーに含めます。
+
+**出力の読み方**
+
+```json
+{
+  "project_dir": "/path/to/project",
+  "dependency_resolution": { "transitive_resolution": "enabled" },
+  "coverage": {
+    "complete": false,
+    "warning": "一部の依存はスキャンされていないか、版を推測してスキャンしています(…)",
+    "manifests": [{ "path": "web/package-lock.json", "ecosystem": "npm", "format": "package-lock.json" }],
+    "lockfile_missing": [{ "path": "svc/package.json", "ecosystem": "npm", "status": "missing", "hint": "lockfileがありません。…" }],
+    "unpinned_requirements": [{ "file": "py/requirements.txt", "line": 2, "name": "Jinja2", "specifier": ">=2.0", "kind": "lower_bound" }],
+    "unscannable_requirements": [
+      { "file": "py/requirements.txt", "line": 4, "text": "-e git+https://…", "reason": "編集可能インストール(-e)はスキャンされません" },
+      { "file": "py/requirements.txt", "line": 5, "text": "-r ../shared/base.txt", "reason": "取り込み先がプロジェクトディレクトリの外のため展開しません" }
+    ],
+    "skipped_files": []
+  },
+  "ecosystem_breakdown": { "npm": { "manifests": 1, "vulnerable_package_count": 2, "vulnerability_count": 4 } },
+  "vulnerable_package_count": 2,
+  "vulnerability_count": 4,
+  "severity_breakdown": { "critical": 0, "high": 2, "medium": 2, "low": 0, "unknown": 0 },
+  "packages": [{ "name": "minimist", "version": "1.2.5", "ecosystem": "npm", "dependency_groups": ["dev"], "vulnerabilities": [] }]
+}
+```
+
+- **`coverage` を必ず確認してください**。`complete: false` の場合、一部の依存はスキャンされていないため、検出0件でも安全とは言えません
+  - `lockfile_missing`: lockfileの無いマニフェスト(`package.json`、`pyproject.toml`、`Pipfile`、`setup.py`、`build.gradle` 等)。同じディレクトリに同じエコシステムのlockfileがあれば記録しません。上位のディレクトリのlockfileだけがある場合は、`package-lock.json`(v2以降)にそのディレクトリが収録されていることを確認できたときだけ記録しません(npm workspaces)。収録されていなければ `status: "missing"`、確認できない形式(yarn.lock、Python系等)なら `status: "unconfirmed"` として記録します。`hint` の手順でlockfileを生成してから再スキャンしてください(生成は信頼できる環境で)
+  - `unpinned_requirements`: requirements.txtのうち、版を固定していない行。`kind` は `unpinned`(版の指定なし)・`range`(`>`、`<`、`!=`、`==1.*`、範囲の組み合わせ等)・`lower_bound`(`>=`、`~=`)。`unpinned` と `range` の行はOSV-Scannerがスキャンせず、`lower_bound` の行は下限の版を使用中の版とみなしてスキャンします(該当パッケージには `version_is_lower_bound: true` が付き、実際の版とは異なる可能性があります)
+  - `unscannable_requirements`: スキャンされない行と理由。`-e`、`name @ URL`、パス指定、展開しなかった取り込み(プロジェクトディレクトリの外・存在しない・URL・上限超過)、制約ファイル(`-c`、適用しません)、解釈できないオプションや版の指定。解釈できない行は無視せず、ここに記録します
+  - `skipped_files`: スキャン対象から外したファイルと理由(requirements.txt自体が読めない・1MiBを超える場合、`pom.xml` の親POMが許可ルートの外を参照する場合。後者は[親POMの扱い](#親pomの扱い)を参照)
+  - 各一覧は200件までで、超えた分の件数を `omitted_items` に返します
+- `ecosystem_breakdown` は、脆弱性0件のエコシステムも含めて「スキャンした」ことを示します
+- `dependency_groups` はOSV-Scannerが付けた依存グループ(例: `dev`)の生の値です。lockfileの形式によって欠落・不正確なため(pnpmでは付かず、pdmでは `optional` になる等)、参考情報として扱ってください
+- 修正版の推奨(`suggest_fix`)は現在Javaのみ対応です
 
 ### `scan_java_project`
 
@@ -166,6 +227,17 @@ Java(Maven)プロジェクトをスキャンし、既知の脆弱性レポート
 > **Gradleプロジェクトについて**: 本ツールは**lockfile方式**のみ対応です(ビルド実行方式は build.gradle の任意コード実行を伴うため、セキュリティ上の理由から採用していません)。`gradle.lockfile` が無い場合は `./gradlew dependencies --write-locks` で生成してください(依存ロック未設定の場合は `build.gradle` に `dependencyLocking { lockAllConfigurations() }` の追加が必要です)。
 
 > **スキャン範囲**: ディレクトリを指定すると、配下の `pom.xml` / `gradle.lockfile` / `buildscript-gradle.lockfile` を深さに関係なく検出し、**検出したファイルだけ**をスキャンします(応答の `manifests` がそのままスキャン範囲です)。同じディレクトリにある `package-lock.json` や `requirements.txt` などJava以外のファイルはスキャンしません。`.git`、`node_modules`、`target`、`build`、`.idea`、`.vscode` とシンボリックリンクは探索しません。探索するエントリが20万件、またはマニフェストが1,000件を超える場合は、結果を黙って省略せず `manifest_search_limit_exceeded` を返します。`pom.xml` などのマニフェストを直接指定した場合は、ディレクトリを探索せず**そのファイルだけ**をスキャンします(上限に達した場合の回避手段としても使えます)。
+
+#### 親POMの扱い
+
+OSV-Scannerは `pom.xml` の `<parent>` が参照する親POM(`<relativePath>` の指すファイル。省略時はMavenの既定どおり `../pom.xml`)を読み、親の親もたどって、そこに書かれた依存を結果に含めます。サブモジュールだけをスキャンしても親から引き継いだ依存を検出できるのはこのためです。
+
+`OSV_MCP_ALLOWED_ROOT` を設定している場合、親POMの連鎖のどこかが**許可ルートの外**のファイルを参照する `pom.xml` は、スキャン対象から外します(許可ルート外のファイルの内容を結果や照会先に出さないため)。外したファイルは応答の `skipped_manifests`(`scan_project` では `coverage.skipped_files`)に理由付きで示し、`scope_warning` で「検出0件でも安全とは判断しない」旨を伝えます。全件が外れた場合や、該当する `pom.xml` を直接指定した場合は `path_outside_allowed_root` を返します。
+
+- 許可ルート内の親POMは従来どおり読みます(サブモジュールのスキャンは許可ルート内なら引き続き使えます)
+- `<relativePath/>`(空)はローカルの親POMを参照しないため対象外です
+- 親のGAVが一致しなければOSV-Scannerは読みませんが、本サーバーはGAVを確認せず、許可ルートの外に参照先のファイルがあれば安全側に除外します。`<relativePath>` にプロパティ参照など評価できない値がある場合も除外します
+- `OSV_MCP_ALLOWED_ROOT` が未設定の場合は任意の絶対パスをスキャンできる状態のため、この検証は行いません
 
 **出力(成功時)**
 
@@ -334,7 +406,7 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 | `binary_download_failed` | バイナリのダウンロード失敗(未対応プラットフォーム含む) |
 | `binary_checksum_mismatch` | ダウンロードしたバイナリのチェックサム不一致(改ざん/破損の可能性) |
 | `gradle_lockfile_missing` | Gradleプロジェクトだがgradle.lockfileが無い(生成手順をmessageで案内) |
-| `path_outside_allowed_root` | `OSV_MCP_ALLOWED_ROOT` の外を指している |
+| `path_outside_allowed_root` | `OSV_MCP_ALLOWED_ROOT` の外を指している(マニフェストの親POMが許可ルートの外を参照し、スキャンできるマニフェストが残らない場合を含む) |
 | `no_packages_found` | スキャン対象パッケージなし(依存関係が未定義のpom.xml等) |
 | `scan_failed` | OSV-Scannerが異常終了(stderr抜粋を`detail`に含む) |
 | `scan_timeout` | タイムアウト(デフォルト120秒) |
@@ -352,7 +424,7 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 
 - **サプライチェーン対策**: バイナリの自動ダウンロードは公式GitHub Releasesに限定し、バージョンをピン留め。**パッケージに埋め込まれたSHA256チェックサム**で検証します(配布元のSHA256SUMSファイルは信用しないため、リリース側が改ざんされても検出可能)。検証合格まで実行権限を与えず、キャッシュ済みバイナリも使用のたびに再検証します。`OSV_MCP_PREFER_DOWNLOAD=1` でPATH上の未検証バイナリを使わない運用も選べます
 - **コマンドインジェクション対策**: シェルを経由しない `spawn` + 引数配列で実行。OSV-Scannerへの引数は固定リストのみで、可変部は検証済み絶対パス1つだけ
-- **パストラバーサル対策**: 入力パスは `realpath` でシンボリックリンク解決後に境界チェック。pom.xml探索ではシンボリックリンクを辿りません。OSV-Scannerにはディレクトリを渡さず、検出したマニフェストだけを形式を明示して個別に渡します(ディレクトリを渡すと、OSV-Scannerが同じディレクトリの `requirements.txt` も読み、その取り込み指定 `-r ../x.txt` でスキャン範囲の外のファイルを読むため)
+- **パストラバーサル対策**: 入力パスは `realpath` でシンボリックリンク解決後に境界チェック。pom.xml探索ではシンボリックリンクを辿りません。OSV-Scannerにはディレクトリを渡さず、検出したマニフェストだけを形式を明示して個別に渡します(ディレクトリを渡すと、OSV-Scannerが同じディレクトリの `requirements.txt` も読み、その取り込み指定 `-r ../x.txt` でスキャン範囲の外のファイルを読むため)。`scan_project` でrequirements.txtをスキャンする場合は元ファイルを渡さず、解釈できた依存の行だけを正規化して書いた専用コピーをスキャンします。コピーには取り込み指定を含めないため、OSV-Scannerの取り込みの解釈と本サーバーの解析がずれても、範囲外のファイルは読まれません。`pom.xml` の親POMの連鎖が `OSV_MCP_ALLOWED_ROOT` の外を参照する場合は、その `pom.xml` をスキャン対象から外します([親POMの扱い](#親pomの扱い))
 - **DoS対策**: タイムアウト・stdout上限・stderr抜粋上限を設定。スキャン結果は防御的にパースし、形式不正でも例外を投げません。同時実行スキャン数も上限(デフォルト2)を設け、並列リクエストによるプロセスの無制限起動を防ぎます
 - **fail-closedな運用モード**: `OSV_MCP_REQUIRE_ALLOWED_ROOT=1` で、スキャン許可ルート未設定時にサーバーの起動自体を拒否できます
 - **通信先の固定と明示**: osv-scannerの依存解決先は `deps.dev` を明示指定し、スキャン対象のpom.xmlが指定する任意のリポジトリへ接続するモード(`--data-source native`)は使いません(テストで保証)。通信先の一覧と、deps.devへの送信を止める `OSV_MCP_NO_REMOTE_RESOLUTION=1` は[通信先とプライバシー](#通信先とプライバシー)を参照
@@ -378,6 +450,9 @@ npm run build             # dist/ へビルド
 - [x] OSV-Scannerバイナリの自動ダウンロード(チェックサム検証付き)
 - [x] Gradle対応(lockfile方式)
 - [x] `scan_java_artifact` ツール: JAR/WAR実体スキャン(lockfileが無い・shaded/fat JARのみのプロジェクト向け)
+- [x] `scan_project` ツール: Java / JavaScript / Python / Go のlockfileをまとめてスキャン
+- [ ] `suggest_fix` のJavaScript / Go対応(semver)
+- [ ] `suggest_fix` のPython対応(PEP 440)、直接/推移的依存の区別
 
 ## ライセンス
 

@@ -360,3 +360,19 @@ describe("parseOsvScanOutput (不正・欠損データへの耐性)", () => {
     expect(vuln.aliases).toEqual([]);
   });
 });
+
+describe("parseOsvScanOutput: dependency_groups", () => {
+  const group = { ids: ["GHSA-x"], aliases: [], max_severity: "5.0" };
+  it("同一パッケージが複数のresultsに分かれても依存グループを合わせ、無ければ出力しない", () => {
+    const report = parseOsvScanOutput({
+      results: [
+        { source: { path: "a" }, packages: [{ package: { name: "m", version: "1", ecosystem: "npm" }, dependency_groups: ["dev"], groups: [group] }] },
+        { source: { path: "b" }, packages: [{ package: { name: "m", version: "1", ecosystem: "npm" }, dependency_groups: ["optional", "dev"], groups: [group] }] },
+        { source: { path: "c" }, packages: [{ package: { name: "g:a", version: "1", ecosystem: "Maven" }, groups: [group] }] },
+      ],
+    });
+    const byName = Object.fromEntries(report.packages.map((p) => [p.name, p]));
+    expect(byName.m!.dependency_groups).toEqual(["dev", "optional"]);
+    expect("dependency_groups" in byName["g:a"]!).toBe(false);
+  });
+});

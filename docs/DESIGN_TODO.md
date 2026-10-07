@@ -387,10 +387,36 @@ Node側で各行を分類してから渡す(pipは使わない。サイズ上限
 - [x] 詳細設計メモの作成(B1完了後) → 上記「対象エコシステム拡大 詳細設計メモ」節(2026-10-07)
 - [x] **Phase 0(v0.3.4)**: 現行版の不具合3件(requirements.txtの取り込みによるスキャン範囲の境界の迂回、suggest_fixのnpm誤表示、manifestsとスキャン範囲の不一致)の修正。検出したファイルだけを`--lockfile`で個別に渡す方式へ切り替える → 実装済み(2026-10-07)。`runOsvScan`は検出済みマニフェストの絶対パスを受け取り、許可した3形式以外は渡さない。suggest_fixはMaven以外を`unsupported_ecosystem`(CVEは`tier: "unsupported"`、unfixedに数えない)。3件の再現手順を回帰テスト化し、実バイナリでMCP経由の解消を確認。利用者から見た変更: Java用ツールは同じディレクトリのJava以外のlockfile(npm・PyPI等)をスキャンしなくなる(v0.4.0の`scan_project`で扱う)
   - (レビュー指摘)上限エラーで「マニフェストを直接指定」と案内していたが、直接指定でも親ディレクトリ全体を再探索しており回避できなかった。マニフェストの直接指定は境界検証後にそのファイル1件だけを返すよう分岐(Gradleビルドファイルの指定は従来どおりディレクトリを探索)。pom.xml+child/pom.xml構成の回帰テストを追加。v0.3.3以前は直接指定でもディレクトリ全体(`-r`)をスキャンしていたため、これも利用者から見た変更
-- [ ] v0.4.0: `scan_project`(3言語の検出、`.venv`/`site-packages`/`vendor`の除外、lockfile欠如時の案内エラー、requirements.txtのcoverage明示、エコシステム別集計・dev依存表示)。suggest_fixはJava以外を「未対応」と明示的に返す
+- [x] v0.4.0: `scan_project`(3言語の検出、`.venv`/`site-packages`/`vendor`の除外、lockfile欠如時の案内エラー、requirements.txtのcoverage明示、エコシステム別集計・dev依存表示)。suggest_fixはJava以外を「未対応」と明示的に返す → 実装済み(2026-10-07)。実装時の判断:
+  - 走査・境界検証を`projectWalk.ts`に切り出し、Java用と共有。osv-scannerに渡す単位を「パス+形式」(`ManifestTarget`)にし、許可する形式は`manifestFormats.ts`の一覧に限定
+  - lockfile欠如: 同じディレクトリに同じエコシステムのlockfileがあれば記録しない。gradleのビルドファイルはgradle.lockfileでのみ満たされる(pom.xmlでは満たさない)。対応ファイルが1つも無ければ案内を含む`no_manifest_found`
+  - requirements.txtの対象名は`requirements.txt`・`requirements-*.txt`・`*-requirements.txt`等。分類は実機確認(`==`/`===`は固定、`>=`/`~=`は下限、それ以外の指定は範囲)に合わせ、`>=`/`~=`の行に該当するパッケージには`version_is_lower_bound`を付ける
+  - 応答: `coverage`(complete・warning・各一覧、各200件まで+`omitted_items`)を件数より前に置き、`ecosystem_breakdown`は脆弱性0件のエコシステムも含める。スキャン対象由来の文字列はすべて`sanitizeExternalText`を通す
+  - 既存ツールへの影響: `dependency_groups`はosv-scannerが値を返した場合だけ出力するため、Mavenの出力は変わらない
+  - (レビュー指摘P1)当初は事前解析で取り込み先を検証してから元のrequirements.txtを渡していたが、osv-scannerは`- r ../x.txt`(空白入り)も取り込みとしてたどる一方、事前解析は未知のオプションとして無視しており、範囲外の内容が結果に入りcompleteにもなった。**解釈のずれがそのまま迂回になる構造**のため、元ファイルを渡すのをやめ、解釈できた依存の行だけを`名前==版`等に正規化して専用の一時ディレクトリ(`mkdtemp`、`0600`・`wx`、成功・失敗とも削除)に書いたコピーをスキャンする方式に変更(`scan_sbom`と同じ考え方)。コピーには取り込み・オプションを含めないため、osv-scannerがたどれる参照が存在しない。解釈できないオプション・版は無視せず`unscannable_requirements`に理由付きで記録
+  - (レビュー指摘P2)osv-scanner 2.4.0は`--requirement`と`-c`をたどらない(実機確認。たどるのは`-r`系のみ)。取り込みは本サーバーがプロジェクト内のものだけ展開してコピーに含める(`--requirement`も確実にスキャンされる)。外・存在しない・URL・深さ5超・50ファイル超の取り込みと制約ファイル(`-c`、適用しない)は、ファイルごと外さず該当行を`unscannable_requirements`に記録し、残りはスキャンする(コピーに取り込み指定が無いため安全)。`skipped_files`は元ファイル自体が読めない・1MiB超の場合のみ
+  - (レビュー指摘P3)当初は上位に同じエコシステムのlockfileがあれば充足扱いにしていたが、workspace設定の無いルートのlockfileで独立した子の欠落を隠していた。上位のlockfileだけの場合は、package-lock.json(v2以降)の`packages`に子のディレクトリが収録されていることを確認できたときだけ充足とし、未収録なら`status: "missing"`、確認できない形式(yarn.lock、Python系、gradle等)なら`status: "unconfirmed"`で報告
 - [ ] v0.5.0: suggest_fixのnpm/Go対応(semver比較、`SEMVER`範囲の検証、0.x系のマイナー更新を破壊的変更として扱う、Goのv2以上はモジュールパス変更を注記)
 - [ ] v0.6.0: suggest_fixのPython対応(PEP 440比較、`ECOSYSTEM`範囲がある場合の`GIT`範囲の無視)、直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)
 - [ ] 以降: Goバイナリスキャン(ビルド情報からstdlibの版も取得でき、go.modで拾えないstdlibの脆弱性を補える)
+
+### B4. pom.xmlの親POM(`<parent><relativePath>`)によるスキャン範囲外の読み込み(v0.4.0で対応)
+
+**背景(2026-10-07 実機確認、osv-scanner v2.4.0)**: v0.4.0のレビュー対応中、requirements.txtの取り込みと同じ種類の問題を確認した。
+
+- `<parent>`の`<relativePath>`がスキャン範囲の外(例: `../outside/pom.xml`)を指すと、osv-scannerはその親POMを読み、そこに書かれた依存が結果に入る(`--no-resolve`でも同じ)
+- `relativePath`を省略した場合もMavenの既定値`../pom.xml`を参照し、親のGAVが一致すれば読む(一致しなければ読まない)
+- 影響: `scan_java_project` / `suggest_fix`(公開中のv0.3.4を含む)と`scan_project`。`OSV_MCP_ALLOWED_ROOT`の外にあるpom.xmlの依存情報が結果に入り、照会先に送られうる
+- 同種の確認: `go.mod`の`replace`によるローカルパスは読まない(パス名がパッケージ名として出るだけ)
+
+**設計上の論点**: サブモジュールだけをスキャンしたときに親POMを読むのはMavenとして正当な動作で、requirements.txtのように「プロジェクトディレクトリ外は読まない」とすると正当な利用を壊す。境界を`OSV_MCP_ALLOWED_ROOT`にするか、親POMを読ませない(`<relativePath/>`を明示した検証済みコピーをスキャンし、親はリポジトリから解決させる)か、範囲外の親を指すpom.xmlをスキャン対象から外して報告するか、を決める必要がある。
+
+- [x] 方針決定と実装 → **境界を`OSV_MCP_ALLOWED_ROOT`とする案で確定**(2026-10-07)。v0.4.0に含めてリリース
+  - 追加の実機確認: 親の親もたどる(連鎖の途中が外でも読む)、`<relativePath/>`(空)はローカルを参照しない、ディレクトリを指す場合はその中のpom.xml、GAV不一致なら読まない
+  - `src/utils/pomParent.ts`: 親POMの連鎖を最大10段たどり、参照先が実在して許可ルートの外ならpom.xmlを除外理由付きで返す。GAVの一致は確認せず安全側に除外。プロパティ参照等で評価できないrelativePathも除外。許可ルート未設定時は検証しない(任意のパスをスキャンできる状態のため)
+  - `scan_java_project` / `suggest_fix`: 外したpom.xmlを`skipped_manifests`と`scope_warning`で件数より前に返す(外したものが無ければ出力しない=既存の出力は不変)。全件除外・直接指定は`path_outside_allowed_root`
+  - `scan_project`: `coverage.skipped_files`に記録(completeはfalse)
+  - 実バイナリでMCP経由で確認: 許可ルート内の親を持つサブモジュールは従来どおり親の依存を検出し、外を指す親のpom.xmlは除外され範囲外の依存が混入しない
 
 ### B3. 既存の未完了項目
 
