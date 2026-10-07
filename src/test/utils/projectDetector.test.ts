@@ -241,41 +241,17 @@ describe("detectJavaProject", () => {
   });
 });
 
-describe("detectJavaProject: 親POMが許可ルートの外を参照するpom.xml", () => {
-  const OUTSIDE_PARENT =
-    "<project><parent><groupId>g</groupId><artifactId>p</artifactId><version>1</version>" +
-    "<relativePath>../../outside/pom.xml</relativePath></parent><artifactId>a</artifactId></project>";
-
-  async function makeBase(): Promise<string> {
+describe("detectJavaProject: 親POMの検証はスナップショットで行う", () => {
+  it("検出段階では除外せず、解決済みの許可ルートを返す", async () => {
     const base = await realpath(await makeTempDir());
-    await mkdir(path.join(base, "outside"), { recursive: true });
-    await writeFile(path.join(base, "outside", "pom.xml"), POM);
-    await mkdir(path.join(base, "root", "proj", "bad"), { recursive: true });
-    return base;
-  }
-
-  it("該当するpom.xmlだけスキャン対象から外し、理由を返す", async () => {
-    const base = await makeBase();
-    await writeFile(path.join(base, "root/proj/pom.xml"), POM);
-    await writeFile(path.join(base, "root/proj/bad/pom.xml"), OUTSIDE_PARENT.replace("../../outside", "../../../outside"));
+    await mkdir(path.join(base, "root", "proj"), { recursive: true });
+    await writeFile(
+      path.join(base, "root/proj/pom.xml"),
+      "<project><parent><groupId>g</groupId><artifactId>p</artifactId><version>1</version>" +
+        "<relativePath>../../outside/pom.xml</relativePath></parent></project>",
+    );
     const project = await detectJavaProject(path.join(base, "root/proj"), { allowedRoot: path.join(base, "root") });
     expect(project.manifests).toEqual(["pom.xml"]);
-    expect(project.skipped).toEqual([{ path: "bad/pom.xml", reason: expect.stringContaining("許可ルート") }]);
-  });
-
-  it("全件除外ならpath_outside_allowed_root(直接指定も)", async () => {
-    const base = await makeBase();
-    await writeFile(path.join(base, "root/proj/pom.xml"), OUTSIDE_PARENT.replace("../../outside", "../../outside"));
-    const options = { allowedRoot: path.join(base, "root") };
-    await expectScanError(detectJavaProject(path.join(base, "root/proj"), options), "path_outside_allowed_root");
-    await expectScanError(detectJavaProject(path.join(base, "root/proj/pom.xml"), options), "path_outside_allowed_root");
-  });
-
-  it("許可ルート未設定なら除外しない", async () => {
-    const base = await makeBase();
-    await writeFile(path.join(base, "root/proj/pom.xml"), OUTSIDE_PARENT);
-    const project = await detectJavaProject(path.join(base, "root/proj"));
-    expect(project.manifests).toEqual(["pom.xml"]);
-    expect(project.skipped).toEqual([]);
+    expect(project.allowedRootReal).toBe(path.join(base, "root"));
   });
 });

@@ -3,9 +3,13 @@
  * レスポンス形式(成功/エラー)は`toolResult.ts`参照。
  */
 
+import path from "node:path";
+import { ScanToolError } from "../errors.js";
 import { isRemoteResolutionDisabled, runOsvScan, type RunOsvScanOptions } from "../osv/runner.js";
+import type { ScanReport } from "../osv/scanReport.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
-import { detectJavaProject } from "../utils/projectDetector.js";
+import { detectJavaProject, type DetectedJavaProject } from "../utils/projectDetector.js";
+import { ScanSnapshot, snapshotManifests } from "../utils/scanSnapshot.js";
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
 const TRANSITIVE_OMITTED_WARNING =
@@ -39,6 +43,44 @@ export function skippedManifestsFields(skipped: readonly { path: string; reason:
   };
 }
 
+/**
+ * 検出したマニフェストをスナップショットへコピーし、コピーをスキャンする(元のファイルは渡さない)。
+ * 応答に一時ディレクトリのパスを出さないよう、スキャナーのパスは元のファイルに戻す。
+ * スナップショットは成功・失敗とも削除する。全件除外ならエラー。
+ */
+export async function scanJavaManifests(
+  project: DetectedJavaProject,
+  options: RunOsvScanOptions,
+): Promise<{ manifests: string[]; skipped: { path: string; reason: string }[]; report: ScanReport }> {
+  const snapshot = await ScanSnapshot.create();
+  try {
+    const { targets, skipped } = await snapshotManifests(snapshot, project.targets, {
+      projectDir: project.projectDir,
+      allowedRootReal: project.allowedRootReal,
+    });
+    const skippedPaths = new Set(skipped.map((s) => s.path));
+    const scanned = project.targets.filter((t) => !skippedPaths.has(t.path));
+    const relative = (file: string) => path.relative(project.projectDir, file);
+    const skippedRelative = skipped.map((s) => ({ path: relative(s.path), reason: s.reason }));
+    if (targets.length === 0) {
+      const details = skippedRelative.map((s) => `${s.path}: ${s.reason}`).join(" / ");
+      throw new ScanToolError(
+        skipped.every((s) => s.kind === "outside_allowed_root") ? "path_outside_allowed_root" : "no_manifest_found",
+        `スキャンできるマニフェストがありません(${details})`,
+      );
+    }
+    const originals = new Map(targets.map((copy, i) => [copy.path, scanned[i]!.path]));
+    const report = await runOsvScan(targets, options);
+    return {
+      manifests: scanned.map((t) => relative(t.path)),
+      skipped: skippedRelative,
+      report: { ...report, source_files: report.source_files.map((file) => originals.get(file) ?? file) },
+    };
+  } finally {
+    await snapshot.cleanup();
+  }
+}
+
 export type { ToolResult } from "./toolResult.js";
 
 export interface ScanJavaProjectArgs {
@@ -60,11 +102,11 @@ export async function handleScanJavaProject(
       allowedRoot: options.allowedRoot,
     });
     const noRemoteResolution = isRemoteResolutionDisabled(options);
-    const report = await runOsvScan(project.targets, { ...options, noRemoteResolution });
+    const { manifests, skipped, report } = await scanJavaManifests(project, { ...options, noRemoteResolution });
     return jsonResult({
       project_dir: project.projectDir,
-      manifests: project.manifests,
-      ...skippedManifestsFields(project.skipped),
+      manifests,
+      ...skippedManifestsFields(skipped),
       dependency_resolution: dependencyResolution(noRemoteResolution),
       ...report,
     });

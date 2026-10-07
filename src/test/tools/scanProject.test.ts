@@ -75,11 +75,20 @@ describe("handleScanProject", () => {
     expect(result.isError).toBeUndefined();
     const args = (await readFile(argsFile, "utf8")).trim().split("\n");
     const lockfileArgs = args.filter((a, i) => args[i - 1] === "--lockfile");
-    expect(lockfileArgs.filter((a) => !a.startsWith("requirements.txt:")).sort()).toEqual([
-      `go.mod:${path.join(dir, "go/go.mod")}`,
-      `package-lock.json:${path.join(dir, "web/npm-shrinkwrap.json")}`,
-      `pom.xml:${path.join(dir, "pom.xml")}`,
-    ]);
+    // lockfile・pom.xmlも元のファイルではなく、元の配置を再現したスナップショットのコピーを渡す
+    const expected: [string, string][] = [
+      ["go.mod", path.join(dir, "go/go.mod")],
+      ["package-lock.json", path.join(dir, "web/npm-shrinkwrap.json")],
+      ["pom.xml", path.join(dir, "pom.xml")],
+    ];
+    for (const [format, original] of expected) {
+      const arg = lockfileArgs.find((a) => a.startsWith(`${format}:`) && a.endsWith(original));
+      expect(arg).toBeDefined();
+      const copy = arg!.slice(format.length + 1);
+      expect(copy).not.toBe(original);
+      expect(copy).toContain("osv-mcp-snap-");
+      expect(await exists(copy)).toBe(false); // スキャン後に削除される
+    }
     // requirements.txtは元ファイルではなく、プロジェクト外の専用コピーを渡し、スキャン後に削除する
     const copies = lockfileArgs.filter((a) => a.startsWith("requirements.txt:")).map((a) => a.slice("requirements.txt:".length));
     expect(copies).toHaveLength(1);
@@ -220,5 +229,26 @@ describe("handleScanProject", () => {
     const result = await handleScanProject({ project_path: dir }, { binaryPath: bin });
     expect(result.isError).toBe(true);
     expect(payload(result).error.kind).toBe("no_manifest_found");
+  });
+});
+
+describe("handleScanProject: 親POMが許可ルートの外を参照するpom.xml", () => {
+  it("coverage.skipped_filesに理由付きで記録し、そのpom.xmlはスキャナーに渡さない", async () => {
+    const base = await makeProject({
+      "outside/pom.xml": "<project/>",
+      "root/proj/package-lock.json": "{}",
+      "root/proj/pom.xml":
+        "<project><parent><groupId>g</groupId><artifactId>p</artifactId><version>1</version>" +
+        "<relativePath>../../outside/pom.xml</relativePath></parent></project>",
+    });
+    const { bin, argsFile } = await fakeScanner({ results: [] });
+    const p = payload(await handleScanProject(
+      { project_path: path.join(base, "root/proj") },
+      { binaryPath: bin, allowedRoot: path.join(base, "root"), noRemoteResolution: false },
+    ));
+    expect(p.coverage.complete).toBe(false);
+    expect(p.coverage.manifests.map((m: any) => m.path)).toEqual(["package-lock.json"]);
+    expect(p.coverage.skipped_files).toEqual([{ path: "pom.xml", reason: expect.stringContaining("許可ルート") }]);
+    expect((await readFile(argsFile, "utf8")).includes("pom.xml:")).toBe(false);
   });
 });

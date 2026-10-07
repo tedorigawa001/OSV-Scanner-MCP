@@ -12,6 +12,8 @@ export type ScanToolErrorKind =
   | "no_manifest_found"
   /** マニフェスト探索が上限(エントリ数・マニフェスト数・深さ)に達した。結果を黙って欠落させない */
   | "manifest_search_limit_exceeded"
+  /** スキャン対象ファイル(スナップショットへのコピー)の合計サイズが上限を超えた */
+  | "scan_input_too_large"
   /** No JAR/WAR files were found in the selected scope. */
   | "no_scannable_artifacts"
   /** Artifact discovery exceeded a bounded traversal limit. */

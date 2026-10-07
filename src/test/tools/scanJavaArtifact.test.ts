@@ -1,4 +1,4 @@
-import { chmod, mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -21,18 +21,26 @@ async function fake(script: string): Promise<string> {
 }
 
 describe("handleScanJavaArtifact", () => {
-  it("passes exact files with fixed archive-only flags without a shell", async () => {
-    const expected = ["scan", "source", "--format", "json", "--all-packages", "--no-ignore",
-      "--experimental-no-default-plugins", "--experimental-plugins", "java/archive", archive];
-    const raw = { results: [{ source: { path: archive, type: "artifact" }, packages: [
-      { package: { name: "g:a", version: "1", ecosystem: "Maven" } },
-    ] }] };
-    const binaryPath = await fake(`require('node:assert/strict').deepEqual(process.argv.slice(2), ${JSON.stringify(expected)});
-      console.log(${JSON.stringify(JSON.stringify(raw))});`);
+  it("passes a private copy (not the original) with fixed archive-only flags, and maps results back", async () => {
+    const flags = ["scan", "source", "--format", "json", "--all-packages", "--no-ignore",
+      "--experimental-no-default-plugins", "--experimental-plugins", "java/archive"];
+    const record = path.join(root, "received.txt");
+    // 偽スキャナー: 固定フラグを確認し、受け取ったコピーのパスを記録して、そのパスで結果を返す
+    const binaryPath = await fake(`const assert = require('node:assert/strict'); const fs = require('node:fs');
+      const args = process.argv.slice(2); assert.deepEqual(args.slice(0, -1), ${JSON.stringify(flags)});
+      const copy = args.at(-1); assert.deepEqual(fs.readFileSync(copy), fs.readFileSync(${JSON.stringify(archive)}));
+      fs.writeFileSync(${JSON.stringify(record)}, copy);
+      console.log(JSON.stringify({ results: [{ source: { path: copy, type: "artifact" }, packages: [
+        { package: { name: "g:a", version: "1", ecosystem: "Maven" } }] }] }));`);
     const response = await handleScanJavaArtifact({ artifact_path: root }, { binaryPath, allowedRoot: root });
     expect(response.isError).toBeUndefined();
+    const copy = await readFile(record, "utf8");
+    expect(copy).not.toBe(archive);
+    expect(copy.startsWith(root)).toBe(false);
+    await expect(readFile(copy)).rejects.toThrow(); // スキャン後に削除される
     const payload = JSON.parse(response.content[0]!.text);
     expect(payload.coverage).toMatchObject({ jars_found: 1, jars_identified: 1, completeness: "incomplete" });
+    expect(payload.artifacts[0].path).toBe(archive); // 応答は元のファイルのパス
   });
 
   it.each(["", '{"results":[]}'])("maps exit 128 to unidentified coverage (stdout: %s)", async (output) => {

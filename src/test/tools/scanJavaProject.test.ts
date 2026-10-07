@@ -34,6 +34,15 @@ function parsePayload(result: ToolResult): Record<string, unknown> {
   return JSON.parse(result.content[0]!.text) as Record<string, unknown>;
 }
 
+/** スキャナーに渡されたのが元のファイルではなく、元の配置を再現したスナップショットのコピーであること */
+function expectSnapshotCopy(arg: string, format: string, original: string): void {
+  expect(arg.startsWith(`${format}:`)).toBe(true);
+  const copy = arg.slice(format.length + 1);
+  expect(copy).not.toBe(original);
+  expect(copy).toContain("osv-mcp-snap-");
+  expect(copy.endsWith(original)).toBe(true);
+}
+
 beforeAll(async () => {
   binDir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-tool-bin-"));
   projectDir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-tool-proj-"));
@@ -162,7 +171,8 @@ describe("handleScanJavaProject: 推移的依存の解決状態の伝播", () =>
       const { payload, args } = await scanWith(undefined, undefined, path.join(dir, "pom.xml"));
       expect(payload.manifests).toEqual(["pom.xml"]);
       const lockfileArgs = args.filter((arg) => arg.startsWith("pom.xml:"));
-      expect(lockfileArgs).toEqual([`pom.xml:${path.join(await realpath(dir), "pom.xml")}`]);
+      expect(lockfileArgs).toHaveLength(1);
+      expectSnapshotCopy(lockfileArgs[0]!, "pom.xml", path.join(await realpath(dir), "pom.xml"));
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -178,9 +188,11 @@ describe("handleScanJavaProject: 推移的依存の解決状態の伝播", () =>
       // 一覧とosv-scannerへ渡す範囲が一致する(ディレクトリは渡さない)
       expect([...(payload.manifests as string[])].sort()).toEqual(["a/b/c/pom.xml", "gradle.lockfile"]);
       const real = await realpath(mixedDir);
-      expect(args).toContain(`pom.xml:${path.join(real, "a", "b", "c", "pom.xml")}`);
-      expect(args).toContain(`gradle.lockfile:${path.join(real, "gradle.lockfile")}`);
-      expect(args).not.toContain(real);
+      const lockfileArgs = args.filter((a, i) => args[i - 1] === "--lockfile");
+      expect(lockfileArgs).toHaveLength(2);
+      expectSnapshotCopy(lockfileArgs.find((a) => a.startsWith("pom.xml:"))!, "pom.xml", path.join(real, "a", "b", "c", "pom.xml"));
+      expectSnapshotCopy(lockfileArgs.find((a) => a.startsWith("gradle.lockfile:"))!, "gradle.lockfile", path.join(real, "gradle.lockfile"));
+      expect(args.some((a) => a === real || a.endsWith(`:${path.join(real, "pom.xml")}`))).toBe(false);
       const resolution = payload.dependency_resolution as { transitive_resolution: string; warning?: string };
       expect(resolution.transitive_resolution).toBe("disabled");
       expect(resolution.warning).toContain("推移的依存の脆弱性は含まれません");

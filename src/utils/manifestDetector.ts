@@ -8,19 +8,20 @@
  * 検出・除外の根拠はdocs/DESIGN_TODO.md「対象エコシステム拡大 詳細設計メモ」を参照。
  */
 
-import { readFile, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import type { ManifestFormat, ManifestTarget } from "./manifestFormats.js";
-import { pomParentOutsideRoot } from "./pomParent.js";
 import {
   assertInsideAllowedRoot,
   resolveExistingPath,
   walkProjectFiles,
   type SearchLimitOptions,
 } from "./projectWalk.js";
+import { readRegularFile } from "./safeRead.js";
 import {
   analyzeRequirementsFile,
+  createRequirementsReadContext,
   type LowerBound,
   type RequirementIssue,
   type RequirementReference,
@@ -113,8 +114,10 @@ export interface RequirementsCopy {
 
 export interface DetectedProject {
   projectDir: string;
+  /** 解決済みの許可ルート(未設定ならundefined)。親POMの検証に使う */
+  allowedRootReal: string | undefined;
   manifests: DetectedManifest[];
-  /** そのままosv-scannerに渡すlockfile(requirements.txtは含まない) */
+  /** スキャン対象の元のlockfile(requirements.txtは含まない)。osv-scannerにはスナップショットのコピーを渡す */
   targets: ManifestTarget[];
   requirementsCopies: RequirementsCopy[];
   lockfileMissing: LockfileMissing[];
@@ -146,24 +149,59 @@ function isSameOrDescendant(dir: string, ancestor: string): boolean {
   return ancestor === "." || dir === ancestor || dir.startsWith(`${ancestor}${path.sep}`);
 }
 
-/** workspaceの収録確認で読むlockfileの上限 */
+/** workspaceの収録確認で読むlockfile1件の上限と、1回の検出での合計の上限 */
 const MAX_LOCKFILE_BYTES = 64 * 1024 * 1024;
+const MAX_LOCKFILE_TOTAL_BYTES = 256 * 1024 * 1024;
+
+/**
+ * workspaceの収録確認用に、package-lock.jsonの`packages`のキー一覧を1回だけ読む。
+ * package.jsonの数だけ同じlockfileを解析し直すと、巨大なlockfileで負荷が増大するため、
+ * lockfileごとに結果を使い回し、読む量の合計にも上限を設ける。
+ */
+export class LockfileKeyCache {
+  private readonly keys = new Map<string, Set<string> | null>();
+  private remaining: number;
+
+  constructor(maxTotalBytes = MAX_LOCKFILE_TOTAL_BYTES) {
+    this.remaining = maxTotalBytes;
+  }
+
+  /** 収録済みのキー。null=確認できない(v1形式・読めない・大きすぎる・上限超過) */
+  async get(lockAbs: string, projectDir: string): Promise<Set<string> | null> {
+    if (this.keys.has(lockAbs)) return this.keys.get(lockAbs)!;
+    let keys: Set<string> | null = null;
+    if (this.remaining > 0) {
+      const read = await readRegularFile(lockAbs, { maxBytes: Math.min(MAX_LOCKFILE_BYTES, this.remaining), boundary: projectDir });
+      if (read.ok) {
+        this.remaining -= read.bytes.length;
+        try {
+          const packages: unknown = (JSON.parse(read.bytes.toString("utf8")) as { packages?: unknown }).packages;
+          if (typeof packages === "object" && packages !== null) keys = new Set(Object.keys(packages));
+        } catch {
+          keys = null;
+        }
+      }
+    }
+    this.keys.set(lockAbs, keys);
+    return keys;
+  }
+}
 
 /**
  * package-lock.json(v2以降)の`packages`に、memberDirのエントリがあるか。
- * true=収録 / false=未収録 / null=確認できない(v1形式・読めない・大きすぎる)
+ * true=収録 / false=未収録 / null=確認できない
  */
-async function npmLockfileRecords(projectDir: string, lockfile: DetectedManifest, memberDir: string): Promise<boolean | null> {
+async function npmLockfileRecords(
+  cache: LockfileKeyCache,
+  projectDir: string,
+  lockfile: DetectedManifest,
+  memberDir: string,
+): Promise<boolean | null> {
   const lockAbs = path.join(projectDir, lockfile.path);
-  try {
-    if ((await stat(lockAbs)).size > MAX_LOCKFILE_BYTES) return null;
-    const packages: unknown = (JSON.parse(await readFile(lockAbs, "utf8")) as { packages?: unknown }).packages;
-    if (typeof packages !== "object" || packages === null) return null;
-    const key = path.relative(path.dirname(lockAbs), path.join(projectDir, memberDir)).split(path.sep).join("/");
-    return Object.hasOwn(packages, key);
-  } catch {
-    return null;
-  }
+  const keys = await cache.get(lockAbs, projectDir);
+  if (keys === null) return null;
+  const key = path.relative(path.dirname(lockAbs), path.join(projectDir, memberDir)).split(path.sep).join("/");
+  return keys.has(key);
 }
 
 /**
@@ -177,6 +215,7 @@ async function findLockfileMissing(
   markers: readonly { path: string; group: LockGroup }[],
   manifests: readonly DetectedManifest[],
 ): Promise<LockfileMissing[]> {
+  const cache = new LockfileKeyCache();
   const missing: LockfileMissing[] = [];
   for (const marker of markers) {
     const markerDir = path.dirname(marker.path);
@@ -193,7 +232,7 @@ async function findLockfileMissing(
     let recorded = false;
     for (const candidate of candidates) {
       const result = candidate.format === "package-lock.json"
-        ? await npmLockfileRecords(projectDir, candidate, markerDir)
+        ? await npmLockfileRecords(cache, projectDir, candidate, markerDir)
         : null;
       if (result === true) recorded = true;
       if (result !== false) confirmedAbsent = false;
@@ -221,6 +260,7 @@ async function finalize(
 ): Promise<DetectedProject> {
   const result: DetectedProject = {
     projectDir,
+    allowedRootReal,
     manifests: [],
     targets: [],
     requirementsCopies: [],
@@ -230,10 +270,11 @@ async function finalize(
     lowerBounds: [],
     skippedFiles: [],
   };
+  const readContext = createRequirementsReadContext();
   for (const manifest of manifests) {
     const absolute = path.join(projectDir, manifest.path);
     if (manifest.format === "requirements.txt") {
-      const analysis = await analyzeRequirementsFile(absolute, projectDir);
+      const analysis = await analyzeRequirementsFile(absolute, projectDir, readContext);
       if (!analysis.ok) {
         result.skippedFiles.push({ path: manifest.path, reason: analysis.reason });
         continue;
@@ -243,11 +284,6 @@ async function finalize(
       result.lowerBounds.push(...analysis.lowerBounds);
       result.requirementsCopies.push({ path: manifest.path, entries: analysis.entries });
     } else {
-      const outside = manifest.format === "pom.xml" ? await pomParentOutsideRoot(absolute, allowedRootReal) : null;
-      if (outside !== null) {
-        result.skippedFiles.push({ path: manifest.path, reason: outside });
-        continue;
-      }
       result.targets.push({ path: absolute, format: manifest.format });
     }
     result.manifests.push(manifest);

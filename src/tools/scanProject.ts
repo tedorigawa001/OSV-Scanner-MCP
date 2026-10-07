@@ -5,15 +5,14 @@
  * complete=falseの場合は「検出0件でも安全とは言えない」旨の警告を付ける。
  */
 
-import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
+import { ScanToolError } from "../errors.js";
 import { isRemoteResolutionDisabled, runOsvScan, type RunOsvScanOptions } from "../osv/runner.js";
 import { parseOsvScanOutput, type ScanReport, type ScanReportPackage } from "../osv/scanReport.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
-import type { ManifestTarget } from "../utils/manifestFormats.js";
 import { detectProject, type DetectedProject } from "../utils/manifestDetector.js";
 import { normalizePypiName } from "../utils/requirementsFile.js";
+import { ScanSnapshot, snapshotManifests } from "../utils/scanSnapshot.js";
 import { dependencyResolution, type ScanJavaProjectArgs, type ScanJavaProjectOptions } from "./scanJavaProject.js";
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
@@ -103,23 +102,37 @@ function markLowerBounds(project: DetectedProject, packages: readonly ScanReport
  * requirements.txtは検証済みの正規化行だけを専用の一時ディレクトリに書いてスキャンする
  * (元ファイルの取り込み指定をosv-scannerにたどらせない)。成功・失敗とも削除する。
  */
-async function scanWithRequirementsCopies(
-  project: DetectedProject,
-  options: RunOsvScanOptions,
-): Promise<ScanReport> {
-  const copies = project.requirementsCopies.filter((copy) => copy.entries.length > 0);
-  if (project.targets.length === 0 && copies.length === 0) return parseOsvScanOutput({ results: [] });
-  const dir = copies.length > 0 ? await mkdtemp(path.join(await realpath(os.tmpdir()), "osv-mcp-req-")) : null;
+/**
+ * 元のファイルはosv-scannerに渡さず、スナップショット(scanSnapshot.ts)のコピーをスキャンする。
+ * lockfile・pom.xml(親POMの連鎖を含む)は安全に読んだ内容のコピー、requirements.txtは
+ * 検証済みの正規化行だけを書いたコピー。コピーできず外したファイルはskippedFilesに記録する。
+ */
+async function scanFromSnapshot(project: DetectedProject, options: RunOsvScanOptions): Promise<ScanReport> {
+  const snapshot = await ScanSnapshot.create();
   try {
-    const targets: ManifestTarget[] = [...project.targets];
-    for (const [index, copy] of copies.entries()) {
-      const copyPath = path.join(dir!, `${index}.txt`);
-      await writeFile(copyPath, `${copy.entries.join("\n")}\n`, { mode: 0o600, flag: "wx" });
-      targets.push({ path: copyPath, format: "requirements.txt" });
+    const { targets, skipped } = await snapshotManifests(snapshot, project.targets, {
+      projectDir: project.projectDir,
+      allowedRootReal: project.allowedRootReal,
+    });
+    if (skipped.length > 0) {
+      const skippedPaths = new Set(skipped.map((s) => s.path));
+      project.manifests = project.manifests.filter((m) => !skippedPaths.has(path.join(project.projectDir, m.path)));
+      project.skippedFiles.push(...skipped.map((s) => ({ path: path.relative(project.projectDir, s.path), reason: s.reason })));
+      if (project.manifests.length === 0) {
+        throw new ScanToolError(
+          skipped.every((s) => s.kind === "outside_allowed_root") ? "path_outside_allowed_root" : "no_manifest_found",
+          `スキャンできるlockfile・マニフェストがありません(${project.skippedFiles.map((s) => `${s.path}: ${s.reason}`).join(" / ")})`,
+        );
+      }
     }
+    for (const copy of project.requirementsCopies) {
+      if (copy.entries.length === 0) continue;
+      targets.push({ path: await snapshot.writeGenerated(`${copy.entries.join("\n")}\n`), format: "requirements.txt" });
+    }
+    if (targets.length === 0) return parseOsvScanOutput({ results: [] });
     return await runOsvScan(targets, options);
   } finally {
-    if (dir !== null) await rm(dir, { recursive: true, force: true });
+    await snapshot.cleanup();
   }
 }
 
@@ -130,7 +143,7 @@ export async function handleScanProject(
   try {
     const project = await detectProject(args.project_path, { allowedRoot: options.allowedRoot });
     const noRemoteResolution = isRemoteResolutionDisabled(options);
-    const report = await scanWithRequirementsCopies(project, { ...options, noRemoteResolution });
+    const report = await scanFromSnapshot(project, { ...options, noRemoteResolution });
     return jsonResult({
       project_dir: project.projectDir,
       dependency_resolution: dependencyResolution(noRemoteResolution, TRANSITIVE_OMITTED_WARNING),

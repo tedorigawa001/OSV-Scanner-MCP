@@ -1,8 +1,14 @@
+import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { analyzeRequirementsFile, normalizePypiName, type RequirementsAnalysis } from "../../utils/requirementsFile.js";
+import {
+  analyzeRequirementsFile,
+  createRequirementsReadContext,
+  normalizePypiName,
+  type RequirementsAnalysis,
+} from "../../utils/requirementsFile.js";
 
 const tempDirs: string[] = [];
 
@@ -184,5 +190,35 @@ describe("analyzeRequirementsFile: 取り込み", () => {
   it("元ファイルのサイズが上限を超える場合はファイルごと外す", async () => {
     const dir = await makeProject({ "requirements.txt": "flask==1.0\n".repeat(120_000) });
     expect((await analyzeRequirementsFile(path.join(dir, "requirements.txt"), dir)).ok).toBe(false);
+  });
+});
+
+describe("analyzeRequirementsFile: 読み込みの共有と上限(回帰)", () => {
+  it("複数のrequirements.txtが同じ取り込み先を参照しても1回だけ読む", async () => {
+    const dir = await makeProject({ "a.txt": "-r shared.txt\n", "b.txt": "-r shared.txt\n", "shared.txt": "requests==2.19.0\n" });
+    const context = createRequirementsReadContext();
+    expect(ok(await analyzeRequirementsFile(path.join(dir, "a.txt"), dir, context)).entries).toEqual(["requests==2.19.0"]);
+    await writeFile(path.join(dir, "shared.txt"), "flask==1.0\n"); // 読み直していれば変わる
+    expect(ok(await analyzeRequirementsFile(path.join(dir, "b.txt"), dir, context)).entries).toEqual(["requests==2.19.0"]);
+  });
+
+  it("読む量の合計が上限を超えたら、それ以上は読まずに理由を報告する", async () => {
+    const dir = await makeProject({ "a.txt": "requests==2.19.0\n", "b.txt": "flask==1.0\n" });
+    const context = createRequirementsReadContext(20);
+    expect((await analyzeRequirementsFile(path.join(dir, "a.txt"), dir, context)).ok).toBe(true);
+    const second = await analyzeRequirementsFile(path.join(dir, "b.txt"), dir, context);
+    expect(second.ok).toBe(false);
+    expect(!second.ok && second.reason).toContain("上限");
+  });
+
+  it("回帰: 取り込み先が名前付きパイプでも処理が止まらない", async () => {
+    const dir = await makeProject({ "requirements.txt": "-r pipe.txt\nflask==1.0\n" });
+    execFileSync("mkfifo", [path.join(dir, "pipe.txt")]);
+    const result = await Promise.race([
+      analyzeRequirementsFile(path.join(dir, "requirements.txt"), dir),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("処理が止まった")), 3000)),
+    ]);
+    expect(ok(result).entries).toEqual(["flask==1.0"]);
+    expect(ok(result).references[0]!.reason).toContain("通常のファイルではありません");
   });
 });

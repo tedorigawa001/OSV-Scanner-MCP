@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { ScanToolError } from "../../errors.js";
-import { detectProject } from "../../utils/manifestDetector.js";
+import { detectProject, LockfileKeyCache } from "../../utils/manifestDetector.js";
 
 const tempDirs: string[] = [];
 
@@ -219,18 +219,38 @@ describe("detectProject: 入力の検証と上限", () => {
   });
 });
 
-describe("detectProject: 親POMが許可ルートの外を参照するpom.xml", () => {
-  it("skipped_filesに理由付きで記録し、スキャン対象から外す", async () => {
-    const base = await makeProject({
-      "outside/pom.xml": "<project/>",
-      "root/proj/package-lock.json": "{}",
-      "root/proj/pom.xml":
-        "<project><parent><groupId>g</groupId><artifactId>p</artifactId><version>1</version>" +
-        "<relativePath>../../outside/pom.xml</relativePath></parent></project>",
-    });
-    const project = await detectProject(path.join(base, "root/proj"), { allowedRoot: path.join(base, "root") });
-    expect(project.manifests.map((m) => m.path)).toEqual(["package-lock.json"]);
-    expect(project.targets.map((t) => path.basename(t.path))).toEqual(["package-lock.json"]);
-    expect(project.skippedFiles).toEqual([{ path: "pom.xml", reason: expect.stringContaining("許可ルート") }]);
+describe("LockfileKeyCache(回帰: lockfileを繰り返し解析する負荷増大)", () => {
+  it("同じlockfileは1回だけ読んで解析し、結果を使い回す", async () => {
+    const dir = await makeProject({ "package-lock.json": JSON.stringify({ packages: { "": {}, "packages/a": {} } }) });
+    const cache = new LockfileKeyCache();
+    const lock = path.join(dir, "package-lock.json");
+    expect([...(await cache.get(lock, dir))!]).toEqual(["", "packages/a"]);
+    // 読んだ後に書き換えても、2回目以降は最初の結果を使う(読み直していない)
+    await writeFile(lock, JSON.stringify({ packages: { "": {} } }));
+    expect([...(await cache.get(lock, dir))!]).toEqual(["", "packages/a"]);
   });
+
+  it("読む量の合計が上限を超えたlockfileは確認できない(null)として扱う", async () => {
+    const dir = await makeProject({
+      "a/package-lock.json": JSON.stringify({ packages: { "": {} } }),
+      "b/package-lock.json": JSON.stringify({ packages: { "": {} } }),
+    });
+    const cache = new LockfileKeyCache(30);
+    expect(await cache.get(path.join(dir, "a/package-lock.json"), dir)).not.toBeNull();
+    expect(await cache.get(path.join(dir, "b/package-lock.json"), dir)).toBeNull();
+  });
+
+  it("巨大なlockfileの配下に大量のpackage.jsonがあっても、lockfileの解析は1回で済む", async () => {
+    const packages: Record<string, object> = { "": {} };
+    for (let i = 0; i < 100_000; i++) packages[`node_modules/pkg-${i}`] = { version: "1.0.0", resolved: "x".repeat(40) };
+    const files: Record<string, string> = { "package-lock.json": JSON.stringify({ lockfileVersion: 3, packages }) };
+    for (let i = 0; i < 1500; i++) files[`apps/app-${i}/package.json`] = "{}";
+    const dir = await makeProject(files);
+    const started = Date.now();
+    const project = await detectProject(dir);
+    // 修正前はpackage.jsonごとに約8MBのlockfileを解析し直していた(1500回)
+    expect(Date.now() - started).toBeLessThan(15_000);
+    expect(project.lockfileMissing).toHaveLength(1500);
+    expect(project.lockfileMissing.every((m) => m.status === "missing")).toBe(true);
+  }, 60_000);
 });

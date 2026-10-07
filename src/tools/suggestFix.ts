@@ -4,11 +4,12 @@
  * 推奨アップグレードバージョン(3段階Tier)を返す。
  */
 
-import { isRemoteResolutionDisabled, runOsvScan } from "../osv/runner.js";
+import { isRemoteResolutionDisabled } from "../osv/runner.js";
 import { suggestUpgrades } from "../osv/suggestFix.js";
 import { detectJavaProject } from "../utils/projectDetector.js";
 import {
   dependencyResolution,
+  scanJavaManifests,
   skippedManifestsFields,
   type ScanJavaProjectArgs,
   type ScanJavaProjectOptions,
@@ -24,7 +25,7 @@ export async function handleSuggestFix(
       allowedRoot: options.allowedRoot,
     });
     const noRemoteResolution = isRemoteResolutionDisabled(options);
-    const report = await runOsvScan(project.targets, { ...options, noRemoteResolution });
+    const { manifests, skipped, report } = await scanJavaManifests(project, { ...options, noRemoteResolution });
     const suggestions = suggestUpgrades(report.packages);
     const unfixedVulnerabilities = suggestions.reduce(
       (sum, s) => sum + s.per_cve_detail.filter((d) => d.tier === "unfixed").length,
@@ -32,8 +33,8 @@ export async function handleSuggestFix(
     );
     return jsonResult({
       project_dir: project.projectDir,
-      manifests: project.manifests,
-      ...skippedManifestsFields(project.skipped),
+      manifests,
+      ...skippedManifestsFields(skipped),
       dependency_resolution: dependencyResolution(noRemoteResolution),
       vulnerable_package_count: suggestions.length,
       unfixed_vulnerability_count: unfixedVulnerabilities,

@@ -20,7 +20,6 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import type { ManifestFormat, ManifestTarget } from "./manifestFormats.js";
-import { pomParentOutsideRoot } from "./pomParent.js";
 import {
   assertInsideAllowedRoot,
   resolveExistingPath,
@@ -33,10 +32,10 @@ export interface DetectedJavaProject {
   projectDir: string;
   /** projectDirからの相対パスで表したマニフェスト(pom.xml / gradle.lockfile)の一覧 */
   manifests: string[];
-  /** OSV-Scannerに渡す対象(スキャン範囲=この一覧) */
+  /** スキャン対象の元のファイル。osv-scannerにはスナップショット(scanSnapshot.ts)のコピーを渡す */
   targets: ManifestTarget[];
-  /** 親POMが許可ルートの外を参照するため、スキャン対象から外したマニフェスト */
-  skipped: { path: string; reason: string }[];
+  /** 解決済みの許可ルート(未設定ならundefined)。親POMの検証に使う */
+  allowedRootReal: string | undefined;
 }
 
 export interface DetectJavaProjectOptions extends SearchLimitOptions {
@@ -68,32 +67,16 @@ const GRADLE_LOCKFILE_GUIDANCE =
   "`./gradlew dependencies --write-locks` でlockfileを生成してから再実行してください" +
   "(依存ロックが未設定の場合は build.gradle に dependencyLocking { lockAllConfigurations() } の追加が必要です)";
 
-/** 親POMが許可ルートの外を参照するpom.xmlを除外して結果を組み立てる。全件除外ならエラー */
-async function buildResult(
+function buildResult(
   projectDir: string,
-  detected: readonly string[],
+  manifests: string[],
   allowedRootReal: string | undefined,
-): Promise<DetectedJavaProject> {
-  const manifests: string[] = [];
-  const skipped: { path: string; reason: string }[] = [];
-  for (const manifest of detected) {
-    const reason = path.basename(manifest) === "pom.xml"
-      ? await pomParentOutsideRoot(path.join(projectDir, manifest), allowedRootReal)
-      : null;
-    if (reason !== null) skipped.push({ path: manifest, reason });
-    else manifests.push(manifest);
-  }
-  if (manifests.length === 0) {
-    throw new ScanToolError(
-      "path_outside_allowed_root",
-      `スキャンできるマニフェストがありません(${skipped.map((s) => `${s.path}: ${s.reason}`).join(" / ")})`,
-    );
-  }
+): DetectedJavaProject {
   const targets = manifests.map((manifest) => ({
     path: path.join(projectDir, manifest),
     format: path.basename(manifest) as ManifestFormat,
   }));
-  return { projectDir, manifests, targets, skipped };
+  return { projectDir, manifests, targets, allowedRootReal };
 }
 
 /**

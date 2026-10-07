@@ -17,9 +17,10 @@
  * スキャンされない参照として報告する(黙って無視しない)。
  */
 
-import { readFile, realpath, stat } from "node:fs/promises";
+import { realpath } from "node:fs/promises";
 import path from "node:path";
 import { isInsideDir } from "./projectWalk.js";
+import { readRegularFile } from "./safeRead.js";
 
 const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_INCLUDE_DEPTH = 5;
@@ -166,6 +167,7 @@ async function include(
   projectDir: string,
   depth: number,
   out: Collected,
+  context: RequirementsReadContext,
 ): Promise<void> {
   const reference = (reason: string): void => {
     out.references.push({ file, line, text: content, reason });
@@ -184,25 +186,72 @@ async function include(
   if (out.visited.size >= MAX_FILES) return reference(`取り込みファイルが上限(${MAX_FILES}件)を超えています`);
   let failure: string | null;
   try {
-    failure = await analyze(resolved, projectDir, depth + 1, out);
+    failure = await analyze(resolved, projectDir, depth + 1, out, context);
   } catch {
     failure = "取り込み先を読み込めません";
   }
   if (failure !== null) reference(failure);
 }
 
-/** ファイルを解析してoutに追加する。読めない・大きすぎる場合は理由を返す */
-async function analyze(file: string, projectDir: string, depth: number, out: Collected): Promise<string | null> {
-  out.visited.add(file);
-  const info = await stat(file);
-  if (!info.isFile()) return "通常ファイルではありません";
-  if (info.size > MAX_FILE_BYTES) return `サイズが上限(${MAX_FILE_BYTES}バイト)を超えています`;
-  const text = await readFile(file, "utf8");
+/** 1回のスキャンで共有する読み込みの上限とキャッシュ(共通の取り込み先を何度も読まない) */
+export interface RequirementsReadContext {
+  remainingBytes: number;
+  texts: Map<string, string>;
+}
 
-  for (const { line, content } of logicalLines(text)) {
+/** 1回のスキャンで読むrequirements.txt(取り込み先を含む)の合計の上限 */
+const DEFAULT_TOTAL_BYTES = 64 * 1024 * 1024;
+
+export function createRequirementsReadContext(maxTotalBytes = DEFAULT_TOTAL_BYTES): RequirementsReadContext {
+  return { remainingBytes: maxTotalBytes, texts: new Map() };
+}
+
+/** 安全に読む(FIFOで止まらず、差し替え・範囲外を検出する)。同じファイルは1回だけ読む */
+async function readText(
+  file: string,
+  projectDir: string,
+  context: RequirementsReadContext,
+): Promise<{ ok: true; text: string } | { ok: false; reason: string }> {
+  const cached = context.texts.get(file);
+  if (cached !== undefined) return { ok: true, text: cached };
+  const budgetLimited = context.remainingBytes < MAX_FILE_BYTES;
+  const result = await readRegularFile(file, {
+    maxBytes: Math.min(MAX_FILE_BYTES, context.remainingBytes),
+    boundary: projectDir,
+  });
+  if (!result.ok) {
+    if (result.failure === "too_large") {
+      return {
+        ok: false,
+        reason: budgetLimited
+          ? "requirements.txtの解析量の合計が上限を超えたため読みませんでした"
+          : `サイズが上限(${MAX_FILE_BYTES}バイト)を超えています`,
+      };
+    }
+    return { ok: false, reason: result.message };
+  }
+  context.remainingBytes -= result.bytes.length;
+  const text = result.bytes.toString("utf8");
+  context.texts.set(file, text);
+  return { ok: true, text };
+}
+
+/** ファイルを解析してoutに追加する。読めない・大きすぎる場合は理由を返す */
+async function analyze(
+  file: string,
+  projectDir: string,
+  depth: number,
+  out: Collected,
+  context: RequirementsReadContext,
+): Promise<string | null> {
+  out.visited.add(file);
+  const read = await readText(file, projectDir, context);
+  if (!read.ok) return read.reason;
+
+  for (const { line, content } of logicalLines(read.text)) {
     const requirementInclude = INCLUDE_REQUIREMENT.exec(content);
     if (requirementInclude) {
-      await include(file, line, content, requirementInclude[1]!, projectDir, depth, out);
+      await include(file, line, content, requirementInclude[1]!, projectDir, depth, out, context);
       continue;
     }
     if (INCLUDE_CONSTRAINT.test(content)) {
@@ -229,11 +278,15 @@ async function analyze(file: string, projectDir: string, depth: number, out: Col
  * @param file 検出済みの絶対パス
  * @param projectDir 取り込みを展開する範囲(解決済みの絶対パス)
  */
-export async function analyzeRequirementsFile(file: string, projectDir: string): Promise<RequirementsAnalysis> {
+export async function analyzeRequirementsFile(
+  file: string,
+  projectDir: string,
+  context: RequirementsReadContext = createRequirementsReadContext(),
+): Promise<RequirementsAnalysis> {
   const out: Collected = { entries: [], issues: [], references: [], lowerBounds: [], visited: new Set() };
   let reason: string | null;
   try {
-    reason = await analyze(await realpath(file), projectDir, 0, out);
+    reason = await analyze(await realpath(file), projectDir, 0, out, context);
   } catch {
     reason = "読み込めません";
   }

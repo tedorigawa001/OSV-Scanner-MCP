@@ -3,6 +3,7 @@ import { constants } from "node:fs";
 import { open, realpath } from "node:fs/promises";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
+import { verifyOpenedFile } from "./safeRead.js";
 import { asRecord } from "./unknownJson.js";
 
 export interface SbomInputOptions {
@@ -46,8 +47,9 @@ export async function loadSbom(inputPath: string, options: SbomInputOptions = {}
   try {
     // Nonblocking open avoids hanging on FIFOs. Refuse a leaf replaced by a symlink.
     const file = await open(sourcePath, constants.O_RDONLY | constants.O_NONBLOCK | (constants.O_NOFOLLOW ?? 0));
+    let info;
     try {
-      const info = await file.stat();
+      info = await file.stat();
       if (!info.isFile()) throw new ScanToolError("sbom_not_found", "SBOM input must be a regular file");
       if (info.size > maxBytes) throw tooLarge();
       const chunk = Buffer.alloc(Math.min(64 * 1024, maxBytes + 1));
@@ -64,6 +66,11 @@ export async function loadSbom(inputPath: string, options: SbomInputOptions = {}
     } finally {
       await file.close();
     }
+    // 読んだ後に、差し替え(途中のディレクトリのシンボリックリンク化等)と境界を確認する
+    const allowedRootReal = options.allowedRoot !== undefined ? await realpath(options.allowedRoot) : undefined;
+    const problem = await verifyOpenedFile(sourcePath, info, allowedRootReal);
+    if (problem === "outside") throw new ScanToolError("path_outside_allowed_root", "SBOM path is outside the allowed root");
+    if (problem !== null) throw new ScanToolError("sbom_not_found", "The SBOM file was replaced while it was being read");
   } catch (error) {
     if (error instanceof ScanToolError) throw error;
     throw new ScanToolError("sbom_not_found", "The specified SBOM file could not be read");

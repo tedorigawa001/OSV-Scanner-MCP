@@ -2,7 +2,22 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { parentRelativePath, pomParentOutsideRoot } from "../../utils/pomParent.js";
+import { parentRelativePath } from "../../utils/pomParent.js";
+import { ScanSnapshot, snapshotManifests } from "../../utils/scanSnapshot.js";
+
+/** pom.xmlをスナップショットへコピーし、除外されれば理由、されなければnullを返す */
+async function checkPom(pomPath: string, allowedRootReal: string | undefined): Promise<string | null> {
+  const snapshot = await ScanSnapshot.create();
+  try {
+    const { skipped } = await snapshotManifests(snapshot, [{ path: pomPath, format: "pom.xml" }], {
+      projectDir: path.dirname(pomPath),
+      allowedRootReal,
+    });
+    return skipped[0]?.reason ?? null;
+  } finally {
+    await snapshot.cleanup();
+  }
+}
 
 const tempDirs: string[] = [];
 
@@ -27,10 +42,10 @@ function pom(parent = ""): string {
 const parent = (relativePath?: string) =>
   `<parent><groupId>g</groupId><artifactId>p</artifactId><version>1</version>${relativePath ?? ""}</parent>`;
 
-describe("pomParentOutsideRoot", () => {
+describe("親POMの連鎖の検証(スナップショット経由)", () => {
   it("許可ルート未設定なら検証しない", async () => {
     const base = await makeTree({ "outside/pom.xml": pom(), "root/proj/pom.xml": pom(parent("<relativePath>../../outside/pom.xml</relativePath>")) });
-    expect(await pomParentOutsideRoot(path.join(base, "root/proj/pom.xml"), undefined)).toBeNull();
+    expect(await checkPom(path.join(base, "root/proj/pom.xml"), undefined)).toBeNull();
   });
 
   it.each([
@@ -41,12 +56,12 @@ describe("pomParentOutsideRoot", () => {
     { label: "コメント内のparentは無視", xml: `<project><!-- ${parent("<relativePath>../../outside/pom.xml</relativePath>")} --></project>` },
   ])("$label → 問題なし", async ({ xml }) => {
     const base = await makeTree({ "outside/pom.xml": pom(), "root/proj/pom.xml": xml });
-    expect(await pomParentOutsideRoot(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toBeNull();
+    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toBeNull();
   });
 
   it("既定のrelativePath(../pom.xml)が許可ルート内なら問題なし", async () => {
     const base = await makeTree({ "root/pom.xml": pom(), "root/proj/pom.xml": pom(parent()) });
-    expect(await pomParentOutsideRoot(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toBeNull();
+    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toBeNull();
   });
 
   it.each<{ label: string; files: Record<string, string>; target: string }>([
@@ -56,19 +71,19 @@ describe("pomParentOutsideRoot", () => {
     { label: "連鎖の途中(親は内、祖父が外)", files: { "outside/pom.xml": pom(), "root/mid/pom.xml": pom(parent("<relativePath>../../outside/pom.xml</relativePath>")), "root/proj/pom.xml": pom(parent("<relativePath>../mid/pom.xml</relativePath>")) }, target: "root/proj/pom.xml" },
   ])("$label が許可ルートの外を指せば除外理由を返す", async ({ files, target }) => {
     const base = await makeTree(files);
-    const reason = await pomParentOutsideRoot(path.join(base, target), path.join(base, "root"));
+    const reason = await checkPom(path.join(base, target), path.join(base, "root"));
     expect(reason).toContain("許可ルート(OSV_MCP_ALLOWED_ROOT)の外");
   });
 
   it("シンボリックリンク経由で外を指す場合も除外する", async () => {
     const base = await makeTree({ "outside/pom.xml": pom(), "root/proj/pom.xml": pom(parent("<relativePath>../link/pom.xml</relativePath>")) });
     await symlink(path.join(base, "outside"), path.join(base, "root/link"));
-    expect(await pomParentOutsideRoot(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).not.toBeNull();
+    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).not.toBeNull();
   });
 
   it("評価できないrelativePath(プロパティ参照)は確認できないため除外する", async () => {
     const base = await makeTree({ "root/proj/pom.xml": pom(parent("<relativePath>${parent.dir}/pom.xml</relativePath>")) });
-    expect(await pomParentOutsideRoot(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("解釈できない");
+    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("解釈できない");
   });
 
   it("循環する親の連鎖は上限で停止して除外する", async () => {
@@ -76,7 +91,7 @@ describe("pomParentOutsideRoot", () => {
       "root/a/pom.xml": pom(parent("<relativePath>../b/pom.xml</relativePath>")),
       "root/b/pom.xml": pom(parent("<relativePath>../a/pom.xml</relativePath>")),
     });
-    expect(await pomParentOutsideRoot(path.join(base, "root/a/pom.xml"), path.join(base, "root"))).toContain("上限");
+    expect(await checkPom(path.join(base, "root/a/pom.xml"), path.join(base, "root"))).toContain("上限");
   });
 });
 
@@ -134,13 +149,13 @@ describe("parentRelativePath: osv-scanner(Go)のXML解釈に合わせる(回帰)
 
   it("回帰: <m:parent>で許可ルートの外を参照するpom.xmlを除外する", async () => {
     const base = await makeTree({ "outside/pom.xml": pom(), "root/proj/pom.xml": doc(`<m:parent>${gav}${rel}</m:parent>`) });
-    expect(await pomParentOutsideRoot(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("許可ルート");
+    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("許可ルート");
   });
 
   it("UTF-8として読めないpom.xmlは解釈できないため除外する", async () => {
     const base = await makeTree({ "root/proj/pom.xml": "" });
     await writeFile(path.join(base, "root/proj/pom.xml"), Buffer.from([0x3c, 0x70, 0xff, 0xfe, 0x3e]));
-    expect(await pomParentOutsideRoot(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("解釈できない");
+    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).toContain("解釈できない");
   });
 });
 
@@ -177,6 +192,6 @@ describe("parentRelativePath: 改行の正規化と文字の制限(回帰)", () 
       "outside/a\nb/pom.xml": pom(),
       "root/proj/pom.xml": `<project><parent>${gav}<relativePath>../../outside/a\rb/pom.xml</relativePath></parent></project>`,
     });
-    expect(await pomParentOutsideRoot(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).not.toBeNull();
+    expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).not.toBeNull();
   });
 });
