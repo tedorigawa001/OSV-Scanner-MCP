@@ -28,10 +28,29 @@ const DEFAULT_MAX_DEPTH = 64;
 const DEFAULT_MAX_ENTRIES = 200_000;
 const DEFAULT_MAX_MANIFESTS = 1_000;
 
+/** Nodeの権限モデル(--permission)による拒否か */
+export function isAccessDenied(error: unknown): error is Error & { permission?: string; resource?: string } {
+  return error instanceof Error && (error as { code?: unknown }).code === "ERR_ACCESS_DENIED";
+}
+
+/** 権限モデルの拒否を、許可の付け方が分かるエラーにする */
+export function permissionDeniedError(error: Error & { permission?: string; resource?: string }): ScanToolError {
+  const resource = typeof error.resource === "string" ? `: ${error.resource}` : "";
+  const kind = error.permission === "FileSystemWrite" ? "書き込み(--allow-fs-write)" : error.permission === "ChildProcess"
+    ? "子プロセスの起動(--allow-child-process)" : "読み取り(--allow-fs-read)";
+  return new ScanToolError(
+    "permission_denied",
+    `Nodeの権限モデル(--permission)で${kind}が許可されていません${resource}。` +
+      "スキャン対象・一時ディレクトリ(シンボリックリンクの解決前と解決後の両方のパス)・osv-scannerのキャッシュへの許可が必要です(READMEの「権限を絞って起動する」を参照)",
+  );
+}
+
 export async function resolveExistingPath(inputPath: string): Promise<string> {
   try {
     return await realpath(path.resolve(inputPath));
-  } catch {
+  } catch (error) {
+    // Nodeの権限モデルの拒否を「存在しない」と誤って伝えない
+    if (isAccessDenied(error)) throw permissionDeniedError(error);
     throw new ScanToolError("project_not_found", `指定されたパスが存在しません: ${inputPath}`);
   }
 }

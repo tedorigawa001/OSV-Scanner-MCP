@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildArtifactReport } from "../../osv/artifactReport.js";
+import { buildArtifactReport, isInferredCoordinate } from "../../osv/artifactReport.js";
 
 const pkg = (vulnerable = false) => ({
-  package: { name: "g:a", version: "1.0", ecosystem: "Maven" },
+  package: { name: "org.example:a", version: "1.0", ecosystem: "Maven" },
   ...(vulnerable ? { groups: [{ ids: ["GHSA-test"], max_severity: "9.8" }] } : {}),
 });
 const result = (file: string, packages: unknown[]) => ({ source: { path: file, type: "artifact" }, packages });
@@ -24,7 +24,7 @@ describe("buildArtifactReport", () => {
   it.each([
     { packages: [] },
     { packages: [{ package: { name: "unknown:unknown", version: "unknown", ecosystem: "Maven" } }] },
-    { packages: [{ package: { name: "g:a", version: "unknown", ecosystem: "Maven" } }] },
+    { packages: [{ package: { name: "org.example:a", version: "unknown", ecosystem: "Maven" } }] },
     { packages: [{}] },
   ])(
     "does not count missing or placeholder metadata as identified (%j)", ({ packages }) => {
@@ -57,5 +57,54 @@ describe("buildArtifactReport", () => {
   it("all unidentified is a report, malformed output is an error", () => {
     expect(buildArtifactReport({ results: [] }, ["/a.jar"]).coverage.jars_identified).toBe(0);
     expect(() => buildArtifactReport({}, ["/a.jar"])).toThrowError(expect.objectContaining({ kind: "invalid_output" }));
+  });
+});
+
+describe("推測された座標(B3の実物の検証で判明)", () => {
+  const coord = (name: string, version: string, vulnerable = false) => ({
+    package: { name, version, ecosystem: "Maven" },
+    ...(vulnerable ? { groups: [{ ids: [`GHSA-${name}`], max_severity: "7.5" }] } : {}),
+  });
+
+  it.each([
+    ["spring-beans:spring-beans", true],
+    ["jar:grpc-netty-shaded", true],
+    ["all:opentelemetry-api", true],
+    ["armeria:armeria-brave", true],
+    ["commons-io:commons-io", true], // 古い形式の正しい座標も含む(安全側)
+    ["org.springframework:spring-beans", false],
+    ["io.netty:netty-codec", false],
+  ])("groupIdに.がない座標を推測とみなす: %s → %s", (name, expected) => {
+    expect(isInferredCoordinate(name)).toBe(expected);
+  });
+
+  it("推測の座標を一覧と警告で示し、パッケージに印を付ける(実物のzipkin-server 2.23.2の形)", () => {
+    const report = buildArtifactReport({ results: [result("/zipkin.jar", [
+      coord("org.apache.logging.log4j:log4j-core", "2.13.3", true),
+      coord("spring-beans:spring-beans", "5.3.2"),
+      coord("armeria:armeria", "1.3.0", true),
+    ])] }, ["/zipkin.jar"]);
+    const inferred = report.coverage.inferred_coordinates!;
+    expect(inferred.count).toBe(2);
+    expect(inferred.items).toEqual([{ name: "armeria:armeria", version: "1.3.0" }, { name: "spring-beans:spring-beans", version: "5.3.2" }]);
+    expect(inferred.warning).toContain("spring-beans:spring-beans");
+    const byName = Object.fromEntries(report.packages.map((p) => [p.name, "coordinates_inferred" in p]));
+    expect(byName).toEqual({ "org.apache.logging.log4j:log4j-core": false, "armeria:armeria": true });
+    expect(report.artifacts[0]!.status).toBe("identified_with_vulnerabilities");
+  });
+
+  it("回帰: 推測の座標だけで同定したアーカイブは「同定済み・既知の脆弱性なし」にせず、同定数に数えない(grpc-netty-shaded 1.84.1・avatica)", () => {
+    const report = buildArtifactReport({ results: [
+      result("/grpc-netty-shaded.jar", [coord("jar:grpc-netty-shaded", "1.84.1")]),
+      result("/ok.jar", [coord("org.example:a", "1.0")]),
+    ] }, ["/grpc-netty-shaded.jar", "/ok.jar"]);
+    expect(report.artifacts.map((a) => a.status)).toEqual(["inferred_only", "identified_without_known_vulnerabilities"]);
+    expect(report.coverage.jars_identified).toBe(1);
+    expect(report.coverage.unidentified_jars).toEqual([{ path: "/grpc-netty-shaded.jar", hint: expect.stringContaining("inferred coordinates") }]);
+  });
+
+  it("推測の座標がなければ一覧を出さない(既存の応答を変えない)", () => {
+    const report = buildArtifactReport({ results: [result("/ok.jar", [coord("org.example:a", "1.0")])] }, ["/ok.jar"]);
+    expect("inferred_coordinates" in report.coverage).toBe(false);
   });
 });

@@ -31,7 +31,7 @@ describe("handleScanJavaArtifact", () => {
       const copy = args.at(-1); assert.deepEqual(fs.readFileSync(copy), fs.readFileSync(${JSON.stringify(archive)}));
       fs.writeFileSync(${JSON.stringify(record)}, copy);
       console.log(JSON.stringify({ results: [{ source: { path: copy, type: "artifact" }, packages: [
-        { package: { name: "g:a", version: "1", ecosystem: "Maven" } }] }] }));`);
+        { package: { name: "org.example:a", version: "1", ecosystem: "Maven" } }] }] }));`);
     const response = await handleScanJavaArtifact({ artifact_path: root }, { binaryPath, allowedRoot: root });
     expect(response.isError).toBeUndefined();
     const copy = await readFile(record, "utf8");

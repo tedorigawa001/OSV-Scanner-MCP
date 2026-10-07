@@ -136,6 +136,41 @@ npm run build
 >
 > 依存の情報をどこに送るかは[通信先とプライバシー](#通信先とプライバシー)を確認してください。どの設定でも、脆弱性照会のためパッケージの名前とバージョンは `api.osv.dev` に送られます。
 
+### 権限を絞って起動する
+
+多層防御として、Nodeの権限モデル(`--permission`)でサーバーが読み書きできる範囲を絞れます(任意。既定の起動方法は変わりません)。`npx` ではNodeのフラグを渡せないため、`node` で直接起動します。
+
+```json
+{
+  "mcpServers": {
+    "osv-scanner": {
+      "command": "node",
+      "args": [
+        "--permission",
+        "--allow-fs-read=/path/to/OSV-Scanner-MCP",
+        "--allow-fs-read=/Users/you/projects",
+        "--allow-fs-read=/var/folders/xx/yyyy/T",
+        "--allow-fs-read=/private/var/folders/xx/yyyy/T",
+        "--allow-fs-write=/private/var/folders/xx/yyyy/T",
+        "--allow-fs-read=/opt/homebrew/bin/osv-scanner",
+        "--allow-child-process",
+        "/path/to/OSV-Scanner-MCP/dist/index.js"
+      ],
+      "env": {
+        "OSV_MCP_ALLOWED_ROOT": "/Users/you/projects",
+        "OSV_SCANNER_PATH": "/opt/homebrew/bin/osv-scanner"
+      }
+    }
+  }
+}
+```
+
+- 読み取り: サーバー本体(`dist` と `node_modules` を含むディレクトリ)、スキャン対象(`OSV_MCP_ALLOWED_ROOT`)、一時ディレクトリ、osv-scannerのバイナリ
+- 一時ディレクトリ(`os.tmpdir()`、macOSでは `$TMPDIR`)は、**シンボリックリンクの解決前と解決後の両方のパス**に読み取りの許可が必要です(macOSの `/var/folders/...` は `/private/var/folders/...` へのリンク)。書き込みは解決後のパスに許可します
+- 自動ダウンロードを使う場合は、キャッシュ(`$XDG_CACHE_HOME/osv-scanner-mcp`、既定は `~/.cache/osv-scanner-mcp`)の読み書きも許可します。使わない場合は `OSV_SCANNER_PATH` を指定します
+- osv-scannerを起動するため `--allow-child-process` が必要です。**子プロセスのosv-scannerは権限モデルの制限を受けません**(Node自身もこのフラグは権限モデルを弱めると警告します)。osv-scannerには検証済みのコピーだけを渡しているため影響は限定的ですが、より強い隔離が必要ならコンテナ等のOSレベルの仕組みを併用してください
+- 必要な許可が欠けている場合は起動時に標準エラー出力へ警告し、スキャン時は `permission_denied`(不足している許可と対象のパス)を返します
+
 ### 通信先とプライバシー
 
 osv-scanner v2.4.0 で接続先を実機確認した結果です(2026-10-07)。
@@ -310,7 +345,8 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 **出力の読み方:**
 
 - 先頭の `coverage` に `jars_found`、`jars_identified`、`unidentified_jars` を返します。件数はWARも含む、ファイルシステム上で列挙した外側のアーカイブ単位です。ネストJARの総数ではありません。
-- `artifacts[].status` は `identified_with_vulnerabilities` / `identified_without_known_vulnerabilities` / `unidentified` の3値です。「同定済み」は少なくとも1件のMaven座標を取得できた意味であり、全依存の同定ではありません。
+- `artifacts[].status` は `identified_with_vulnerabilities` / `identified_without_known_vulnerabilities` / `inferred_only` / `unidentified` の4値です。「同定済み」は少なくとも1件のMaven座標を取得できた意味であり、全依存の同定ではありません。`inferred_only` は推測した座標(下記)だけで同定したアーカイブで、`jars_identified` に数えず `unidentified_jars` に理由付きで示します。
+- **推測した座標**: `pom.properties` を含まないJAR(Spring Frameworkの本体JARなど)について、OSV-Scannerはファイル名等からMaven座標を推測し、groupIdを誤ることがあります(例: `spring-beans:spring-beans`。正しくは `org.springframework:spring-beans`)。誤った座標はOSVで照合されず、**既知の脆弱性を取りこぼします**(実例: zipkin-server 2.23.2 のfat JARに含まれる spring-beans 5.3.2 のSpring4Shell(CVE-2022-22965)は検出されません)。groupIdに `.` を含まない座標を推測とみなし、`coverage.inferred_coordinates`(件数・一覧・警告)と、該当パッケージの `coordinates_inferred: true` で示します。`commons-io:commons-io` のような古い形式の正しい座標も含まれます(安全側)。`.` を含む誤った推測(`com.sun.jna:jna` 等)は区別できません。正確な結果には、ビルド元のlockfile・`pom.xml` を `scan_project` でスキャンしてください
 - `coverage.completeness` は常に `incomplete`。`identified_vulnerability_count: 0` は安全性の保証ではありません。
 - `packages` は同定できた脆弱なパッケージの詳細です。複数アーカイブに含まれる同一パッケージ・脆弱性は全体集計では重複排除します。
 - JAR/WARが無い場合は `no_scannable_artifacts`、全件同定不能の場合は警告を含む成功レポートです。
@@ -434,6 +470,7 @@ npm・Go・PyPIの「同じ系統」は、npmの `^`(キャレット)が互換�
 |---|---|
 | `binary_not_found` | OSV-Scannerが見つからない(インストール案内をmessageに含む) |
 | `project_not_found` | 指定パスが存在しない・ディレクトリ/pom.xmlでない |
+| `permission_denied` | Nodeの権限モデル(`--permission`)でファイルの読み書きが許可されていない(メッセージに不足している許可と対象のパスを示します。[権限を絞って起動する](#権限を絞って起動する)を参照) |
 | `no_manifest_found` | 対応マニフェスト(pom.xml / gradle.lockfile)が見つからない |
 | `scan_input_too_large` | スキャン対象ファイル(一時ディレクトリへのコピー)の合計サイズが上限(2GiB)を超えた。対象を絞って再実行する |
 | `manifest_search_limit_exceeded` | マニフェスト探索が上限(20万エントリ・1,000マニフェスト)に達した。より狭いディレクトリかマニフェストを直接指定する |

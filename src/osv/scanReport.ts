@@ -38,6 +38,10 @@ export interface ScanReportVulnerability {
    * 複数リリース系統が混在しうる。空=OSVに修正版の記載がない
    */
   fixed_versions: string[];
+  /**
+   * 影響範囲の証拠(suggest_fixの推奨の検証に使う内部データ)。応答のJSONには出さない(列挙不可のプロパティ)。
+   * v0.9.0までは応答に含まれ、応答の大半(実物のWARで555KB中517KB)を占めていた
+   */
   affected_versions?: AffectedVersionEvidence;
 }
 
@@ -255,7 +259,11 @@ export function parseOsvScanOutput(raw: unknown): ScanReport {
           severity: severityFromScore(score),
           summary: extractSummary(vulnDetails),
           fixed_versions: extractFixedVersions(vulnDetails, name, ecosystem),
-          affected_versions: extractAffectedVersions(vulnDetails, ids, name, ecosystem),
+        });
+        // 内部でだけ使うため列挙不可にする(JSON.stringifyに含まれない)
+        Object.defineProperty(entry.vulns.get(primaryId)!, "affected_versions", {
+          value: extractAffectedVersions(vulnDetails, ids, name, ecosystem),
+          enumerable: false,
         });
       }
     }

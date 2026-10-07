@@ -22,6 +22,10 @@ import { handleScanProject } from "./tools/scanProject.js";
 import { handleScanJavaArtifact } from "./tools/scanJavaArtifact.js";
 import { handleScanSbom } from "./tools/scanSbom.js";
 import { handleSuggestFix } from "./tools/suggestFix.js";
+import { realpathSync } from "node:fs";
+import os from "node:os";
+import { defaultCacheDir } from "./osv/binaryDownloader.js";
+import { permissionModelWarnings } from "./utils/permissionCheck.js";
 import { installShutdownHandlers, removeStaleTempDirs } from "./utils/processCleanup.js";
 import {
   ALLOWED_ROOT_ENV,
@@ -42,6 +46,24 @@ if (startupError !== null) {
 const startupWarning = allowedRootStartupWarning();
 if (startupWarning !== null) {
   console.error(`osv-scanner-mcp: [警告] ${startupWarning}`);
+}
+// Nodeの権限モデル(--permission)で起動された場合、必要な許可が欠けていればstderrで知らせる(起動は続ける)
+{
+  const tmpDir = os.tmpdir();
+  let tmpDirReal = tmpDir;
+  try {
+    tmpDirReal = realpathSync(tmpDir);
+  } catch { /* 解決前のパスの読み取りが拒否されている場合も、警告で示す */ }
+  const scannerPath = process.env.OSV_SCANNER_PATH?.trim();
+  for (const warning of permissionModelWarnings({
+    allowedRoot: allowedRootFromEnv(),
+    tmpDir,
+    tmpDirReal,
+    cacheDir: scannerPath ? undefined : defaultCacheDir(),
+    scannerPath: scannerPath || undefined,
+  })) {
+    console.error(`osv-scanner-mcp: [警告] ${warning}`);
+  }
 }
 
 // NOTE: リリース時はpackage.jsonのversionと同じ値に更新すること
@@ -147,6 +169,7 @@ server.registerTool(
     description:
       "JAR/WARファイルまたはディレクトリ内の実体をスキャンする。ビルドやJavaコードの実行は行わない。" +
       "メタデータによるベストエフォート同定のため、coverageと同定不能ファイルを必ず確認すること。" +
+      "pom.propertiesのないJARは座標を推測し、groupIdの誤りで既知の脆弱性を取りこぼしうる(coverage.inferred_coordinates、status: inferred_only)。" +
       "completenessは常にincomplete。検出0件でも安全性や全依存の同定を保証しない。",
     inputSchema: {
       artifact_path: z.string().min(1).describe("JAR/WARファイル、または探索するディレクトリの絶対パス"),

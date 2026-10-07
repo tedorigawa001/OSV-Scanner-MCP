@@ -5,6 +5,7 @@
  */
 
 import { access, constants, stat } from "node:fs/promises";
+import { isAccessDenied, permissionDeniedError } from "../utils/projectWalk.js";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 
@@ -12,13 +13,18 @@ export const OSV_SCANNER_PATH_ENV = "OSV_SCANNER_PATH";
 
 const BINARY_NAME = process.platform === "win32" ? "osv-scanner.exe" : "osv-scanner";
 
-async function isExecutableFile(filePath: string): Promise<boolean> {
+/**
+ * 実行可能な通常のファイルか。rethrowDeniedのとき、Nodeの権限モデル(--permission)による拒否は
+ * 「見つからない」にせず投げる(明示指定のパスで原因を誤らせない。PATHの探索では読めない場所を飛ばす)
+ */
+async function isExecutableFile(filePath: string, rethrowDenied = false): Promise<boolean> {
   try {
     const stats = await stat(filePath);
     if (!stats.isFile()) return false;
     await access(filePath, constants.X_OK);
     return true;
-  } catch {
+  } catch (error) {
+    if (rethrowDenied && isAccessDenied(error)) throw permissionDeniedError(error);
     return false;
   }
 }
@@ -30,7 +36,7 @@ export async function findOsvScannerBinary(
   const explicit = env[OSV_SCANNER_PATH_ENV];
   if (explicit !== undefined && explicit.trim() !== "") {
     // 明示指定が無効な場合はPATHにフォールバックせず失敗させる(意図しないバイナリの実行を防ぐ)
-    return (await isExecutableFile(explicit)) ? explicit : null;
+    return (await isExecutableFile(explicit, true)) ? explicit : null;
   }
   for (const dir of (env.PATH ?? "").split(path.delimiter)) {
     if (dir === "") continue;

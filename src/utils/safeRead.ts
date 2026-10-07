@@ -15,9 +15,9 @@
 
 import { constants, type Stats } from "node:fs";
 import { open, realpath, rm, stat } from "node:fs/promises";
-import { isInsideDir } from "./projectWalk.js";
+import { isAccessDenied, isInsideDir } from "./projectWalk.js";
 
-export type SafeReadFailure = "not_found" | "not_regular" | "too_large" | "outside" | "changed";
+export type SafeReadFailure = "not_found" | "denied" | "not_regular" | "too_large" | "outside" | "changed";
 
 export interface SafeReadError {
   ok: false;
@@ -37,6 +37,7 @@ const OPEN_FLAGS = constants.O_RDONLY | (constants.O_NONBLOCK ?? 0) | (constants
 
 const MESSAGES: Record<SafeReadFailure, string> = {
   not_found: "ファイルを開けません",
+  denied: "Nodeの権限モデル(--permission)で読み取りが許可されていません",
   not_regular: "通常のファイルではありません(名前付きパイプ・デバイス等)",
   too_large: "サイズが上限を超えています",
   outside: "スキャン範囲の外のファイルです",
@@ -82,8 +83,8 @@ export async function copyRegularFile(
   let source;
   try {
     source = await open(filePath, OPEN_FLAGS);
-  } catch {
-    return failure("not_found");
+  } catch (error) {
+    return failure(isAccessDenied(error) ? "denied" : "not_found");
   }
   let total = 0;
   let result: SafeReadFailure | null = null;
@@ -132,8 +133,8 @@ export async function readRegularFile(filePath: string, options: SafeReadOptions
   let handle;
   try {
     handle = await open(filePath, OPEN_FLAGS);
-  } catch {
-    return failure("not_found");
+  } catch (error) {
+    return failure(isAccessDenied(error) ? "denied" : "not_found");
   }
   let info: Stats;
   const chunks: Buffer[] = [];

@@ -9,6 +9,7 @@
 
 import { ScanToolError } from "../errors.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
+import { isAccessDenied, permissionDeniedError } from "../utils/projectWalk.js";
 
 /** MCPのCallToolResultと互換の最小形 */
 export interface ToolResult {
@@ -41,6 +42,8 @@ export function errorResult(error: unknown): ToolResult {
       true,
     );
   }
+  // Nodeの権限モデルの拒否は、許可の付け方が分かるエラーにする(内部の例外の詳細は返さない)
+  if (isAccessDenied(error)) return errorResult(permissionDeniedError(error));
   // 想定外の例外はスタックトレース等の内部情報をクライアントへ返さない
   return jsonResult(
     { error: { kind: "internal_error", message: "予期しないエラーが発生しました" } },

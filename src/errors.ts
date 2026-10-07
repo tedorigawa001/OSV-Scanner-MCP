@@ -8,6 +8,8 @@ export type ScanToolErrorKind =
   | "binary_not_found"
   /** 指定パスが存在しない・ディレクトリ/pom.xmlでない */
   | "project_not_found"
+  /** Nodeの権限モデル(--permission)でファイルの読み書きが許可されていない */
+  | "permission_denied"
   /** プロジェクト内に対応マニフェスト(pom.xml / gradle.lockfile)が見つからない */
   | "no_manifest_found"
   /** マニフェスト探索が上限(エントリ数・マニフェスト数・深さ)に達した。結果を黙って欠落させない */

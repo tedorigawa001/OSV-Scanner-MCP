@@ -69,7 +69,7 @@ export function assetNameForPlatform(
   return `osv-scanner_${osName}_${cpuName}${osName === "windows" ? ".exe" : ""}`;
 }
 
-function defaultCacheDir(): string {
+export function defaultCacheDir(): string {
   const xdg = process.env.XDG_CACHE_HOME;
   const base = xdg !== undefined && xdg.trim() !== "" ? xdg : path.join(os.homedir(), ".cache");
   return path.join(base, "osv-scanner-mcp");

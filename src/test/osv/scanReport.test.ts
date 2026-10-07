@@ -465,3 +465,13 @@ describe("parseOsvScanOutput: Maven以外のfixed_versions", () => {
     ])).toEqual(["1.2"]);
   });
 });
+
+describe("parseOsvScanOutput: 応答の大きさ(B3の検証で判明)", () => {
+  it("回帰: 影響範囲の証拠(affected_versions)は内部で使えるが、応答のJSONには出さない", () => {
+    const report = parseOsvScanOutput(fixture);
+    const vuln = report.packages[0]!.vulnerabilities[0]!;
+    expect(vuln.affected_versions).toBeDefined();
+    expect(Object.keys(vuln)).not.toContain("affected_versions");
+    expect(JSON.stringify(report)).not.toContain("affected_versions");
+  });
+});
