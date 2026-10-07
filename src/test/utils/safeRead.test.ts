@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, open, readFile, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { copyRegularFile, readRegularFile, verifyOpenedFile } from "../../utils/safeRead.js";
 
 const tempDirs: string[] = [];
@@ -85,6 +85,30 @@ describe("copyRegularFile", () => {
     expect(result).toEqual({ ok: true, bytes: 9 });
     expect(await readFile(dest, "utf8")).toBe("jar-bytes");
     expect((await stat(dest)).mode & 0o777).toBe(0o600);
+  });
+
+  it("writeが要求より少ないバイト数で戻っても、全バイトを書き切る", async () => {
+    const base = await makeBase();
+    const content = Buffer.from(Array.from({ length: 3 * 1024 * 1024 + 7 }, (_, i) => i % 251));
+    await writeFile(path.join(base, "root/big.jar"), content);
+    // FileHandle.writeを1回あたり最大4096バイトしか書かない実装に差し替える(部分書き込みの再現)
+    const probe = await open(path.join(base, "root/big.jar"), "r");
+    const proto = Object.getPrototypeOf(probe) as { write: (...args: unknown[]) => Promise<unknown> };
+    await probe.close();
+    const original = proto.write;
+    const spy = vi.spyOn(proto, "write").mockImplementation(function (this: unknown, buffer: unknown, offset: unknown, length: unknown, ...rest: unknown[]) {
+      const capped = typeof length === "number" ? Math.min(length, 4096) : length;
+      return original.call(this, buffer, offset, capped, ...rest);
+    });
+    try {
+      const dest = path.join(base, "copy.jar");
+      const result = await copyRegularFile(path.join(base, "root/big.jar"), dest, { maxBytes: 16 * 1024 * 1024 });
+      expect(result).toEqual({ ok: true, bytes: content.length });
+      expect((await readFile(dest)).equals(content)).toBe(true);
+      expect(spy.mock.calls.length).toBeGreaterThan(4);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("FIFOで処理が止まらず、コピー先を残さない", async () => {

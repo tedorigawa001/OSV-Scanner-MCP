@@ -32,9 +32,18 @@ export interface SnapshotSkip {
   kind: "outside_allowed_root" | "unreadable";
 }
 
+/** スキャンはするが、親POMを再現できず親から継承する依存が欠ける可能性があるpom.xml */
+export interface SnapshotIncomplete {
+  /** 元のpom.xmlの絶対パス */
+  path: string;
+  reason: string;
+}
+
 export class ScanSnapshot {
   private readonly copied = new Map<string, string>();
   private readonly parentCache = new Map<string, string | null | undefined>();
+  /** 再現した配置のルートごとのディレクトリ → 元のルート("/"等) */
+  private readonly mirroredRoots = new Map<string, string>();
   private used = 0;
   private generated = 0;
 
@@ -56,7 +65,33 @@ export class ScanSnapshot {
   /** 元の絶対パスに対応する、スナップショット内のパス */
   mirror(absolute: string): string {
     const { root } = path.parse(absolute);
-    return path.join(this.treeRoot, root.replace(/[^A-Za-z0-9]/g, "_"), path.relative(root, absolute));
+    const mirroredRoot = path.join(this.treeRoot, root.replace(/[^A-Za-z0-9]/g, "_"));
+    this.mirroredRoots.set(mirroredRoot, root);
+    return path.join(mirroredRoot, path.relative(root, absolute));
+  }
+
+  /**
+   * スキャナーのメッセージ(stderr等)に含まれるコピーのパスを元のパスに戻す。
+   * 生成したコピー(requirements.txt)など元のファイルが無いものは一時ディレクトリと分かる表記にする
+   */
+  restorePaths(text: string): string {
+    let restored = text;
+    for (const [mirroredRoot, root] of this.mirroredRoots) restored = restored.split(mirroredRoot + path.sep).join(root);
+    return restored.split(this.dir).join("<一時コピー>");
+  }
+
+  /** スキャナーのエラーに一時ディレクトリのパスを出さない(応答のパスは常に元のファイルを指す) */
+  async guard<T>(scan: () => Promise<T>): Promise<T> {
+    try {
+      return await scan();
+    } catch (error) {
+      if (!(error instanceof ScanToolError)) throw error;
+      throw new ScanToolError(
+        error.kind,
+        this.restorePaths(error.message),
+        error.detail === undefined ? undefined : this.restorePaths(error.detail),
+      );
+    }
   }
 
   /** 元のファイルを安全にコピーする。同じファイルは1回だけコピーする */
@@ -116,14 +151,18 @@ interface PomContext {
 /**
  * pom.xmlと親POMの連鎖をスナップショットへコピーする。
  * 許可ルート設定時、連鎖が許可ルートの外・スナップショットの外を参照するか、解釈できない場合は除外理由を返す。
+ * 存在する親POMを再現できなかった場合(サイズ超過・通常のファイルでない等)はスキャンを続けるが、
+ * 親から継承する依存が欠ける可能性があるためincompleteに理由を返す(黙って成功扱いにしない)。
  */
 async function snapshotPom(
   snapshot: ScanSnapshot,
   pomPath: string,
   context: PomContext,
-): Promise<{ ok: true; path: string } | { ok: false; reason: string; kind: SnapshotSkip["kind"] }> {
-  const first = await snapshot.copy(pomPath, context.projectDir, MAX_POM_BYTES);
-  if (!first.ok) return { ok: false, reason: first.message, kind: "unreadable" };
+): Promise<{ ok: true; path: string; incomplete?: string } | { ok: false; reason: string; kind: SnapshotSkip["kind"] }> {
+  const copied = await snapshot.copy(pomPath, context.projectDir, MAX_POM_BYTES);
+  if (!copied.ok) return { ok: false, reason: copied.message, kind: "unreadable" };
+  const first = { ok: true as const, path: copied.path };
+  const partial = (reason: string) => ({ ...first, incomplete: reason });
   const restricted = context.allowedRootReal !== undefined;
   let current = pomPath;
   let currentCopy = first.path;
@@ -131,7 +170,11 @@ async function snapshotPom(
   for (let depth = 0; depth < MAX_PARENT_DEPTH; depth++) {
     const relativePath = await snapshot.parentOf(currentCopy);
     if (relativePath === null || relativePath === "") return first;
-    if (relativePath === undefined) return restricted ? { ok: false, reason: UNPARSEABLE, kind: "unreadable" } : first;
+    if (relativePath === undefined) {
+      return restricted
+        ? { ok: false, reason: UNPARSEABLE, kind: "unreadable" }
+        : partial("親POMの指定を確実に解釈できないため、親POMを含めずにスキャンしました。親から継承する依存が結果に含まれない可能性があります");
+    }
 
     // Goのfilepath.Joinと同じ規則で結合する(絶対パスも連結し、..はルートで止まる)
     const inCopy = path.join(path.dirname(currentCopy), relativePath);
@@ -144,8 +187,11 @@ async function snapshotPom(
     let candidate = path.join(path.dirname(current), relativePath);
     try {
       if ((await stat(candidate)).isDirectory()) candidate = path.join(candidate, "pom.xml");
-    } catch {
-      return first; // 参照先が無い: スナップショット内にも無いため、osv-scannerは親を読まない
+    } catch (error) {
+      // 参照先が無い: 元の配置でもosv-scannerは親を読まないため、欠落ではない
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT" || code === "ENOTDIR") return first;
+      return partial(`親POM(relativePath: ${relativePath})を確認できないため、親POMを含めずにスキャンしました。親から継承する依存が結果に含まれない可能性があります`);
     }
     const parent = await snapshot.copy(candidate, context.allowedRootReal, MAX_POM_BYTES);
     if (!parent.ok) {
@@ -159,35 +205,46 @@ async function snapshotPom(
         };
       }
       if (parent.failure === "changed") return { ok: false, reason: `親POMの${parent.message}`, kind: "unreadable" };
-      return first; // 読めない・通常のファイルでない等: コピーしないため、osv-scannerも読まない
+      // 読めない・通常のファイルでない・サイズ超過等: コピーしないため、osv-scannerも読まない
+      return partial(
+        `親POM(relativePath: ${relativePath})を読めないため(${parent.message})、親POMを含めずにスキャンしました。` +
+          "親から継承する依存が結果に含まれない可能性があります(親のGAVが一致しない場合はもともと読まれません)",
+      );
     }
     current = candidate;
     currentCopy = parent.path;
   }
-  return restricted ? { ok: false, reason: `親POMの連鎖が上限(${MAX_PARENT_DEPTH}段)を超えています`, kind: "unreadable" } : first;
+  return restricted
+    ? { ok: false, reason: `親POMの連鎖が上限(${MAX_PARENT_DEPTH}段)を超えています`, kind: "unreadable" }
+    : partial(`親POMの連鎖が上限(${MAX_PARENT_DEPTH}段)を超えるため、それより上の親POMを含めずにスキャンしました`);
 }
 
 /**
  * 検出済みのマニフェストをスナップショットへコピーし、osv-scannerに渡す対象(コピー)を返す。
- * コピーできない・除外すべきものはskippedに理由付きで返す。
+ * コピーできない・除外すべきものはskippedに、親POMを再現できずスキャンしたものはincompleteに理由付きで返す。
  */
 export async function snapshotManifests(
   snapshot: ScanSnapshot,
   targets: readonly ManifestTarget[],
   context: PomContext,
-): Promise<{ targets: ManifestTarget[]; skipped: SnapshotSkip[] }> {
+): Promise<{ targets: ManifestTarget[]; skipped: SnapshotSkip[]; incomplete: SnapshotIncomplete[] }> {
   const copies: ManifestTarget[] = [];
   const skipped: SnapshotSkip[] = [];
+  const incomplete: SnapshotIncomplete[] = [];
   for (const target of targets) {
     if (target.format === "pom.xml") {
       const result = await snapshotPom(snapshot, target.path, context);
-      if (result.ok) copies.push({ path: result.path, format: target.format });
-      else skipped.push({ path: target.path, reason: result.reason, kind: result.kind });
+      if (result.ok) {
+        copies.push({ path: result.path, format: target.format });
+        if (result.incomplete !== undefined) incomplete.push({ path: target.path, reason: result.incomplete });
+      } else {
+        skipped.push({ path: target.path, reason: result.reason, kind: result.kind });
+      }
       continue;
     }
     const result = await snapshot.copy(target.path, context.projectDir);
     if (result.ok) copies.push({ path: result.path, format: target.format });
     else skipped.push({ path: target.path, reason: result.message, kind: "unreadable" });
   }
-  return { targets: copies, skipped };
+  return { targets: copies, skipped, incomplete };
 }

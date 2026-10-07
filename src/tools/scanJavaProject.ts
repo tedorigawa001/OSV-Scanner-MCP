@@ -28,19 +28,42 @@ export function dependencyResolution(noRemoteResolution: boolean, warning = TRAN
 }
 
 const SKIPPED_MANIFESTS_WARNING =
-  "一部のマニフェストをスキャン対象から外しました(skipped_manifestsを参照)。" +
+  "一部のマニフェストをスキャン対象から外したか、親POMを含めずにスキャンしました(skipped_manifests / incomplete_manifestsを参照)。" +
   "それらの依存の脆弱性は結果に含まれないため、検出0件でも安全とは判断しないでください";
 
+type ManifestNote = { path: string; reason: string };
+
 /**
- * 親POMが許可ルートの外を参照するため外したマニフェスト。外したものが無ければ何も出力しない
- * (既存の出力を変えない)。件数より前に置き、検出0件を安全と誤読させない
+ * 外したマニフェスト(skipped)と、親POMを再現できずにスキャンしたマニフェスト(incomplete)。
+ * どちらも無ければ何も出力しない(既存の出力を変えない)。件数より前に置き、検出0件を安全と誤読させない
  */
-export function skippedManifestsFields(skipped: readonly { path: string; reason: string }[]) {
-  if (skipped.length === 0) return {};
+export function skippedManifestsFields(skipped: readonly ManifestNote[], incomplete: readonly ManifestNote[] = []) {
+  if (skipped.length === 0 && incomplete.length === 0) return {};
+  const list = (items: readonly ManifestNote[]) =>
+    items.map((s) => ({ path: sanitizeExternalText(s.path), reason: sanitizeExternalText(s.reason) }));
   return {
-    skipped_manifests: skipped.map((s) => ({ path: sanitizeExternalText(s.path), reason: sanitizeExternalText(s.reason) })),
+    ...(skipped.length > 0 ? { skipped_manifests: list(skipped) } : {}),
+    ...(incomplete.length > 0 ? { incomplete_manifests: list(incomplete) } : {}),
     scope_warning: SKIPPED_MANIFESTS_WARNING,
   };
+}
+
+/**
+ * スキャン対象を外した・親POMを含めずにスキャンしたマニフェストがある状態で「パッケージなし」になった場合、
+ * エラーにもその旨を含める(応答の一覧が出ないため、欠落を黙って「依存なし」と読ませない)。
+ */
+export async function withScopeNotes<T>(notes: readonly ManifestNote[], scan: () => Promise<T>): Promise<T> {
+  try {
+    return await scan();
+  } catch (error) {
+    if (!(error instanceof ScanToolError) || error.kind !== "no_packages_found" || notes.length === 0) throw error;
+    throw new ScanToolError(
+      error.kind,
+      `${error.message}。ただし次のマニフェストはスキャン対象から外したか、親POMを含めずにスキャンしたため、` +
+        `検出0件でも安全とは判断しないでください: ${notes.map((n) => `${n.path}: ${n.reason}`).join(" / ")}`,
+      error.detail,
+    );
+  }
 }
 
 /**
@@ -51,10 +74,10 @@ export function skippedManifestsFields(skipped: readonly { path: string; reason:
 export async function scanJavaManifests(
   project: DetectedJavaProject,
   options: RunOsvScanOptions,
-): Promise<{ manifests: string[]; skipped: { path: string; reason: string }[]; report: ScanReport }> {
+): Promise<{ manifests: string[]; skipped: ManifestNote[]; incomplete: ManifestNote[]; report: ScanReport }> {
   const snapshot = await ScanSnapshot.create();
   try {
-    const { targets, skipped } = await snapshotManifests(snapshot, project.targets, {
+    const { targets, skipped, incomplete } = await snapshotManifests(snapshot, project.targets, {
       projectDir: project.projectDir,
       allowedRootReal: project.allowedRootReal,
     });
@@ -70,10 +93,12 @@ export async function scanJavaManifests(
       );
     }
     const originals = new Map(targets.map((copy, i) => [copy.path, scanned[i]!.path]));
-    const report = await runOsvScan(targets, options);
+    const incompleteRelative = incomplete.map((s) => ({ path: relative(s.path), reason: s.reason }));
+    const report = await withScopeNotes([...skippedRelative, ...incompleteRelative], () => snapshot.guard(() => runOsvScan(targets, options)));
     return {
       manifests: scanned.map((t) => relative(t.path)),
       skipped: skippedRelative,
+      incomplete: incompleteRelative,
       report: { ...report, source_files: report.source_files.map((file) => originals.get(file) ?? file) },
     };
   } finally {
@@ -102,11 +127,11 @@ export async function handleScanJavaProject(
       allowedRoot: options.allowedRoot,
     });
     const noRemoteResolution = isRemoteResolutionDisabled(options);
-    const { manifests, skipped, report } = await scanJavaManifests(project, { ...options, noRemoteResolution });
+    const { manifests, skipped, incomplete, report } = await scanJavaManifests(project, { ...options, noRemoteResolution });
     return jsonResult({
       project_dir: project.projectDir,
       manifests,
-      ...skippedManifestsFields(skipped),
+      ...skippedManifestsFields(skipped, incomplete),
       dependency_resolution: dependencyResolution(noRemoteResolution),
       ...report,
     });

@@ -103,7 +103,12 @@ export async function copyRegularFile(
             result = "too_large";
             break;
           }
-          await target.write(chunk, 0, bytesRead);
+          // writeは要求より少ないバイト数で戻りうるため、チャンクを書き切るまで繰り返す
+          for (let written = 0; written < bytesRead; ) {
+            const { bytesWritten } = await target.write(chunk, written, bytesRead - written);
+            if (bytesWritten <= 0) throw new Error("short write");
+            written += bytesWritten;
+          }
         }
       } finally {
         await target.close();

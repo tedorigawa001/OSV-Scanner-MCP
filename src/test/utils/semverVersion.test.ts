@@ -57,6 +57,11 @@ describe("compareSemver", () => {
   });
 
   it("プレリリース識別子を数値と文字列に分けて保持する", () => {
-    expect(parseSemver("1.2.3-beta.11.x-y")).toEqual({ major: 1, minor: 2, patch: 3, prerelease: ["beta", 11, "x-y"] });
+    expect(parseSemver("1.2.3-beta.11.x-y")).toEqual({ major: 1, minor: 2, patch: 3, prerelease: ["beta", 11n, "x-y"] });
+  });
+
+  it("2^53を超えるプレリリースの数値識別子も丸めずに比較する", () => {
+    expectStrictOrder(["1.0.0-9007199254740992", "1.0.0-9007199254740993", "1.0.0-99999999999999999999", "1.0.0-a"]);
+    expect(compareSemver("1.0.0-9007199254740993", "1.0.0-9007199254740993")).toBe(0);
   });
 });

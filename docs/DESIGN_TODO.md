@@ -479,6 +479,9 @@ Node側で各行を分類してから渡す(pipは使わない。サイズ上限
   - (レビュー指摘P2)osv-scanner 2.4.0は`--requirement`と`-c`をたどらない(実機確認。たどるのは`-r`系のみ)。取り込みは本サーバーがプロジェクト内のものだけ展開してコピーに含める(`--requirement`も確実にスキャンされる)。外・存在しない・URL・深さ5超・50ファイル超の取り込みと制約ファイル(`-c`、適用しない)は、ファイルごと外さず該当行を`unscannable_requirements`に記録し、残りはスキャンする(コピーに取り込み指定が無いため安全)。`skipped_files`は元ファイル自体が読めない・1MiB超の場合のみ
   - (レビュー指摘P3)当初は上位に同じエコシステムのlockfileがあれば充足扱いにしていたが、workspace設定の無いルートのlockfileで独立した子の欠落を隠していた。上位のlockfileだけの場合は、package-lock.json(v2以降)の`packages`に子のディレクトリが収録されていることを確認できたときだけ充足とし、未収録なら`status: "missing"`、確認できない形式(yarn.lock、Python系、gradle等)なら`status: "unconfirmed"`で報告
 - [x] v0.4.2: `scan_project`の`fixed_versions`がnpm・Go・PyPIで常に空になる不具合の修正(上記「suggest_fix npm/Go対応(v0.5.0)詳細設計メモ」参照) → 実装済み(2026-10-07)。`semverVersion.ts`(SemVer 2.0.0の厳密な解釈と優先順位)と`versionScheme.ts`(エコシステム別の範囲の型と並べ替え)を追加し、`extractFixedVersions`を一般化。同じ`parseOsvScanOutput`を使う`scan_sbom`(npm・PyPI等のSBOM)も同じく直る。実バイナリでMCP経由の確認: lodash `[4.17.21, 4.18.0]`、golang.org/x/text `[0.39.0]`等が入り、Mavenの`fixed_versions`とsuggest_fixの出力はv0.4.1と同一
+  - (レビュー指摘、v0.4.2に同梱)存在する親POMをスナップショットへコピーできない場合(10MiB超・FIFO・末尾のシンボリックリンク等)に、子のpom.xmlを黙って完全扱いにしていた(v0.4.1で混入)。子はスキャンし、`incomplete_manifests`(scan_projectは`coverage.skipped_files`、complete=false)で欠落の可能性を示す。子に依存が無く`no_packages_found`になる場合もエラーに理由を含める(実バイナリで確認)。親POMが存在しない(ENOENT)場合は元の配置でも読まれないため報告しない
+  - (レビュー指摘)コピーの書き込みで`bytesWritten`を確認せず、部分書き込みで欠損しうる → 書き切るまで繰り返す。SemVerの数値のプレリリース識別子を`Number`にしていたため2^53超で同値になる → `BigInt`で比較
+  - (検証中に発見)スキャナーのエラーの`detail`(stderr)に一時ディレクトリのパスが出ていた → 元のパスに戻す
 - [ ] v0.5.0: suggest_fixのnpm/Go対応(semver比較、`SEMVER`範囲の検証、0.x系のマイナー更新を破壊的変更として扱う、Goのv2以上はモジュールパス変更を注記) → 詳細設計メモ作成済み(2026-10-07)
 - [ ] v0.6.0: suggest_fixのPython対応(PEP 440比較、`ECOSYSTEM`範囲がある場合の`GIT`範囲の無視)、直接/推移的依存の区別(npmの`overrides`はルートプロジェクトでのみ有効な点を推奨文に反映)
 - [ ] 以降: Goバイナリスキャン(ビルド情報からstdlibの版も取得でき、go.modで拾えないstdlibの脆弱性を補える)

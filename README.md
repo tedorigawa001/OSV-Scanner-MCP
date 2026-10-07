@@ -208,7 +208,7 @@ api.osv.dev と deps.dev はどちらも Google が運営するサービスで�
   - `lockfile_missing`: lockfileの無いマニフェスト(`package.json`、`pyproject.toml`、`Pipfile`、`setup.py`、`build.gradle` 等)。同じディレクトリに同じエコシステムのlockfileがあれば記録しません。上位のディレクトリのlockfileだけがある場合は、`package-lock.json`(v2以降)にそのディレクトリが収録されていることを確認できたときだけ記録しません(npm workspaces)。収録されていなければ `status: "missing"`、確認できない形式(yarn.lock、Python系等)なら `status: "unconfirmed"` として記録します。`hint` の手順でlockfileを生成してから再スキャンしてください(生成は信頼できる環境で)
   - `unpinned_requirements`: requirements.txtのうち、版を固定していない行。`kind` は `unpinned`(版の指定なし)・`range`(`>`、`<`、`!=`、`==1.*`、範囲の組み合わせ等)・`lower_bound`(`>=`、`~=`)。`unpinned` と `range` の行はOSV-Scannerがスキャンせず、`lower_bound` の行は下限の版を使用中の版とみなしてスキャンします(該当パッケージには `version_is_lower_bound: true` が付き、実際の版とは異なる可能性があります)
   - `unscannable_requirements`: スキャンされない行と理由。`-e`、`name @ URL`、パス指定、展開しなかった取り込み(プロジェクトディレクトリの外・存在しない・URL・上限超過)、制約ファイル(`-c`、適用しません)、解釈できないオプションや版の指定。解釈できない行は無視せず、ここに記録します
-  - `skipped_files`: スキャン対象から外したファイルと理由(requirements.txt自体が読めない・1MiBを超える場合、`pom.xml` の親POMが許可ルートの外を参照する場合。後者は[親POMの扱い](#親pomの扱い)を参照)
+  - `skipped_files`: スキャン対象から外したファイルと理由(requirements.txt自体が読めない・1MiBを超える場合、`pom.xml` の親POMが許可ルートの外を参照する場合)。親POMを読めず、親POMを含めずにスキャンした `pom.xml` もここに理由付きで示します([親POMの扱い](#親pomの扱い)を参照)
   - 各一覧は200件までで、超えた分の件数を `omitted_items` に返します
 - `ecosystem_breakdown` は、脆弱性0件のエコシステムも含めて「スキャンした」ことを示します
 - `dependency_groups` はOSV-Scannerが付けた依存グループ(例: `dev`)の生の値です。lockfileの形式によって欠落・不正確なため(pnpmでは付かず、pdmでは `optional` になる等)、参考情報として扱ってください
@@ -233,6 +233,8 @@ Java(Maven)プロジェクトをスキャンし、既知の脆弱性レポート
 OSV-Scannerは `pom.xml` の `<parent>` が参照する親POM(`<relativePath>` の指すファイル。省略時はMavenの既定どおり `../pom.xml`)を読み、親の親もたどって、そこに書かれた依存を結果に含めます。サブモジュールだけをスキャンしても親から引き継いだ依存を検出できるのはこのためです。
 
 `OSV_MCP_ALLOWED_ROOT` を設定している場合、親POMの連鎖のどこかが**許可ルートの外**のファイルを参照する `pom.xml` は、スキャン対象から外します(許可ルート外のファイルの内容を結果や照会先に出さないため)。外したファイルは応答の `skipped_manifests`(`scan_project` では `coverage.skipped_files`)に理由付きで示し、`scope_warning` で「検出0件でも安全とは判断しない」旨を伝えます。全件が外れた場合や、該当する `pom.xml` を直接指定した場合は `path_outside_allowed_root` を返します。
+
+存在する親POMを読めない場合(10MiBを超える、名前付きパイプ等の通常のファイルでない、末尾がシンボリックリンク等)は、その `pom.xml` を親POMを含めずにスキャンし、親から継承する依存が欠ける可能性を応答の `incomplete_manifests`(`scan_project` では `coverage.skipped_files`、`coverage.complete` は `false`)に理由付きで示します。子の `pom.xml` に依存が無く `no_packages_found` になる場合も、エラーのメッセージに同じ理由を含めます。親POMが存在しない場合(ルートの `pom.xml` で既定の `../pom.xml` が無い等)は、元の配置でもOSV-Scannerは親を読まないため欠落として扱いません。
 
 - 許可ルート内の親POMは従来どおり読みます(サブモジュールのスキャンは許可ルート内なら引き続き使えます)
 - `<relativePath/>`(空)はローカルの親POMを参照しないため対象外です

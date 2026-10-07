@@ -12,8 +12,11 @@ export interface SemverVersion {
   major: number;
   minor: number;
   patch: number;
-  /** プレリリース識別子。数値の識別子はnumber */
-  prerelease: (string | number)[];
+  /**
+   * プレリリース識別子。数値の識別子はbigint(Numberでは2^53を超える値が丸められ、
+   * 9007199254740992と9007199254740993が等しくなるため)
+   */
+  prerelease: (string | bigint)[];
 }
 
 const NUMERIC = "0|[1-9]\\d*";
@@ -38,11 +41,11 @@ export function parseSemver(version: string): SemverVersion | null {
     major: numbers[0]!,
     minor: numbers[1]!,
     patch: numbers[2]!,
-    prerelease: m[4] === undefined ? [] : m[4].split(".").map((id) => (/^\d+$/.test(id) ? Number(id) : id)),
+    prerelease: m[4] === undefined ? [] : m[4].split(".").map((id) => (/^\d+$/.test(id) ? BigInt(id) : id)),
   };
 }
 
-function cmp(a: number | string, b: number | string): number {
+function cmp<T extends number | bigint | string>(a: T, b: T): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
@@ -63,7 +66,7 @@ export function compareParsedSemver(a: SemverVersion, b: SemverVersion): number 
       if (result !== 0) return result;
     } else {
       // 数値の識別子は英数字の識別子より小さい
-      return typeof x === "number" ? -1 : 1;
+      return typeof x === "bigint" ? -1 : 1;
     }
   }
   return cmp(a.prerelease.length, b.prerelease.length);

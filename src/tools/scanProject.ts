@@ -13,7 +13,7 @@ import { sanitizeExternalText } from "../utils/externalText.js";
 import { detectProject, type DetectedProject } from "../utils/manifestDetector.js";
 import { normalizePypiName } from "../utils/requirementsFile.js";
 import { ScanSnapshot, snapshotManifests } from "../utils/scanSnapshot.js";
-import { dependencyResolution, type ScanJavaProjectArgs, type ScanJavaProjectOptions } from "./scanJavaProject.js";
+import { dependencyResolution, withScopeNotes, type ScanJavaProjectArgs, type ScanJavaProjectOptions } from "./scanJavaProject.js";
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
 const TRANSITIVE_OMITTED_WARNING =
@@ -110,10 +110,12 @@ function markLowerBounds(project: DetectedProject, packages: readonly ScanReport
 async function scanFromSnapshot(project: DetectedProject, options: RunOsvScanOptions): Promise<ScanReport> {
   const snapshot = await ScanSnapshot.create();
   try {
-    const { targets, skipped } = await snapshotManifests(snapshot, project.targets, {
+    const { targets, skipped, incomplete } = await snapshotManifests(snapshot, project.targets, {
       projectDir: project.projectDir,
       allowedRootReal: project.allowedRootReal,
     });
+    // 親POMを再現できずにスキャンしたpom.xmlも、欠落の可能性としてcoverageに出す(complete=falseになる)
+    project.skippedFiles.push(...incomplete.map((s) => ({ path: path.relative(project.projectDir, s.path), reason: s.reason })));
     if (skipped.length > 0) {
       const skippedPaths = new Set(skipped.map((s) => s.path));
       project.manifests = project.manifests.filter((m) => !skippedPaths.has(path.join(project.projectDir, m.path)));
@@ -130,7 +132,7 @@ async function scanFromSnapshot(project: DetectedProject, options: RunOsvScanOpt
       targets.push({ path: await snapshot.writeGenerated(`${copy.entries.join("\n")}\n`), format: "requirements.txt" });
     }
     if (targets.length === 0) return parseOsvScanOutput({ results: [] });
-    return await runOsvScan(targets, options);
+    return await withScopeNotes(project.skippedFiles, () => snapshot.guard(() => runOsvScan(targets, options)));
   } finally {
     await snapshot.cleanup();
   }

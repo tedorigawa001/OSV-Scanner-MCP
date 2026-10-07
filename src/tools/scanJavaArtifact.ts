@@ -38,7 +38,7 @@ export async function handleScanJavaArtifact(
         const copy = await snapshot.copy(artifact, boundary);
         if (copy.ok) originals.set(copy.path, artifact);
       }
-      const raw = originals.size > 0 ? await runOsvArtifactScan([...originals.keys()], options) : { results: [] };
+      const raw = originals.size > 0 ? await snapshot.guard(() => runOsvArtifactScan([...originals.keys()], options)) : { results: [] };
       return jsonResult(buildArtifactReport(restoreSourcePaths(raw, originals), artifactPaths));
     } finally {
       await snapshot.cleanup();

@@ -25,7 +25,7 @@ export async function handleSuggestFix(
       allowedRoot: options.allowedRoot,
     });
     const noRemoteResolution = isRemoteResolutionDisabled(options);
-    const { manifests, skipped, report } = await scanJavaManifests(project, { ...options, noRemoteResolution });
+    const { manifests, skipped, incomplete, report } = await scanJavaManifests(project, { ...options, noRemoteResolution });
     const suggestions = suggestUpgrades(report.packages);
     const unfixedVulnerabilities = suggestions.reduce(
       (sum, s) => sum + s.per_cve_detail.filter((d) => d.tier === "unfixed").length,
@@ -34,7 +34,7 @@ export async function handleSuggestFix(
     return jsonResult({
       project_dir: project.projectDir,
       manifests,
-      ...skippedManifestsFields(skipped),
+      ...skippedManifestsFields(skipped, incomplete),
       dependency_resolution: dependencyResolution(noRemoteResolution),
       vulnerable_package_count: suggestions.length,
       unfixed_vulnerability_count: unfixedVulnerabilities,
