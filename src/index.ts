@@ -10,6 +10,7 @@
  * - OSV_MCP_AUTO_DOWNLOAD: 0/false指定時、バイナリの自動ダウンロードを無効化
  * - OSV_MCP_PREFER_DOWNLOAD: 1/true指定時、PATH上のバイナリを使わず検証済み自動ダウンロードを優先
  * - OSV_MCP_NO_REMOTE_RESOLUTION: 1/true指定時、pom.xmlの推移的依存をdeps.devで解決しない
+ * - OSV_MCP_NO_CANDIDATE_CHECK: 1/true指定時、suggest_fixの推奨先のOSV照会を行わない
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -104,7 +105,7 @@ server.registerTool(
       "推奨はJava(Maven / Gradle)・JavaScript(npm)・Python(PyPI)・Goに対応。" +
       "現在のバージョンに最も近いリリース系統の修正版を優先する3段階フォールバック" +
       "(same_minor: 同一系統内 → major_internal: 同一メジャー内 → cross_major: メジャーアップグレード)で選定し、" +
-      "推奨バージョン・アップグレード距離(upgrade_tier)・CVEごとの修正版を返す。npm・Go・PyPIでは0.x系のマイナー更新もcross_major(破壊的変更の可能性)。requirements.txtの下限(>=)でスキャンした依存はversion_is_lower_boundを付け、推奨は下限の引き上げを意味する。直接/推移的依存の別(dependency_relation、npmはintroduced_by・declared_in)に応じて更新方法(update_hint)を示す。" +
+      "推奨バージョン・アップグレード距離(upgrade_tier)・CVEごとの修正版を返す。npm・Go・PyPIでは0.x系のマイナー更新もcross_major(破壊的変更の可能性)。requirements.txtの下限(>=)でスキャンした依存はversion_is_lower_boundを付け、推奨は下限の引き上げを意味する。直接/推移的依存の別(dependency_relation、npmはintroduced_by・declared_in)に応じて更新方法(update_hint)を示す。推奨先はapi.osv.devに照会し、現在の版には該当しない既知の脆弱性があれば避けて選び直す(結果はcandidate_check。has_known_vulnerabilities・failed・skippedの場合は推奨先の安全性が確認できていない。conflictは判定の食い違いで推奨を保留)。" +
       "候補を全修正対象CVEの影響範囲と照合し、情報不足の場合は推奨を保留する。プレリリース版は正式版で解消できない場合だけ推奨し、recommended_is_prereleaseを付ける。" +
       "現在より新しい修正版候補のないCVEはunfixedとして別表示し、推奨先での判定も返す。" +
       "応答のcoverageを必ず確認すること(complete=falseなら提案に含まれない依存がある)。" +

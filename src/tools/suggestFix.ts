@@ -6,6 +6,7 @@
  */
 
 import { isRemoteResolutionDisabled } from "../osv/runner.js";
+import { candidateCheckDisabledFromEnv, checkRecommendedCandidates, type CandidateCheckOptions } from "../osv/candidateCheck.js";
 import { suggestUpgrades } from "../osv/suggestFix.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
 import { detectProject } from "../utils/manifestDetector.js";
@@ -17,15 +18,22 @@ import {
 import { buildCoverage, markLowerBounds, scanFromSnapshot, TRANSITIVE_OMITTED_WARNING } from "./scanProject.js";
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
+export interface SuggestFixOptions extends ScanJavaProjectOptions {
+  /** 推奨先のOSV照会。"disabled"で無効。省略時は環境変数OSV_MCP_NO_CANDIDATE_CHECKに従う */
+  candidateCheck?: CandidateCheckOptions | "disabled";
+}
+
 export async function handleSuggestFix(
   args: ScanJavaProjectArgs,
-  options: ScanJavaProjectOptions = {},
+  options: SuggestFixOptions = {},
 ): Promise<ToolResult> {
   try {
     const project = await detectProject(args.project_path, { allowedRoot: options.allowedRoot });
     const noRemoteResolution = isRemoteResolutionDisabled(options);
     const report = await scanFromSnapshot(project, { ...options, noRemoteResolution });
-    const suggestions = suggestUpgrades(markLowerBounds(project, report.packages));
+    const packages = markLowerBounds(project, report.packages);
+    const candidateCheck = options.candidateCheck ?? (candidateCheckDisabledFromEnv() ? "disabled" : {});
+    const suggestions = await checkRecommendedCandidates(packages, suggestUpgrades(packages), candidateCheck);
     const unfixedVulnerabilities = suggestions.reduce(
       (sum, s) => sum + s.per_cve_detail.filter((d) => d.tier === "unfixed").length,
       0,

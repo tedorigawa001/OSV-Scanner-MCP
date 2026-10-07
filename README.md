@@ -124,6 +124,7 @@ npm run build
 | `OSV_MCP_MAX_CONCURRENT_SCANS` | 同時実行できるスキャン数の上限(デフォルト `2`、最大 `16`)。超過したリクエストは待たずに即時エラーになります |
 | `OSV_MCP_AUTO_DOWNLOAD` | `0` または `false` でバイナリの自動ダウンロードを無効化(デフォルト有効) |
 | `OSV_MCP_PREFER_DOWNLOAD` | `1` または `true` 指定時、PATH上のosv-scannerを使わず、チェックサム検証済みの自動ダウンロードバイナリを常に使用します(PATH汚染による偽バイナリ実行の防止。`OSV_SCANNER_PATH` の明示指定は引き続き最優先) |
+| `OSV_MCP_NO_CANDIDATE_CHECK` | `1` または `true` 指定時、`suggest_fix` の推奨先のOSV照会を行いません(応答の `candidate_check` は `disabled`。推奨先に、現在の版には該当しない既知の脆弱性がないことは確認されません) |
 | `OSV_MCP_NO_REMOTE_RESOLUTION` | `1` または `true` 指定時、`pom.xml` と `requirements.txt` の推移的依存を deps.dev で解決しません。**止まるのは deps.dev への送信だけで、脆弱性照会のためパッケージの名前とバージョンは引き続き `api.osv.dev` に送られます**。推移的依存の脆弱性は検出できなくなり、その旨が応答の `dependency_resolution.warning` に示されます。詳細は[通信先とプライバシー](#通信先とプライバシー) |
 
 > **推奨**: `OSV_MCP_ALLOWED_ROOT` は未設定でも動作しますが、その場合は任意の絶対パスをスキャンできてしまいます。悪意ある指示(プロンプトインジェクション)経由で意図しないディレクトリをスキャンさせられる経路を塞ぐため、プロジェクト置き場のルート(例: `~/projects`)を設定しておくことを推奨します。各クライアントの設定で `"env": {"OSV_MCP_ALLOWED_ROOT": "/Users/you/projects"}` のように渡せます(Codex CLIのTOMLでは `[mcp_servers.osv-scanner.env]` セクション)。
@@ -145,6 +146,7 @@ osv-scanner v2.4.0 で接続先を実機確認した結果です(2026-10-07)。
 | `requirements.txt` のスキャン(`scan_project` / `suggest_fix`) | `api.osv.dev`、**`api.deps.dev`** | `pom.xml` と同じく、推移的依存の解決のため記載された依存の名前とバージョンが deps.dev に送られます。`--index-url` 等に書かれた取得先へは接続しません |
 | lockfileのスキャン(`gradle.lockfile`、`package-lock.json` 等のnpm系、`poetry.lock` 等のPython系、`go.mod`) | `api.osv.dev` | パッケージの名前とバージョン(lockfileに全依存が記載済みのため、解決のための外部接続はしません) |
 | `scan_java_artifact` / `scan_sbom` | `api.osv.dev` | 同定できたパッケージの名前とバージョン |
+| `suggest_fix` の推奨先の照会 | `api.osv.dev` | 推奨を出したパッケージの名前(スキャンで照会済みのもの)と、推奨候補の版(公開されている修正版)。`OSV_MCP_NO_CANDIDATE_CHECK=1` で無効化できます |
 | `explain_vulnerability` | `api.osv.dev` | 指定した脆弱性ID |
 | バイナリの自動ダウンロード(初回のみ) | GitHub(公式Releases) | なし(ピン留めしたバージョンのバイナリを取得) |
 
@@ -386,6 +388,15 @@ npm・Go・PyPIの「同じ系統」は、npmの `^`(キャレット)が互換�
 - 推奨時は `verification: "verified"`、CVEごとの `recommended_status` は `affected` / `not_affected` / `unknown` です。推奨保留時は `not_evaluated` になります。`per_cve_detail.fixed_in` は各CVE単独の候補であり、最終推奨先の判定は `recommended_status` を参照してください。
 - 現在より新しい修正版候補がないCVEは `tier: "unfixed"` として推奨の修正対象から除外します(情報欠落を含む場合があります)。除外したCVEも推奨先で判定し、その状態を表示します。全CVEがunfixedの場合も `recommended_upgrade` は `null` です。修正版の記載はあるがバージョンとして解釈できないCVE(SemVerでない `13.0` 等)は `tier: "unparseable_fix"` とし、修正版が無いとは扱わず修正対象に残すため、推奨は保留(`no_verified_candidate`)になります。
 - npm・Go・PyPIの提案には更新方法の `update_hint` を付けます。PyPIでは、requirements.txtやpyproject.toml・Pipfileの指定を更新してlockfileを再生成し、推移的依存はpipの制約ファイル(`-c`)やuv・Poetryの上書き設定で版を指定します。推移的依存の場合、npmでは要求している直接依存の更新か、ルートの `package.json` の `overrides`(ルートのプロジェクトでのみ有効)で版を指定します。Goでは `go get <module>@<version>` で更新できます。Goのv2以上のメジャーは別のモジュールパス(`/v2` 等)としてOSV上も別パッケージになるため、新しいメジャー系列の修正版は候補に含まれません。現在の版が疑似バージョン(タグのないコミット)の場合は `upgrade_note` に示します。
+- **推奨先のOSV照会**: 推奨はスキャンで分かった脆弱性(現在の版に該当するもの)の範囲だけで検証しているため、推奨先に現在の版には該当しない新しい脆弱性がありえます(例: cryptography 3.2 の推奨候補 49.0.0 は、44.0.0 で混入し 50.0.0 で修正された2件に該当)。そこで推奨先を `api.osv.dev` に照会し、該当する脆弱性があれば、それも避けるよう修正版を候補に加えて選び直します(この例では 50.0.0 を推奨し、`upgrade_note` に理由を示します)。結果は `candidate_check` に示します:
+  - `clean`: 推奨先に該当する既知の脆弱性はありません
+  - `has_known_vulnerabilities`: 避けられる修正版の候補が見つからず、推奨先が既知の脆弱性に該当します(`recommended_known_vulnerabilities` にID)
+  - `conflict`: OSVが、スキャンした脆弱性に候補が該当すると返しました(手元の範囲情報との食い違い)。他に候補がないため推奨を保留します(`recommended_upgrade: null`、`verification: "no_verified_candidate"`)
+  - `failed`: 照会に失敗したか、応答の形式が不正でした(推奨はスキャンした脆弱性に対して検証済みのまま返します)
+  - `skipped`: 照会回数の上限(1パッケージ4回、1回の呼び出しで合計60回)のため照会していません
+  - `disabled`: `OSV_MCP_NO_CANDIDATE_CHECK=1` で無効化されています
+  
+  照会するのは推奨を出したパッケージだけで、送るのはスキャンで既に照会したパッケージの名前と、推奨候補の版です。OSVの判定が手元の範囲情報と食い違う候補(スキャンした脆弱性に該当と返る候補)は推奨しません。不正な応答(オブジェクトでない応答・レコード、文字列でないページトークン)は「該当なし」とは扱わず失敗とします。照会で見つかった脆弱性は現在の版の脆弱性ではないため、`per_cve_detail` には含めません。
 - 各提案には `scan_project` と同じ `dependency_relation`(と `introduced_by` / `declared_in` / `replaced_in_go_mod`)を付け、`update_hint` を直接/推移的依存の別に応じて具体化します(npmの推移的依存なら `introduced_by` の直接依存の更新と `overrides`、Goの `replace` ならreplaceの版の更新、等)。`unknown` / `mixed` の場合は両方の場合を案内します。
 - requirements.txtの `>=X` / `~=X` の行は、OSV-Scannerが下限Xを使用中の版とみなしてスキャンしています。この依存の提案には `version_is_lower_bound: true` を付け、推奨は「下限を推奨版以上に引き上げる」意味であること(実際にインストールされる版とは異なりうること)を `upgrade_note` に示します。
 - 推奨に未対応のエコシステム(SBOM由来のRubyGems等)は `verification: "unsupported_ecosystem"`、現在の版をバージョンとして解釈できない場合(npmのgit・ローカルパス依存等)は `verification: "unparseable_version"` を返し、どちらもCVEごとの `tier: "unsupported"` として `unfixed` には数えません(修正版の有無は判定していないため。修正版は `scan_project` の `fixed_versions` や `explain_vulnerability` で確認できます)。

@@ -67,7 +67,7 @@ afterAll(async () => {
 describe("handleSuggestFix", () => {
   it("スキャン結果から3段階Tierの提案を組み立てて返す", async () => {
     const bin = await makeFakeBinary("ok", `echo '${SCAN_JSON}'; exit 1`);
-    const result = await handleSuggestFix({ project_path: projectDir }, { binaryPath: bin });
+    const result = await handleSuggestFix({ project_path: projectDir }, { candidateCheck: "disabled", binaryPath: bin });
     expect(result.isError).toBeUndefined();
 
     const payload = parsePayload(result) as {
@@ -108,7 +108,7 @@ describe("handleSuggestFix: 推移的依存の解決状態の伝播", () => {
       "rec-suggest",
       `printf '%s\\n' "$@" > '${argsFile}'; echo '{"results":[]}'; exit 0`,
     );
-    const result = await handleSuggestFix({ project_path: projectDir }, { binaryPath: bin, noRemoteResolution: true });
+    const result = await handleSuggestFix({ project_path: projectDir }, { candidateCheck: "disabled", binaryPath: bin, noRemoteResolution: true });
     const payload = parsePayload(result);
     const resolution = payload.dependency_resolution as { transitive_resolution: string; warning?: string };
     expect(resolution.transitive_resolution).toBe("disabled");
@@ -126,7 +126,7 @@ describe("handleSuggestFix: 推移的依存の解決状態の伝播", () => {
       await writeFile(path.join(mixedDir, "a", "b", "c", "pom.xml"), "<project/>");
       const bin = await makeFakeBinary("ok-deep", `echo '{"results":[]}'; exit 0`);
       const payload = parsePayload(
-        await handleSuggestFix({ project_path: mixedDir }, { binaryPath: bin, noRemoteResolution: true }),
+        await handleSuggestFix({ project_path: mixedDir }, { candidateCheck: "disabled", binaryPath: bin, noRemoteResolution: true }),
       );
       expect([...(payload.manifests as string[])].sort()).toEqual(["a/b/c/pom.xml", "gradle.lockfile"]);
       const resolution = payload.dependency_resolution as { transitive_resolution: string; warning?: string };
@@ -142,7 +142,7 @@ describe("handleSuggestFix: 推移的依存の解決状態の伝播", () => {
     const previous = process.env.OSV_MCP_NO_REMOTE_RESOLUTION;
     delete process.env.OSV_MCP_NO_REMOTE_RESOLUTION;
     try {
-      const payload = parsePayload(await handleSuggestFix({ project_path: projectDir }, { binaryPath: bin }));
+      const payload = parsePayload(await handleSuggestFix({ project_path: projectDir }, { candidateCheck: "disabled", binaryPath: bin }));
       expect(payload.dependency_resolution).toEqual({ transitive_resolution: "enabled" });
     } finally {
       if (previous !== undefined) process.env.OSV_MCP_NO_REMOTE_RESOLUTION = previous;
@@ -179,7 +179,7 @@ describe("handleSuggestFix: npm・Go対応(v0.5.0)", () => {
       await writeFile(path.join(dir, "svc", "package.json"), "{}"); // lockfileが無い → coverageに出る
       const argsFile = path.join(binDir, "mixed-args.txt");
       const bin = await makeFakeBinary("mixed", `printf '%s\\n' "$@" > '${argsFile}'; echo '${MIXED_JSON}'; exit 1`);
-      const payload = parsePayload(await handleSuggestFix({ project_path: dir }, { binaryPath: bin }));
+      const payload = parsePayload(await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled", binaryPath: bin }));
 
       expect([...(payload.manifests as string[])].sort()).toEqual(["pom.xml", "svc/go.mod", "web/package-lock.json"]);
       const lockfiles = (await readFile(argsFile, "utf8")).split("\n").filter((a) => a.includes(":/"));
@@ -222,7 +222,7 @@ describe("handleSuggestFix: PyPI(v0.6.0)", () => {
         vulnerabilities: [{ id: `PYSEC-${name}`, affected: [{ package: { name, ecosystem: "PyPI" }, ranges: [{ type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed }] }] }] }],
       })) }] });
       const bin = await makeFakeBinary("lower", `echo '${json}'; exit 1`);
-      const payload = parsePayload(await handleSuggestFix({ project_path: dir }, { binaryPath: bin }));
+      const payload = parsePayload(await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled", binaryPath: bin }));
       const byName = Object.fromEntries((payload.suggestions as { package: string; recommended_upgrade: string; version_is_lower_bound?: true; upgrade_note: string }[])
         .map((s) => [s.package, s]));
       expect(byName.jinja2!.recommended_upgrade).toBe("2.11.3");

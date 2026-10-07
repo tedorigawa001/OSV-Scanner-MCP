@@ -61,6 +61,10 @@ export interface PackageUpgradeSuggestion {
   update_hint?: string;
   /** requirements.txtの下限(`>=X`等)を現在の版とみなしてスキャンした。推奨は「下限の引き上げ」の意味になる */
   version_is_lower_bound?: true;
+  /** 推奨先のOSV照会の結果(candidateCheck.ts。推奨がある場合だけ) */
+  candidate_check?: "clean" | "has_known_vulnerabilities" | "conflict" | "failed" | "skipped" | "disabled";
+  /** 推奨先に該当する既知の脆弱性のID(candidate_checkがhas_known_vulnerabilitiesの場合) */
+  recommended_known_vulnerabilities?: string[];
   per_cve_detail: CveFixDetail[];
   verification: "verified" | "no_verified_candidate" | "unsupported_ecosystem" | "unparseable_version";
 }
@@ -230,8 +234,26 @@ function buildNote(
   return note;
 }
 
-/** 1パッケージ分のアップグレード提案を組み立てる。 */
-export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgradeSuggestion {
+/**
+ * 推奨先のOSV照会(candidateCheck.ts)で見つかった、現在の版には該当しない脆弱性。
+ * 候補の選定にだけ使い(この範囲外であることも推奨の条件にし、修正版を候補に加える)、per_cve_detailには含めない
+ */
+export interface ExtraFixTarget {
+  fixed_versions: readonly string[];
+  affected_versions?: ScanReportPackage["vulnerabilities"][number]["affected_versions"];
+}
+
+export interface SuggestContext {
+  extraTargets?: readonly ExtraFixTarget[];
+  /** OSVの判定と手元の範囲情報が食い違った候補(推奨しない) */
+  excluded?: ReadonlySet<string>;
+}
+
+/**
+ * 1パッケージ分のアップグレード提案を組み立てる(同期・純粋)。
+ * contextを渡すと、照会で見つかった脆弱性も避けて候補を選び直す(contextなしの結果が従来の推奨)。
+ */
+export function suggestUpgradeForPackage(pkg: ScanReportPackage, context: SuggestContext = {}): PackageUpgradeSuggestion {
   const scheme = versionSchemeFor(pkg.ecosystem);
   if (scheme === null) return notEvaluatedSuggestion(pkg, "unsupported_ecosystem");
   if (!scheme.isValid(pkg.version)) return { ...notEvaluatedSuggestion(pkg, "unparseable_version"), ...hintFields(pkg) };
@@ -251,9 +273,12 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgrade
   const unparseableCount = details.filter((d) => d.tier === "unparseable_fix").length;
   const fixableCount = details.length - unfixedCount;
   // 解釈できない修正版のCVEも修正対象に残す。その影響範囲は情報不足のため、どの候補も検証できず推奨を保留する
-  const targets = pkg.vulnerabilities.filter((_, i) => details[i]!.tier !== "unfixed");
+  const targets: readonly ExtraFixTarget[] = [
+    ...pkg.vulnerabilities.filter((_, i) => details[i]!.tier !== "unfixed"),
+    ...(context.extraTargets ?? []),
+  ];
   const candidates = rankCandidates(scheme, pkg.version, targets.flatMap((v) => v.fixed_versions));
-  const recommended = candidates.find((v) =>
+  const recommended = candidates.find((v) => !context.excluded?.has(v) &&
     targets.every((target) => candidateStatus(target.affected_versions, v, pkg.ecosystem) === "not_affected")) ?? null;
   for (let i = 0; i < details.length; i++) {
     details[i]!.recommended_status = recommended === null ? "not_evaluated" :
@@ -282,5 +307,5 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage): PackageUpgrade
 
 /** スキャンレポート全体からパッケージごとの提案一覧を作る(深刻度順を維持)。 */
 export function suggestUpgrades(packages: readonly ScanReportPackage[]): PackageUpgradeSuggestion[] {
-  return packages.map(suggestUpgradeForPackage);
+  return packages.map((pkg) => suggestUpgradeForPackage(pkg));
 }

@@ -133,7 +133,7 @@ function extractSummary(vulnDetails: Record<string, unknown>[]): string | null {
  * 範囲の型はエコシステム別(versionScheme.ts)。GIT型のコミットハッシュは集めない。
  * v0.4.1以前はMavenだけを集めていたため、npm・Go・PyPI等で常に空になっていた。
  */
-function extractFixedVersions(
+export function extractFixedVersions(
   vulnDetails: Record<string, unknown>[],
   packageName: string,
   ecosystem: string,
