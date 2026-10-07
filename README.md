@@ -16,7 +16,7 @@ Google製 [OSV-Scanner](https://github.com/google/osv-scanner) をラップす�
 - **JAR/WAR実体スキャン**: `scan_java_artifact` ツールで、lockfileが無い・shaded/fat JARしか手元にないプロジェクトでもアーカイブ内メタデータから既知の脆弱性を検出します(ベストエフォート同定であることを明示するcoverage情報付き)
 - **SBOM入力スキャン**: `scan_sbom` ツールでCycloneDX/SPDXのJSON SBOMに記録された依存を検査します。SBOMの網羅性や実成果物との一致は未検証であることを明示します
 - **深刻度順のレポート**: パッケージごとに脆弱性をCVSSスコア順に整理し、5段階の深刻度ラベル(critical / high / medium / low / unknown)とサマリ集計付きで返します
-- **修正版の提示**: 各脆弱性の `fixed_versions` をMavenバージョン優先順位規則で正しくソートして含めます(`2.17.1-RELEASE` のようなsemver非対応の表記にも対応)
+- **修正版の提示**: 各脆弱性の `fixed_versions` を含めます。MavenはMavenバージョン優先順位規則(`2.17.1-RELEASE` のようなsemver非対応の表記にも対応)、npm・GoはSemantic Versioningの優先順位で正しくソートします
 - **セキュリティ第一の設計**: シェル非経由の実行・引数ホワイトリスト・パス正規化と境界チェック・タイムアウト/出力サイズ上限を実装段階から組み込んでいます
 
 ## 動作要件
@@ -275,7 +275,7 @@ OSV-Scannerは `pom.xml` の `<parent>` が参照する親POM(`<relativePath>` �
 ```
 
 - `packages` は最も深刻な脆弱性を持つ順、各 `vulnerabilities` は深刻度順(unknownは末尾)
-- `fixed_versions` はMaven優先順位で昇順。複数のリリース系統(例: 2.12系バックポートと2.15系)が混在することがあります。空配列は「修正版が存在しない」ことを意味します
+- `fixed_versions` はOSVに記載された修正版です。MavenはMaven優先順位、npm・GoはSemantic Versioningの優先順位で昇順(SemVerとして解釈できない表記は末尾)、PyPI等はOSVの記載順のまま(並び順は保証しません)。複数のリリース系統(例: 2.12系バックポートと2.15系)が混在することがあります。プレリリース版(`5.0.0-beta.3`)やGoの疑似バージョン(`0.0.0-20180925071336-cf3bd585ca2a`)が含まれることもあります。空配列は「OSVに修正版の記載がない」ことを意味します。v0.4.1以前はMaven以外のパッケージで常に空配列を返していました
 - `severity_score` が取得できない脆弱性は `null` / `"unknown"` として扱います
 
 ### `scan_java_artifact`
@@ -371,7 +371,7 @@ OSV-Scanner 2.4.0の `java/archive` プラグインを使用し、ネストJAR�
 - MavenのOSV `ECOSYSTEM` 範囲(`introduced` / `fixed` / `last_affected` / 上限なし)を照合します。`versions` に明示された影響も確認します。範囲欠落・不正・未対応形式・`limit` による不完全な情報では安全と推定せず、候補を検証できなければ `recommended_upgrade: null`、`verification: "no_verified_candidate"` を返します。
 - 推奨時は `verification: "verified"`、CVEごとの `recommended_status` は `affected` / `not_affected` / `unknown` です。推奨保留時は `not_evaluated` になります。`per_cve_detail.fixed_in` は各CVE単独の候補であり、最終推奨先の判定は `recommended_status` を参照してください。
 - 現在より新しい修正版候補がないCVEは `tier: "unfixed"` として推奨の修正対象から除外します(情報欠落を含む場合があります)。除外したCVEも推奨先で判定し、その状態を表示します。全CVEがunfixedの場合も `recommended_upgrade` は `null` です。
-- 修正版の推奨はMavenのみ対応です。Maven以外のパッケージは `verification: "unsupported_ecosystem"`、CVEごとの `tier: "unsupported"` を返し、`unfixed` には数えません(修正版の有無は判定していないため。修正版は `explain_vulnerability` で確認できます)。
+- 修正版の推奨はMavenのみ対応です。Maven以外のパッケージは `verification: "unsupported_ecosystem"`、CVEごとの `tier: "unsupported"` を返し、`unfixed` には数えません(修正版の有無は判定していないため。修正版は `scan_project` の `fixed_versions` や `explain_vulnerability` で確認できます)。
 
 ### `explain_vulnerability`
 

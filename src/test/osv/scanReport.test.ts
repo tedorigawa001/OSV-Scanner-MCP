@@ -376,3 +376,72 @@ describe("parseOsvScanOutput: dependency_groups", () => {
     expect("dependency_groups" in byName["g:a"]!).toBe(false);
   });
 });
+
+describe("parseOsvScanOutput: Maven以外のfixed_versions", () => {
+  /** 1パッケージ・1脆弱性のosv-scanner出力。affectedは対象パッケージのものとして組み立てる */
+  function single(ecosystem: string, name: string, ranges: unknown[]) {
+    return parseOsvScanOutput({
+      results: [{
+        source: { path: "/work/lock" },
+        packages: [{
+          package: { name, version: "1.0.0", ecosystem },
+          groups: [{ ids: ["GHSA-x"], aliases: [], max_severity: "7.5" }],
+          vulnerabilities: [{ id: "GHSA-x", affected: [{ package: { name, ecosystem }, ranges }] }],
+        }],
+      }],
+    }).packages[0]!.vulnerabilities[0]!.fixed_versions;
+  }
+
+  it("npmのSEMVER型の修正版を集める(v0.4.1以前は常に空だった。lodashの実データ)", () => {
+    expect(single("npm", "lodash", [
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "4.18.0" }] },
+      { type: "SEMVER", events: [{ introduced: "4.0.0" }, { fixed: "4.17.21" }] },
+    ])).toEqual(["4.17.21", "4.18.0"]);
+  });
+
+  it("npm・GoはSemVerの優先順位で並べ、プレリリース・疑似バージョン・+incompatibleを扱う", () => {
+    expect(single("npm", "express", [
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "4.20.0" }] },
+      { type: "SEMVER", events: [{ introduced: "5.0.0-alpha.1" }, { fixed: "5.0.0-beta.3" }] },
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "4.10.0" }] },
+    ])).toEqual(["4.10.0", "4.20.0", "5.0.0-beta.3"]);
+    expect(single("Go", "golang.org/x/net", [
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "0.38.0" }] },
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "0.0.0-20180925071336-cf3bd585ca2a" }] },
+      { type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "0.7.0" }] },
+    ])).toEqual(["0.0.0-20180925071336-cf3bd585ca2a", "0.7.0", "0.38.0"]);
+    expect(single("Go", "github.com/docker/docker", [
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "23.0.3+incompatible" }] },
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "20.10.24+incompatible" }] },
+    ])).toEqual(["20.10.24+incompatible", "23.0.3+incompatible"]);
+  });
+
+  it("SemVerとして解釈できない版は捨てずに末尾へ置く(docker/dockerのGHSAの実データ)", () => {
+    expect(single("Go", "github.com/docker/docker", [
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "19.03.9" }] },
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "20.10.24+incompatible" }] },
+    ])).toEqual(["20.10.24+incompatible", "19.03.9"]);
+  });
+
+  it("GIT型のコミットハッシュは集めない", () => {
+    expect(single("PyPI", "jinja2", [
+      { type: "GIT", repo: "https://example.com/r", events: [{ introduced: "0" }, { fixed: "a1b2c3d4" }] },
+      { type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "2.11.3" }] },
+    ])).toEqual(["2.11.3"]);
+  });
+
+  it("比較器のないエコシステム(PyPI等)は重複を除いてOSVの記載順のまま返す", () => {
+    expect(single("PyPI", "urllib3", [
+      { type: "ECOSYSTEM", events: [{ introduced: "2.0.0" }, { fixed: "2.0.7" }] },
+      { type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "1.26.18" }] },
+      { type: "ECOSYSTEM", events: [{ introduced: "2.0.0" }, { fixed: "2.0.7" }] },
+    ])).toEqual(["2.0.7", "1.26.18"]);
+  });
+
+  it("MavenはこれまでどおりECOSYSTEM型だけを集める", () => {
+    expect(single("Maven", "g:a", [
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "9.9.9" }] },
+      { type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "1.2" }] },
+    ])).toEqual(["1.2"]);
+  });
+});

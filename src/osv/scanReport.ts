@@ -13,9 +13,9 @@
  * 読み取れた範囲でレポートを構築する(欠損フィールドはスキップ)。
  */
 
-import { compareMavenVersions } from "../utils/mavenVersion.js";
 import { asArray, asRecord, asString, asStrings } from "../utils/unknownJson.js";
 import { extractAffectedVersions, type AffectedVersionEvidence } from "./affectedVersions.js";
+import { sortVersions, versionRangeTypes } from "./versionScheme.js";
 
 export type SeverityLevel = "critical" | "high" | "medium" | "low" | "unknown";
 
@@ -31,7 +31,11 @@ export interface ScanReportVulnerability {
   severity: SeverityLevel;
   /** OSVエントリのsummary。外部由来テキストのため長さ上限あり */
   summary: string | null;
-  /** 修正版バージョン(Maven優先順位で昇順)。複数リリース系統が混在しうる。空=未修正 */
+  /**
+   * OSVに記載された修正版。Mavenは Mavenの優先順位、npm・GoはSemVerの優先順位で昇順
+   * (SemVerとして解釈できない版は末尾)。その他のエコシステムはOSVの記載順。
+   * 複数リリース系統が混在しうる。空=OSVに修正版の記載がない
+   */
   fixed_versions: string[];
   affected_versions?: AffectedVersionEvidence;
 }
@@ -108,6 +112,8 @@ function extractSummary(vulnDetails: Record<string, unknown>[]): string | null {
 /**
  * OSVエントリの`affected[].ranges[].events[].fixed`から修正版を収集する。
  * 1つのOSVエントリが複数パッケージをカバーしうるため、対象パッケージ名で絞り込む。
+ * 範囲の型はエコシステム別(versionScheme.ts)。GIT型のコミットハッシュは集めない。
+ * v0.4.1以前はMavenだけを集めていたため、npm・Go・PyPI等で常に空になっていた。
  */
 function extractFixedVersions(
   vulnDetails: Record<string, unknown>[],
@@ -115,6 +121,7 @@ function extractFixedVersions(
   ecosystem: string,
 ): string[] {
   const versions = new Set<string>();
+  const rangeTypes = versionRangeTypes(ecosystem);
   for (const detail of vulnDetails) {
     for (const affectedRaw of asArray(detail.affected)) {
       const affected = asRecord(affectedRaw);
@@ -122,7 +129,8 @@ function extractFixedVersions(
       const affectedName = asString(asRecord(affected.package)?.name);
       if (affectedName !== packageName || asString(asRecord(affected.package)?.ecosystem) !== ecosystem) continue;
       for (const rangeRaw of asArray(affected.ranges)) {
-        if (asRecord(rangeRaw)?.type !== "ECOSYSTEM" || ecosystem !== "Maven") continue;
+        const type = asString(asRecord(rangeRaw)?.type);
+        if (type === null || !rangeTypes.has(type)) continue;
         for (const eventRaw of asArray(asRecord(rangeRaw)?.events)) {
           const fixed = asString(asRecord(eventRaw)?.fixed);
           if (fixed !== null && fixed !== "") versions.add(fixed);
@@ -130,7 +138,7 @@ function extractFixedVersions(
       }
     }
   }
-  return [...versions].sort(compareMavenVersions);
+  return sortVersions(versions, ecosystem);
 }
 
 interface MutablePackage {
