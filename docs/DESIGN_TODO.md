@@ -665,6 +665,112 @@ v0.7.0では、親POM・BOM・プロファイル・プロパティの解釈を�
 
 **実装済み(2026-10-08)**: `parseOsvScanOutput`がスキャン元を`{path, type}`で保持し(応答には出さない)、`pomRelations`が`source.type`で判定。同じファイルの複数の結果は、ファイルごとに直接依存を優先して1つにまとめる(要らない`mixed`を出さない)。Mavenの`update_hint`を追加(`unknown`では付けない)。`binaryDownloader.ts`のピン留めの注記に再確認の対象として追記。実バイナリでMCP経由の確認: 上記の構成で期待値どおり(解決あり・なし)。npm・Go・PyPIとMavenの推奨はv0.8.0と出力のハッシュが一致(5構成)、`scan_java_project`の応答は不変
 
+## B3 詳細設計メモ(2026-10-08)
+
+B3は2項目: (1) JAR/WAR実体スキャン(`scan_java_artifact`)の実物での検証、(2) サーバープロセスの権限の最小化。
+
+### (1) 実物のfat JAR・shaded JAR・WARでの検証
+
+#### 目的
+
+これまでの検証は合成JAR(pom.propertiesを手で入れたもの)だけ。実物の成果物で次を確かめる。
+
+- 同定率: 同梱されたライブラリのうち、osv-scannerが名前と版を復元できる割合(BOOT-INF/lib・WEB-INF/libのネストJARと、shadedで再配置された依存)
+- 既知の脆弱性の検出: 古い版の成果物で、同梱ライブラリの既知の脆弱性が実際に検出されるか(陽性対照)
+- 応答の正しさ: `coverage`(`jars_found`・`jars_identified`・`unidentified_jars`)と`completeness: "incomplete"`が実態と食い違わないか。特にfat JARの中の同定できないネストJARは、外側のアーカイブ単位の`coverage`には現れない(現行設計の限界)ため、その量を測る
+- 性能: 100MB級のfat JARでの所要時間・スナップショットへのコピー(合計2GiBの上限)・出力サイズの上限に収まるか
+
+#### 検証対象(2026-10-08 ダウンロードの許可を得た)
+
+公開リポジトリの成果物をスクラッチ領域にダウンロードし、**実行はせず**スキャンだけ行う。取得後に公開されているチェックサム(Maven Centralの`.sha1`、Jenkinsの`.sha256`)と照合する。
+
+| 種類 | 成果物 | サイズ | 取得元 |
+|---|---|---|---|
+| Spring Boot fat JAR(新) | io.zipkin:zipkin-server:3.6.1 `-exec.jar` | 135.3MB | Maven Central |
+| Spring Boot fat JAR(旧、陽性対照) | io.zipkin:zipkin-server:2.23.2 `-exec.jar`(2021年) | 62.0MB | Maven Central |
+| WAR(新) | jenkins.war 2.580.1(最新LTS) | 54.0MB | get.jenkins.io(ミラーへリダイレクト) |
+| WAR(旧、陽性対照) | jenkins.war 2.303.3(2021年のLTS) | 72.3MB | get.jenkins.io |
+| shaded(依存を再配置) | io.grpc:grpc-netty-shaded:1.84.1 | 10.9MB | Maven Central |
+| shaded(旧、陽性対照) | io.grpc:grpc-netty-shaded:1.30.0(2020年、旧nettyを同梱) | 7.1MB | Maven Central |
+| shaded | org.apache.calcite.avatica:avatica:1.29.0 | 8.0MB | Maven Central |
+| shaded(大規模) | org.apache.hadoop:hadoop-client-runtime:3.5.0 | 30.1MB | Maven Central |
+
+合計約380MB。
+
+#### 正解データの作り方
+
+- ネストJARの一覧: Python標準の`zipfile`で、外側のアーカイブの`BOOT-INF/lib/*.jar`・`WEB-INF/lib/*.jar`と、それぞれの`META-INF/maven/*/*/pom.properties`の有無を列挙する(検証用のスクリプトだけで使い、サーバーにzip解析は入れない)
+- shaded JAR: 外側の`META-INF/maven/*/*/pom.properties`の一覧(残っている依存のメタデータ)と、再配置されたパッケージ(例: `io/grpc/netty/shaded/io/netty/`)の有無を比べ、メタデータの残っていない同梱依存を数える
+- 陽性対照: 旧版の同梱ライブラリの版をOSV APIで照会し、既知の脆弱性がある同梱ライブラリの一覧を作って、スキャン結果と突き合わせる
+
+#### 結果に応じた対応(検証後に判断)
+
+- 同定できないネストJARが多い場合: 応答に外側のアーカイブごとの「ネストJARの数・同定できた数」を出す案を検討する。ただしNode側でzipを解析することになり攻撃面が増える(現行設計はzip展開をosv-scannerに任せている)ため、上限付きの中央ディレクトリの読み取りだけにする等、別途設計する
+- shadedで再配置された依存が同定できない場合: 既知の限界としてREADMEに具体例付きで明記する(SHA1→GAVのDBは採用しない方針のまま)
+- 性能・上限の問題があれば修正する
+
+#### 検証結果(2026-10-08、osv-scanner v2.4.0、8成果物はチェックサム照合済み)
+
+| 成果物 | ネストJAR(pom.propertiesなし) | osv-scannerの報告 | うちpom.properties由来 / それ以外から推測 | 応答 |
+|---|---|---|---|---|
+| zipkin-server 3.6.1 exec | 157(63) | 150件 | 85 / 65 | 19パッケージ・86件、3.5秒 |
+| zipkin-server 2.23.2 exec | 111(53) | 112件 | 58 / 54 | 19パッケージ・111件、2.8秒 |
+| jenkins.war 2.580.1 | 78(21) | 118件 | 70 / 48 | 1パッケージ・1件、1.9秒 |
+| jenkins.war 2.303.3 | 107(32) | 198件 | 98 / 100 | 31パッケージ・119件、3.6秒 |
+| grpc-netty-shaded 1.30.0 | -(外側にnettyのpom.properties 14件) | 14件 | 14 / 0 | 7パッケージ・48件 |
+| grpc-netty-shaded 1.84.1 | -(pom.propertiesなし) | 1件 | 0 / 1(`jar:grpc-netty-shaded`) | 0件 |
+| avatica 1.29.0 | -(pom.propertiesなし、protobuf・jackson等を再配置) | 1件 | 0 / 1(`avatica:avatica`) | 0件 |
+| hadoop-client-runtime 3.5.0 | -(外側にpom.properties 68件) | 68件 | 68 / 0 | 7パッケージ・24件 |
+
+- **pom.propertiesがあれば取りこぼしはない**(全成果物で、pom.propertiesのGAVはすべて検出)。shadedでもメタデータを残していれば(grpc-netty-shaded 1.30.0、hadoop-client-runtime)同梱依存を同定できる
+- **重大な発見: pom.propertiesのないJARは、osv-scannerがファイル名等からMaven座標を推測し、groupIdを誤る**。例: `spring-beans:spring-beans@5.3.2`(正しくは`org.springframework:spring-beans`)、`armeria:armeria`(`com.linecorp.armeria`)、`bcprov:bcprov-jdk15on`(`org.bouncycastle`)、`jar:grpc-netty-shaded`、`avatica:avatica`、`all:opentelemetry-api`。誤った座標はOSVで照会しても0件になり、**既知の脆弱性を黙って取りこぼす**。実例: zipkin-server 2.23.2のspring-beans 5.3.2はSpring4Shell(CVE-2022-22965)を含む2件に該当するが検出されない。bcprov-jdk15on 1.68(5件)、armeria 1.3.0(1件)も同様。Spring Frameworkの本体JAR(Gradleでビルドされpom.propertiesを含まない)はこの形で一律に取りこぼす
+- **現行の`coverage`はこれを「同定済み」と数える**: grpc-netty-shaded 1.84.1・avaticaは推測の座標1件だけで`identified_without_known_vulnerabilities`になり、「同定でき、既知の脆弱性なし」と誤読させる。fat JAR・WARでもネストJARの単位の状況は応答に現れない
+- **応答の肥大**: 応答の93%が`affected_versions`(suggest_fixの推奨の検証に使う内部の影響範囲データ。READMEに記載なし)。jenkins.war 2.303.3で555KB中517KB。全スキャンツールの応答に含まれ、LLMの文脈を大きく消費する
+- 性能: 135MBのfat JARでも3.5秒。スナップショットのコピー・出力の上限には余裕がある
+
+#### 対応方針(2026-10-08 推奨案で確定。権限の最小化と合わせてv0.10.0)
+
+
+1. **`affected_versions`を応答から外す**(全スキャンツール)。内部では保持し(パッケージのスキャン元と同じくWeakMap等)、suggest_fixの検証は従来どおり行う。応答は数分の一になる
+2. **推測された座標を区別する**: osv-scannerの出力には座標の出所(pom.propertiesか推測か)がない。Node側でzipを解析しない方針は維持し、座標の形で判定する: groupIdに`.`がなく、artifactIdと同じかartifactIdの接頭辞であるもの(`spring-beans:spring-beans`、`armeria:armeria-brave`、`jar:…`)を`coordinates_inferred: true`とする。`commons-io:commons-io`・`junit:junit`のような古い形式の正しい座標も含まれる(安全側の誤検知)
+   - `scan_java_artifact`の`coverage`に`inferred_coordinates`(件数と一覧、上限付き)と警告(「groupIdを推測した可能性があり、既知の脆弱性を照合できていない可能性がある。ビルド元のlockfile/pom.xmlのスキャンを推奨」)を追加
+   - アーカイブの状態: 推測の座標だけで同定したもの(grpc-netty-shaded 1.84.1、avatica)は`identified_without_known_vulnerabilities`ではなく、新しい状態`inferred_only`にし、`jars_identified`に数えない
+   - 座標の補正(Maven Centralやdeps.devでの正しいgroupIdの照会)は、送信先・送信内容が増えるため行わない
+3. **READMEに実例付きで限界を明記**: Spring Frameworkの本体JARなどpom.propertiesを含まないJARは、groupIdの推測により脆弱性を取りこぼしうる。正確な結果にはビルド元のlockfile/pom.xmlのスキャン(`scan_project`)を使う
+
+### (2) 権限の最小化
+
+#### 実機確認(2026-10-08、Node 24.18、macOS)
+
+Nodeの権限モデル(`--permission`)でサーバーを起動し、スナップショット方式のスキャンが動くか確認した。
+
+- `--allow-fs-read`(サーバー本体のディレクトリ・スキャン対象・一時ディレクトリ)、`--allow-fs-write`(一時ディレクトリ)、`--allow-child-process`で、検出→スナップショット→スキャン→削除まで動作した
+- **一時ディレクトリはsymlinkの解決前・解決後の両方の読み取り許可が必要**(macOSの`/var/folders/...`は`/private/var/folders/...`へのsymlink。`ScanSnapshot.create`の`realpath(os.tmpdir())`が解決前のパスを読む)。片方だけでは`ERR_ACCESS_DENIED`で失敗し、ツールの応答は`internal_error`になる
+- 許可外のパスを指定すると、権限モデルの拒否が`project_not_found`(「指定されたパスが存在しません」)と表示される(原因が分かりにくい)
+- **`--allow-child-process`が必須で、子プロセスのosv-scannerは権限モデルの制限を受けない**(Node自身もこのフラグは権限モデルを無効にしうると警告する)。osv-scannerには検証済みのコピーだけを渡しているため実害は限定的だが、多層防御としては不完全
+- バイナリの自動ダウンロードを使う場合は、キャッシュディレクトリ(`$XDG_CACHE_HOME/osv-scanner-mcp`、既定は`~/.cache/osv-scanner-mcp`)への書き込み許可も必要
+
+#### 方針(2026-10-08 推奨案で確定)
+
+**任意の多層防御として文書化し、権限モデル下で正しく動くようにする**。既定の起動方法は変えない。
+
+- READMEに「権限を絞って起動する」節を追加し、MCPクライアントの設定例(`node --permission --allow-fs-read=... ...`)と、子プロセス(osv-scanner)は制限を受けないことを明記する。OSレベルの隔離(コンテナ、macOSのsandbox-exec等)はさらに強いが、環境依存のため例示にとどめる
+- コード側の対応:
+  - 権限モデルの拒否(`ERR_ACCESS_DENIED`)を`project_not_found`ではなく専用のエラー(例: `permission_denied`、「Nodeの権限モデルで読み取りが許可されていません」)にする
+  - 一時ディレクトリの解決で、解決前のパスの読み取りが拒否された場合の案内(エラーメッセージで両方の許可が必要と示す)
+  - 起動時に権限モデルが有効かを`process.permission`で検出し、スキャン対象(`OSV_MCP_ALLOWED_ROOT`)・一時ディレクトリ・キャッシュの読み書きが許可されていなければ、stderrに警告する(fail-closedの起動拒否にはしない)
+- テスト: 権限モデル下でサーバーを起動するE2Eテスト(許可内のスキャンが成功、許可外が`permission_denied`)
+
+#### 採らない案
+
+- 既定で権限モデルを有効にする(`npx`での起動ではNodeのフラグを渡せず、クライアント設定の互換性が崩れる)
+- osv-scannerをサンドボックスで包む(OSごとの仕組みが必要で保守できない)
+
+### 段階計画(案)
+
+1. (1)の検証(ダウンロードの許可を得てから)。結果をこのメモに記録し、対応が必要なら別途設計
+2. (2)のコード対応とREADME(v0.10.0候補)
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
@@ -826,5 +932,5 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 
 ### B3. 既存の未完了項目
 
-- [ ] JAR実体スキャン: 実プロジェクトのfat JAR・shaded JARでの実機検証(上記「JAR実体スキャン」節の残タスク)
-- [ ] 権限の最小化: MCPサーバープロセスに必要以上のファイルシステム権限を与えない(上記「セキュリティ考慮事項」節)
+- [ ] JAR実体スキャン: 実プロジェクトのfat JAR・shaded JARでの実機検証(上記「JAR実体スキャン」節の残タスク) → 検証計画作成済み(上記「B3 詳細設計メモ」、2026-10-08)
+- [ ] 権限の最小化: MCPサーバープロセスに必要以上のファイルシステム権限を与えない(上記「セキュリティ考慮事項」節) → 詳細設計メモ作成済み(上記「B3 詳細設計メモ」、2026-10-08)
