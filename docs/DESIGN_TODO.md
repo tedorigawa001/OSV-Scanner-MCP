@@ -175,8 +175,8 @@ MCPサーバーは「外部プロセス実行」「ファイルシステムア�
 - [x] スキャン結果に含まれる外部由来の文字列(パッケージ名、説明文など)をLLMにそのまま渡す際のプロンプトインジェクション耐性も考慮(結果はあくまで「データ」として扱われるよう構造化する) → `utils/externalText.ts`のサニタイザで制御文字(ANSI含む)・ゼロ幅文字・双方向制御文字・Unicodeタグ文字・行区切りを除去+NFC正規化。`unknownJson.ts`のアクセサ(全外部JSON文字列の読み取り経路)と`toolResult.ts`のエラー出力(stderr経路)を単一境界として組み込み(2026-07-05)
 
 ### 権限の最小化
-- [ ] MCPサーバープロセスに必要以上のファイルシステム権限を与えない
-- [ ] ネットワークアクセスはOSV-Scannerの照会先(OSV API等)に限定されることを明示し、README等でユーザーに透明性を提供 → 2026-10-07の実機確認でpom.xml/requirements.txtのスキャンはdeps.devにも接続すると判明。バックログB1で対応
+- [x] MCPサーバープロセスに必要以上のファイルシステム権限を与えない → v0.10.0でNodeの権限モデル(`--permission`)での動作に対応(任意の多層防御。下記「B3 詳細設計メモ」)
+- [x] ネットワークアクセスはOSV-Scannerの照会先(OSV API等)に限定されることを明示し、README等でユーザーに透明性を提供 → v0.3.3でREADMEに通信先の一覧を追加(現在は「Network destinations and privacy」節)。2026-10-07の実機確認でpom.xml/requirements.txtのスキャンはdeps.devにも接続すると判明。バックログB1で対応
 
 ### 運用面
 - [x] 依存パッケージの自動更新(Dependabot等)をリポジトリに設定 → `.github/dependabot.yml`(npm週次、devDependenciesはグループ化)(2026-07-04)。OSV-Scannerのピン留めバージョンは対象外のため手動更新(binaryDownloader.tsのコメントに手順記載)
@@ -216,7 +216,7 @@ lockfileが無い・shaded JARしか手元に無いプロジェクトへの対�
 - [x] `scan_java_artifact` の入力Zodスキーマとcoverage先頭の出力を実装(2026-09-15)。WARを含む外側アーカイブ単位の3状態を返し、全体のcompletenessは常にincomplete
 - [x] runner.tsのプラグイン引数対応+上限付きJAR/WAR列挙を実装。列挙済み絶対パスだけを渡し、default pluginsを無効化、`--all-packages`で既知脆弱性のないパッケージも取得。`unknown:unknown`等は同定不能として扱う
 - [x] suggest_fixは今回の実装では既存のマニフェスト方式専用を維持。アーティファクトへの拡張は別途検討
-- [ ] 実プロジェクトのfat JAR(Spring Boot等)・shaded JARでの実機検証
+- [x] 実プロジェクトのfat JAR(Spring Boot等)・shaded JARでの実機検証 → 2026-10-08に実施(下記「B3 詳細設計メモ」の検証結果)
 
 実装時の検証: ピン留め済み2.4.0で合成JAR、WAR内の`WEB-INF/lib`、Boot形式の`BOOT-INF/lib`、同定済み・既知脆弱性なし、メタデータなしの5ファイルをMCP経由で確認。`--all-packages`では同定不能のプレースホルダーも出力されるため、source.pathの存在だけでなくMaven座標の有効性を確認する。実プロジェクト由来の成果物での検証は上記のとおり未完了。
 
@@ -928,7 +928,7 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 **残課題**:
 - [ ] SIGKILL・OOM killer等の捕捉できない終了では残る(次回起動時の掃除まで、最長24時間+次の起動まで)。一時ディレクトリ自体は0700のため他ユーザーからは読めない
 - [ ] Windowsではシグナルの扱いが異なり(SIGTERMは捕捉不可)、起動時の掃除も行わない。Windowsでの実機確認は未実施
-- [ ] テストの後始末漏れ: `src/test/osv/binaryDownloader.test.ts`の`osv-mcp-dl-404-*`・`osv-mcp-dl-net-*`がテスト実行ごとに一時ディレクトリへ残る(2026-10-08時点で各114件。サーバー本体ではなくテストの問題)
+- [x] テストの後始末漏れ: `src/test/osv/binaryDownloader.test.ts`の`osv-mcp-dl-404-*`・`osv-mcp-dl-net-*`がテスト実行ごとに一時ディレクトリへ残る(2026-10-08時点で各114件。サーバー本体ではなくテストの問題) → 修正済み(2026-10-08)。HTTPエラー・ネットワークエラーのテストのキャッシュを、afterAllで削除する共有のcacheDir配下に作る。残っていた312件(空のv2.4.0ディレクトリのみ)を削除
 
 ### B8. 英語化(2026-10-08)
 

@@ -203,7 +203,7 @@ describe("ensureOsvScannerDownloaded", () => {
     await expectScanError(
       ensureOsvScannerDownloaded(
         options({
-          cacheDir: await mkdtemp(path.join(os.tmpdir(), "osv-mcp-dl-404-")),
+          cacheDir: await mkdtemp(path.join(cacheDir, "404-")), // 共有のcacheDir配下に作り、afterAllで消す
           fetchFn: async () => new Response("not found", { status: 404 }),
         }),
       ),
@@ -215,7 +215,7 @@ describe("ensureOsvScannerDownloaded", () => {
     await expectScanError(
       ensureOsvScannerDownloaded(
         options({
-          cacheDir: await mkdtemp(path.join(os.tmpdir(), "osv-mcp-dl-net-")),
+          cacheDir: await mkdtemp(path.join(cacheDir, "net-")), // 共有のcacheDir配下に作り、afterAllで消す
           fetchFn: async () => {
             throw new TypeError("fetch failed");
           },
