@@ -771,6 +771,90 @@ Nodeの権限モデル(`--permission`)でサーバーを起動し、スナップ
 1. (1)の検証(ダウンロードの許可を得てから)。結果をこのメモに記録し、対応が必要なら別途設計
 2. (2)のコード対応とREADME(v0.10.0候補)
 
+## Rust(crates.io)対応 詳細設計メモ(2026-10-11)
+
+`scan_project`・`suggest_fix`の対象にRust(`Cargo.lock`)を加える。既存の方針(lockfile方式・検出したファイルだけを個別に渡す・スナップショットのコピーをスキャン・ビルドツールを実行しない)を前提とする。
+
+### 非目標
+
+- `cargo`の実行(`cargo generate-lockfile` / `cargo metadata` / `cargo audit`等)。レジストリ・gitの取得や`.cargo/config.toml`の設定を伴う。lockfileの生成は利用者が信頼できる環境で行う
+- Rustバイナリ(cargo-auditable)のスキャン、関数単位の到達性の解析(`affects.functions`の活用)
+- crates.ioのAPI照会(yanked版の確認等)。通信先を増やさない
+
+### 実機確認結果(2026-10-11、osv-scanner v2.4.0・api.osv.dev)
+
+手書きの最小フィクスチャ(workspace・pathの依存・gitの依存・別レジストリ・同名の複数版)で確認:
+
+- `--lockfile Cargo.lock:<パス>`で読める。エコシステムは`crates.io`、`source.type`は`lockfile`、`dependency_groups`は出ない。lockfileの形式はv1(`[metadata]`のchecksum・`"名前 版 (source)"`形式の依存)・v3・v4のいずれも読める。`[[patch.unused]]`は無視される。`sparse+https://index.crates.io/`も通常どおり
+- `Cargo.toml`は解析形式として指定できない(exit 127「could not determine extractor」)。`Cargo.toml`だけのディレクトリはスキャンできない
+- **sourceを見ずに全パッケージをcrates.ioとして照会する**: workspaceのメンバー・pathの依存(`source`なし)、gitの依存(`git+...`)、別レジストリの依存(`registry+https://my-company.example/index`)も`crates.io`として照会され、同名・同版のcrates.ioのアドバイザリが付く。ローカルのcrateを`failure 0.1.8`、gitのforkを`smallvec 1.6.0`、別レジストリのcrateを`atty 0.2.14`にすると、いずれもcrates.ioの脆弱性が報告された(誤検知)。あわせて**社内crateの名前がapi.osv.devへ送られる**。cargo-auditはcrates.io由来のパッケージだけを照合するため挙動が異なる
+- OSVのレコード(代表的な50 crateの360件): 範囲の型は`SEMVER`のみ(`GIT`・`ECOSYSTEM`なし)。IDは`RUSTSEC-*`と`GHSA-*`。`introduced: "0.13.0-0"`のようにプレリリースの最小値を下限にする記法が多い。`fixed`のない範囲が15件、`last_affected`が4件、`versions[]`の列挙が20件。ビルドメタデータ付きの版(`openssl-src`の`111.25.0+1.1.1t`等)はこの範囲の境界には現れなかった
+- **RustSecの情報提供アドバイザリ**: `affected[].database_specific.informational`が`unmaintained`(保守終了)・`unsound`(健全性の欠陥)・`notice`のレコードがある(上記360件中で`unsound` 21件、`unmaintained` 7件)。osv-scannerの出力にもそのまま含まれ、通常の脆弱性と区別されない。多くは`introduced: "0.0.0-0"`だけで修正版がない(例: `atty`のRUSTSEC-2024-0375)。一方、GHSAが同じ欠陥を脆弱性として登録していると同じグループにまとまる(`failure`: unsoundのRUSTSEC-2019-0036・unmaintainedのRUSTSEC-2020-0036・GHSA 2件が1グループでCVSS 9.8)。cargo-auditは情報提供を既定で警告として別扱いにする
+
+### 中核の設計判断1: スキャンするのはcrates.io由来のパッケージだけ(コピーを生成する)
+
+requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**本サーバーが解析した結果からcrates.io由来のパッケージだけを書いたコピー**をスキャンする。
+
+- 対象: `source`が`registry+https://github.com/rust-lang/crates.io-index`または`sparse+https://index.crates.io/`のパッケージ
+- `source`なし(workspaceのメンバー・pathの依存): 利用者自身のコードとしてスキャンしない。coverageには数だけ示す(`local_crates`)。完全性(`complete`)には影響させない
+- gitの依存・別レジストリの依存: スキャンしない。第三者のコードが未検査なので、`coverage.unscannable_crates[]`に名前・版・理由(git: 版がcrates.ioのリリースと対応しない / 別レジストリ: crates.ioと同名でも別物で、名前を外部に送らない)を記録し、`complete: false`にする。sourceのURLは応答に出さない(認証情報やホスト名を含み得る)
+- コピーの形式: `version = 3`と、各パッケージの`name`・`version`・`source`だけの`[[package]]`。osv-scannerが読む内容は常に本サーバーが生成したものになる(解析の食い違いによる取りこぼし・境界外の読み込みが起きない)
+- 解析器(`src/utils/cargoLock.ts`): cargoが生成する範囲のTOMLだけを受け付ける厳格な行解析(TOMLの汎用パーサーは追加しない)。受け付ける行: コメント・空行、先頭の`version = 整数`、`[[package]]`、`[[patch.unused]]`(読み飛ばす)、`[metadata]`(v1。読み飛ばす)、`キー = "文字列"`、`dependencies = [`〜`]`の各行の`"..."`。文字列のエスケープは`\"` `\\` `\uXXXX`程度。**想定外の行が1つでもあればファイル全体をスキャン対象から外し**、`skipped_files`に理由を記録する(部分的に読んで取りこぼしを隠さない)。サイズ・パッケージ数の上限は既存の読み込みの上限を共用
+- 同じパッケージの重複(name・version・sourceが同じ)はコピーで1つにまとめる
+
+### 中核の設計判断2: 情報提供アドバイザリを脆弱性と区別して示す
+
+保守終了・健全性の欠陥を「脆弱性」として件数に含めると、LLMが重大度を誤って要約する。一方で隠すと保守終了のcrateを見落とす。
+
+- 判定: グループ内で**詳細を取得できたレコードのすべて**が、そのパッケージの`affected[]`に`database_specific.informational`を持つ場合だけ、そのグループを情報提供とする。GHSA等が脆弱性として登録していれば(1件でも`informational`なし)従来どおり脆弱性(上の`failure`は脆弱性のまま)
+- 出力: 該当グループの`ScanReportVulnerability`に`informational: "unmaintained" | "unsound" | "notice"`(複数の種類なら`unsound` > `unmaintained` > `notice`の順で1つ)を付ける。`packages[]`には残す
+- 件数: 情報提供のグループは`vulnerability_count`・`severity_breakdown`・`vulnerable_package_count`に数えず、`informational_count`(新設。crates.io以外では常に0)に数える。情報提供だけのパッケージも`packages[]`に含め、並び順は脆弱性のあるパッケージの後ろ
+- 既存のエコシステムへの影響: `informational`はRustSec由来のレコードだけが持つため、Maven・npm・PyPI・Goの応答は変わらない(回帰テストで確認)
+
+### 検出(`manifestDetector.ts`)
+
+- `Cargo.lock` → エコシステム`crates.io`。解析形式`Cargo.lock`を`MANIFEST_FORMATS`に追加(osv-scannerにはコピーだけを渡す)
+- `Cargo.toml`(lockfileなし) → `lockfile_missing`。案内は「信頼できる環境で`cargo generate-lockfile`を実行してから再スキャン(依存の取得を伴う)」。ライブラリのcrateはCargo.lockをコミットしない慣習が長かったため、ここに記録されるケースが多い旨をREADMEに書く
+- workspace: メンバーの`Cargo.toml`はサブディレクトリにあり、`Cargo.lock`はworkspaceのルートにだけある。上位の`Cargo.lock`に、メンバーの`[package] name`と同名の`source`なしパッケージがあれば充足とする(npm workspacesの確認と同じ考え方)。`name`は`[package]`テーブルの`name = "..."`だけを行解析で読み、読めなければ`status: "unconfirmed"`
+- 除外ディレクトリ: `target`は既存。`.cargo`(レジストリのキャッシュ等)を追加。`vendor`は既存(`cargo vendor`の出力を含む)
+
+### 直接/推移的依存の区別(Cargo.lockから)
+
+- `source`なしのパッケージ(workspaceのメンバー・pathの依存)を起点とし、その`dependencies`にあるパッケージを**直接**、それ以外の到達できるパッケージを**推移的**とする。推移的依存には、起点からたどって最初に通る直接依存を`introduced_by`(最大10件、npmと同じ)に付ける
+- `dependencies`の要素は`"名前"`・`"名前 版"`・`"名前 版 (source)"`の3形式。名前だけで複数版がある等で一意に決まらなければ、そのパッケージは`unknown`
+- Cargo.lockには開発用・ビルド用・対象OS限定の依存の区別がない(`[dev-dependencies]`・`[build-dependencies]`・`[target.'cfg(windows)'.dependencies]`もすべて含まれる)。直接/推移的の区別だけを示し、本番で使われるかは判定しない旨をREADMEに書く
+- gitの依存の配下にあるcrates.ioの依存も推移的として扱う(`introduced_by`はgitのcrate名)
+
+### suggest_fix
+
+- バージョン比較: `crates.io`をSemVerのエコシステムに加える(`versionScheme.ts`)。Cargoのキャレット(`^`、既定の要求)はnpmと同じ規則(1.0以上はメジャーが同じなら互換、0.xはマイナーまで、0.0.xは完全一致)のため、`classifyCaret`をそのまま使う。すなわち`cross_major`でなければ、Cargo.tomlの既定の要求の範囲内で更新できる
+- 情報提供のグループは修正版の推奨の対象にしない(`unmaintained`は版を上げても解消しない)。`per_cve_detail`に`informational`を付けて残し、`unfixed`の件数に数えない。注記に「保守終了のcrateは代替への移行を検討」を含める
+- 推奨先のOSV照会(`candidateCheck.ts`): 候補に該当するレコードのうち、`unmaintained`・`notice`の情報提供はcrate全体の状態で版の選択に関係しないため無視する。`unsound`は版ごとの欠陥のため従来どおり既知の脆弱性として扱う
+- `update_hint`(直接/推移的とTierで分ける):
+  - 直接・`cross_major`以外: `cargo update -p <name>@<現在の版> --precise <推奨版>`でCargo.lockだけを更新できる(Cargo.tomlの要求が`=`や`~`で固定されていれば要求を変更)
+  - 直接・`cross_major`: 依存元のcrate(`source`なしのパッケージ名)のCargo.tomlの要求を変更する
+  - 推移的・`cross_major`以外: 同じく`cargo update -p <name>@<現在の版> --precise <推奨版>`(依存元の要求が許す範囲なら、Cargo.tomlを変えずに更新できる)
+  - 推移的・`cross_major`: `introduced_by`の直接依存の更新が必要。`[patch.crates-io]`は最後の手段
+  - `<name>@<版>`の指定は、同じcrateの複数版がCargo.lockにある場合に対象を一意にするため
+
+### 段階計画(推奨案)
+
+- **v0.12.0**: `scan_project`のCargo.lock対応(解析器・crates.io由来だけのコピー・`local_crates`/`unscannable_crates`・`lockfile_missing`とworkspaceの確認)と、情報提供アドバイザリの区別(`informational`・`informational_count`)。suggest_fixはcrates.ioを`unsupported_ecosystem`のまま
+- **v0.13.0**: suggest_fixのcrates.io対応(SemVer比較・情報提供の扱い・候補照会での除外)と、Cargo.lockからの直接/推移的依存の区別・`update_hint`
+
+### 完了条件とテスト
+
+- 解析器: v1/v3/v4、`[[patch.unused]]`、`[metadata]`、同名の複数版、依存の3形式、エスケープ、想定外の行・壊れた入力でファイル全体を除外、サイズ上限
+- 誤検知の回帰テスト: ローカル・git・別レジストリのcrateに同名のcrates.ioの脆弱性がある場合に、報告されず`unscannable_crates`・`local_crates`に示されること(偽スキャナーでコピーの内容を検証し、実バイナリでMCP経由でも確認)
+- 情報提供: 情報提供だけのグループ・GHSAと混在するグループ・件数の分離・既存エコシステムの応答の不変(v0.11.0のworktreeとの出力ハッシュの比較)
+- 実バイナリでMCP経由の確認(複数言語の混在を含む)と、接続先がapi.osv.devだけであること
+
+### 未確認事項
+
+- 実プロジェクト(大きなworkspace、cargo vendor・source置換を使うもの)のCargo.lockでの解析の成否と所要時間。生成済みのCargo.lockの取得はダウンロードを伴うため、実施時に許可を得る
+- `cargo update --precise`の実機確認(レジストリの取得を伴う)
+- osv-scannerの将来の版で、sourceによる絞り込みや`informational`の扱いが変わるか(2.6.0へのピン更新時に再確認)
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
