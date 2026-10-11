@@ -254,3 +254,120 @@ describe("LockfileKeyCache(回帰: lockfileを繰り返し解析する負荷増�
     expect(project.lockfileMissing.every((m) => m.status === "missing")).toBe(true);
   }, 60_000);
 });
+
+describe("detectProject: Rust(Cargo.lock)", () => {
+  const CRATES_IO = "registry+https://github.com/rust-lang/crates.io-index";
+  const lock = (...packages: [string, string, string | null][]) =>
+    "version = 4\n" +
+    packages
+      .map(([name, version, source]) => `\n[[package]]\nname = "${name}"\nversion = "${version}"\n${source !== null ? `source = "${source}"\n` : ""}`)
+      .join("");
+
+  it("Cargo.lockは元のファイルを渡さず、crates.io由来のパッケージだけをコピーの対象にする", async () => {
+    const dir = await makeProject({
+      "Cargo.toml": `[package]\nname = "app"\n`,
+      "Cargo.lock": lock(
+        ["app", "0.1.0", null],
+        ["mylib", "0.2.0", null],
+        ["smallvec", "1.6.0", CRATES_IO],
+        ["fork", "1.0.0", "git+https://github.com/me/fork#abc"],
+        ["internal", "2.0.0", "sparse+https://registry.example/"],
+      ),
+    });
+    const project = await detectProject(dir);
+    expect(project.manifests).toEqual([{ path: "Cargo.lock", ecosystem: "crates.io", format: "Cargo.lock" }]);
+    expect(project.targets).toEqual([]);
+    expect(project.cargoCopies).toEqual([
+      { path: "Cargo.lock", packages: [{ name: "smallvec", version: "1.6.0", source: CRATES_IO, dependencies: [] }] },
+    ]);
+    expect(project.localCrateCount).toBe(2);
+    expect(project.unscannableCrates).toEqual([
+      { file: "Cargo.lock", name: "fork", version: "1.0.0", reason: expect.stringContaining("Git dependency") },
+      { file: "Cargo.lock", name: "internal", version: "2.0.0", reason: expect.stringContaining("registry other than crates.io") },
+    ]);
+    expect(project.lockfileMissing).toEqual([]);
+  });
+
+  it("解析できないCargo.lockはスキャン対象から外し、理由を記録する", async () => {
+    const dir = await makeProject({ "Cargo.lock": `[[package]]\nname = "a"\nversion = "1"\nsource = { git = "x" }\n`, "go.mod": "module x\n" });
+    const project = await detectProject(dir);
+    expect(project.manifests.map((m) => m.path)).toEqual(["go.mod"]);
+    expect(project.cargoCopies).toEqual([]);
+    expect(project.skippedFiles).toEqual([{ path: "Cargo.lock", reason: expect.stringContaining("at line 4") }]);
+  });
+
+  it("workspaceのメンバー: 上位のCargo.lockに同名のsourceなしパッケージがあれば欠落扱いにしない", async () => {
+    const dir = await makeProject({
+      "Cargo.toml": `[workspace]\nmembers = ["crates/*"]\n`,
+      "Cargo.lock": lock(["member-a", "0.1.0", null], ["serde", "1.0.0", CRATES_IO]),
+      "crates/a/Cargo.toml": `[package]\nname = "member-a"\nversion = "0.1.0"\n`,
+      "crates/b/Cargo.toml": `[package]\nname = "independent"\n`,
+      "crates/c/Cargo.toml": `[package]\nname.workspace = true\n`,
+    });
+    const project = await detectProject(dir);
+    expect(project.lockfileMissing.map((m) => [m.path, m.status])).toEqual([
+      ["crates/b/Cargo.toml", "missing"],
+      ["crates/c/Cargo.toml", "unconfirmed"],
+    ]);
+    expect(project.lockfileMissing[0]!.hint).toContain("cargo generate-lockfile");
+  });
+
+  it("回帰(レビュー指摘): 上位のCargo.lockに同名のcrateがあっても、workspaceの所属を確認できなければunconfirmed", async () => {
+    const dir = await makeProject({
+      // ルートはworkspaceでない単独のcrate app@0.1.0。sub/は同名の独立したcrate app@0.2.0(Cargo.lockなし)
+      "Cargo.toml": `[package]\nname = "app"\nversion = "0.1.0"\n`,
+      "Cargo.lock": lock(["app", "0.1.0", null], ["serde", "1.0.0", CRATES_IO]),
+      "sub/Cargo.toml": `[package]\nname = "app"\nversion = "0.2.0"\n`,
+    });
+    const project = await detectProject(dir);
+    expect(project.lockfileMissing.map((m) => [m.path, m.status])).toEqual([["sub/Cargo.toml", "unconfirmed"]]);
+  });
+
+  it("回帰(レビュー指摘): ルートのCargo.tomlの複数行文字列内のworkspace設定に見える記述でメンバーとみなさない", async () => {
+    const dir = await makeProject({
+      "Cargo.toml": `[package]\nname = "app"\nversion = "0.1.0"\ndescription = """\n[workspace]\nmembers = ["sub"]"""\n`,
+      "Cargo.lock": lock(["app", "0.1.0", null]),
+      "sub/Cargo.toml": `[package]\nname = "app"\nversion = "0.2.0"\n`,
+    });
+    const project = await detectProject(dir);
+    expect(project.lockfileMissing.map((m) => [m.path, m.status])).toEqual([["sub/Cargo.toml", "unconfirmed"]]);
+  });
+
+  it("workspaceのmembersに含まれないディレクトリの同名crate・excludeで除かれたcrateは収録扱いにしない", async () => {
+    const dir = await makeProject({
+      "Cargo.toml": `[workspace]\nmembers = ["crates/*"]\nexclude = ["crates/ex"]\n`,
+      "Cargo.lock": lock(["a", "0.1.0", null]),
+      "crates/a/Cargo.toml": `[package]\nname = "a"\n`,
+      "crates/ex/Cargo.toml": `[package]\nname = "a"\n`,
+      "elsewhere/Cargo.toml": `[package]\nname = "a"\n`,
+    });
+    const project = await detectProject(dir);
+    expect(project.lockfileMissing.map((m) => [m.path, m.status]).sort()).toEqual([
+      ["crates/ex/Cargo.toml", "unconfirmed"],
+      ["elsewhere/Cargo.toml", "unconfirmed"],
+    ]);
+  });
+
+  it("Cargo.tomlだけのディレクトリはlockfile_missingとして案内する", async () => {
+    const dir = await makeProject({ "Cargo.toml": `[package]\nname = "lib"\n`, "go.mod": "module x\n" });
+    const project = await detectProject(dir);
+    expect(project.lockfileMissing).toEqual([
+      { path: "Cargo.toml", ecosystem: "crates.io", status: "missing", hint: expect.stringContaining("cargo generate-lockfile") },
+    ]);
+  });
+
+  it("target・.cargoの中は探索しない", async () => {
+    const dir = await makeProject({
+      "Cargo.lock": lock(["a", "1.0.0", CRATES_IO]),
+      "target/package/x/Cargo.lock": lock(["b", "1.0.0", CRATES_IO]),
+      ".cargo/registry/src/x/Cargo.lock": lock(["c", "1.0.0", CRATES_IO]),
+    });
+    expect((await detectProject(dir)).manifests.map((m) => m.path)).toEqual(["Cargo.lock"]);
+  });
+
+  it("Cargo.lockの直接指定は、そのファイルだけを対象にする", async () => {
+    const dir = await makeProject({ "Cargo.lock": lock(["a", "1.0.0", CRATES_IO]) });
+    const project = await detectProject(path.join(dir, "Cargo.lock"));
+    expect(project.cargoCopies.map((c) => c.packages.length)).toEqual([1]);
+  });
+});

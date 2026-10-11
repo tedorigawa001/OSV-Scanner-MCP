@@ -75,15 +75,17 @@ const server = new McpServer({
 server.registerTool(
   "scan_project",
   {
-    title: "Scan project dependencies for vulnerabilities (Java / JavaScript / Python / Go)",
+    title: "Scan project dependencies for vulnerabilities (Java / JavaScript / Python / Go / Rust)",
     description:
       "Detects the lockfiles and manifests in a project and scans the dependencies for known vulnerabilities (CVE/GHSA). " +
       "Supported: Java (pom.xml / gradle.lockfile), JavaScript (package-lock.json / npm-shrinkwrap.json / yarn.lock / pnpm-lock.yaml / bun.lock), " +
-      "Python (poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt), Go (go.mod). " +
+      "Python (poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt), Go (go.mod), Rust (Cargo.lock). " +
       "Package managers and builds are never run. " +
       "Always check coverage at the top of the response: it lists manifests without a lockfile, requirements lines without a pinned version, and excluded files. " +
+      "For Cargo.lock, only crates from crates.io are scanned: the project's own crates are counted in local_crates, and git or private-registry crates are listed in unscannable_crates. " +
+      "Vulnerabilities marked informational (RustSec notices such as unmaintained or unsound crates) are not counted in vulnerability_count; they are counted in informational_count. " +
       "Each package's dependency_relation tells whether it is a direct or transitive dependency (determined for package-lock.json, go.mod, requirements.txt, and pom.xml; unknown otherwise). " +
-      "If coverage.complete is false, do not conclude that the project is safe even with zero findings. Upgrade recommendations (suggest_fix) are available for Java, JavaScript, Python, and Go.",
+      "If coverage.complete is false, do not conclude that the project is safe even with zero findings. Upgrade recommendations (suggest_fix) are available for Java, JavaScript, Python, and Go (not yet for Rust).",
     inputSchema: {
       project_path: z
         .string()

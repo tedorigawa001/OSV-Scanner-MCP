@@ -234,3 +234,32 @@ describe("handleSuggestFix: PyPI(v0.6.0)", () => {
     }
   });
 });
+
+describe("handleSuggestFix: Rust(Cargo.lock)", () => {
+  it("情報提供のアドバイザリだけのパッケージはvulnerable_package_countに数えない(v0.12.0ではunsupported_ecosystem)", async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-fix-cargo-"));
+    try {
+      await writeFile(
+        path.join(dir, "Cargo.lock"),
+        'version = 4\n\n[[package]]\nname = "atty"\nversion = "0.2.14"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n',
+      );
+      const json = JSON.stringify({
+        results: [{
+          source: { path: "/x/Cargo.lock", type: "lockfile" },
+          packages: [{
+            package: { name: "atty", version: "0.2.14", ecosystem: "crates.io" },
+            groups: [{ ids: ["RUSTSEC-2024-0375"], aliases: [], max_severity: "" }],
+            vulnerabilities: [{ id: "RUSTSEC-2024-0375", affected: [{ package: { name: "atty", ecosystem: "crates.io" }, database_specific: { informational: "unmaintained" } }] }],
+          }],
+        }],
+      });
+      const bin = await makeFakeBinary("cargo-informational", `echo '${json}'; exit 1`);
+      const payload = parsePayload(await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled", binaryPath: bin }));
+      expect(payload.vulnerable_package_count).toBe(0);
+      expect(payload.unfixed_vulnerability_count).toBe(0);
+      expect(payload.suggestions).toEqual([expect.objectContaining({ package: "atty", verification: "unsupported_ecosystem" })]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});

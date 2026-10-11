@@ -1,9 +1,10 @@
 /**
- * `scan_project`用の検出: Java / JavaScript / Python / Goのlockfileを列挙する。
+ * `scan_project`用の検出: Java / JavaScript / Python / Go / Rustのlockfileを列挙する。
  *
  * - 検出したファイルだけをosv-scannerに渡す(ディレクトリは渡さない)。解析形式も明示する
  * - パッケージマネージャー・ビルドは実行しない。lockfileが無いマニフェストはcoverageに記録する
  * - requirements.txtは取り込み先を検証し、プロジェクト外を読む場合はスキャン対象から外す
+ * - Cargo.lockはここで解析し、crates.io由来のパッケージだけをスキャンする(cargoLock.ts)
  *
  * 検出・除外の根拠はdocs/DESIGN_TODO.md「対象エコシステム拡大 詳細設計メモ」を参照。
  */
@@ -18,7 +19,7 @@ import {
   walkProjectFiles,
   type SearchLimitOptions,
 } from "./projectWalk.js";
-import { readRegularFile } from "./safeRead.js";
+import { capitalizeReason, readRegularFile } from "./safeRead.js";
 import {
   analyzeRequirementsFile,
   createRequirementsReadContext,
@@ -26,8 +27,19 @@ import {
   type RequirementIssue,
   type RequirementReference,
 } from "./requirementsFile.js";
+import {
+  cargoTomlPackageName,
+  cargoWorkspace,
+  workspaceIncludes,
+  type CargoWorkspace,
+  classifyCargoPackages,
+  parseCargoLock,
+  UNSCANNABLE_CRATE_REASONS,
+  type CargoLockClassification,
+  type CargoPackage,
+} from "./cargoLock.js";
 
-export type Ecosystem = "Maven" | "npm" | "PyPI" | "Go";
+export type Ecosystem = "Maven" | "npm" | "PyPI" | "Go" | "crates.io";
 
 /** ファイル名→(エコシステム, 解析形式)。npm-shrinkwrap.jsonはpackage-lock.json形式で解析する */
 const LOCKFILES = new Map<string, { ecosystem: Ecosystem; format: ManifestFormat }>([
@@ -44,12 +56,13 @@ const LOCKFILES = new Map<string, { ecosystem: Ecosystem; format: ManifestFormat
   ["Pipfile.lock", { ecosystem: "PyPI", format: "Pipfile.lock" }],
   ["pdm.lock", { ecosystem: "PyPI", format: "pdm.lock" }],
   ["go.mod", { ecosystem: "Go", format: "go.mod" }],
+  ["Cargo.lock", { ecosystem: "crates.io", format: "Cargo.lock" }],
 ]);
 
 /** requirements.txt / requirements-dev.txt / dev-requirements.txt 等 */
 const REQUIREMENTS_NAME = /^(?:[\w.]+[-_])?requirements(?:[-_][\w.]+)?\.txt$/;
 
-type LockGroup = "npm" | "pypi" | "gradle";
+type LockGroup = "npm" | "pypi" | "gradle" | "cargo";
 
 /** lockfileが無ければスキャンできないマニフェスト */
 const LOCK_MARKERS = new Map<string, LockGroup>([
@@ -62,9 +75,10 @@ const LOCK_MARKERS = new Map<string, LockGroup>([
   ["build.gradle.kts", "gradle"],
   ["settings.gradle", "gradle"],
   ["settings.gradle.kts", "gradle"],
+  ["Cargo.toml", "cargo"],
 ]);
 
-const LOCK_GROUP_ECOSYSTEM: Record<LockGroup, Ecosystem> = { npm: "npm", pypi: "PyPI", gradle: "Maven" };
+const LOCK_GROUP_ECOSYSTEM: Record<LockGroup, Ecosystem> = { npm: "npm", pypi: "PyPI", gradle: "Maven", cargo: "crates.io" };
 
 const LOCKFILE_HINTS: Record<LockGroup, string> = {
   npm:
@@ -76,11 +90,14 @@ const LOCKFILE_HINTS: Record<LockGroup, string> = {
   gradle:
     "No gradle.lockfile. Run `./gradlew dependencies --write-locks` in a trusted environment, then scan again " +
     "(if dependency locking is not configured, add dependencyLocking { lockAllConfigurations() } to build.gradle)",
+  cargo:
+    "No Cargo.lock. Run `cargo generate-lockfile` in a trusted environment (it fetches the registry index; " +
+    "for a workspace member, run it at the workspace root), then scan again",
 };
 
 const SKIPPED_DIRS = new Set([
   ".git", "node_modules", "target", "build", ".idea", ".vscode",
-  ".venv", "venv", "site-packages", "__pycache__", ".tox", "vendor",
+  ".venv", "venv", "site-packages", "__pycache__", ".tox", "vendor", ".cargo",
 ]);
 
 export interface DetectedManifest {
@@ -112,6 +129,23 @@ export interface RequirementsCopy {
   entries: string[];
 }
 
+/** Cargo.lockはosv-scannerに直接渡さず、crates.io由来のパッケージだけをコピーに書いてスキャンする */
+export interface CargoCopy {
+  /** 元ファイルのprojectDirからの相対パス */
+  path: string;
+  /** コピーに書くパッケージ。空ならスキャンしない */
+  packages: CargoPackage[];
+}
+
+/** スキャンしなかったcrate(gitの依存・別レジストリの依存) */
+export interface UnscannableCrateEntry {
+  /** Cargo.lockのprojectDirからの相対パス */
+  file: string;
+  name: string;
+  version: string;
+  reason: string;
+}
+
 export interface DetectedProject {
   projectDir: string;
   /** 解決済みの許可ルート(未設定ならundefined)。親POMの検証に使う */
@@ -120,6 +154,10 @@ export interface DetectedProject {
   /** スキャン対象の元のlockfile(requirements.txtは含まない)。osv-scannerにはスナップショットのコピーを渡す */
   targets: ManifestTarget[];
   requirementsCopies: RequirementsCopy[];
+  cargoCopies: CargoCopy[];
+  /** sourceなし(workspaceのメンバー・pathの依存)で、スキャンしなかったcrateの数(Cargo.lockごとに数えた合計) */
+  localCrateCount: number;
+  unscannableCrates: UnscannableCrateEntry[];
   lockfileMissing: LockfileMissing[];
   /** パスは絶対パス(表示時に相対化する) */
   requirementIssues: RequirementIssue[];
@@ -187,6 +225,81 @@ export class LockfileKeyCache {
   }
 }
 
+/** Cargo.lock1件の上限(読み込み自体の上限。合計はLockfileKeyCacheと同じ上限) */
+const MAX_CARGO_LOCK_BYTES = 64 * 1024 * 1024;
+const MAX_CARGO_TOML_BYTES = 1024 * 1024;
+
+/**
+ * Cargo.lockの解析結果を1回だけ作る(workspaceの収録確認とスキャン対象の生成で共用)。
+ * 元のファイルは安全に読み(safeRead)、osv-scannerには渡さない
+ */
+export class CargoLockCache {
+  private readonly results = new Map<string, CargoLockClassification | { reason: string }>();
+  private remaining: number;
+
+  constructor(maxTotalBytes = MAX_LOCKFILE_TOTAL_BYTES) {
+    this.remaining = maxTotalBytes;
+  }
+
+  async get(lockAbs: string, projectDir: string): Promise<CargoLockClassification | { reason: string }> {
+    const cached = this.results.get(lockAbs);
+    if (cached !== undefined) return cached;
+    let result: CargoLockClassification | { reason: string };
+    if (this.remaining <= 0) {
+      result = { reason: "Not read because the total size of the Cargo.lock files exceeded the limit" };
+    } else {
+      const read = await readRegularFile(lockAbs, { maxBytes: Math.min(MAX_CARGO_LOCK_BYTES, this.remaining), boundary: projectDir });
+      if (!read.ok) {
+        result = { reason: capitalizeReason(read.message) };
+      } else {
+        this.remaining -= read.bytes.length;
+        const parsed = parseCargoLock(read.bytes.toString("utf8"));
+        result = parsed.ok ? classifyCargoPackages(parsed.packages) : { reason: parsed.reason };
+      }
+    }
+    this.results.set(lockAbs, result);
+    return result;
+  }
+
+  private readonly workspaces = new Map<string, CargoWorkspace | null>();
+
+  /** Cargo.lockと同じディレクトリのCargo.tomlの`[workspace]`(1回だけ読む)。無い・読めない場合はnull */
+  async workspace(lockAbs: string, projectDir: string): Promise<CargoWorkspace | null> {
+    if (this.workspaces.has(lockAbs)) return this.workspaces.get(lockAbs)!;
+    const read = await readRegularFile(path.join(path.dirname(lockAbs), "Cargo.toml"), { maxBytes: MAX_CARGO_TOML_BYTES, boundary: projectDir });
+    const workspace = read.ok ? cargoWorkspace(read.bytes.toString("utf8")) : null;
+    this.workspaces.set(lockAbs, workspace);
+    return workspace;
+  }
+}
+
+/**
+ * 上位のCargo.lockに、メンバーのCargo.tomlのcrateが収録されているか。
+ * - 同名のsourceなしパッケージが無ければ未収録(false)。workspaceのメンバーでもpathの依存でもない
+ * - 同名があっても名前だけでは所属を確定しない(独立したサブプロジェクトが同名のこともある)。
+ *   Cargo.lockと同じディレクトリのCargo.tomlの`[workspace]`の`members`・`exclude`で所属を確認できた場合だけ収録(true)
+ * - それ以外は確認できない(null): `[package] name`を読めない、lockfileを解析できない、`[workspace]`が無い・解釈できない、
+ *   `members`に含まれない(pathの依存として収録されている可能性がある)、解釈できないglob
+ */
+async function cargoLockfileRecords(
+  cache: CargoLockCache,
+  projectDir: string,
+  lockfile: DetectedManifest,
+  memberToml: string,
+): Promise<boolean | null> {
+  const lock = await cache.get(path.join(projectDir, lockfile.path), projectDir);
+  if ("reason" in lock) return null;
+  const read = await readRegularFile(path.join(projectDir, memberToml), { maxBytes: MAX_CARGO_TOML_BYTES, boundary: projectDir });
+  const name = read.ok ? cargoTomlPackageName(read.bytes.toString("utf8")) : null;
+  if (name === null) return null;
+  if (!lock.localCrates.includes(name)) return false;
+  const lockAbs = path.join(projectDir, lockfile.path);
+  const workspace = await cache.workspace(lockAbs, projectDir);
+  if (workspace === null) return null;
+  const memberDir = path.relative(path.dirname(lockAbs), path.join(projectDir, path.dirname(memberToml))).split(path.sep).join("/");
+  return workspaceIncludes(workspace, memberDir) === true ? true : null;
+}
+
 /**
  * package-lock.json(v2以降)の`packages`に、memberDirのエントリがあるか。
  * true=収録 / false=未収録 / null=確認できない
@@ -214,6 +327,7 @@ async function findLockfileMissing(
   projectDir: string,
   markers: readonly { path: string; group: LockGroup }[],
   manifests: readonly DetectedManifest[],
+  cargoCache: CargoLockCache,
 ): Promise<LockfileMissing[]> {
   const cache = new LockfileKeyCache();
   const missing: LockfileMissing[] = [];
@@ -233,7 +347,9 @@ async function findLockfileMissing(
     for (const candidate of candidates) {
       const result = candidate.format === "package-lock.json"
         ? await npmLockfileRecords(cache, projectDir, candidate, markerDir)
-        : null;
+        : candidate.format === "Cargo.lock"
+          ? await cargoLockfileRecords(cargoCache, projectDir, candidate, marker.path)
+          : null;
       if (result === true) recorded = true;
       if (result !== false) confirmedAbsent = false;
     }
@@ -258,13 +374,17 @@ async function finalize(
   markers: { path: string; group: LockGroup }[],
   allowedRootReal: string | undefined,
 ): Promise<DetectedProject> {
+  const cargoCache = new CargoLockCache();
   const result: DetectedProject = {
     projectDir,
     allowedRootReal,
     manifests: [],
     targets: [],
     requirementsCopies: [],
-    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests),
+    cargoCopies: [],
+    localCrateCount: 0,
+    unscannableCrates: [],
+    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache),
     requirementIssues: [],
     requirementReferences: [],
     lowerBounds: [],
@@ -283,6 +403,17 @@ async function finalize(
       result.requirementReferences.push(...analysis.references);
       result.lowerBounds.push(...analysis.lowerBounds);
       result.requirementsCopies.push({ path: manifest.path, entries: analysis.entries });
+    } else if (manifest.format === "Cargo.lock") {
+      const lock = await cargoCache.get(absolute, projectDir);
+      if ("reason" in lock) {
+        result.skippedFiles.push({ path: manifest.path, reason: lock.reason });
+        continue;
+      }
+      result.cargoCopies.push({ path: manifest.path, packages: lock.cratesIo });
+      result.localCrateCount += lock.localCrates.length;
+      result.unscannableCrates.push(
+        ...lock.unscannable.map((c) => ({ file: manifest.path, name: c.name, version: c.version, reason: UNSCANNABLE_CRATE_REASONS[c.kind] })),
+      );
     } else {
       result.targets.push({ path: absolute, format: manifest.format });
     }

@@ -49,6 +49,7 @@ export function buildSbomReport(raw: unknown, input: SbomInput, snapshotPath: st
     },
     identified_vulnerability_count: report.vulnerability_count,
     identified_vulnerable_package_count: report.vulnerable_package_count,
+    ...(report.informational_count !== undefined ? { informational_count: report.informational_count } : {}),
     severity_breakdown: report.severity_breakdown,
     packages: report.packages,
   };

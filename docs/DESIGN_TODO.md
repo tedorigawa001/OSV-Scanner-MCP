@@ -796,7 +796,9 @@ Nodeの権限モデル(`--permission`)でサーバーを起動し、スナップ
 requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**本サーバーが解析した結果からcrates.io由来のパッケージだけを書いたコピー**をスキャンする。
 
 - 対象: `source`が`registry+https://github.com/rust-lang/crates.io-index`または`sparse+https://index.crates.io/`のパッケージ
+- `[replace]`で置換されたパッケージ(`replace = "名前 版 (source)"`を持つもの)は使われないためスキャンしない。置換先は別の`[[package]]`として記載され、そのsourceで分類する(cargo 1.98で確認: pathへの置換は`replace = "anyhow 1.0.102"`とsourceなしの置換先)。置換先を解釈できない・記載が無い場合はファイル全体を除外する(レビュー指摘、2026-10-11: `replace`をchecksumと同様に読み飛ばすと、置換元のcrates.ioのcrateが残り、使っていない版の脆弱性を報告する)
 - `source`なし(workspaceのメンバー・pathの依存): 利用者自身のコードとしてスキャンしない。coverageには数だけ示す(`local_crates`)。完全性(`complete`)には影響させない
+- `local_crates`・`unscannable_crates`は、Cargo.lockをスキャンした場合だけcoverageに付ける(従来の応答を変えない)
 - gitの依存・別レジストリの依存: スキャンしない。第三者のコードが未検査なので、`coverage.unscannable_crates[]`に名前・版・理由(git: 版がcrates.ioのリリースと対応しない / 別レジストリ: crates.ioと同名でも別物で、名前を外部に送らない)を記録し、`complete: false`にする。sourceのURLは応答に出さない(認証情報やホスト名を含み得る)
 - コピーの形式: `version = 3`と、各パッケージの`name`・`version`・`source`だけの`[[package]]`。osv-scannerが読む内容は常に本サーバーが生成したものになる(解析の食い違いによる取りこぼし・境界外の読み込みが起きない)
 - 解析器(`src/utils/cargoLock.ts`): cargoが生成する範囲のTOMLだけを受け付ける厳格な行解析(TOMLの汎用パーサーは追加しない)。受け付ける行: コメント・空行、先頭の`version = 整数`、`[[package]]`、`[[patch.unused]]`(読み飛ばす)、`[metadata]`(v1。読み飛ばす)、`キー = "文字列"`、`dependencies = [`〜`]`の各行の`"..."`。文字列のエスケープは`\"` `\\` `\uXXXX`程度。**想定外の行が1つでもあればファイル全体をスキャン対象から外し**、`skipped_files`に理由を記録する(部分的に読んで取りこぼしを隠さない)。サイズ・パッケージ数の上限は既存の読み込みの上限を共用
@@ -806,16 +808,16 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 
 保守終了・健全性の欠陥を「脆弱性」として件数に含めると、LLMが重大度を誤って要約する。一方で隠すと保守終了のcrateを見落とす。
 
-- 判定: グループ内で**詳細を取得できたレコードのすべて**が、そのパッケージの`affected[]`に`database_specific.informational`を持つ場合だけ、そのグループを情報提供とする。GHSA等が脆弱性として登録していれば(1件でも`informational`なし)従来どおり脆弱性(上の`failure`は脆弱性のまま)
+- 判定: グループに関連する**すべてのID**(グループの`ids`・`aliases`と、各レコードの`aliases`)について詳細のレコードがあり、そのすべてが、そのパッケージの`affected[]`のすべてに`database_specific.informational`(既知の種類)を持つ場合だけ、そのグループを情報提供とする。GHSA等が脆弱性として登録していれば(1件でも`informational`なし)従来どおり脆弱性(上の`failure`は脆弱性のまま)。**詳細の欠けたID・未知の種類があれば分類を確かめられないため脆弱性として扱う**(レビュー指摘、2026-10-11: 「取得できたレコードのすべて」では、RustSecの情報提供レコードだけ詳細があり、aliasesにだけ現れるGHSAの詳細が欠けた場合に脆弱性から外してしまう)。実データ(情報提供のレコード36件)では10件がGHSA・CVEのaliasesを持ち、通常はGHSAも`ids`に詳細付きで含まれる
 - 出力: 該当グループの`ScanReportVulnerability`に`informational: "unmaintained" | "unsound" | "notice"`(複数の種類なら`unsound` > `unmaintained` > `notice`の順で1つ)を付ける。`packages[]`には残す
-- 件数: 情報提供のグループは`vulnerability_count`・`severity_breakdown`・`vulnerable_package_count`に数えず、`informational_count`(新設。crates.io以外では常に0)に数える。情報提供だけのパッケージも`packages[]`に含め、並び順は脆弱性のあるパッケージの後ろ
+- 件数: 情報提供のグループは`vulnerability_count`・`severity_breakdown`・`vulnerable_package_count`に数えず、`informational_count`(新設)に数える。実装時の判断: `informational_count`は1件以上の場合だけ付ける(scan_java_project等は報告をそのまま展開するため、常に付けると従来の応答が変わる)。scan_project・scan_sbom・`ecosystem_breakdown`も同じ。suggest_fixの`vulnerable_package_count`も情報提供だけのパッケージを数えない情報提供だけのパッケージも`packages[]`に含め、並び順は脆弱性のあるパッケージの後ろ
 - 既存のエコシステムへの影響: `informational`はRustSec由来のレコードだけが持つため、Maven・npm・PyPI・Goの応答は変わらない(回帰テストで確認)
 
 ### 検出(`manifestDetector.ts`)
 
 - `Cargo.lock` → エコシステム`crates.io`。解析形式`Cargo.lock`を`MANIFEST_FORMATS`に追加(osv-scannerにはコピーだけを渡す)
 - `Cargo.toml`(lockfileなし) → `lockfile_missing`。案内は「信頼できる環境で`cargo generate-lockfile`を実行してから再スキャン(依存の取得を伴う)」。ライブラリのcrateはCargo.lockをコミットしない慣習が長かったため、ここに記録されるケースが多い旨をREADMEに書く
-- workspace: メンバーの`Cargo.toml`はサブディレクトリにあり、`Cargo.lock`はworkspaceのルートにだけある。上位の`Cargo.lock`に、メンバーの`[package] name`と同名の`source`なしパッケージがあれば充足とする(npm workspacesの確認と同じ考え方)。`name`は`[package]`テーブルの`name = "..."`だけを行解析で読み、読めなければ`status: "unconfirmed"`
+- workspace: メンバーの`Cargo.toml`はサブディレクトリにあり、`Cargo.lock`はworkspaceのルートにだけある。上位の`Cargo.lock`に、メンバーの`[package] name`と同名の`source`なしパッケージがあり、**かつ`Cargo.lock`と同じディレクトリの`Cargo.toml`の`[workspace]`の`members`・`exclude`で所属を確認できた場合だけ**充足とする(レビュー指摘、2026-10-11: 名前だけでは、ルートの`app@0.1.0`と独立したサブプロジェクトの`app@0.2.0`を区別できず、サブ側の欠落を隠す)。所属の規則はcargo 1.98で確認: `members`はglob(`*`・`?`のみ対応。`**`・`[...]`等は判定できない)で展開し、`exclude`はパスの前方一致で除くが、`members`に文字どおり書かれたパスの配下は`exclude`より優先する。Cargo.tomlは文字列・配列の外で始まる行だけを見出し・キーとして読む(レビュー指摘、2026-10-11: 行ごとに判定すると、`description = """`の複数行文字列の中の`[workspace]` / `members = ["sub"]`を本物の設定と誤認し、独立した`sub`の欠落を再び見逃す。`[package] name`の読み取りも同様)。閉じない文字列・括弧の不整合、読み落としの可能性がある書き方(引用符付きのキー、ルートのテーブルの`workspace.`のドット付きのキー、配列内の複数行文字列)は解釈できないものとしてnull。同名があっても所属を確認できなければ`unconfirmed`(workspace外のpathの依存は収録されているが、同名の独立crateと区別できないため。ルートに`[workspace]`の無いプロジェクトのpathの依存も`unconfirmed`になり`complete: false`になる。依存元のCargo.tomlの`path = "..."`との照合は今後の改善)。同名のパッケージが無ければ`status: "missing"`(workspaceのメンバーでもpathの依存でもないため、そのcrateは別のlockfileを使う)。`name`は`[package]`テーブルの`name = "..."`だけを行解析で読み、読めなければ(virtual manifest・`name.workspace`等)`status: "unconfirmed"`
 - 除外ディレクトリ: `target`は既存。`.cargo`(レジストリのキャッシュ等)を追加。`vendor`は既存(`cargo vendor`の出力を含む)
 
 ### 直接/推移的依存の区別(Cargo.lockから)
@@ -827,14 +829,15 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 
 ### suggest_fix
 
-- バージョン比較: `crates.io`をSemVerのエコシステムに加える(`versionScheme.ts`)。Cargoのキャレット(`^`、既定の要求)はnpmと同じ規則(1.0以上はメジャーが同じなら互換、0.xはマイナーまで、0.0.xは完全一致)のため、`classifyCaret`をそのまま使う。すなわち`cross_major`でなければ、Cargo.tomlの既定の要求の範囲内で更新できる
+- バージョン比較: `crates.io`をSemVerのエコシステムに加える(`versionScheme.ts`)。Cargoのキャレット(`^`、既定の要求)はnpmと同じ規則(1.0以上はメジャーが同じなら互換、0.xはマイナーまで、0.0.xは完全一致)のため、`classifyCaret`をそのまま使う。すなわち正式版の推奨で`cross_major`でなければ、Cargo.tomlの既定の要求の範囲内で更新できる(プレリリースの推奨は例外。下記`update_hint`)
 - 情報提供のグループは修正版の推奨の対象にしない(`unmaintained`は版を上げても解消しない)。`per_cve_detail`に`informational`を付けて残し、`unfixed`の件数に数えない。注記に「保守終了のcrateは代替への移行を検討」を含める
 - 推奨先のOSV照会(`candidateCheck.ts`): 候補に該当するレコードのうち、`unmaintained`・`notice`の情報提供はcrate全体の状態で版の選択に関係しないため無視する。`unsound`は版ごとの欠陥のため従来どおり既知の脆弱性として扱う
 - `update_hint`(直接/推移的とTierで分ける):
   - 直接・`cross_major`以外: `cargo update -p <name>@<現在の版> --precise <推奨版>`でCargo.lockだけを更新できる(Cargo.tomlの要求が`=`や`~`で固定されていれば要求を変更)
   - 直接・`cross_major`: 依存元のcrate(`source`なしのパッケージ名)のCargo.tomlの要求を変更する
   - 推移的・`cross_major`以外: 同じく`cargo update -p <name>@<現在の版> --precise <推奨版>`(依存元の要求が許す範囲なら、Cargo.tomlを変えずに更新できる)
-  - 推移的・`cross_major`: `introduced_by`の直接依存の更新が必要。`[patch.crates-io]`は最後の手段
+  - 推移的・`cross_major`: `introduced_by`の直接依存を、推奨版を許す要求の版へ更新する必要がある。`[patch.crates-io]`は要求範囲を強制的に変える仕組みではなく、同じcrateを別のソース(修正を取り込んだforkやバックポート)に差し替える仕組みで、差し替え先の版も依存元の版要求を満たす必要がある(Cargo公式文書「Overriding Dependencies」)。そのため案内は「依存元の要求の範囲内の修正版(バックポート)を`[patch.crates-io]`で使う」場合に限定し、メジャー更新の代替としては示さない(レビュー指摘、2026-10-11)
+  - **プレリリースの推奨**(`recommended_is_prerelease`): Cargoの要求(`"1.2"`等の既定のキャレット)は、要求自体にプレリリースを書かない限りプレリリース版に一致しない(Cargo公式文書「Specifying Dependencies」)。`cross_major`でなくても`cargo update --precise`だけでは更新できないことがあるため、直接依存なら要求をプレリリース版に変更し(`"=1.3.0-rc.1"`等)、推移的依存なら依存元の要求がその版を許す必要がある旨を案内する(レビュー指摘、2026-10-11)。上の「`cross_major`でなければ既定の要求の範囲内」は正式版の推奨に限る
   - `<name>@<版>`の指定は、同じcrateの複数版がCargo.lockにある場合に対象を一意にするため
 
 ### 段階計画(推奨案)
@@ -846,8 +849,18 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 
 - 解析器: v1/v3/v4、`[[patch.unused]]`、`[metadata]`、同名の複数版、依存の3形式、エスケープ、想定外の行・壊れた入力でファイル全体を除外、サイズ上限
 - 誤検知の回帰テスト: ローカル・git・別レジストリのcrateに同名のcrates.ioの脆弱性がある場合に、報告されず`unscannable_crates`・`local_crates`に示されること(偽スキャナーでコピーの内容を検証し、実バイナリでMCP経由でも確認)
-- 情報提供: 情報提供だけのグループ・GHSAと混在するグループ・件数の分離・既存エコシステムの応答の不変(v0.11.0のworktreeとの出力ハッシュの比較)
+- 情報提供: 情報提供だけのグループ・GHSAと混在するグループ・詳細の欠けたaliases・件数の分離・既存エコシステムの応答の不変(v0.11.0のworktreeとの出力ハッシュの比較)
+- v0.13.0の`update_hint`: プレリリースの推奨(要求の変更が必要な旨)、推移的依存の`cross_major`(依存元の更新。`[patch.crates-io]`をメジャー更新の代替として示さない)
 - 実バイナリでMCP経由の確認(複数言語の混在を含む)と、接続先がapi.osv.devだけであること
+
+### v0.12.0の実装結果(2026-10-11)
+
+- 実装: `src/utils/cargoLock.ts`(解析・分類・コピーの生成・Cargo.tomlのname)、`manifestDetector.ts`(`CargoLockCache`で解析を1回にし、workspaceの確認とスキャン対象の生成で共用)、`scanProject.ts`(コピーの書き込み・coverage)、`scanReport.ts`(`informational`・`informational_count`・`hasVulnerability`)
+- osv-scannerは`--lockfile Cargo.lock:<生成したコピー>`(拡張子`.txt`)でも読むことを実機で確認
+- 実バイナリでMCP経由の確認: 誤検知のフィクスチャ(ローカルの`failure`・gitの`smallvec`・別レジストリの`atty`)で、crates.io由来の`time`だけが報告され、3件は`local_crates`・`unscannable_crates`に出た。workspaceのフィクスチャで`atty`のunmaintainedが情報提供になり、GHSAと混在するunsoundは脆弱性のまま。Cargo.lockだけのスキャンの接続先はapi.osv.devだけ(CONNECTプロキシで確認)。5エコシステム混在でも件数が分かれる
+- 回帰: npm・Go・PyPI・Gradleの混在プロジェクトで、scan_project・suggest_fixの応答がv0.11.0とバイト単位で一致(候補照会は無効にして比較)
+- 変異確認: 全crateをスキャン対象にする変更・情報提供の判定を外す変更・aliasesを判定に含めない変更・`[replace]`の置換元を除かない変更・名前だけでworkspaceの所属を判定する変更・Cargo.tomlを行ごとに判定する変更で、それぞれ追加したテストが失敗する
+- cargoで生成したlockfile(`--offline`、ダウンロードなし)での確認: `[replace]`でpathに置換した`anyhow`はスキャンされない(osv-scanner単体では置換元をスキャンする)。members・exclude・globのworkspaceで、非メンバーと除外したcrateは`missing`
 
 ### 未確認事項
 

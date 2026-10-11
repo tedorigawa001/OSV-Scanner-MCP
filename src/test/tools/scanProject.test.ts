@@ -35,7 +35,7 @@ function pkg(ecosystem: string, name: string, version: string, extra: Record<str
   };
 }
 
-/** 渡された引数とrequirements.txtのコピーの中身を記録し、指定のJSONを返す偽osv-scanner */
+/** 渡された引数とrequirements.txt・Cargo.lockのコピーの中身を記録し、指定のJSONを返す偽osv-scanner */
 async function fakeScanner(output: unknown): Promise<{ bin: string; argsFile: string; copiesFile: string }> {
   const id = Math.random().toString(36).slice(2);
   const argsFile = path.join(binDir, `args-${id}.txt`);
@@ -47,7 +47,8 @@ async function fakeScanner(output: unknown): Promise<{ bin: string; argsFile: st
   await writeFile(
     bin,
     `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsFile}'\n` +
-      `for a in "$@"; do case "$a" in requirements.txt:*) cat "\${a#requirements.txt:}" >> '${copiesFile}';; esac; done\n` +
+      `for a in "$@"; do case "$a" in requirements.txt:*) cat "\${a#requirements.txt:}" >> '${copiesFile}';; ` +
+      `Cargo.lock:*) cat "\${a#Cargo.lock:}" >> '${copiesFile}';; esac; done\n` +
       `cat '${outFile}'\nexit 1\n`,
   );
   await chmod(bin, 0o755);
@@ -371,5 +372,119 @@ process.exit(1);`);
     const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin }));
     const byName = Object.fromEntries((p.packages as Record<string, unknown>[]).map((x) => [x.name, x.dependency_relation]));
     expect(byName).toEqual({ "g:a": "direct", "g:b": "mixed" });
+  });
+});
+
+describe("handleScanProject: Rust(Cargo.lock)", () => {
+  const CRATES_IO = "registry+https://github.com/rust-lang/crates.io-index";
+  const LOCK = `version = 4
+
+[[package]]
+name = "failure"
+version = "0.1.8"
+dependencies = ["smallvec", "atty"]
+
+[[package]]
+name = "smallvec"
+version = "1.6.0"
+source = "git+https://github.com/me/smallvec-fork#0123456789abcdef"
+
+[[package]]
+name = "atty"
+version = "0.2.14"
+source = "registry+https://my-company.example/index"
+
+[[package]]
+name = "time"
+version = "0.1.43"
+source = "sparse+https://index.crates.io/"
+
+[[package]]
+name = "libc"
+version = "0.2.80"
+source = "${CRATES_IO}"
+checksum = "4d58d1b70b004888f764dfbf6a26a3b0342a1632d33968e4a179d8011c760614"
+`;
+
+  it("回帰: ローカル・git・別レジストリのcrateはスキャナーに渡さず(誤検知・名前の送信の防止)、coverageに示す", async () => {
+    const dir = await makeProject({ "Cargo.toml": `[package]\nname = "failure"\n`, "Cargo.lock": LOCK });
+    const { bin, argsFile, copiesFile } = await fakeScanner({ results: [] });
+    const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin, noRemoteResolution: false }));
+    const args = (await readFile(argsFile, "utf8")).trim().split("\n");
+    const cargoArgs = args.filter((a) => a.startsWith("Cargo.lock:"));
+    expect(cargoArgs).toHaveLength(1);
+    const copy = cargoArgs[0]!.slice("Cargo.lock:".length);
+    expect(copy.startsWith(dir)).toBe(false); // 元のファイルは渡さない
+    expect(await exists(copy)).toBe(false);
+    expect(await readFile(copiesFile, "utf8")).toBe(
+      `version = 3\n\n[[package]]\nname = "time"\nversion = "0.1.43"\nsource = "sparse+https://index.crates.io/"\n\n` +
+        `[[package]]\nname = "libc"\nversion = "0.2.80"\nsource = "${CRATES_IO}"\n`,
+    );
+    expect(p.coverage).toMatchObject({
+      complete: false,
+      manifests: [{ path: "Cargo.lock", ecosystem: "crates.io", format: "Cargo.lock" }],
+      lockfile_missing: [],
+      local_crates: 1,
+      unscannable_crates: [
+        { file: "Cargo.lock", name: "smallvec", version: "1.6.0", reason: expect.stringContaining("Git dependency") },
+        { file: "Cargo.lock", name: "atty", version: "0.2.14", reason: expect.stringContaining("not sent to api.osv.dev") },
+      ],
+    });
+    expect(p.coverage.warning).toContain("unscannable_crates");
+    expect(JSON.stringify(p)).not.toContain("my-company.example"); // sourceのURLは応答に出さない
+  });
+
+  it("crates.io由来のパッケージが無ければスキャナーを起動せず、ローカルのcrateだけならcomplete", async () => {
+    const dir = await makeProject({ "Cargo.lock": `version = 4\n\n[[package]]\nname = "app"\nversion = "0.1.0"\n` });
+    const { bin, argsFile } = await fakeScanner({ results: [] });
+    const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin, noRemoteResolution: false }));
+    expect(await exists(argsFile)).toBe(false);
+    expect(p.coverage).toMatchObject({ complete: true, local_crates: 1, unscannable_crates: [] });
+  });
+
+  it("Cargo.lockが無いプロジェクトの応答にはRust用の項目を付けない(従来の応答と同じ)", async () => {
+    const dir = await makeProject({ "go.mod": "module x\n" });
+    const { bin } = await fakeScanner({ results: [] });
+    const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin, noRemoteResolution: false }));
+    expect(Object.keys(p.coverage)).toEqual([
+      "complete", "manifests", "lockfile_missing", "unpinned_requirements", "unscannable_requirements", "skipped_files",
+    ]);
+    expect(p).not.toHaveProperty("informational_count");
+  });
+
+  it("情報提供のアドバイザリは件数から外し、informational_countとエコシステム別の件数に示す", async () => {
+    const dir = await makeProject({ "Cargo.lock": `version = 4\n\n[[package]]\nname = "atty"\nversion = "0.2.14"\nsource = "${CRATES_IO}"\n` });
+    const affected = (informational?: string) => [{
+      package: { name: "atty", ecosystem: "crates.io" },
+      ranges: [{ type: "SEMVER", events: [{ introduced: "0.0.0-0" }] }],
+      ...(informational ? { database_specific: { informational } } : {}),
+    }];
+    const { bin } = await fakeScanner({
+      results: [{
+        source: { path: "/x/Cargo.lock", type: "lockfile" },
+        packages: [{
+          package: { name: "atty", version: "0.2.14", ecosystem: "crates.io" },
+          groups: [
+            { ids: ["RUSTSEC-2021-0145", "GHSA-g98v-hv3f-hcfr"], aliases: [], max_severity: "" },
+            { ids: ["RUSTSEC-2024-0375"], aliases: [], max_severity: "" },
+          ],
+          vulnerabilities: [
+            { id: "RUSTSEC-2021-0145", affected: affected("unsound") },
+            { id: "GHSA-g98v-hv3f-hcfr", affected: affected() },
+            { id: "RUSTSEC-2024-0375", affected: affected("unmaintained") },
+          ],
+        }],
+      }],
+    });
+    const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin, noRemoteResolution: false }));
+    expect(p.vulnerability_count).toBe(1);
+    expect(p.informational_count).toBe(1);
+    expect(p.ecosystem_breakdown).toEqual({
+      "crates.io": { manifests: 1, vulnerable_package_count: 1, vulnerability_count: 1, informational_count: 1 },
+    });
+    expect(p.packages[0].vulnerabilities.map((v: { id: string; informational?: string }) => [v.id, v.informational ?? null])).toEqual([
+      ["RUSTSEC-2021-0145", null],
+      ["RUSTSEC-2024-0375", "unmaintained"],
+    ]);
   });
 });

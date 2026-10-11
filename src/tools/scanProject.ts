@@ -1,5 +1,5 @@
 /**
- * `scan_project`ツールのハンドラ: Java / JavaScript / Python / Goのlockfileをまとめてスキャンする。
+ * `scan_project`ツールのハンドラ: Java / JavaScript / Python / Go / Rustのlockfileをまとめてスキャンする。
  *
  * 誤要約対策(JAR実体スキャンと同じ原則): スキャンできなかった依存を示すcoverageを件数より前に置き、
  * complete=falseの場合は「検出0件でも安全とは言えない」旨の警告を付ける。
@@ -8,7 +8,7 @@
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import { isRemoteResolutionDisabled, runOsvScan, type RunOsvScanOptions } from "../osv/runner.js";
-import { packageSources, parseOsvScanOutput, type ScanReport, type ScanReportPackage } from "../osv/scanReport.js";
+import { hasVulnerability, packageSources, parseOsvScanOutput, type ScanReport, type ScanReportPackage } from "../osv/scanReport.js";
 import {
   combineRelations,
   goModRelations,
@@ -18,6 +18,7 @@ import {
   type RelationInfo,
   type RelationLookup,
 } from "../utils/dependencyRelations.js";
+import { cargoLockCopyContent } from "../utils/cargoLock.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
 import { readRegularFile } from "../utils/safeRead.js";
 import { detectProject, type DetectedProject } from "../utils/manifestDetector.js";
@@ -34,7 +35,7 @@ export const TRANSITIVE_OMITTED_WARNING =
 
 const INCOMPLETE_WARNING =
   "Some dependencies were not scanned, or were scanned at an assumed version " +
-  "(see lockfile_missing / unpinned_requirements / unscannable_requirements / skipped_files). " +
+  "(see lockfile_missing / unpinned_requirements / unscannable_requirements / unscannable_crates / skipped_files). " +
   "Zero findings does not confirm that those dependencies are safe";
 
 /** coverageの各一覧の上限(巨大なrequirements.txtで応答を膨らませない) */
@@ -50,12 +51,15 @@ export function buildCoverage(project: DetectedProject) {
   const unpinned = capped(project.requirementIssues);
   const unscannable = capped(project.requirementReferences);
   const skipped = capped(project.skippedFiles);
+  const crates = capped(project.unscannableCrates);
   const complete =
     project.lockfileMissing.length === 0 &&
     project.requirementIssues.length === 0 &&
     project.requirementReferences.length === 0 &&
+    project.unscannableCrates.length === 0 &&
     project.skippedFiles.length === 0;
-  const omitted = lockfileMissing.omitted + unpinned.omitted + unscannable.omitted + skipped.omitted;
+  const omitted = lockfileMissing.omitted + unpinned.omitted + unscannable.omitted + crates.omitted + skipped.omitted;
+  const hasCargo = project.manifests.some((m) => m.format === "Cargo.lock");
   return {
     complete,
     ...(complete ? {} : { warning: INCOMPLETE_WARNING }),
@@ -79,21 +83,43 @@ export function buildCoverage(project: DetectedProject) {
       text: sanitizeExternalText(ref.text),
       reason: ref.reason,
     })),
+    // Rust: 従来のエコシステムの応答を変えないよう、Cargo.lockをスキャンした場合だけ付ける
+    ...(hasCargo
+      ? {
+          local_crates: project.localCrateCount,
+          unscannable_crates: crates.items.map((c) => ({
+            file: sanitizeExternalText(c.file),
+            name: sanitizeExternalText(c.name),
+            version: sanitizeExternalText(c.version),
+            reason: c.reason,
+          })),
+        }
+      : {}),
     skipped_files: skipped.items.map((s) => ({ path: sanitizeExternalText(s.path), reason: sanitizeExternalText(s.reason) })),
     ...(omitted > 0 ? { omitted_items: omitted } : {}),
   };
 }
 
+interface EcosystemCounts {
+  manifests: number;
+  vulnerable_package_count: number;
+  vulnerability_count: number;
+  /** 情報提供のアドバイザリ(RustSecのunmaintained等)の件数。1件以上ある場合だけ付ける */
+  informational_count?: number;
+}
+
 function ecosystemBreakdown(project: DetectedProject, packages: readonly ScanReportPackage[]) {
-  const breakdown: Record<string, { manifests: number; vulnerable_package_count: number; vulnerability_count: number }> = {};
+  const breakdown: Record<string, EcosystemCounts> = {};
   for (const manifest of project.manifests) {
     breakdown[manifest.ecosystem] ??= { manifests: 0, vulnerable_package_count: 0, vulnerability_count: 0 };
     breakdown[manifest.ecosystem]!.manifests++;
   }
   for (const pkg of packages) {
-    breakdown[pkg.ecosystem] ??= { manifests: 0, vulnerable_package_count: 0, vulnerability_count: 0 };
-    breakdown[pkg.ecosystem]!.vulnerable_package_count++;
-    breakdown[pkg.ecosystem]!.vulnerability_count += pkg.vulnerabilities.length;
+    const counts = (breakdown[pkg.ecosystem] ??= { manifests: 0, vulnerable_package_count: 0, vulnerability_count: 0 });
+    const informational = pkg.vulnerabilities.filter((v) => v.informational !== undefined).length;
+    if (hasVulnerability(pkg)) counts.vulnerable_package_count++;
+    counts.vulnerability_count += pkg.vulnerabilities.length - informational;
+    if (informational > 0) counts.informational_count = (counts.informational_count ?? 0) + informational;
   }
   return breakdown;
 }
@@ -220,6 +246,12 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
       targets.push({ path: generated, format: "requirements.txt" });
       relationSources.push({ copy: generated, format: "requirements.txt", originalRelative: copy.path, entries: copy.entries });
     }
+    for (const copy of project.cargoCopies) {
+      if (copy.packages.length === 0) continue;
+      const generated = await snapshot.writeGenerated(cargoLockCopyContent(copy.packages));
+      targets.push({ path: generated, format: "Cargo.lock" });
+      relationSources.push({ copy: generated, format: "Cargo.lock", originalRelative: copy.path });
+    }
     if (targets.length === 0) return parseOsvScanOutput({ results: [] });
     const report = await withScopeNotes(project.skippedFiles, () => snapshot.guard(() => runOsvScan(targets, options)));
     // 判定はコピーを読むため、スナップショットを消す前に行う
@@ -244,6 +276,7 @@ export async function handleScanProject(
       ecosystem_breakdown: ecosystemBreakdown(project, report.packages),
       vulnerable_package_count: report.vulnerable_package_count,
       vulnerability_count: report.vulnerability_count,
+      ...(report.informational_count !== undefined ? { informational_count: report.informational_count } : {}),
       severity_breakdown: report.severity_breakdown,
       packages: markLowerBounds(project, report.packages),
     });

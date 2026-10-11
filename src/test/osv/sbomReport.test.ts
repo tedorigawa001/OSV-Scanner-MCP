@@ -54,3 +54,18 @@ describe("buildSbomReport", () => {
     expect(() => buildSbomReport(raw, input, snapshot)).toThrowError(expect.objectContaining({ kind: "invalid_output" }));
   });
 });
+
+describe("buildSbomReport: RustSecの情報提供アドバイザリ", () => {
+  it("情報提供のグループは件数に数えず、informational_countに示す(無ければ項目自体を付けない)", () => {
+    const crate = {
+      package: { name: "atty", version: "0.2.14", ecosystem: "crates.io" },
+      groups: [{ ids: ["RUSTSEC-2024-0375"], max_severity: "" }],
+      vulnerabilities: [{ id: "RUSTSEC-2024-0375", affected: [{ package: { name: "atty", ecosystem: "crates.io" }, database_specific: { informational: "unmaintained" } }] }],
+    };
+    const report = buildSbomReport({ results: [result([pkg("g:a", true), crate])] }, input, snapshot);
+    expect(report.identified_vulnerability_count).toBe(1);
+    expect(report.identified_vulnerable_package_count).toBe(1);
+    expect(report).toMatchObject({ informational_count: 1 });
+    expect(buildSbomReport({ results: [result([pkg("g:a", true)])] }, input, snapshot)).not.toHaveProperty("informational_count");
+  });
+});

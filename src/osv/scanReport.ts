@@ -30,6 +30,11 @@ export interface ScanReportVulnerability {
   /** `group.max_severity`(CVSSスコア)。空文字・非数値はnull */
   severity_score: number | null;
   severity: SeverityLevel;
+  /**
+   * RustSecの情報提供アドバイザリ(保守終了・健全性の欠陥等)。グループ内のすべてのレコードが
+   * `affected[].database_specific.informational`を持つ場合だけ付ける。脆弱性の件数・深刻度の集計には数えない
+   */
+  informational?: InformationalKind;
   /** OSVエントリのsummary。外部由来テキストのため長さ上限あり */
   summary: string | null;
   /**
@@ -78,11 +83,75 @@ export interface ScanReportPackage {
 export interface ScanReport {
   /** スキャン対象として認識されたファイル(pom.xml等)のパス */
   source_files: string[];
+  /** 情報提供でない脆弱性を1件以上持つパッケージの数 */
   vulnerable_package_count: number;
+  /** 情報提供(informational)のグループを除いた件数 */
   vulnerability_count: number;
+  /** 情報提供のグループの件数。1件以上ある場合だけ付ける(従来のエコシステムの応答を変えない) */
+  informational_count?: number;
   severity_breakdown: Record<SeverityLevel, number>;
   /** 最も深刻な脆弱性を持つパッケージ順 */
   packages: ScanReportPackage[];
+}
+
+/**
+ * RustSecの`informational`の値。並びは複数の種類が混在するグループで代表にする優先順
+ * (健全性の欠陥は版ごとの欠陥で、保守終了・通知より重い)
+ */
+export const INFORMATIONAL_KINDS = ["unsound", "unmaintained", "notice"] as const;
+export type InformationalKind = (typeof INFORMATIONAL_KINDS)[number];
+
+function isInformationalKind(value: string): value is InformationalKind {
+  return (INFORMATIONAL_KINDS as readonly string[]).includes(value);
+}
+
+/**
+ * OSVレコードのうち、対象パッケージの`affected[]`の`database_specific.informational`。
+ * 該当する`affected[]`が無い・1つでも値が無い(未知の値を含む)場合はnull
+ */
+export function recordInformationalKind(
+  record: Record<string, unknown>,
+  packageName: string,
+  ecosystem: string,
+): InformationalKind | null {
+  let kind: InformationalKind | null = null;
+  let matched = false;
+  for (const affectedRaw of asArray(record.affected)) {
+    const affected = asRecord(affectedRaw);
+    const pkg = asRecord(affected?.package);
+    const affectedName = asString(pkg?.name);
+    if (affectedName === null || !samePackageName(affectedName, packageName, ecosystem) || asString(pkg?.ecosystem) !== ecosystem) continue;
+    matched = true;
+    const value = asString(asRecord(affected!.database_specific)?.informational);
+    if (value === null || !isInformationalKind(value)) return null;
+    if (kind === null || INFORMATIONAL_KINDS.indexOf(value) < INFORMATIONAL_KINDS.indexOf(kind)) kind = value;
+  }
+  return matched ? kind : null;
+}
+
+/**
+ * グループが情報提供か。関連するすべてのID(グループのids・aliases、各レコードのaliases)の詳細があり、
+ * そのすべてが情報提供の場合だけ種類を返す。GHSA等が同じ欠陥を脆弱性として登録していれば(informationalなし)、
+ * また詳細の欠けたID(aliasesにだけ現れるGHSA・CVE等)があれば分類を確かめられないため、従来どおり脆弱性として扱う
+ */
+function groupInformationalKind(
+  details: unknown[],
+  ids: readonly string[],
+  aliases: readonly string[],
+  packageName: string,
+  ecosystem: string,
+): InformationalKind | null {
+  if (ids.length === 0) return null;
+  const related = new Set([...ids, ...aliases]);
+  for (const record of findVulnDetails(details, ids)) for (const alias of asStrings(record.aliases)) related.add(alias);
+  let kind: InformationalKind | null = null;
+  for (const id of related) {
+    const record = findVulnDetails(details, [id])[0];
+    const recordKind = record === undefined ? null : recordInformationalKind(record, packageName, ecosystem);
+    if (recordKind === null) return null;
+    if (kind === null || INFORMATIONAL_KINDS.indexOf(recordKind) < INFORMATIONAL_KINDS.indexOf(kind)) kind = recordKind;
+  }
+  return kind;
 }
 
 /** 外部由来のsummaryをLLMに渡す際の長さ上限(プロンプト肥大・DoS対策) */
@@ -249,6 +318,7 @@ export function parseOsvScanOutput(raw: unknown): ScanReport {
 
         const score = parseSeverityScore(asString(group.max_severity));
         const vulnDetails = findVulnDetails(details, ids);
+        const informational = groupInformationalKind(details, ids, aliases, name, ecosystem);
         entry.vulns.set(primaryId, {
           id: primaryId,
           cve:
@@ -257,6 +327,7 @@ export function parseOsvScanOutput(raw: unknown): ScanReport {
           aliases: [...new Set([...ids, ...aliases])].filter((a) => a !== primaryId),
           severity_score: score,
           severity: severityFromScore(score),
+          ...(informational !== null ? { informational } : {}),
           summary: extractSummary(vulnDetails),
           fixed_versions: extractFixedVersions(vulnDetails, name, ecosystem),
         });
@@ -286,14 +357,23 @@ function buildReport(sourceFiles: string[], packageMap: Map<string, MutablePacka
     unknown: 0,
   };
   let vulnerabilityCount = 0;
+  let informationalCount = 0;
 
   const packages: ScanReportPackage[] = [...packageMap.values()]
     .filter((entry) => entry.vulns.size > 0)
     .map((entry) => {
+      // 情報提供のグループは脆弱性の後ろに置く
       const vulnerabilities = [...entry.vulns.values()].sort(
-        (a, b) => sortScore(b.severity_score) - sortScore(a.severity_score) || cmpId(a.id, b.id),
+        (a, b) =>
+          Number(a.informational !== undefined) - Number(b.informational !== undefined) ||
+          sortScore(b.severity_score) - sortScore(a.severity_score) ||
+          cmpId(a.id, b.id),
       );
       for (const vuln of vulnerabilities) {
+        if (vuln.informational !== undefined) {
+          informationalCount++;
+          continue;
+        }
         severityBreakdown[vuln.severity]++;
         vulnerabilityCount++;
       }
@@ -314,15 +394,24 @@ function buildReport(sourceFiles: string[], packageMap: Map<string, MutablePacka
 
   return {
     source_files: sourceFiles,
-    vulnerable_package_count: packages.length,
+    vulnerable_package_count: packages.filter(hasVulnerability).length,
     vulnerability_count: vulnerabilityCount,
+    ...(informationalCount > 0 ? { informational_count: informationalCount } : {}),
     severity_breakdown: severityBreakdown,
     packages,
   };
 }
 
+/** 情報提供でない脆弱性を1件以上持つか */
+export function hasVulnerability(pkg: ScanReportPackage): boolean {
+  return pkg.vulnerabilities.some((v) => v.informational === undefined);
+}
+
+/** 並び替え用。情報提供だけのパッケージは、脆弱性のあるパッケージ(unknownを含む)の後ろに置く */
 function maxScore(vulns: ScanReportVulnerability[]): number {
-  return vulns.reduce((max, v) => Math.max(max, sortScore(v.severity_score)), -1);
+  const counted = vulns.filter((v) => v.informational === undefined);
+  if (counted.length === 0) return -2;
+  return counted.reduce((max, v) => Math.max(max, sortScore(v.severity_score)), -1);
 }
 
 function cmpId(a: string, b: string): number {

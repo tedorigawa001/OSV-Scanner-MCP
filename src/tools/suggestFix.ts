@@ -7,6 +7,7 @@
 
 import { isRemoteResolutionDisabled } from "../osv/runner.js";
 import { candidateCheckDisabledFromEnv, checkRecommendedCandidates, type CandidateCheckOptions } from "../osv/candidateCheck.js";
+import { hasVulnerability } from "../osv/scanReport.js";
 import { suggestUpgrades } from "../osv/suggestFix.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
 import { detectProject } from "../utils/manifestDetector.js";
@@ -43,7 +44,8 @@ export async function handleSuggestFix(
       manifests: project.manifests.map((m) => sanitizeExternalText(m.path)),
       dependency_resolution: dependencyResolution(noRemoteResolution, TRANSITIVE_OMITTED_WARNING),
       coverage: buildCoverage(project),
-      vulnerable_package_count: suggestions.length,
+      // 情報提供のアドバイザリ(RustSecのunmaintained等)だけのパッケージは数えない
+      vulnerable_package_count: packages.filter(hasVulnerability).length,
       unfixed_vulnerability_count: unfixedVulnerabilities,
       suggestions,
     });

@@ -475,3 +475,115 @@ describe("parseOsvScanOutput: 応答の大きさ(B3の検証で判明)", () => {
     expect(JSON.stringify(report)).not.toContain("affected_versions");
   });
 });
+
+describe("parseOsvScanOutput: RustSecの情報提供アドバイザリ(informational)", () => {
+  /** 2026-10-11にosv-scanner 2.4.0で観測した構造(atty 0.2.14・failure 0.1.8)を縮約したもの */
+  function record(id: string, name: string, informational?: string, extraAffected: Record<string, unknown>[] = []) {
+    return {
+      id,
+      summary: `${id} summary`,
+      affected: [
+        {
+          package: { name, ecosystem: "crates.io" },
+          ranges: [{ type: "SEMVER", events: [{ introduced: "0.0.0-0" }] }],
+          ...(informational !== undefined ? { database_specific: { informational, cvss: null } } : {}),
+        },
+        ...extraAffected,
+      ],
+    };
+  }
+  const output = (packages: unknown[]) => ({ results: [{ source: { path: "/p/Cargo.lock", type: "lockfile" }, packages }] });
+
+  const atty = {
+    package: { name: "atty", version: "0.2.14", ecosystem: "crates.io" },
+    groups: [
+      { ids: ["RUSTSEC-2021-0145", "GHSA-g98v-hv3f-hcfr"], aliases: [], max_severity: "" },
+      { ids: ["RUSTSEC-2024-0375"], aliases: [], max_severity: "" },
+    ],
+    vulnerabilities: [
+      record("RUSTSEC-2021-0145", "atty", "unsound"),
+      record("RUSTSEC-2024-0375", "atty", "unmaintained"),
+      record("GHSA-g98v-hv3f-hcfr", "atty"),
+    ],
+  };
+  const unmaintainedOnly = {
+    package: { name: "ansi_term", version: "0.12.1", ecosystem: "crates.io" },
+    groups: [{ ids: ["RUSTSEC-2021-0139"], aliases: [], max_severity: "9.8" }],
+    vulnerabilities: [record("RUSTSEC-2021-0139", "ansi_term", "unmaintained")],
+  };
+  const smallvec = {
+    package: { name: "smallvec", version: "1.6.0", ecosystem: "crates.io" },
+    groups: [{ ids: ["RUSTSEC-2021-0003", "GHSA-43w2-9j62-hq99"], aliases: ["CVE-2021-25900"], max_severity: "9.8" }],
+    vulnerabilities: [record("RUSTSEC-2021-0003", "smallvec"), record("GHSA-43w2-9j62-hq99", "smallvec")],
+  };
+
+  it("グループのすべてのレコードが情報提供の場合だけinformationalを付け、件数・深刻度の集計から外す", () => {
+    const report = parseOsvScanOutput(output([atty, unmaintainedOnly, smallvec]));
+    // GHSAが脆弱性として登録しているグループ(RUSTSEC-2021-0145)は脆弱性のまま
+    expect(report.vulnerability_count).toBe(2);
+    expect(report.informational_count).toBe(2);
+    expect(report.vulnerable_package_count).toBe(2);
+    expect(report.severity_breakdown).toEqual({ critical: 1, high: 0, medium: 0, low: 0, unknown: 1 });
+    const byName = Object.fromEntries(report.packages.map((p) => [p.name, p]));
+    expect(byName.atty!.vulnerabilities.map((v) => [v.id, v.informational])).toEqual([
+      ["RUSTSEC-2021-0145", undefined],
+      ["RUSTSEC-2024-0375", "unmaintained"],
+    ]);
+    // 情報提供だけのパッケージは、深刻度が高くても脆弱性のあるパッケージの後ろ
+    expect(report.packages.map((p) => p.name)).toEqual(["smallvec", "atty", "ansi_term"]);
+    expect(byName.ansi_term!.vulnerabilities[0]).toMatchObject({ informational: "unmaintained", severity: "critical" });
+  });
+
+  it("情報提供が1件も無ければinformational_countを付けない(従来の応答と同じ)", () => {
+    const report = parseOsvScanOutput(output([smallvec]));
+    expect(report).not.toHaveProperty("informational_count");
+    expect(JSON.stringify(report)).not.toContain("informational");
+  });
+
+  it("aliasesのIDも詳細があり、すべて情報提供なら情報提供とする", () => {
+    const report = parseOsvScanOutput(output([{
+      package: { name: "x", version: "1.0.0", ecosystem: "crates.io" },
+      groups: [{ ids: ["RUSTSEC-A", "RUSTSEC-B"], aliases: ["RUSTSEC-B"], max_severity: "" }],
+      vulnerabilities: [
+        { ...record("RUSTSEC-A", "x", "unmaintained"), aliases: ["RUSTSEC-B"] },
+        { ...record("RUSTSEC-B", "x", "unmaintained"), aliases: ["RUSTSEC-A"] },
+      ],
+    }]));
+    expect(report.packages[0]!.vulnerabilities[0]!.informational).toBe("unmaintained");
+  });
+
+  it("種類が混在するグループはunsound > unmaintained > noticeの順で1つを代表にする", () => {
+    const report = parseOsvScanOutput(output([{
+      package: { name: "x", version: "1.0.0", ecosystem: "crates.io" },
+      groups: [{ ids: ["RUSTSEC-A", "RUSTSEC-B", "RUSTSEC-C"], aliases: [], max_severity: "" }],
+      vulnerabilities: [record("RUSTSEC-A", "x", "notice"), record("RUSTSEC-B", "x", "unmaintained"), record("RUSTSEC-C", "x", "unsound")],
+    }]));
+    expect(report.packages[0]!.vulnerabilities[0]!.informational).toBe("unsound");
+  });
+
+  it.each([
+    ["詳細の無いIDを含む", { ids: ["RUSTSEC-A", "RUSTSEC-MISSING"] }, [record("RUSTSEC-A", "x", "unmaintained")]],
+    ["未知の種類", { ids: ["RUSTSEC-A"] }, [record("RUSTSEC-A", "x", "deprecated")]],
+    // 回帰(レビュー指摘): RustSecの情報提供レコードだけ詳細があり、GHSAの詳細が欠けた場合に脆弱性から外さない
+    ["グループのaliasesにだけ現れるGHSAの詳細が無い", { ids: ["RUSTSEC-A"], aliases: ["GHSA-xxxx-yyyy-zzzz"] }, [record("RUSTSEC-A", "x", "unmaintained")]],
+    ["レコードのaliasesにだけ現れるCVEの詳細が無い", { ids: ["RUSTSEC-A"] }, [{ ...record("RUSTSEC-A", "x", "unmaintained"), aliases: ["CVE-2020-0001"] }]],
+    ["対象パッケージのaffectedの一部だけが情報提供", { ids: ["RUSTSEC-A"] }, [
+      record("RUSTSEC-A", "x", "unmaintained", [{ package: { name: "x", ecosystem: "crates.io" }, ranges: [] }]),
+    ]],
+    ["別パッケージのaffectedだけが情報提供", { ids: ["RUSTSEC-A"] }, [{
+      id: "RUSTSEC-A",
+      affected: [
+        { package: { name: "x", ecosystem: "crates.io" }, ranges: [] },
+        { package: { name: "y", ecosystem: "crates.io" }, database_specific: { informational: "unmaintained" } },
+      ],
+    }]],
+  ])("判定できない場合は脆弱性として数える(%s)", (_label, group, vulnerabilities) => {
+    const report = parseOsvScanOutput(output([{
+      package: { name: "x", version: "1.0.0", ecosystem: "crates.io" },
+      groups: [{ aliases: [], ...group, max_severity: "" }],
+      vulnerabilities,
+    }]));
+    expect(report.vulnerability_count).toBe(1);
+    expect(report.packages[0]!.vulnerabilities[0]!.informational).toBeUndefined();
+  });
+});

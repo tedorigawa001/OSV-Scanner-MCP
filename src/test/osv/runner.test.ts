@@ -113,7 +113,7 @@ describe("osv-scannerへの引数", () => {
 
   it.each([
     { path: "/p/package.json", format: "package.json" },
-    { path: "/p/Cargo.lock", format: "Cargo.lock" },
+    { path: "/p/Cargo.toml", format: "Cargo.toml" },
     { path: "relative/pom.xml", format: "pom.xml" },
   ])("許可外の形式・相対パスは渡さない: $format:$path", (bad) => {
     expect(() => buildProjectTargetArgs([bad as ManifestTarget])).toThrow();
