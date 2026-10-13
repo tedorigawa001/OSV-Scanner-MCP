@@ -868,6 +868,92 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 - `cargo update --precise`の実機確認(レジストリの取得を伴う)
 - osv-scannerの将来の版で、sourceによる絞り込みや`informational`の扱いが変わるか(2.6.0へのピン更新時に再確認)
 
+## suggest_fixのRust対応・Cargo.lockの直接/推移的依存(v0.13.0)詳細設計メモ(2026-10-13)
+
+上の「Rust(crates.io)対応 詳細設計メモ」のv0.13.0部分の詳細。v0.12.0の`Cargo.lock`解析・crates.io由来だけのコピー・`informational`を前提とする。
+
+### 設計中に見つかった公開中の不具合(v0.8.0〜v0.12.0、全エコシステム)
+
+**推奨先のOSV照会が、修正版のない既知の脆弱性を「判定の食い違い」と誤認して推奨を保留する。** `candidateCheck.ts`は、照会で返ったレコードのIDがスキャンで既に知っている脆弱性なら、無条件に「手元の範囲情報とOSVの判定が食い違っている」とみなして候補を除外する。しかし修正版のない脆弱性(`tier: "unfixed"`)は修正対象ではなく、推奨先にも該当するのが正しい(手元の判定も`recommended_status: "affected"`)。そのため、修正できる脆弱性と修正版のない脆弱性を併せ持つパッケージでは、照会を有効にすると(既定)推奨が必ず保留になる。
+
+- 実データでの再現(2026-10-13、v0.12.0): PyPIの`ecdsa==0.13`。照会なし(`OSV_MCP_NO_CANDIDATE_CHECK=1`)では`0.19.2`を推奨(`verified`、PYSEC-2026-1325は`unfixed`で推奨先でも`affected`)。照会ありでは`candidate_check: "conflict"`・`recommended_upgrade: null`になり、注記は「範囲情報が食い違う」と誤った説明をする
+- 単体でも再現: 修正版あり(`0`〜`1.5.0`)と修正版なし(`0`〜)の2件を持つnpmパッケージで、照会が修正版なしの脆弱性を返すと`conflict`
+- Rustでは、全版に該当する`unmaintained`(例: `atty`のRUSTSEC-2024-0375)が同じ形になるため、v0.13.0の前提としても修正が要る
+
+**修正(v0.12.1として先に出すことを推奨)**: 既知のIDのレコードは、その脆弱性が**修正対象**(`tier`が`unfixed`以外。推奨は全修正対象の範囲外と確認済み)の場合だけ食い違いとして扱う。修正対象でない既知の脆弱性(`unfixed`。v0.13.0では情報提供も)のレコードは、手元の判定と矛盾しないため無視する(修正対象にも加えない)。推奨先に該当することは`per_cve_detail[].recommended_status`で既に示している。`candidate_check: "clean"`の意味は「スキャンで示した脆弱性のほかに、推奨先に該当する既知の脆弱性はない」と明記する(README・ツールの説明)。
+
+**v0.12.1の実装結果(2026-10-13)**: `candidateCheck.ts`で、`unfixed`の脆弱性のIDと別名だけに一致するレコードを照会結果から除く(別名が修正対象の脆弱性とも重なる場合は修正対象を優先し、従来どおり食い違いとして扱う。照会で新しく見つかった脆弱性は除かない)。回帰テスト4件(主ID・別名、新しい脆弱性との混在、修正対象と重なる別名、ecdsaの形)は修正を外すと失敗する。実データでMCP経由: `ecdsa==0.13`は`0.19.2`(`clean`・`verified`、PYSEC-2026-1325は`affected`)。npm・Go・PyPI・Gradleの16パッケージで照会ありの応答をv0.12.0と比較し、変わったのは`ecdsa`だけ
+
+### 実データの確認(2026-10-13、api.osv.dev・cargo 1.98)
+
+**推奨の成否**: 既知の脆弱性を持つ実在の38パッケージ(44 crateから)の`Cargo.lock`で、`versionScheme`だけcrates.ioを有効にした一時ビルド(照会なし)を実行:
+
+- 33件が`verified`。`same_minor`(`smallvec 1.6.0→1.6.1`、`openssl 0.10.30→0.10.79`等)、`major_internal`(`tokio 1.8.0→1.38.2`)、`cross_major`(`time 0.1.43→0.2.23`、`idna 0.2.3→1.0.0`等)
+- 4件(`failure`・`atty`・`ansi_term`・`yaml-rust`)は修正版のない情報提供・unsoundだけ → 下記の情報提供の扱いで整理する
+- `rustls 0.20.0`は`no_verified_candidate`: GHSA-6g7w-8wpp-frhjの`affected[]`に`versions: ["0.20"]`(SemVerでない)だけのエントリがあり、未記載の版が非該当と言えないため保留(既存の安全側の扱いで正しい。データの不備)
+- `borsh 0.9.0→1.0.0-alpha.1`(プレリリースの推奨): GHSAが`0`〜`1.0.0-alpha.1`を該当とするため、0.10.4では解消しない。プレリリースの案内(下記)が必要な実例
+- ビルドメタデータ: `openssl-src 111.10.0+1.1.1g→111.25.0`、`libgit2-sys 0.12.0+1.1.0→0.16.2`。OSVの修正版はメタデータなしで、実際の版は`111.25.0+1.1.1t`等。cargoでは`--precise 0.7.5`(メタデータなし)も`-p toml_datetime@0.7.5+spec-1.1.0`(あり)も通る(cargo 1.98で確認)ため、推奨版をそのまま案内に使える
+
+**Cargo.lockの依存の記法**(cargo 1.98で生成): 同名のパッケージが1つなら`"名前"`、複数の版があれば`"名前 版"`(`"anstream 0.6.21"`・`"anstream 1.0.0"`)。同名・同版でsourceが異なる場合だけ`"名前 版 (source)"`。v1形式は常に`"名前 版 (source)"`
+
+**`cargo update --precise`**(`--offline`、ダウンロードなし): 
+- 直接依存・要求の範囲内(`anyhow = "1.0.102"`で`--precise 1.0.103`): Cargo.lockだけが更新される
+- 同名の複数版がある場合、`-p anstyle-parse`は拒否され(`anstyle-parse@0.2.7`等の指定を求める)、`-p anstyle-parse@0.2.7 --precise 0.2.6`は推移的依存でも通る
+- 要求の範囲外(`anstream = "=0.6.21"`に`--precise 1.0.0`): 失敗する(Cargo.tomlの変更が必要)
+
+### バージョン比較・Tier
+
+- `versionScheme.ts`の`SEMVER_ECOSYSTEMS`に`crates.io`を加える(範囲の型は`SEMVER`。実データは`SEMVER`のみ)。Tierはnpmと同じキャレットの規則(`classifyCaret`)
+- パッケージ名は完全一致で照合する(OSVの名前とCargo.lockの名前は同じ表記。crates.ioは`-`と`_`の違いだけの名前の重複を禁止しているが、表記は公開時のまま)
+
+### 情報提供のアドバイザリ(suggest_fix)
+
+- `informational`のグループは修正対象にしない(候補の検証にも使わない)。`per_cve_detail`には`tier: "informational"`(新設)と`informational`(種類)を付けて残し、`recommended_status`(推奨先での判定)も示す。`unfixed_vulnerability_count`には数えない
+- 情報提供だけのパッケージ: 推奨は出さず、`verification: "informational_only"`(新設)。注記は種類別(`unmaintained`: 版を上げても解消しないため代替crateへの移行を検討 / `unsound`: 修正版があれば`fixed_versions`を確認 / `notice`: 内容を`explain_vulnerability`で確認)
+- 推奨先の照会: 既知の情報提供は上の修正で無視される。照会で新しく見つかったレコードのうち、`unmaintained`・`notice`(`recordInformationalKind`で判定)はcrate全体の状態で版の選択に関係しないため無視し、`unsound`は版ごとの欠陥のため新しい脆弱性として修正対象に加える(設計メモ「Rust(crates.io)対応」のとおり)
+
+### Cargo.lockの直接/推移的依存(`dependencyRelations.ts`に`cargoLockRelations`)
+
+- 入力: 検出時に解析済みの全パッケージ(`CargoLockCache`の結果に保持する。コピーには依存を書かないため、スナップショットのコピーは読まない。requirements.txtと同じく検出時の検証済みデータを渡す)
+- 依存の解決: `"名前"`は同名のパッケージが1つの場合だけ、`"名前 版"`は同名・同版が1つの場合だけ、`"名前 版 (source)"`は完全一致で解決する。解決先が`replace`を持てば置換先へたどる。解決できない参照があれば、その参照元から先は判定しない(到達できないパッケージは`unknown`)
+- 起点: sourceなしのパッケージ(workspaceのメンバー・pathの依存。置換先のpathのcrateを含む)。起点の依存にあるcrates.io由来のパッケージが**直接**、直接依存(gitの依存・別レジストリのcrateを含む)から到達できるものが**推移的**。推移的依存には、到達経路の最初の直接依存を`introduced_by`(最大10件、npmと同じ)に付ける。直接依存が他の依存からも要求される場合は`direct`のまま`introduced_by`も付ける(npmと同じ)
+- 開発用・ビルド用・対象OS限定の依存の区別はできない(Cargo.lockに情報がない)
+- `declared_in`: 直接依存を宣言しているローカルのcrateのCargo.toml(プロジェクトからの相対パス)。検出時に見つけたCargo.tomlの`[package] name`(`cargoTomlPackageName`)と名前で対応付け、依存元のすべてのcrateを一意に対応付けられた場合だけ付ける(同名のCargo.tomlが複数・プロジェクト外のpathの依存等で対応できなければ付けず、案内文にcrate名を示す)。Cargo.tomlの読み込みは既存の上限(1件1MiB、合計の上限)の範囲
+- 上限: 依存の辺の数はnpmと同じ上限(`MAX_DEPENDENCY_EDGES`)。超えたら`unknown`
+- スキャン結果との対応: osv-scannerの結果のパッケージ(名前・版)を、そのCargo.lockのcrates.io由来のパッケージと対応付ける(コピーには同名・同版が1つしかない)
+
+### `update_hint`(crates.io)
+
+推奨版・現在の版・crate名を埋め込む。crate名は解析時に文字の範囲を検証済み、推奨版はOSV由来の外部データのため`^[0-9A-Za-z.+-]{1,64}$`に一致する場合だけ埋め込み、一致しなければ一般的な文にする。
+
+| 依存 | Tier | 案内 |
+|---|---|---|
+| 直接 | `cross_major`以外 | `cargo update -p <name>@<現在の版> --precise <推奨版>`。Cargo.tomlの要求が許す場合(既定のキャレットなら許す)はCargo.lockだけが更新される。`=`や`~`で固定していれば、`declared_in`のCargo.tomlの要求を変更する |
+| 直接 | `cross_major` | `declared_in`のCargo.tomlの要求を推奨版に変更する(破壊的変更の可能性。0.xはマイナー更新も含む) |
+| 推移的 | `cross_major`以外 | 同じ`cargo update -p ... --precise ...`。依存元(`introduced_by`)の要求が許す範囲ならCargo.tomlを変えずに更新できる。要求を満たせないと報告されたら依存元を更新する |
+| 推移的 | `cross_major` | 依存元(`introduced_by`)を、推奨版以上を要求する版へ更新する。`[patch.crates-io]`は要求範囲を変える仕組みではなく、依存元の要求を満たす版の修正(バックポート)を別ソースから使う場合に限る |
+| 不明・混在 | - | 上の直接・推移的の両方の方法を示す |
+
+- プレリリースの推奨(`recommended_is_prerelease`)では全行に追記: Cargoの要求は要求自体にプレリリースを書かない限りプレリリースに一致しないため、`--precise`だけでは更新できないことがある。直接依存なら要求を`"=<推奨版>"`に変更し、推移的依存なら依存元の要求がその版を許す必要がある
+- `-p <name>@<現在の版>`は、同名の複数版がCargo.lockにある場合に対象を一意にするため常に付ける
+
+### 段階計画(推奨案)
+
+- **v0.12.1(修正リリース)**: 推奨先の照会の誤った`conflict`の修正。回帰テスト(修正版なしの既知の脆弱性が推奨先に該当しても推奨を保留しない・修正対象の脆弱性が該当と返れば従来どおり`conflict`)と、実データ(`ecdsa==0.13`)でMCP経由の確認。既存の推奨の不変(照会なしの出力がv0.12.0と一致)
+- **v0.13.0**: crates.ioの推奨(SemVer・情報提供の扱い・照会で新しい`unmaintained`/`notice`を無視)、Cargo.lockの直接/推移的依存・`declared_in`、`update_hint`
+
+### 完了条件とテスト(v0.13.0)
+
+- 依存の解決: 3つの記法、同名の複数版、`replace`の置換先、gitの依存の配下、解決できない参照、辺の上限。cargoで生成したlockfile(上記の`anstream`の2版・`[replace]`)をフィクスチャにする
+- 情報提供: 情報提供だけのパッケージ(`informational_only`)、修正可能な脆弱性と`unmaintained`を併せ持つパッケージ(推奨が出て、照会で`unmaintained`が`conflict`にならない)、照会で新しく見つかった`unmaintained`(無視)と`unsound`(修正対象に追加)
+- `update_hint`: 上表の各行、プレリリース、推奨版の文字の範囲外(埋め込まない)
+- 実データでMCP経由: 上の38パッケージ(照会あり)、`borsh`(プレリリース)、`openssl-src`(ビルドメタデータ)、他エコシステムの応答の不変(v0.12.1との比較)
+
+### 未確認事項
+
+- プレリリースへの`cargo update --precise`の実機確認(キャッシュに依存元の揃ったプレリリースのcrateが無い)。案内はCargo公式文書の要求の規則に基づく
+- crates.ioでyankされた版を推奨する可能性(OSVはyankを知らない。crates.ioのAPI照会は通信先を増やすため行わない。注記で触れる)
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
