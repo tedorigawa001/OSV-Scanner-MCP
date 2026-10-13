@@ -74,6 +74,9 @@ export interface ScanReportPackage {
   introduced_by_omitted?: number;
   /** npm: 直接依存として宣言しているpackage.json(プロジェクトからの相対パス) */
   declared_in?: string[];
+  /** Rust: 宣言元Cargo.tomlを一意に対応付けられないときのcrate名(最大10件) */
+  declaring_crates?: string[];
+  declaring_crates_omitted?: number;
   /** Go: go.modのreplaceで置換している(requireの版を変えても効かない) */
   replaced_in_go_mod?: true;
   /** 深刻度の高い順(unknownは末尾) */

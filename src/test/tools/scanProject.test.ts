@@ -64,6 +64,25 @@ function payload(result: ToolResult): Record<string, any> {
 }
 
 describe("handleScanProject", () => {
+  it("annotates Cargo packages using the graph associated with the generated scanner input", async () => {
+    const registry = "registry+https://github.com/rust-lang/crates.io-index";
+    const dir = await makeProject({
+      "rust/Cargo.toml": '[package]\nname = "app"\n',
+      "rust/Cargo.lock": 'version = 3\n[[package]]\nname = "app"\nversion = "1.0.0"\ndependencies = ["a"]\n' +
+        `[[package]]\nname = "a"\nversion = "1.0.0"\nsource = "${registry}"\ndependencies = ["b"]\n` +
+        `[[package]]\nname = "b"\nversion = "1.0.0"\nsource = "${registry}"\n`,
+    });
+    const bin = path.join(binDir, "cargo-relations");
+    await writeFile(bin, `#!${process.execPath}\n` +
+      `const input = process.argv.find(a => a.startsWith("Cargo.lock:"));\n` +
+      `console.log(JSON.stringify({results:[{source:{path:input.slice(11),type:"Cargo.lock"},packages:${JSON.stringify([pkg("crates.io", "a", "1.0.0"), pkg("crates.io", "b", "1.0.0")])}}]}));\nprocess.exitCode=1;\n`);
+    await chmod(bin, 0o755);
+    const result = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin }));
+    expect(result.packages).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "a", dependency_relation: "direct", declared_in: ["rust/Cargo.toml"] }),
+      expect.objectContaining({ name: "b", dependency_relation: "transitive", introduced_by: ["a"] }),
+    ]));
+  });
   it("検出した全ファイルを形式付きで個別に渡し、ディレクトリは渡さない", async () => {
     const dir = await makeProject({
       "pom.xml": "<project/>",

@@ -3,6 +3,7 @@
  *
  * - Maven: Mavenの優先順位(mavenVersion.ts)。範囲はECOSYSTEM型
  * - npm・Go: SemVer 2.0.0の優先順位(semverVersion.ts)。範囲はSEMVER型とECOSYSTEM型
+ * - crates.io: SemVerの優先順位とCargoキャレット互換。範囲はSEMVER型
  * - PyPI: PEP 440の優先順位(pep440Version.ts)。範囲はECOSYSTEM型。名前はPEP 503で正規化して照合する
  * - その他: 比較器なし。範囲はECOSYSTEM型
  *
@@ -13,7 +14,7 @@ import { compareMavenVersions, mavenVersionSeries } from "../utils/mavenVersion.
 import { compareParsedPep440, parsePep440, type Pep440Version } from "../utils/pep440Version.js";
 import { compareParsedSemver, parseSemver } from "../utils/semverVersion.js";
 
-const SEMVER_ECOSYSTEMS = new Set(["npm", "Go"]);
+const SEMVER_ECOSYSTEMS = new Set(["npm", "Go", "crates.io"]);
 
 /**
  * 現在の版から見た候補の距離(3段階Tier)。
@@ -146,6 +147,7 @@ export function samePackageName(a: string, b: string, ecosystem: string): boolea
 /** 修正版・影響範囲として読み取るOSVの範囲の型 */
 export function versionRangeTypes(ecosystem: string): ReadonlySet<string> {
   if (ecosystem === "Maven") return new Set(["ECOSYSTEM"]);
+  if (ecosystem === "crates.io") return new Set(["SEMVER"]);
   if (SEMVER_ECOSYSTEMS.has(ecosystem)) return new Set(["SEMVER", "ECOSYSTEM"]);
   return new Set(["ECOSYSTEM"]);
 }

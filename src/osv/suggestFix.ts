@@ -17,7 +17,7 @@
  * プレリリース(canary版・Goの疑似バージョン等)は、正式版の候補で解消できない場合だけ推奨する。
  */
 
-import type { ScanReportPackage, SeverityLevel } from "./scanReport.js";
+import type { InformationalKind, ScanReportPackage, SeverityLevel } from "./scanReport.js";
 import { candidateStatus } from "./affectedVersions.js";
 import { versionSchemeFor, type UpgradeTier, type VersionScheme } from "./versionScheme.js";
 
@@ -36,7 +36,8 @@ export interface CveFixDetail {
    *   修正版が無いとは言えないため修正対象に残し、推奨を保留する
    * unsupported: 修正版推奨に未対応のエコシステム、または現在の版を解釈できない(修正版の有無は判定していない)
    */
-  tier: UpgradeTier | "unfixed" | "unparseable_fix" | "unsupported";
+  tier: UpgradeTier | "unfixed" | "unparseable_fix" | "unsupported" | "informational";
+  informational?: InformationalKind;
   recommended_status?: "affected" | "not_affected" | "unknown" | "not_evaluated";
 }
 
@@ -49,6 +50,8 @@ export interface PackageUpgradeSuggestion {
   introduced_by?: string[];
   introduced_by_omitted?: number;
   declared_in?: string[];
+  declaring_crates?: string[];
+  declaring_crates_omitted?: number;
   replaced_in_go_mod?: true;
   /** 既知の修正版候補のうち影響範囲を検証できた版。null = 検証済み候補なし */
   recommended_upgrade: string | null;
@@ -66,7 +69,7 @@ export interface PackageUpgradeSuggestion {
   /** 推奨先に該当する既知の脆弱性のID(candidate_checkがhas_known_vulnerabilitiesの場合) */
   recommended_known_vulnerabilities?: string[];
   per_cve_detail: CveFixDetail[];
-  verification: "verified" | "no_verified_candidate" | "unsupported_ecosystem" | "unparseable_version";
+  verification: "verified" | "no_verified_candidate" | "unsupported_ecosystem" | "unparseable_version" | "informational_only";
 }
 
 const TIER_ORDER: readonly UpgradeTier[] = ["same_minor", "major_internal", "cross_major"];
@@ -138,8 +141,55 @@ function updateHint(pkg: ScanReportPackage): string | undefined {
   }
 }
 
-function hintFields(pkg: ScanReportPackage): { update_hint?: string } {
-  const hint = updateHint(pkg);
+/** OSV由来の版・crate名を案内のコマンドに埋め込めるか(外部データのため文字の範囲を限定する) */
+const SAFE_VERSION = /^[0-9A-Za-z.+-]{1,64}$/;
+const SAFE_CRATE_NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
+
+/**
+ * crates.ioの更新方法(docs/DESIGN_TODO.md「suggest_fixのRust対応」の表)。直接/推移的依存とTierで分ける。
+ * 推奨がない場合はコマンドを示さず、方向だけを示す
+ */
+function cargoUpdateHint(pkg: ScanReportPackage, recommended: string | null, tier: UpgradeTier | null): string {
+  const manifest = pkg.declared_in?.join(", ") ?? (pkg.declaring_crates?.length
+    ? `the Cargo.toml of ${pkg.declaring_crates.join(", ")}` : "the declaring Cargo.toml");
+  const parent = pkg.introduced_by?.join(", ") ?? "the direct dependency that requires this crate";
+  if (recommended === null) {
+    const direct = `No verified upgrade is recommended (see upgrade_note and per_cve_detail). Any fix requires a version allowed by the requirement in ${manifest}.`;
+    const transitive = `No verified upgrade is recommended (see upgrade_note and per_cve_detail). Any fix must be allowed by the requirements of ${parent}.`;
+    return pkg.dependency_relation === "direct" ? `Direct dependency. ${direct}`
+      : pkg.dependency_relation === "transitive" ? `Transitive dependency. ${transitive}`
+      : `For a direct dependency: ${direct} For a transitive dependency: ${transitive}`;
+  }
+  const embeddable = SAFE_VERSION.test(recommended) && SAFE_VERSION.test(pkg.version) && SAFE_CRATE_NAME.test(pkg.name);
+  // OSVの修正版はビルドメタデータを含むことがある。cargoは`--precise`・`=`の要求でメタデータなしの版を受け付ける(cargo 1.98で確認)
+  const precise = recommended.split("+")[0]!;
+  const target = embeddable ? recommended : "the recommended version";
+  const command = embeddable
+    ? `cargo update -p ${pkg.name}@${pkg.version} --precise ${precise}`
+    : "cargo update with an appropriate -p package specification and --precise version";
+  const direct = tier === "cross_major"
+    ? `Change the requirement in ${manifest} to allow ${target}; this may include breaking changes (in 0.x, even a minor update).`
+    : `If the requirement in ${manifest} allows ${target} (the default caret requirement does), run ${command}; only Cargo.lock changes. ` +
+      `If the requirement pins the version (= or ~), change it in ${manifest}.`;
+  const transitive = tier === "cross_major"
+    ? `Update ${parent} to a version whose requirements permit ${target}. ` +
+      "[patch.crates-io] does not override version requirements: use it only for a fix (such as a backport) from another source that still satisfies the requirements of the crates that depend on it."
+    : `If the requirements of ${parent} allow ${target}, run ${command}; only Cargo.lock changes. If cargo reports that the requirements cannot be satisfied, update ${parent}.`;
+  let hint = pkg.dependency_relation === "direct" ? `Direct dependency. ${direct}`
+    : pkg.dependency_relation === "transitive" ? `Transitive dependency. ${transitive}`
+    : `For a direct dependency: ${direct} For a transitive dependency: ${transitive}`;
+  if (pkg.dependency_relation === "direct" && pkg.introduced_by?.length) hint += ` It is also required by ${parent}, whose requirements must allow ${target} as well.`;
+  if (versionSchemeFor("crates.io")!.isPrerelease(recommended)) {
+    hint += ` ${target} is a pre-release: Cargo requirements match a pre-release only when they name one, so cargo update --precise alone may fail. ` +
+      (embeddable ? `For a direct dependency, set the requirement to "=${precise}"` : "For a direct dependency, set the requirement to the exact pre-release version") +
+      "; for a transitive dependency, the crate that requires it must allow it.";
+  }
+  hint += " Before updating, check that the version is not yanked and that it supports your Rust version (MSRV).";
+  return hint;
+}
+
+function hintFields(pkg: ScanReportPackage, recommended: string | null = null, tier: UpgradeTier | null = null): { update_hint?: string } {
+  const hint = pkg.ecosystem === "crates.io" ? cargoUpdateHint(pkg, recommended, tier) : updateHint(pkg);
   return hint === undefined ? {} : { update_hint: hint };
 }
 
@@ -150,6 +200,8 @@ function relationFields(pkg: ScanReportPackage) {
     ...(pkg.introduced_by !== undefined ? { introduced_by: pkg.introduced_by } : {}),
     ...(pkg.introduced_by_omitted !== undefined ? { introduced_by_omitted: pkg.introduced_by_omitted } : {}),
     ...(pkg.declared_in !== undefined ? { declared_in: pkg.declared_in } : {}),
+    ...(pkg.declaring_crates !== undefined ? { declaring_crates: pkg.declaring_crates } : {}),
+    ...(pkg.declaring_crates_omitted !== undefined ? { declaring_crates_omitted: pkg.declaring_crates_omitted } : {}),
     ...(pkg.replaced_in_go_mod ? { replaced_in_go_mod: true as const } : {}),
   };
 }
@@ -180,7 +232,8 @@ function notEvaluatedSuggestion(
       cve: vuln.cve,
       severity: vuln.severity,
       fixed_in: null,
-      tier: "unsupported" as const,
+      tier: vuln.informational !== undefined ? "informational" as const : "unsupported" as const,
+      ...(vuln.informational !== undefined ? { informational: vuln.informational, recommended_status: "not_evaluated" as const } : {}),
     })),
     verification,
   };
@@ -261,12 +314,55 @@ export interface SuggestContext {
  * 1パッケージ分のアップグレード提案を組み立てる(同期・純粋)。
  * contextを渡すと、照会で見つかった脆弱性も避けて候補を選び直す(contextなしの結果が従来の推奨)。
  */
+/**
+ * 修正対象にしない情報提供のアドバイザリ。unmaintained・noticeは版を上げても解消しない(版と無関係)。
+ * unsoundは版ごとの欠陥のため、現在より新しい修正版があれば通常の脆弱性と同じく修正対象にする
+ * (v0.13.0の実装中に判明: 修正版のあるunsoundを外すと、lru 0.6.0に0.7.1(RUSTSEC-2026-0253の0.18.2未満)を推奨した)
+ */
+function isExcludedInformational(vuln: ScanReportPackage["vulnerabilities"][number], scheme: VersionScheme, current: string): boolean {
+  if (vuln.informational === undefined) return false;
+  if (vuln.informational !== "unsound") return true;
+  return rankCandidates(scheme, current, vuln.fixed_versions).length === 0 && vuln.fixed_versions.every((v) => scheme.isValid(v));
+}
+
+function informationalNote(pkg: ScanReportPackage, excluded: readonly boolean[]): string {
+  const notes: string[] = [];
+  const kinds = (pick: (excluded: boolean) => boolean) =>
+    new Set(pkg.vulnerabilities.filter((v, i) => v.informational !== undefined && pick(excluded[i]!)).map((v) => v.informational));
+  const out = kinds((e) => e);
+  if (out.has("unmaintained")) notes.push("Unmaintained advisories are not resolved by upgrading; consider an alternative crate.");
+  if (out.has("unsound")) notes.push("Unsound advisories without a fixed version remain; check recommended_status.");
+  if (out.has("notice")) notes.push("For notices, use explain_vulnerability for details.");
+  if (kinds((e) => !e).has("unsound")) notes.push("Unsound advisories with a fixed version are included in the fix.");
+  return notes.join(" ");
+}
+
+/**
+ * 1パッケージ分のアップグレード提案を組み立てる(同期・純粋)。
+ * contextを渡すと、照会で見つかった脆弱性も避けて候補を選び直す(contextなしの結果が従来の推奨)。
+ */
 export function suggestUpgradeForPackage(pkg: ScanReportPackage, context: SuggestContext = {}): PackageUpgradeSuggestion {
   const scheme = versionSchemeFor(pkg.ecosystem);
   if (scheme === null) return notEvaluatedSuggestion(pkg, "unsupported_ecosystem");
   if (!scheme.isValid(pkg.version)) return { ...notEvaluatedSuggestion(pkg, "unparseable_version"), ...hintFields(pkg) };
 
-  const details: CveFixDetail[] = pkg.vulnerabilities.map((vuln) => {
+  const excluded = pkg.vulnerabilities.map((vuln) => isExcludedInformational(vuln, scheme, pkg.version));
+  const informationalNotes = informationalNote(pkg, excluded);
+  if (pkg.vulnerabilities.length > 0 && excluded.every((e) => e)) {
+    return {
+      package: pkg.name, current_version: pkg.version, ecosystem: pkg.ecosystem, ...relationFields(pkg),
+      recommended_upgrade: null, upgrade_tier: null, upgrade_note: informationalNotes,
+      per_cve_detail: pkg.vulnerabilities.map((v) => ({ id: v.id, cve: v.cve, severity: v.severity,
+        fixed_in: null, tier: "informational", informational: v.informational!, recommended_status: "not_evaluated" })),
+      verification: "informational_only",
+    };
+  }
+
+  const details: CveFixDetail[] = pkg.vulnerabilities.map((vuln, i) => {
+    if (excluded[i]) return {
+      id: vuln.id, cve: vuln.cve, severity: vuln.severity, fixed_in: null,
+      tier: "informational", informational: vuln.informational!,
+    };
     const fix = rankCandidates(scheme, pkg.version, vuln.fixed_versions)[0];
     return {
       id: vuln.id,
@@ -275,14 +371,16 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage, context: Sugges
       fixed_in: fix ?? null,
       tier: fix !== undefined ? scheme.classify(pkg.version, fix)
         : vuln.fixed_versions.some((v) => !scheme.isValid(v)) ? "unparseable_fix" : "unfixed",
+      // 修正対象にした情報提供(修正版のあるunsound)も種類を示す
+      ...(vuln.informational !== undefined ? { informational: vuln.informational } : {}),
     };
   });
   const unfixedCount = details.filter((d) => d.tier === "unfixed").length;
   const unparseableCount = details.filter((d) => d.tier === "unparseable_fix").length;
-  const fixableCount = details.length - unfixedCount;
+  const fixableCount = details.filter((d) => d.tier !== "unfixed" && d.tier !== "informational").length;
   // 解釈できない修正版のCVEも修正対象に残す。その影響範囲は情報不足のため、どの候補も検証できず推奨を保留する
   const targets: readonly ExtraFixTarget[] = [
-    ...pkg.vulnerabilities.filter((_, i) => details[i]!.tier !== "unfixed"),
+    ...pkg.vulnerabilities.filter((_, i) => details[i]!.tier !== "unfixed" && details[i]!.tier !== "informational"),
     ...(context.extraTargets ?? []),
   ];
   const candidates = rankCandidates(scheme, pkg.version, targets.flatMap((v) => v.fixed_versions));
@@ -302,11 +400,11 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage, context: Sugges
     recommended_upgrade: recommended,
     upgrade_tier: upgradeTier,
     ...(recommended !== null && scheme.isPrerelease(recommended) ? { recommended_is_prerelease: true as const } : {}),
-    upgrade_note: recommended === null && fixableCount > 0
+    upgrade_note: (recommended === null && fixableCount > 0
       ? "No known fixed version could be confirmed to be outside the affected ranges of every CVE to fix. The recommendation is also withheld when the data are insufficient or use unsupported range types." +
         (unparseableCount > 0 ? ` ${unparseableCount} CVEs list fixed versions that cannot be parsed as versions (tier: unparseable_fix), so the recommendation is withheld.` : "")
-      : buildNote(scheme, pkg, recommended, upgradeTier, fixableCount, unfixedCount),
-    ...hintFields(pkg),
+      : buildNote(scheme, pkg, recommended, upgradeTier, fixableCount, unfixedCount)) + (informationalNotes ? ` ${informationalNotes}` : ""),
+    ...hintFields(pkg, recommended, upgradeTier),
     ...(pkg.version_is_lower_bound ? { version_is_lower_bound: true as const } : {}),
     per_cve_detail: details,
     verification: recommended === null ? "no_verified_candidate" : "verified",

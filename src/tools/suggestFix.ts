@@ -1,7 +1,7 @@
 /**
  * `suggest_fix`ツールのハンドラ。
  * scan_projectと同じ検出・スキャンを実行し、脆弱なパッケージごとの
- * 推奨アップグレードバージョン(3段階Tier)を返す。推奨はMaven・npm・Go・PyPIに対応し、
+ * 推奨アップグレードバージョン(3段階Tier)を返す。推奨はMaven・npm・Go・PyPI・crates.ioに対応し、
  * それ以外はunsupported_ecosystemとして返す。
  */
 

@@ -29,6 +29,18 @@ async function expectScanError(promise: Promise<unknown>, kind: string): Promise
 }
 
 describe("detectProject: 検出", () => {
+  it("omits ambiguous Cargo.toml name mappings and preserves the full dependency graph", async () => {
+    const dir = await makeProject({
+      "Cargo.toml": '[package]\nname = "app"\n',
+      "member/Cargo.toml": '[package]\nname = "app"\n',
+      "Cargo.lock": 'version = 3\n[[package]]\nname = "app"\nversion = "1.0.0"\ndependencies = ["a"]\n' +
+        '[[package]]\nname = "a"\nversion = "1.0.0"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n',
+    });
+    const copy = (await detectProject(dir)).cargoCopies[0]!;
+    expect(copy.declaringManifests.has("app")).toBe(false);
+    expect(copy.allPackages[0]!.dependencies).toEqual(["a"]);
+    expect(copy.packages).toHaveLength(1);
+  });
   it("全対応形式を検出し、エコシステムと解析形式を割り当てる", async () => {
     const dir = await makeProject({
       "pom.xml": "<project/>",
@@ -278,7 +290,8 @@ describe("detectProject: Rust(Cargo.lock)", () => {
     expect(project.manifests).toEqual([{ path: "Cargo.lock", ecosystem: "crates.io", format: "Cargo.lock" }]);
     expect(project.targets).toEqual([]);
     expect(project.cargoCopies).toEqual([
-      { path: "Cargo.lock", packages: [{ name: "smallvec", version: "1.6.0", source: CRATES_IO, dependencies: [] }] },
+      { path: "Cargo.lock", packages: [{ name: "smallvec", version: "1.6.0", source: CRATES_IO, dependencies: [] }],
+        allPackages: expect.any(Array), declaringManifests: new Map([["app", "Cargo.toml"]]) },
     ]);
     expect(project.localCrateCount).toBe(2);
     expect(project.unscannableCrates).toEqual([

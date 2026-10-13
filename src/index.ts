@@ -85,7 +85,7 @@ server.registerTool(
       "For Cargo.lock, only crates from crates.io are scanned: the project's own crates are counted in local_crates, and git or private-registry crates are listed in unscannable_crates. " +
       "Vulnerabilities marked informational (RustSec notices such as unmaintained or unsound crates) are not counted in vulnerability_count; they are counted in informational_count. " +
       "Each package's dependency_relation tells whether it is a direct or transitive dependency (determined for package-lock.json, go.mod, requirements.txt, and pom.xml; unknown otherwise). " +
-      "If coverage.complete is false, do not conclude that the project is safe even with zero findings. Upgrade recommendations (suggest_fix) are available for Java, JavaScript, Python, and Go (not yet for Rust).",
+      "If coverage.complete is false, do not conclude that the project is safe even with zero findings. Upgrade recommendations (suggest_fix) are available for Java, JavaScript, Python, Go, and Rust. Cargo.lock dependency graphs provide direct/transitive relations, introduced_by, and uniquely mapped declaring Cargo.toml paths in declared_in.",
     inputSchema: {
       project_path: z
         .string()
@@ -126,17 +126,18 @@ server.registerTool(
     title: "Recommend upgrades that fix vulnerabilities",
     description:
       "Scans the project with the same detection as scan_project and recommends an upgrade version for each vulnerable package. " +
-      "Recommendations are available for Java (Maven / Gradle), JavaScript (npm), Python (PyPI), and Go. " +
+      "Recommendations are available for Java (Maven / Gradle), JavaScript (npm), Python (PyPI), Go, and Rust (crates.io). " +
       "The fixed version closest to the current release line is chosen with a three-tier fallback " +
       "(same_minor: same release line -> major_internal: same major version -> cross_major: major upgrade), " +
-      "and the response gives the recommended version, the upgrade distance (upgrade_tier), and the fixed version per CVE. For npm, Go, and PyPI, a minor update within 0.x is also cross_major (may include breaking changes). " +
+      "and the response gives the recommended version, the upgrade distance (upgrade_tier), and the fixed version per CVE. For npm, Go, PyPI, and Rust, a minor update within 0.x is also cross_major (may include breaking changes). " +
       "Dependencies scanned at a requirements.txt lower bound (>=) are marked version_is_lower_bound, and the recommendation then means raising the lower bound. " +
-      "update_hint explains how to upgrade, depending on whether the package is a direct or transitive dependency (dependency_relation; for npm also introduced_by and declared_in). " +
+      "update_hint explains how to upgrade, depending on whether the package is a direct or transitive dependency (dependency_relation; for npm and Cargo.lock also introduced_by and declared_in). Cargo updates are conditional on parent version requirements; cross-major updates may require Cargo.toml changes. " +
       "The recommended version is checked against api.osv.dev, and versions with known vulnerabilities that do not affect the current version are avoided (result in candidate_check). " +
-      "clean means no additional known vulnerabilities beyond those shown in the scan; unfixed vulnerabilities may still affect the recommended version. " +
+      "clean excludes known unfixed advisories, known informational advisories that are not fix targets, and new Rust unmaintained/notice records; these may still apply. New unsound records are fix targets. " +
       "With has_known_vulnerabilities, failed, or skipped, the recommended version has not been confirmed safe; conflict means the data disagreed and the recommendation is withheld. " +
       "Candidates are checked against the affected ranges of every vulnerability to fix, and the recommendation is withheld when the data are insufficient. Pre-releases are recommended only when no stable version fixes everything, and are marked recommended_is_prerelease. " +
       "CVEs with no fixed version newer than the current one are reported separately as unfixed, together with their status at the recommended version. " +
+      "Rust unmaintained/notice advisories and unsound advisories without a newer fixed version have tier informational and are not fix targets; unsound advisories with a fixed version are fixed like vulnerabilities. Packages with no fix target left have verification informational_only and no recommendation. " +
       "Always check coverage in the response (if complete is false, some dependencies are not included in the suggestions). " +
       "If dependency_resolution.warning is present, vulnerabilities in transitive dependencies are not included.",
     inputSchema: {

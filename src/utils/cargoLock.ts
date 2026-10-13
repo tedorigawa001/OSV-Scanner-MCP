@@ -264,6 +264,7 @@ export const UNSCANNABLE_CRATE_REASONS: Record<UnscannableCrate["kind"], string>
 };
 
 export interface CargoLockClassification {
+  allPackages: CargoPackage[];
   /** スキャンするcrates.io由来のパッケージ(name・version・sourceの重複を除く) */
   cratesIo: CargoPackage[];
   /** sourceなし(workspaceのメンバー・pathの依存)のcrateの名前 */
@@ -272,7 +273,7 @@ export interface CargoLockClassification {
 }
 
 export function classifyCargoPackages(packages: readonly CargoPackage[]): CargoLockClassification {
-  const result: CargoLockClassification = { cratesIo: [], localCrates: [], unscannable: [] };
+  const result: CargoLockClassification = { allPackages: [...packages], cratesIo: [], localCrates: [], unscannable: [] };
   const seen = new Set<string>();
   for (const pkg of packages) {
     // [replace]で置換されたパッケージは使われない(置換先は別のパッケージとして分類する)

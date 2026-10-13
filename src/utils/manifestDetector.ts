@@ -131,6 +131,8 @@ export interface RequirementsCopy {
 
 /** Cargo.lockはosv-scannerに直接渡さず、crates.io由来のパッケージだけをコピーに書いてスキャンする */
 export interface CargoCopy {
+  allPackages: CargoPackage[];
+  declaringManifests: Map<string, string>;
   /** 元ファイルのprojectDirからの相対パス */
   path: string;
   /** コピーに書くパッケージ。空ならスキャンしない */
@@ -236,6 +238,18 @@ const MAX_CARGO_TOML_BYTES = 1024 * 1024;
 export class CargoLockCache {
   private readonly results = new Map<string, CargoLockClassification | { reason: string }>();
   private remaining: number;
+  private readonly tomls = new Map<string, string | null>();
+  private remainingToml = MAX_LOCKFILE_TOTAL_BYTES;
+
+  async toml(file: string, projectDir: string): Promise<string | null> {
+    if (this.tomls.has(file)) return this.tomls.get(file)!;
+    const read = this.remainingToml > 0
+      ? await readRegularFile(file, { maxBytes: Math.min(MAX_CARGO_TOML_BYTES, this.remainingToml), boundary: projectDir }) : null;
+    const text = read?.ok ? read.bytes.toString("utf8") : null;
+    if (read?.ok) this.remainingToml -= read.bytes.length;
+    this.tomls.set(file, text);
+    return text;
+  }
 
   constructor(maxTotalBytes = MAX_LOCKFILE_TOTAL_BYTES) {
     this.remaining = maxTotalBytes;
@@ -266,8 +280,8 @@ export class CargoLockCache {
   /** Cargo.lockと同じディレクトリのCargo.tomlの`[workspace]`(1回だけ読む)。無い・読めない場合はnull */
   async workspace(lockAbs: string, projectDir: string): Promise<CargoWorkspace | null> {
     if (this.workspaces.has(lockAbs)) return this.workspaces.get(lockAbs)!;
-    const read = await readRegularFile(path.join(path.dirname(lockAbs), "Cargo.toml"), { maxBytes: MAX_CARGO_TOML_BYTES, boundary: projectDir });
-    const workspace = read.ok ? cargoWorkspace(read.bytes.toString("utf8")) : null;
+    const text = await this.toml(path.join(path.dirname(lockAbs), "Cargo.toml"), projectDir);
+    const workspace = text === null ? null : cargoWorkspace(text);
     this.workspaces.set(lockAbs, workspace);
     return workspace;
   }
@@ -289,8 +303,8 @@ async function cargoLockfileRecords(
 ): Promise<boolean | null> {
   const lock = await cache.get(path.join(projectDir, lockfile.path), projectDir);
   if ("reason" in lock) return null;
-  const read = await readRegularFile(path.join(projectDir, memberToml), { maxBytes: MAX_CARGO_TOML_BYTES, boundary: projectDir });
-  const name = read.ok ? cargoTomlPackageName(read.bytes.toString("utf8")) : null;
+  const text = await cache.toml(path.join(projectDir, memberToml), projectDir);
+  const name = text === null ? null : cargoTomlPackageName(text);
   if (name === null) return null;
   if (!lock.localCrates.includes(name)) return false;
   const lockAbs = path.join(projectDir, lockfile.path);
@@ -391,6 +405,16 @@ async function finalize(
     skippedFiles: [],
   };
   const readContext = createRequirementsReadContext();
+  const cargoManifests = new Map<string, string[]>();
+  const cargoMarkers = new Set([
+    ...markers.filter((m) => m.path.endsWith("Cargo.toml")).map((m) => m.path),
+    ...manifests.filter((m) => m.format === "Cargo.lock").map((m) => path.join(path.dirname(m.path), "Cargo.toml")),
+  ]);
+  for (const marker of cargoMarkers) {
+    const text = await cargoCache.toml(path.join(projectDir, marker), projectDir);
+    const name = text === null ? null : cargoTomlPackageName(text);
+    if (name !== null) cargoManifests.set(name, [...(cargoManifests.get(name) ?? []), marker]);
+  }
   for (const manifest of manifests) {
     const absolute = path.join(projectDir, manifest.path);
     if (manifest.format === "requirements.txt") {
@@ -409,7 +433,11 @@ async function finalize(
         result.skippedFiles.push({ path: manifest.path, reason: lock.reason });
         continue;
       }
-      result.cargoCopies.push({ path: manifest.path, packages: lock.cratesIo });
+      const declaringManifests = new Map<string, string>();
+      for (const [name, paths] of cargoManifests) {
+        if (paths.length === 1) declaringManifests.set(name, path.relative(path.dirname(manifest.path), paths[0]!));
+      }
+      result.cargoCopies.push({ path: manifest.path, packages: lock.cratesIo, allPackages: lock.allPackages, declaringManifests });
       result.localCrateCount += lock.localCrates.length;
       result.unscannableCrates.push(
         ...lock.unscannable.map((c) => ({ file: manifest.path, name: c.name, version: c.version, reason: UNSCANNABLE_CRATE_REASONS[c.kind] })),

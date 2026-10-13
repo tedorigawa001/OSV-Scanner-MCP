@@ -36,6 +36,63 @@ function pkg(
 }
 
 describe("suggestUpgradeForPackage", () => {
+  it("does not mistake a hyphen in build metadata for a Cargo pre-release", () => {
+    const s = suggestUpgradeForPackage({ ...pkg("crate", "1.0.0", [vuln("A", null, ["1.0.1+build-id"])]),
+      ecosystem: "crates.io", dependency_relation: "direct" });
+    expect(s.recommended_upgrade).toBe("1.0.1+build-id");
+    expect(s.update_hint).not.toContain("pre-release");
+    expect(s.update_hint).toMatch(/--precise 1\.0\.1(?![+\w.-])/);
+  });
+  it.each(["1.0.1-beta.1+" + "a".repeat(70), "1.0.1;echo bad"])("does not embed unsafe or oversized Cargo candidates in commands: %s", (fixed) => {
+    const s = suggestUpgradeForPackage({ ...pkg("crate", "1.0.0", [vuln("A", null, [fixed])]),
+      ecosystem: "crates.io", dependency_relation: "direct" });
+    expect(s.update_hint).not.toContain(`--precise ${fixed}`);
+    expect(s.update_hint).not.toContain("cargo update -p");
+  });
+  it("gives parent-update guidance for a transitive cross-major recommendation", () => {
+    const s = suggestUpgradeForPackage({ ...pkg("crate", "0.1.0", [vuln("A", null, ["0.2.0"])]),
+      ecosystem: "crates.io", dependency_relation: "transitive", introduced_by: ["parent"] });
+    expect(s.update_hint).toContain("Update parent to a version whose requirements permit");
+    expect(s.update_hint).not.toContain("cargo update -p");
+  });
+  it("names unmapped declaring crates in update guidance", () => {
+    const s = suggestUpgradeForPackage({ ...pkg("crate", "1.0.0", [vuln("A", null, ["1.0.1"])]),
+      ecosystem: "crates.io", dependency_relation: "direct", declaring_crates: ["local"] });
+    expect(s.update_hint).toContain("Cargo.toml of local");
+    expect(s.declaring_crates).toEqual(["local"]);
+  });
+  it.each([
+    ["1.0.0", "1.0.1", "same_minor"], ["1.0.0", "1.1.0", "major_internal"],
+    ["0.1.0", "0.2.0", "cross_major"], ["0.0.1", "0.0.2", "cross_major"],
+  ])("recommends Cargo %s -> %s with %s", (current, fixed, tier) => {
+    const s = suggestUpgradeForPackage({ ...pkg("crate", current, [vuln("A", null, [fixed])]),
+      ecosystem: "crates.io", dependency_relation: "direct", declared_in: ["member/Cargo.toml"] });
+    expect(s).toMatchObject({ recommended_upgrade: fixed, upgrade_tier: tier, verification: "verified" });
+    expect(s.update_hint).toContain(tier === "cross_major" ? "member/Cargo.toml" : `cargo update -p crate@${current} --precise ${fixed}`);
+  });
+  it.each(["unsound", "unmaintained", "notice"] as const)("keeps %s informational-only without an upgrade", (informational) => {
+    const s = suggestUpgradeForPackage({ ...pkg("crate", "1.0.0", [{ ...vuln("I", null, []), informational }]), ecosystem: "crates.io" });
+    expect(s).toMatchObject({ recommended_upgrade: null, verification: "informational_only",
+      per_cve_detail: [{ tier: "informational", informational, recommended_status: "not_evaluated" }] });
+    expect(s.upgrade_note).not.toContain("unfixed");
+  });
+  it("excludes informational advisories from mixed recommendation targets", () => {
+    const s = suggestUpgradeForPackage({ ...pkg("crate", "1.0.0", [vuln("A", null, ["1.0.1"]),
+      { ...vuln("I", null, []), informational: "unmaintained" }]), ecosystem: "crates.io" });
+    expect(s.recommended_upgrade).toBe("1.0.1");
+    expect(s.per_cve_detail[1]).toMatchObject({ tier: "informational", recommended_status: "affected" });
+    expect(s.upgrade_note).toContain("alternative crate");
+    expect(s.upgrade_note).not.toContain("remaining 1 CVEs");
+  });
+  it.each(["direct", "transitive", "mixed", "unknown"] as const)("gives conditional Cargo guidance for %s prereleases", (relation) => {
+    const s = suggestUpgradeForPackage({ ...pkg("crate", "1.0.0", [vuln("A", null, ["1.0.1-beta.1+build"])]),
+      ecosystem: "crates.io", dependency_relation: relation, introduced_by: ["parent"] });
+    // 推奨版を要求の例に埋め込む(ビルドメタデータは除く)
+    expect(s.update_hint).toContain('"=1.0.1-beta.1"');
+    expect(s.update_hint).not.toContain("=<version>");
+    expect(s.update_hint).toContain("parent");
+    expect(s.update_hint).not.toContain("--precise 1.0.1-beta.1+build");
+  });
   it("別系統で再び影響を受ける候補を除外する(スキャンJSONから通して検証)", () => {
     const result = parseOsvScanOutput({ results: [{ packages: [{
       package: { name: "a:a", ecosystem: "Maven", version: "1.0.0" },
@@ -412,5 +469,61 @@ describe("Mavenのupdate_hint(pom.xmlの直接/推移的依存)", () => {
     expect(suggestUpgradeForPackage({ ...base, dependency_relation: "direct" }).update_hint).toContain("Update the version in the <dependency>");
     expect(suggestUpgradeForPackage({ ...base, dependency_relation: "transitive" }).update_hint).toContain("Override the version with the recommended version in <dependencyManagement>");
     expect("update_hint" in suggestUpgradeForPackage({ ...base, dependency_relation: "unknown" })).toBe(false);
+  });
+});
+
+describe("suggestUpgradeForPackage: crates.ioの修正版のあるunsound(実データ: lru 0.6.0)", () => {
+  const crate = (version: string, vulnerabilities: ScanReportVulnerability[], extra: Partial<ScanReportPackage> = {}) =>
+    ({ ...pkg("lru", version, vulnerabilities), ecosystem: "crates.io", ...extra });
+
+  it("回帰: 修正版のあるunsoundは修正対象にし、その修正版まで推奨する(0.7.1ではなく0.18.2)", () => {
+    const s = suggestUpgradeForPackage(crate("0.6.0", [
+      vuln("RUSTSEC-2021-0130", null, ["0.7.1"]),
+      { ...vuln("RUSTSEC-2026-0253", null, ["0.18.2"]), informational: "unsound" },
+    ]));
+    expect(s).toMatchObject({ recommended_upgrade: "0.18.2", upgrade_tier: "cross_major", verification: "verified" });
+    expect(s.per_cve_detail[1]).toMatchObject({ tier: "cross_major", informational: "unsound", fixed_in: "0.18.2", recommended_status: "not_affected" });
+    expect(s.upgrade_note).toContain("Unsound advisories with a fixed version are included in the fix");
+  });
+
+  it("修正版のあるunsoundだけのパッケージもinformational_onlyにせず推奨する", () => {
+    const s = suggestUpgradeForPackage(crate("1.0.0", [{ ...vuln("U", null, ["1.0.1"]), informational: "unsound" }]));
+    expect(s).toMatchObject({ recommended_upgrade: "1.0.1", verification: "verified" });
+  });
+
+  it("修正版のないunsoundは修正対象にせず、推奨先での判定を示す", () => {
+    const s = suggestUpgradeForPackage(crate("1.0.0", [vuln("A", null, ["1.0.1"]), { ...vuln("U", null, []), informational: "unsound" }]));
+    expect(s.recommended_upgrade).toBe("1.0.1");
+    expect(s.per_cve_detail[1]).toMatchObject({ tier: "informational", informational: "unsound", fixed_in: null, recommended_status: "affected" });
+    expect(s.upgrade_note).toContain("Unsound advisories without a fixed version remain");
+  });
+
+  it("unmaintainedは修正版の記載があっても修正対象にしない", () => {
+    const s = suggestUpgradeForPackage(crate("1.0.0", [{ ...vuln("M", null, ["2.0.0"]), informational: "unmaintained" }]));
+    expect(s).toMatchObject({ recommended_upgrade: null, verification: "informational_only" });
+  });
+});
+
+describe("suggestUpgradeForPackage: crates.ioのupdate_hint(レビュー指摘)", () => {
+  const crate = (version: string, vulnerabilities: ScanReportVulnerability[], extra: Partial<ScanReportPackage>) =>
+    ({ ...pkg("crate", version, vulnerabilities), ecosystem: "crates.io", ...extra });
+
+  it.each(["direct", "transitive", "unknown"] as const)("推奨がなければコマンドを示さず、推奨があるかのように書かない(%s)", (relation) => {
+    // 範囲の情報を不完全にして推奨を保留させる
+    const withheld = suggestUpgradeForPackage(crate("1.0.0", [{ ...vuln("B", null, ["1.0.1"]), affected_versions: { complete: false, versions: [], intervals: [] } }],
+      { dependency_relation: relation, introduced_by: ["parent"] }));
+    expect(withheld.recommended_upgrade).toBeNull();
+    expect(withheld.update_hint).toContain("No verified upgrade is recommended");
+    expect(withheld.update_hint).not.toContain("cargo update");
+    expect(withheld.update_hint).not.toContain("permits the recommendation");
+  });
+
+  it("[patch.crates-io]は推移的依存のcross_majorだけで、要求を変えない仕組みとして示す", () => {
+    const cross = suggestUpgradeForPackage(crate("0.1.0", [vuln("A", null, ["0.2.0"])], { dependency_relation: "transitive", introduced_by: ["parent"] }));
+    expect(cross.update_hint).toContain("[patch.crates-io] does not override version requirements");
+    for (const relation of ["direct", "transitive"] as const) {
+      const same = suggestUpgradeForPackage(crate("1.0.0", [vuln("A", null, ["1.0.1"])], { dependency_relation: relation, introduced_by: ["parent"] }));
+      expect(same.update_hint).not.toContain("[patch.crates-io]");
+    }
   });
 });

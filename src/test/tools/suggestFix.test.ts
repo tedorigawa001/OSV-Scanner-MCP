@@ -236,7 +236,7 @@ describe("handleSuggestFix: PyPI(v0.6.0)", () => {
 });
 
 describe("handleSuggestFix: Rust(Cargo.lock)", () => {
-  it("情報提供のアドバイザリだけのパッケージはvulnerable_package_countに数えない(v0.12.0ではunsupported_ecosystem)", async () => {
+  it("情報提供だけのパッケージはinformational_onlyとし、脆弱性件数に数えない", async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), "osv-mcp-fix-cargo-"));
     try {
       await writeFile(
@@ -257,7 +257,7 @@ describe("handleSuggestFix: Rust(Cargo.lock)", () => {
       const payload = parsePayload(await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled", binaryPath: bin }));
       expect(payload.vulnerable_package_count).toBe(0);
       expect(payload.unfixed_vulnerability_count).toBe(0);
-      expect(payload.suggestions).toEqual([expect.objectContaining({ package: "atty", verification: "unsupported_ecosystem" })]);
+      expect(payload.suggestions).toEqual([expect.objectContaining({ package: "atty", verification: "informational_only" })]);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

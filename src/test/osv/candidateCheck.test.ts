@@ -45,6 +45,30 @@ async function check(packages: ScanReportPackage[], responses: Parameters<typeof
 }
 
 describe("checkRecommendedCandidates", () => {
+  function rustRecord(id: string, fixed?: string, kind?: string) {
+    return { id, affected: [{ package: { name: "crate", ecosystem: "crates.io" }, ranges: [range("0", fixed)],
+      ...(kind ? { database_specific: { informational: kind } } : {}) }] };
+  }
+  function rustPackage(informational = false) {
+    const records = [rustRecord("A", "1.0.1"), ...(informational ? [rustRecord("I", undefined, "unsound")] : [])];
+    return parseOsvScanOutput({ results: [{ packages: [{ package: { name: "crate", version: "1.0.0", ecosystem: "crates.io" },
+      groups: records.map((r) => ({ ids: [r.id] })), vulnerabilities: records }] }] }).packages[0]!;
+  }
+  it("ignores known informational advisories at the recommended version", async () => {
+    expect(rustPackage(true).vulnerabilities[1]!.informational).toBe("unsound");
+    const { suggestions } = await check([rustPackage(true)], { "crate@1.0.1": [rustRecord("I", undefined, "unsound")] });
+    expect(suggestions[0]).toMatchObject({ recommended_upgrade: "1.0.1", candidate_check: "clean" });
+  });
+  it.each(["unmaintained", "notice"])("does not treat newly found %s as a fix target", async (kind) => {
+    const { suggestions, queried } = await check([rustPackage()], { "crate@1.0.1": [rustRecord("NEW", undefined, kind)] });
+    expect(suggestions[0]).toMatchObject({ recommended_upgrade: "1.0.1", candidate_check: "clean" });
+    expect(queried).toHaveLength(1);
+  });
+  it.each(["unsound", "unknown"])("retains newly found %s as a fix target", async (kind) => {
+    const { suggestions, queried } = await check([rustPackage()], { "crate@1.0.1": [rustRecord("NEW", "1.0.2", kind)] });
+    expect(suggestions[0]).toMatchObject({ recommended_upgrade: "1.0.2", candidate_check: "clean" });
+    expect(queried.map((q) => q.version)).toEqual(["1.0.1", "1.0.2"]);
+  });
   const pkg = scanned("x", "1.0.0", [{ id: "GHSA-a", ranges: [range("0", "1.5.0")] }]);
 
   it("推奨先に既知の脆弱性がなければclean(照会は名前・エコシステム・版だけ)", async () => {

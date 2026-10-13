@@ -2,12 +2,15 @@
  * 直接/推移的依存の判定(docs/DESIGN_TODO.md「直接/推移的依存の区別(v0.7.0)詳細設計メモ」)。
  *
  * osv-scannerの出力には直接/推移的の区別がないため、スキャンしたファイル(スナップショットのコピー)を解析する。
- * 新しい外部依存は追加せず、JSON(package-lock.json)と行形式(go.mod、requirements.txt)だけを扱う。
+ * 新しい外部依存は追加せず、JSON・行形式・解析済みのCargo.lockグラフを扱う。
  * - package-lock.json(v2以降): ルートとworkspaceの依存をNodeの解決規則で解決したものが直接依存、
  *   そこからたどれるものが推移的依存。経由した直接依存の名前(introduced_by)と、宣言したpackage.json(declared_in)を返す
  * - go.mod: `// indirect`のないrequireが直接依存。replaceの置換先にも同じ関係を当てる(osv-scannerは置換先で報告する)
  * - requirements.txt: 本サーバーが書いたコピーの行が直接依存、それ以外(deps.devで解決された依存)が推移的依存
+ * - Cargo.lock: local/path/workspace crateの直下を直接依存、そこから到達するcrates.ioのcrateを推移的依存とする
  */
+
+import { cargoSourceKind, parsePackageId, type CargoPackage } from "./cargoLock.js";
 
 export type DependencyRelation = "direct" | "transitive" | "mixed" | "unknown";
 
@@ -18,6 +21,8 @@ export interface RelationInfo {
   introducedBy?: ReadonlySet<string>;
   /** npm: 直接依存として宣言しているpackage.json(projectからの相対パスではなく、lockfileの位置からの相対パス) */
   declaredIn?: ReadonlySet<string>;
+  /** Rust: Cargo.tomlと一意に対応付けられない宣言元のcrate名 */
+  declaringCrates?: ReadonlySet<string>;
   /** Go: go.modのreplaceの置換元または置換先(requireの版を変えても効かない) */
   replaced?: true;
 }
@@ -32,6 +37,101 @@ export type RelationLookup = ((name: string, version: string, sourceType?: strin
 export const MAX_DEPENDENCY_EDGES = 2_000_000;
 
 const UNKNOWN: RelationInfo = { relation: "unknown" };
+
+/** Cargoの省略されたpackage IDは、一意に解決できるときだけたどる。 */
+export function cargoLockRelations(
+  packages: readonly CargoPackage[],
+  manifests: ReadonlyMap<string, string> = new Map(),
+  maxEdges = MAX_DEPENDENCY_EDGES,
+): RelationLookup {
+  const identity = (p: { name: string; version: string; source: string | null }) => JSON.stringify([p.name, p.version, p.source]);
+  const entries = new Map(packages.map((p) => [identity(p), p]));
+  const names = new Map<string, string[]>();
+  const versions = new Map<string, string[]>();
+  for (const [id, p] of entries) {
+    const named = names.get(p.name) ?? [];
+    named.push(id);
+    names.set(p.name, named);
+    const nv = JSON.stringify([p.name, p.version]);
+    const versioned = versions.get(nv) ?? [];
+    versioned.push(id);
+    versions.set(nv, versioned);
+  }
+  let edges = 0;
+  let exceeded = false;
+  const tick = () => { if (++edges > maxEdges) exceeded = true; return !exceeded; };
+  const resolve = (reference: string): string | null => {
+    let ref = reference;
+    const seen = new Set<string>();
+    for (;;) {
+      if (!tick()) return null;
+      const parsed = parsePackageId(ref);
+      const candidates = parsed === null ? names.get(ref)
+        : parsed.source === null ? versions.get(JSON.stringify([parsed.name, parsed.version]))
+        : entries.has(identity(parsed)) ? [identity(parsed)] : undefined;
+      if (candidates?.length !== 1) return null;
+      const id = candidates[0]!;
+      if (seen.has(id)) return null;
+      seen.add(id);
+      const p = entries.get(id)!;
+      if (p.replace === undefined) return id;
+      ref = p.replace;
+    }
+  };
+  const direct = new Map<string, Set<string>>();
+  const introduced = new Map<string, Set<string>>();
+  const origins = new Set<string>();
+  for (const root of entries.values()) {
+    if (root.source !== null || root.replace !== undefined) continue;
+    for (const dep of root.dependencies) {
+      const target = resolve(dep);
+      if (exceeded) return null;
+      if (target === null) continue;
+      // ローカルのcrate(pathの依存)はそれ自体が起点で、その依存は直接依存になる。経由した依存元(introduced_by)には含めない
+      if (entries.get(target)!.source === null) continue;
+      origins.add(target);
+      if (cargoSourceKind(entries.get(target)!.source) !== "crates_io") continue;
+      const declared = direct.get(target) ?? new Set<string>();
+      declared.add(root.name);
+      direct.set(target, declared);
+    }
+  }
+  for (const origin of origins) {
+    const visited = new Set([origin]);
+    const queue = [origin];
+    while (queue.length) {
+      for (const dep of entries.get(queue.pop()!)!.dependencies) {
+        const target = resolve(dep);
+        if (exceeded) return null;
+        if (target === null || visited.has(target)) continue;
+        visited.add(target);
+        queue.push(target);
+        if (cargoSourceKind(entries.get(target)!.source) !== "crates_io") continue;
+        const by = introduced.get(target) ?? new Set<string>();
+        by.add(entries.get(origin)!.name);
+        introduced.set(target, by);
+      }
+    }
+  }
+  const byPackage = new Map<string, RelationInfo>();
+  for (const [id, p] of entries) {
+    if (p.replace !== undefined || cargoSourceKind(p.source) !== "crates_io") continue;
+    const declared = direct.get(id);
+    const by = introduced.get(id);
+    const mapped = declared === undefined ? [] : [...declared].map((name) => manifests.get(name));
+    const info: RelationInfo = {
+      relation: declared ? "direct" : by ? "transitive" : "unknown",
+      ...(by ? { introducedBy: by } : {}),
+      ...(mapped.length > 0 && mapped.every((m): m is string => m !== undefined) ? { declaredIn: new Set(mapped) } : {}),
+      ...(declared && !mapped.every((m) => m !== undefined) ? { declaringCrates: declared } : {}),
+    };
+    const key = JSON.stringify([p.name, p.version]);
+    const prior = byPackage.get(key);
+    // Multiple crates.io source identities cannot be distinguished in the scanner output.
+    byPackage.set(key, prior === undefined ? info : UNKNOWN);
+  }
+  return (name, version) => byPackage.get(JSON.stringify([name, version])) ?? UNKNOWN;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

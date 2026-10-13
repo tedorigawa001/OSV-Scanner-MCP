@@ -949,6 +949,15 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 - `update_hint`: 上表の各行、プレリリース、推奨版の文字の範囲外(埋め込まない)
 - 実データでMCP経由: 上の38パッケージ(照会あり)、`borsh`(プレリリース)、`openssl-src`(ビルドメタデータ)、他エコシステムの応答の不変(v0.12.1との比較)
 
+### v0.13.0の実装とレビューでの修正(2026-10-13)
+
+- **設計の誤り(修正版のあるunsound)**: 上の「情報提供のアドバイザリ」では情報提供をすべて修正対象から外したが、`unsound`は版ごとの欠陥で修正版を持つものが多い。実データ(照会あり)で`lru 0.6.0`に`0.7.1`(RUSTSEC-2026-0253は`0.18.2`で修正)、`git2 0.13.0`に`0.20.4`(RUSTSEC-2026-0183/0184は`0.21.0`)を推奨し、推奨先でも該当し、`fixed_in`も`null`になっていた。修正: 修正対象から外すのは`unmaintained`・`notice`と、現在より新しい修正版のない`unsound`だけ。修正版のある`unsound`は通常の脆弱性と同じくTierを求めて修正対象にし、`informational: "unsound"`を残す。修正対象が1件も残らない場合だけ`informational_only`。修正後は`lru→0.18.2`・`git2→0.21.0`
+- `introduced_by`にローカルのcrate(pathの依存)が入っていた(`app`→`mylib`→`tokio`で`tokio`に`introduced_by: ["mylib"]`)。ローカルのcrateはそれ自体が起点でその依存は直接依存のため、推移的依存の探索の起点から外した
+- 推奨がない場合の`update_hint`が「推奨を許すなら`cargo update ...`」と書いていた。推奨がなければコマンドを示さず、直接/推移的依存の方向だけを示す
+- `[patch.crates-io]`の注意を全ての案内に付けていたため、推移的依存の`cross_major`だけにした。プレリリースの案内の`=<version>`は推奨版を埋め込む(ビルドメタデータは除く)
+- 実装時の追加(設計に無かったもの): `declared_in`を一意に対応付けられない場合は`declaring_crates`(crate名、最大10件)を返す。案内の`--precise`はビルドメタデータを除いた版にする
+- 確認: 実際の`Cargo.lock`(gix 420件・cargo-audit 399件、ローカルのレジストリのソースに同梱のもの)で関係の判定は2〜4ms、crates.io由来で`unknown`なし。38パッケージ(照会あり)で`verified` 33・`informational_only` 2・保留3、照会は33件とも`clean`
+
 ### 未確認事項
 
 - プレリリースへの`cargo update --precise`の実機確認(キャッシュに依存元の揃ったプレリリースのcrateが無い)。案内はCargo公式文書の要求の規則に基づく

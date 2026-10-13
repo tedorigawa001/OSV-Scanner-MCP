@@ -11,6 +11,7 @@ import { isRemoteResolutionDisabled, runOsvScan, type RunOsvScanOptions } from "
 import { hasVulnerability, packageSources, parseOsvScanOutput, type ScanReport, type ScanReportPackage } from "../osv/scanReport.js";
 import {
   combineRelations,
+  cargoLockRelations,
   goModRelations,
   npmLockRelations,
   pomRelations,
@@ -18,7 +19,7 @@ import {
   type RelationInfo,
   type RelationLookup,
 } from "../utils/dependencyRelations.js";
-import { cargoLockCopyContent } from "../utils/cargoLock.js";
+import { cargoLockCopyContent, type CargoPackage } from "../utils/cargoLock.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
 import { readRegularFile } from "../utils/safeRead.js";
 import { detectProject, type DetectedProject } from "../utils/manifestDetector.js";
@@ -150,17 +151,26 @@ interface SourceRelations {
   lockDir: string;
 }
 
+interface RelationSource {
+  copy: string;
+  format: string;
+  originalRelative: string | null;
+  entries?: readonly string[];
+  cargoPackages?: readonly CargoPackage[];
+  declaringManifests?: ReadonlyMap<string, string>;
+}
+
 /**
  * スキャンしたファイル(スナップショットのコピー)ごとに、直接/推移的依存の判定を用意する。
  * 解析するのは検証済みのコピーだけで、元のファイルは読まない。判定できない形式・上限超過はnull(unknown)。
  */
 export async function buildRelationLookups(
-  copies: readonly { copy: string; format: string; originalRelative: string | null; entries?: readonly string[] }[],
+  copies: readonly RelationSource[],
   maxTotalBytes = MAX_RELATION_LOCKFILE_BYTES,
 ): Promise<Map<string, SourceRelations>> {
   const lookups = new Map<string, SourceRelations>();
   let remaining = maxTotalBytes;
-  for (const { copy, format, originalRelative, entries } of copies) {
+  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests } of copies) {
     const lockDir = originalRelative === null ? "" : path.dirname(originalRelative);
     let lookup: RelationLookup = null;
     try {
@@ -176,6 +186,8 @@ export async function buildRelationLookups(
         lookup = pomRelations(); // ファイルは読まず、osv-scannerのsource.typeで判定する
       } else if (format === "requirements.txt" && entries !== undefined) {
         lookup = requirementsRelations(entries);
+      } else if (format === "Cargo.lock" && cargoPackages !== undefined) {
+        lookup = cargoLockRelations(cargoPackages, declaringManifests);
       }
     } catch {
       lookup = null; // 解析できないファイルはunknown(スキャン自体は続ける)
@@ -192,6 +204,7 @@ function annotateRelations(packages: readonly ScanReportPackage[], lookups: Read
     // 同じファイルで直接依存と判定された結果があれば直接依存とする
     const byFile = new Map<string, RelationInfo>();
     const declaredIn = new Set<string>();
+    const declaringCrates = new Set<string>();
     const rank = { direct: 2, transitive: 1, unknown: 0 } as const;
     for (const source of packageSources(pkg)) {
       const entry = lookups.get(source.path);
@@ -199,6 +212,7 @@ function annotateRelations(packages: readonly ScanReportPackage[], lookups: Read
       const previous = byFile.get(source.path);
       if (previous === undefined || rank[info.relation] > rank[previous.relation]) byFile.set(source.path, info);
       for (const manifest of info.declaredIn ?? []) declaredIn.add(path.join(entry!.lockDir, manifest));
+      for (const name of info.declaringCrates ?? []) declaringCrates.add(name);
     }
     const infos = [...byFile.values()];
     const { relation, introducedBy, replaced } = combineRelations(infos);
@@ -209,6 +223,8 @@ function annotateRelations(packages: readonly ScanReportPackage[], lookups: Read
       ...(introducedBy.length > 0 ? { introduced_by: introducedBy.slice(0, MAX_INTRODUCED_BY).map(sanitizeExternalText) } : {}),
       ...(introducedBy.length > MAX_INTRODUCED_BY ? { introduced_by_omitted: introducedBy.length - MAX_INTRODUCED_BY } : {}),
       ...(declaredIn.size > 0 ? { declared_in: [...declaredIn].sort().map(sanitizeExternalText) } : {}),
+      ...(declaringCrates.size > 0 ? { declaring_crates: [...declaringCrates].sort().slice(0, MAX_INTRODUCED_BY).map(sanitizeExternalText) } : {}),
+      ...(declaringCrates.size > MAX_INTRODUCED_BY ? { declaring_crates_omitted: declaringCrates.size - MAX_INTRODUCED_BY } : {}),
       ...(replaced ? { replaced_in_go_mod: true as const } : {}),
       vulnerabilities,
     };
@@ -225,7 +241,7 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
     // コピーと元のファイルの対応(snapshotManifestsは外したもの以外を入力の順に返す)
     const skippedOriginals = new Set(skipped.map((s) => s.path));
     const scannedOriginals = project.targets.filter((t) => !skippedOriginals.has(t.path));
-    const relationSources: { copy: string; format: string; originalRelative: string | null; entries?: readonly string[] }[] =
+    const relationSources: RelationSource[] =
       targets.map((copy, i) => ({ copy: copy.path, format: copy.format, originalRelative: path.relative(project.projectDir, scannedOriginals[i]!.path) }));
     // 親POMを再現できずにスキャンしたpom.xmlも、欠落の可能性としてcoverageに出す(complete=falseになる)
     project.skippedFiles.push(...incomplete.map((s) => ({ path: path.relative(project.projectDir, s.path), reason: s.reason })));
@@ -250,7 +266,8 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
       if (copy.packages.length === 0) continue;
       const generated = await snapshot.writeGenerated(cargoLockCopyContent(copy.packages));
       targets.push({ path: generated, format: "Cargo.lock" });
-      relationSources.push({ copy: generated, format: "Cargo.lock", originalRelative: copy.path });
+      relationSources.push({ copy: generated, format: "Cargo.lock", originalRelative: copy.path,
+        cargoPackages: copy.allPackages, declaringManifests: copy.declaringManifests });
     }
     if (targets.length === 0) return parseOsvScanOutput({ results: [] });
     const report = await withScopeNotes(project.skippedFiles, () => snapshot.guard(() => runOsvScan(targets, options)));

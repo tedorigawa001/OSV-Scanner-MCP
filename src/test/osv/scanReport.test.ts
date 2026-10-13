@@ -439,12 +439,19 @@ describe("parseOsvScanOutput: Maven以外のfixed_versions", () => {
     ])).toEqual(["1.26.18rc1", "1.26.18", "2.0.7"]);
   });
 
-  it("比較器のないエコシステム(crates.io等)は重複を除いてOSVの記載順のまま返す", () => {
-    expect(single("crates.io", "smallvec", [
+  it("比較器のないエコシステムは重複を除いてOSVの記載順のまま返す", () => {
+    expect(single("RubyGems", "example", [
       { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "9.9.9" }] },
       { type: "ECOSYSTEM", events: [{ introduced: "1.0.0" }, { fixed: "1.6.1" }] },
       { type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "0.6.14" }] },
     ])).toEqual(["1.6.1", "0.6.14"]);
+  });
+  it("crates.io uses SEMVER ranges and sorts fixed versions", () => {
+    expect(single("crates.io", "smallvec", [
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "1.6.1" }] },
+      { type: "SEMVER", events: [{ introduced: "0" }, { fixed: "0.6.14" }] },
+      { type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "9.9.9" }] },
+    ])).toEqual(["0.6.14", "1.6.1"]);
   });
 
   it("PyPIの名前はPEP 503の正規化で照合する", () => {

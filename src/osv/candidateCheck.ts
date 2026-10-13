@@ -16,7 +16,7 @@ import { asString, asStrings } from "../utils/unknownJson.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
 import { extractAffectedVersions } from "./affectedVersions.js";
 import { queryOsvPackageVersion, type FetchOsvRecordOptions } from "./osvApi.js";
-import { extractFixedVersions, type ScanReportPackage } from "./scanReport.js";
+import { extractFixedVersions, recordInformationalKind, type ScanReportPackage } from "./scanReport.js";
 import { suggestUpgradeForPackage, type ExtraFixTarget, type PackageUpgradeSuggestion } from "./suggestFix.js";
 
 export const NO_CANDIDATE_CHECK_ENV = "OSV_MCP_NO_CANDIDATE_CHECK";
@@ -74,7 +74,7 @@ async function checkPackage(
   options: CandidateCheckOptions,
 ): Promise<CheckResult> {
   const known = new Set(pkg.vulnerabilities.flatMap((v) => [v.id, ...v.aliases]));
-  const unfixed = new Set(initial.per_cve_detail.filter((v) => v.tier === "unfixed").map((v) => v.id));
+  const unfixed = new Set(initial.per_cve_detail.filter((v) => v.tier === "unfixed" || v.tier === "informational").map((v) => v.id));
   const ignoredKnown = new Set(pkg.vulnerabilities.filter((v) => unfixed.has(v.id)).flatMap((v) => [v.id, ...v.aliases]));
   // 別名が修正対象とも重なる場合は、その対象の判定を優先する。
   for (const vuln of pkg.vulnerabilities) {
@@ -100,7 +100,9 @@ async function checkPackage(
     // 新しく照会で見つかった対象はknownへ追加されるが、ignoredKnownには入れない。
     records = records.filter((record) => {
       const matched = recordIds(record).filter((id) => known.has(id));
-      return matched.length === 0 || matched.some((id) => !ignoredKnown.has(id));
+      if (matched.length > 0) return matched.some((id) => !ignoredKnown.has(id));
+      const kind = pkg.ecosystem === "crates.io" ? recordInformationalKind(record, pkg.name, pkg.ecosystem) : null;
+      return kind !== "unmaintained" && kind !== "notice";
     });
     if (records.length === 0) return { suggestion, status: "clean", rejected };
 
