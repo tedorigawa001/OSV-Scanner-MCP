@@ -132,8 +132,9 @@ server.registerTool(
       "and the response gives the recommended version, the upgrade distance (upgrade_tier), and the fixed version per CVE. For npm, Go, and PyPI, a minor update within 0.x is also cross_major (may include breaking changes). " +
       "Dependencies scanned at a requirements.txt lower bound (>=) are marked version_is_lower_bound, and the recommendation then means raising the lower bound. " +
       "update_hint explains how to upgrade, depending on whether the package is a direct or transitive dependency (dependency_relation; for npm also introduced_by and declared_in). " +
-      "The recommended version is checked against api.osv.dev, and versions with known vulnerabilities that do not affect the current version are avoided (result in candidate_check; " +
-      "with has_known_vulnerabilities, failed, or skipped, the recommended version has not been confirmed safe; conflict means the data disagreed and the recommendation is withheld). " +
+      "The recommended version is checked against api.osv.dev, and versions with known vulnerabilities that do not affect the current version are avoided (result in candidate_check). " +
+      "clean means no additional known vulnerabilities beyond those shown in the scan; unfixed vulnerabilities may still affect the recommended version. " +
+      "With has_known_vulnerabilities, failed, or skipped, the recommended version has not been confirmed safe; conflict means the data disagreed and the recommendation is withheld. " +
       "Candidates are checked against the affected ranges of every vulnerability to fix, and the recommendation is withheld when the data are insufficient. Pre-releases are recommended only when no stable version fixes everything, and are marked recommended_is_prerelease. " +
       "CVEs with no fixed version newer than the current one are reported separately as unfixed, together with their status at the recommended version. " +
       "Always check coverage in the response (if complete is false, some dependencies are not included in the suggestions). " +

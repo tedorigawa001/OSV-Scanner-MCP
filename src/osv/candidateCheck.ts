@@ -74,6 +74,12 @@ async function checkPackage(
   options: CandidateCheckOptions,
 ): Promise<CheckResult> {
   const known = new Set(pkg.vulnerabilities.flatMap((v) => [v.id, ...v.aliases]));
+  const unfixed = new Set(initial.per_cve_detail.filter((v) => v.tier === "unfixed").map((v) => v.id));
+  const ignoredKnown = new Set(pkg.vulnerabilities.filter((v) => unfixed.has(v.id)).flatMap((v) => [v.id, ...v.aliases]));
+  // 別名が修正対象とも重なる場合は、その対象の判定を優先する。
+  for (const vuln of pkg.vulnerabilities) {
+    if (!unfixed.has(vuln.id)) for (const id of [vuln.id, ...vuln.aliases]) ignoredKnown.delete(id);
+  }
   const extraTargets: ExtraFixTarget[] = [];
   const excluded = new Set<string>();
   const rejected: CheckResult["rejected"] = [];
@@ -90,9 +96,15 @@ async function checkPackage(
       if (error instanceof ScanToolError) return { suggestion, status: "failed", rejected };
       throw error;
     }
+    // 修正版なしの既知の脆弱性は修正対象ではなく、推奨先でもaffectedであることと矛盾しない。
+    // 新しく照会で見つかった対象はknownへ追加されるが、ignoredKnownには入れない。
+    records = records.filter((record) => {
+      const matched = recordIds(record).filter((id) => known.has(id));
+      return matched.length === 0 || matched.some((id) => !ignoredKnown.has(id));
+    });
     if (records.length === 0) return { suggestion, status: "clean", rejected };
 
-    // 新しい脆弱性は修正対象に加え、修正版を候補に加える。スキャンで既に知っている脆弱性なのに該当と返った場合は、
+    // 新しい脆弱性は修正対象に加え、修正版を候補に加える。既知の修正対象の脆弱性に該当と返った場合は、
     // 手元の範囲情報とOSVの判定が食い違っているため、その候補を除外する(安全側)
     let conflict = false;
     for (const record of records) {

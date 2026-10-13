@@ -74,6 +74,71 @@ describe("checkRecommendedCandidates", () => {
     expect(suggestions[0]!.upgrade_note).toContain("No fixed version that avoids them was found");
   });
 
+  it.each([false, true])("修正版のない既知の脆弱性は候補を除外しない(別名: %s)", async (alias) => {
+    const mixed = scanned("x", "1.0.0", [
+      { id: "GHSA-a", ranges: [range("0", "1.5.0")] },
+      { id: "GHSA-unfixed", ranges: [range("0")] },
+    ]);
+    const response = alias
+      ? record("CVE-2026-9999", "x", [range("0")], ["GHSA-unfixed"])
+      : record("GHSA-unfixed", "x", [range("0")]);
+    const { suggestions, queried } = await check([mixed], { "x@1.5.0": [response] });
+    const s = suggestions[0]!;
+    expect(s).toMatchObject({ recommended_upgrade: "1.5.0", candidate_check: "clean", verification: "verified" });
+    expect(s.per_cve_detail.map((d) => [d.id, d.tier, d.recommended_status])).toEqual([
+      ["GHSA-a", "major_internal", "not_affected"],
+      ["GHSA-unfixed", "unfixed", "affected"],
+    ]);
+    expect(queried.map((q) => q.version)).toEqual(["1.5.0"]);
+    expect(s.upgrade_note).not.toContain("the range data disagree");
+  });
+
+  it("修正版なしの既知の脆弱性と新しい脆弱性が混在しても、新しい脆弱性を避けて選び直す", async () => {
+    const mixed = scanned("x", "1.0.0", [
+      { id: "GHSA-a", ranges: [range("0", "1.5.0")] },
+      { id: "GHSA-unfixed", ranges: [range("0")] },
+    ]);
+    const { suggestions, queried } = await check([mixed], {
+      "x@1.5.0": [record("GHSA-unfixed", "x", [range("0")]), record("GHSA-new", "x", [range("1.4.0", "1.6.0")])],
+      "x@1.6.0": [record("GHSA-unfixed", "x", [range("0")])],
+    });
+    expect(suggestions[0]).toMatchObject({ recommended_upgrade: "1.6.0", candidate_check: "clean" });
+    expect(queried.map((q) => q.version)).toEqual(["1.5.0", "1.6.0"]);
+    expect(suggestions[0]!.upgrade_note).toContain("1.5.0 is affected by 1 known vulnerability");
+    expect(suggestions[0]!.per_cve_detail.find((d) => d.id === "GHSA-unfixed")!.recommended_status).toBe("affected");
+  });
+
+  it("修正対象と修正版なしのIDが同じレコードに現れた場合は、修正対象の不一致を優先する", async () => {
+    const mixed = scanned("x", "1.0.0", [
+      { id: "GHSA-a", ranges: [range("0", "1.5.0")] },
+      { id: "GHSA-unfixed", ranges: [range("0")] },
+    ]);
+    const { suggestions } = await check([mixed], {
+      "x@1.5.0": [record("GHSA-unfixed", "x", [range("0")], ["GHSA-a"])],
+    });
+    expect(suggestions[0]).toMatchObject({ recommended_upgrade: null, candidate_check: "conflict" });
+  });
+
+  it("PyPIのecdsaの形: 修正可能な問題の候補を残し、修正版なしの問題はaffectedのまま示す", async () => {
+    const name = "ecdsa";
+    const affected = (fixed?: string) => [{ package: { name, ecosystem: "PyPI" }, ranges: [{
+      type: "ECOSYSTEM", events: fixed === undefined ? [{ introduced: "0" }] : [{ introduced: "0" }, { fixed }],
+    }] }];
+    const ecdsa = parseOsvScanOutput({ results: [{ packages: [{
+      package: { name, version: "0.13", ecosystem: "PyPI" },
+      groups: [{ ids: ["TEST-FIXED"] }, { ids: ["PYSEC-2026-1325"] }],
+      vulnerabilities: [
+        { id: "TEST-FIXED", affected: affected("0.19.2") },
+        { id: "PYSEC-2026-1325", affected: affected() },
+      ],
+    }] }] }).packages[0]!;
+    const { suggestions } = await check([ecdsa], {
+      "ecdsa@0.19.2": [{ id: "PYSEC-2026-1325", affected: affected() }],
+    });
+    expect(suggestions[0]).toMatchObject({ recommended_upgrade: "0.19.2", candidate_check: "clean", verification: "verified" });
+    expect(suggestions[0]!.per_cve_detail.find((d) => d.id === "PYSEC-2026-1325")).toMatchObject({ tier: "unfixed", recommended_status: "affected" });
+  });
+
   it("スキャンで既に知っている脆弱性に該当と返った場合(範囲情報の食い違い)は、その候補を除外する", async () => {
     const two = scanned("x", "1.0.0", [
       { id: "GHSA-a", ranges: [range("0", "1.5.0")] },
