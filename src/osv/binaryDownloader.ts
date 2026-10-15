@@ -23,23 +23,25 @@ import { readResponseBytes } from "../utils/readResponseBytes.js";
  * 範囲外の読み込みを防ぐ検証はこの版の挙動に合わせているため、更新時は
  * docs/DESIGN_TODO.md「B5」の監査と、requirements.txt・親POMの解釈の実機確認をやり直すこと。
  * pom.xmlの直接/推移的依存の判定(dependencyRelations.tsのpomRelations)も、この版が同じpom.xmlを
- * source.type "lockfile"(宣言された依存)と"unknown"(deps.devで解決された推移的依存)に分けて報告する挙動に依存するため再確認すること
+ * source.type "lockfile"(宣言された依存)と"unknown"(deps.devで解決された推移的依存)に分けて報告する挙動に依存するため再確認すること。
+ * 2.7.0への更新時の確認結果はdocs/DESIGN_TODO.md「osv-scannerのピン留め更新(2.4.0 → 2.7.0)」(2026-10-15)
  */
-export const PINNED_OSV_SCANNER_VERSION = "2.4.0";
+export const PINNED_OSV_SCANNER_VERSION = "2.7.0";
 
 /**
- * v2.4.0公式リリースのSHA256(osv-scanner_SHA256SUMSより転記、2026-07-04取得)。
- * https://github.com/google/osv-scanner/releases/tag/v2.4.0
+ * v2.7.0公式リリースのSHA256(2026-10-15取得)。osv-scanner_SHA256SUMSとGitHub APIのリリース資産のdigestの
+ * 両方で一致を確認し、darwin_arm64はダウンロードした実体のハッシュとも照合した。
+ * https://github.com/google/osv-scanner/releases/tag/v2.7.0
  */
 const ASSET_CHECKSUMS: Record<string, string> = {
-  "osv-scanner_darwin_amd64": "088119325156321c34c456ac3703d6013538fd71cbac82b891ab34db491e4d66",
-  "osv-scanner_darwin_arm64": "9ca3185ad63e9ab54f7cb90f46a7362be02d80e37f0123d095a54355ea202f5d",
-  "osv-scanner_linux_amd64": "15314940c10d26af9c6649f150b8a47c1262e8fc7e17b1d1029b0e479e8ed8a0",
-  "osv-scanner_linux_arm64": "44e580752910f0ff36ec99aff59af20f65df1e859aa31e5605a8f0d055b496e9",
+  "osv-scanner_darwin_amd64": "e82c5df7ab0a42dff29a1cd0660711447b56b4c0483ff66ad8634df10fd81a45",
+  "osv-scanner_darwin_arm64": "d4926ef8da134332543be276dff157e4c170f99ad91fc48e89448a8816bdf70b",
+  "osv-scanner_linux_amd64": "160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b",
+  "osv-scanner_linux_arm64": "4061ef4c021ed3c47f203b818f337e351336cc5cd67c0274fc36bd1dfc728dd7",
   "osv-scanner_windows_amd64.exe":
-    "0cdd113610126d5dfd5e12ad0e0b4f3e879291ff19bb43b0c52ed2f2c2df1a37",
+    "9964ed64ec9a387391eb4cc006ad5c531154821aef29b793e02c448de4686438",
   "osv-scanner_windows_arm64.exe":
-    "1ce89d7d8ef083634648ef0f193fe1254f36f46f4bdc93d61178adacc2e60da0",
+    "3e630381c1f1fd3c9c4d447e6ff2ef6c737083371722773db8337eead0f97962",
 };
 
 const DOWNLOAD_TIMEOUT_MS = 300_000;

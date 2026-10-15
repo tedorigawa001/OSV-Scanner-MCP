@@ -1029,7 +1029,7 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 
 ### 実バイナリでの確認結果(2026-10-15、2.4.0と2.7.0を並べて実行)
 
-**チェックサム**: 5種(darwin amd64/arm64、linux amd64/arm64、windows amd64)とも、GitHub APIの`digest`と`osv-scanner_SHA256SUMS`が一致。darwin_arm64はダウンロードした実体のSHA-256(`d4926ef8da134332543be276dff157e4c170f99ad91fc48e89448a8816bdf70b`)とも一致。`--version`は`osv-scanner version: 2.7.0`(`osv-scalibr version: 0.5.3`)
+**チェックサム**: 6種(darwin amd64/arm64、linux amd64/arm64、windows amd64/arm64。設計時に「windows arm64は対象外」と書いたのは誤りで、従来から6種を埋め込んでいる)とも、GitHub APIの`digest`と`osv-scanner_SHA256SUMS`が一致。darwin_arm64はダウンロードした実体のSHA-256(`d4926ef8da134332543be276dff157e4c170f99ad91fc48e89448a8816bdf70b`)とも一致。`--version`は`osv-scanner version: 2.7.0`(`osv-scalibr version: 0.5.3`)
 
 **変わらなかったもの**:
 - B5の再監査(package-lock.json・yarn.lock・pnpm-lock.yaml・poetry.lock・go.mod・pom.xmlの`<modules>`とBOMの`import`、resolveあり・`--no-resolve`): 範囲外の読み込みなし。陽性対照のrequirements.txtの`-r`は2.7.0でも範囲外を読み、親POMの`<relativePath>`も範囲外を読む(本サーバーの対策は引き続き必要)
@@ -1050,6 +1050,16 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 - 1(`resolved`なし): **package-lock.json(npm-shrinkwrap.jsonを含む)のスナップショットのコピーで、`resolved`の無いエントリに公開レジストリの形のURLを補い、2.4.0と同じく照会させる**。対象は、キーが`node_modules/`を含み、`link`でなく、`resolved`が無いエントリだけ(ローカルのディレクトリの依存は`link: true`とキーが`node_modules/`を含まない対象のエントリ、tarballは`resolved: "file:..."`のため対象外)。送信される名前は2.4.0と同じで、新たな送信はない。補った件数は応答に出さない(スキャンの範囲は2.4.0と同じになるため)。JSONの解析・再出力は本サーバーで行い、重複したキー等で解析できない場合は元のコピーをそのまま渡す(2.7.0の挙動になる。従来どおり`coverage`の範囲は変えない)
 - 2(gitのURL): v0.14.0では**READMEの通信先の表とツールの説明に明記**する。コピーから除く・`resolved`を外して照会させない等の対処は、gitの依存の公開リポジトリでの正しい検出(OSVのGITの範囲)を失うため、要望があれば別途検討する(バックログ)
 - 3(フラグ): 旧名を維持。テストに「2.4.0と2.7.0の両方で動く引数」である旨の注記を加える
+
+### v0.14.0の実装(2026-10-15)
+
+- `binaryDownloader.ts`: 2.7.0と6種のチェックサム(取得日・照合の経路を注記)
+- `npmLockCopy.ts`(新規)・`scanProject.ts`: スナップショットのpackage-lock.jsonのコピーで`resolved`を補う(v2以降の`packages`と、v1の`dependencies`の入れ子の両方)。補うエントリが無ければコピーを書き換えない。単体テスト・統合テスト(コピーだけが変わり元のファイルは変えない)を追加し、補完を外すと統合テストが失敗することを確認
+- 実機(MCP経由、検証済みのキャッシュの2.7.0): `resolved`なし・`inBundle`・v1の`lodash 4.17.20`が、補完なしの0件から検出されるようになった(グループ単位で3件)
+- (レビュー指摘)v1の別名の依存(`"version": "npm:lodash@4.17.20"`、スコープ付きの`npm:@babel/traverse@7.22.0`)は版の文字種の確認で対象外になり補われなかった(`filled: 0`)。osv-scannerはこの表記を実際の名前と版で照会し、`resolved`が無いと2.7.0では照会しない(2.4.0では`lodash` 5件・`@babel/traverse` 1件、2.7.0では0件)。実際の名前と版を取り出して補う。MCP経由で`lodash`・`@babel/traverse`とも検出されることを確認
+- 回帰: 5エコシステムの混在プロジェクトで、`scan_project`・`suggest_fix`の応答がv0.13.0+2.4.0と**バイト単位で一致**
+- `--experimental-`のフラグは維持(`runner.ts`に理由を注記)。README・SECURITY.md・ツールの説明にgitの依存のURLの送信、READMEに`resolved`の補完と旧版のキャッシュの削除を記載。2.4.0を前提にしたコードの注記に2.7.0での確認を追記
+- リリースは2.7.0の公開から2週間後(2026-10-26以降)、重大な不具合の報告と2.7.xの修正版がないことを確認してから
 
 ### 必要なダウンロード(実施前に許可を得る)
 

@@ -5,6 +5,7 @@
  * complete=falseの場合は「検出0件でも安全とは言えない」旨の警告を付ける。
  */
 
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import { isRemoteResolutionDisabled, runOsvScan, type RunOsvScanOptions } from "../osv/runner.js";
@@ -23,6 +24,7 @@ import { cargoLockCopyContent, type CargoPackage } from "../utils/cargoLock.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
 import { readRegularFile } from "../utils/safeRead.js";
 import { detectProject, type DetectedProject } from "../utils/manifestDetector.js";
+import { fillMissingResolved } from "../utils/npmLockCopy.js";
 import { normalizePypiName } from "../utils/requirementsFile.js";
 import { ScanSnapshot, snapshotManifests } from "../utils/scanSnapshot.js";
 import { dependencyResolution, withScopeNotes, type ScanJavaProjectArgs, type ScanJavaProjectOptions } from "./scanJavaProject.js";
@@ -231,6 +233,12 @@ function annotateRelations(packages: readonly ScanReportPackage[], lookups: Read
   });
 }
 
+/** スナップショットのpackage-lock.jsonのコピーにresolvedを補う。解析できなければそのまま渡す */
+async function fillResolvedInCopy(copyPath: string): Promise<void> {
+  const filled = fillMissingResolved(await readFile(copyPath, "utf8"));
+  if (filled?.changed) await writeFile(copyPath, filled.content, { mode: 0o600 });
+}
+
 export async function scanFromSnapshot(project: DetectedProject, options: RunOsvScanOptions): Promise<ScanReport> {
   const snapshot = await ScanSnapshot.create();
   try {
@@ -238,6 +246,10 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
       projectDir: project.projectDir,
       allowedRootReal: project.allowedRootReal,
     });
+    // osv-scanner 2.7.0はresolvedの無いnpmのエントリを照会しないため、コピーで補う(npmLockCopy.ts)
+    for (const copy of targets) {
+      if (copy.format === "package-lock.json") await fillResolvedInCopy(copy.path);
+    }
     // コピーと元のファイルの対応(snapshotManifestsは外したもの以外を入力の順に返す)
     const skippedOriginals = new Set(skipped.map((s) => s.path));
     const scannedOriginals = project.targets.filter((t) => !skippedOriginals.has(t.path));

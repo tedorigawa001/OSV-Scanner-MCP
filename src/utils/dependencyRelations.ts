@@ -349,7 +349,7 @@ export function goModRelations(text: string): RelationLookup {
 
 /**
  * pom.xmlの依存の関係を、osv-scannerの`source.type`で判定する(pom.xmlは自前で解析しない)。
- * osv-scanner 2.4.0は同じpom.xmlを、宣言された依存(親POM・プロファイル・プロパティ・依存管理をosv-scannerが解釈したもの)を
+ * osv-scanner 2.4.0・2.7.0は同じpom.xmlを、宣言された依存(親POM・プロファイル・プロパティ・依存管理をosv-scannerが解釈したもの)を
  * `type: "lockfile"`、deps.devで解決された推移的依存を`type: "unknown"`の結果に分けて報告する(実データで確認)。
  * 文書化された仕様ではないため、想定外のtypeはunknownにする(osv-scannerのピン留め更新時に再確認する)。
  */

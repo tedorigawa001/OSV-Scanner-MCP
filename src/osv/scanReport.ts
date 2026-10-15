@@ -248,7 +248,7 @@ interface MutablePackage {
 
 /**
  * スキャン元: osv-scannerの`results[].source`のパスと種類。
- * osv-scanner 2.4.0は同じpom.xml・requirements.txtを、宣言された依存(`type: "lockfile"`)と、
+ * osv-scanner 2.4.0・2.7.0は同じpom.xml・requirements.txtを、宣言された依存(`type: "lockfile"`)と、
  * deps.devで解決された推移的依存(`type: "unknown"`)の2つの結果に分けて報告する(直接/推移的の判定に使う)
  */
 export interface PackageSource {

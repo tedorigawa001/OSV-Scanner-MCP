@@ -12,7 +12,7 @@
  * - タイムアウトと出力サイズ上限を設ける(ハング・巨大出力によるDoS対策)
  * - サーバーの終了時に実行中のプロセスを残さない(processCleanup.tsに登録し、終了時にSIGKILL)
  *
- * 終了コード(2.4.0で実機確認):
+ * 終了コード(2.4.0・2.7.0で実機確認):
  *   0 = スキャン成功・脆弱性なし / 1 = スキャン成功・脆弱性あり / 128 = 対象パッケージなし
  */
 
@@ -76,7 +76,7 @@ export function isRemoteResolutionDisabled(options: RunOsvScanOptions = {}): boo
 /**
  * OSV-Scannerに渡す固定引数。ここに無いオプションは一切使わない(ホワイトリスト)
  *
- * pom.xml/requirements.txtの推移的依存はapi.deps.devで解決される(2.4.0で実機確認)。
+ * pom.xml/requirements.txtの推移的依存はapi.deps.devで解決される(2.4.0・2.7.0で実機確認)。
  * `--data-source native` はスキャン対象pom.xmlの<repositories>に書かれた任意のURLへ
  * 接続するため使わない。既定値の変更に備えてdeps.devを明示する。
  */
@@ -92,6 +92,10 @@ export function buildProjectTargetArgs(targets: readonly ManifestTarget[]): stri
     return ["--lockfile", `${target.format}:${target.path}`];
   });
 }
+/**
+ * `--experimental-`のフラグは2.7.0で非推奨(stderrに警告。新名は`--x-`)だが、新名は2.4.0では未定義でexit 127になる。
+ * OSV_SCANNER_PATH・PATH上の古い版でも動くよう、両方の版で使える旧名を使う(2026-10-15 実機確認)
+ */
 const FIXED_ARTIFACT_ARGS = [
   "scan", "source", "--format", "json", "--all-packages", "--no-ignore",
   "--experimental-no-default-plugins", "--experimental-plugins", "java/archive",

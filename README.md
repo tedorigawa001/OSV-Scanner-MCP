@@ -29,6 +29,7 @@ An MCP server that wraps Google's [OSV-Scanner](https://github.com/google/osv-sc
   - A manually installed binary (on `PATH` or set with `OSV_SCANNER_PATH`) is used first
   - Set `OSV_MCP_AUTO_DOWNLOAD=0` to disable the automatic download
   - Set `OSV_MCP_PREFER_DOWNLOAD=1` to always use the verified downloaded binary instead of one on `PATH` (recommended for production)
+  - The pinned version is osv-scanner 2.7.0. Its binary is cached in `~/.cache/osv-scanner-mcp/v2.7.0/`; directories of earlier versions (such as `v2.4.0/`) are no longer used and can be deleted
 - Scans, `suggest_fix`, and `explain_vulnerability` access the network. Vulnerabilities are looked up in the OSV database (`api.osv.dev`), and **scanning `pom.xml` or `requirements.txt` also connects to deps.dev (`api.deps.dev`) to resolve transitive dependencies**. See [Network destinations and privacy](#network-destinations-and-privacy) for details and how to turn this off
 
 ## Setup
@@ -176,13 +177,13 @@ As an additional layer of defense, you can limit what the server can read and wr
 
 ### Network destinations and privacy
 
-Destinations confirmed with osv-scanner v2.4.0 (2026-10-07):
+Destinations confirmed with osv-scanner v2.4.0 (2026-10-07) and v2.7.0, the pinned version (2026-10-15):
 
 | Operation | Destinations | Information sent |
 |---|---|---|
 | Scanning `pom.xml` (`scan_project` / `scan_java_project` / `suggest_fix`) | `api.osv.dev`, **`api.deps.dev`** | Package names and versions. To resolve transitive dependencies, the names and versions of the dependencies declared in `pom.xml` (including internal packages) are sent to deps.dev |
 | Scanning `requirements.txt` (`scan_project` / `suggest_fix`) | `api.osv.dev`, **`api.deps.dev`** | As with `pom.xml`, the names and versions of the listed dependencies are sent to deps.dev to resolve transitive dependencies. Package indexes given with `--index-url` and similar options are not contacted |
-| Scanning lockfiles (`gradle.lockfile`, npm lockfiles such as `package-lock.json`, Python lockfiles such as `poetry.lock`, `go.mod`, `Cargo.lock`) | `api.osv.dev` | Package names and versions (lockfiles already list every dependency, so nothing is resolved remotely). For `Cargo.lock`, only crates from crates.io are sent: the names of your own crates, git dependencies, and private-registry crates are not sent (confirmed 2026-10-11) |
+| Scanning lockfiles (`gradle.lockfile`, npm lockfiles such as `package-lock.json`, Python lockfiles such as `poetry.lock`, `go.mod`, `Cargo.lock`) | `api.osv.dev` | Package names and versions (lockfiles already list every dependency, so nothing is resolved remotely). For `Cargo.lock`, only crates from crates.io are sent: the names of your own crates, git dependencies, and private-registry crates are not sent (confirmed 2026-10-11). **Git dependencies in npm lockfiles** (`package-lock.json`, `yarn.lock`, and so on) are looked up by their repository URL (ecosystem `GIT`) and commit, so the host name and path of a private git repository (for example `https://git.example.com/team/repo`) are sent (since osv-scanner 2.6.0) |
 | `scan_java_artifact` / `scan_sbom` | `api.osv.dev` | Names and versions of the identified packages |
 | `suggest_fix` checking recommended versions | `api.osv.dev` | The names of packages with a recommendation (already sent during the scan) and the candidate versions (published fixed versions). Disable with `OSV_MCP_NO_CANDIDATE_CHECK=1` |
 | `explain_vulnerability` | `api.osv.dev` | The vulnerability ID |
@@ -219,7 +220,9 @@ Detects the lockfiles and manifests in a project and scans the Java / JavaScript
 
 **`requirements.txt` files are not passed to OSV-Scanner as they are.** The server parses them, rewrites only the dependency lines it can interpret into simple forms such as `name==version`, and scans a private temporary copy (deleted after the scan). OSV-Scanner interprets include directives on its own (it even treats `- r ../x.txt`, with a space, as an include and reads files outside the scan scope), so the copy never contains include directives or options. Includes (`-r` / `--requirement`) are expanded by the server, and only when the included file is inside the project directory.
 
-**`Cargo.lock` files are not passed to OSV-Scanner as they are either.** OSV-Scanner (v2.4.0) ignores where each package comes from and looks every package up as a crates.io crate, so a workspace crate, a git fork, or a private-registry crate with the same name and version as a vulnerable crates.io crate is reported as vulnerable, and its name is sent to the OSV API. The server parses `Cargo.lock` and scans a private copy that lists only the packages whose source is crates.io (`registry+https://github.com/rust-lang/crates.io-index` or `sparse+https://index.crates.io/`), like `cargo audit`. Packages replaced with `[replace]` are not scanned, because they are not used (the replacement is classified by its own source). The parser accepts only what Cargo writes; if a `Cargo.lock` contains anything else, the whole file is excluded and listed in `skipped_files` instead of being scanned partially. Cargo is never run.
+**`Cargo.lock` files are not passed to OSV-Scanner as they are either.** OSV-Scanner (v2.4.0 and v2.7.0) ignores where each package comes from and looks every package up as a crates.io crate, so a workspace crate, a git fork, or a private-registry crate with the same name and version as a vulnerable crates.io crate is reported as vulnerable, and its name is sent to the OSV API. The server parses `Cargo.lock` and scans a private copy that lists only the packages whose source is crates.io (`registry+https://github.com/rust-lang/crates.io-index` or `sparse+https://index.crates.io/`), like `cargo audit`. Packages replaced with `[replace]` are not scanned, because they are not used (the replacement is classified by its own source). The parser accepts only what Cargo writes; if a `Cargo.lock` contains anything else, the whole file is excluded and listed in `skipped_files` instead of being scanned partially. Cargo is never run.
+
+**`package-lock.json` copies get a `resolved` URL where it is missing.** osv-scanner 2.7.0 treats entries without `resolved` as local packages and does not look them up, which would silently skip bundled dependencies (`inBundle`) and registry packages in lockfiles generated with npm's `omit-lockfile-registry-resolved=true`. The private copy that is scanned gets a public-registry URL for those entries (entries under `node_modules/` that are not links and have a plain version, and aliases such as `npm:lodash@4.17.20` in lockfile version 1), so they are looked up as before; the original file is not changed.
 
 **Reading the output**
 
@@ -351,7 +354,7 @@ A directory search includes `target` and `build`, and excludes `.git`, `node_mod
 The search is limited to a depth of 8, 100 archives, and 10,000 entries. If the search cannot complete within the limits, `artifact_search_limit_exceeded` is returned instead of silently truncating the results; narrow the target and try again.
 `OSV_MCP_ALLOWED_ROOT` applies as well.
 
-OSV-Scanner 2.4.0's `java/archive` plugin is used, and nested JARs are also analyzed by the scanner. No Java code is executed and no build is run.
+OSV-Scanner's `java/archive` plugin is used, and nested JARs are also analyzed by the scanner. No Java code is executed and no build is run.
 Identification relies on metadata inside the archives, so dependencies whose metadata was removed, and dependencies inside shaded/minimized JARs, may be missed.
 
 **Reading the output:**

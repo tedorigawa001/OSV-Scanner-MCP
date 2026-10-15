@@ -1,7 +1,7 @@
 /**
  * Cargo.lockの解析と、osv-scannerに渡すコピーの内容の生成(cargoは実行しない)。
  *
- * osv-scanner v2.4.0はCargo.lockの`source`を見ずに全パッケージをcrates.ioとして照会する(2026-10-11 実機確認)。
+ * osv-scanner v2.4.0・v2.7.0はCargo.lockの`source`を見ずに全パッケージをcrates.ioとして照会する(2026-10-11 実機確認)。
  * workspaceのメンバー・pathの依存・gitの依存・別レジストリの依存も、同名・同版のcrates.ioのアドバイザリが付き(誤検知)、
  * 社内crateの名前がapi.osv.devへ送られる。そこで元のファイルは渡さず、ここで解析したcrates.io由来の
  * パッケージだけを書いたコピーをスキャンする(docs/DESIGN_TODO.md「Rust(crates.io)対応」)。

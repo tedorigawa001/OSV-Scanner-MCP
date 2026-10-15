@@ -1,7 +1,7 @@
 /**
  * pom.xmlの親POM(`<parent><relativePath>`)の参照の解釈。連鎖のコピーと検証はscanSnapshot.tsが行う。
  *
- * osv-scanner v2.4.0の実機確認(2026-10-07):
+ * osv-scanner v2.4.0の実機確認(2026-10-07。範囲外の親POMを読む挙動はv2.7.0でも同じ、2026-10-15):
  * - `<relativePath>`の指す親POMを読み、その依存を結果に含める(`--no-resolve`でも同じ)。親の親もたどる
  * - `<relativePath>`省略時はMavenの既定値`../pom.xml`を参照する。ディレクトリを指す場合はその中のpom.xml
  * - `<relativePath/>`(空)はローカルを参照しない。親のGAVが一致しない場合も読まない

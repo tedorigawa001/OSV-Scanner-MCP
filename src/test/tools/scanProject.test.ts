@@ -35,7 +35,7 @@ function pkg(ecosystem: string, name: string, version: string, extra: Record<str
   };
 }
 
-/** 渡された引数とrequirements.txt・Cargo.lockのコピーの中身を記録し、指定のJSONを返す偽osv-scanner */
+/** 渡された引数とrequirements.txt・Cargo.lock・package-lock.jsonのコピーの中身を記録し、指定のJSONを返す偽osv-scanner */
 async function fakeScanner(output: unknown): Promise<{ bin: string; argsFile: string; copiesFile: string }> {
   const id = Math.random().toString(36).slice(2);
   const argsFile = path.join(binDir, `args-${id}.txt`);
@@ -48,7 +48,8 @@ async function fakeScanner(output: unknown): Promise<{ bin: string; argsFile: st
     bin,
     `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsFile}'\n` +
       `for a in "$@"; do case "$a" in requirements.txt:*) cat "\${a#requirements.txt:}" >> '${copiesFile}';; ` +
-      `Cargo.lock:*) cat "\${a#Cargo.lock:}" >> '${copiesFile}';; esac; done\n` +
+      `Cargo.lock:*) cat "\${a#Cargo.lock:}" >> '${copiesFile}';; ` +
+      `package-lock.json:*) cat "\${a#package-lock.json:}" >> '${copiesFile}';; esac; done\n` +
       `cat '${outFile}'\nexit 1\n`,
   );
   await chmod(bin, 0o755);
@@ -114,7 +115,9 @@ describe("handleScanProject", () => {
     expect(copies).toHaveLength(1);
     expect(copies[0]!.startsWith(dir)).toBe(false);
     expect(await exists(copies[0]!)).toBe(false);
-    expect(await readFile(copiesFile, "utf8")).toBe("requests==2.19.0\n");
+    // 記録にはnpm-shrinkwrap.json("{}")のコピーも含まれる
+    expect(await readFile(copiesFile, "utf8")).toContain("requests==2.19.0\n");
+    expect((await readFile(copiesFile, "utf8")).replace("{}", "")).toBe("requests==2.19.0\n");
     expect(args).not.toContain(dir);
     expect(args).not.toContain("-r");
   });
@@ -505,5 +508,25 @@ checksum = "4d58d1b70b004888f764dfbf6a26a3b0342a1632d33968e4a179d8011c760614"
       ["RUSTSEC-2021-0145", null],
       ["RUSTSEC-2024-0375", "unmaintained"],
     ]);
+  });
+});
+
+describe("handleScanProject: package-lock.jsonのresolvedの補完(osv-scanner 2.7.0)", () => {
+  it("回帰: コピーだけにresolvedを補い、元のファイルは変えない", async () => {
+    const original = JSON.stringify({ name: "w", lockfileVersion: 3, packages: { "": { name: "w" }, "node_modules/lodash": { version: "4.17.20" } } });
+    const dir = await makeProject({ "package-lock.json": original });
+    const { bin, copiesFile } = await fakeScanner({ results: [] });
+    await handleScanProject({ project_path: dir }, { binaryPath: bin, noRemoteResolution: false });
+    const copy = JSON.parse(await readFile(copiesFile, "utf8")) as { packages: Record<string, { resolved?: string }> };
+    expect(copy.packages["node_modules/lodash"]!.resolved).toBe("https://registry.npmjs.org/lodash/-/lodash-4.17.20.tgz");
+    expect(await readFile(path.join(dir, "package-lock.json"), "utf8")).toBe(original);
+  });
+
+  it("補うエントリが無ければコピーの内容はそのまま", async () => {
+    const original = JSON.stringify({ name: "w", lockfileVersion: 3, packages: { "": { name: "w" }, "node_modules/x": { version: "1.0.0", resolved: "https://registry.npmjs.org/x/-/x-1.0.0.tgz" } } });
+    const dir = await makeProject({ "package-lock.json": original });
+    const { bin, copiesFile } = await fakeScanner({ results: [] });
+    await handleScanProject({ project_path: dir }, { binaryPath: bin, noRemoteResolution: false });
+    expect(await readFile(copiesFile, "utf8")).toBe(original);
   });
 });

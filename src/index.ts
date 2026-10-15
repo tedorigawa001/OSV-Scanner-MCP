@@ -82,6 +82,7 @@ server.registerTool(
       "Python (poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt), Go (go.mod), Rust (Cargo.lock). " +
       "Package managers and builds are never run. " +
       "Always check coverage at the top of the response: it lists manifests without a lockfile, requirements lines without a pinned version, and excluded files. " +
+      "Git dependencies in npm lockfiles are looked up by repository URL, so private git host names and paths are sent to api.osv.dev. " +
       "For Cargo.lock, only crates from crates.io are scanned: the project's own crates are counted in local_crates, and git or private-registry crates are listed in unscannable_crates. " +
       "Vulnerabilities marked informational (RustSec notices such as unmaintained or unsound crates) are not counted in vulnerability_count; they are counted in informational_count. " +
       "Each package's dependency_relation tells whether it is a direct or transitive dependency (determined for package-lock.json, go.mod, requirements.txt, and pom.xml; unknown otherwise). " +
