@@ -1027,6 +1027,30 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 - キャッシュ: 新しい版は`~/.cache/osv-scanner-mcp/v2.7.0/`に入る。旧版のディレクトリは削除しない(READMEに手動削除の案内)
 - リリースは**v0.14.0**(スキャン結果・送信内容が変わり得るため、修正版ではなくマイナー版)
 
+### 実バイナリでの確認結果(2026-10-15、2.4.0と2.7.0を並べて実行)
+
+**チェックサム**: 5種(darwin amd64/arm64、linux amd64/arm64、windows amd64)とも、GitHub APIの`digest`と`osv-scanner_SHA256SUMS`が一致。darwin_arm64はダウンロードした実体のSHA-256(`d4926ef8da134332543be276dff157e4c170f99ad91fc48e89448a8816bdf70b`)とも一致。`--version`は`osv-scanner version: 2.7.0`(`osv-scalibr version: 0.5.3`)
+
+**変わらなかったもの**:
+- B5の再監査(package-lock.json・yarn.lock・pnpm-lock.yaml・poetry.lock・go.mod・pom.xmlの`<modules>`とBOMの`import`、resolveあり・`--no-resolve`): 範囲外の読み込みなし。陽性対照のrequirements.txtの`-r`は2.7.0でも範囲外を読み、親POMの`<relativePath>`も範囲外を読む(本サーバーの対策は引き続き必要)
+- Mavenのプロパティ: `${env.X}`・`${user.home}`・未定義のプロパティは両版とも展開されず、その依存は出力から消える(環境変数の値は送られない)。`${project.version}`・親POMのプロパティは両版とも展開される
+- pom.xmlの`source.type`の分離(宣言=`lockfile`、deps.devで解決=`unknown`)、requirements.txtの`==`・`>=`(下限)・`~=`・`===`の扱い、終了コード(脆弱性あり1・なし0・パッケージなし128・解析失敗127)とstderrの形式
+- Cargo.lock: 2.7.0でもsourceを見ずに、ローカル・gitの依存・別レジストリのcrateをcrates.ioとして照会し、同名のアドバイザリが付く(2.6.0の`pkg:git`の変更は`--lockfile Cargo.lock:`の経路では効いていない)。コピー方式は引き続き必要。`informational`は出力に残る
+- 接続先: lockfile・Cargo.lock・JAR/WARはapi.osv.devだけ、pom.xml・requirements.txtはapi.deps.devも(CONNECTプロキシで記録)
+- MCP経由の応答: npm(`resolved`付き)・Go・PyPI・Gradle・pom.xml(親POMあり)・Rustの混在プロジェクトで、`scan_project`(26パッケージ・249件)と`suggest_fix`(26件)がv0.13.0+2.4.0と**完全に一致**。`scan_java_artifact`(合成JAR・fat JAR・WAR・同定不能のJAR)と`scan_sbom`(CycloneDX・SPDX)も完全に一致
+- pnpm-lock.yaml・bun.lock・yarn.lockのレジストリのパッケージは両版とも照会される
+
+**変わったもの(要判断)**:
+1. **package-lock.jsonで`resolved`の無いエントリを照会しない(2.7.0、偽陰性)**: osv-scalibrの`DeterminePackageSource`は、`resolved`がnpmを含むhttp(s)のURLなら公開レジストリ、その他のhttp・gitなら「その他」、**それ以外(空を含む)はローカル**とみなし、ローカルは照会しない。`lodash 4.17.20`で、`resolved`なし・`inBundle: true`(バンドルされた依存)・`file:`は2.4.0では5件、2.7.0では0件。`file:`は正しくローカルだが、**バンドルされた依存と、npmの`omit-lockfile-registry-resolved=true`で生成したlockfile(レジストリのパッケージに`resolved`を書かない)は、実際のレジストリのコードなのに黙って照会されなくなる**。`resolved`がyarnpkg・社内のレジストリのURLでも照会は続く
+2. **gitの依存がリポジトリURLで照会される(2.6.0〜、送信内容の変化)**: package-lock.json・yarn.lockの`git+ssh://git@git.mycompany.example/team/priv.git#<commit>`は、2.4.0では`npm:priv@1.2.3`(+commit)として照会されたが、2.7.0では**エコシステム`GIT`・名前`https://git.mycompany.example/team/priv`**で照会される。社内のgitホスト名とリポジトリのパスがapi.osv.devへ送られる
+3. **`--experimental-`のフラグの非推奨**: 2.7.0は`--experimental-plugins`・`--experimental-no-default-plugins`を受け付けるが、stderrに非推奨の警告を出す。新名`--x-plugins`等は**2.4.0では未定義でexit 127**。`OSV_SCANNER_PATH`やPATH上の古い版を使う利用者がいるため、旧名を使い続ける(警告はstderrのため応答に影響しない)
+
+### 判断(推奨案)
+
+- 1(`resolved`なし): **package-lock.json(npm-shrinkwrap.jsonを含む)のスナップショットのコピーで、`resolved`の無いエントリに公開レジストリの形のURLを補い、2.4.0と同じく照会させる**。対象は、キーが`node_modules/`を含み、`link`でなく、`resolved`が無いエントリだけ(ローカルのディレクトリの依存は`link: true`とキーが`node_modules/`を含まない対象のエントリ、tarballは`resolved: "file:..."`のため対象外)。送信される名前は2.4.0と同じで、新たな送信はない。補った件数は応答に出さない(スキャンの範囲は2.4.0と同じになるため)。JSONの解析・再出力は本サーバーで行い、重複したキー等で解析できない場合は元のコピーをそのまま渡す(2.7.0の挙動になる。従来どおり`coverage`の範囲は変えない)
+- 2(gitのURL): v0.14.0では**READMEの通信先の表とツールの説明に明記**する。コピーから除く・`resolved`を外して照会させない等の対処は、gitの依存の公開リポジトリでの正しい検出(OSVのGITの範囲)を失うため、要望があれば別途検討する(バックログ)
+- 3(フラグ): 旧名を維持。テストに「2.4.0と2.7.0の両方で動く引数」である旨の注記を加える
+
 ### 必要なダウンロード(実施前に許可を得る)
 
 - `osv-scanner_darwin_arm64`(v2.7.0、55,336,530バイト)と`osv-scanner_SHA256SUMS`(554バイト)。公式のGitHub Releases(google/osv-scanner)。本サーバーの自動ダウンロードと同じ経路・同じ検証で取得できる
