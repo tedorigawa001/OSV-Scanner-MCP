@@ -963,6 +963,74 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 - プレリリースへの`cargo update --precise`の実機確認(キャッシュに依存元の揃ったプレリリースのcrateが無い)。案内はCargo公式文書の要求の規則に基づく
 - crates.ioでyankされた版を推奨する可能性(OSVはyankを知らない。crates.ioのAPI照会は通信先を増やすため行わない。注記で触れる)
 
+## osv-scannerのピン留め更新(2.4.0 → 2.7.0)詳細設計メモ(2026-10-15)
+
+本サーバーの境界の検証・関係の判定・出力の解釈は、ピン留めした版の実挙動に合わせている(`binaryDownloader.ts`の注記)。更新は版を書き換えるだけでなく、実バイナリでの再監査を伴う。
+
+### 対象の版(2026-10-15 確認)
+
+リリース: 2.5.0(08-07)、2.5.1(08-17)、2.6.0(09-14)、**2.7.0(10-12、最新)**。当初は2.6.0を想定していたが、2.7.0が出ている。
+
+**推奨: 2.7.0を対象にする。** 再監査(B5・親POM・requirements.txt・source.type・Cargo)は版ごとに必要で、2.6.0で行ってもすぐ2.7.0でやり直しになる。2.7.0にはプライバシー上の改善(下表の「ローカルのnpmパッケージを照会しない」)と、Mavenのgroup IDの修正も含まれる。ただし公開から3日のため、**公開から2週間(2026-10-26以降)経ち、重大な不具合の報告や2.7.xの修正版がないことを確認してからリリースする**(検証は先に進める)。2.7.1が出た場合はそれを対象にし直す。
+
+### 変更点と本サーバーへの影響(リリースノートより)
+
+| 版 | 変更 | 影響・確認事項 |
+|---|---|---|
+| 2.5.0 | スキャン・絞り込み・照合を**osv-scalibrのパイプラインに全面移行** | 出力の構造・`source.type`・グループ化・エラー時の終了コードとstderrが変わり得る。全項目の再確認の主因 |
+| 2.5.0 | requirements.txt抽出器の正規表現の修正(名前・要求ごとのオプション) | 本サーバーは正規化した行(`名前==版`・`>=`・`~=`)だけを書くが、下限を使用中の版とみなす挙動(`version_is_lower_bound`)の再確認 |
+| 2.5.0 / 2.5.1 | PURLの型の対応付け、照会時の名前空間(npmのscope等)の保持 | npmのscope付きパッケージ・Mavenの照会結果の比較 |
+| 2.6.0 | **JSのlockfileのgitの依存からリポジトリURLを抽出し、OSVのタグと照合**。JS・Cargoのgitの依存に`pkg:git`を付けて、レジストリのパッケージとの誤検知を避ける | osv-scalibrのソース(`osvutil.go`)では、エコシステム`GIT`の照会でリポジトリURLを名前に使う。**package-lock.json等の社内gitリポジトリのURLがapi.osv.devへ送られる可能性**(新しい送信内容)。Cargoのgitの依存は本サーバーがコピーから除いているため送られない |
+| 2.6.0 | tar爆弾による展開時のOOM・ディスク枯渇の防止 | JAR/WARのスキャン(`scan_java_artifact`)に有利。同定の結果が変わらないことを確認 |
+| 2.6.0 | `--allow-no-lockfiles`で`results`が`null`でなく`[]` | 本サーバーは使っていない。パーサーはどちらも受け付ける |
+| 2.7.0 | **Mavenの依存の版のプロパティの事前展開**(best-effort)、Maven解決のキャッシュ | 親POM・プロパティの解釈が変わる。`${env.X}`等の展開で**環境変数の値が版としてdeps.dev・OSVに送られないか**、範囲外のファイルを読まないかを確認 |
+| 2.7.0 | ローカルのnpmパッケージ(`file:`・workspace・ローカルのtarball)をOSVに照会しない | 社内パッケージ名の送信が減る(改善)。npmの関係の判定・件数への影響を確認 |
+| 2.7.0 | JSON出力にpurlを含める | パーサーは未知のフィールドを無視する。応答には出さない |
+| 2.7.0 | Mavenのgroup IDの保持(CycloneDX)、Goのモジュールの名前空間を大文字小文字を区別せず照合 | SBOM・Goの結果の比較 |
+| 2.7.0 | `--experimental-`のフラグを`--x-`に改名し、旧名は非推奨 | 本サーバーは`--experimental-plugins java/archive`を使う。**旧名が引き続き動くこと**を確認し、警告が出るなら新名に移る(固定の引数リストとテストを更新) |
+
+### チェックサムの取得(供給網)
+
+従来は公式リリースの`osv-scanner_SHA256SUMS`から転記した。今回は3つの経路で照合してから埋め込む:
+
+1. GitHub APIのリリース資産の`digest`(2026-10-15に取得済み。darwin_arm64は`d4926ef8…f70b`等)
+2. `osv-scanner_SHA256SUMS`(554バイト)
+3. ダウンロードしたdarwin_arm64の実体のSHA-256(検証用に使う1件だけ)
+
+対象は従来と同じ5種(darwin amd64/arm64、linux amd64/arm64、windows amd64)。windows arm64は従来どおり対象外。
+
+### 実バイナリでの再確認(陽性対照つき。2.4.0と2.7.0を同じ時刻に並べて実行し、OSVのデータの更新と版の違いを分ける)
+
+1. **B5の再監査**: 各形式のローカル参照で範囲外を読まないこと(既存のフィクスチャを再利用)。**陽性対照**(requirements.txtの`-r`、親POMの範囲外)が引き続き検出できることも確認する
+2. **親POM**: `<relativePath>`・既定の`../pom.xml`・`<packaging>pom</packaging>`の条件、B4の回帰ケース(重複した`<parent>`、名前空間付き、CRの改行)の解釈がGoのXMLデコーダーと一致したままか
+3. **Mavenのプロパティの展開(2.7.0)**: `${env.HOME}`・`${user.home}`・未定義のプロパティ・親POMのプロパティ・`${project.version}`を版に書いたpom.xmlで、送信される版・範囲外の読み込みを確認する
+4. **requirements.txt**: 正規化したコピーの`==`・`>=`・`~=`の扱いと、`version_is_lower_bound`の前提
+5. **pom.xmlの`source.type`の分離**(`lockfile` / `unknown`): `pomRelations`の前提
+6. **Cargo.lock**: gitの依存・ローカルのcrate・別レジストリのcrateの扱い(sourceで絞り込むようになったか)、`informational`が出力に残るか。いずれにしてもコピー方式は維持する(社内crateの名前を送らないため)
+7. **JSのlockfileのgitの依存**: `--all-packages`で、gitの依存がエコシステム`GIT`・リポジトリURLで照会されるかを確認する。送られる場合の対処は下記
+8. **JAR/WAR**: 合成JAR(pom.properties入り)・ネストしたJAR・同定不能のJARで、同定・`inferred_only`の判定(groupIdに`.`がない座標)・終了コードが変わらないこと。実物のfat/shaded JARでの確認はダウンロードを伴うため、必要なら別途許可を得る
+9. **SBOM**: CycloneDX・SPDXの既存フィクスチャ
+10. **出力と終了コード**: 脆弱性あり(1)・なし(0)・パッケージなし(128)・解析失敗、stderrの形式(`runner.ts`の扱い)、`--experimental-plugins`の警告
+11. **接続先**: lockfileはapi.osv.devだけ、pom.xml・requirements.txtはdeps.devも(CONNECTプロキシで記録)
+12. **回帰の比較**: 混在プロジェクト(npm・Go・PyPI・Gradle・Rust)と`ecdsa`等の実データで、`scan_project`・`suggest_fix`の応答をv0.13.0(2.4.0)と比較し、差分を1件ずつ説明できること
+
+### JSのlockfileのgitの依存のURL(確認7で送られると分かった場合)
+
+- 推奨: v0.14.0では**READMEの通信先の表に明記**し(「package-lock.json等のgitの依存は、リポジトリURLとコミットがapi.osv.devに送られる」)、ツールの説明にも1文加える。Cargo.lockと同様にコピーから除く方式は、package-lock.json・yarn.lock・pnpm-lock.yaml・bun.lockの書き換えが必要で影響が大きいため、要望があれば別途検討する(バックログに記録)
+- 代替: 該当する依存があるとき応答の`coverage`に「送信した」旨の注意を出す(lockfileの解析が必要)
+
+### 変更するもの
+
+- `binaryDownloader.ts`: `PINNED_OSV_SCANNER_VERSION`・`ASSET_CHECKSUMS`・注記(取得日と照合の経路)
+- 実挙動の違いに応じた修正(確認の結果次第。2.4.0の挙動を前提にした注記・テストの更新)
+- README: 通信先の表の確認日と版、gitの依存の送信内容、要件の記載
+- キャッシュ: 新しい版は`~/.cache/osv-scanner-mcp/v2.7.0/`に入る。旧版のディレクトリは削除しない(READMEに手動削除の案内)
+- リリースは**v0.14.0**(スキャン結果・送信内容が変わり得るため、修正版ではなくマイナー版)
+
+### 必要なダウンロード(実施前に許可を得る)
+
+- `osv-scanner_darwin_arm64`(v2.7.0、55,336,530バイト)と`osv-scanner_SHA256SUMS`(554バイト)。公式のGitHub Releases(google/osv-scanner)。本サーバーの自動ダウンロードと同じ経路・同じ検証で取得できる
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
