@@ -284,7 +284,7 @@ interface GoReplace {
  */
 export function goModRelations(text: string): RelationLookup {
   const requires = new Map<string, { relation: "direct" | "transitive"; version: string }>();
-  const replaces: GoReplace[] = [];
+  const replaces = new Map<string, Map<string | null, GoReplace>>();
   let block: "require" | "replace" | null = null;
   for (const raw of text.split(/\r?\n/)) {
     const { body, indirect } = splitGoComment(raw);
@@ -309,12 +309,19 @@ export function goModRelations(text: string): RelationLookup {
     } else if (directive === "replace") {
       const arrow = fields.indexOf("=>");
       if ((arrow === 1 || arrow === 2) && fields[arrow + 1] !== undefined) {
-        replaces.push({
+        const replace: GoReplace = {
           from: fields[0]!,
           fromVersion: arrow === 2 ? stripV(fields[1]!) : null,
           to: fields[arrow + 1]!,
           toVersion: fields[arrow + 2] !== undefined ? stripV(fields[arrow + 2]!) : null,
-        });
+        };
+        let versions = replaces.get(replace.from);
+        if (versions === undefined) {
+          versions = new Map();
+          replaces.set(replace.from, versions);
+        }
+        // Match the former find calls: retain the first declaration for each version.
+        if (!versions.has(replace.fromVersion)) versions.set(replace.fromVersion, replace);
       }
     }
   }
@@ -329,9 +336,8 @@ export function goModRelations(text: string): RelationLookup {
   };
   for (const [modulePath, { relation, version }] of requires) {
     setRelation(modulePath, relation);
-    const replace =
-      replaces.find((r) => r.from === modulePath && r.fromVersion === version) ??
-      replaces.find((r) => r.from === modulePath && r.fromVersion === null);
+    const versions = replaces.get(modulePath);
+    const replace = versions?.get(version) ?? versions?.get(null);
     if (replace === undefined) continue;
     if (replace.toVersion === null) {
       replacedLocal.add(modulePath);

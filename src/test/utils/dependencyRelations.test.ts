@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   combineRelations,
   goModRelations,
@@ -89,6 +89,66 @@ describe("npmLockRelations", () => {
 });
 
 describe("goModRelations", () => {
+  it.each(["missing", "versioned", "fallback"] as const)("does not repeatedly scan replacement arrays (%s)", (mode) => {
+    const count = 1000;
+    const requires = Array.from({ length: count }, (_, i) => `example.com/required-${i} v1.0.0`);
+    const replacements = Array.from({ length: count }, (_, i) => {
+      const from = mode === "missing" ? `example.com/other-${i}` : `example.com/required-${i}`;
+      return `${from}${mode === "versioned" ? " v1.0.0" : ""} => example.com/target-${i} v2.0.0`;
+    });
+    const text = `module example.com/test\nrequire (\n${requires.join("\n")}\n)\nreplace (\n${replacements.join("\n")}\n)\n`;
+    const scan = vi.spyOn(Array.prototype, "find");
+    let result: RelationLookup;
+    let rescans: number;
+    try {
+      result = goModRelations(text);
+      rescans = scan.mock.contexts.filter((value) => Array.isArray(value) && value.length === count).length;
+    } finally {
+      scan.mockRestore();
+    }
+    expect(result!("example.com/required-999", "1.0.0")).toEqual({ relation: "direct" });
+    expect(result!("example.com/target-999", "2.0.0")).toEqual(
+      mode === "missing" ? { relation: "unknown" } : { relation: "direct", replaced: true },
+    );
+    expect(rescans).toBeLessThanOrEqual(1);
+  });
+
+  it("preserves first replacements per normalized version and version-specific precedence in either order", () => {
+    const directives = [
+      "replace example.com/a => example.com/fallback-first v2.0.0",
+      "replace example.com/a => example.com/fallback-later v3.0.0",
+      "replace example.com/a v1.0.0 => example.com/exact-first v4.0.0",
+      "replace example.com/a 1.0.0 => example.com/exact-later v5.0.0",
+    ];
+    for (const replacements of [directives, [...directives.slice(2), ...directives.slice(0, 2)]]) {
+      for (const version of ["v1.0.0", "v1.1.0"]) {
+        const result = goModRelations(`require example.com/a ${version} // indirect\n${replacements.join("\n")}\n`)!;
+        expect(result("example.com/exact-first", "4.0.0")).toEqual(
+          version === "v1.0.0" ? { relation: "transitive", replaced: true } : { relation: "unknown" },
+        );
+        expect(result("example.com/fallback-first", "2.0.0")).toEqual(
+          version === "v1.1.0" ? { relation: "transitive", replaced: true } : { relation: "unknown" },
+        );
+        expect(result("example.com/exact-later", "5.0.0").relation).toBe("unknown");
+        expect(result("example.com/fallback-later", "3.0.0").relation).toBe("unknown");
+      }
+    }
+  });
+
+  it("keeps local version-specific replacements ahead of remote fallbacks and direct relations ahead of indirect ones", () => {
+    const result = goModRelations([
+      "replace (",
+      "example.com/a => example.com/remote v2.0.0",
+      "example.com/a v1.0.0 => ../local",
+      ")",
+      "require example.com/a v0.9.0 // indirect",
+      "require example.com/a v1.0.0",
+      "require example.com/a v1.1.0 // indirect",
+    ].join("\n"))!;
+    expect(result("example.com/a", "1.0.0")).toEqual({ relation: "direct", replaced: true });
+    expect(result("example.com/remote", "2.0.0").relation).toBe("unknown");
+  });
+
   const lookup = goModRelations([
     "module example.com/rel",
     "",
