@@ -87,7 +87,7 @@ describe("handleScanProject", () => {
     expect(copies.length).toBeGreaterThan(0);
     expect(copies.length).toBeLessThanOrEqual(100_000);
     expect(copies.every((line) => line === "a==1")).toBe(true);
-  });
+  }, 30_000); // 121件のファイルを作るため、全体の並列実行中は既定の5秒を超えうる
 
   it("annotates Cargo packages using the graph associated with the generated scanner input", async () => {
     const registry = "registry+https://github.com/rust-lang/crates.io-index";

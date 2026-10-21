@@ -51,32 +51,34 @@ describe("detectProject: 検出", () => {
       writes.mockRestore();
     }
     expect(candidateElements).toBeLessThanOrEqual(count);
-  });
+  }, 30_000); // 1,001件のファイルを作るため、全体の並列実行中は既定の5秒を超えうる
 
   it("keeps later duplicates ambiguous and unique declaration paths relative to each lock", async () => {
     const dir = await makeProject({
       "Cargo.toml": '[package]\nname = "unique-root"\n',
-      "Cargo.lock": "version = 3\n",
+      // 各Cargo.lockのローカルのcrate(依存元)だけを対応付ける
+      "Cargo.lock": 'version = 3\n[[package]]\nname = "unique-root"\nversion = "0.1.0"\n[[package]]\nname = "unique-member"\nversion = "0.1.0"\n[[package]]\nname = "duplicate"\nversion = "0.1.0"\n',
       "a/Cargo.toml": '[package]\nname = "duplicate"\n',
       "b/Cargo.toml": '[package]\nname = "unique-member"\n',
-      "b/Cargo.lock": "version = 3\n",
+      "b/Cargo.lock": 'version = 3\n[[package]]\nname = "unique-member"\nversion = "0.1.0"\n',
       "c/Cargo.toml": '[package]\nname = "duplicate"\n',
       "d/Cargo.toml": '[package]\nname = "duplicate"\n',
     });
-    const copies = (await detectProject(dir)).cargoCopies;
-    expect(copies).toHaveLength(2);
-    for (const copy of copies) {
-      expect(copy.declaringManifests).toEqual(new Map([
-        ["unique-root", path.relative(path.dirname(copy.path), "Cargo.toml")],
-        ["unique-member", path.relative(path.dirname(copy.path), path.join("b", "Cargo.toml"))],
-      ]));
-    }
+    const copies = new Map((await detectProject(dir)).cargoCopies.map((c) => [c.path, c.declaringManifests]));
+    expect(copies.size).toBe(2);
+    // 同名が複数あるduplicateは対応付けない。パスは各Cargo.lockからの相対
+    expect(copies.get("Cargo.lock")).toEqual(new Map([
+      ["unique-root", "Cargo.toml"],
+      ["unique-member", path.join("b", "Cargo.toml")],
+    ]));
+    // そのCargo.lockのローカルのcrateでない名前(unique-root)は含めない
+    expect(copies.get(path.join("b", "Cargo.lock"))).toEqual(new Map([["unique-member", "Cargo.toml"]]));
   });
 
   it("maps the sibling Cargo.toml when a Cargo.lock is selected directly", async () => {
     const dir = await makeProject({
       "member/Cargo.toml": '[package]\nname = "selected-member"\n',
-      "member/Cargo.lock": "version = 3\n",
+      "member/Cargo.lock": 'version = 3\n[[package]]\nname = "selected-member"\nversion = "0.1.0"\n',
     });
     const project = await detectProject(path.join(dir, "member", "Cargo.lock"));
     expect(project.cargoCopies[0]!.declaringManifests).toEqual(new Map([

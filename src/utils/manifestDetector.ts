@@ -440,8 +440,11 @@ async function finalize(
         continue;
       }
       const declaringManifests = new Map<string, string>();
-      for (const [name, marker] of cargoManifests) {
-        if (marker !== null) declaringManifests.set(name, path.relative(path.dirname(manifest.path), marker));
+      // declared_inに使うのは、このCargo.lockのローカルのcrate(依存元)の名前だけ。プロジェクトの全crate名を
+      // Cargo.lockごとにたどると、Cargo.lockの数×crate名の数の処理・メモリになる(900件×2万件で約24秒)
+      for (const name of lock.localCrates) {
+        const marker = cargoManifests.get(name);
+        if (typeof marker === "string") declaringManifests.set(name, path.relative(path.dirname(manifest.path), marker));
       }
       result.cargoCopies.push({ path: manifest.path, packages: lock.cratesIo, allPackages: lock.allPackages, declaringManifests });
       result.localCrateCount += lock.localCrates.length;
