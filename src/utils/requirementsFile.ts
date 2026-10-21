@@ -193,17 +193,31 @@ async function include(
   if (failure !== null) reference(failure);
 }
 
-/** 1回のスキャンで共有する読み込みの上限とキャッシュ(共通の取り込み先を何度も読まない) */
+/** 1回のスキャンで共有する読み込み・再展開の上限とキャッシュ */
 export interface RequirementsReadContext {
   remainingBytes: number;
+  remainingExpandedBytes: number;
+  remainingLogicalLines: number;
   texts: Map<string, string>;
 }
 
 /** 1回のスキャンで読むrequirements.txt(取り込み先を含む)の合計の上限 */
 const DEFAULT_TOTAL_BYTES = 64 * 1024 * 1024;
+const DEFAULT_EXPANDED_BYTES = 64 * 1024 * 1024;
+const DEFAULT_LOGICAL_LINES = 100_000;
+const EXPANSION_BYTE_LIMIT = "Not analyzed because the scan-wide requirements expansion byte limit was reached";
+const LOGICAL_LINE_LIMIT = "Not analyzed because the scan-wide requirements logical-line limit was reached";
 
-export function createRequirementsReadContext(maxTotalBytes = DEFAULT_TOTAL_BYTES): RequirementsReadContext {
-  return { remainingBytes: maxTotalBytes, texts: new Map() };
+export function createRequirementsReadContext(
+  maxTotalBytes = DEFAULT_TOTAL_BYTES,
+  limits: { maxExpandedBytes?: number; maxLogicalLines?: number } = {},
+): RequirementsReadContext {
+  return {
+    remainingBytes: maxTotalBytes,
+    remainingExpandedBytes: limits.maxExpandedBytes ?? DEFAULT_EXPANDED_BYTES,
+    remainingLogicalLines: limits.maxLogicalLines ?? DEFAULT_LOGICAL_LINES,
+    texts: new Map(),
+  };
 }
 
 /** 安全に読む(FIFOで止まらず、差し替え・範囲外を検出する)。同じファイルは1回だけ読む */
@@ -236,7 +250,7 @@ async function readText(
   return { ok: true, text };
 }
 
-/** ファイルを解析してoutに追加する。読めない・大きすぎる場合は理由を返す */
+/** ファイルを解析してoutに追加する。読めない・上限超過の場合は理由を返す */
 async function analyze(
   file: string,
   projectDir: string,
@@ -244,11 +258,18 @@ async function analyze(
   out: Collected,
   context: RequirementsReadContext,
 ): Promise<string | null> {
+  if (context.remainingLogicalLines <= 0) return LOGICAL_LINE_LIMIT;
   out.visited.add(file);
   const read = await readText(file, projectDir, context);
   if (!read.ok) return read.reason;
+  // Cached text costs expansion work and output space again for each requirements root.
+  const expandedBytes = Buffer.byteLength(read.text, "utf8");
+  if (expandedBytes > context.remainingExpandedBytes) return EXPANSION_BYTE_LIMIT;
+  context.remainingExpandedBytes -= expandedBytes;
 
   for (const { line, content } of logicalLines(read.text)) {
+    if (context.remainingLogicalLines <= 0) return LOGICAL_LINE_LIMIT;
+    context.remainingLogicalLines--;
     const requirementInclude = INCLUDE_REQUIREMENT.exec(content);
     if (requirementInclude) {
       await include(file, line, content, requirementInclude[1]!, projectDir, depth, out, context);
@@ -274,7 +295,7 @@ async function analyze(
 }
 
 /**
- * requirements.txtを解析する。元ファイル自体が読めない・大きすぎる場合だけ`ok: false`。
+ * requirements.txtを解析する。元ファイルを読めない・大きすぎる・解析の共有上限を超えた場合は`ok: false`。
  * @param file 検出済みの絶対パス
  * @param projectDir 取り込みを展開する範囲(解決済みの絶対パス)
  */

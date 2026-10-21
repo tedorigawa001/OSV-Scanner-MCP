@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildRelationLookups, handleScanProject } from "../../tools/scanProject.js";
+import { handleSuggestFix } from "../../tools/suggestFix.js";
 import type { ToolResult } from "../../tools/toolResult.js";
 
 let binDir: string;
@@ -65,6 +66,28 @@ function payload(result: ToolResult): Record<string, any> {
 }
 
 describe("handleScanProject", () => {
+  it.each([
+    ["scan_project", handleScanProject],
+    ["suggest_fix", handleSuggestFix],
+  ] as const)("%s bounds shared requirements expansion and reports incomplete coverage", async (_name, handler) => {
+    const files: Record<string, string> = { "shared.txt": "a==1\n".repeat(1000) };
+    for (let i = 0; i < 120; i++) files[`requirements-${i}.txt`] = "-r shared.txt\n";
+    const dir = await makeProject(files);
+    const { bin, copiesFile } = await fakeScanner({ results: [] });
+    const result = await handler({ project_path: dir }, { binaryPath: bin, noRemoteResolution: true });
+    expect(result.isError).not.toBe(true);
+    const p = payload(result);
+    expect(p.coverage.complete).toBe(false);
+    expect(p.coverage.warning).toBeTruthy();
+    expect([...p.coverage.skipped_files, ...p.coverage.unscannable_requirements].some(
+      (item) => item.reason.includes("logical-line limit"),
+    )).toBe(true);
+    const copies = (await readFile(copiesFile, "utf8")).trim().split("\n");
+    expect(copies.length).toBeGreaterThan(0);
+    expect(copies.length).toBeLessThanOrEqual(100_000);
+    expect(copies.every((line) => line === "a==1")).toBe(true);
+  });
+
   it("annotates Cargo packages using the graph associated with the generated scanner input", async () => {
     const registry = "registry+https://github.com/rust-lang/crates.io-index";
     const dir = await makeProject({

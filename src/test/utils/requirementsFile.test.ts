@@ -194,6 +194,63 @@ describe("analyzeRequirementsFile: 取り込み", () => {
 });
 
 describe("analyzeRequirementsFile: 読み込みの共有と上限(回帰)", () => {
+  it("charges cached include expansion against a scan-wide byte budget", async () => {
+    const dir = await makeProject({
+      "a.txt": "-r shared.txt\n",
+      "b.txt": "-r shared.txt\n",
+      "shared.txt": "requests==2.19.0\n",
+    });
+    const context = createRequirementsReadContext(1024, { maxExpandedBytes: 45 });
+    expect(ok(await analyzeRequirementsFile(path.join(dir, "a.txt"), dir, context)).entries).toEqual(["requests==2.19.0"]);
+    const second = ok(await analyzeRequirementsFile(path.join(dir, "b.txt"), dir, context));
+    expect(second.entries).toEqual([]);
+    expect(second.references[0]!.reason).toContain("expansion byte limit");
+    expect(context.remainingBytes).toBeGreaterThan(900);
+    const third = await analyzeRequirementsFile(path.join(dir, "a.txt"), dir, context);
+    expect(third).toMatchObject({ ok: false, reason: expect.stringContaining("expansion byte limit") });
+  });
+
+  it("bounds output across cached roots with a shared logical-line budget", async () => {
+    const dir = await makeProject({ "requirements.txt": "a>=1\nb\n-c constraints.txt\n" });
+    const context = createRequirementsReadContext(1024, { maxLogicalLines: 3 });
+    const first = ok(await analyzeRequirementsFile(path.join(dir, "requirements.txt"), dir, context));
+    expect(first.entries).toEqual(["a>=1"]);
+    expect(first.issues).toHaveLength(2);
+    expect(first.lowerBounds).toHaveLength(1);
+    expect(first.references).toHaveLength(1);
+    expect(await analyzeRequirementsFile(path.join(dir, "requirements.txt"), dir, context)).toMatchObject({
+      ok: false, reason: expect.stringContaining("logical-line limit"),
+    });
+  });
+
+  it("reports exhaustion inside nested includes without silently claiming complete coverage", async () => {
+    const dir = await makeProject({
+      "requirements.txt": "-r child.txt\n",
+      "child.txt": "-r shared.txt\n",
+      "shared.txt": "a==1\nb==1\n",
+    });
+    const context = createRequirementsReadContext(1024, { maxLogicalLines: 3 });
+    const result = ok(await analyzeRequirementsFile(path.join(dir, "requirements.txt"), dir, context));
+    expect(result.entries).toEqual(["a==1"]);
+    expect(result.references).toEqual([expect.objectContaining({
+      file: path.join(dir, "child.txt"), line: 1, reason: expect.stringContaining("logical-line limit"),
+    })]);
+    expect(context.remainingLogicalLines).toBe(0);
+  });
+
+  it("charges UTF-8 comments and harmless options and keeps budgets request-local", async () => {
+    const text = "# \u3042\n--pre\n";
+    const dir = await makeProject({ "requirements.txt": text });
+    const context = createRequirementsReadContext(1024, { maxExpandedBytes: Buffer.byteLength(text, "utf8") });
+    const file = path.join(dir, "requirements.txt");
+    expect(ok(await analyzeRequirementsFile(file, dir, context)).entries).toEqual([]);
+    expect(context.remainingExpandedBytes).toBe(0);
+    expect(await analyzeRequirementsFile(file, dir, context)).toMatchObject({
+      ok: false, reason: expect.stringContaining("expansion byte limit"),
+    });
+    expect(ok(await analyzeRequirementsFile(file, dir, createRequirementsReadContext())).references).toEqual([]);
+  });
+
   it("複数のrequirements.txtが同じ取り込み先を参照しても1回だけ読む", async () => {
     const dir = await makeProject({ "a.txt": "-r shared.txt\n", "b.txt": "-r shared.txt\n", "shared.txt": "requests==2.19.0\n" });
     const context = createRequirementsReadContext();
