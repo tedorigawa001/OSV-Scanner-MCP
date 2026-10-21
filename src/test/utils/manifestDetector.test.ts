@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { ScanToolError } from "../../errors.js";
-import { detectProject, LockfileKeyCache } from "../../utils/manifestDetector.js";
+import { CargoLockCache, detectProject, LockfileKeyCache } from "../../utils/manifestDetector.js";
 
 const tempDirs: string[] = [];
 
@@ -331,6 +331,35 @@ describe("LockfileKeyCache(回帰: lockfileを繰り返し解析する負荷増�
 });
 
 describe("detectProject: Rust(Cargo.lock)", () => {
+  it("shares dependency budgets across cached Cargo.lock files without charging cached reads twice", async () => {
+    const header = '[[package]]\nname = "a"\nversion = "1"\ndependencies = [';
+    const dir = await makeProject({
+      "a/Cargo.lock": header + '"a",'.repeat(100_000) + "]\n",
+      "b/Cargo.lock": header + '"a",'.repeat(100_001) + "]\n",
+    });
+    const cache = new CargoLockCache();
+    const first = await cache.get(path.join(dir, "a", "Cargo.lock"), dir);
+    expect("reason" in first).toBe(false);
+    expect(await cache.get(path.join(dir, "a", "Cargo.lock"), dir)).toBe(first);
+    expect(await cache.get(path.join(dir, "b", "Cargo.lock"), dir)).toMatchObject({
+      reason: expect.stringContaining("dependency entry limit"),
+    });
+    expect("reason" in await new CargoLockCache().get(path.join(dir, "b", "Cargo.lock"), dir)).toBe(false);
+  });
+
+  it("excludes over-budget locks and keeps ancestor membership unconfirmed", async () => {
+    const dir = await makeProject({
+      "Cargo.lock": '[[package]]\nname = "child"\nversion = "1"\nsource = "' + "x".repeat(65_537) + '"\n',
+      "child/Cargo.toml": '[package]\nname = "child"\nversion = "1"\n',
+      "go.mod": "module example\n",
+    });
+    const project = await detectProject(dir);
+    expect(project.cargoCopies).toEqual([]);
+    expect(project.skippedFiles).toEqual([{ path: "Cargo.lock", reason: expect.stringContaining("string length limit") }]);
+    expect(project.lockfileMissing).toEqual([expect.objectContaining({ path: "child/Cargo.toml", status: "unconfirmed" })]);
+    await expectScanError(detectProject(path.join(dir, "Cargo.lock")), "no_manifest_found");
+  });
+
   it("keeps invalid replacements excluded and workspace membership unconfirmed", async () => {
     const dir = await makeProject({
       "Cargo.lock": '[[package]]\nname = "child"\nversion = "1"\nreplace = "child 1"\n',

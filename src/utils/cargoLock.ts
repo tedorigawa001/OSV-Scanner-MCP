@@ -19,6 +19,29 @@ const CRATES_IO_SOURCES: ReadonlySet<string> = new Set([
 /** 1つのCargo.lockで受け付けるパッケージ数の上限 */
 const MAX_PACKAGES = 50_000;
 
+const MAX_LOCK_STRING_CHARS = 65_536;
+
+/** Shared by all Cargo.lock files in one detection, including discarded fields. */
+export interface CargoLockParseBudget {
+  remainingLines: number;
+  remainingDependencies: number;
+  remainingStringChars: number;
+  exceeded?: string;
+}
+
+export function createCargoLockParseBudget(): CargoLockParseBudget {
+  return { remainingLines: 1_000_000, remainingDependencies: 200_000, remainingStringChars: 16 * 1024 * 1024 };
+}
+
+function takeDependency(budget: CargoLockParseBudget): boolean {
+  if (budget.remainingDependencies <= 0) {
+    budget.exceeded = "the dependency entry limit was exceeded";
+    return false;
+  }
+  budget.remainingDependencies--;
+  return true;
+}
+
 /** crateの名前(cargoの制約より緩め。英数字・`-`・`_`) */
 const CRATE_NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 /** 版(SemVerの文字の範囲) */
@@ -55,18 +78,40 @@ const BARE_KEY = /^([A-Za-z0-9_-]+)\s*=\s*(.*)$/;
  * TOMLの基本文字列(`"..."`)を先頭から1つ読む。読めなければnull。
  * cargoが書くエスケープ(`\"` `\\` `\n` `\t` `\uXXXX` `\UXXXXXXXX`等)だけを受け付ける
  */
-function readBasicString(text: string, start: number): { value: string; end: number } | null {
+function readBasicString(text: string, start: number, budget?: CargoLockParseBudget): { value: string; end: number } | null {
   if (text[start] !== '"') return null;
-  let value = "";
+  const parts: string[] = [];
+  let segmentStart = start + 1;
+  let length = 0;
+  const takeChars = (count: number): boolean => {
+    if (budget === undefined) return true;
+    if (length + count > MAX_LOCK_STRING_CHARS) {
+      budget.exceeded = "the string length limit was exceeded";
+      return false;
+    }
+    if (count > budget.remainingStringChars) {
+      budget.exceeded = "the total string character limit was exceeded";
+      return false;
+    }
+    length += count;
+    budget.remainingStringChars -= count;
+    return true;
+  };
   for (let i = start + 1; i < text.length; i++) {
     const ch = text[i]!;
-    if (ch === '"') return { value, end: i + 1 };
+    if (ch === '"') {
+      parts.push(text.slice(segmentStart, i));
+      return { value: parts.join(""), end: i + 1 };
+    }
     if (ch === "\\") {
+      parts.push(text.slice(segmentStart, i));
       const next = text[i + 1];
       const simple: Record<string, string> = { '"': '"', "\\": "\\", n: "\n", t: "\t", r: "\r", b: "\b", f: "\f" };
       if (next !== undefined && next in simple) {
-        value += simple[next];
+        if (!takeChars(1)) return null;
+        parts.push(simple[next]!);
         i++;
+        segmentStart = i + 1;
         continue;
       }
       const width = next === "u" ? 4 : next === "U" ? 8 : 0;
@@ -74,12 +119,15 @@ function readBasicString(text: string, start: number): { value: string; end: num
       if (width === 0 || !/^[0-9A-Fa-f]+$/.test(hex) || hex.length !== width) return null;
       const codePoint = Number.parseInt(hex, 16);
       if (codePoint > 0x10ffff || (codePoint >= 0xd800 && codePoint <= 0xdfff)) return null;
-      value += String.fromCodePoint(codePoint);
+      const decoded = String.fromCodePoint(codePoint);
+      if (!takeChars(decoded.length)) return null;
+      parts.push(decoded);
       i += 1 + width;
+      segmentStart = i + 1;
       continue;
     }
     if (ch.charCodeAt(0) < 0x20 && ch !== "\t") return null;
-    value += ch;
+    if (!takeChars(1)) return null;
   }
   return null;
 }
@@ -90,8 +138,8 @@ function restIsBlank(rest: string): boolean {
 }
 
 /** 1行全体が文字列1つ(と任意の末尾カンマ・コメント)の場合にその値を返す */
-function lineString(text: string, allowComma: boolean): string | null {
-  const parsed = readBasicString(text, 0);
+function lineString(text: string, allowComma: boolean, budget?: CargoLockParseBudget): string | null {
+  const parsed = readBasicString(text, 0, budget);
   if (parsed === null) return null;
   let rest = text.slice(parsed.end);
   if (allowComma) rest = rest.replace(/^\s*,/, "");
@@ -99,14 +147,15 @@ function lineString(text: string, allowComma: boolean): string | null {
 }
 
 /** `["a", "b"]`形式(1行の配列)の要素。読めなければnull */
-function inlineStringArray(text: string): string[] | null {
+function inlineStringArray(text: string, budget: CargoLockParseBudget): string[] | null {
   if (!text.startsWith("[")) return null;
   const items: string[] = [];
   let i = 1;
   for (;;) {
     while (text[i] === " " || text[i] === "\t") i++;
     if (text[i] === "]") return restIsBlank(text.slice(i + 1)) ? items : null;
-    const parsed = readBasicString(text, i);
+    if (!takeDependency(budget)) return null;
+    const parsed = readBasicString(text, i, budget);
     if (parsed === null) return null;
     items.push(parsed.value);
     i = parsed.end;
@@ -123,15 +172,16 @@ type State = "top" | "package" | "skipped_table" | "metadata" | "dependencies";
  * 受け付ける行: 空行・コメント、先頭の`version = 整数`、`[[package]]`、`[[patch.unused]]`(読み飛ばす)、
  * `[metadata]`(v1のchecksum。読み飛ばす)、`キー = "文字列"`、`dependencies = [` 〜 `]`の各要素
  */
-export function parseCargoLock(text: string): CargoLockParseResult {
+export function parseCargoLock(text: string, budget = createCargoLockParseBudget()): CargoLockParseResult {
   const packages: CargoPackage[] = [];
   let current: { name?: string; version?: string; source?: string; replace?: string; dependencies: string[] } | null = null;
   let state: State = "top";
   let sawTable = false;
   const fail = (line: number, what: string): CargoLockParseResult => ({
     ok: false,
-    reason: `Cargo.lock could not be interpreted with certainty (${what} at line ${line}), so the file was excluded from the scan`,
+    reason: `Cargo.lock could not be interpreted with certainty (${budget.exceeded ?? what} at line ${line}), so the file was excluded from the scan`,
   });
+  if (budget.exceeded !== undefined) return fail(1, budget.exceeded);
   const finish = (line: number): CargoLockParseResult | null => {
     if (current === null) return null;
     const { name, version, source, replace, dependencies } = current;
@@ -144,17 +194,26 @@ export function parseCargoLock(text: string): CargoLockParseResult {
     return null;
   };
 
-  const lines = text.replace(/^﻿/, "").split(/\r?\n/);
-  for (let index = 0; index < lines.length; index++) {
-    const lineNo = index + 1;
-    const line = lines[index]!.trim();
+  let lineNo = 0;
+  // Do not materialize a line array: even blank lines can amplify a small input.
+  for (let start = 0; start <= text.length;) {
+    lineNo++;
+    if (budget.remainingLines <= 0) {
+      budget.exceeded = "the line limit was exceeded";
+      return fail(lineNo, budget.exceeded);
+    }
+    budget.remainingLines--;
+    const end = text.indexOf("\n", start);
+    const line = text.slice(start, end === -1 ? text.length : end).trim();
+    start = end === -1 ? text.length + 1 : end + 1;
     if (state === "dependencies") {
       if (line === "" || line.startsWith("#")) continue;
       if (/^\]\s*(?:#.*)?$/.test(line)) {
         state = "package";
         continue;
       }
-      const item = lineString(line, true);
+      if (!takeDependency(budget)) return fail(lineNo, budget.exceeded!);
+      const item = lineString(line, true, budget);
       if (item === null) return fail(lineNo, "an unexpected dependency entry");
       current!.dependencies.push(item);
       continue;
@@ -187,9 +246,9 @@ export function parseCargoLock(text: string): CargoLockParseResult {
 
     if (state === "metadata") {
       // v1: "checksum 名前 版 (source)" = "ハッシュ"
-      const key = readBasicString(line, 0);
+      const key = readBasicString(line, 0, budget);
       const valueMatch = key === null ? null : /^\s*=\s*(.*)$/.exec(line.slice(key.end));
-      if (valueMatch === null || lineString(valueMatch[1]!, false) === null) return fail(lineNo, "an unexpected metadata entry");
+      if (valueMatch === null || lineString(valueMatch[1]!, false, budget) === null) return fail(lineNo, "an unexpected metadata entry");
       continue;
     }
 
@@ -207,12 +266,12 @@ export function parseCargoLock(text: string): CargoLockParseResult {
         state = "dependencies";
         continue;
       }
-      const items = inlineStringArray(valueText);
+      const items = inlineStringArray(valueText, budget);
       if (items === null) return fail(lineNo, "an unexpected dependencies value");
-      if (state === "package") current!.dependencies.push(...items);
+      if (state === "package") for (const item of items) current!.dependencies.push(item);
       continue;
     }
-    const value = lineString(valueText, false);
+    const value = lineString(valueText, false, budget);
     if (value === null) return fail(lineNo, `an unexpected value for ${key}`);
     if (state === "package") {
       if (key === "name" || key === "version" || key === "source" || key === "replace") {
@@ -222,8 +281,8 @@ export function parseCargoLock(text: string): CargoLockParseResult {
       // checksum等の他の文字列キーはスキャンに使わない
     }
   }
-  if (state === "dependencies") return fail(lines.length, "an unterminated dependencies array");
-  const failed = finish(lines.length);
+  if (state === "dependencies") return fail(lineNo, "an unterminated dependencies array");
+  const failed = finish(lineNo);
   if (failed) return failed;
   // Count exact identities once; counts distinguish a separate duplicate from self-only replacement.
   const packageCounts = new Map<string, number>();

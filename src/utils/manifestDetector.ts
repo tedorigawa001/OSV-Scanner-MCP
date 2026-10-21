@@ -36,6 +36,7 @@ import {
   type GlobWorkBudget,
   type CargoWorkspace,
   classifyCargoPackages,
+  createCargoLockParseBudget,
   parseCargoLock,
   UNSCANNABLE_CRATE_REASONS,
   type CargoLockClassification,
@@ -240,6 +241,7 @@ const MAX_CARGO_TOML_BYTES = 1024 * 1024;
  */
 export class CargoLockCache {
   private readonly results = new Map<string, CargoLockClassification | { reason: string }>();
+  private readonly parseBudget = createCargoLockParseBudget();
   private remaining: number;
   private readonly tomls = new Map<string, string | null>();
   private remainingToml = MAX_LOCKFILE_TOTAL_BYTES;
@@ -270,7 +272,7 @@ export class CargoLockCache {
         result = { reason: capitalizeReason(read.message) };
       } else {
         this.remaining -= read.bytes.length;
-        const parsed = parseCargoLock(read.bytes.toString("utf8"));
+        const parsed = parseCargoLock(read.bytes.toString("utf8"), this.parseBudget);
         result = parsed.ok ? classifyCargoPackages(parsed.packages) : { reason: parsed.reason };
       }
     }

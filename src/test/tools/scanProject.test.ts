@@ -70,6 +70,24 @@ describe("handleScanProject", () => {
   it.each([
     ["scan_project", handleScanProject],
     ["suggest_fix", handleSuggestFix],
+  ] as const)("%s excludes over-budget Cargo locks and reports incomplete coverage", async (_name, handler) => {
+    const dir = await makeProject({
+      "Cargo.lock": '[[package]]\nname = "a"\nversion = "1"\ndependencies = [' + '"a",'.repeat(200_001) + "]\n",
+      "go.mod": "module example\n",
+    });
+    const { bin, argsFile } = await fakeScanner({ results: [] });
+    const result = await handler({ project_path: dir }, { binaryPath: bin, noRemoteResolution: true });
+    expect(result.isError).not.toBe(true);
+    expect(payload(result).coverage).toMatchObject({
+      complete: false,
+      skipped_files: [{ path: "Cargo.lock", reason: expect.stringContaining("dependency entry limit") }],
+    });
+    expect(await readFile(argsFile, "utf8")).not.toContain("Cargo.lock:");
+  });
+
+  it.each([
+    ["scan_project", handleScanProject],
+    ["suggest_fix", handleSuggestFix],
   ] as const)("%s bounds shared requirements expansion and reports incomplete coverage", async (_name, handler) => {
     const files: Record<string, string> = { "shared.txt": "a==1\n".repeat(1000) };
     for (let i = 0; i < 120; i++) files[`requirements-${i}.txt`] = "-r shared.txt\n";

@@ -5,6 +5,7 @@ import {
   cargoTomlPackageName,
   cargoWorkspace,
   classifyCargoPackages,
+  createCargoLockParseBudget,
   parseCargoLock,
   createGlobWorkBudget,
   parsePackageId,
@@ -72,6 +73,99 @@ source = "${CRATES_IO}"
 `;
 
 describe("parseCargoLock", () => {
+  const header = '[[package]]\nname = "a"\nversion = "1"\n';
+
+  it.each([
+    'dependencies = ["", ""]\ndependencies = [""]\n',
+    'dependencies = ["", ""]\n[[package]]\nname = "b"\nversion = "1"\ndependencies = [\n "",\n]\n',
+    'dependencies = ["", ""]\n[[patch.unused]]\ndependencies = [""]\n',
+  ])("counts duplicate and empty dependencies across arrays and tables", (suffix) => {
+    const budget = createCargoLockParseBudget();
+    budget.remainingDependencies = 2;
+    expect(parseCargoLock(header + suffix, budget)).toMatchObject({
+      ok: false, reason: expect.stringContaining("dependency entry limit"),
+    });
+  });
+
+  it.each([
+    ["x", 1], ["\\n", 1], ["\\u0061", 1], ["\\U0001F600", 2],
+  ] as const)("charges decoded UTF-16 characters before allocation (%s)", (value, units) => {
+    const text = header + `source = "${value}"\n`;
+    const exact = createCargoLockParseBudget();
+    exact.remainingStringChars = 2 + units;
+    expect(parseCargoLock(text, exact).ok).toBe(true);
+    expect(exact.remainingStringChars).toBe(0);
+    const short = createCargoLockParseBudget();
+    short.remainingStringChars = 1 + units;
+    expect(parseCargoLock(text, short)).toMatchObject({
+      ok: false, reason: expect.stringContaining("total string character limit"),
+    });
+  });
+
+  it.each([
+    'checksum = "x"\n',
+    '[[patch.unused]]\nsource = "x"\n',
+    '[metadata]\n"x" = ""\n',
+    '[metadata]\n"" = "x"\n',
+  ])("charges discarded strings as well as retained fields", (suffix) => {
+    const budget = createCargoLockParseBudget();
+    budget.remainingStringChars = 2;
+    expect(parseCargoLock(header + suffix, budget)).toMatchObject({
+      ok: false, reason: expect.stringContaining("total string character limit"),
+    });
+  });
+
+  it("shares character and line budgets across calls without returning partial packages", () => {
+    const budget = createCargoLockParseBudget();
+    budget.remainingStringChars = 3;
+    expect(parseCargoLock(header, budget).ok).toBe(true);
+    expect(parseCargoLock(header, budget)).toMatchObject({ ok: false });
+    const lines = createCargoLockParseBudget();
+    lines.remainingLines = 2;
+    expect(parseCargoLock("\uFEFFversion = 3\r\n", lines)).toEqual({ ok: true, packages: [] });
+    expect(parseCargoLock("", lines)).toMatchObject({ ok: false, reason: expect.stringContaining("line limit") });
+  });
+
+  it("preserves EOF line numbers with and without a final newline", () => {
+    const text = header + 'dependencies = [\n"a",';
+    expect(parseCargoLock(text)).toMatchObject({ ok: false, reason: expect.stringContaining("at line 5") });
+    expect(parseCargoLock(text + "\n")).toMatchObject({ ok: false, reason: expect.stringContaining("at line 6") });
+  });
+
+  it("bounds escaped strings as well as raw strings", () => {
+    const exact = parseCargoLock(header + `source = "${"\\U0001F600".repeat(32_768)}"\n`);
+    expect(exact.ok && exact.packages[0]!.source).toHaveLength(65_536);
+    expect(parseCargoLock(header + `source = "${"\\U0001F600".repeat(32_769)}"\n`)).toMatchObject({
+      ok: false, reason: expect.stringContaining("string length limit"),
+    });
+  });
+
+  it.each(["inline", "multiline"])("rejects excessive dependency entries before allocation (%s)", (format) => {
+    const items = format === "inline" ? '"a",'.repeat(200_001) : '\n"a",'.repeat(200_001);
+    const result = parseCargoLock(`[[package]]\nname = "a"\nversion = "1"\ndependencies = [${items}${format === "multiline" ? "\n" : ""}]\n`);
+    expect(result).toMatchObject({ ok: false, reason: expect.stringContaining("dependency entry limit") });
+  });
+
+  it("accepts an inline array at the dependency limit without argument-count exceptions", () => {
+    const result = parseCargoLock(`[[package]]\nname = "a"\nversion = "1"\ndependencies = [${'"a",'.repeat(200_000)}]\n`);
+    expect(result.ok && result.packages[0]!.dependencies).toHaveLength(200_000);
+  });
+
+  it("bounds blank lines as well as package lines", () => {
+    expect(parseCargoLock("\n".repeat(1_000_000))).toMatchObject({
+      ok: false, reason: expect.stringContaining("line limit"),
+    });
+  });
+
+  it("bounds strings before decoding oversized values", () => {
+    const header = '[[package]]\nname = "a"\nversion = "1"\nsource = "';
+    const accepted = parseCargoLock(header + "x".repeat(65_536) + '"\n');
+    expect(accepted.ok && accepted.packages[0]!.source).toHaveLength(65_536);
+    expect(parseCargoLock(header + "x".repeat(65_537) + '"\n')).toMatchObject({
+      ok: false, reason: expect.stringContaining("string length limit"),
+    });
+  });
+
   it("v3形式: パッケージのname・version・source・依存を読み、[[patch.unused]]は無視する", () => {
     const result = parseCargoLock(V3);
     expect(result.ok).toBe(true);
