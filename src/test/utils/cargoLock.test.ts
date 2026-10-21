@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   cargoLockCopyContent,
   cargoSourceKind,
@@ -206,6 +206,73 @@ describe("cargoTomlPackageName", () => {
 });
 
 describe("[replace]の解決(レビュー指摘: 置換元のcrates.ioのcrateをスキャンしない)", () => {
+  const fanIn = (count: number): string => Array.from({ length: count - 1 }, (_, i) =>
+    `[[package]]\nname = "crate-${i}"\nversion = "1.0.0"\nsource = "${CRATES_IO}"\nreplace = "target 1.0.0"\n`,
+  ).join("\n") + '\n[[package]]\nname = "target"\nversion = "1.0.0"\n';
+
+  it("does not rescan package arrays for every replacement", () => {
+    const text = fanIn(1000);
+    const scan = vi.spyOn(Array.prototype, "some");
+    let rescans: number;
+    try {
+      const parsed = parseCargoLock(text);
+      expect(parsed.ok).toBe(true);
+      rescans = scan.mock.contexts.filter((value) => Array.isArray(value) && value.length === 1000).length;
+    } finally {
+      scan.mockRestore();
+    }
+    expect(rescans).toBeLessThanOrEqual(1);
+  });
+
+  it("handles the package limit with replacements all pointing to the final package", () => {
+    const parsed = parseCargoLock(fanIn(50_000));
+    if (!parsed.ok) throw new Error(parsed.reason);
+    expect(parsed.packages).toHaveLength(50_000);
+    expect(parsed.packages[0]!.replace).toBe("target 1.0.0");
+    const classified = classifyCargoPackages(parsed.packages);
+    expect(classified.cratesIo).toEqual([]);
+    expect(classified.localCrates).toEqual(["target"]);
+    expect(parseCargoLock(fanIn(50_001))).toMatchObject({ ok: false, reason: expect.stringContaining("more than 50000 packages") });
+  });
+
+  it("preserves a distinct duplicate identity while rejecting a singleton self-reference", () => {
+    const block = '[[package]]\nname = "a"\nversion = "1"\nreplace = "a 1"\n';
+    expect(parseCargoLock(block)).toMatchObject({ ok: false });
+    const parsed = parseCargoLock(block + '\n[[package]]\nname = "a"\nversion = "1"\n');
+    expect(parsed.ok && parsed.packages).toHaveLength(2);
+    expect(parseCargoLock(block + "\n" + block).ok).toBe(true);
+  });
+
+  it("keeps the first replacement failure and never returns partial packages", () => {
+    const parsed = parseCargoLock(
+      '[[package]]\nname = "first"\nversion = "1"\nreplace = "missing 1"\n' +
+      '\n[[package]]\nname = "second"\nversion = "1"\nreplace = "also-missing 1"\n',
+    );
+    expect(parsed).toEqual({ ok: false, reason: expect.stringContaining("the replacement of first 1") });
+  });
+
+  it.each([
+    ["different name", "target", "1", null, "other 1"],
+    ["different version", "target", "1", null, "target 2"],
+    ["source omitted", "target", "1", CRATES_IO, "target 1"],
+    ["empty source", "target", "1", "", "target 1"],
+    ["registry versus sparse", "target", "1", CRATES_IO, `target 1 (${SPARSE})`],
+    ["hyphen versus underscore", "a-b", "1", null, "a_b 1"],
+  ] as const)("matches replacement identity exactly: %s", (_label, name, version, source, replacement) => {
+    const text = `[[package]]\nname = "original"\nversion = "1"\nreplace = "${replacement}"\n` +
+      `\n[[package]]\nname = "${name}"\nversion = "${version}"\n${source === null ? "" : `source = "${source}"\n`}`;
+    expect(parseCargoLock(text)).toMatchObject({ ok: false, reason: expect.stringContaining("the replacement of original 1") });
+  });
+
+  it("preserves immediate-target validation for forward references, chains, and cycles", () => {
+    const parsed = parseCargoLock(
+      '[[package]]\nname = "a"\nversion = "1"\nreplace = "b 1"\n' +
+      '\n[[package]]\nname = "b"\nversion = "1"\nreplace = "c 1"\n' +
+      '\n[[package]]\nname = "c"\nversion = "1"\nreplace = "a 1"\n',
+    );
+    expect(parsed.ok && parsed.packages.map((p) => p.name)).toEqual(["a", "b", "c"]);
+  });
+
   /** cargo 1.98(generate-lockfile --offline)が`[replace] "anyhow:1.0.102" = { path = "fake" }`で生成した内容 */
   const REPLACED_BY_PATH = `version = 4
 

@@ -274,6 +274,20 @@ describe("LockfileKeyCache(回帰: lockfileを繰り返し解析する負荷増�
 });
 
 describe("detectProject: Rust(Cargo.lock)", () => {
+  it("keeps invalid replacements excluded and workspace membership unconfirmed", async () => {
+    const dir = await makeProject({
+      "Cargo.lock": '[[package]]\nname = "child"\nversion = "1"\nreplace = "child 1"\n',
+      "child/Cargo.toml": '[package]\nname = "child"\nversion = "1"\n',
+      "go.mod": "module example\n",
+    });
+    const project = await detectProject(dir);
+    expect(project.manifests.map((m) => m.path)).toEqual(["go.mod"]);
+    expect(project.cargoCopies).toEqual([]);
+    expect(project.skippedFiles).toEqual([{ path: "Cargo.lock", reason: expect.stringContaining("replacement of child 1") }]);
+    expect(project.lockfileMissing).toEqual([expect.objectContaining({ path: "child/Cargo.toml", status: "unconfirmed" })]);
+    await expectScanError(detectProject(path.join(dir, "Cargo.lock")), "no_manifest_found");
+  });
+
   const CRATES_IO = "registry+https://github.com/rust-lang/crates.io-index";
   const lock = (...packages: [string, string, string | null][]) =>
     "version = 4\n" +

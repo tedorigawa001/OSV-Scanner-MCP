@@ -225,13 +225,19 @@ export function parseCargoLock(text: string): CargoLockParseResult {
   if (state === "dependencies") return fail(lines.length, "an unterminated dependencies array");
   const failed = finish(lines.length);
   if (failed) return failed;
+  // Count exact identities once; counts distinguish a separate duplicate from self-only replacement.
+  const packageCounts = new Map<string, number>();
+  for (const pkg of packages) {
+    const id = JSON.stringify([pkg.name, pkg.version, pkg.source]);
+    packageCounts.set(id, (packageCounts.get(id) ?? 0) + 1);
+  }
   // 置換先が解釈でき、別のパッケージとして記載されていることを確かめる(置換元は使われないためスキャンしない)
   for (const pkg of packages) {
     if (pkg.replace === undefined) continue;
     const target = parsePackageId(pkg.replace);
-    const found = target !== null && packages.some(
-      (other) => other !== pkg && other.name === target.name && other.version === target.version && other.source === target.source,
-    );
+    const found = target !== null &&
+      (packageCounts.get(JSON.stringify([target.name, target.version, target.source])) ?? 0) >
+        (pkg.name === target.name && pkg.version === target.version && pkg.source === target.source ? 1 : 0);
     if (!found) {
       return {
         ok: false,
