@@ -6,6 +6,7 @@ import {
   cargoWorkspace,
   classifyCargoPackages,
   parseCargoLock,
+  createGlobWorkBudget,
   parsePackageId,
   topLevelTomlLines,
   workspaceIncludes,
@@ -329,6 +330,48 @@ resolver = "2"
   });
 });
 
+describe("workspaceIncludes: bounded glob matching", () => {
+  it("returns unknown when a single glob exceeds the work budget", () => {
+    expect(workspaceIncludes({ members: ["?".repeat(1100)], exclude: [] }, "a".repeat(1100))).toBeNull();
+    expect(workspaceIncludes({ members: ["*a".repeat(10_000) + "b"], exclude: [] }, "a".repeat(64))).toBeNull();
+  });
+
+  it("shares the work budget across member patterns", () => {
+    const pattern = "*" + "?".repeat(98) + "b";
+    const target = "a".repeat(99);
+    expect(workspaceIncludes({ members: [pattern], exclude: [] }, target)).toBe(false);
+    expect(workspaceIncludes({ members: Array<string>(100).fill(pattern), exclude: [] }, target)).toBeNull();
+  });
+
+  it.each([
+    ["*a".repeat(32) + "b", "a".repeat(64), false],
+    ["a*".repeat(32) + "?b", "a".repeat(64), false],
+    ["*a".repeat(32) + "b", "a".repeat(64) + "b", true],
+    ["a*b?c", "abxc", true],
+    ["a*b?c", "axyzbxc", true],
+    ["a*b?c", "abc", false],
+    ["crates/*", "crates/a/nested", false],
+    ["crates/a.+(x)$^|", "crates/a.+(x)$^|", true],
+    ["crates/a.+(x)$^|", "crates/ax", false],
+    ["./crates\\t?/", "crates/t1", true],
+    ["*?", "\n", true],
+    ["?", "\u{1f600}", false],
+    ["??", "\u{1f600}", true],
+    ["a", "a\n", false],
+  ])("matches %s against %s without backtracking", (pattern, target, expected) => {
+    expect(workspaceIncludes({ members: [pattern], exclude: [] }, target)).toBe(expected);
+  });
+
+  it("keeps a confirmed member when another pattern exceeds the budget", () => {
+    const target = "a".repeat(1100);
+    expect(workspaceIncludes({ members: [target, "?".repeat(1100)], exclude: [] }, target)).toBe(true);
+  });
+
+  it("keeps unsupported syntax unknown even when path depths differ", () => {
+    expect(workspaceIncludes({ members: ["crates/**/nested"], exclude: [] }, "other")).toBeNull();
+  });
+});
+
 describe("Cargo.tomlの複数行文字列(レビュー指摘: 文字列内の記述を設定と誤認しない)", () => {
   /** レビューで示された例: 説明文の中にworkspaceの設定に見える記述がある有効なCargo.toml */
   const DESCRIPTION_LOOKS_LIKE_WORKSPACE = `[package]
@@ -390,5 +433,44 @@ members = ["crates/*"] # c
     ["配列の中の複数行文字列", `[workspace]\nmembers = ["""a"""]\n`],
   ])("読み落としの可能性がある書き方はnull(%s)", (_label, text) => {
     expect(cargoWorkspace(text)).toBeNull();
+  });
+});
+
+describe("workspaceIncludes: 検出全体で共有する計算量の上限(レビュー指摘)", () => {
+  const heavy = { members: ["*/" + "*a".repeat(1900) + "*b"], exclude: [] };
+  const member = (i: number) => `m${i}/${"a".repeat(250)}`;
+
+  it("回帰: 共有の上限を渡すと、メンバーごとに上限が戻らず、使い切った後は未確認(null)になる", () => {
+    const total = createGlobWorkBudget(3_000_000);
+    const results = Array.from({ length: 6 }, (_, i) => workspaceIncludes(heavy, member(i), total));
+    // 1回あたり約0.95Mセル: 3回は照合して不一致(false)、使い切った後は判定しない
+    expect(results).toEqual([false, false, false, null, null, null]);
+    expect(total.remaining).toBeLessThan(1_000_000);
+    // 共有の上限を渡さない呼び出しは、従来どおり1回ごとの上限だけ
+    expect(workspaceIncludes(heavy, member(9))).toBe(false);
+  });
+
+  it("文字どおりのメンバーは共有の上限を使わず、使い切った後も確認できる", () => {
+    const total = createGlobWorkBudget(0);
+    const workspace = { members: ["crates/a", "crates/b*"], exclude: ["crates/a/x"] };
+    expect(workspaceIncludes(workspace, "crates/a", total)).toBe(true);
+    expect(workspaceIncludes(workspace, "crates/bb", total)).toBeNull(); // globは上限切れで判定しない
+    expect(total.remaining).toBe(0);
+  });
+
+  it("上限を使い切ったら残りのglobを見ない(大量のパターンでも空回りしない)", () => {
+    const workspace = { members: Array.from({ length: 100_000 }, (_, i) => `zz${i}*`), exclude: [] };
+    const total = createGlobWorkBudget(0);
+    const started = performance.now();
+    // 空回りする実装では10,000回×100,000パターン(10億回)になり、この上限を大きく超える
+    for (let i = 0; i < 10_000; i++) expect(workspaceIncludes(workspace, `m${i}`, total)).toBeNull();
+    expect(performance.now() - started).toBeLessThan(1_000);
+  });
+
+  it("文字どおりのメンバーの前方一致(excludeより優先)とexcludeは、globを含む文字列も従来どおり扱う", () => {
+    const workspace = { members: ["crates/*", "crates/ex/inner"], exclude: ["crates/ex"] };
+    expect(workspaceIncludes(workspace, "crates/ex")).toBe(false);
+    expect(workspaceIncludes(workspace, "crates/ex/inner")).toBe(true);
+    expect(workspaceIncludes({ members: ["*"], exclude: ["*"] }, "*")).toBe(true); // 名前が"*"のディレクトリ(Cargoは文字列のまま前方一致を見る)
   });
 });

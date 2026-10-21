@@ -346,6 +346,31 @@ describe("detectProject: Rust(Cargo.lock)", () => {
     expect(project.lockfileMissing.map((m) => [m.path, m.status])).toEqual([["sub/Cargo.toml", "unconfirmed"]]);
   });
 
+  it("回帰: メンバーを文字どおりに列挙した大きなworkspace(300件)は、計算量の上限に関係なく全件を収録済みとする", async () => {
+    const names = Array.from({ length: 300 }, (_, i) => `crate-${String(i).padStart(3, "0")}`);
+    const files: Record<string, string> = {
+      "Cargo.toml": `[workspace]\nmembers = [\n${names.map((n) => `  "crates/${n}",`).join("\n")}\n]\n`,
+      "Cargo.lock": lock(...names.map((n) => [n, "0.1.0", null] as [string, string, null])),
+    };
+    for (const n of names) files[`crates/${n}/Cargo.toml`] = `[package]\nname = "${n}"\n`;
+    const project = await detectProject(await makeProject(files));
+    expect(project.lockfileMissing).toEqual([]);
+  });
+
+  it.each([32, 10_000])("keeps Cargo membership unconfirmed for a repeated-star glob (%i stars)", async (stars) => {
+    const memberDir = "a".repeat(64);
+    const dir = await makeProject({
+      "Cargo.toml": `[workspace]\nmembers = ["${"*a".repeat(stars)}b"]\n`,
+      "Cargo.lock": lock(["member", "0.1.0", null], ["serde", "1.0.0", CRATES_IO]),
+      [`${memberDir}/Cargo.toml`]: '[package]\nname = "member"\nversion = "0.1.0"\n',
+    });
+    const project = await detectProject(dir);
+    expect(project.lockfileMissing.map((m) => [m.path, m.status])).toEqual([
+      [`${memberDir}/Cargo.toml`, "unconfirmed"],
+    ]);
+    expect(project.cargoCopies[0]!.packages.map((p) => p.name)).toEqual(["serde"]);
+  });
+
   it("workspaceのmembersに含まれないディレクトリの同名crate・excludeで除かれたcrateは収録扱いにしない", async () => {
     const dir = await makeProject({
       "Cargo.toml": `[workspace]\nmembers = ["crates/*"]\nexclude = ["crates/ex"]\n`,

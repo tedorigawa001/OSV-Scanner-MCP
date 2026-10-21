@@ -483,44 +483,151 @@ function isPathPrefix(prefix: string, target: string): boolean {
   return prefix === "" || target === prefix || target.startsWith(`${prefix}/`);
 }
 
-/** `*`・`?`だけのglobの一致。それ以外のglob(`**`・`[...]`・`{...}`)はnull(判定できない) */
-function globMatches(pattern: string, target: string): boolean | null {
+/** 1回の所属の判定(1つのメンバー)で使えるglobの照合の計算量(DPの表のセル数) */
+const MAX_WORKSPACE_GLOB_WORK = 1_000_000;
+/**
+ * 1回の検出全体で使えるglobの照合の計算量。メンバーのCargo.tomlごとに上限を戻すと、同名のcrateを名乗る
+ * Cargo.tomlを大量に置いたリポジトリで計算量が積み上がる(2,000件で4.6秒の同期処理を確認、2026-10-22)ため、
+ * 検出全体でも上限を設ける。使い切った後の判定はnull(未確認)
+ */
+export const MAX_WORKSPACE_GLOB_TOTAL_WORK = 10_000_000;
+
+/** globの照合の計算量の残り(検出全体で共有する) */
+export interface GlobWorkBudget {
+  remaining: number;
+}
+
+export function createGlobWorkBudget(total = MAX_WORKSPACE_GLOB_TOTAL_WORK): GlobWorkBudget {
+  return { remaining: total };
+}
+
+/** `*`・`?`だけのglobの一致。それ以外のglob、計算量の上限超過はnull(判定できない) */
+function globMatches(pattern: string, target: string, budget: { remaining: number }): boolean | null {
+  const preparationWork = pattern.length + target.length + 1;
+  if (preparationWork > budget.remaining) return null;
+  budget.remaining -= preparationWork;
   const patternParts = pattern.split("/");
   const targetParts = target === "" ? [] : target.split("/");
   if (patternParts.some((part) => part.includes("**") || /[[\]{}]/.test(part))) return null;
   if (patternParts.length !== targetParts.length) return false;
-  return patternParts.every((part, i) => {
-    const regex = new RegExp(`^${part.replace(/[.+^$()|\\]/g, "\\$&").replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]")}$`);
-    return regex.test(targetParts[i]!);
-  });
+  for (let i = 0; i < patternParts.length; i++) {
+    const part = patternParts[i]!;
+    const value = targetParts[i]!;
+    if (!part.includes("*") && !part.includes("?")) {
+      if (part !== value) return false;
+      continue;
+    }
+    // Reserve all DP cells before allocating; the budget is shared by every member pattern.
+    const work = (part.length + 1) * (value.length + 1);
+    if (work > budget.remaining) return null;
+    budget.remaining -= work;
+    let previous = new Uint8Array(value.length + 1);
+    let current = new Uint8Array(value.length + 1);
+    previous[0] = 1;
+    for (let p = 0; p < part.length; p++) {
+      const token = part[p]!;
+      current[0] = token === "*" ? previous[0]! : 0;
+      for (let t = 1; t <= value.length; t++) {
+        current[t] = token === "*"
+          ? previous[t]! | current[t - 1]!
+          : (token === "?" || token === value[t - 1]) ? previous[t - 1]! : 0;
+      }
+      [previous, current] = [current, previous];
+    }
+    if (previous[value.length] === 0) return false;
+  }
+  return true;
+}
+
+/**
+ * 所属の判定用に前処理したworkspace(workspaceごとに1回だけ作る)。メンバーのCargo.tomlごとに全パターンを
+ * 正規化・比較し直すと、パターン数×メンバー数の処理になるため、文字どおりのパスは集合で引き、globだけを照合する
+ */
+interface CompiledWorkspace {
+  /** globでないメンバー(正規化済み) */
+  literalMembers: Set<string>;
+  /** `*`・`?`を含むメンバー、または未対応の記法(`[`・`{`)を含むメンバー(正規化済み) */
+  globMembers: string[];
+  /** `exclude`より優先する、文字どおりに書かれたメンバーのパス(Cargoはglobを含む文字列のまま前方一致を見る) */
+  explicitMembers: Set<string>;
+  /** 正規化できないメンバーがある(判定できない) */
+  invalidMember: boolean;
+  /** `exclude`(正規化済み。前方一致で除く) */
+  excludes: Set<string>;
+  invalidExclude: boolean;
+}
+
+const compiledWorkspaces = new WeakMap<CargoWorkspace, CompiledWorkspace>();
+
+function compileWorkspace(workspace: CargoWorkspace): CompiledWorkspace {
+  const cached = compiledWorkspaces.get(workspace);
+  if (cached !== undefined) return cached;
+  const compiled: CompiledWorkspace = {
+    literalMembers: new Set(), globMembers: [], explicitMembers: new Set(), invalidMember: false, excludes: new Set(), invalidExclude: false,
+  };
+  for (const member of workspace.members) {
+    const pattern = normalizeWorkspacePath(member);
+    if (pattern === null) {
+      compiled.invalidMember = true;
+      continue;
+    }
+    compiled.explicitMembers.add(pattern);
+    if (/[*?[\]{}]/.test(pattern)) compiled.globMembers.push(pattern);
+    else compiled.literalMembers.add(pattern);
+  }
+  for (const ex of workspace.exclude) {
+    const prefix = normalizeWorkspacePath(ex);
+    if (prefix === null) compiled.invalidExclude = true;
+    else compiled.excludes.add(prefix);
+  }
+  compiledWorkspaces.set(workspace, compiled);
+  return compiled;
+}
+
+/** targetとその祖先(ルート""を含む)。前方一致の判定を集合の参照にするため */
+function selfAndAncestors(target: string): string[] {
+  const parts = target === "" ? [] : target.split("/");
+  const result = [""];
+  for (let i = 1; i <= parts.length; i++) result.push(parts.slice(0, i).join("/"));
+  return result;
 }
 
 /**
  * memberDir(workspaceのルートからの相対パス)が`members`に含まれ、`exclude`で除かれていないか。
  * Cargoの規則(2026-10-11 cargo 1.98で確認): `members`はglobで展開し、`exclude`はパスの前方一致で除く。
  * ただし`members`に(globでなく)文字どおり書かれたパスの配下は`exclude`より優先する。
- * true=所属 / false=所属しない / null=判定できない(解釈できないパス・glob)
+ * true=所属 / false=所属しない / null=判定できない(解釈できないパス・glob・計算量の上限超過)。
+ * totalを渡すと、globの照合の計算量を呼び出しをまたいで共有する(検出全体の上限)
  */
-export function workspaceIncludes(workspace: CargoWorkspace, memberDir: string): boolean | null {
+export function workspaceIncludes(workspace: CargoWorkspace, memberDir: string, total?: GlobWorkBudget): boolean | null {
   const target = normalizeWorkspacePath(memberDir);
   if (target === null) return null;
-  let undecided = false;
-  let matched = false;
-  for (const member of workspace.members) {
-    const pattern = normalizeWorkspacePath(member);
-    const result = pattern === null ? null : globMatches(pattern, target);
-    if (result === null) undecided = true;
-    else if (result) matched = true;
+  const compiled = compileWorkspace(workspace);
+  let matched = compiled.literalMembers.has(target);
+  let undecided = compiled.invalidMember;
+  if (!matched && compiled.globMembers.length > 0) {
+    // 1回の判定の上限と、検出全体の残りの小さいほう。使った分は検出全体の残りからも引く
+    const budget = { remaining: Math.min(MAX_WORKSPACE_GLOB_WORK, total?.remaining ?? MAX_WORKSPACE_GLOB_WORK) };
+    const start = budget.remaining;
+    for (const pattern of compiled.globMembers) {
+      // 上限を使い切ったら残りのパターンは見ない(パターン数×メンバー数の空回りを避ける)
+      if (budget.remaining <= 0) {
+        undecided = true;
+        break;
+      }
+      const result = globMatches(pattern, target, budget);
+      if (result === null) undecided = true;
+      else if (result) {
+        matched = true;
+        break;
+      }
+    }
+    if (total !== undefined) total.remaining -= start - budget.remaining;
   }
   if (!matched) return undecided ? null : false;
-  const explicit = workspace.members.some((member) => {
-    const literal = normalizeWorkspacePath(member);
-    return literal !== null && isPathPrefix(literal, target);
-  });
-  const excluded = workspace.exclude.some((ex) => {
-    const prefix = normalizeWorkspacePath(ex);
-    return prefix !== null && isPathPrefix(prefix, target);
-  });
-  if (workspace.exclude.some((ex) => normalizeWorkspacePath(ex) === null)) return null;
+  if (compiled.invalidExclude) return null;
+  const ancestors = selfAndAncestors(target);
+  const explicit = ancestors.some((prefix) => compiled.explicitMembers.has(prefix));
+  const excluded = ancestors.some((prefix) => compiled.excludes.has(prefix));
   return !(excluded && !explicit);
 }

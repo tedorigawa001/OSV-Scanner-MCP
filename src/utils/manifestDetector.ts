@@ -31,6 +31,8 @@ import {
   cargoTomlPackageName,
   cargoWorkspace,
   workspaceIncludes,
+  createGlobWorkBudget,
+  type GlobWorkBudget,
   type CargoWorkspace,
   classifyCargoPackages,
   parseCargoLock,
@@ -276,6 +278,8 @@ export class CargoLockCache {
   }
 
   private readonly workspaces = new Map<string, CargoWorkspace | null>();
+  /** workspaceの所属の判定のglobの照合の計算量(1回の検出全体で共有する) */
+  readonly globBudget: GlobWorkBudget = createGlobWorkBudget();
 
   /** Cargo.lockと同じディレクトリのCargo.tomlの`[workspace]`(1回だけ読む)。無い・読めない場合はnull */
   async workspace(lockAbs: string, projectDir: string): Promise<CargoWorkspace | null> {
@@ -311,7 +315,7 @@ async function cargoLockfileRecords(
   const workspace = await cache.workspace(lockAbs, projectDir);
   if (workspace === null) return null;
   const memberDir = path.relative(path.dirname(lockAbs), path.join(projectDir, path.dirname(memberToml))).split(path.sep).join("/");
-  return workspaceIncludes(workspace, memberDir) === true ? true : null;
+  return workspaceIncludes(workspace, memberDir, cache.globBudget) === true ? true : null;
 }
 
 /**
