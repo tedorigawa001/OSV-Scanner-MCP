@@ -1075,6 +1075,13 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 - 修正(利用者が実装): 1回のスキャンで共有する上限を追加。展開する量(64MiB、キャッシュ済みの再展開も数える)と論理行数(10万行)。超えたら、ルートのrequirements.txtは`skipped_files`(理由付き)、取り込みの途中なら`unscannable_requirements`(その取り込みは途中まで展開)に記録し、`complete: false`
 - 確認: 同じ入力で修正後0.07秒・22MB・コピー99,998行、198件を理由付きで除外。MCP経由の`scan_project`も同じ(全体20秒の大半はosv-scannerによる約10万件の照会)
 
+### npmのlockfileのJSONの解析による資源の枯渇(v0.4.0〜v0.13.0の不具合、v0.14.0で修正、2026-10-22)
+
+- **事象**: npm workspacesの収録確認(`LockfileKeyCache`、v0.4.0〜)と直接/推移的依存の判定(v0.7.0〜)が、package-lock.jsonを`JSON.parse`で丸ごと解析していた。上限はサイズ(1件64MiB・合計256MiB)だけで、構造の量は無制限。実測(修正前のコード): 空のオブジェクト2,000万個の60MBのlockfile1件で、workspaceの確認だけでメモリ2.45GB(最大常駐)。数件でメモリ不足になりうる。v0.14.0で追加した`resolved`の補完(未公開)も同じ解析と、インデント付きの再出力(深い入れ子で出力が膨らむ)を行っていた
+- 修正(利用者が実装): `parseNpmLock`で、`JSON.parse`の前に入れ子の深さ(128)と構造の記号の数(1件100万・解析の段階ごとに200万)を数え、入力・出力を1件16MiB・スキャン全体64MiBに制限。補完したコピーは詰めたJSONで、出力の大きさを作る前に見積もる。workspaceの確認・関係の判定は上限超過で`unconfirmed`・`unknown`
+- **レビュー指摘**: 補完の段階だけは上限超過でスキャン全体を`scan_input_too_large`で止めていたため、正当な大きいlockfile(4万パッケージ・17.2MB、補う必要のないもの)で、他のエコシステムを含むスキャン全体が失敗した(修正前は正常にスキャン)。実在のlockfileは1パッケージあたり約500バイト・構造の記号約22個で、1件の上限は約3.3万パッケージに当たる。修正: 補完の上限を超えたlockfileは補わずにそのまま渡し(osv-scannerは大きなlockfileも解析できる。上限は本サーバー自身の解析・再出力のためのもの)、`coverage.skipped_files`に理由を出す(`complete: false`)。補う必要のない(書き換えない)コピーは出力の上限に数えない
+- 確認: 4万パッケージのlockfileはMCP経由でスキャンでき(`lodash`を検出、`complete: false`と理由)、5,000段の入れ子のlockfileは1秒で終わる。60MBの攻撃的なlockfileのworkspaceの確認は0秒・51MB。変異確認: 補完の上限超過で再びスキャンを止めると、追加したテスト8件が失敗する
+
 ### 必要なダウンロード(実施前に許可を得る)
 
 - `osv-scanner_darwin_arm64`(v2.7.0、55,336,530バイト)と`osv-scanner_SHA256SUMS`(554バイト)。公式のGitHub Releases(google/osv-scanner)。本サーバーの自動ダウンロードと同じ経路・同じ検証で取得できる

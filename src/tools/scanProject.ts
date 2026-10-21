@@ -5,7 +5,7 @@
  * complete=falseの場合は「検出0件でも安全とは言えない」旨の警告を付ける。
  */
 
-import { readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import { isRemoteResolutionDisabled, runOsvScan, type RunOsvScanOptions } from "../osv/runner.js";
@@ -24,7 +24,7 @@ import { cargoLockCopyContent, type CargoPackage } from "../utils/cargoLock.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
 import { readRegularFile } from "../utils/safeRead.js";
 import { detectProject, type DetectedProject } from "../utils/manifestDetector.js";
-import { fillMissingResolved } from "../utils/npmLockCopy.js";
+import { createNpmLockWorkBudget, fillMissingResolved, MAX_NPM_LOCK_BYTES, MAX_NPM_LOCK_TOTAL_BYTES, parseNpmLock, type NpmLockWorkBudget } from "../utils/npmLockCopy.js";
 import { normalizePypiName } from "../utils/requirementsFile.js";
 import { ScanSnapshot, snapshotManifests } from "../utils/scanSnapshot.js";
 import { dependencyResolution, withScopeNotes, type ScanJavaProjectArgs, type ScanJavaProjectOptions } from "./scanJavaProject.js";
@@ -143,7 +143,7 @@ export function markLowerBounds(project: DetectedProject, packages: readonly Sca
  * 検証済みの正規化行だけを書いたコピー。コピーできず外したファイルはskippedFilesに記録する。
  * スナップショットは成功・失敗とも削除する。suggest_fixも同じスキャンを使う。
  */
-/** 直接/推移的依存の判定で読むpackage-lock.json・go.modの合計サイズの上限(LockfileKeyCacheと同じ) */
+/** 直接/推移的依存の判定で読むpackage-lock.json・go.modの合計サイズの上限 */
 const MAX_RELATION_LOCKFILE_BYTES = 256 * 1024 * 1024;
 const MAX_INTRODUCED_BY = 10;
 
@@ -171,6 +171,7 @@ export async function buildRelationLookups(
   maxTotalBytes = MAX_RELATION_LOCKFILE_BYTES,
 ): Promise<Map<string, SourceRelations>> {
   const lookups = new Map<string, SourceRelations>();
+  const npmWorkBudget = createNpmLockWorkBudget();
   let remaining = maxTotalBytes;
   for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests } of copies) {
     const lockDir = originalRelative === null ? "" : path.dirname(originalRelative);
@@ -178,11 +179,11 @@ export async function buildRelationLookups(
     try {
       if (format === "package-lock.json" || format === "go.mod") {
         // 残りの予算を上限に、読み込みの途中で打ち切る(予算を超えるファイルは全体を読まずにunknownにする)
-        const read = await readRegularFile(copy, { maxBytes: remaining });
+        const read = await readRegularFile(copy, { maxBytes: format === "package-lock.json" ? Math.min(MAX_NPM_LOCK_BYTES, remaining) : remaining });
         if (read.ok) {
           remaining -= read.bytes.length;
           const text = read.bytes.toString("utf8");
-          lookup = format === "go.mod" ? goModRelations(text) : npmLockRelations(JSON.parse(text));
+          lookup = format === "go.mod" ? goModRelations(text) : npmLockRelations(parseNpmLock(text, npmWorkBudget));
         }
       } else if (format === "pom.xml") {
         lookup = pomRelations(); // ファイルは読まず、osv-scannerのsource.typeで判定する
@@ -233,10 +234,37 @@ function annotateRelations(packages: readonly ScanReportPackage[], lookups: Read
   });
 }
 
-/** スナップショットのpackage-lock.jsonのコピーにresolvedを補う。解析できなければそのまま渡す */
-async function fillResolvedInCopy(copyPath: string): Promise<void> {
-  const filled = fillMissingResolved(await readFile(copyPath, "utf8"));
-  if (filled?.changed) await writeFile(copyPath, filled.content, { mode: 0o600 });
+export const NPM_LOCK_NOT_NORMALIZED =
+  "Scanned without filling in missing `resolved` fields, because the lockfile exceeds the normalization limits " +
+  `(${MAX_NPM_LOCK_BYTES / 1024 / 1024} MiB per file; ${MAX_NPM_LOCK_TOTAL_BYTES / 1024 / 1024} MiB and a JSON structure budget per scan). ` +
+  "Entries without `resolved` (such as bundled dependencies) may not have been looked up";
+
+/**
+ * コピーにresolvedを補う。構文エラーの場合はそのまま渡す。
+ * 資源の上限を超えた場合もスキャン全体は止めず、コピーをそのまま渡して理由を返す
+ * (osv-scannerは大きなlockfileも解析できる。上限は本サーバー自身の解析・再出力を抑えるためのもの)
+ */
+async function fillResolvedInCopy(copyPath: string, budget: { input: number; output: number; work: NpmLockWorkBudget }): Promise<string | null> {
+  const read = await readRegularFile(copyPath, { maxBytes: Math.min(MAX_NPM_LOCK_BYTES, budget.input) });
+  if (!read.ok) {
+    if (read.failure === "too_large") return NPM_LOCK_NOT_NORMALIZED;
+    throw new ScanToolError("scan_failed", "The npm lockfile copy cannot be read safely");
+  }
+  budget.input -= read.bytes.length;
+  const text = read.bytes.toString("utf8");
+  let filled: ReturnType<typeof fillMissingResolved>;
+  try {
+    filled = fillMissingResolved(text, Math.min(MAX_NPM_LOCK_BYTES, budget.output), budget.work);
+  } catch (error) {
+    if (error instanceof ScanToolError && error.kind === "scan_input_too_large") return NPM_LOCK_NOT_NORMALIZED;
+    throw error;
+  }
+  if (!filled?.changed) return null; // 書き換えないコピーは出力の上限に数えない
+  const outputBytes = Buffer.byteLength(filled.content, "utf8");
+  if (outputBytes > budget.output) return NPM_LOCK_NOT_NORMALIZED;
+  budget.output -= outputBytes;
+  await writeFile(copyPath, filled.content, { mode: 0o600 });
+  return null;
 }
 
 export async function scanFromSnapshot(project: DetectedProject, options: RunOsvScanOptions): Promise<ScanReport> {
@@ -246,13 +274,17 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
       projectDir: project.projectDir,
       allowedRootReal: project.allowedRootReal,
     });
-    // osv-scanner 2.7.0はresolvedの無いnpmのエントリを照会しないため、コピーで補う(npmLockCopy.ts)
-    for (const copy of targets) {
-      if (copy.format === "package-lock.json") await fillResolvedInCopy(copy.path);
-    }
     // コピーと元のファイルの対応(snapshotManifestsは外したもの以外を入力の順に返す)
     const skippedOriginals = new Set(skipped.map((s) => s.path));
     const scannedOriginals = project.targets.filter((t) => !skippedOriginals.has(t.path));
+    // osv-scanner 2.7.0はresolvedの無いnpmのエントリを照会しないため、コピーで補う(npmLockCopy.ts)。
+    // 上限を超えたlockfileはそのままスキャンし、補えなかったことをcoverageに出す(complete=falseになる)
+    const npmBudget = { input: MAX_NPM_LOCK_TOTAL_BYTES, output: MAX_NPM_LOCK_TOTAL_BYTES, work: createNpmLockWorkBudget() };
+    for (const [i, copy] of targets.entries()) {
+      if (copy.format !== "package-lock.json") continue;
+      const reason = await fillResolvedInCopy(copy.path, npmBudget);
+      if (reason !== null) project.skippedFiles.push({ path: path.relative(project.projectDir, scannedOriginals[i]!.path), reason });
+    }
     const relationSources: RelationSource[] =
       targets.map((copy, i) => ({ copy: copy.path, format: copy.format, originalRelative: path.relative(project.projectDir, scannedOriginals[i]!.path) }));
     // 親POMを再現できずにスキャンしたpom.xmlも、欠落の可能性としてcoverageに出す(complete=falseになる)

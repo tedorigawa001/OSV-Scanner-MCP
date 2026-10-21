@@ -232,6 +232,12 @@ describe("detectProject: 入力の検証と上限", () => {
 });
 
 describe("LockfileKeyCache(回帰: lockfileを繰り返し解析する負荷増大)", () => {
+  it("treats structurally oversized npm JSON as unconfirmed before parsing", async () => {
+    const dir = await makeProject({ "package-lock.json": `{"packages":{},"metadata":${"[".repeat(200)}0${"]".repeat(200)}}` });
+    const cache = new LockfileKeyCache();
+    expect(await cache.get(path.join(dir, "package-lock.json"), dir)).toBeNull();
+  });
+
   it("同じlockfileは1回だけ読んで解析し、結果を使い回す", async () => {
     const dir = await makeProject({ "package-lock.json": JSON.stringify({ packages: { "": {}, "packages/a": {} } }) });
     const cache = new LockfileKeyCache();

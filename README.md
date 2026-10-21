@@ -224,6 +224,8 @@ Detects the lockfiles and manifests in a project and scans the Java / JavaScript
 
 **`package-lock.json` copies get a `resolved` URL where it is missing.** osv-scanner 2.7.0 treats entries without `resolved` as local packages and does not look them up, which would silently skip bundled dependencies (`inBundle`) and registry packages in lockfiles generated with npm's `omit-lockfile-registry-resolved=true`. The private copy that is scanned gets a public-registry URL for those entries (entries under `node_modules/` that are not links and have a plain version, and aliases such as `npm:lodash@4.17.20` in lockfile version 1), so they are looked up as before; the original file is not changed.
 
+**npm JSON limits:** Normalization of `package-lock.json` and `npm-shrinkwrap.json` is limited to 16 MiB per file and 64 MiB per scan, for both input and output. Before parsing, JSON nesting is limited to 128 levels and structural markers (containers, commas, and colons outside strings) to 1,000,000 per file and 2,000,000 per analysis phase. Changed copies use compact JSON, with their size checked before serialization. A lockfile that exceeds these limits is scanned as it is, without filling in `resolved` (OSV-Scanner parses large lockfiles itself; the limits only bound this server's own parsing and rewriting), and it is listed in `coverage.skipped_files` with the reason, so `complete` is `false`: entries without `resolved` in it may not have been looked up. Workspace membership and dependency-relation lookups use the same structural checks and remain unconfirmed or unknown when limits are reached.
+
 **Reading the output**
 
 ```json

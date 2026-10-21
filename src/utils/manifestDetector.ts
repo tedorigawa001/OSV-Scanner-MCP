@@ -20,6 +20,7 @@ import {
   type SearchLimitOptions,
 } from "./projectWalk.js";
 import { capitalizeReason, readRegularFile } from "./safeRead.js";
+import { createNpmLockWorkBudget, MAX_NPM_LOCK_BYTES, MAX_NPM_LOCK_TOTAL_BYTES, parseNpmLock } from "./npmLockCopy.js";
 import {
   analyzeRequirementsFile,
   createRequirementsReadContext,
@@ -191,8 +192,7 @@ function isSameOrDescendant(dir: string, ancestor: string): boolean {
   return ancestor === "." || dir === ancestor || dir.startsWith(`${ancestor}${path.sep}`);
 }
 
-/** workspaceの収録確認で読むlockfile1件の上限と、1回の検出での合計の上限 */
-const MAX_LOCKFILE_BYTES = 64 * 1024 * 1024;
+/** Cargo.lockの読み込み合計の上限(npm JSONにはnpmLockCopy.tsの上限を使う) */
 const MAX_LOCKFILE_TOTAL_BYTES = 256 * 1024 * 1024;
 
 /**
@@ -202,9 +202,10 @@ const MAX_LOCKFILE_TOTAL_BYTES = 256 * 1024 * 1024;
  */
 export class LockfileKeyCache {
   private readonly keys = new Map<string, Set<string> | null>();
+  private readonly workBudget = createNpmLockWorkBudget();
   private remaining: number;
 
-  constructor(maxTotalBytes = MAX_LOCKFILE_TOTAL_BYTES) {
+  constructor(maxTotalBytes = MAX_NPM_LOCK_TOTAL_BYTES) {
     this.remaining = maxTotalBytes;
   }
 
@@ -213,11 +214,11 @@ export class LockfileKeyCache {
     if (this.keys.has(lockAbs)) return this.keys.get(lockAbs)!;
     let keys: Set<string> | null = null;
     if (this.remaining > 0) {
-      const read = await readRegularFile(lockAbs, { maxBytes: Math.min(MAX_LOCKFILE_BYTES, this.remaining), boundary: projectDir });
+      const read = await readRegularFile(lockAbs, { maxBytes: Math.min(MAX_NPM_LOCK_BYTES, this.remaining), boundary: projectDir });
       if (read.ok) {
         this.remaining -= read.bytes.length;
         try {
-          const packages: unknown = (JSON.parse(read.bytes.toString("utf8")) as { packages?: unknown }).packages;
+          const packages: unknown = (parseNpmLock(read.bytes.toString("utf8"), this.workBudget) as { packages?: unknown }).packages;
           if (typeof packages === "object" && packages !== null) keys = new Set(Object.keys(packages));
         } catch {
           keys = null;

@@ -1,10 +1,11 @@
-import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { buildRelationLookups, handleScanProject } from "../../tools/scanProject.js";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { buildRelationLookups, handleScanProject, NPM_LOCK_NOT_NORMALIZED } from "../../tools/scanProject.js";
 import { handleSuggestFix } from "../../tools/suggestFix.js";
 import type { ToolResult } from "../../tools/toolResult.js";
+import { ScanSnapshot } from "../../utils/scanSnapshot.js";
 
 let binDir: string;
 const tempDirs: string[] = [];
@@ -535,6 +536,72 @@ checksum = "4d58d1b70b004888f764dfbf6a26a3b0342a1632d33968e4a179d8011c760614"
 });
 
 describe("handleScanProject: package-lock.jsonのresolvedの補完(osv-scanner 2.7.0)", () => {
+  it.each(([
+    ["scan_project", handleScanProject, "package-lock.json", false],
+    ["scan_project", handleScanProject, "package-lock.json", true],
+    ["scan_project", handleScanProject, "npm-shrinkwrap.json", false],
+    ["scan_project", handleScanProject, "npm-shrinkwrap.json", true],
+    ["suggest_fix", handleSuggestFix, "package-lock.json", false],
+    ["suggest_fix", handleSuggestFix, "package-lock.json", true],
+    ["suggest_fix", handleSuggestFix, "npm-shrinkwrap.json", false],
+    ["suggest_fix", handleSuggestFix, "npm-shrinkwrap.json", true],
+  ] as const).map(([name, handler, filename, direct]) => ({ name, handler, filename, direct })))(
+    "$name scans deep $filename JSON as is and reports that resolved was not filled in (direct=$direct)", async ({ handler, filename, direct }) => {
+    const original = `{"packages":{"node_modules/a":{"version":"1"}},"metadata":${"[".repeat(200)}0${"]".repeat(200)}}`;
+    const dir = await makeProject({ [filename]: original });
+    const { bin, argsFile, copiesFile } = await fakeScanner({ results: [] });
+    const cleanup = vi.spyOn(ScanSnapshot.prototype, "cleanup");
+    try {
+      const result = await handler({ project_path: direct ? path.join(dir, filename) : dir }, { binaryPath: bin });
+      expect(result.isError).toBeUndefined();
+      const p = payload(result);
+      // 上限を超えたlockfileもスキャンを止めず、補わずにそのまま渡し、coverageで知らせる
+      expect(p.coverage.complete).toBe(false);
+      expect(p.coverage.skipped_files).toEqual([{ path: filename, reason: NPM_LOCK_NOT_NORMALIZED }]);
+      expect(await exists(argsFile)).toBe(true);
+      expect(await readFile(copiesFile, "utf8")).toBe(original);
+      expect(await readFile(path.join(dir, filename), "utf8")).toBe(original);
+      expect(cleanup).toHaveBeenCalledOnce();
+      const snapshot = cleanup.mock.contexts[0] as ScanSnapshot;
+      expect(await stat(snapshot.dir).then(() => true, () => false)).toBe(false);
+    } finally {
+      cleanup.mockRestore();
+    }
+  });
+
+  it("回帰(レビュー指摘): 1ファイルの上限を超える大きなlockfileでも、スキャン全体を止めない", async () => {
+    const dir = await makeProject({ "package-lock.json": `{"metadata":"${"a".repeat(16 * 1024 * 1024)}"}`, "go.mod": "module x\n" });
+    const { bin, argsFile } = await fakeScanner({ results: [] });
+    const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin }));
+    expect(p.error).toBeUndefined();
+    expect(p.coverage.skipped_files).toEqual([{ path: "package-lock.json", reason: NPM_LOCK_NOT_NORMALIZED }]);
+    const args = (await readFile(argsFile, "utf8")).trim().split("\n");
+    expect(args.some((a) => a.startsWith("package-lock.json:"))).toBe(true);
+    expect(args.some((a) => a.startsWith("go.mod:"))).toBe(true);
+  }, 30_000);
+
+  it("スキャン全体の入力の上限を超えた分のlockfileだけを補わずに渡す", async () => {
+    const text = `{"metadata":"${"a".repeat(15 * 1024 * 1024)}"}`;
+    const files: Record<string, string> = {};
+    for (let i = 0; i < 5; i++) files[`app-${i}/package-lock.json`] = text;
+    const dir = await makeProject(files);
+    const { bin, argsFile } = await fakeScanner({ results: [] });
+    const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin }));
+    expect(p.error).toBeUndefined();
+    // 15MiB×4件で64MiBの大半を使い、5件目は上限を超える
+    expect(p.coverage.skipped_files).toHaveLength(1);
+    expect(p.coverage.skipped_files[0]).toMatchObject({ reason: NPM_LOCK_NOT_NORMALIZED });
+    const args = (await readFile(argsFile, "utf8")).trim().split("\n");
+    expect(args.filter((a) => a.startsWith("package-lock.json:"))).toHaveLength(5);
+  }, 60_000);
+
+  it("uses the structural guard for relation analysis too", async () => {
+    const dir = await makeProject({ "package-lock.json": `{"metadata":${"[".repeat(200)}0${"]".repeat(200)}}` });
+    const copy = path.join(dir, "package-lock.json");
+    const lookups = await buildRelationLookups([{ copy, format: "package-lock.json", originalRelative: "package-lock.json" }]);
+    expect(lookups.get(copy)!.lookup).toBeNull();
+  });
+
   it("回帰: コピーだけにresolvedを補い、元のファイルは変えない", async () => {
     const original = JSON.stringify({ name: "w", lockfileVersion: 3, packages: { "": { name: "w" }, "node_modules/lodash": { version: "4.17.20" } } });
     const dir = await makeProject({ "package-lock.json": original });

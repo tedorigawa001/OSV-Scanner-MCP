@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { fillMissingResolved } from "../../utils/npmLockCopy.js";
+import { createNpmLockWorkBudget, fillMissingResolved, parseNpmLock } from "../../utils/npmLockCopy.js";
+import { ScanToolError } from "../../errors.js";
 
 const lock = (packages: Record<string, unknown>, extra: Record<string, unknown> = {}) =>
   JSON.stringify({ name: "w", lockfileVersion: 3, requires: true, packages: { "": { name: "w" }, ...packages }, ...extra });
@@ -11,6 +12,55 @@ function filledPackages(text: string) {
 }
 
 describe("fillMissingResolved(osv-scanner 2.7.0はresolvedの無いエントリを照会しない)", () => {
+  it.each([true, false])("rejects deeply nested retained metadata before parsing (changed=%s)", (changed) => {
+    const text = `{"packages":{"node_modules/a":{"version":"1","resolved":${changed ? '""' : '"existing"'}}},"metadata":${"[".repeat(12_000)}0${"]".repeat(12_000)}}`;
+    expect(() => fillMissingResolved(text)).toThrow(ScanToolError);
+    expect(() => fillMissingResolved(text)).toThrow(/depth limit/);
+  });
+
+  it("bounds flat JSON structure before materializing it", () => {
+    const text = `{"metadata":[${"0,".repeat(1_000_000)}0]}`;
+    expect(() => fillMissingResolved(text)).toThrow(/structure limit/);
+  });
+
+  it("shares structure work across locks and does not refund malformed JSON", () => {
+    const budget = { remaining: 4 };
+    expect(() => parseNpmLock('{"a":[', budget)).toThrow(SyntaxError);
+    expect(budget.remaining).toBe(1);
+    expect(parseNpmLock("{}", budget)).toEqual({});
+    expect(() => parseNpmLock("{}", budget)).toThrow(/scan-wide JSON structure limit/);
+    expect(parseNpmLock("{}", createNpmLockWorkBudget())).toEqual({});
+  });
+
+  it("ignores escaped quotes and structural characters inside strings", () => {
+    const text = lock({ "node_modules/a": { version: "1" } }, { metadata: '[{\\"}]'.repeat(200) });
+    const result = fillMissingResolved(text)!;
+    expect(result.filled).toBe(1);
+    expect(JSON.parse(result.content).metadata).toBe(JSON.parse(text).metadata);
+  });
+
+  it("bounds input bytes even when no entry would change", () => {
+    expect(() => fillMissingResolved(`{"metadata":"${"a".repeat(16 * 1024 * 1024)}"}`)).toThrow(/byte limit/);
+  });
+
+  it("bounds transformed output before serializing it", () => {
+    expect(() => fillMissingResolved(lock({ "node_modules/a": { version: "1" } }), 100)).toThrow(/output byte limit/);
+  });
+
+  it("measures exact compact output bytes including escaped keys, arrays, and expanded numbers", () => {
+    const text = lock({ "node_modules/a": { version: "1" } }, { metadata: { 'q"': ["\u0001", 1e20, null, true, "\u3042"] } });
+    const result = fillMissingResolved(text)!;
+    const size = Buffer.byteLength(result.content, "utf8");
+    expect(fillMissingResolved(text, size)!.content).toBe(result.content);
+    expect(() => fillMissingResolved(text, size - 1)).toThrow(/output byte limit/);
+    expect(result.content).toBe(JSON.stringify(JSON.parse(result.content)));
+  });
+
+  it("keeps native JSON duplicate-key semantics", () => {
+    const result = fillMissingResolved('{"packages":{},"packages":{"node_modules/a":{"version":"1"}}}')!;
+    expect(result.filled).toBe(1);
+  });
+
   it("回帰: resolvedの無いレジストリのパッケージ・バンドルされた依存に公開レジストリの形のURLを補う", () => {
     const packages = filledPackages(lock({
       "node_modules/lodash": { version: "4.17.20" },

@@ -11,7 +11,86 @@
  * 版が`file:`・`git+...`・`user/repo`等の参照のもの(v1の別名`npm:<名前>@<版>`は実際の名前と版で補う)。`resolved`があるもの(`file:`のtarballを含む)は変えない。
  */
 
+import { ScanToolError } from "../errors.js";
+
+export const MAX_NPM_LOCK_BYTES = 16 * 1024 * 1024;
+export const MAX_NPM_LOCK_TOTAL_BYTES = 64 * 1024 * 1024;
+const MAX_JSON_DEPTH = 128;
+const MAX_JSON_STRUCTURE = 1_000_000;
 const REGISTRY = "https://registry.npmjs.org";
+
+export interface NpmLockWorkBudget {
+  remaining: number;
+}
+
+export function createNpmLockWorkBudget(): NpmLockWorkBudget {
+  return { remaining: 2_000_000 };
+}
+
+function limitExceeded(limit: string): never {
+  throw new ScanToolError("scan_input_too_large", `The npm lockfile exceeds the ${limit}. Narrow the target or use a smaller lockfile`);
+}
+
+/** Bound allocation before JSON.parse; JSON syntax itself is still validated by the native parser. */
+export function parseNpmLock(text: string, budget = createNpmLockWorkBudget()): unknown {
+  if (text.length > MAX_NPM_LOCK_BYTES || Buffer.byteLength(text, "utf8") > MAX_NPM_LOCK_BYTES) {
+    limitExceeded(`input byte limit (${MAX_NPM_LOCK_BYTES} bytes)`);
+  }
+  let quoted = false;
+  let escaped = false;
+  let depth = 0;
+  let structure = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]!;
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') quoted = false;
+      continue;
+    }
+    if (char === '"') quoted = true;
+    else if (char === "{" || char === "[") {
+      if (++depth > MAX_JSON_DEPTH) limitExceeded(`JSON depth limit (${MAX_JSON_DEPTH})`);
+      structure++;
+    } else if (char === "}" || char === "]") depth--;
+    else if (char === "," || char === ":") structure++;
+    if (structure > MAX_JSON_STRUCTURE) limitExceeded(`JSON structure limit (${MAX_JSON_STRUCTURE})`);
+    if (structure > budget.remaining) limitExceeded("scan-wide JSON structure limit");
+  }
+  budget.remaining -= structure;
+  return JSON.parse(text);
+}
+
+/** Measure compact output before materializing it, including JSON escaping and number formatting. */
+function stringifyNpmLock(lock: unknown, maxBytes: number): string {
+  let remaining = maxBytes;
+  const reserve = (bytes: number): void => {
+    remaining -= bytes;
+    if (remaining < 0) limitExceeded(`output byte limit (${maxBytes} bytes)`);
+  };
+  const measure = (value: unknown): void => {
+    if (typeof value === "object" && value !== null) {
+      reserve(2);
+      const array = Array.isArray(value);
+      const record = value as Record<string, unknown>;
+      let first = true;
+      for (const key of Object.keys(value)) {
+        if (!first) reserve(1);
+        first = false;
+        if (!array) {
+          reserve(key.length);
+          reserve(Buffer.byteLength(JSON.stringify(key), "utf8") - key.length + 1);
+        }
+        measure(record[key]);
+      }
+    } else {
+      if (typeof value === "string" && value.length > remaining) limitExceeded(`output byte limit (${maxBytes} bytes)`);
+      reserve(Buffer.byteLength(JSON.stringify(value)!, "utf8"));
+    }
+  };
+  measure(lock);
+  return JSON.stringify(lock);
+}
 
 /** 照会させてよい版(参照でない、ふつうの版の文字) */
 const PLAIN_VERSION = /^[0-9A-Za-z.+-]{1,256}$/;
@@ -77,18 +156,23 @@ function fillDependencies(dependencies: Record<string, unknown>, depth: number):
 
 /**
  * `resolved`を補ったlockfileの内容。補うエントリが無ければ`changed: false`(コピーを書き換えない)。
- * JSONとして解析できなければnull(呼び出し側はコピーをそのまま渡す)
+ * JSONとして解析できなければnull(呼び出し側はコピーをそのまま渡す)。資源上限超過は型付きエラーで停止する。
  */
-export function fillMissingResolved(text: string): { changed: boolean; content: string; filled: number } | null {
+export function fillMissingResolved(
+  text: string,
+  maxOutputBytes = MAX_NPM_LOCK_BYTES,
+  budget = createNpmLockWorkBudget(),
+): { changed: boolean; content: string; filled: number } | null {
   let lock: unknown;
   try {
-    lock = JSON.parse(text);
-  } catch {
+    lock = parseNpmLock(text, budget);
+  } catch (error) {
+    if (error instanceof ScanToolError) throw error;
     return null;
   }
   if (!isRecord(lock)) return null;
   let filled = 0;
   if (isRecord(lock.packages)) filled += fillPackages(lock.packages);
   if (isRecord(lock.dependencies)) filled += fillDependencies(lock.dependencies, 0);
-  return filled === 0 ? { changed: false, content: text, filled } : { changed: true, content: JSON.stringify(lock, null, 2), filled };
+  return filled === 0 ? { changed: false, content: text, filled } : { changed: true, content: stringifyNpmLock(lock, maxOutputBytes), filled };
 }
