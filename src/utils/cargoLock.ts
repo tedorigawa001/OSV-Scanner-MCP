@@ -510,7 +510,11 @@ export function createGlobWorkBudget(total = MAX_WORKSPACE_GLOB_TOTAL_WORK): Glo
 /** `*`・`?`だけのglobの一致。それ以外のglob、計算量の上限超過はnull(判定できない) */
 function globMatches(pattern: string, target: string, budget: { remaining: number }): boolean | null {
   const preparationWork = pattern.length + target.length + 1;
-  if (preparationWork > budget.remaining) return null;
+  if (preparationWork > budget.remaining) {
+    // Do not leave an unchargeable remainder that permits unlimited pattern visits.
+    budget.remaining = 0;
+    return null;
+  }
   budget.remaining -= preparationWork;
   const patternParts = pattern.split("/");
   const targetParts = target === "" ? [] : target.split("/");

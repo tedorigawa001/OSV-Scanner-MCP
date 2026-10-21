@@ -507,6 +507,45 @@ describe("workspaceIncludes: 検出全体で共有する計算量の上限(レ�
   const heavy = { members: ["*/" + "*a".repeat(1900) + "*b"], exclude: [] };
   const member = (i: number) => `m${i}/${"a".repeat(250)}`;
 
+  it.each([1, 7, 38])("exhausts an unusable positive residual budget (%i)", (remaining) => {
+    const workspace = { members: ["*a*a*a*b", "*a*a*a*c", "*a*a*a*d"], exclude: [] };
+    const total = createGlobWorkBudget(remaining);
+    expect(workspaceIncludes(workspace, "a".repeat(30), total)).toBeNull();
+    expect(total.remaining).toBe(0);
+    expect(workspaceIncludes(workspace, "a".repeat(30), total)).toBeNull();
+    expect(total.remaining).toBe(0);
+  });
+
+  it("exhausts the default shared budget naturally without retaining a positive remainder", () => {
+    const workspace = { members: Array<string>(5000).fill("*a*a*a*b"), exclude: [] };
+    const total = createGlobWorkBudget();
+    for (let i = 0; i < 20; i++) expect(workspaceIncludes(workspace, "a".repeat(30), total)).toBeNull();
+    expect(total.remaining).toBe(0);
+  });
+
+  it("still considers a cheaper matching glob when only the DP reservation fails", () => {
+    const workspace = { members: ["?".repeat(1100), "*"], exclude: [] };
+    const total = createGlobWorkBudget();
+    expect(workspaceIncludes(workspace, "a".repeat(1100), total)).toBe(true);
+    expect(total.remaining).toBeGreaterThan(0);
+  });
+
+  it("charges only the per-member allowance when a larger shared budget remains", () => {
+    const workspace = { members: Array<string>(1000).fill("*" + "?".repeat(510) + "b"), exclude: [] };
+    const total = createGlobWorkBudget(3_000_000);
+    expect(workspaceIncludes(workspace, "a".repeat(511), total)).toBeNull();
+    expect(total.remaining).toBe(2_000_000);
+    expect(workspaceIncludes({ members: ["*"], exclude: [] }, "a", total)).toBe(true);
+    expect(total.remaining).toBeGreaterThan(0);
+  });
+
+  it("accepts exact-cost matches and continues after unsupported syntax", () => {
+    const total = createGlobWorkBudget(7);
+    expect(workspaceIncludes({ members: ["?"], exclude: [] }, "a", total)).toBe(true);
+    expect(total.remaining).toBe(0);
+    expect(workspaceIncludes({ members: ["**", "*"], exclude: [] }, "a", createGlobWorkBudget(100))).toBe(true);
+  });
+
   it("回帰: 共有の上限を渡すと、メンバーごとに上限が戻らず、使い切った後は未確認(null)になる", () => {
     const total = createGlobWorkBudget(3_000_000);
     const results = Array.from({ length: 6 }, (_, i) => workspaceIncludes(heavy, member(i), total));
@@ -525,9 +564,9 @@ describe("workspaceIncludes: 検出全体で共有する計算量の上限(レ�
     expect(total.remaining).toBe(0);
   });
 
-  it("上限を使い切ったら残りのglobを見ない(大量のパターンでも空回りしない)", () => {
+  it.each([0, 1, 23])("上限を使い切ったら残りのglobを見ない(初期残額=%i)", (remaining) => {
     const workspace = { members: Array.from({ length: 100_000 }, (_, i) => `zz${i}*`), exclude: [] };
-    const total = createGlobWorkBudget(0);
+    const total = createGlobWorkBudget(remaining);
     const started = performance.now();
     // 空回りする実装では10,000回×100,000パターン(10億回)になり、この上限を大きく超える
     for (let i = 0; i < 10_000; i++) expect(workspaceIncludes(workspace, `m${i}`, total)).toBeNull();
