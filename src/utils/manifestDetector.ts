@@ -410,7 +410,8 @@ async function finalize(
     skippedFiles: [],
   };
   const readContext = createRequirementsReadContext();
-  const cargoManifests = new Map<string, string[]>();
+  // A null value permanently marks a crate name with multiple declaration paths.
+  const cargoManifests = new Map<string, string | null>();
   const cargoMarkers = new Set([
     ...markers.filter((m) => m.path.endsWith("Cargo.toml")).map((m) => m.path),
     ...manifests.filter((m) => m.format === "Cargo.lock").map((m) => path.join(path.dirname(m.path), "Cargo.toml")),
@@ -418,7 +419,7 @@ async function finalize(
   for (const marker of cargoMarkers) {
     const text = await cargoCache.toml(path.join(projectDir, marker), projectDir);
     const name = text === null ? null : cargoTomlPackageName(text);
-    if (name !== null) cargoManifests.set(name, [...(cargoManifests.get(name) ?? []), marker]);
+    if (name !== null) cargoManifests.set(name, cargoManifests.has(name) ? null : marker);
   }
   for (const manifest of manifests) {
     const absolute = path.join(projectDir, manifest.path);
@@ -439,8 +440,8 @@ async function finalize(
         continue;
       }
       const declaringManifests = new Map<string, string>();
-      for (const [name, paths] of cargoManifests) {
-        if (paths.length === 1) declaringManifests.set(name, path.relative(path.dirname(manifest.path), paths[0]!));
+      for (const [name, marker] of cargoManifests) {
+        if (marker !== null) declaringManifests.set(name, path.relative(path.dirname(manifest.path), marker));
       }
       result.cargoCopies.push({ path: manifest.path, packages: lock.cratesIo, allPackages: lock.allPackages, declaringManifests });
       result.localCrateCount += lock.localCrates.length;

@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { ScanToolError } from "../../errors.js";
 import { detectProject, LockfileKeyCache } from "../../utils/manifestDetector.js";
 
@@ -29,6 +29,61 @@ async function expectScanError(promise: Promise<unknown>, kind: string): Promise
 }
 
 describe("detectProject: 検出", () => {
+  it("collects repeated Cargo declarations without quadratic candidate copying", async () => {
+    const count = 1001;
+    const name = "repeated-declaration-test";
+    const files: Record<string, string> = { "Cargo.lock": "version = 3\n" };
+    for (let i = 0; i < count; i++) {
+      files[`member-${i}/Cargo.toml`] = `[package]\nname = "${name}"\n`;
+    }
+    const dir = await makeProject(files);
+    const writes = vi.spyOn(Map.prototype, "set");
+    let candidateElements = 0;
+    try {
+      const project = await detectProject(dir);
+      expect(project.cargoCopies).toHaveLength(1);
+      expect(project.cargoCopies[0]!.declaringManifests.has(name)).toBe(false);
+      // Count accumulated candidate arrays rather than relying on wall-clock timing.
+      for (const [key, value] of writes.mock.calls) {
+        if (key === name && Array.isArray(value)) candidateElements += value.length;
+      }
+    } finally {
+      writes.mockRestore();
+    }
+    expect(candidateElements).toBeLessThanOrEqual(count);
+  });
+
+  it("keeps later duplicates ambiguous and unique declaration paths relative to each lock", async () => {
+    const dir = await makeProject({
+      "Cargo.toml": '[package]\nname = "unique-root"\n',
+      "Cargo.lock": "version = 3\n",
+      "a/Cargo.toml": '[package]\nname = "duplicate"\n',
+      "b/Cargo.toml": '[package]\nname = "unique-member"\n',
+      "b/Cargo.lock": "version = 3\n",
+      "c/Cargo.toml": '[package]\nname = "duplicate"\n',
+      "d/Cargo.toml": '[package]\nname = "duplicate"\n',
+    });
+    const copies = (await detectProject(dir)).cargoCopies;
+    expect(copies).toHaveLength(2);
+    for (const copy of copies) {
+      expect(copy.declaringManifests).toEqual(new Map([
+        ["unique-root", path.relative(path.dirname(copy.path), "Cargo.toml")],
+        ["unique-member", path.relative(path.dirname(copy.path), path.join("b", "Cargo.toml"))],
+      ]));
+    }
+  });
+
+  it("maps the sibling Cargo.toml when a Cargo.lock is selected directly", async () => {
+    const dir = await makeProject({
+      "member/Cargo.toml": '[package]\nname = "selected-member"\n',
+      "member/Cargo.lock": "version = 3\n",
+    });
+    const project = await detectProject(path.join(dir, "member", "Cargo.lock"));
+    expect(project.cargoCopies[0]!.declaringManifests).toEqual(new Map([
+      ["selected-member", "Cargo.toml"],
+    ]));
+  });
+
   it("omits ambiguous Cargo.toml name mappings and preserves the full dependency graph", async () => {
     const dir = await makeProject({
       "Cargo.toml": '[package]\nname = "app"\n',
