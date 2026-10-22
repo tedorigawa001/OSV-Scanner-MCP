@@ -43,6 +43,7 @@ export interface SnapshotIncomplete {
 
 export class ScanSnapshot {
   private readonly copied = new Map<string, string>();
+  private readonly copiedPaths = new Set<string>();
   private readonly parentCache = new Map<string, string | null | undefined>();
   /** 再現した配置のルートごとのディレクトリ → 元のルート("/"等) */
   private readonly mirroredRoots = new Map<string, string>();
@@ -117,7 +118,13 @@ export class ScanSnapshot {
     }
     this.used += result.bytes;
     this.copied.set(absolute, dest);
+    this.copiedPaths.add(dest);
     return { ok: true, path: dest };
+  }
+
+  /** Only completed private copies can be followed during the final parent-chain check. */
+  hasCopy(copyPath: string): boolean {
+    return this.copiedPaths.has(copyPath);
   }
 
   /** 本サーバーが生成した内容(requirements.txtの正規化コピー等)を書く */
@@ -146,7 +153,7 @@ export class ScanSnapshot {
 
 const UNPARSEABLE =
   "The parent POM reference cannot be interpreted with certainty (duplicate parent elements, CDATA, DOCTYPE, property references, an encoding other than UTF-8, and so on), " +
-  "so it could not be confirmed to be inside the allowed root and the file was excluded from the scan";
+  "so its parent chain could not be confirmed to stay inside the snapshot and the file was excluded from the scan";
 
 interface PomContext {
   projectDir: string;
@@ -155,7 +162,7 @@ interface PomContext {
 
 /**
  * pom.xmlと親POMの連鎖をスナップショットへコピーする。
- * 許可ルート設定時、連鎖が許可ルートの外・スナップショットの外を参照するか、解釈できない場合は除外理由を返す。
+ * 連鎖がスナップショットの外を参照するか解釈できない場合は除外する。許可ルート設定時は元の参照先も制限する。
  * 存在する親POMを再現できなかった場合(サイズ超過・通常のファイルでない等)はスキャンを続けるが、
  * 親から継承する依存が欠ける可能性があるためincompleteに理由を返す(黙って成功扱いにしない)。
  */
@@ -168,7 +175,6 @@ async function snapshotPom(
   if (!copied.ok) return { ok: false, reason: capitalizeReason(copied.message), kind: "unreadable" };
   const first = { ok: true as const, path: copied.path };
   const partial = (reason: string) => ({ ...first, incomplete: reason });
-  const restricted = context.allowedRootReal !== undefined;
   let current = pomPath;
   let currentCopy = first.path;
 
@@ -176,18 +182,14 @@ async function snapshotPom(
     const relativePath = await snapshot.parentOf(currentCopy);
     if (relativePath === null || relativePath === "") return first;
     if (relativePath === undefined) {
-      return restricted
-        ? { ok: false, reason: UNPARSEABLE, kind: "unreadable" }
-        : partial("The parent POM reference cannot be interpreted with certainty, so the file was scanned without its parent POM. Dependencies inherited from the parent may be missing from the results");
+      return { ok: false, reason: UNPARSEABLE, kind: "unreadable" };
     }
 
     // Goのfilepath.Joinと同じ規則で結合する(絶対パスも連結し、..はルートで止まる)
     const inCopy = path.join(path.dirname(currentCopy), relativePath);
     if (!isInsideDir(snapshot.treeRoot, inCopy)) {
       // ..を重ねるとスナップショットの外(本物のファイルシステム)に届くため、コピーではなく元のファイルが読まれる
-      return restricted
-        ? { ok: false, reason: `The parent POM reference (relativePath: ${relativePath}) leads outside the scan scope, so the file was excluded from the scan`, kind: "outside_allowed_root" }
-        : first;
+      return { ok: false, reason: `The parent POM reference (relativePath: ${relativePath}) leads outside the scan scope, so the file was excluded from the scan`, kind: "outside_allowed_root" };
     }
     let candidate = path.join(path.dirname(current), relativePath);
     try {
@@ -219,9 +221,25 @@ async function snapshotPom(
     current = candidate;
     currentCopy = parent.path;
   }
-  return restricted
-    ? { ok: false, reason: `The parent POM chain exceeds the limit (${MAX_PARENT_DEPTH} levels)`, kind: "unreadable" }
-    : partial(`The parent POM chain exceeds the limit (${MAX_PARENT_DEPTH} levels), so parents beyond it were not included in the scan`);
+  return { ok: false, reason: `The parent POM chain exceeds the limit (${MAX_PARENT_DEPTH} levels)`, kind: "unreadable" };
+}
+
+/** Check the final scanner-visible graph, independently of the now-mutable source files. */
+async function validateCopiedPom(snapshot: ScanSnapshot, copyPath: string): Promise<Omit<SnapshotSkip, "path"> | null> {
+  let current = copyPath;
+  for (let depth = 0; depth < MAX_PARENT_DEPTH; depth++) {
+    const relativePath = await snapshot.parentOf(current);
+    if (relativePath === null || relativePath === "") return null;
+    if (relativePath === undefined) return { reason: UNPARSEABLE, kind: "unreadable" };
+    let parent = path.join(path.dirname(current), relativePath);
+    if (!isInsideDir(snapshot.treeRoot, parent)) {
+      return { reason: "The copied parent POM chain leads outside the scan scope, so the file was excluded from the scan", kind: "outside_allowed_root" };
+    }
+    if (!snapshot.hasCopy(parent)) parent = path.join(parent, "pom.xml");
+    if (!snapshot.hasCopy(parent)) return null;
+    current = parent;
+  }
+  return { reason: `The parent POM chain exceeds the limit (${MAX_PARENT_DEPTH} levels)`, kind: "unreadable" };
 }
 
 /**
@@ -234,6 +252,7 @@ export async function snapshotManifests(
   context: PomContext,
 ): Promise<{ targets: ManifestTarget[]; skipped: SnapshotSkip[]; incomplete: SnapshotIncomplete[] }> {
   const copies: ManifestTarget[] = [];
+  const copiedPoms: { original: string; copy: string }[] = [];
   const skipped: SnapshotSkip[] = [];
   const incomplete: SnapshotIncomplete[] = [];
   for (const target of targets) {
@@ -241,6 +260,7 @@ export async function snapshotManifests(
       const result = await snapshotPom(snapshot, target.path, context);
       if (result.ok) {
         copies.push({ path: result.path, format: target.format });
+        copiedPoms.push({ original: target.path, copy: result.path });
         if (result.incomplete !== undefined) incomplete.push({ path: target.path, reason: result.incomplete });
       } else {
         skipped.push({ path: target.path, reason: result.reason, kind: result.kind });
@@ -251,5 +271,19 @@ export async function snapshotManifests(
     if (result.ok) copies.push({ path: result.path, format: target.format });
     else skipped.push({ path: target.path, reason: capitalizeReason(result.message), kind: "unreadable" });
   }
-  return { targets: copies, skipped, incomplete };
+  // A later target may populate a parent path that was absent during an earlier check.
+  const rejectedCopies = new Set<string>();
+  const rejectedOriginals = new Set<string>();
+  for (const { original, copy } of copiedPoms) {
+    const failure = await validateCopiedPom(snapshot, copy);
+    if (failure === null) continue;
+    skipped.push({ path: original, ...failure });
+    rejectedCopies.add(copy);
+    rejectedOriginals.add(original);
+  }
+  return {
+    targets: copies.filter((target) => !rejectedCopies.has(target.path)),
+    skipped,
+    incomplete: incomplete.filter((item) => !rejectedOriginals.has(item.path)),
+  };
 }

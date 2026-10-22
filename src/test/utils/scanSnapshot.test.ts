@@ -2,10 +2,11 @@ import { execFileSync } from "node:child_process";
 import { chmod, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { ScanToolError } from "../../errors.js";
 import { handleScanJavaProject } from "../../tools/scanJavaProject.js";
 import { handleScanProject } from "../../tools/scanProject.js";
+import { handleSuggestFix } from "../../tools/suggestFix.js";
 import { ScanSnapshot, snapshotManifests } from "../../utils/scanSnapshot.js";
 
 const tempDirs: string[] = [];
@@ -29,13 +30,13 @@ const childPom = (relativePath: string) =>
   `<project><parent>${gav}<relativePath>${relativePath}</relativePath></parent><artifactId>c</artifactId></project>`;
 
 describe("ScanSnapshot", () => {
-  it("pom.xmlと親POMを、元の配置を再現してコピーする(osv-scannerが相対パスでコピーの親を見つけられる)", async () => {
+  it.each([true, false])("copies ordinary parent POMs with allowedRoot configured: %s", async (restricted) => {
     const base = await makeTree({ "root/pom.xml": "<project/>", "root/mod/pom.xml": childPom("../pom.xml") });
     const snapshot = await ScanSnapshot.create();
     try {
       const { targets, skipped, incomplete } = await snapshotManifests(snapshot, [{ path: path.join(base, "root/mod/pom.xml"), format: "pom.xml" }], {
         projectDir: path.join(base, "root/mod"),
-        allowedRootReal: path.join(base, "root"),
+        allowedRootReal: restricted ? path.join(base, "root") : undefined,
       });
       expect(skipped).toEqual([]);
       expect(incomplete).toEqual([]);
@@ -49,7 +50,7 @@ describe("ScanSnapshot", () => {
     await expect(stat(snapshot.dir)).rejects.toThrow();
   });
 
-  it("..を重ねてスナップショットの外(本物のファイルシステム)に届く参照は除外する", async () => {
+  it.each([true, false])("rejects snapshot escapes with allowedRoot configured: %s", async (restricted) => {
     // 実際のファイルシステムでは..がルートで止まり許可ルート内を指すが、スナップショット内では外に出る
     const base = await makeTree({ "root/parent/pom.xml": "<project/>" });
     const escape = `${"../".repeat(64)}${path.join(base, "root/parent/pom.xml").slice(1)}`;
@@ -57,10 +58,11 @@ describe("ScanSnapshot", () => {
     await writeFile(path.join(base, "root/proj/pom.xml"), childPom(escape));
     const snapshot = await ScanSnapshot.create();
     try {
-      const { skipped } = await snapshotManifests(snapshot, [{ path: path.join(base, "root/proj/pom.xml"), format: "pom.xml" }], {
+      const { targets, skipped } = await snapshotManifests(snapshot, [{ path: path.join(base, "root/proj/pom.xml"), format: "pom.xml" }], {
         projectDir: path.join(base, "root/proj"),
-        allowedRootReal: path.join(base, "root"),
+        allowedRootReal: restricted ? path.join(base, "root") : undefined,
       });
+      expect(targets).toEqual([]);
       expect(skipped[0]?.reason).toContain("leads outside the scan scope");
     } finally {
       await snapshot.cleanup();
@@ -125,17 +127,117 @@ describe("ScanSnapshot", () => {
     }
   });
 
-  it("許可ルートなしで親の指定を解釈できない場合、子はスキャンするが欠落として返す", async () => {
+  it.each(["duplicate", "CDATA"])("rejects unverified parent references without allowedRoot (%s)", async (syntax) => {
     const base = await makeTree({ "root/pom.xml": "<project/>", "root/mod/pom.xml": `<project><parent>${gav}</parent><parent>${gav}</parent></project>` });
+    if (syntax === "CDATA") await writeFile(path.join(base, "root/mod/pom.xml"), childPom("<![CDATA[../../../../outside/pom.xml]]>"));
     const snapshot = await ScanSnapshot.create();
     try {
-      const { targets, incomplete } = await snapshotManifests(snapshot, [{ path: path.join(base, "root/mod/pom.xml"), format: "pom.xml" }], {
+      const { targets, skipped, incomplete } = await snapshotManifests(snapshot, [{ path: path.join(base, "root/mod/pom.xml"), format: "pom.xml" }], {
         projectDir: path.join(base, "root/mod"),
         allowedRootReal: undefined,
       });
-      expect(targets).toHaveLength(1);
-      expect(incomplete[0]?.reason).toContain("cannot be interpreted");
+      expect(targets).toEqual([]);
+      expect(incomplete).toEqual([]);
+      expect(skipped[0]?.reason).toContain("cannot be interpreted");
     } finally {
+      await snapshot.cleanup();
+    }
+  });
+
+  it.each([true, false])("rejects an unchecked ancestor beyond the depth limit (restricted: %s)", async (restricted) => {
+    const files: Record<string, string> = {};
+    for (let i = 0; i <= 10; i++) files[`root/p${i}/pom.xml`] = childPom(i === 10 ? "../".repeat(64) + "outside/pom.xml" : `../p${i + 1}/pom.xml`);
+    const base = await makeTree(files);
+    const snapshot = await ScanSnapshot.create();
+    try {
+      const result = await snapshotManifests(snapshot, [{ path: path.join(base, "root/p0/pom.xml"), format: "pom.xml" }], {
+        projectDir: path.join(base, "root"), allowedRootReal: restricted ? path.join(base, "root") : undefined,
+      });
+      expect(result.targets).toEqual([]);
+      expect(result.incomplete).toEqual([]);
+      expect(result.skipped[0]?.reason).toContain("limit");
+    } finally {
+      await snapshot.cleanup();
+    }
+  });
+
+  it.each([true, false])("does not expose a rejected cached parent after its source disappears (restricted: %s)", async (restricted) => {
+    const base = await makeTree({
+      "root/bad/pom.xml": childPom("../".repeat(64) + "outside/pom.xml"),
+      "root/child/pom.xml": childPom("../bad/pom.xml"),
+    });
+    const snapshot = await ScanSnapshot.create();
+    const bad = path.join(base, "root/bad/pom.xml");
+    const parentOf = snapshot.parentOf.bind(snapshot);
+    const read = vi.spyOn(snapshot, "parentOf").mockImplementation(async (copy) => {
+      const result = await parentOf(copy);
+      if (copy === snapshot.mirror(bad)) await rm(bad, { force: true });
+      return result;
+    });
+    try {
+      const result = await snapshotManifests(snapshot, [bad, path.join(base, "root/child/pom.xml")].map((file) => ({ path: file, format: "pom.xml" })), {
+        projectDir: path.join(base, "root"), allowedRootReal: restricted ? path.join(base, "root") : undefined,
+      });
+      expect(result.targets).toEqual([]);
+      expect(result.skipped).toHaveLength(2);
+    } finally {
+      read.mockRestore();
+      await snapshot.cleanup();
+    }
+  });
+
+  it.each([true, false])("retains verified parent copies after their source disappears (restricted: %s)", async (restricted) => {
+    const base = await makeTree({ "root/parent/pom.xml": "<project/>", "root/child/pom.xml": childPom("../parent/pom.xml") });
+    const parent = path.join(base, "root/parent/pom.xml");
+    const snapshot = await ScanSnapshot.create();
+    const original = snapshot.parentOf.bind(snapshot);
+    const read = vi.spyOn(snapshot, "parentOf").mockImplementation(async (copy) => {
+      const result = await original(copy);
+      if (copy === snapshot.mirror(parent)) await rm(parent, { force: true });
+      return result;
+    });
+    try {
+      const result = await snapshotManifests(snapshot, [parent, path.join(base, "root/child/pom.xml")].map((file) => ({ path: file, format: "pom.xml" })), {
+        projectDir: path.join(base, "root"), allowedRootReal: restricted ? path.join(base, "root") : undefined,
+      });
+      expect(result.targets).toHaveLength(2);
+      expect(result.skipped).toEqual([]);
+      expect(result.incomplete).toEqual([]);
+    } finally {
+      read.mockRestore();
+      await snapshot.cleanup();
+    }
+  });
+
+  it.each([
+    { restricted: true, directory: false }, { restricted: false, directory: false },
+    { restricted: true, directory: true }, { restricted: false, directory: true },
+  ])("checks parents populated by later targets (restricted: $restricted, directory: $directory)", async ({ restricted, directory }) => {
+    const unsafe = childPom("../".repeat(64) + "outside/pom.xml");
+    const base = await makeTree({
+      "root/bad/pom.xml": unsafe,
+      "root/child/pom.xml": childPom(directory ? "../bad" : "../bad/pom.xml"),
+    });
+    const bad = path.join(base, "root/bad/pom.xml");
+    const child = path.join(base, "root/child/pom.xml");
+    const snapshot = await ScanSnapshot.create();
+    const originalCopy = snapshot.copy.bind(snapshot);
+    let badReads = 0;
+    const copy = vi.spyOn(snapshot, "copy").mockImplementation(async (file, boundary, maxBytes) => {
+      if (file === bad && ++badReads >= (directory ? 2 : 1)) await writeFile(bad, unsafe);
+      const result = await originalCopy(file, boundary, maxBytes);
+      if (file === child) await rm(bad, { force: true });
+      return result;
+    });
+    try {
+      const result = await snapshotManifests(snapshot, [child, bad].map((file) => ({ path: file, format: "pom.xml" })), {
+        projectDir: path.join(base, "root"), allowedRootReal: restricted ? path.join(base, "root") : undefined,
+      });
+      expect(result.targets).toEqual([]);
+      expect(result.skipped).toHaveLength(2);
+      expect(result.incomplete).toEqual([]);
+    } finally {
+      copy.mockRestore();
       await snapshot.cleanup();
     }
   });
@@ -197,6 +299,43 @@ console.log(JSON.stringify({ results: [{ source: { path: files[0] }, packages: l
 });
 
 describe("親POMの欠落の応答への反映(回帰)", () => {
+  it.each([
+    { tool: "scan_project", handler: handleScanProject, cdata: false },
+    { tool: "scan_java_project", handler: handleScanJavaProject, cdata: false },
+    { tool: "suggest_fix", handler: handleSuggestFix, cdata: false },
+    { tool: "scan_project", handler: handleScanProject, cdata: true },
+    { tool: "scan_java_project", handler: handleScanJavaProject, cdata: true },
+    { tool: "suggest_fix", handler: handleSuggestFix, cdata: true },
+  ])("$tool excludes unsafe POMs before invoking the scanner (CDATA: $cdata)", async ({ tool, handler, cdata }) => {
+    const escape = "../".repeat(64) + "outside/pom.xml";
+    const base = await makeTree({
+      "root/unsafe/pom.xml": childPom(cdata ? `<![CDATA[${escape}]]>` : escape),
+      "root/safe/pom.xml": "<project/>",
+    });
+    const marker = path.join(base, "scanned.json");
+    const bin = path.join(base, "scanner.cjs");
+    await writeFile(bin, `#!${process.execPath}
+const fs = require("node:fs");
+const args = process.argv.slice(2);
+const files = args.filter((a, i) => args[i - 1] === "--lockfile").map(a => a.slice(a.indexOf(":") + 1));
+fs.writeFileSync(${JSON.stringify(marker)}, JSON.stringify(files.map(file => fs.readFileSync(file, "utf8"))));
+console.log(JSON.stringify({results:[]}));`);
+    await chmod(bin, 0o755);
+    const options = { binaryPath: bin, noRemoteResolution: true };
+    const result = await handler({ project_path: path.join(base, "root") }, options);
+    expect(result.isError).not.toBe(true);
+    const payload = JSON.parse(result.content[0]!.text);
+    const skipped = tool === "scan_java_project" ? payload.skipped_manifests : payload.coverage.skipped_files;
+    expect(skipped).toEqual([{ path: path.join("unsafe", "pom.xml"), reason: expect.stringContaining(cdata ? "cannot be interpreted" : "outside the scan scope") }]);
+    if (tool !== "scan_java_project") expect(payload.coverage.complete).toBe(false);
+    const scanned = await readFile(marker, "utf8");
+    expect(JSON.parse(scanned)).toEqual(["<project/>"]);
+    const rejected = await handler({ project_path: path.join(base, "root/unsafe") }, options);
+    expect(rejected.isError).toBe(true);
+    expect(JSON.parse(rejected.content[0]!.text).error.kind).toBe(cdata ? "no_manifest_found" : "path_outside_allowed_root");
+    expect(await readFile(marker, "utf8")).toBe(scanned);
+  });
+
   /** 偽osv-scanner: 渡されたファイルの数だけ空の結果を返す */
   async function emptyScanner(dir: string): Promise<string> {
     const bin = path.join(dir, "osv-empty.cjs");
