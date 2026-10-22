@@ -30,7 +30,10 @@ export interface SnapshotSkip {
   /** 元のファイルの絶対パス */
   path: string;
   reason: string;
-  /** outside_allowed_root: 親POMの連鎖が許可ルートの外を参照 / unreadable: 安全に読めない・解釈できない */
+  /**
+   * outside_allowed_root: 親POMの連鎖が許可ルートの外・スナップショットの外を参照(許可ルート設定時) /
+   * unreadable: 安全に読めない・解釈できない、または許可ルート未設定時にスナップショットの外を参照
+   */
   kind: "outside_allowed_root" | "unreadable";
 }
 
@@ -189,7 +192,7 @@ async function snapshotPom(
     const inCopy = path.join(path.dirname(currentCopy), relativePath);
     if (!isInsideDir(snapshot.treeRoot, inCopy)) {
       // ..を重ねるとスナップショットの外(本物のファイルシステム)に届くため、コピーではなく元のファイルが読まれる
-      return { ok: false, reason: `The parent POM reference (relativePath: ${relativePath}) leads outside the scan scope, so the file was excluded from the scan`, kind: "outside_allowed_root" };
+      return { ok: false, reason: `The parent POM reference (relativePath: ${relativePath}) leads outside the scan scope, so the file was excluded from the scan`, kind: escapeKind(context) };
     }
     let candidate = path.join(path.dirname(current), relativePath);
     try {
@@ -224,8 +227,16 @@ async function snapshotPom(
   return { ok: false, reason: `The parent POM chain exceeds the limit (${MAX_PARENT_DEPTH} levels)`, kind: "unreadable" };
 }
 
+/**
+ * スナップショットの外に出る参照の除外の種類。許可ルート未設定時は「許可ルートの外」ではないため、
+ * 全件が除外されたときのエラーをpath_outside_allowed_rootではなくno_manifest_foundにする
+ */
+function escapeKind(context: PomContext): SnapshotSkip["kind"] {
+  return context.allowedRootReal !== undefined ? "outside_allowed_root" : "unreadable";
+}
+
 /** Check the final scanner-visible graph, independently of the now-mutable source files. */
-async function validateCopiedPom(snapshot: ScanSnapshot, copyPath: string): Promise<Omit<SnapshotSkip, "path"> | null> {
+async function validateCopiedPom(snapshot: ScanSnapshot, copyPath: string, context: PomContext): Promise<Omit<SnapshotSkip, "path"> | null> {
   let current = copyPath;
   for (let depth = 0; depth < MAX_PARENT_DEPTH; depth++) {
     const relativePath = await snapshot.parentOf(current);
@@ -233,7 +244,7 @@ async function validateCopiedPom(snapshot: ScanSnapshot, copyPath: string): Prom
     if (relativePath === undefined) return { reason: UNPARSEABLE, kind: "unreadable" };
     let parent = path.join(path.dirname(current), relativePath);
     if (!isInsideDir(snapshot.treeRoot, parent)) {
-      return { reason: "The copied parent POM chain leads outside the scan scope, so the file was excluded from the scan", kind: "outside_allowed_root" };
+      return { reason: "The copied parent POM chain leads outside the scan scope, so the file was excluded from the scan", kind: escapeKind(context) };
     }
     if (!snapshot.hasCopy(parent)) parent = path.join(parent, "pom.xml");
     if (!snapshot.hasCopy(parent)) return null;
@@ -275,7 +286,7 @@ export async function snapshotManifests(
   const rejectedCopies = new Set<string>();
   const rejectedOriginals = new Set<string>();
   for (const { original, copy } of copiedPoms) {
-    const failure = await validateCopiedPom(snapshot, copy);
+    const failure = await validateCopiedPom(snapshot, copy, context);
     if (failure === null) continue;
     skipped.push({ path: original, ...failure });
     rejectedCopies.add(copy);

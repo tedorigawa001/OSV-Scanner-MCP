@@ -364,7 +364,13 @@ console.log(JSON.stringify({results:[]}));`);
     expect(JSON.parse(scanned)).toEqual(["<project/>"]);
     const rejected = await handler({ project_path: path.join(base, "root/unsafe") }, options);
     expect(rejected.isError).toBe(true);
-    expect(JSON.parse(rejected.content[0]!.text).error.kind).toBe(cdata ? "no_manifest_found" : "path_outside_allowed_root");
+    // 許可ルート未設定のため、スナップショットの外に出る参照でも「許可ルートの外」とは示さない
+    expect(JSON.parse(rejected.content[0]!.text).error.kind).toBe("no_manifest_found");
+    if (!cdata) {
+      // 許可ルート設定時は従来どおりpath_outside_allowed_root
+      const restricted = await handler({ project_path: path.join(base, "root/unsafe") }, { ...options, allowedRoot: path.join(base, "root") });
+      expect(JSON.parse(restricted.content[0]!.text).error.kind).toBe("path_outside_allowed_root");
+    }
     expect(await readFile(marker, "utf8")).toBe(scanned);
   });
 
