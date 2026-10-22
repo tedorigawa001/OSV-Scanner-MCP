@@ -24,7 +24,7 @@ An MCP server that wraps Google's [OSV-Scanner](https://github.com/google/osv-sc
 
 ## Requirements
 
-- Node.js >= 20.19
+- Node.js >= 20.19 (development: Node.js 26.12.1, as specified in `.node-version`)
 - The [OSV-Scanner](https://google.github.io/osv-scanner/) binary — **no manual installation needed**. If it is not found, a pinned version is downloaded from the official GitHub Releases and verified against a SHA256 checksum embedded in the package before use (cached in `~/.cache/osv-scanner-mcp/`)
   - A manually installed binary (on `PATH` or set with `OSV_SCANNER_PATH`) is used first
   - Set `OSV_MCP_AUTO_DOWNLOAD=0` to disable the automatic download
