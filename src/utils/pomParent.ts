@@ -4,11 +4,13 @@
  * osv-scanner v2.4.0の実機確認(2026-10-07。範囲外の親POMを読む挙動はv2.7.0でも同じ、2026-10-15):
  * - `<relativePath>`の指す親POMを読み、その依存を結果に含める(`--no-resolve`でも同じ)。親の親もたどる
  * - `<relativePath>`省略時はMavenの既定値`../pom.xml`を参照する。ディレクトリを指す場合はその中のpom.xml
- * - `<relativePath/>`(空)はローカルを参照しない。親のGAVが一致しない場合も読まない
+ * - 親のGAVが一致しない場合は読まない
+ * - `<relativePath/>`・`<relativePath></relativePath>`・空白だけの値も、既定値`../pom.xml`を参照する(v2.4.0・v2.7.0で実機確認、2026-10-22)。
+ *   Mavenでは空は「ローカルを参照しない」だが、osv-scannerは既定値と同じに扱う。以前は空を「参照しない」と解釈して親をコピーせず、
+ *   スナップショットでは親から継承する依存が黙って欠け、許可ルートの検証も行われなかった
  *
- * スナップショット方式では、osv-scannerが読めるのはコピーしたファイルだけのため、ここでの解釈が
- * osv-scannerとずれても範囲外は読まれない(最悪でも親が見つからない)。解釈できない場合の除外は、
- * 親から引き継ぐ依存を黙って欠落させないためのもの。
+ * コピーしたPOMにも相対参照は残るため、解釈できない参照は除外し、コピー後の連鎖も検証する。
+ * 警告だけで続行すると、osv-scannerがスナップショット外の元ファイルを読む可能性がある。
  */
 
 const DEFAULT_RELATIVE_PATH = "../pom.xml";
@@ -30,7 +32,7 @@ function decodeEntities(text: string): string | undefined {
 }
 
 /**
- * 親POMのrelativePath。null=親なし / ""=ローカルを参照しない / undefined=解釈できない(除外する)
+ * 親POMのrelativePath。null=親なし / undefined=解釈できない(除外する)。空・空白だけの値は既定値`../pom.xml`(osv-scannerと同じ)
  *
  * osv-scannerのXMLデコーダー(Go)の挙動に合わせる(2026-10-07 実機確認):
  * - 要素は名前空間・接頭辞に関係なくローカル名で照合する(`<m:parent>`も親として読む)。大文字小文字は区別する
@@ -115,7 +117,8 @@ export function parentRelativePath(source: string): string | null | undefined {
   // 制御文字・通常の空白以外の空白・書式文字は、文字の正規化や前後の空白の除去の細部
   // (JSとGoで扱いが異なる)で参照先がずれうるため、解釈できないものとして除外する
   if (/[\p{Cc}\p{Cf}\u0085]|(?! )\p{Z}/u.test(trimmed)) return undefined;
-  return trimmed;
+  // 空・空白だけの値は、osv-scannerでは省略時と同じく既定値を参照する
+  return trimmed === "" ? DEFAULT_RELATIVE_PATH : trimmed;
 }
 
 /** UTF-8として厳密に読む。不正なバイト列・NULを含む場合はnull(Goと同じ解釈を保証できない) */

@@ -50,8 +50,8 @@ describe("親POMの連鎖の検証(スナップショット経由)", () => {
 
   it.each([
     { label: "親なし", xml: pom() },
-    { label: "空のrelativePath(ローカルを参照しない)", xml: pom(parent("<relativePath/>")) },
-    { label: "空要素のrelativePath", xml: pom(parent("<relativePath></relativePath>")) },
+    { label: "空のrelativePath(既定の../pom.xmlが無い)", xml: pom(parent("<relativePath/>")) },
+    { label: "空要素のrelativePath(既定の../pom.xmlが無い)", xml: pom(parent("<relativePath></relativePath>")) },
     { label: "参照先が存在しない", xml: pom(parent("<relativePath>../../missing/pom.xml</relativePath>")) },
     { label: "コメント内のparentは無視", xml: `<project><!-- ${parent("<relativePath>../../outside/pom.xml</relativePath>")} --></project>` },
   ])("$label → 問題なし", async ({ xml }) => {
@@ -141,10 +141,17 @@ describe("parentRelativePath: osv-scanner(Go)のXML解釈に合わせる(回帰)
     expect(parentRelativePath(`<?xml version="1.0"?><project><!-- <parent>${rel}</parent> --><?pi <parent> ?></project>`)).toBeNull();
   });
 
-  it("relativePath省略は既定の../pom.xml、空はローカルを参照しない", () => {
+  it("回帰: relativePathの省略・空・空白だけは、osv-scannerと同じく既定の../pom.xml(v2.4.0・v2.7.0で実機確認)", () => {
     expect(parentRelativePath(doc(`<parent>${gav}</parent>`))).toBe("../pom.xml");
-    expect(parentRelativePath(doc(`<parent>${gav}<relativePath/></parent>`))).toBe("");
-    expect(parentRelativePath(doc(`<parent>${gav}<relativePath></relativePath></parent>`))).toBe("");
+    expect(parentRelativePath(doc(`<parent>${gav}<relativePath/></parent>`))).toBe("../pom.xml");
+    expect(parentRelativePath(doc(`<parent>${gav}<relativePath></relativePath></parent>`))).toBe("../pom.xml");
+    expect(parentRelativePath(doc(`<parent>${gav}<relativePath> \n\t</relativePath></parent>`))).toBe("../pom.xml");
+  });
+
+  it("回帰: 空のrelativePathでも、既定の../pom.xmlが許可ルートの外なら除外する", async () => {
+    const base = await makeTree({ "pom.xml": pom(), "root/pom.xml": pom(parent("<relativePath/>")) });
+    // root/pom.xmlの既定の親はbase/pom.xml(許可ルートrootの外)
+    expect(await checkPom(path.join(base, "root/pom.xml"), path.join(base, "root"))).not.toBeNull();
   });
 
   it("回帰: <m:parent>で許可ルートの外を参照するpom.xmlを除外する", async () => {

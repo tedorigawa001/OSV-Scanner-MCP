@@ -50,6 +50,38 @@ describe("ScanSnapshot", () => {
     await expect(stat(snapshot.dir)).rejects.toThrow();
   });
 
+  it.each(["<relativePath/>", "<relativePath></relativePath>", "<relativePath>  </relativePath>"])(
+    "回帰: 空のrelativePath(%s)でも、osv-scannerと同じく既定の../pom.xmlの親をスナップショットへコピーする", async (relative) => {
+    const base = await makeTree({ "root/pom.xml": "<project/>", "root/mod/pom.xml": `<project><parent>${gav}${relative}</parent><artifactId>c</artifactId></project>` });
+    const snapshot = await ScanSnapshot.create();
+    try {
+      const { targets, skipped, incomplete } = await snapshotManifests(snapshot, [{ path: path.join(base, "root/mod/pom.xml"), format: "pom.xml" }], {
+        projectDir: path.join(base, "root/mod"),
+        allowedRootReal: path.join(base, "root"),
+      });
+      expect([skipped, incomplete]).toEqual([[], []]);
+      // 以前は空を「親を参照しない」と解釈して親をコピーせず、osv-scannerが読む../pom.xmlがスナップショットに無かった
+      expect(await readFile(path.join(path.dirname(targets[0]!.path), "../pom.xml"), "utf8")).toBe("<project/>");
+    } finally {
+      await snapshot.cleanup();
+    }
+  });
+
+  it("回帰: 空のrelativePathの既定の親が許可ルートの外なら、そのpom.xmlを除外する", async () => {
+    const base = await makeTree({ "pom.xml": "<project/>", "root/pom.xml": `<project><parent>${gav}<relativePath/></parent><artifactId>c</artifactId></project>` });
+    const snapshot = await ScanSnapshot.create();
+    try {
+      const { targets, skipped } = await snapshotManifests(snapshot, [{ path: path.join(base, "root/pom.xml"), format: "pom.xml" }], {
+        projectDir: path.join(base, "root"),
+        allowedRootReal: path.join(base, "root"),
+      });
+      expect(targets).toEqual([]);
+      expect(skipped[0]).toMatchObject({ kind: "outside_allowed_root", reason: expect.stringContaining("outside the allowed root") });
+    } finally {
+      await snapshot.cleanup();
+    }
+  });
+
   it.each([true, false])("rejects snapshot escapes with allowedRoot configured: %s", async (restricted) => {
     // 実際のファイルシステムでは..がルートで止まり許可ルート内を指すが、スナップショット内では外に出る
     const base = await makeTree({ "root/parent/pom.xml": "<project/>" });
