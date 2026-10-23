@@ -91,6 +91,7 @@ const allow = () => [
   `--allow-fs-read=${tmp}`,
   `--allow-fs-write=${tmp}`,
   "--allow-child-process",
+  ...(process.platform === "linux" ? ["--allow-fs-read=/proc/self/fd"] : ["--allow-addons"]),
 ];
 
 /**

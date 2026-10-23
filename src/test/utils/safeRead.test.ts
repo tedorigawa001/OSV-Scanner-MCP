@@ -72,7 +72,30 @@ describe("verifyOpenedFile", () => {
     const opened = await stat(path.join(base, "root/a.txt"));
     // 読んだのはa.txtの実体だが、確認時にパスがb.txtの実体を指している(差し替えられた)状況
     expect(await verifyOpenedFile(path.join(base, "root/b.txt"), opened, undefined)).toBe("changed");
-    expect(await verifyOpenedFile(path.join(base, "root/a.txt"), opened, path.join(base, "root"))).toBeNull();
+    const file = await open(path.join(base, "root/a.txt"), "r");
+    try {
+      expect(await verifyOpenedFile(path.join(base, "root/a.txt"), opened, path.join(base, "root"), file)).toBeNull();
+    } finally {
+      await file.close();
+    }
+  });
+
+  it("回帰: パス文字列とstatが内側を装っても、開いた外部ハンドルを承認しない", async () => {
+    const base = await makeBase();
+    const inside = path.join(base, "root/a.txt");
+    const outside = path.join(base, "outside/a.txt");
+    await writeFile(outside, "external dependency data");
+    const file = await open(outside, "r");
+    const opened = await file.stat();
+    // hard link intentionally makes the path/inode checks alone pass. The
+    // descriptor was opened outside, regardless of the alternate inside name.
+    const { link } = await import("node:fs/promises");
+    await link(outside, inside);
+    try {
+      expect(await verifyOpenedFile(inside, opened, path.join(base, "root"), file)).toBe("outside");
+    } finally {
+      await file.close();
+    }
   });
 });
 

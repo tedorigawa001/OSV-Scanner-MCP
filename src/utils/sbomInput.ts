@@ -66,14 +66,14 @@ export async function loadSbom(inputPath: string, options: SbomInputOptions = {}
         chunks.push(Buffer.from(chunk.subarray(0, bytesRead)));
       }
       bytes = Buffer.concat(chunks, total);
+      const allowedRootReal = options.allowedRoot !== undefined ? await realpath(options.allowedRoot) : undefined;
+      const problem = await verifyOpenedFile(sourcePath, info, allowedRootReal, file);
+      if (problem === "outside") throw new ScanToolError("path_outside_allowed_root", "SBOM path is outside the allowed root");
+      if (problem === "denied") throw new ScanToolError("permission_denied", "Opened-file boundary verification is not allowed (macOS/Windows: --allow-addons; Linux: --allow-fs-read=/proc/self/fd)");
+      if (problem !== null) throw new ScanToolError("sbom_not_found", "The SBOM file was replaced or could not be verified while being read");
     } finally {
       await file.close();
     }
-    // 読んだ後に、差し替え(途中のディレクトリのシンボリックリンク化等)と境界を確認する
-    const allowedRootReal = options.allowedRoot !== undefined ? await realpath(options.allowedRoot) : undefined;
-    const problem = await verifyOpenedFile(sourcePath, info, allowedRootReal);
-    if (problem === "outside") throw new ScanToolError("path_outside_allowed_root", "SBOM path is outside the allowed root");
-    if (problem !== null) throw new ScanToolError("sbom_not_found", "The SBOM file was replaced while it was being read");
   } catch (error) {
     if (error instanceof ScanToolError) throw error;
     if (isAccessDenied(error)) throw permissionDeniedError(error);

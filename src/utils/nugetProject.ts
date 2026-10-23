@@ -12,6 +12,7 @@
 
 import { stat } from "node:fs/promises";
 import path from "node:path";
+import { ScanToolError } from "../errors.js";
 import { capitalizeReason, readRegularFile } from "./safeRead.js";
 import { createNpmLockWorkBudget, type NpmLockWorkBudget } from "./npmLockCopy.js";
 import {
@@ -88,6 +89,8 @@ export interface NugetAnalysis {
 const MAX_JSON_FILE_BYTES = 16 * 1024 * 1024;
 const MAX_XML_FILE_BYTES = 4 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 64 * 1024 * 1024;
+const MAX_NUGET_FILES = 10_000;
+const MAX_ASSOCIATION_WORK = 1_000_000;
 /**
  * project.assets.jsonがプロジェクトのファイルよりこれ以上古い場合だけ「古い可能性」を示す。
  * git cloneやダウンロードはファイルを任意の順に書くため、わずかな差では古さを判断できない(実物の確認で判明)
@@ -119,10 +122,6 @@ function projectBaseName(projectFile: string): string {
   return path.basename(projectFile).replace(/\.[^.]+$/, "").toLowerCase();
 }
 
-function isSameOrBelow(dir: string, ancestor: string): boolean {
-  return ancestor === "." || ancestor === "" || dir === ancestor || dir.startsWith(`${ancestor}${path.sep}`);
-}
-
 class Reader {
   private remaining = MAX_TOTAL_BYTES;
   readonly jsonBudget: NpmLockWorkBudget = createNpmLockWorkBudget();
@@ -148,12 +147,17 @@ function ownerOf(
   pattern: RegExp,
   projectsByDir: ReadonlyMap<string, readonly string[]>,
   customLockPath: ReadonlySet<string>,
+  chargeWork: () => void,
 ): string | null {
   const named = pattern.exec(path.basename(file))?.[1];
   const projects = projectsByDir.get(path.dirname(file)) ?? [];
   let owner: string | null;
   if (named !== undefined) {
-    const matches = projects.filter((p) => projectBaseName(p) === named.toLowerCase());
+    const key = named.toLowerCase();
+    const matches = projects.filter((p) => {
+      chargeWork();
+      return projectBaseName(p) === key;
+    });
     owner = matches.length === 1 ? matches[0]! : null;
   } else {
     owner = projects.length === 1 ? projects[0]! : null;
@@ -166,6 +170,14 @@ function ownerOf(
 }
 
 export async function analyzeNuget(projectDir: string, files: NugetFiles): Promise<NugetAnalysis> {
+  // Project/support files are not charged against the walker's manifest limit.
+  if (Object.values(files).reduce((sum, list) => sum + list.length, 0) > MAX_NUGET_FILES) {
+    throw new ScanToolError("scan_input_too_large", `The .NET file count exceeds the limit (${MAX_NUGET_FILES}). Narrow the target and try again`);
+  }
+  let associationWork = MAX_ASSOCIATION_WORK;
+  const chargeAssociation = () => {
+    if (--associationWork < 0) throw new ScanToolError("scan_input_too_large", "The .NET project association work limit was exceeded. Narrow the target and try again");
+  };
   const result: NugetAnalysis = {
     manifests: [], copies: [], localProjects: 0, unscannable: [], unresolved: [], lockfileMissing: [], skippedFiles: [], warnings: [],
   };
@@ -210,18 +222,26 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
   const projectsByDir = new Map<string, string[]>();
   for (const project of files.projectFiles) {
     const dir = path.dirname(project);
-    projectsByDir.set(dir, [...(projectsByDir.get(dir) ?? []), project]);
+    let projects = projectsByDir.get(dir);
+    if (projects === undefined) projectsByDir.set(dir, projects = []);
+    projects.push(project);
   }
-  const directoryBuildNames: { dir: string; names: ReadonlySet<string> }[] = [];
+  const directoryBuildNames = new Map<string, Set<string>>();
   for (const file of files.directoryBuildFiles) {
     const read = await reader.read(file, MAX_XML_FILE_BYTES);
     if (read === null) continue;
     const xml = read.ok ? parseXml(read.text) : null;
+    const dir = path.dirname(file);
+    let names = directoryBuildNames.get(dir);
+    if (names === undefined) directoryBuildNames.set(dir, names = new Set());
     if (xml?.ok) {
-      directoryBuildNames.push({ dir: path.dirname(file), names: packageReferenceNames(xml.root) });
+      for (const name of packageReferenceNames(xml.root)) {
+        chargeAssociation();
+        names.add(name);
+      }
     } else {
       // 読めない場合は、その下のプロジェクトの参照を全て「上書きされうる」とする
-      directoryBuildNames.push({ dir: path.dirname(file), names: new Set(["*"]) });
+      names.add("*");
       result.skippedFiles.push({
         path: file,
         reason: `${read.ok ? `Could not be parsed: ${xml!.ok ? "" : xml!.reason}` : read.reason}; package references of the projects below it are not looked up`,
@@ -234,8 +254,15 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
     const read = await reader.read(project, MAX_XML_FILE_BYTES);
     if (read === null) continue;
     const external = new Set<string>();
-    for (const { dir, names } of directoryBuildNames) {
-      if (isSameOrBelow(path.dirname(project), dir)) for (const name of names) external.add(name);
+    // Only ancestors can affect this project; unrelated Directory.Build files
+    // must not produce a projects × support-files traversal.
+    for (let dir = path.dirname(project); ; dir = path.dirname(dir)) {
+      chargeAssociation();
+      for (const name of directoryBuildNames.get(dir) ?? []) {
+        chargeAssociation();
+        external.add(name);
+      }
+      if (dir === "." || dir === "" || path.dirname(dir) === dir) break;
     }
     const analysis = read.ok ? analyzeProjectFile(read.text, external) : read;
     projectAnalyses.set(project, analysis);
@@ -252,7 +279,7 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
       const parsed = await parseFile(file, format === "packages.config" ? MAX_XML_FILE_BYTES : MAX_JSON_FILE_BYTES, parse);
       if (parsed === null) continue;
       addCopy(file, format, parsed);
-      const owner = ownerOf(file, pattern, projectsByDir, customLockPath);
+      const owner = ownerOf(file, pattern, projectsByDir, customLockPath, chargeAssociation);
       if (owner !== null) covered.add(owner);
       else if (format === "packages.lock.json") unownedLockDirs.add(path.dirname(file));
     }

@@ -211,8 +211,8 @@ export function parseDepsJson(source: string, budget: NpmLockWorkBudget = create
   if (isRecord(data.targets)) {
     for (const target of Object.values(data.targets)) {
       if (!isRecord(target)) continue;
-      for (const key of projects) {
-        const entry = target[key];
+      for (const [key, entry] of Object.entries(target)) {
+        if (!projects.has(key)) continue;
         if (isRecord(entry) && isRecord(entry.dependencies)) {
           for (const name of Object.keys(entry.dependencies)) direct.add(nugetKey(name));
         }
@@ -314,19 +314,35 @@ export function parseXml(source: string): { ok: true; root: XmlElement } | { ok:
     const qname = /^[^\s/]+/.exec(body)?.[0];
     if (qname === undefined) return fail("invalid tag");
     const attributes = new Map<string, string>();
-    const attrPattern = /\s+([^\s=]+)\s*=\s*("([^"]*)"|'([^']*)')/g;
     const rest = body.slice(qname.length);
     let consumed = 0;
-    for (let m = attrPattern.exec(rest); m !== null; m = attrPattern.exec(rest)) {
-      if (m.index !== consumed) return fail("invalid attribute");
-      consumed = m.index + m[0].length;
-      const value = decodeEntities(m[3] ?? m[4] ?? "");
+    // Consume each character once. An unanchored attribute regex retries a failed
+    // whitespace suffix from every offset (quadratic work even on valid XML).
+    const whitespace = /\s/;
+    while (consumed < rest.length) {
+      const beforeSpace = consumed;
+      while (consumed < rest.length && whitespace.test(rest[consumed]!)) consumed++;
+      if (consumed === rest.length) break;
+      if (consumed === beforeSpace) return fail("invalid attribute");
+      const nameStart = consumed;
+      while (consumed < rest.length && !whitespace.test(rest[consumed]!) && rest[consumed] !== "=") consumed++;
+      if (consumed === nameStart) return fail("invalid attribute");
+      const attributeName = rest.slice(nameStart, consumed);
+      while (consumed < rest.length && whitespace.test(rest[consumed]!)) consumed++;
+      if (rest[consumed++] !== "=") return fail("invalid attribute");
+      while (consumed < rest.length && whitespace.test(rest[consumed]!)) consumed++;
+      const delimiter = rest[consumed++];
+      if (delimiter !== '"' && delimiter !== "'") return fail("invalid attribute");
+      const valueStart = consumed;
+      const valueEnd = rest.indexOf(delimiter, consumed);
+      if (valueEnd === -1) return fail("invalid attribute");
+      consumed = valueEnd + 1;
+      const value = decodeEntities(rest.slice(valueStart, valueEnd));
       if (value === undefined) return fail("unknown entity reference");
-      const key = localName(m[1]!).toLowerCase();
+      const key = localName(attributeName).toLowerCase();
       if (attributes.has(key)) return fail("duplicate attribute");
       attributes.set(key, value);
     }
-    if (rest.slice(consumed).trim() !== "") return fail("invalid attribute");
     if (++count > MAX_XML_ELEMENTS) return fail(`more than ${MAX_XML_ELEMENTS} elements`);
     const name = localName(qname);
     const element: XmlElement = { name, lowerName: name.toLowerCase(), attributes, children: [], text: "" };

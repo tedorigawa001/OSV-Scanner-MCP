@@ -14,8 +14,9 @@
  */
 
 import { constants, type Stats } from "node:fs";
-import { open, realpath, rm, stat } from "node:fs/promises";
+import { open, realpath, rm, stat, type FileHandle } from "node:fs/promises";
 import { isAccessDenied, isInsideDir } from "./projectWalk.js";
+import { openedFilePath } from "./openedFilePath.js";
 
 export type SafeReadFailure = "not_found" | "denied" | "not_regular" | "too_large" | "outside" | "changed";
 
@@ -37,7 +38,7 @@ const OPEN_FLAGS = constants.O_RDONLY | (constants.O_NONBLOCK ?? 0) | (constants
 
 const MESSAGES: Record<SafeReadFailure, string> = {
   not_found: "the file cannot be opened",
-  denied: "reading is not allowed by the Node permission model (--permission)",
+  denied: "reading or opened-file verification is not allowed by the Node permission model (--allow-fs-read; macOS/Windows also need --allow-addons)",
   not_regular: "not a regular file (named pipe, device, and so on)",
   too_large: "the file exceeds the size limit",
   outside: "the file is outside the scan scope",
@@ -61,14 +62,22 @@ export async function verifyOpenedFile(
   filePath: string,
   opened: Pick<Stats, "dev" | "ino">,
   boundary: string | undefined,
+  handle?: Pick<FileHandle, "fd">,
 ): Promise<SafeReadFailure | null> {
   let resolved: string;
   let current: Stats;
   try {
+    if (boundary !== undefined) {
+      // A realpath string and a later stat can describe different ancestor
+      // states. Check the still-open object using its kernel-provided path.
+      if (handle === undefined) return "changed";
+      const actual = await openedFilePath(handle.fd);
+      if (!isInsideDir(boundary, actual)) return "outside";
+    }
     resolved = await realpath(filePath);
     current = await stat(resolved);
-  } catch {
-    return "changed";
+  } catch (error) {
+    return isAccessDenied(error) || (error as NodeJS.ErrnoException).code === "ERR_DLOPEN_DISABLED" ? "denied" : "changed";
   }
   if (current.dev !== opened.dev || current.ino !== opened.ino) return "changed";
   if (boundary !== undefined && !isInsideDir(boundary, resolved)) return "outside";
@@ -119,7 +128,7 @@ export async function copyRegularFile(
       } finally {
         await target.close();
       }
-      if (result === null) result = await verifyOpenedFile(filePath, info, options.boundary);
+      if (result === null) result = await verifyOpenedFile(filePath, info, options.boundary, source);
     }
   } catch {
     result = "not_found";
@@ -156,12 +165,12 @@ export async function readRegularFile(filePath: string, options: SafeReadOptions
       if (total > options.maxBytes) return failure("too_large");
       chunks.push(Buffer.from(chunk.subarray(0, bytesRead)));
     }
+    const problem = await verifyOpenedFile(filePath, info, options.boundary, handle);
+    if (problem !== null) return failure(problem);
   } catch {
     return failure("not_found");
   } finally {
     await handle.close();
   }
-  const problem = await verifyOpenedFile(filePath, info, options.boundary);
-  if (problem !== null) return failure(problem);
   return { ok: true, bytes: Buffer.concat(chunks, total) };
 }

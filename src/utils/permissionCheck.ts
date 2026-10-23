@@ -31,12 +31,19 @@ export interface PermissionCheckInput {
 export function permissionModelWarnings(
   input: PermissionCheckInput,
   permission: PermissionApi | undefined = (process as { permission?: PermissionApi }).permission,
+  platform: NodeJS.Platform = process.platform,
 ): string[] {
   if (permission === undefined) return [];
   const inside = (dir: string) => path.join(dir, "x"); // ディレクトリ配下の読み書きの許可を確かめる
   const warnings: string[] = [];
   if (!permission.has("child")) {
     warnings.push("Starting child processes is not allowed, so osv-scanner cannot run (--allow-child-process)");
+  }
+  if ((platform === "darwin" || platform === "win32") && !permission.has("addons")) {
+    warnings.push("Opened-file boundary verification needs the trusted native binding (--allow-addons; native code is outside Node's permission sandbox)");
+  }
+  if (platform === "linux" && !permission.has("fs.read", "/proc/self/fd/0")) {
+    warnings.push("Opened-file boundary verification needs /proc/self/fd (--allow-fs-read=/proc/self/fd)");
   }
   const tmpDirs = [...new Set([input.tmpDir, input.tmpDirReal])];
   const unreadableTmp = tmpDirs.filter((dir) => !permission.has("fs.read", inside(dir)));

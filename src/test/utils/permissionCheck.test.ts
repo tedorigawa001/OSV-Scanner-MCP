@@ -6,13 +6,19 @@ import { permissionModelWarnings, type PermissionApi } from "../../utils/permiss
 function api(allowed: { read?: string[]; write?: string[]; child?: boolean }): PermissionApi {
   const under = (dirs: string[] = [], ref = "") => dirs.some((dir) => ref === dir || ref.startsWith(`${dir}/`));
   return {
-    has: (scope, ref) => scope === "child" ? allowed.child === true : scope === "fs.read" ? under(allowed.read, ref) : scope === "fs.write" ? under(allowed.write, ref) : false,
+    has: (scope, ref) => scope === "addons" ? true : scope === "child" ? allowed.child === true : scope === "fs.read" ? ref?.startsWith("/proc/self/fd/") || under(allowed.read, ref) : scope === "fs.write" ? under(allowed.write, ref) : false,
   };
 }
 
 const input = { allowedRoot: "/work", tmpDir: "/var/tmp-x", tmpDirReal: "/private/var/tmp-x", cacheDir: "/home/u/.cache/osv-scanner-mcp" };
 
 describe("permissionModelWarnings", () => {
+  it("OS別のハンドル検証に必要な権限がなければ警告する", () => {
+    const none: PermissionApi = { has: () => false };
+    expect(permissionModelWarnings(input, none, "darwin").join("\n")).toContain("--allow-addons");
+    expect(permissionModelWarnings(input, none, "win32").join("\n")).toContain("--allow-addons");
+    expect(permissionModelWarnings(input, none, "linux").join("\n")).toContain("--allow-fs-read=/proc/self/fd");
+  });
   it("権限モデルが無効なら何も警告しない", () => {
     expect(permissionModelWarnings(input, undefined)).toEqual([]);
   });

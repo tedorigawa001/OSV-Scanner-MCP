@@ -163,6 +163,7 @@ As an additional layer of defense, you can limit what the server can read and wr
         "--allow-fs-write=/private/var/folders/xx/yyyy/T",
         "--allow-fs-read=/opt/homebrew/bin/osv-scanner",
         "--allow-child-process",
+        "--allow-addons",
         "/path/to/OSV-Scanner-MCP/dist/index.js"
       ],
       "env": {
@@ -179,6 +180,7 @@ As an additional layer of defense, you can limit what the server can read and wr
 - If you use the automatic download, also allow reading and writing the cache (`$XDG_CACHE_HOME/osv-scanner-mcp`, by default `~/.cache/osv-scanner-mcp`). Otherwise, set `OSV_SCANNER_PATH`
 - If you enable the scan history (`OSV_MCP_HISTORY=1`), also allow reading and writing the history directory (`OSV_MCP_HISTORY_DIR`, or the default under `~/.local/state`). The server warns at startup if it is not allowed
 - `--allow-child-process` is required to run osv-scanner. **osv-scanner runs as a child process and is not restricted by the permission model** (Node itself warns that this flag weakens the permission model). The impact is limited because osv-scanner only receives verified private copies, but use an OS-level mechanism such as a container if you need stronger isolation
+- On macOS and Windows, `--allow-addons` is also required for the trusted Koffi native binding used to verify the path of an open file handle. Native code is outside Node's permission sandbox. On Linux, use `--allow-fs-read=/proc/self/fd` instead; `/proc` must be mounted. If the OS cannot verify the opened object, boundary-protected reads fail closed. Keep OS-level isolation when scanning in a stronger sandbox.
 - If a required permission is missing, the server prints a warning to stderr at startup, and scans return `permission_denied` (naming the missing permission and the path)
 
 ### Network destinations and privacy

@@ -16,7 +16,7 @@ import {
   parseProjectAssets,
   parseXml,
 } from "../../utils/nugetFiles.js";
-import { NUGET_LOWER_BOUND_WARNING, NUGET_PRIVATE_FEED_WARNING } from "../../utils/nugetProject.js";
+import { analyzeNuget, emptyNugetFiles, NUGET_LOWER_BOUND_WARNING, NUGET_PRIVATE_FEED_WARNING } from "../../utils/nugetProject.js";
 
 const tempDirs: string[] = [];
 afterAll(async () => {
@@ -142,6 +142,33 @@ describe("project.assets.json / deps.json / packages.config", () => {
 });
 
 describe("XMLの走査", () => {
+  it("回帰: 属性末尾の長い空白を再探索せず、有効なXMLと不正属性を速やかに処理する", () => {
+    const padding = " ".repeat(100_000);
+    const start = performance.now();
+    expect(parseXml(`<Project${padding}/>`).ok).toBe(true);
+    expect(parseXml(`<Project a='1'${padding}/>`).ok).toBe(true);
+    expect(parseXml(`<Project${padding}broken/>`).ok).toBe(false);
+    // 修正前は1タグで数秒以上。通常のCI速度差を十分に許容する。
+    expect(performance.now() - start).toBeLessThan(1_500);
+  });
+
+  it("回帰: 多数のprojectと空targetsの直積を作らず、実在する直接依存だけを判定する", () => {
+    const libraries: Record<string, unknown> = { "A/1.0.0": { type: "package" }, "B/1.0.0": { type: "package" } };
+    const targets: Record<string, unknown> = {};
+    for (let i = 0; i < 10_000; i++) {
+      libraries[`P${i}/1.0.0`] = { type: "project" };
+      targets[`T${i}`] = {};
+    }
+    targets.real = { "P0/1.0.0": { dependencies: { A: "1.0.0" } }, "non-project/1": { dependencies: { B: "1.0.0" } } };
+    const input = JSON.stringify({ libraries, targets });
+    const start = performance.now();
+    const parsed = parseDepsJson(input);
+    expect(parsed.ok && parsed.packages).toEqual([
+      { name: "A", version: "1.0.0", relation: "direct" },
+      { name: "B", version: "1.0.0", relation: "transitive" },
+    ]);
+    expect(performance.now() - start).toBeLessThan(1_500);
+  });
   it.each([
     ['<!DOCTYPE p [<!ENTITY a "aaaa">]><packages>&a;</packages>', "DOCTYPE"],
     ["<packages><![CDATA[x]]></packages>", "DOCTYPE"],
@@ -251,6 +278,22 @@ describe("コピーと関係", () => {
 });
 
 describe("プロジェクトとの対応付け(detectProject)", () => {
+  it("回帰: Directory.Buildの名前の繰り返し伝播にもスキャン共有の作業量上限を適用する", async () => {
+    const files: Record<string, string> = {
+      "Directory.Build.props": csproj(Array.from({ length: 1_000 }, (_, i) => `<PackageReference Update="P${i}" />`).join("")),
+    };
+    for (let i = 0; i < 1_100; i++) files[`P${i}.csproj`] = "<Project />";
+    const dir = await makeProject(files);
+    await expect(detectProject(dir)).rejects.toMatchObject({ kind: "scan_input_too_large" });
+  });
+  it("回帰: projectと補助ファイルにも件数制限を適用し、読み込み前に過大な対応付けを拒否する", async () => {
+    const files = emptyNugetFiles();
+    files.projectFiles = Array.from({ length: 10_001 }, (_, i) => `P${i}.csproj`);
+    await expect(analyzeNuget(os.tmpdir(), files)).rejects.toMatchObject({ kind: "scan_input_too_large" });
+    files.projectFiles = [];
+    files.directoryBuildFiles = Array.from({ length: 10_001 }, (_, i) => `d${i}/Directory.Build.props`);
+    await expect(analyzeNuget(os.tmpdir(), files)).rejects.toMatchObject({ kind: "scan_input_too_large" });
+  });
   it("プロジェクトが1つのディレクトリのpackages.lock.jsonは、そのプロジェクトのものとする", async () => {
     const dir = await makeProject({ "App/App.csproj": csproj(ref("A", "1.0.0")), "App/packages.lock.json": lock({ A: { type: "Direct", resolved: "1.2.0" } }) });
     const project = await detectProject(dir);
