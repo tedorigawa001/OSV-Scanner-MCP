@@ -90,18 +90,22 @@ const recorded = (tool: HistoryTool, input: string, run: () => Promise<ToolResul
 server.registerTool(
   "scan_project",
   {
-    title: "Scan project dependencies for vulnerabilities (Java / JavaScript / Python / Go / Rust)",
+    title: "Scan project dependencies for vulnerabilities (Java / JavaScript / Python / Go / Rust / .NET)",
     description:
       "Detects the lockfiles and manifests in a project and scans the dependencies for known vulnerabilities (CVE/GHSA). " +
       "Supported: Java (pom.xml / gradle.lockfile), JavaScript (package-lock.json / npm-shrinkwrap.json / yarn.lock / pnpm-lock.yaml / bun.lock), " +
-      "Python (poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt), Go (go.mod), Rust (Cargo.lock). " +
+      "Python (poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt), Go (go.mod), Rust (Cargo.lock), " +
+      ".NET (packages.lock.json / obj/project.assets.json / packages.config / *.deps.json, and the direct PackageReference items of .csproj / .fsproj / .vbproj files without them). " +
       "Package managers and builds are never run. " +
       "Always check coverage at the top of the response: it lists manifests without a lockfile, requirements lines without a pinned version, and excluded files. " +
       "Git dependencies in npm lockfiles are looked up by repository URL, so private git host names and paths are sent to api.osv.dev. " +
       "For Cargo.lock, only crates from crates.io are scanned: the project's own crates are counted in local_crates, and git or private-registry crates are listed in unscannable_crates. " +
+      "For .NET, each project file is matched to its own lockfile or obj/project.assets.json; projects without one are scanned from their direct PackageReference items only (lockfile_missing status direct_only or unconfirmed), " +
+      "a PackageReference Version=\"x\" is looked up at its lower bound (version_is_lower_bound), and references with properties, ranges without a lower bound, floating versions, conditions, or Update/Remove are not looked up (unresolved_package_references). " +
+      "The project's own projects are counted in local_projects. Names of packages from private NuGet feeds are also sent to api.osv.dev; see nuget_warnings. " +
       "Vulnerabilities marked informational (RustSec notices such as unmaintained or unsound crates) are not counted in vulnerability_count; they are counted in informational_count. " +
       "Each package's dependency_relation tells whether it is a direct or transitive dependency (determined for package-lock.json, go.mod, requirements.txt, and pom.xml; unknown otherwise). " +
-      "If coverage.complete is false, do not conclude that the project is safe even with zero findings. Upgrade recommendations (suggest_fix) are available for Java, JavaScript, Python, Go, and Rust. Cargo.lock dependency graphs provide direct/transitive relations, introduced_by, and uniquely mapped declaring Cargo.toml paths in declared_in.",
+      "If coverage.complete is false, do not conclude that the project is safe even with zero findings. Upgrade recommendations (suggest_fix) are available for Java, JavaScript, Python, Go, and Rust (not yet for .NET). Cargo.lock dependency graphs provide direct/transitive relations, introduced_by, and uniquely mapped declaring Cargo.toml paths in declared_in.",
     inputSchema: {
       project_path: z
         .string()

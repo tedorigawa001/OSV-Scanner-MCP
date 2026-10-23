@@ -2,6 +2,7 @@
  * osv-scannerに`--lockfile <形式>:<絶対パス>`で個別に渡せる解析形式(2.4.0・2.7.0で実機確認)。
  * ここに無い形式はosv-scannerに渡さない。npm-shrinkwrap.jsonは"package-lock.json"形式で解析する。
  * Cargo.lockは元のファイルを渡さず、crates.io由来のパッケージだけを書いたコピーを渡す(cargoLock.ts)。
+ * packages.lock.jsonは.NETの各形式から本サーバーが書いたコピーだけを渡す(nugetFiles.ts。元のファイルは渡さない)。
  */
 export const MANIFEST_FORMATS = [
   "pom.xml",
@@ -18,6 +19,7 @@ export const MANIFEST_FORMATS = [
   "requirements.txt",
   "go.mod",
   "Cargo.lock",
+  "packages.lock.json",
 ] as const;
 
 export type ManifestFormat = (typeof MANIFEST_FORMATS)[number];

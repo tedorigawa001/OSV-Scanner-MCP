@@ -81,12 +81,15 @@ function searchLimitError(reason: string): ScanToolError {
 /**
  * 上限付きで幅優先に走査し、ファイルごとにonFileを呼ぶ。シンボリックリンクは辿らない。
  * onFileがtrueを返したファイルをマニフェストとして数え、上限到達はエラーにする。
+ * skipChildrenはディレクトリごとに、その中の項目の名前から追加で飛ばすサブディレクトリを返す
+ * (.NETのプロジェクトのディレクトリのbin・obj。名前だけで飛ばすと他のエコシステムのbinまで飛ばすため)
  */
 export async function walkProjectFiles(
   rootDir: string,
   options: SearchLimitOptions,
   skippedDirs: ReadonlySet<string>,
   onFile: (relativePath: string, name: string) => boolean,
+  skipChildren?: (entryNames: readonly string[]) => ReadonlySet<string>,
 ): Promise<void> {
   const limits: SearchLimits = {
     maxDepth: options.maxDepth ?? DEFAULT_MAX_DEPTH,
@@ -109,13 +112,14 @@ export async function walkProjectFiles(
         if (isAccessDenied(error)) throw permissionDeniedError(error);
         continue; // 読めないディレクトリはスキップ(OSの権限不足等)
       }
+      const extraSkipped = skipChildren?.(entries.map((e) => e.name));
       for (const entry of entries) {
         if (++visited > limits.maxEntries) throw searchLimitError(`${limits.maxEntries} entries`);
         if (entry.isFile()) {
           if (onFile(path.relative(rootDir, path.join(dir, entry.name)), entry.name)) {
             if (++manifests > limits.maxManifests) throw searchLimitError(`${limits.maxManifests} manifests`);
           }
-        } else if (entry.isDirectory() && !skippedDirs.has(entry.name)) {
+        } else if (entry.isDirectory() && !skippedDirs.has(entry.name) && !extraSkipped?.has(entry.name)) {
           // isDirectory()はシンボリックリンクに対してfalseを返すため、リンクは自然に除外される
           nextLevel.push(path.join(dir, entry.name));
         }

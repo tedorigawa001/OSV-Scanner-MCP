@@ -1,10 +1,11 @@
 /**
- * `scan_project`用の検出: Java / JavaScript / Python / Go / Rustのlockfileを列挙する。
+ * `scan_project`用の検出: Java / JavaScript / Python / Go / Rust / .NETのlockfileを列挙する。
  *
  * - 検出したファイルだけをosv-scannerに渡す(ディレクトリは渡さない)。解析形式も明示する
  * - パッケージマネージャー・ビルドは実行しない。lockfileが無いマニフェストはcoverageに記録する
  * - requirements.txtは取り込み先を検証し、プロジェクト外を読む場合はスキャン対象から外す
  * - Cargo.lockはここで解析し、crates.io由来のパッケージだけをスキャンする(cargoLock.ts)
+ * - .NETはプロジェクトのファイルごとに情報源を対応付け、照会してよいパッケージだけをスキャンする(nugetProject.ts)
  *
  * 検出・除外の根拠はdocs/DESIGN_TODO.md「対象エコシステム拡大 詳細設計メモ」を参照。
  */
@@ -12,7 +13,7 @@
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
-import type { ManifestFormat, ManifestTarget } from "./manifestFormats.js";
+import { isManifestFormat, type ManifestFormat, type ManifestTarget } from "./manifestFormats.js";
 import {
   assertInsideAllowedRoot,
   resolveExistingPath,
@@ -42,8 +43,22 @@ import {
   type CargoLockClassification,
   type CargoPackage,
 } from "./cargoLock.js";
+import {
+  analyzeNuget,
+  collectNugetFile,
+  emptyNugetFiles,
+  NUGET_DEPS_JSON,
+  NUGET_LOCKFILE,
+  NUGET_PACKAGES_CONFIG,
+  NUGET_PROJECT_ASSETS,
+  NUGET_PROJECT_FILE,
+  type NugetCopy,
+  type NugetFiles,
+  type NugetSourceFormat,
+} from "./nugetProject.js";
+import type { UnresolvedReason } from "./nugetFiles.js";
 
-export type Ecosystem = "Maven" | "npm" | "PyPI" | "Go" | "crates.io";
+export type Ecosystem = "Maven" | "npm" | "PyPI" | "Go" | "crates.io" | "NuGet";
 
 /** ファイル名→(エコシステム, 解析形式)。npm-shrinkwrap.jsonはpackage-lock.json形式で解析する */
 const LOCKFILES = new Map<string, { ecosystem: Ecosystem; format: ManifestFormat }>([
@@ -104,19 +119,31 @@ const SKIPPED_DIRS = new Set([
   ".venv", "venv", "site-packages", "__pycache__", ".tox", "vendor", ".cargo",
 ]);
 
+/** .NETのプロジェクトのディレクトリのビルド出力(同じプロジェクトの重複。obj/project.assets.jsonは直接読む) */
+const DOTNET_OUTPUT_DIRS: ReadonlySet<string> = new Set(["bin", "obj"]);
+const NONE: ReadonlySet<string> = new Set();
+
+function dotnetOutputDirs(entryNames: readonly string[]): ReadonlySet<string> {
+  return entryNames.some((name) => NUGET_PROJECT_FILE.test(name)) ? DOTNET_OUTPUT_DIRS : NONE;
+}
+
 export interface DetectedManifest {
   /** projectDirからの相対パス */
   path: string;
   ecosystem: Ecosystem;
-  format: ManifestFormat;
+  /** .NETは元の形式を示す(osv-scannerには常にpackages.lock.json形式のコピーを渡す) */
+  format: ManifestFormat | NugetSourceFormat;
 }
 
 export interface LockfileMissing {
   /** lockfileの無いマニフェストのprojectDirからの相対パス */
   path: string;
   ecosystem: Ecosystem;
-  /** missing: 対応するlockfileが無い / unconfirmed: 上位のlockfileに収録されているか確認できない */
-  status: "missing" | "unconfirmed";
+  /**
+   * missing: 対応するlockfileが無い / unconfirmed: 上位のlockfileに収録されているか確認できない
+   * (.NET: lockfileはあるが、このプロジェクトのものと確認できない) / direct_only: .NETのプロジェクトのファイルの直接依存だけをスキャンした
+   */
+  status: "missing" | "unconfirmed" | "direct_only";
   hint: string;
 }
 
@@ -170,10 +197,24 @@ export interface DetectedProject {
   requirementReferences: RequirementReference[];
   lowerBounds: LowerBound[];
   skippedFiles: SkippedFile[];
+  /** .NET: osv-scannerにはpackages.lock.json形式のコピーを渡す */
+  nugetCopies: NugetCopy[];
+  /** .NETの自分のプロジェクト(type: project等)で、照会しなかったものの数 */
+  localProjectCount: number;
+  unscannableNugetPackages: { file: string; name: string; version: string; reason: string }[];
+  unresolvedPackageReferences: { file: string; name: string; specifier: string; reason: UnresolvedReason }[];
+  nugetWarnings: string[];
+  /** .NETのファイルを1つでも検出した(応答の.NETの項目を付けるか) */
+  hasNuget: boolean;
 }
 
 export interface DetectProjectOptions extends SearchLimitOptions {
   allowedRoot?: string;
+}
+
+/** 直接指定できる.NETのファイル(プロジェクトのファイルは、そのディレクトリを走査する) */
+function isDirectNugetFile(name: string): boolean {
+  return NUGET_LOCKFILE.test(name) || NUGET_PACKAGES_CONFIG.test(name) || NUGET_DEPS_JSON.test(name) || name === NUGET_PROJECT_ASSETS;
 }
 
 function classifyFile(name: string): { ecosystem: Ecosystem; format: ManifestFormat } | null {
@@ -394,6 +435,7 @@ async function finalize(
   manifests: DetectedManifest[],
   markers: { path: string; group: LockGroup }[],
   allowedRootReal: string | undefined,
+  nugetFiles: NugetFiles = emptyNugetFiles(),
 ): Promise<DetectedProject> {
   const cargoCache = new CargoLockCache();
   const result: DetectedProject = {
@@ -410,6 +452,12 @@ async function finalize(
     requirementReferences: [],
     lowerBounds: [],
     skippedFiles: [],
+    nugetCopies: [],
+    localProjectCount: 0,
+    unscannableNugetPackages: [],
+    unresolvedPackageReferences: [],
+    nugetWarnings: [],
+    hasNuget: Object.values(nugetFiles).some((list) => list.length > 0),
   };
   const readContext = createRequirementsReadContext();
   // A null value permanently marks a crate name with multiple declaration paths.
@@ -453,10 +501,21 @@ async function finalize(
       result.unscannableCrates.push(
         ...lock.unscannable.map((c) => ({ file: manifest.path, name: c.name, version: c.version, reason: UNSCANNABLE_CRATE_REASONS[c.kind] })),
       );
-    } else {
+    } else if (isManifestFormat(manifest.format)) {
       result.targets.push({ path: absolute, format: manifest.format });
     }
     result.manifests.push(manifest);
+  }
+  if (result.hasNuget) {
+    const nuget = await analyzeNuget(projectDir, nugetFiles);
+    result.manifests.push(...nuget.manifests.map((m) => ({ path: m.path, ecosystem: "NuGet" as const, format: m.format })));
+    result.nugetCopies = nuget.copies;
+    result.localProjectCount = nuget.localProjects;
+    result.unscannableNugetPackages = nuget.unscannable;
+    result.unresolvedPackageReferences = nuget.unresolved;
+    result.nugetWarnings = nuget.warnings;
+    result.lockfileMissing.push(...nuget.lockfileMissing.map((m) => ({ ...m, ecosystem: "NuGet" as const })));
+    result.skippedFiles.push(...nuget.skippedFiles);
   }
   if (result.manifests.length === 0) {
     const details = [
@@ -484,11 +543,12 @@ export async function detectProject(inputPath: string, options: DetectProjectOpt
   const stats = await stat(resolved);
   const name = path.basename(resolved);
   const direct = stats.isFile() ? classifyFile(name) : null;
+  const directNuget = stats.isFile() && isDirectNugetFile(name);
 
   let projectDir: string;
   if (stats.isDirectory()) {
     projectDir = resolved;
-  } else if (stats.isFile() && (direct !== null || LOCK_MARKERS.has(name))) {
+  } else if (stats.isFile() && (direct !== null || directNuget || LOCK_MARKERS.has(name) || NUGET_PROJECT_FILE.test(name))) {
     projectDir = path.dirname(resolved);
   } else {
     throw new ScanToolError(
@@ -502,18 +562,27 @@ export async function detectProject(inputPath: string, options: DetectProjectOpt
   if (direct !== null) {
     return finalize(projectDir, [{ path: name, ...direct }], [], allowedRootReal);
   }
+  if (directNuget) {
+    const nugetFiles = emptyNugetFiles();
+    if (name === NUGET_PROJECT_ASSETS) nugetFiles.projectAssets.push(name);
+    else collectNugetFile(nugetFiles, name, name);
+    return finalize(projectDir, [], [], allowedRootReal, nugetFiles);
+  }
 
   const manifests: DetectedManifest[] = [];
   const markers: { path: string; group: LockGroup }[] = [];
+  const nugetFiles = emptyNugetFiles();
   await walkProjectFiles(projectDir, options, SKIPPED_DIRS, (relativePath, fileName) => {
     const found = classifyFile(fileName);
     if (found) {
       manifests.push({ path: relativePath, ...found });
       return true;
     }
+    const nuget = collectNugetFile(nugetFiles, relativePath, fileName);
+    if (nuget !== null) return nuget;
     const group = LOCK_MARKERS.get(fileName);
     if (group) markers.push({ path: relativePath, group });
     return false;
-  });
-  return finalize(projectDir, manifests, markers, allowedRootReal);
+  }, dotnetOutputDirs);
+  return finalize(projectDir, manifests, markers, allowedRootReal, nugetFiles);
 }

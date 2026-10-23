@@ -171,7 +171,10 @@ function severityOf(severity: Record<string, unknown> | null): Record<string, nu
   );
 }
 
-const GAP_FIELDS = ["lockfile_missing", "unpinned_requirements", "unscannable_requirements", "unscannable_crates", "skipped_files", "unidentified_jars", "unidentified_packages"];
+const GAP_FIELDS = [
+  "lockfile_missing", "unpinned_requirements", "unscannable_requirements", "unscannable_crates", "unscannable_nuget_packages",
+  "unresolved_package_references", "skipped_files", "unidentified_jars", "unidentified_packages",
+];
 
 function gapsOf(payload: Record<string, unknown>): Record<string, number> | undefined {
   const coverage = asRecord(payload.coverage);

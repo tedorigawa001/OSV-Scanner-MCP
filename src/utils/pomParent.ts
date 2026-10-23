@@ -17,8 +17,8 @@ const DEFAULT_RELATIVE_PATH = "../pom.xml";
 
 const NAMED_ENTITIES: Record<string, string> = { lt: "<", gt: ">", amp: "&", apos: "'", quot: '"' };
 
-/** XMLの文字参照・定義済み実体参照を展開する。未知の実体はundefined */
-function decodeEntities(text: string): string | undefined {
+/** XMLの文字参照・定義済み実体参照を展開する。未知の実体はundefined(nugetFiles.tsも使う) */
+export function decodeEntities(text: string): string | undefined {
   let unknown = false;
   const decoded = text.replace(/&([^;\s&]*);?/g, (match, body: string) => {
     if (!match.endsWith(";")) unknown = true;

@@ -1308,6 +1308,19 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - 実バイナリでMCP経由: 各形式で既知の脆弱性を検出し、`type: project`の同名パッケージ・未解決の版を照会しないこと。2.4.0でも同じ結果
 - **実物のファイルでの確認**: 手元に.NET SDKが無いため、`dotnet restore`で生成した実物(`packages.lock.json`・`project.assets.json`・`*.deps.json`)は公開リポジトリから入手するか、利用者に用意してもらう(ダウンロードは許可を得てから)
 
+### 実装メモ(設計からの変更点、2026-10-23)
+
+- 構成: 各形式の解析・XMLの走査・コピー・関係は`src/utils/nugetFiles.ts`、プロジェクトとの対応付けは`src/utils/nugetProject.ts`。検出(`manifestDetector.ts`)は走査で.NETのファイルを振り分け、`analyzeNuget`の結果を`DetectedProject`の`nugetCopies`等に入れる。`scanProject.ts`がコピーを`packages.lock.json`形式で渡す
+- 注意の文言は`coverage.warning`(範囲の欠けの定型文)とは別の`coverage.nuget_warnings`(配列)にした。下限・`project.assets.json`の古さ・直接依存だけの場合の確かめられない参照・非公開フィードを並べる。非公開フィードと古さは`complete`を変えない(範囲の欠けではないため)
+- `nuget.config`は、プロジェクトのディレクトリから上をたどる代わりに、スキャン対象の中の全ての`nuget.config`を確かめる(注意を示す側に広い)。解釈できない`nuget.config`も注意の対象
+- `Directory.Build.props`/`.targets`は、プロジェクトのディレクトリかその上(スキャン対象の中)にある全てのものの名前を使う(MSBuildが自動で読むのは最も近い1つだが、それが上位を読み込むことがあるため広く取る)。解釈できないものは`skipped_files`にし、その下の全ての参照を照会しない
+- パッケージの参照を書いていないプロジェクト(`ProjectReference`だけ等)は、直接依存だけの対象にも`lockfile_missing`にもしない(雑音を避ける)
+- `.csproj`を直接指定した場合は、他のマーカー(`package.json`等)と同じく、そのディレクトリを走査する
+- `packages.config`の`developmentDependency`による`dependency_groups: ["dev"]`は見送り(`dependency_groups`はosv-scannerの出力をそのまま返す項目で、本サーバーが付ける仕組みが無い)
+- 下限の印: 同じ名前・版を別のファイルで確定版として照会した場合は付けない(確定版の結果が実在を示すため)
+- 名前に`;`区切りの複数の指定(`Include="A;B"`)を扱う。`$(...)`・ワイルドカードを含む名前は照会せず(理由`property`)、`Update`・`Remove`の名前にあれば全ての名前を照会しない
+- 確認: 単体・統合のテスト(70件)、変異確認(対応付けの各規則・Conditionの親・Update・下限・deps.jsonのproject・DOCTYPE・bin/objの除外・下限の表示・関係の直接優先・非公開フィード・別の版の別グループ・参照なしのプロジェクトの14通りで、追加したテストが失敗する)。MCP経由で実バイナリ(2.7.0)に複数の形式を混ぜた構成を渡し、対応付け・未解決の理由・`bin`の除外が設計どおりであることを確認
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。

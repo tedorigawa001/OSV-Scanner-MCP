@@ -1,5 +1,5 @@
 /**
- * `scan_project`ツールのハンドラ: Java / JavaScript / Python / Go / Rustのlockfileをまとめてスキャンする。
+ * `scan_project`ツールのハンドラ: Java / JavaScript / Python / Go / Rust / .NETのlockfileをまとめてスキャンする。
  *
  * 誤要約対策(JAR実体スキャンと同じ原則): スキャンできなかった依存を示すcoverageを件数より前に置き、
  * complete=falseの場合は「検出0件でも安全とは言えない」旨の警告を付ける。
@@ -21,6 +21,7 @@ import {
   type RelationLookup,
 } from "../utils/dependencyRelations.js";
 import { cargoLockCopyContent, type CargoPackage } from "../utils/cargoLock.js";
+import { nugetKey, nugetLockCopyContent, nugetRelations, type NugetPackage } from "../utils/nugetFiles.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
 import { readRegularFile } from "../utils/safeRead.js";
 import { detectProject, type DetectedProject } from "../utils/manifestDetector.js";
@@ -38,7 +39,8 @@ export const TRANSITIVE_OMITTED_WARNING =
 
 const INCOMPLETE_WARNING =
   "Some dependencies were not scanned, or were scanned at an assumed version " +
-  "(see lockfile_missing / unpinned_requirements / unscannable_requirements / unscannable_crates / skipped_files). " +
+  "(see lockfile_missing / unpinned_requirements / unscannable_requirements / unscannable_crates / " +
+  "unscannable_nuget_packages / unresolved_package_references / skipped_files). " +
   "Zero findings does not confirm that those dependencies are safe";
 
 /** coverageの各一覧の上限(巨大なrequirements.txtで応答を膨らませない) */
@@ -55,13 +57,18 @@ export function buildCoverage(project: DetectedProject) {
   const unscannable = capped(project.requirementReferences);
   const skipped = capped(project.skippedFiles);
   const crates = capped(project.unscannableCrates);
+  const nugetUnscannable = capped(project.unscannableNugetPackages);
+  const nugetUnresolved = capped(project.unresolvedPackageReferences);
   const complete =
     project.lockfileMissing.length === 0 &&
     project.requirementIssues.length === 0 &&
     project.requirementReferences.length === 0 &&
     project.unscannableCrates.length === 0 &&
+    project.unscannableNugetPackages.length === 0 &&
+    project.unresolvedPackageReferences.length === 0 &&
     project.skippedFiles.length === 0;
-  const omitted = lockfileMissing.omitted + unpinned.omitted + unscannable.omitted + crates.omitted + skipped.omitted;
+  const omitted = lockfileMissing.omitted + unpinned.omitted + unscannable.omitted + crates.omitted + skipped.omitted +
+    nugetUnscannable.omitted + nugetUnresolved.omitted;
   const hasCargo = project.manifests.some((m) => m.format === "Cargo.lock");
   return {
     complete,
@@ -98,6 +105,25 @@ export function buildCoverage(project: DetectedProject) {
           })),
         }
       : {}),
+    // .NET: 従来のエコシステムの応答を変えないよう、.NETのファイルを検出した場合だけ付ける
+    ...(project.hasNuget
+      ? {
+          local_projects: project.localProjectCount,
+          unscannable_nuget_packages: nugetUnscannable.items.map((p) => ({
+            file: sanitizeExternalText(p.file),
+            name: sanitizeExternalText(p.name),
+            version: sanitizeExternalText(p.version),
+            reason: p.reason,
+          })),
+          unresolved_package_references: nugetUnresolved.items.map((r) => ({
+            file: sanitizeExternalText(r.file),
+            name: sanitizeExternalText(r.name),
+            specifier: sanitizeExternalText(r.specifier),
+            reason: r.reason,
+          })),
+          ...(project.nugetWarnings.length > 0 ? { nuget_warnings: project.nugetWarnings.map(sanitizeExternalText) } : {}),
+        }
+      : {}),
     skipped_files: skipped.items.map((s) => ({ path: sanitizeExternalText(s.path), reason: sanitizeExternalText(s.reason) })),
     ...(omitted > 0 ? { omitted_items: omitted } : {}),
   };
@@ -127,14 +153,23 @@ function ecosystemBreakdown(project: DetectedProject, packages: readonly ScanRep
   return breakdown;
 }
 
-/** `>=X` / `~=X` の行は、osv-scannerが下限Xを使用中の版とみなしてスキャンしている */
+/**
+ * `>=X` / `~=X` の行(requirements.txt)と、`.csproj`の`Version="X"`(X以上)は、下限Xを使用中の版とみなしてスキャンしている。
+ * .NETは同じ名前・版を確定版として照会したファイルもあれば、下限とは示さない
+ */
 export function markLowerBounds(project: DetectedProject, packages: readonly ScanReportPackage[]): ScanReportPackage[] {
-  return packages.map((pkg) =>
-    pkg.ecosystem === "PyPI" &&
-    project.lowerBounds.some((lb) => lb.name === normalizePypiName(pkg.name) && lb.version === pkg.version)
-      ? { ...pkg, version_is_lower_bound: true as const }
-      : pkg,
-  );
+  const nugetExact = new Set<string>();
+  const nugetLower = new Set<string>();
+  for (const copy of project.nugetCopies) {
+    for (const pkg of copy.packages) (pkg.lowerBound ? nugetLower : nugetExact).add(JSON.stringify([nugetKey(pkg.name), pkg.version]));
+  }
+  return packages.map((pkg) => {
+    const nugetId = JSON.stringify([nugetKey(pkg.name), pkg.version]);
+    const lower = pkg.ecosystem === "PyPI"
+      ? project.lowerBounds.some((lb) => lb.name === normalizePypiName(pkg.name) && lb.version === pkg.version)
+      : pkg.ecosystem === "NuGet" && nugetLower.has(nugetId) && !nugetExact.has(nugetId);
+    return lower ? { ...pkg, version_is_lower_bound: true as const } : pkg;
+  });
 }
 
 /**
@@ -160,6 +195,7 @@ interface RelationSource {
   entries?: readonly string[];
   cargoPackages?: readonly CargoPackage[];
   declaringManifests?: ReadonlyMap<string, string>;
+  nugetPackages?: readonly NugetPackage[];
 }
 
 /**
@@ -173,7 +209,7 @@ export async function buildRelationLookups(
   const lookups = new Map<string, SourceRelations>();
   const npmWorkBudget = createNpmLockWorkBudget();
   let remaining = maxTotalBytes;
-  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests } of copies) {
+  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages } of copies) {
     const lockDir = originalRelative === null ? "" : path.dirname(originalRelative);
     let lookup: RelationLookup = null;
     try {
@@ -191,6 +227,8 @@ export async function buildRelationLookups(
         lookup = requirementsRelations(entries);
       } else if (format === "Cargo.lock" && cargoPackages !== undefined) {
         lookup = cargoLockRelations(cargoPackages, declaringManifests);
+      } else if (format === "packages.lock.json" && nugetPackages !== undefined) {
+        lookup = nugetRelations(nugetPackages);
       }
     } catch {
       lookup = null; // 解析できないファイルはunknown(スキャン自体は続ける)
@@ -312,6 +350,11 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
       targets.push({ path: generated, format: "Cargo.lock" });
       relationSources.push({ copy: generated, format: "Cargo.lock", originalRelative: copy.path,
         cargoPackages: copy.allPackages, declaringManifests: copy.declaringManifests });
+    }
+    for (const copy of project.nugetCopies) {
+      const generated = await snapshot.writeGenerated(nugetLockCopyContent(copy.packages));
+      targets.push({ path: generated, format: "packages.lock.json" });
+      relationSources.push({ copy: generated, format: "packages.lock.json", originalRelative: copy.path, nugetPackages: copy.packages });
     }
     if (targets.length === 0) return parseOsvScanOutput({ results: [] });
     const report = await withScopeNotes(project.skippedFiles, () => snapshot.guard(() => runOsvScan(targets, options)));
