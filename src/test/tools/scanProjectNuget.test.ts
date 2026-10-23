@@ -77,6 +77,20 @@ const FILES = {
 };
 
 describe("scan_project: .NET", () => {
+  it.each([
+    ["x/x.csproj", '<Project><ItemGroup><PackageReference Include="A&#x110000;" Version="1.0.0" /></ItemGroup></Project>'],
+    ["x/pom.xml", "<project><modelVersion>4.0.0</modelVersion><groupId>g</groupId><artifactId>a</artifactId><version>1</version>" +
+      "<parent><groupId>g</groupId><artifactId>p</artifactId><version>1</version><relativePath>../&#99999999999;/pom.xml</relativePath></parent></project>"],
+  ])("回帰(脆弱性チェック): 範囲外の文字参照を含む%sがあっても、他のファイルのスキャンを止めない", async (file, content) => {
+    const dir = await makeProject({ [file]: content, "web/go.mod": "module x\n" });
+    const { bin, argsFile } = await fakeScanner({ results: [] });
+    const p = payload(await handleScanProject({ project_path: dir }, { binaryPath: bin }));
+    expect(p.error).toBeUndefined();
+    expect(p.coverage.complete).toBe(false);
+    expect(p.coverage.skipped_files.map((s: { path: string }) => s.path)).toContain(file);
+    expect((await readFile(argsFile, "utf8")).split("\n").some((a) => a.startsWith("go.mod:"))).toBe(true);
+  });
+
   it("元のファイルは渡さず、照会してよいパッケージだけを書いたコピーを渡す", async () => {
     const dir = await makeProject(FILES);
     const { bin, argsFile, copiesFile } = await fakeScanner({ results: [] });

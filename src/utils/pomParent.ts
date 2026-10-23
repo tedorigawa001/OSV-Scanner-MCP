@@ -17,15 +17,28 @@ const DEFAULT_RELATIVE_PATH = "../pom.xml";
 
 const NAMED_ENTITIES: Record<string, string> = { lt: "<", gt: ">", amp: "&", apos: "'", quot: '"' };
 
-/** XMLの文字参照・定義済み実体参照を展開する。未知の実体はundefined(nugetFiles.tsも使う) */
+/** 文字参照の符号位置。Unicodeの範囲外・サロゲートはnull(XMLでも文字ではない) */
+function codePointOf(digits: string, radix: 16 | 10): number | null {
+  const value = Number.parseInt(digits, radix);
+  return value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff) ? null : value;
+}
+
+/**
+ * XMLの文字参照・定義済み実体参照を展開する。未知の実体・範囲外の文字参照はundefined(nugetFiles.tsも使う)。
+ * 範囲外の文字参照(`&#x110000;`等)をString.fromCodePointに渡すと例外になり、1つのファイルでスキャン全体が
+ * internal_errorになっていた(v0.4.0〜。脆弱性チェックで判明、2026-10-24)。名前の照合は自身のプロパティだけ
+ * (`&constructor;`等がObjectのプロトタイプのプロパティとして展開されないように)
+ */
 export function decodeEntities(text: string): string | undefined {
   let unknown = false;
   const decoded = text.replace(/&([^;\s&]*);?/g, (match, body: string) => {
-    if (!match.endsWith(";")) unknown = true;
-    else if (/^#x[0-9a-fA-F]+$/.test(body)) return String.fromCodePoint(parseInt(body.slice(2), 16));
-    else if (/^#[0-9]+$/.test(body)) return String.fromCodePoint(parseInt(body.slice(1), 10));
-    else if (body in NAMED_ENTITIES) return NAMED_ENTITIES[body]!;
-    else unknown = true;
+    const codePoint = !match.endsWith(";") ? null
+      : /^#x[0-9a-fA-F]+$/.test(body) ? codePointOf(body.slice(2), 16)
+      : /^#[0-9]+$/.test(body) ? codePointOf(body.slice(1), 10)
+      : undefined;
+    if (codePoint !== null && codePoint !== undefined) return String.fromCodePoint(codePoint);
+    if (codePoint === undefined && Object.hasOwn(NAMED_ENTITIES, body)) return NAMED_ENTITIES[body]!;
+    unknown = true;
     return match;
   });
   return unknown ? undefined : decoded;

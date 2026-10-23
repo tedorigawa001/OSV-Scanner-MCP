@@ -1315,6 +1315,11 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - `nuget.config`は、プロジェクトのディレクトリから上をたどる代わりに、スキャン対象の中の全ての`nuget.config`を確かめる(注意を示す側に広い)。解釈できない`nuget.config`も注意の対象
 - `Directory.Build.props`/`.targets`は、プロジェクトのディレクトリかその上(スキャン対象の中)にある全てのものの名前を使う(MSBuildが自動で読むのは最も近い1つだが、それが上位を読み込むことがあるため広く取る)。解釈できないものは`skipped_files`にし、その下の全ての参照を照会しない
 - 直接の`PackageReference`が無いプロジェクトも、確認済みの情報源が無ければ`lockfile_missing`(`direct_only`)に残す(当初は雑音を避けて無視していたが、`Directory.Build.props`やSDKが参照を加える構成で欠落を隠し、別のエコシステムのlockfileが同居すると`complete: true`になった。レビュー指摘)
+- **脆弱性チェック(2026-10-24)での修正**:
+  - XMLの文字参照の展開(`pomParent.ts`の`decodeEntities`、.NETのXMLの走査と共用)は、Unicodeの範囲外・サロゲートの文字参照(`&#x110000;`・巨大な10進数等)を`String.fromCodePoint`にそのまま渡して例外にしていた。1つの`pom.xml`(親POMの`relativePath`)・`.csproj`等で**スキャン全体が`internal_error`**になり、同じプロジェクトの他のエコシステムも結果を返さない(リポジトリにファイルを1つ置くだけでスキャンを妨げられる)。v0.4.0〜v0.15.0の`pom.xml`に該当。範囲外は解釈できない(`undefined`)として、そのファイルだけを除外する。定義済み実体の照合を`in`から`Object.hasOwn`にし、`&constructor;`等がプロトタイプのプロパティとして展開されないようにした
+  - osv-scannerに渡す.NETのコピーは1,000件まで(走査のマニフェストの上限と同じ)。コピーごとに`--lockfile`の引数になり、9,000件で引数の長さの上限(macOSのARG_MAX 1MiB)を超えてスキャン全体が`internal_error`になっていた。超えた分は`skipped_files`(マニフェストにも数えない)
+  - `project.assets.json`の「古い可能性」の注意は、プロジェクトごとではなく1件にまとめる(名前は5件まで、残りは件数)。応答が際限なく大きくならないように
+  - 依存: `body-parser` 2.4.0(GHSA-27r3-jxmh-p828)・`fast-uri` 3.1.9(4件)にロックファイルだけ更新(MCP SDK経由。配布物にロックファイルは含まれない)
 - `*.deps.json`のランタイムパックは、SDKがライブラリ名に`runtimepack.`を付ける(`runtimepack.Microsoft.NETCore.App.Runtime.linux-x64/8.0.0`)。接頭辞を除いて照会する(付けたままではOSVで0件、正しい名前で12件。当初のテストの入力は接頭辞の無い形で、実際の形と違っていた。レビュー指摘)
 - `NuGetLockFilePath`のあるプロジェクトは、既定の名前・名前付き(`packages.<名前>.lock.json`)のどちらのlockfileとも対応付けない(当初は名前付きの判定で先に返し、別の保存先を指定したプロジェクトが古い名前付きlockfileで確認済みになっていた。レビュー指摘)
 - `.csproj`を直接指定した場合は、他のマーカー(`package.json`等)と同じく、そのディレクトリを走査する

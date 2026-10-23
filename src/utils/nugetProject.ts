@@ -98,6 +98,13 @@ const MAX_ASSOCIATION_WORK = 1_000_000;
 const STALE_ASSETS_TOLERANCE_MS = 60_000;
 /** 照会するパッケージの数の上限(スキャン全体) */
 export const MAX_NUGET_PACKAGES = 200_000;
+/**
+ * osv-scannerに渡す.NETのコピーの数の上限(走査のマニフェストの上限と同じ)。コピーごとに`--lockfile`の引数になり、
+ * 9,000件で引数の長さの上限(macOSのARG_MAX 1MiB)を超えてスキャン全体がinternal_errorになっていた(脆弱性チェックで判明)
+ */
+export const MAX_NUGET_COPIES = 1_000;
+/** 「古い可能性」の注意に名前を挙げるproject.assets.jsonの数(残りは件数だけ示す) */
+const MAX_STALE_LISTED = 5;
 
 const DIRECT_ONLY_HINT =
   "No packages.lock.json or obj/project.assets.json was found for this project, so only its direct PackageReference items were scanned " +
@@ -185,12 +192,18 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
   let packageBudget = MAX_NUGET_PACKAGES;
   let lowerBounds = false;
   let directOnly = false;
+  const staleAssets: string[] = [];
 
   const addCopy = (file: string, format: NugetSourceFormat, outcome: Extract<NugetParseOutcome, { ok: true }>) => {
     let packages = outcome.packages;
     if (packages.length > packageBudget) {
       result.skippedFiles.push({ path: file, reason: `Only the first ${packageBudget} packages were scanned (the per-scan limit of ${MAX_NUGET_PACKAGES} was reached)` });
       packages = packages.slice(0, packageBudget);
+    }
+    if (packages.length > 0 && result.copies.length >= MAX_NUGET_COPIES) {
+      // スキャンしないファイルはマニフェストにも数えない(範囲の欠けとして示し、complete: falseになる)
+      result.skippedFiles.push({ path: file, reason: `Not scanned because the per-scan limit of ${MAX_NUGET_COPIES} .NET files to scan was reached. Narrow the target` });
+      return;
     }
     packageBudget -= packages.length;
     result.localProjects += outcome.localProjects;
@@ -318,7 +331,7 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
           stat(path.join(projectDir, project)).catch(() => null),
         ]);
         if (assetsStat !== null && projectStat !== null && projectStat.mtimeMs - assetsStat.mtimeMs > STALE_ASSETS_TOLERANCE_MS) {
-          result.warnings.push(`${assetsFile} is older than ${project}, so it may not reflect the current package references. Run \`dotnet restore\` and scan again`);
+          staleAssets.push(assetsFile);
         }
         continue;
       }
@@ -340,6 +353,15 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
     addCopy(project, "PackageReference", { ok: true, packages: analysis.references, localProjects: 0, unscannable: [] });
   }
 
+  if (staleAssets.length > 0) {
+    // プロジェクトごとに1件ずつ並べると応答が際限なく大きくなるため、1件にまとめる
+    const listed = staleAssets.slice(0, MAX_STALE_LISTED).join(", ");
+    const rest = staleAssets.length > MAX_STALE_LISTED ? ` and ${staleAssets.length - MAX_STALE_LISTED} more` : "";
+    result.warnings.push(
+      `${staleAssets.length} obj/project.assets.json file(s) are older than their project files (${listed}${rest}), so they may not reflect ` +
+        "the current package references. Run `dotnet restore` and scan again",
+    );
+  }
   if (lowerBounds) result.warnings.push(NUGET_LOWER_BOUND_WARNING);
   if (directOnly) result.warnings.push(NUGET_DIRECT_ONLY_WARNING);
   if (result.manifests.length > 0 || files.projectFiles.length > 0) {

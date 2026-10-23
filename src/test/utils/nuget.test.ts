@@ -16,7 +16,7 @@ import {
   parseProjectAssets,
   parseXml,
 } from "../../utils/nugetFiles.js";
-import { analyzeNuget, emptyNugetFiles, NUGET_LOWER_BOUND_WARNING, NUGET_PRIVATE_FEED_WARNING } from "../../utils/nugetProject.js";
+import { analyzeNuget, emptyNugetFiles, MAX_NUGET_COPIES, NUGET_LOWER_BOUND_WARNING, NUGET_PRIVATE_FEED_WARNING } from "../../utils/nugetProject.js";
 
 const tempDirs: string[] = [];
 afterAll(async () => {
@@ -142,6 +142,11 @@ describe("project.assets.json / deps.json / packages.config", () => {
 });
 
 describe("XMLの走査", () => {
+  it.each(["&#x110000;", "&#99999999999;", "&#xD800;", "&constructor;"])("回帰(脆弱性チェック): 解釈できない文字参照は例外にせず解析しない(%s)", (ref) => {
+    expect(parseXml(`<Project><ItemGroup><PackageReference Include="A${ref}" Version="1.0.0" /></ItemGroup></Project>`).ok).toBe(false);
+    expect(parseXml(`<Project>${ref}</Project>`).ok).toBe(false);
+  });
+
   it("回帰: 属性末尾の長い空白を再探索せず、有効なXMLと不正属性を速やかに処理する", () => {
     const padding = " ".repeat(100_000);
     const start = performance.now();
@@ -341,7 +346,7 @@ describe("プロジェクトとの対応付け(detectProject)", () => {
     ]);
     expect(project.unresolvedPackageReferences).toEqual([]);
     expect(project.lockfileMissing.map((m) => [m.path, m.status])).toEqual([[path.join("Other", "Other.csproj"), "direct_only"]]);
-    expect(project.nugetWarnings.some((w) => w.includes("is older than"))).toBe(true);
+    expect(project.nugetWarnings.some((w) => w.includes("older than their project files"))).toBe(true);
     expect(project.nugetWarnings).toContain(NUGET_LOWER_BOUND_WARNING);
   });
 
@@ -434,5 +439,30 @@ describe("プロジェクトとの対応付け(detectProject)", () => {
     expect(project.unresolvedPackageReferences.map((u) => u.reason)).toEqual(["property"]);
     // 解釈できないプロジェクトのファイルだけならno_manifest_found(理由つき)
     await expect(detectProject(await makeProject({ "Lib/Lib.csproj": "<Project><!DOCTYPE x></Project>" }))).rejects.toMatchObject({ kind: "no_manifest_found" });
+  });
+});
+
+describe("上限(脆弱性チェック)", () => {
+  it(`回帰: osv-scannerに渡すコピーは${MAX_NUGET_COPIES}件まで。残りは範囲の欠けとして示し、スキャン全体は止めない`, async () => {
+    const files: Record<string, string> = {};
+    for (let i = 0; i <= MAX_NUGET_COPIES; i++) files[`p${i}/p${i}.csproj`] = csproj(ref(`Pkg${i}`, "[1.0.0]"));
+    const project = await detectProject(await makeProject(files));
+    expect(project.nugetCopies).toHaveLength(MAX_NUGET_COPIES);
+    expect(project.skippedFiles).toEqual([{ path: expect.stringMatching(/\.csproj$/), reason: expect.stringContaining(`limit of ${MAX_NUGET_COPIES}`) }]);
+    expect(project.manifests).toHaveLength(MAX_NUGET_COPIES);
+  }, 60_000);
+
+  it("回帰: project.assets.jsonの「古い可能性」はプロジェクトの数によらず1件にまとめる", async () => {
+    const files: Record<string, string> = {};
+    for (let i = 0; i < 7; i++) {
+      files[`p${i}/p${i}.csproj`] = csproj("");
+      files[`p${i}/obj/project.assets.json`] = JSON.stringify({ libraries: {}, project: { restore: { projectPath: `/s/p${i}/p${i}.csproj` } } });
+    }
+    const dir = await makeProject(files);
+    for (let i = 0; i < 7; i++) await utimes(path.join(dir, `p${i}/obj/project.assets.json`), new Date(0), new Date(0));
+    // 全てassetsで対応付けられるため、注意は古さの1件だけ
+    const warnings = (await detectProject(dir)).nugetWarnings;
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/^7 obj\/project\.assets\.json file\(s\).*and 2 more/);
   });
 });

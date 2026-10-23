@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { parentRelativePath } from "../../utils/pomParent.js";
+import { decodeEntities, parentRelativePath } from "../../utils/pomParent.js";
 import { ScanSnapshot, snapshotManifests } from "../../utils/scanSnapshot.js";
 
 /** pom.xmlをスナップショットへコピーし、除外されれば理由、されなければnullを返す */
@@ -200,5 +200,29 @@ describe("parentRelativePath: 改行の正規化と文字の制限(回帰)", () 
       "root/proj/pom.xml": `<project><parent>${gav}<relativePath>../../outside/a\rb/pom.xml</relativePath></parent></project>`,
     });
     expect(await checkPom(path.join(base, "root/proj/pom.xml"), path.join(base, "root"))).not.toBeNull();
+  });
+});
+
+describe("decodeEntities", () => {
+  it("文字参照・定義済み実体参照を展開する", () => {
+    expect(decodeEntities("a&amp;b&#x41;&#66;&lt;")).toBe("a&bAB<");
+  });
+
+  it.each([
+    ["Unicodeの範囲外(16進)", "&#x110000;"],
+    ["Unicodeの範囲外(10進)", "&#99999999999;"],
+    ["非常に長い数", `&#${"9".repeat(400)};`],
+    ["サロゲート", "&#xD800;"],
+    ["プロトタイプのプロパティ", "&constructor;"],
+    ["プロトタイプのプロパティ(toString)", "&toString;"],
+    ["未知の実体", "&nbsp;"],
+  ])("回帰(脆弱性チェック): 解釈できない参照は例外にせずundefined(%s)", (_label, text) => {
+    expect(decodeEntities(`x${text}y`)).toBeUndefined();
+  });
+
+  it("回帰(脆弱性チェック): 範囲外の文字参照を含む親POMの参照は例外にせず解釈できない扱い", () => {
+    const pom = "<project><parent><groupId>g</groupId><artifactId>p</artifactId><version>1</version>" +
+      "<relativePath>../&#x110000;/pom.xml</relativePath></parent></project>";
+    expect(parentRelativePath(pom)).toBeUndefined();
   });
 });
