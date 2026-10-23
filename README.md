@@ -18,6 +18,7 @@ An MCP server that wraps Google's [OSV-Scanner](https://github.com/google/osv-sc
 - **Java project scan**: `scan_java_project` scans only the Java (Maven / Gradle) manifests and returns a formatted report
 - **JAR/WAR scan**: `scan_java_artifact` detects known vulnerabilities from the metadata inside JAR/WAR archives, for projects without a lockfile or with only shaded/fat JARs (best-effort identification, stated explicitly in `coverage`)
 - **SBOM scan**: `scan_sbom` checks the dependencies recorded in a CycloneDX/SPDX JSON SBOM. It states explicitly that the SBOM's completeness and its match with the actual artifacts are not verified
+- **Scan history (opt-in)**: With `OSV_MCP_HISTORY=1`, each scan is recorded locally, and `scan_history` lists past runs and shows what changed since the previous run (new and resolved vulnerabilities, version changes, coverage changes)
 - **Severity-sorted reports**: Vulnerabilities are grouped by package and sorted by CVSS score, with five severity labels (critical / high / medium / low / unknown) and summary counts
 - **Fixed versions**: Each vulnerability includes `fixed_versions`, sorted correctly by Maven version precedence (including non-semver forms such as `2.17.1-RELEASE`), Semantic Versioning precedence for npm, Go, and Rust, and PEP 440 for PyPI
 - **Security first**: No shell execution, a fixed argument allowlist, path normalization and boundary checks, scanning private copies instead of the original files, and timeouts and output size limits are built in
@@ -130,6 +131,9 @@ npm run build
 | `OSV_MCP_PREFER_DOWNLOAD` | If `1` or `true`, always use the checksum-verified downloaded binary instead of osv-scanner on `PATH` (protects against a fake binary planted on `PATH`; an explicit `OSV_SCANNER_PATH` still takes precedence) |
 | `OSV_MCP_NO_CANDIDATE_CHECK` | If `1` or `true`, `suggest_fix` does not query OSV about recommended versions (`candidate_check` is `disabled`, and recommended versions are not checked for known vulnerabilities that do not affect the current version) |
 | `OSV_MCP_NO_REMOTE_RESOLUTION` | If `1` or `true`, transitive dependencies of `pom.xml` and `requirements.txt` are not resolved through deps.dev. **This stops only the requests to deps.dev; package names and versions are still sent to `api.osv.dev` for the vulnerability lookup.** Vulnerabilities in transitive dependencies are then not detected, and responses say so in `dependency_resolution.warning`. See [Network destinations and privacy](#network-destinations-and-privacy) |
+| `OSV_MCP_HISTORY` | If `1` or `true`, records each scan in the local scan history (disabled by default). See [`scan_history`](#scan_history) |
+| `OSV_MCP_HISTORY_DIR` | Absolute path of the history directory (default `$XDG_STATE_HOME/osv-scanner-mcp/history`, or `~/.local/state/osv-scanner-mcp/history`) |
+| `OSV_MCP_HISTORY_MAX_ENTRIES` | Number of runs kept (default `500`, maximum `5000`). Older runs are deleted, and the total size is also capped at 100 MiB |
 
 > **Recommendation**: The server works without `OSV_MCP_ALLOWED_ROOT`, but then any absolute path can be scanned. To prevent malicious instructions (prompt injection) from scanning unintended directories, set it to the root of your projects (for example `~/projects`). Pass it in the client configuration, for example `"env": {"OSV_MCP_ALLOWED_ROOT": "/Users/you/projects"}` (in Codex CLI's TOML, use a `[mcp_servers.osv-scanner.env]` section).
 
@@ -172,6 +176,7 @@ As an additional layer of defense, you can limit what the server can read and wr
 - Read access: the server itself (the directory containing `dist` and `node_modules`), the scan targets (`OSV_MCP_ALLOWED_ROOT`), the temporary directory, and the osv-scanner binary
 - The temporary directory (`os.tmpdir()`, `$TMPDIR` on macOS) needs read access under **both the symlinked and the resolved path** (on macOS, `/var/folders/...` is a symbolic link to `/private/var/folders/...`). Write access is needed on the resolved path
 - If you use the automatic download, also allow reading and writing the cache (`$XDG_CACHE_HOME/osv-scanner-mcp`, by default `~/.cache/osv-scanner-mcp`). Otherwise, set `OSV_SCANNER_PATH`
+- If you enable the scan history (`OSV_MCP_HISTORY=1`), also allow reading and writing the history directory (`OSV_MCP_HISTORY_DIR`, or the default under `~/.local/state`). The server warns at startup if it is not allowed
 - `--allow-child-process` is required to run osv-scanner. **osv-scanner runs as a child process and is not restricted by the permission model** (Node itself warns that this flag weakens the permission model). The impact is limited because osv-scanner only receives verified private copies, but use an OS-level mechanism such as a container if you need stronger isolation
 - If a required permission is missing, the server prints a warning to stderr at startup, and scans return `permission_denied` (naming the missing permission and the path)
 
@@ -466,6 +471,44 @@ For npm, Go, PyPI, and Rust, the "same release line" is the range a caret (`^`) 
 - Ecosystems without recommendation support (such as RubyGems from an SBOM) return `verification: "unsupported_ecosystem"`, and current versions that cannot be parsed (such as npm git or local path dependencies) return `verification: "unparseable_version"`. In both cases each CVE gets `tier: "unsupported"` and is not counted as unfixed (whether a fixed version exists is not evaluated; check `fixed_versions` in `scan_project` or `explain_vulnerability`).
 - `coverage` is the same as in `scan_project`. If a manifest has no lockfile or a file was excluded, `complete` is `false`, and those dependencies are not included in the suggestions. The `skipped_manifests` / `scope_warning` fields of v0.4.2 and earlier were merged into `coverage.skipped_files` / `coverage.warning`.
 
+### `scan_history`
+
+Lists past runs of the scan tools (`scan_project`, `suggest_fix`, `scan_java_project`, `scan_java_artifact`, `scan_sbom`) and shows what changed between the last two runs. No scan is run.
+
+**Recording is disabled by default**, because the history keeps package names and paths on disk. Enable it with `OSV_MCP_HISTORY=1` in the server's `env`; runs are recorded from then on. Without it, this tool returns `history_disabled`.
+
+**Input**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `project_path` | string (optional) | A scanned target (project directory, lockfile, JAR/WAR, or SBOM). Filters the runs and adds `changes` |
+| `limit` | number (optional) | Number of runs to list (default 10, maximum 50) |
+| `run_id` | string (optional) | An `id` from `runs`. Returns the details of that run instead of the list |
+
+**Output**
+
+- `history`: the directory, `max_entries`, the number of matching runs (`recorded_runs`), and `skipped_records` if some files could not be read or were invalid
+- `runs`: newest first, with `id`, `started_at`, `tool`, the target, `status` (`ok` or `error` with `error_kind`), `coverage_complete`, vulnerability counts, and `duration_ms`
+- `changes` (with `project_path`): for each kind of scan (`project` for `scan_project` and `suggest_fix`, `java_project`, `artifact`, `sbom`), a comparison of the **last two successful runs**:
+  - `new_vulnerabilities` / `resolved_vulnerabilities`: compared per package (ecosystem and name). A vulnerability is the same if its ID or any alias matches, so a change of the primary ID in OSV is not reported as new. A vulnerability that remains after a version change is neither new nor resolved
+  - `reason` of a resolved vulnerability: `version_changed` (the package is still reported, at another version: `current_versions`), `package_not_reported` (the package is no longer in the results: it was upgraded to a version without known vulnerabilities, removed, or is no longer scanned; scan results list only vulnerable packages, so these cannot be told apart), or `same_version_not_reported` (same version, no longer reported, for example because the OSV data changed)
+  - `version_changes`: packages whose versions changed, with `still_affected` (the vulnerabilities that remain)
+  - `coverage_changes`: changes of `coverage.complete` and added or removed manifests
+  - `incomplete`: set when the comparison is partial (a run exceeded the record size limit or the findings limit)
+- `run` (with `run_id`): the details of one run, including its manifests, coverage gaps, severity breakdown, and the recorded packages and vulnerability IDs (up to 500 packages)
+
+> **Note**: Changes are computed from the OSV data at the time of each scan, so they can also appear when only the vulnerability database changed.
+
+**What is recorded**: one JSON file per run, with the tool, time, server and pinned OSV-Scanner versions, the target paths, coverage, counts, and the packages with their vulnerability IDs and aliases (and, for `suggest_fix`, the recommended versions). Vulnerability summaries, details, and error messages are not recorded. A run whose record would exceed 1 MiB keeps only the summary (`findings_omitted`), and if that is still too large, only part of its manifest list (`manifests_truncated`; manifest changes are then not compared).
+
+**Storage and safety**:
+
+- The directory is created with mode `0700` and files with `0600`. The server refuses a directory that is a symbolic link or is owned by another user (scans still succeed; a warning is printed to stderr)
+- Each run is written to a temporary file and renamed, so concurrent server processes do not corrupt each other's records. Recording failures never fail the scan
+- History files are treated as untrusted input: each is read with a size limit, validated, and its strings are sanitized before being returned
+- When `OSV_MCP_ALLOWED_ROOT` is set, only runs whose target is inside the allowed root are returned, and a `project_path` outside it is refused with `path_outside_allowed_root`
+- To delete the history, remove the directory
+
 ### `explain_vulnerability`
 
 Returns the details of a vulnerability, given its GHSA or CVE ID, **fetched directly from the OSV database API (api.osv.dev)** (no scan is run). IDs from the scan results can be passed as they are. This is especially useful for vulnerabilities published after the client LLM's knowledge cutoff.
@@ -520,6 +563,9 @@ Returns JSON with a machine-readable `kind`, together with `isError: true`:
 | `invalid_vulnerability_id` | The vulnerability ID is malformed |
 | `vulnerability_not_found` | No vulnerability with the ID exists in the OSV database |
 | `api_request_failed` | The request to the OSV API failed (network, timeout, or a non-2xx response) |
+| `history_disabled` | The scan history is disabled (`scan_history`; set `OSV_MCP_HISTORY=1`) |
+| `history_unavailable` | The history directory cannot be used (for example a symbolic link or owned by another user) |
+| `history_run_not_found` | No recorded run with the given `run_id` (or the ID is malformed) |
 | `internal_error` | An unexpected error (no internal details are returned) |
 
 ## Security design
@@ -566,6 +612,7 @@ Design notes and open items are in [docs/DESIGN_TODO.md](docs/DESIGN_TODO.md) (i
 - [x] English tool descriptions and messages
 - [x] `scan_project` for Rust (`Cargo.lock`, crates.io crates only) and RustSec informational advisories
 - [x] `suggest_fix` and direct/transitive dependencies for Rust
+- [x] Scan history and changes between runs (`scan_history`, opt-in)
 - [ ] Direct and transitive dependencies for `gradle.lockfile` and the YAML/TOML lockfiles
 
 ## License

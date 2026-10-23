@@ -1132,7 +1132,7 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
   - `runs`: 新しい順の要約(時刻・ツール・対象・`status`・件数・`coverage.complete`)。`project_path`を指定すると、その対象の回だけ
   - `changes`(`project_path`指定時): 同じ対象・同じ種類のスキャン(プロジェクト / Javaプロジェクト / JAR・WAR / SBOM)の、直近の成功した2回の比較。`suggest_fix`と`scan_project`は検出が同じため同じ種類として比べる
     - `new_vulnerabilities`: 今回あって前回なかった(パッケージ・版と脆弱性の組。IDか別名が重なれば同じ脆弱性とみなす。OSVの代表IDが入れ替わっても誤検知しない)
-    - `resolved_vulnerabilities`: 前回あって今回ない。理由を分ける: `upgraded`(同じパッケージの版が変わった)、`removed`(パッケージが無くなった)、`no_longer_reported`(同じ版のまま報告されなくなった。OSVのデータの更新等)
+    - `resolved_vulnerabilities`: 前回あって今回ない。理由を分ける: `upgraded`(同じパッケージの版が変わった)、`removed`(パッケージが無くなった)、`no_longer_reported`(同じ版のまま報告されなくなった。OSVのデータの更新等)。※実装では名前と比べ方を変更(下の「実装メモ」)
     - `version_changes`: パッケージの版の変化
     - `coverage_changes`: `complete`の変化、マニフェストの増減
     - 注意書き: 差分はスキャンの時点のOSVのデータに依存する(コードを変えていなくても、データの更新で増減する)。`findings_truncated`の回が含まれる場合は不完全と示す
@@ -1156,6 +1156,18 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 - 差分: 新規・解消(upgraded・removed・no_longer_reported)、別名での同一視、代表IDの入れ替わり、範囲の変化、打ち切りを含む場合
 - 閲覧: 許可ルートの外の回を返さない、改ざん・壊れたファイルの無視、外部由来の文字列の無害化、`history_disabled`
 - 実バイナリでMCP経由: 同じプロジェクトを依存を変えて2回スキャンし、差分が期待どおりになること。履歴を無効にした場合に何も書かないこと
+
+### 実装メモ(設計からの変更点)
+
+- **差分はパッケージ(エコシステムと名前)単位で比べる**: 当初の「パッケージ・版と脆弱性の組」で比べると、版を上げても残る脆弱性(例: lodash 4.17.20→4.17.21で残る3件)が新規にも解消にも数えられた(MCP経由の確認で判明)。版が変わっても残る脆弱性はどちらにも数えず、`version_changes`の`still_affected`に件数を示す
+- **解消の理由の名前を変更**: `upgraded`→`version_changed`、`removed`→`package_not_reported`、`no_longer_reported`→`same_version_not_reported`。スキャン結果には脆弱なパッケージしか載らないため、結果から消えたパッケージが「更新された」(既知の脆弱性のない版へ)のか「削除された」のか「範囲外になった」のかは区別できない。断定する名前を避け、観測できる事実だけを示す。`version_changed`には今回の版(`current_versions`)を付ける
+- 比較は失敗した回(`status: "error"`)を飛ばし、同じ種類の直近の成功した2回を使う。2回未満なら種類ごとに`note`で示す
+- `suggest_fix`の件数は、記録した`findings`から情報提供を除いて数え直す(応答に`vulnerability_count`がないため)
+- 上限: `findings`は5,000パッケージ・合計2万件の脆弱性・別名は各20件・文字列は512文字。1件の記録が1MiBを超えたら`findings`を省く(`findings_omitted`)。それでも超えれば(長いパスのマニフェストが多い場合)マニフェストの一覧を半分ずつ減らし、最後は一覧を省く(`manifests_truncated`。マニフェストの増減は比べず`incomplete`に示す)。深刻度別の件数のキーは16個まで。これで残りの項目は大きさに上限があり、保存したものは読み出しの上限(同じ1MiB)で必ず読み戻せる。`scan_history`で1回に読む量は合計64MiB、`run_id`の詳細は500パッケージまで、差分の各一覧は500件まで(超えたら`incomplete`)
+- 対象の照合: `project_path`は実パスで解決し、解決できなければ(削除済みのプロジェクト)絶対パスのまま照合する。記録の`target.resolved`(応答の`project_dir`、なければ入力の実パス)か入力のパスと一致する回を選ぶ
+- 保存先は作成・確認の後の実パスで読み書きする(安全な読み込みの境界の確認が実パスで行われるため。macOSの`/var`→`/private/var`等)
+- 差分の照合はパッケージごとにIDと別名の集合を作って行う(件数に比例する時間)。相手側の全件を走査する方式では、上限内の2万件同士で数秒〜十数秒、同期処理でサーバーが止まった(レビューで指摘)
+- 文字列の無害化は二重: 記録を解釈するとき(`unknownJson`の取り出し)と、応答を返す直前(`sanitizeDeep`)。どちらか一方が漏れても他方で止まる
 
 ## バックログ(2026-10-07)
 

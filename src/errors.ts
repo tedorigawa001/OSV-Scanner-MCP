@@ -53,7 +53,13 @@ export type ScanToolErrorKind =
   /** OSV-Scannerバイナリのダウンロードに失敗した(未対応プラットフォーム含む) */
   | "binary_download_failed"
   /** ダウンロードしたバイナリのチェックサムが埋め込み値と一致しない */
-  | "binary_checksum_mismatch";
+  | "binary_checksum_mismatch"
+  /** スキャンの実行履歴が無効(OSV_MCP_HISTORY未設定) */
+  | "history_disabled"
+  /** 実行履歴の保存先が安全でない(シンボリックリンク・他人の所有等)ため読み書きしない */
+  | "history_unavailable"
+  /** 指定した実行履歴のIDが無い・形式が不正 */
+  | "history_run_not_found";
 
 export class ScanToolError extends Error {
   constructor(

@@ -11,6 +11,9 @@
  * - OSV_MCP_PREFER_DOWNLOAD: 1/true指定時、PATH上のバイナリを使わず検証済み自動ダウンロードを優先
  * - OSV_MCP_NO_REMOTE_RESOLUTION: 1/true指定時、pom.xmlの推移的依存をdeps.devで解決しない
  * - OSV_MCP_NO_CANDIDATE_CHECK: 1/true指定時、suggest_fixの推奨先のOSV照会を行わない
+ * - OSV_MCP_HISTORY: 1/true指定時、スキャンの実行履歴(要約と差分用の識別子)をローカルに記録する(既定は無効)
+ * - OSV_MCP_HISTORY_DIR: 実行履歴の保存先(絶対パス。既定は$XDG_STATE_HOME/osv-scanner-mcp/history)
+ * - OSV_MCP_HISTORY_MAX_ENTRIES: 保持する実行履歴の件数(既定500)
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -22,6 +25,11 @@ import { handleScanProject } from "./tools/scanProject.js";
 import { handleScanJavaArtifact } from "./tools/scanJavaArtifact.js";
 import { handleScanSbom } from "./tools/scanSbom.js";
 import { handleSuggestFix } from "./tools/suggestFix.js";
+import { handleScanHistory } from "./tools/scanHistory.js";
+import { withHistory } from "./history/historyRecorder.js";
+import { historyConfigFromEnv } from "./history/historyStore.js";
+import type { HistoryTool } from "./history/historyRecord.js";
+import type { ToolResult } from "./tools/toolResult.js";
 import { realpathSync } from "node:fs";
 import os from "node:os";
 import { defaultCacheDir } from "./osv/binaryDownloader.js";
@@ -61,16 +69,23 @@ if (startupWarning !== null) {
     tmpDirReal,
     cacheDir: scannerPath ? undefined : defaultCacheDir(),
     scannerPath: scannerPath || undefined,
+    historyDir: historyConfigFromEnv().enabled ? historyConfigFromEnv().dir : undefined,
   })) {
     console.error(`osv-scanner-mcp: [warning] ${warning}`);
   }
 }
 
 // NOTE: リリース時はpackage.jsonのversionと同じ値に更新すること
+const SERVER_VERSION = "0.14.1";
 const server = new McpServer({
   name: "osv-scanner-mcp",
-  version: "0.14.1",
+  version: SERVER_VERSION,
 });
+
+const historyConfig = historyConfigFromEnv();
+/** スキャンのツールを実行履歴に記録する(OSV_MCP_HISTORYが無効なら何もしない) */
+const recorded = (tool: HistoryTool, input: string, run: () => Promise<ToolResult>) =>
+  withHistory(tool, input, run, { config: historyConfig, serverVersion: SERVER_VERSION, allowedRootSet: allowedRootFromEnv() !== undefined });
 
 server.registerTool(
   "scan_project",
@@ -95,7 +110,7 @@ server.registerTool(
     },
   },
   async ({ project_path }) =>
-    handleScanProject({ project_path }, { allowedRoot: allowedRootFromEnv() }),
+    recorded("scan_project", project_path, () => handleScanProject({ project_path }, { allowedRoot: allowedRootFromEnv() })),
 );
 
 server.registerTool(
@@ -115,10 +130,10 @@ server.registerTool(
     },
   },
   async ({ project_path }) =>
-    handleScanJavaProject(
+    recorded("scan_java_project", project_path, () => handleScanJavaProject(
       { project_path },
       { allowedRoot: allowedRootFromEnv() },
-    ),
+    )),
 );
 
 server.registerTool(
@@ -149,7 +164,7 @@ server.registerTool(
     },
   },
   async ({ project_path }) =>
-    handleSuggestFix({ project_path }, { allowedRoot: allowedRootFromEnv() }),
+    recorded("suggest_fix", project_path, () => handleSuggestFix({ project_path }, { allowedRoot: allowedRootFromEnv() })),
 );
 
 server.registerTool(
@@ -184,9 +199,9 @@ server.registerTool(
       artifact_path: z.string().min(1).describe("Absolute path to a JAR/WAR file, or to a directory to search"),
     },
   },
-  async ({ artifact_path }) => handleScanJavaArtifact(
+  async ({ artifact_path }) => recorded("scan_java_artifact", artifact_path, () => handleScanJavaArtifact(
     { artifact_path }, { allowedRoot: allowedRootFromEnv() },
-  ),
+  )),
 );
 
 server.registerTool(
@@ -201,8 +216,31 @@ server.registerTool(
       sbom_path: z.string().min(1).describe("Absolute path to a CycloneDX/SPDX JSON SBOM file"),
     },
   },
-  async ({ sbom_path }) => handleScanSbom(
+  async ({ sbom_path }) => recorded("scan_sbom", sbom_path, () => handleScanSbom(
     { sbom_path }, { allowedRoot: allowedRootFromEnv() },
+  )),
+);
+
+server.registerTool(
+  "scan_history",
+  {
+    title: "Show the scan history and what changed",
+    description:
+      "Lists recorded runs of the scan tools (scan_project, suggest_fix, scan_java_project, scan_java_artifact, scan_sbom), newest first, " +
+      "with their time, target, coverage, and vulnerability counts. With project_path, also compares the last two successful runs of each kind for that target: " +
+      "new_vulnerabilities, resolved_vulnerabilities (reason: version_changed, package_not_reported, or same_version_not_reported), version_changes, and coverage_changes. " +
+      "With run_id, returns the details of one run, including the recorded packages and vulnerability IDs. " +
+      "Recording is off by default and must be enabled with OSV_MCP_HISTORY=1 (otherwise the error kind is history_disabled). " +
+      "Changes reflect the OSV data at the time of each scan, so they can also appear when only the vulnerability database changed. " +
+      "Only summaries and identifiers are kept, not full results.",
+    inputSchema: {
+      project_path: z.string().min(1).optional().describe("Absolute path of a scanned target (project directory, lockfile, JAR/WAR, or SBOM) to filter by and compare"),
+      limit: z.number().int().min(1).max(50).optional().describe("Number of runs to list (default 10, maximum 50)"),
+      run_id: z.string().min(1).max(64).optional().describe("ID of a run from the runs list, to show its details"),
+    },
+  },
+  async ({ project_path, limit, run_id }) => handleScanHistory(
+    { project_path, limit, run_id }, { config: historyConfig, allowedRoot: allowedRootFromEnv() },
   ),
 );
 

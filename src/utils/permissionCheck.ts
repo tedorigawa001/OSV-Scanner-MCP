@@ -23,6 +23,8 @@ export interface PermissionCheckInput {
   cacheDir?: string;
   /** OSV_SCANNER_PATH(指定時はそのファイルの読み取りを確認する) */
   scannerPath?: string;
+  /** スキャンの実行履歴の保存先(OSV_MCP_HISTORYが有効な場合だけ確認する) */
+  historyDir?: string;
 }
 
 /** 権限モデルが有効なときに、欠けている許可を警告文の一覧で返す。無効なら空 */
@@ -57,6 +59,12 @@ export function permissionModelWarnings(
     warnings.push(
       `Writing to the osv-scanner cache is not allowed: ${input.cacheDir} ` +
         "(to use the automatic download, add --allow-fs-write and --allow-fs-read; otherwise set OSV_SCANNER_PATH)",
+    );
+  }
+  if (input.historyDir !== undefined && (!permission.has("fs.write", inside(input.historyDir)) || !permission.has("fs.read", inside(input.historyDir)))) {
+    warnings.push(
+      `Reading and writing the scan history directory is not allowed: ${input.historyDir} ` +
+        "(add --allow-fs-read and --allow-fs-write for it, or unset OSV_MCP_HISTORY; scans still run but are not recorded)",
     );
   }
   return warnings;
