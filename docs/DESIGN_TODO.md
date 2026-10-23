@@ -1320,6 +1320,8 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - 下限の印: 同じ名前・版を別のファイルで確定版として照会した場合は付けない(確定版の結果が実在を示すため)
 - 名前に`;`区切りの複数の指定(`Include="A;B"`)を扱う。`$(...)`・ワイルドカードを含む名前は照会せず(理由`property`)、`Update`・`Remove`の名前にあれば全ての名前を照会しない
 - 確認: 単体・統合のテスト(70件)、変異確認(対応付けの各規則・Conditionの親・Update・下限・deps.jsonのproject・DOCTYPE・bin/objの除外・下限の表示・関係の直接優先・非公開フィード・別の版の別グループ・参照なしのプロジェクトの14通りで、追加したテストが失敗する)。MCP経由で実バイナリ(2.7.0)に複数の形式を混ぜた構成を渡し、対応付け・未解決の理由・`bin`の除外が設計どおりであることを確認
+- **実物での確認(2026-10-23)**: 公開リポジトリの実物7件(Project-MONAI/monai-deploy-informatics-gatewayの`packages.lock.json`と`.csproj`、EasyPost/easypost-csharpの`packages.lock.json`(6つのフレームワーク)と`.csproj`、Tophness/StickyMouseの`obj/project.assets.json`と`.csproj`、bitmono-project/BitMonoの`*.deps.json`。利用者の許可を得てダウンロード、作業用の領域のみ)で確認。コピーのパッケージは、osv-scannerが元のファイルから読む全パッケージ(`--all-packages`)から自分のプロジェクトだけを除いたものと一致した(MONAI: 43件中`Project`の1件、BitMono: 16件中`type: project`の4件(`Echo`等。osv-scannerだけではNuGetとして照会される))。StickyMouseの`projectPath`(Windowsのパス)で対応付けできた
+- 実物の確認で判明: ダウンロード(`git clone`も同じ)はファイルを任意の順に書くため、更新日時のわずかな差で`project.assets.json`を古いと誤って示した。差が60秒を超える場合だけ示す
 
 ## バックログ(2026-10-07)
 

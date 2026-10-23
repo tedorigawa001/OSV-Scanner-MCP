@@ -301,6 +301,17 @@ describe("プロジェクトとの対応付け(detectProject)", () => {
     expect(project.nugetWarnings).toContain(NUGET_LOWER_BOUND_WARNING);
   });
 
+  it("回帰(実物の確認): cloneやダウンロードの書き込み順によるわずかな差では、project.assets.jsonを古いとしない", async () => {
+    const dir = await makeProject({
+      "App.csproj": csproj(""),
+      "obj/project.assets.json": JSON.stringify({ libraries: {}, project: { restore: { projectPath: "E:\\x\\App.csproj" } } }),
+    });
+    const now = Date.now();
+    await utimes(path.join(dir, "obj/project.assets.json"), new Date(now - 30_000), new Date(now - 30_000));
+    await utimes(path.join(dir, "App.csproj"), new Date(now), new Date(now));
+    expect((await detectProject(dir)).nugetWarnings).toEqual([]);
+  });
+
   it("プロジェクトのディレクトリのbin・objは走査せず、他のbinは走査する", async () => {
     const deps = (name: string) => JSON.stringify({ libraries: { [`${name}/1.0.0`]: { type: "package" } } });
     const dir = await makeProject({

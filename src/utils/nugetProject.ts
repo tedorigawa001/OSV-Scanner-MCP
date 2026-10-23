@@ -88,6 +88,11 @@ export interface NugetAnalysis {
 const MAX_JSON_FILE_BYTES = 16 * 1024 * 1024;
 const MAX_XML_FILE_BYTES = 4 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 64 * 1024 * 1024;
+/**
+ * project.assets.jsonがプロジェクトのファイルよりこれ以上古い場合だけ「古い可能性」を示す。
+ * git cloneやダウンロードはファイルを任意の順に書くため、わずかな差では古さを判断できない(実物の確認で判明)
+ */
+const STALE_ASSETS_TOLERANCE_MS = 60_000;
 /** 照会するパッケージの数の上限(スキャン全体) */
 export const MAX_NUGET_PACKAGES = 200_000;
 
@@ -281,7 +286,7 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
           stat(path.join(projectDir, assetsFile)).catch(() => null),
           stat(path.join(projectDir, project)).catch(() => null),
         ]);
-        if (assetsStat !== null && projectStat !== null && assetsStat.mtimeMs < projectStat.mtimeMs) {
+        if (assetsStat !== null && projectStat !== null && projectStat.mtimeMs - assetsStat.mtimeMs > STALE_ASSETS_TOLERANCE_MS) {
           result.warnings.push(`${assetsFile} is older than ${project}, so it may not reflect the current package references. Run \`dotnet restore\` and scan again`);
         }
         continue;
