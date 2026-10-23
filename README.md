@@ -499,7 +499,7 @@ Lists past runs of the scan tools (`scan_project`, `suggest_fix`, `scan_java_pro
 
 > **Note**: Changes are computed from the OSV data at the time of each scan, so they can also appear when only the vulnerability database changed.
 
-**What is recorded**: one JSON file per run, with the tool, time, server and pinned OSV-Scanner versions, the target paths, coverage, counts, and the packages with their vulnerability IDs and aliases (and, for `suggest_fix`, the recommended versions). Vulnerability summaries, details, and error messages are not recorded. A run whose record would exceed 1 MiB keeps only the summary (`findings_omitted`), and if that is still too large, only part of its manifest list (`manifests_truncated`; manifest changes are then not compared).
+**What is recorded**: one JSON file per run, with the tool, time, server and pinned OSV-Scanner versions, the target paths, coverage, counts, and the packages with their vulnerability IDs and aliases (and, for `suggest_fix`, the recommended versions). Vulnerability summaries, details, and error messages are not recorded. A run whose record would exceed 1 MiB keeps only the summary (`findings_omitted`), and if that is still too large, only part of its manifest list (`manifests_truncated`; manifest changes are then not compared). Target paths longer than 4,096 characters (longer than any path that can exist) are truncated and marked `target_truncated`.
 
 **Storage and safety**:
 

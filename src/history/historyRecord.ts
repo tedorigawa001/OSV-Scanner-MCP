@@ -60,6 +60,8 @@ export interface HistoryRecord {
   osv_scanner: { pinned_version: string; source: "OSV_SCANNER_PATH" | "pinned_download" | "PATH_or_pinned_download" };
   /** input: ツールに渡したパス / resolved: 比較・絞り込みに使う対象(プロジェクトのディレクトリ等の実パス) */
   target: { input: string; resolved: string };
+  /** 対象のパスが長さの上限を超えたため切り詰めた */
+  target_truncated?: true;
   allowed_root_set: boolean;
   status: "ok" | "error";
   error_kind?: string;
@@ -89,11 +91,18 @@ const MAX_ALIASES = 20;
 const MAX_MANIFESTS = 1_000;
 const MAX_TEXT = 512;
 const MAX_SEVERITY_KEYS = 16;
+/** 対象のパスの長さの上限(LinuxのPATH_MAX。これより長いパスは実在しえず、スキャンは失敗する) */
+const MAX_PATH = 4096;
 
 function text(value: unknown): string | null {
-  if (typeof value === "string") return value;
   const s = asString(value);
   return s === null ? null : s.slice(0, MAX_TEXT);
+}
+
+/** 対象のパス。照合に使うため、MAX_TEXTより長いパスもそのまま残す */
+function pathText(value: unknown): { path: string; truncated: boolean } | null {
+  const s = asString(value);
+  return s === null ? null : { path: s.slice(0, MAX_PATH), truncated: s.length > MAX_PATH };
 }
 
 function count(value: unknown): number | null {
@@ -198,6 +207,8 @@ export function buildHistoryRecord(context: RecordContext, responseText: string,
   } catch {
     payload = null;
   }
+  const input = pathText(context.inputPath) ?? { path: "", truncated: false };
+  const resolved = pathText(payload?.project_dir) ?? pathText(context.resolvedInput) ?? input;
   const base = {
     schema: 1 as const,
     id: context.id,
@@ -207,7 +218,8 @@ export function buildHistoryRecord(context: RecordContext, responseText: string,
     kind: scanKind(context.tool),
     server_version: context.serverVersion,
     osv_scanner: { pinned_version: context.pinnedScannerVersion, source: context.scannerSource },
-    target: { input: context.inputPath, resolved: text(payload?.project_dir) ?? context.resolvedInput },
+    target: { input: input.path, resolved: resolved.path },
+    ...(input.truncated || resolved.truncated ? { target_truncated: true as const } : {}),
     allowed_root_set: context.allowedRootSet,
   };
   const errorKind = text(asRecord(payload?.error)?.kind);
@@ -248,7 +260,7 @@ function fitting(value: unknown): string | null {
 /**
  * 保存する文字列。1件の上限(読み出しの上限と同じ)に必ず収める:
  * findingsを省き、それでも超えればマニフェストの一覧を半分ずつ減らし、最後は一覧を省く
- * (残りの項目は文字列の長さ・件数に上限があり、上限を十分に下回る)
+ * (残りの項目は文字列の長さ・件数に上限があり、上限を十分に下回る。対象のパスも含む)
  */
 export function serializeHistoryRecord(record: HistoryRecord): string {
   const full = fitting(record);
@@ -262,7 +274,10 @@ export function serializeHistoryRecord(record: HistoryRecord): string {
     const partial = fitting({ ...summary, manifests: manifests.slice(0, n), manifests_truncated: true });
     if (partial !== null) return partial;
   }
-  return JSON.stringify({ ...summary, manifests_truncated: true });
+  const last = fitting({ ...summary, manifests_truncated: true });
+  // 残りの項目はどれも大きさに上限があるため通常は届かない。読み戻せないファイルは書かない(記録側が警告する)
+  if (last === null) throw new Error("The history record exceeds the size limit even without findings and manifests");
+  return last;
 }
 
 /** 読み出した記録の形式を確かめる(履歴のファイルは信頼しない)。解釈できなければnull */
@@ -272,8 +287,8 @@ export function parseHistoryRecord(id: string, raw: unknown): HistoryRecord | nu
   const tool = asString(rec.tool);
   if (tool === null || !(HISTORY_TOOLS as readonly string[]).includes(tool)) return null;
   const target = asRecord(rec.target);
-  const input = text(target?.input);
-  const resolved = text(target?.resolved);
+  const input = pathText(target?.input)?.path ?? null;
+  const resolved = pathText(target?.resolved)?.path ?? null;
   const startedAt = text(rec.started_at);
   const status = rec.status === "ok" || rec.status === "error" ? rec.status : null;
   if (input === null || resolved === null || startedAt === null || status === null) return null;
@@ -309,6 +324,7 @@ export function parseHistoryRecord(id: string, raw: unknown): HistoryRecord | nu
       source: source === "OSV_SCANNER_PATH" || source === "pinned_download" ? source : "PATH_or_pinned_download",
     },
     target: { input, resolved },
+    ...(rec.target_truncated === true ? { target_truncated: true as const } : {}),
     allowed_root_set: rec.allowed_root_set === true,
     status,
     ...(status === "error" ? { error_kind: text(rec.error_kind) ?? "unknown" } : {}),

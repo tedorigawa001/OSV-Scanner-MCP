@@ -222,6 +222,39 @@ describe("buildHistoryRecord / parseHistoryRecord", () => {
     expect(saved.manifests!.length).toBeLessThan(1000);
   });
 
+  it("非常に長い入力パスで失敗した回も上限に収め、読み戻せる(パスは切り詰めて印を付ける)", async () => {
+    const huge = `/${"a".repeat(600_000)}`;
+    const record = buildHistoryRecord(context({ inputPath: huge, resolvedInput: huge }), JSON.stringify({ error: { kind: "project_not_found", message: "x" } }), true);
+    expect(record).toMatchObject({ status: "error", target_truncated: true });
+    expect(record.target.input).toHaveLength(4096);
+    const text = serializeHistoryRecord(record);
+    expect(Buffer.byteLength(text)).toBeLessThanOrEqual(1024 * 1024);
+    const dir = await tempDir();
+    await writeHistoryRecord(config(dir), record.id, text);
+    const { records, skipped } = await readHistoryRecords(config(dir));
+    expect(skipped).toBe(0);
+    expect(parseHistoryRecord(record.id, records[0]!.data)).toMatchObject({ target_truncated: true, target: { input: record.target.input } });
+  });
+
+  it("512文字を超える実在しうるパスは切り詰めずに保存し、読み戻しても一致する", () => {
+    const long = `/work/${"d".repeat(1500)}/app`;
+    const record = buildHistoryRecord(context({ inputPath: long, resolvedInput: long }), scanPayload([], { project_dir: long }), false);
+    const saved = parseHistoryRecord(record.id, JSON.parse(serializeHistoryRecord(record)))!;
+    expect(saved.target).toEqual({ input: long, resolved: long });
+    expect(saved.target_truncated).toBeUndefined();
+  });
+
+  it("どうしても上限に収まらない記録は書かずに例外にする(記録側が警告する)", () => {
+    const record = { ...buildHistoryRecord(context(), scanPayload([]), false), server_version: "x".repeat(2 * 1024 * 1024) };
+    expect(() => serializeHistoryRecord(record)).toThrow("size limit");
+  });
+
+  it("記録する文字列は作成時に無害化し、長さを抑える", () => {
+    const record = buildHistoryRecord(context(), scanPayload([pkg(`evil\u202e${"n".repeat(1000)}`, "1\u0007", [vuln("X\u200b")])]), false);
+    const [f] = record.findings!;
+    expect([f!.name.length, f!.name.includes("\u202e"), f!.version, f!.vulnerabilities[0]!.id]).toEqual([512, false, "1", "X"]);
+  });
+
   it("深刻度別の件数のキーの数を抑える", () => {
     const severity = Object.fromEntries(Array.from({ length: 1000 }, (_, i) => [`k${i}`, i]));
     const record = buildHistoryRecord(context(), scanPayload([], { severity_breakdown: severity }), false);

@@ -85,6 +85,7 @@ function detail(record: HistoryRecord) {
     server_version: record.server_version,
     osv_scanner: record.osv_scanner,
     allowed_root_set: record.allowed_root_set,
+    ...(record.target_truncated ? { target_truncated: true } : {}),
     ...(record.manifests !== undefined ? { manifests: record.manifests } : {}),
     ...(record.manifests_truncated ? { manifests_truncated: true } : {}),
     ...(record.coverage_gaps !== undefined ? { coverage_gaps: record.coverage_gaps } : {}),
