@@ -664,7 +664,8 @@ describe("workspaceIncludes: 検出全体で共有する計算量の上限(レ�
     const started = performance.now();
     // 空回りする実装では10,000回×100,000パターン(10億回)になり、この上限を大きく超える
     for (let i = 0; i < 10_000; i++) expect(workspaceIncludes(workspace, `m${i}`, total)).toBeNull();
-    expect(performance.now() - started).toBeLessThan(1_000);
+    // 正しい実装は数十ms。マシンの負荷(負荷平均49で1.4〜1.8秒)でも誤検知しない程度に余裕を取る(10億回は大きく超える)
+    expect(performance.now() - started).toBeLessThan(5_000);
   });
 
   it("文字どおりのメンバーの前方一致(excludeより優先)とexcludeは、globを含む文字列も従来どおり扱う", () => {

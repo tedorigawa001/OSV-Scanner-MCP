@@ -290,7 +290,7 @@ describe("プロジェクトとの対応付け(detectProject)", () => {
     for (let i = 0; i < 1_100; i++) files[`P${i}.csproj`] = "<Project />";
     const dir = await makeProject(files);
     await expect(detectProject(dir)).rejects.toMatchObject({ kind: "scan_input_too_large" });
-  });
+  }, 30_000); // 1,101件のファイルを書くため、並列実行の負荷で既定の5秒を超えることがある(npm publishの事前テストで発生)
   it("回帰: projectと補助ファイルにも件数制限を適用し、読み込み前に過大な対応付けを拒否する", async () => {
     const files = emptyNugetFiles();
     files.projectFiles = Array.from({ length: 10_001 }, (_, i) => `P${i}.csproj`);
