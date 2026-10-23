@@ -1,7 +1,7 @@
 /**
  * OSV-Scannerバイナリの解決(docs/DESIGN_TODO.md 方式C)。
- * MVPでは自動ダウンロードは行わず、「存在チェック → なければ案内メッセージ」で対応する。
- * 探索順: 環境変数 OSV_SCANNER_PATH → PATH上の osv-scanner
+ * 探索順: 環境変数 OSV_SCANNER_PATH → PATH上の osv-scanner → ピン留めした版の自動ダウンロード
+ * (チェックサム検証付き。binaryDownloader.ts)。詳細はresolveOsvScannerBinaryを参照
  */
 
 import { access, constants, stat } from "node:fs/promises";
