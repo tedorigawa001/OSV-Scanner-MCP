@@ -1314,12 +1314,14 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - 注意の文言は`coverage.warning`(範囲の欠けの定型文)とは別の`coverage.nuget_warnings`(配列)にした。下限・`project.assets.json`の古さ・直接依存だけの場合の確かめられない参照・非公開フィードを並べる。非公開フィードと古さは`complete`を変えない(範囲の欠けではないため)
 - `nuget.config`は、プロジェクトのディレクトリから上をたどる代わりに、スキャン対象の中の全ての`nuget.config`を確かめる(注意を示す側に広い)。解釈できない`nuget.config`も注意の対象
 - `Directory.Build.props`/`.targets`は、プロジェクトのディレクトリかその上(スキャン対象の中)にある全てのものの名前を使う(MSBuildが自動で読むのは最も近い1つだが、それが上位を読み込むことがあるため広く取る)。解釈できないものは`skipped_files`にし、その下の全ての参照を照会しない
-- パッケージの参照を書いていないプロジェクト(`ProjectReference`だけ等)は、直接依存だけの対象にも`lockfile_missing`にもしない(雑音を避ける)
+- 直接の`PackageReference`が無いプロジェクトも、確認済みの情報源が無ければ`lockfile_missing`(`direct_only`)に残す(当初は雑音を避けて無視していたが、`Directory.Build.props`やSDKが参照を加える構成で欠落を隠し、別のエコシステムのlockfileが同居すると`complete: true`になった。レビュー指摘)
+- `*.deps.json`のランタイムパックは、SDKがライブラリ名に`runtimepack.`を付ける(`runtimepack.Microsoft.NETCore.App.Runtime.linux-x64/8.0.0`)。接頭辞を除いて照会する(付けたままではOSVで0件、正しい名前で12件。当初のテストの入力は接頭辞の無い形で、実際の形と違っていた。レビュー指摘)
+- `NuGetLockFilePath`のあるプロジェクトは、既定の名前・名前付き(`packages.<名前>.lock.json`)のどちらのlockfileとも対応付けない(当初は名前付きの判定で先に返し、別の保存先を指定したプロジェクトが古い名前付きlockfileで確認済みになっていた。レビュー指摘)
 - `.csproj`を直接指定した場合は、他のマーカー(`package.json`等)と同じく、そのディレクトリを走査する
 - `packages.config`の`developmentDependency`による`dependency_groups: ["dev"]`は見送り(`dependency_groups`はosv-scannerの出力をそのまま返す項目で、本サーバーが付ける仕組みが無い)
 - 下限の印: 同じ名前・版を別のファイルで確定版として照会した場合は付けない(確定版の結果が実在を示すため)
 - 名前に`;`区切りの複数の指定(`Include="A;B"`)を扱う。`$(...)`・ワイルドカードを含む名前は照会せず(理由`property`)、`Update`・`Remove`の名前にあれば全ての名前を照会しない
-- 確認: 単体・統合のテスト(70件)、変異確認(対応付けの各規則・Conditionの親・Update・下限・deps.jsonのproject・DOCTYPE・bin/objの除外・下限の表示・関係の直接優先・非公開フィード・別の版の別グループ・参照なしのプロジェクトの14通りで、追加したテストが失敗する)。MCP経由で実バイナリ(2.7.0)に複数の形式を混ぜた構成を渡し、対応付け・未解決の理由・`bin`の除外が設計どおりであることを確認
+- 確認: 単体・統合のテスト(70件)、変異確認(対応付けの各規則・Conditionの親・Update・下限・deps.jsonのproject・DOCTYPE・bin/objの除外・下限の表示・関係の直接優先・非公開フィード・別の版の別グループの13通りと、レビュー指摘の修正3件(`runtimepack.`の接頭辞・名前付きlockfileの`NuGetLockFilePath`・参照の無いプロジェクトの欠け)で、追加したテストが失敗する)。MCP経由で実バイナリ(2.7.0)に複数の形式を混ぜた構成を渡し、対応付け・未解決の理由・`bin`の除外が設計どおりであることを確認
 - **実物での確認(2026-10-23)**: 公開リポジトリの実物7件(Project-MONAI/monai-deploy-informatics-gatewayの`packages.lock.json`と`.csproj`、EasyPost/easypost-csharpの`packages.lock.json`(6つのフレームワーク)と`.csproj`、Tophness/StickyMouseの`obj/project.assets.json`と`.csproj`、bitmono-project/BitMonoの`*.deps.json`。利用者の許可を得てダウンロード、作業用の領域のみ)で確認。コピーのパッケージは、osv-scannerが元のファイルから読む全パッケージ(`--all-packages`)から自分のプロジェクトだけを除いたものと一致した(MONAI: 43件中`Project`の1件、BitMono: 16件中`type: project`の4件(`Echo`等。osv-scannerだけではNuGetとして照会される))。StickyMouseの`projectPath`(Windowsのパス)で対応付けできた
 - 実物の確認で判明: ダウンロード(`git clone`も同じ)はファイルを任意の順に書くため、更新日時のわずかな差で`project.assets.json`を古いと誤って示した。差が60秒を超える場合だけ示す
 

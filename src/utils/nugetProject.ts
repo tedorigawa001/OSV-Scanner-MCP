@@ -151,14 +151,18 @@ function ownerOf(
 ): string | null {
   const named = pattern.exec(path.basename(file))?.[1];
   const projects = projectsByDir.get(path.dirname(file)) ?? [];
+  let owner: string | null;
   if (named !== undefined) {
     const matches = projects.filter((p) => projectBaseName(p) === named.toLowerCase());
-    return matches.length === 1 ? matches[0]! : null;
+    owner = matches.length === 1 ? matches[0]! : null;
+  } else {
+    owner = projects.length === 1 ? projects[0]! : null;
   }
-  if (projects.length !== 1) return null;
-  // NuGetLockFilePathは既定の名前のlockfileとの対応を変える(packages.configには関係しない)
-  if (pattern === NUGET_LOCKFILE && customLockPath.has(projects[0]!)) return null;
-  return projects[0]!;
+  // NuGetLockFilePathは既定の名前(名前付きの`packages.<名前>.lock.json`も含む)のlockfileとの対応を変える。
+  // 名前付きの分岐で先に返すと、別の保存先を指定したプロジェクトが古い名前付きlockfileで確認済みになっていた(レビュー指摘)。
+  // packages.configには関係しない
+  if (owner !== null && pattern === NUGET_LOCKFILE && customLockPath.has(owner)) return null;
+  return owner;
 }
 
 export async function analyzeNuget(projectDir: string, files: NugetFiles): Promise<NugetAnalysis> {
@@ -299,8 +303,8 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
       result.skippedFiles.push({ path: project, reason: analysis.reason });
       continue;
     }
-    // パッケージの参照を書いていないプロジェクト(参照するのはプロジェクトだけ等)は、範囲の欠けとして示さない
-    if (analysis.references.length === 0 && analysis.unresolved.length === 0) continue;
+    // 直接のPackageReferenceが無くても、復元の情報を確認できないプロジェクトは範囲の欠けとして残す
+    // (Directory.Build.props・SDKが参照を加える場合がある。無視すると他のlockfileと合わせてcomplete: trueになっていた。レビュー指摘)
     directOnly = true;
     const unconfirmed = unownedLockDirs.has(path.dirname(project)) || analysis.customLockFilePath;
     result.lockfileMissing.push({ path: project, status: unconfirmed ? "unconfirmed" : "direct_only", hint: unconfirmed ? UNCONFIRMED_HINT : DIRECT_ONLY_HINT });

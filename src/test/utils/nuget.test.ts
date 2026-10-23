@@ -115,7 +115,7 @@ describe("project.assets.json / deps.json / packages.config", () => {
     ]);
   });
 
-  it("deps.json: package・runtimepackを照会し、公開パッケージと同名でもproject・referenceは照会しない", () => {
+  it("deps.json: package・runtimepackを照会し、公開パッケージと同名でもproject・referenceは照会しない。runtimepack.の接頭辞は除く", () => {
     const parsed = parseDepsJson(JSON.stringify({
       targets: { t: { "app/1.0.0": { dependencies: { "System.Net.Http": "4.3.0" } } } },
       libraries: {
@@ -123,7 +123,8 @@ describe("project.assets.json / deps.json / packages.config", () => {
         "Newtonsoft.Json/12.0.1": { type: "project" },
         "System.Runtime.Ref/1.0.0": { type: "reference" },
         "System.Net.Http/4.3.0": { type: "package" },
-        "Microsoft.NETCore.App.Runtime.linux-x64/8.0.0": { type: "runtimepack" },
+        // SDKの実際の書き方(レビュー指摘): ライブラリ名に`runtimepack.`が付く。付けたままではOSVで一致しない
+        "runtimepack.Microsoft.NETCore.App.Runtime.linux-x64/8.0.0": { type: "runtimepack" },
       },
     }));
     expect(parsed.ok && parsed.packages).toEqual([
@@ -322,7 +323,8 @@ describe("プロジェクトとの対応付け(detectProject)", () => {
       "tools/bin/package-lock.json": '{"lockfileVersion":3,"packages":{}}',
     });
     const project = await detectProject(dir);
-    expect(project.manifests.map((m) => m.path).sort()).toEqual([path.join("tools", "bin", "package-lock.json"), path.join("tools", "bin", "tool.deps.json")]);
+    // 復元の情報の無いApp.csproj自体は直接依存だけの対象として残る
+    expect(project.manifests.map((m) => m.path).sort()).toEqual([path.join("App", "App.csproj"), path.join("tools", "bin", "package-lock.json"), path.join("tools", "bin", "tool.deps.json")]);
   });
 
   it("Directory.Build.propsで扱われる名前はその下のプロジェクトで照会しない。読めなければ全て照会しない", async () => {
@@ -337,10 +339,31 @@ describe("プロジェクトとの対応付け(detectProject)", () => {
     expect(project.skippedFiles.map((s) => s.path)).toEqual([path.join("other", "Directory.Build.targets")]);
   });
 
-  it("パッケージの参照の無いプロジェクトは範囲の欠けにしない。nuget.configの非公開フィードを警告する", async () => {
+  it("回帰(レビュー指摘): 直接のPackageReferenceが無くても、復元の情報の無いプロジェクトは欠けとして残す", async () => {
+    // Directory.Build.propsが依存を加える構成。別のエコシステムのlockfileが同居してもcomplete: trueにしない
+    const dir = await makeProject({
+      "Directory.Build.props": '<Project><ItemGroup><PackageReference Include="Newtonsoft.Json" Version="12.0.1" /></ItemGroup></Project>',
+      "Lib/Lib.csproj": "<Project />",
+      "web/package-lock.json": '{"lockfileVersion":3,"packages":{}}',
+    });
+    const project = await detectProject(dir);
+    expect(project.lockfileMissing.map((m) => [m.path, m.ecosystem, m.status])).toEqual([[path.join("Lib", "Lib.csproj"), "NuGet", "direct_only"]]);
+  });
+
+  it("回帰(レビュー指摘): NuGetLockFilePathのあるプロジェクトは、名前付きのpackages.<名前>.lock.jsonとも対応付けない", async () => {
+    const dir = await makeProject({
+      "App.csproj": csproj(ref("A", "1.0.0"), "<PropertyGroup><NuGetLockFilePath>locks/app.json</NuGetLockFilePath></PropertyGroup>"),
+      "packages.App.lock.json": lock({ A: { type: "Direct", resolved: "1.0.0" } }),
+    });
+    const project = await detectProject(dir);
+    expect(project.lockfileMissing.map((m) => m.status)).toEqual(["unconfirmed"]);
+    // 古いlockfileでも、載っているパッケージはスキャンする
+    expect(project.nugetCopies.map((c) => c.path)).toEqual(["packages.App.lock.json", "App.csproj"]);
+  });
+
+  it("確認済みのlockfileのあるプロジェクトは欠けにしない。nuget.configの非公開フィードを警告する", async () => {
     const dir = await makeProject({
       "nuget.config": '<configuration><packageSources><add key="corp" value="https://corp.example/v3/index.json" /></packageSources></configuration>',
-      "Lib/Lib.csproj": "<Project />",
       "App/App.csproj": csproj(""),
       "App/packages.lock.json": lock({ A: { type: "Direct", resolved: "1.0.0" } }),
     });
@@ -361,11 +384,12 @@ describe("プロジェクトとの対応付け(detectProject)", () => {
     expect((await detectProject(path.join(dir, "App.csproj"))).manifests.map((m) => m.path).sort()).toEqual(["go.mod", "packages.lock.json"]);
   });
 
-  it("スキャンできる.NETのファイルが無ければno_manifest_found(案内つき)", async () => {
+  it("照会できる参照が無いプロジェクトも対象として示す。解釈できるものが無ければno_manifest_found", async () => {
     const dir = await makeProject({ "App/App.csproj": csproj(ref("A", "$(V)")) });
     // 照会できる参照が無くても、直接依存だけの対象としてマニフェストに数える(未解決の参照を示すため)
     const project = await detectProject(dir);
     expect(project.unresolvedPackageReferences.map((u) => u.reason)).toEqual(["property"]);
-    await expect(detectProject(await makeProject({ "Lib/Lib.csproj": "<Project />" }))).rejects.toMatchObject({ kind: "no_manifest_found" });
+    // 解釈できないプロジェクトのファイルだけならno_manifest_found(理由つき)
+    await expect(detectProject(await makeProject({ "Lib/Lib.csproj": "<Project><!DOCTYPE x></Project>" }))).rejects.toMatchObject({ kind: "no_manifest_found" });
   });
 });

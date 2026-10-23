@@ -125,6 +125,8 @@ export function parsePackagesLock(source: string, budget: NpmLockWorkBudget = cr
   return { ok: true, ...out, packages: dedupe(out.packages), localProjects: localProjects.size };
 }
 
+const RUNTIME_PACK_PREFIX = "runtimepack.";
+
 /** `Name/Version`形式のライブラリのキー */
 function splitLibraryKey(key: string): { name: string; version: string } | null {
   const slash = key.lastIndexOf("/");
@@ -224,8 +226,11 @@ export function parseDepsJson(source: string, budget: NpmLockWorkBudget = create
     if (id === null) {
       out.unscannable.push({ name: key.slice(0, 200), version: "", reason: "invalid_library_key" });
     } else if (type === "package" || type === "runtimepack") {
-      const relation = projects.size === 0 ? "unknown" : direct.has(nugetKey(id.name)) ? "direct" : "transitive";
-      acceptResolved(id.name, id.version, relation, out);
+      // SDKはランタイムパックのライブラリ名に`runtimepack.`を付ける。付けたまま照会するとOSVで一致しない
+      // (Microsoft.NETCore.App.Runtime.linux-x64 8.0.0: 正しい名前で12件、接頭辞付きで0件。レビュー指摘、2026-10-23)
+      const name = type === "runtimepack" && id.name.toLowerCase().startsWith(RUNTIME_PACK_PREFIX) ? id.name.slice(RUNTIME_PACK_PREFIX.length) : id.name;
+      const relation = projects.size === 0 ? "unknown" : direct.has(nugetKey(name)) ? "direct" : "transitive";
+      acceptResolved(name, id.version, relation, out);
     } else if (type === "project" || type === "reference") {
       out.localProjects++;
     } else {
