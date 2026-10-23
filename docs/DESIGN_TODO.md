@@ -1169,6 +1169,114 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 - 差分の照合はパッケージごとにIDと別名の集合を作って行う(件数に比例する時間)。相手側の全件を走査する方式では、上限内の2万件同士で数秒〜十数秒、同期処理でサーバーが止まった(レビューで指摘)
 - 文字列の無害化は二重: 記録を解釈するとき(`unknownJson`の取り出し)と、応答を返す直前(`sanitizeDeep`)。どちらか一方が漏れても他方で止まる
 
+## .NET(NuGet)対応(v0.16.0候補)詳細設計メモ(2026-10-23)
+
+利用者の要望: .NETのプロジェクトも`scan_project`でスキャンしたい。v0.16.0はスキャン(検出・範囲・直接/推移的の区別)まで、`suggest_fix`のNuGet対応はv0.17.0(Rustと同じ二段階)。
+
+### 非目標
+
+- `dotnet restore`・MSBuildの実行や評価(プロパティ・条件・`<Import>`の解決)。ビルドは実行しない方針(既存と同じ)
+- ユーザー単位・マシン単位の`NuGet.Config`(`~/.nuget/NuGet/NuGet.Config`等)の読み込み。スキャン範囲の外を読まない
+- 中央パッケージ管理(`Directory.Packages.props`)の版の解決(lockfileへの誘導で対応。下の「中央パッケージ管理」)
+- `suggest_fix`のNuGet対応(v0.17.0)。v0.16.0では既存どおり`verification: "unsupported_ecosystem"`
+
+### 実機確認(osv-scanner 2.7.0、2026-10-23)
+
+Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
+
+| 形式 | osv-scannerの挙動 | 判断 |
+|---|---|---|
+| `packages.lock.json`(`RestorePackagesWithLockFile`) | 直接・推移的の全パッケージを確定版で照会。`type: Project`は照会しない | 主対象 |
+| `packages.config`(.NET Framework) | 確定版で照会(推移的も平坦に列挙される形式) | 対象 |
+| `*.deps.json`(ビルド出力) | `type: project`(自分のプロジェクト)も**NuGetのパッケージとして照会する**(公開パッケージと同名なら誤検知、社内名はapi.osv.devに送られる。Cargo.lockのローカルcrateと同じ問題) | コピーで除外して対象 |
+| `.csproj` | `Version="$(Prop)"`・範囲`[12.0.1,13.0.0)`を**そのまま版の文字列として照会する** | そのままは渡さない |
+| `Directory.Packages.props`・Versionの無い`PackageReference` | 読まない(エラー) | 範囲外として示す |
+
+- **解釈できない版の文字列はOSVで「全ての版より前」とみなされる**: api.osv.devに`$(NJ)`・`[12.0.1,13.0.0)`・`garbage`を送ると、どれも12.0.1と同じ脆弱性が返る(13.0.1は0件)。未解決の版を送ると、修正済みでも脆弱と報告される(誤検知)。**確定版と確認できたものだけを送る**
+- `.csproj`の`<Import Project="../...">`・`Directory.Build.props`はたどらない(範囲外のローカル参照は起きない)。ただし下の方針により、元のファイルはosv-scannerに渡さないため、そもそも依存しない
+- 複数のターゲットフレームワーク(`net48`・`net8.0`・`net8.0/linux-x64`)で版が違う場合、各版を照会する
+- 自己完結型アプリのランタイムパック(`Microsoft.NETCore.App.Runtime.linux-x64` 8.0.0)は脆弱性12件。照会対象に含める
+- サーバーが書く正規化した`packages.lock.json`を`--lockfile packages.lock.json:<絶対パス>`で渡すと、2.7.0・2.4.0とも同じ結果(フレームワーク名は任意の文字列でよい)
+
+### 方針: 全形式をサーバーが解析し、正規化したコピーだけを渡す
+
+- `packages.lock.json`・`packages.config`・`*.deps.json`・`obj/project.assets.json`・`.csproj`を、サーバーが読んで(`readRegularFile`、サイズ上限つき)解析し、**照会してよいパッケージだけを書いた`packages.lock.json`形式のコピー**をスナップショットに書く。元のファイルはosv-scannerに渡さない(Cargo.lock・requirements.txtと同じ。解釈の食い違いによる範囲外読み込み・誤照会を構造的に防ぐ)
+- `MANIFEST_FORMATS`に`packages.lock.json`を追加するが、渡すのはコピーだけ(Cargo.lockと同じ扱い。テストで元のファイルを渡さないことを確かめる)
+- コピーは(名前, 版)ごとに1件。同じ名前の別の版は別のフレームワークのグループに分けて書く(JSONのキーの重複を避ける)。応答のパスは元のファイルに戻す(既存のコピーの対応付けを使う)
+
+### 検出とプロジェクトごとの優先順位
+
+プロジェクトのディレクトリ = `*.csproj`・`*.fsproj`・`*.vbproj`のあるディレクトリ。ディレクトリごとに、次の順で最初に見つかったものを使う。
+
+1. `packages.lock.json`(同じディレクトリ) → 完全(直接・推移的)
+2. `obj/project.assets.json`(`dotnet restore`の生成物。lockfileを有効にしていない一般的なプロジェクトでも、復元済みならある) → 完全。ただしプロジェクトのファイルより古い場合は「古い可能性」を`coverage.warning`に示す(更新日時の比較)。**lockfileは既定で無効のため、これが無いと多くのプロジェクトで推移的依存を見られない**
+3. プロジェクトのファイルの`PackageReference` → **直接依存だけ**。確定版(後述)のものだけ照会し、それ以外は`unresolved_package_references`に理由つきで示す。`lockfile_missing`に`status: "direct_only"`(新しい値)で載せ、`RestorePackagesWithLockFile`の有効化を案内する
+
+その他:
+- `packages.config` → 完全(どのディレクトリでも)。`developmentDependency="true"`は`dependency_groups: ["dev"]`
+- `*.deps.json` → 直接指定された場合と、プロジェクトのディレクトリの`bin/`・`obj/`の外で見つかった場合(配置済みのアプリ等)。`bin/`・`obj/`の中は同じプロジェクトの重複になるため走査しない(走査関数に「プロジェクトのファイルがあるディレクトリの`bin`・`obj`を飛ばす」判定を追加。名前だけで飛ばすと他のエコシステムの`bin`まで飛ばすため)。`obj/project.assets.json`は走査ではなくプロジェクトのディレクトリから直接読む
+- `project_path`にファイルを直接指定した場合はその形式だけ(既存と同じ)
+
+### 各形式で照会するもの・しないもの
+
+| 形式 | 照会する | 自分のプロジェクト(数だけ数える: `local_projects`) | その他(`unscannable_nuget_packages`に理由つき) |
+|---|---|---|---|
+| `packages.lock.json` | `type`が`Direct`・`Transitive`・`CentralTransitive` | `Project` | 未知の`type`、確定版でない`resolved` |
+| `project.assets.json` | `libraries`の`type: package` | `project` | その他の`type` |
+| `*.deps.json` | `libraries`の`type`が`package`・`runtimepack` | `project`・`reference` | その他の`type` |
+| `packages.config` | `package`の`id`・`version` | — | 確定版でない`version` |
+
+- **確定版**: NuGetの版の形式(`^\d+(\.\d+){0,3}(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$`)か、完全一致の範囲`[x]`(xを使う)。`$(...)`・範囲・`*`(フローティング)・空は確定版でない
+- **名前**: NuGetのIDは大文字小文字を区別しないため、比較は小文字化して行い、最初の表記を使う。使える文字(`^[A-Za-z0-9_.-]{1,100}$`)以外は照会しない
+- `.csproj`の`PackageReference`: `Include`と`Version`(属性または子要素)。`Update=`(既存の参照の上書き)・`VersionOverride`・Versionなし(中央パッケージ管理)は`unresolved_package_references`(理由: `property` / `range` / `floating` / `central_package_management` / `update_only`)
+
+### 直接/推移的の区別
+
+- `packages.lock.json`: `Direct` / `Transitive`(`CentralTransitive`も推移的)
+- `project.assets.json`: `project.frameworks.*.dependencies`に載るものが直接
+- `*.deps.json`: `type: project`のライブラリの`dependencies`に載るものが直接
+- `packages.config`: 区別できない(`unknown`)。`.csproj`: 全て直接
+- `introduced_by`(どの直接依存が持ち込んだか)と`declared_in`はv0.17.0(`suggest_fix`と合わせて。Rustと同じ順序)
+
+### 中央パッケージ管理(`Directory.Packages.props`)
+
+- lockfile・`project.assets.json`があれば版は確定しているため問題ない
+- どちらも無い場合、版は`Directory.Packages.props`(上位のディレクトリをたどる・`<Import>`・条件を持てる)にあり、正しく解決するにはMSBuildの評価が要る。v0.16.0では解決せず、`unresolved_package_references`(理由`central_package_management`)にして、lockfileの有効化を案内する
+
+### 非公開フィード
+
+- lockfile等にはパッケージの取得元が記録されないため、非公開フィードのパッケージを見分けられない(Rustの`source`のような手がかりが無い)。**その名前もapi.osv.devに送られる**ことをREADME・SECURITY.md・ツールの説明に明記する
+- プロジェクトのディレクトリから`scan_project`の対象ディレクトリまでの`nuget.config`(大文字小文字を区別しない)に、nuget.org(`api.nuget.org`)以外の`packageSources`があれば、`coverage.warning`で「非公開フィードのパッケージ名も送られる」と示す(読むのはスキャン範囲の中だけ)
+- `packageSourceMapping`による非公開パッケージの除外は以降の候補
+
+### 上限と安全性
+
+- XML(`.csproj`・`packages.config`)は専用の小さな走査で読む(外部のライブラリは使わない)。`DOCTYPE`・`ENTITY`・CDATAは扱わず、そのファイルを`skipped_files`にする(エンティティ展開による資源枯渇を避ける。`pomParent.ts`と同じ考え方)。1件4MiB
+- JSON(`packages.lock.json`・`project.assets.json`・`*.deps.json`)は`npmLockCopy.ts`の事前検査(入れ子の深さ・構造の数)を共用し、1件16MiB・スキャン全体64MiB。上限を超えたファイルは`skipped_files`に理由つきで示す(スキャンは止めない)
+- 照会するパッケージの数はスキャン全体で上限を設ける(例: 20万件。超えた分は`skipped_files`)
+- 名前の一覧の照合はMap・Setで行う(件数に比例する時間。過去の二乗時間の指摘を踏まえる)
+
+### 応答の変更
+
+- `coverage`: `local_projects`(数)、`unscannable_nuget_packages`、`unresolved_package_references`を追加。`lockfile_missing`の`status`に`direct_only`を追加。`ecosystem_breakdown`に`NuGet`
+- 履歴: 範囲の欠けの件数に新しい一覧を加える(`historyRecord.ts`のGAP_FIELDS)
+- README・ツールの説明(`scan_project`のエコシステムの一覧)・SECURITY.md(送信先)を更新
+
+### 段階計画(推奨案)
+
+- **v0.16.0**: 上記のスキャン(`packages.lock.json`・`project.assets.json`・`packages.config`・`*.deps.json`・`.csproj`の直接依存)と直接/推移的の区別、非公開フィードの警告
+- **v0.17.0**: `suggest_fix`のNuGet対応(NuGetの版の順序: 4つ目の数・プレリリースの大文字小文字を区別しない比較・`1.0`=`1.0.0`の正規化)、`introduced_by`・`declared_in`、`dotnet add package X --version Y`の案内
+- 以降(要望があれば): 中央パッケージ管理の版の解決、`packageSourceMapping`による除外
+
+### 完了条件とテスト
+
+- 各形式の解析: 照会する・自分のプロジェクト・照会しないものの分類、確定版の判定(`$(...)`・範囲・`*`・`[x]`・4つ目の数・プレリリース)、名前の大文字小文字、複数のフレームワークの版
+- 優先順位: lockfileがあれば`project.assets.json`・`.csproj`を使わない、`project.assets.json`の古さの警告、`direct_only`
+- 走査: プロジェクトのディレクトリの`bin`・`obj`は飛ばし、他のエコシステムの`bin`は飛ばさない
+- 安全性: 元のファイルをosv-scannerに渡さない、XMLの`DOCTYPE`・`ENTITY`の拒否、JSON・XML・件数の上限、`nuget.config`はスキャン範囲の中だけ読む
+- 実バイナリでMCP経由: 各形式で既知の脆弱性を検出し、`type: project`の同名パッケージ・未解決の版を照会しないこと。2.4.0でも同じ結果
+- **実物のファイルでの確認**: 手元に.NET SDKが無いため、`dotnet restore`で生成した実物(`packages.lock.json`・`project.assets.json`・`*.deps.json`)は公開リポジトリから入手するか、利用者に用意してもらう(ダウンロードは許可を得てから)
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
