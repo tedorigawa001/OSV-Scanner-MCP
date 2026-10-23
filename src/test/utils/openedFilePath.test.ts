@@ -51,7 +51,15 @@ describe("OSの開いたファイルの実体パス(Linux/macOS/Windows)", () =>
     const file = await open(original, "r");
     try {
       const info = await file.stat();
-      await rename(dir, path.join(base, "moved"));
+      const moved = path.join(base, "moved");
+      if (process.platform === "win32") {
+        // Windowsは開いたファイルを含むディレクトリの移動をOSが拒否する(差し替え自体が起きない。CIで確認)。
+        // 移動できないことと、開いた実体が境界の内側のまま確認できることを確かめる
+        await expect(rename(dir, moved)).rejects.toMatchObject({ code: "EPERM" });
+        expect(await verifyOpenedFile(original, info, root, file)).toBeNull();
+        return;
+      }
+      await rename(dir, moved);
       expect(await verifyOpenedFile(original, info, root, file)).toBe("outside");
     } finally { await file.close(); }
   });
