@@ -1204,16 +1204,23 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - `MANIFEST_FORMATS`に`packages.lock.json`を追加するが、渡すのはコピーだけ(Cargo.lockと同じ扱い。テストで元のファイルを渡さないことを確かめる)
 - コピーは(名前, 版)ごとに1件。同じ名前の別の版は別のフレームワークのグループに分けて書く(JSONのキーの重複を避ける)。応答のパスは元のファイルに戻す(既存のコピーの対応付けを使う)
 
-### 検出とプロジェクトごとの優先順位
+### 検出とプロジェクトごとの対応付け
 
-プロジェクトのディレクトリ = `*.csproj`・`*.fsproj`・`*.vbproj`のあるディレクトリ。ディレクトリごとに、次の順で最初に見つかったものを使う。
+**単位はプロジェクトのファイル**(`*.csproj`・`*.fsproj`・`*.vbproj`)。ディレクトリ単位にしない: 同じディレクトリに複数のプロジェクトがある場合、1つのlockfileを全プロジェクトの完全な情報とみなせない(レビュー指摘)。プロジェクトごとに、**そのプロジェクトのものと確認できた**情報源を次の順で探し、最初に見つかったものを使う。
 
-1. `packages.lock.json`(同じディレクトリ) → 完全(直接・推移的)
-2. `obj/project.assets.json`(`dotnet restore`の生成物。lockfileを有効にしていない一般的なプロジェクトでも、復元済みならある) → 完全。ただしプロジェクトのファイルより古い場合は「古い可能性」を`coverage.warning`に示す(更新日時の比較)。**lockfileは既定で無効のため、これが無いと多くのプロジェクトで推移的依存を見られない**
-3. プロジェクトのファイルの`PackageReference` → **直接依存だけ**。確定版(後述)のものだけ照会し、それ以外は`unresolved_package_references`に理由つきで示す。`lockfile_missing`に`status: "direct_only"`(新しい値)で載せ、`RestorePackagesWithLockFile`の有効化を案内する
+1. **lockfile**(NuGetの公式の説明: 既定はプロジェクトのディレクトリの`packages.lock.json`、同じディレクトリに複数のプロジェクトがある場合は`packages.<プロジェクト名>.lock.json`、`NuGetLockFilePath`で別の場所も指定できる)
+   - `packages.<プロジェクト名>.lock.json`(プロジェクトのファイル名から拡張子を除いた名前。大文字小文字を区別しない) → そのプロジェクトのものと確認できる
+   - `packages.lock.json` → **そのディレクトリのプロジェクトのファイルが1つだけの場合に限り**、そのプロジェクトのものとする
+   - プロジェクトのファイルに`NuGetLockFilePath`がある場合(値は評価しない) → 既定の名前のlockfileがあっても対応付けを確認できないため、確認済みとはしない
+2. **`obj/project.assets.json`**(`dotnet restore`の生成物。lockfileは既定で無効のため、これが無いと多くのプロジェクトで推移的依存を見られない) → ファイルの`project.restore.projectPath`(または`projectName`)が**そのプロジェクトのファイルと一致する場合だけ**使う(同じディレクトリの複数のプロジェクトは`obj`を共有して上書きし合うため、名前で確かめる)。プロジェクトのファイルより古い場合は「古い可能性」を`coverage.warning`に示す(更新日時の比較)。`BaseIntermediateOutputPath`等で`obj`の場所を変えている場合は見つからず、3になる
+3. **プロジェクトのファイルの`PackageReference`** → 直接依存だけ(下の「`.csproj`の読み方」)。`lockfile_missing`に`status: "direct_only"`(新しい値)で載せ、`RestorePackagesWithLockFile`の有効化を案内する
+
+対応付けを確認できない場合:
+- どのプロジェクトのものか確認できないlockfile(複数のプロジェクトがあるディレクトリの`packages.lock.json`等)も、**載っているパッケージは実在するためスキャンする**。ただし、どのプロジェクトも確認済みにしない
+- 確認済みの情報源の無いプロジェクトは、3(直接依存だけ)で扱い、`lockfile_missing`には`status: "unconfirmed"`(既存の値)で「lockfileはあるが、このプロジェクトのものと確認できない」と示す。`coverage.complete`は`false`
 
 その他:
-- `packages.config` → 完全(どのディレクトリでも)。`developmentDependency="true"`は`dependency_groups: ["dev"]`
+- `packages.config`(.NET Framework。全ての依存が確定版で列挙される: NuGetの公式の説明) → 完全。プロジェクト別の`packages.<プロジェクト名>.config`も同じ規則で対応付ける。`developmentDependency="true"`は`dependency_groups: ["dev"]`
 - `*.deps.json` → 直接指定された場合と、プロジェクトのディレクトリの`bin/`・`obj/`の外で見つかった場合(配置済みのアプリ等)。`bin/`・`obj/`の中は同じプロジェクトの重複になるため走査しない(走査関数に「プロジェクトのファイルがあるディレクトリの`bin`・`obj`を飛ばす」判定を追加。名前だけで飛ばすと他のエコシステムの`bin`まで飛ばすため)。`obj/project.assets.json`は走査ではなくプロジェクトのディレクトリから直接読む
 - `project_path`にファイルを直接指定した場合はその形式だけ(既存と同じ)
 
@@ -1226,16 +1233,37 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 | `*.deps.json` | `libraries`の`type`が`package`・`runtimepack` | `project`・`reference` | その他の`type` |
 | `packages.config` | `package`の`id`・`version` | — | 確定版でない`version` |
 
-- **確定版**: NuGetの版の形式(`^\d+(\.\d+){0,3}(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$`)か、完全一致の範囲`[x]`(xを使う)。`$(...)`・範囲・`*`(フローティング)・空は確定版でない
+- **確定版**(復元の結果の形式で使う: lockfileの`resolved`・`project.assets.json`・`*.deps.json`・`packages.config`の`version`): NuGetの版の形式(`^\d+(\.\d+){0,3}(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$`)。それ以外の文字列は照会しない(解釈できない版はOSVで全ての脆弱性に一致するため)
 - **名前**: NuGetのIDは大文字小文字を区別しないため、比較は小文字化して行い、最初の表記を使う。使える文字(`^[A-Za-z0-9_.-]{1,100}$`)以外は照会しない
-- `.csproj`の`PackageReference`: `Include`と`Version`(属性または子要素)。`Update=`(既存の参照の上書き)・`VersionOverride`・Versionなし(中央パッケージ管理)は`unresolved_package_references`(理由: `property` / `range` / `floating` / `central_package_management` / `update_only`)
+
+### `.csproj`の読み方(直接依存だけの場合)
+
+**版の指定は確定版ではない**(レビュー指摘。NuGetの公式の説明: `Version="3.6.0"`は「3.6.0以上で最も低い版を優先」、完全一致は`[3.6.0]`。指定の版が無ければ、それより上の最も近い版に解決される):
+
+| 指定 | 扱い |
+|---|---|
+| `[x]`(完全一致) | 確定版xとして照会 |
+| `x`・`[x,)`・`[x,y)`・`[x,y]`(下限を含む) | **下限xとして照会**し、`version_is_lower_bound: true`を付ける(requirements.txtの`>=`と同じ扱い)。実際に復元される版はxより上でありうる(OSVの結果は下限の版のもの)ことを`coverage.warning`に示す |
+| `(x,)`・`(,y]`・`(x,y)`等(下限を含まない・下限が無い) | 照会しない(理由`range`) |
+| `$(...)`を含む | 照会しない(理由`property`) |
+| `*`を含む(フローティング) | 照会しない(理由`floating`) |
+| 版が無い(中央パッケージ管理) | 照会しない(理由`central_package_management`) |
+
+**評価しないため、使われるか確かめられない参照は照会しない**(レビュー指摘。NuGetの公式の説明: `PackageReference`と`ItemGroup`のどちらにも`Condition`を付けられる):
+
+- 照会するのは、`<Project>`の直下の`<ItemGroup>`の直下にある、**`Condition`の無い**`<PackageReference Include="...">`だけ。`PackageReference`自身・親の`ItemGroup`・子の`<Version>`のどれかに`Condition`がある場合、`<Choose>`/`<When>`/`<Otherwise>`の中、`<Target>`の中は照会しない(理由`conditional`)
+- `Update=`・`Remove=`で同じ名前を扱う要素がファイル内にある場合、**その名前の`Include`も全て照会しない**(理由`updated`/`removed`。`Update`だけ未解決にすると、先行する`Include`の古い版を照会してしまうため)
+- 同じ名前の`Include`が複数ある場合は照会しない(理由`duplicate`)
+- `VersionOverride`がある場合は照会しない(理由`central_package_management`)
+- プロジェクトのディレクトリからスキャン対象のディレクトリまでの`Directory.Build.props`・`Directory.Build.targets`(暗黙に読み込まれる)に`PackageReference`(`Include`・`Update`・`Remove`)がある場合、その名前も照会しない(理由`updated`)。スキャン対象の外の同名のファイルは確かめられないことを`coverage.warning`に示す
+- `.NET SDK`が暗黙に追加する参照(NuGetの公式の説明)はファイルに無いため含まれない。直接依存だけの場合は、そもそも`coverage.complete: false`
 
 ### 直接/推移的の区別
 
 - `packages.lock.json`: `Direct` / `Transitive`(`CentralTransitive`も推移的)
 - `project.assets.json`: `project.frameworks.*.dependencies`に載るものが直接
 - `*.deps.json`: `type: project`のライブラリの`dependencies`に載るものが直接
-- `packages.config`: 区別できない(`unknown`)。`.csproj`: 全て直接
+- `packages.config`: 区別できない(`unknown`)。`.csproj`(直接依存だけの場合): 全て直接
 - `introduced_by`(どの直接依存が持ち込んだか)と`declared_in`はv0.17.0(`suggest_fix`と合わせて。Rustと同じ順序)
 
 ### 中央パッケージ管理(`Directory.Packages.props`)
@@ -1259,6 +1287,7 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 ### 応答の変更
 
 - `coverage`: `local_projects`(数)、`unscannable_nuget_packages`、`unresolved_package_references`を追加。`lockfile_missing`の`status`に`direct_only`を追加。`ecosystem_breakdown`に`NuGet`
+- `.csproj`の下限の指定から照会したパッケージには、requirements.txtの下限と同じ`version_is_lower_bound: true`を付ける(`scan_project`・`suggest_fix`の既存のフィールド)
 - 履歴: 範囲の欠けの件数に新しい一覧を加える(`historyRecord.ts`のGAP_FIELDS)
 - README・ツールの説明(`scan_project`のエコシステムの一覧)・SECURITY.md(送信先)を更新
 
@@ -1271,7 +1300,9 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 ### 完了条件とテスト
 
 - 各形式の解析: 照会する・自分のプロジェクト・照会しないものの分類、確定版の判定(`$(...)`・範囲・`*`・`[x]`・4つ目の数・プレリリース)、名前の大文字小文字、複数のフレームワークの版
-- 優先順位: lockfileがあれば`project.assets.json`・`.csproj`を使わない、`project.assets.json`の古さの警告、`direct_only`
+- 対応付け: `packages.<名前>.lock.json`、1つのディレクトリに1つ・複数のプロジェクトがある場合の`packages.lock.json`、`NuGetLockFilePath`、`project.assets.json`の`projectPath`の一致・不一致、確認できないプロジェクトの`unconfirmed`と`complete: false`。確認できないlockfileもスキャンすること
+- 優先順位: 確認済みのlockfileがあれば`project.assets.json`・`.csproj`を使わない、`project.assets.json`の古さの警告、`direct_only`
+- `.csproj`: 版の指定の各形(完全一致・下限・下限を含まない範囲・`$(...)`・`*`・版なし)、`Condition`(参照・`ItemGroup`・子の`Version`)、`Choose`・`Target`の中、`Update`・`Remove`が先にも後にもある場合、重複、`VersionOverride`、`Directory.Build.props`/`.targets`の`PackageReference`
 - 走査: プロジェクトのディレクトリの`bin`・`obj`は飛ばし、他のエコシステムの`bin`は飛ばさない
 - 安全性: 元のファイルをosv-scannerに渡さない、XMLの`DOCTYPE`・`ENTITY`の拒否、JSON・XML・件数の上限、`nuget.config`はスキャン範囲の中だけ読む
 - 実バイナリでMCP経由: 各形式で既知の脆弱性を検出し、`type: project`の同名パッケージ・未解決の版を照会しないこと。2.4.0でも同じ結果
