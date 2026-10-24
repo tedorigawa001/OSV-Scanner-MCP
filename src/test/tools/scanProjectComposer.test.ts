@@ -31,6 +31,54 @@ function report(source = "composer.lock", fixed = "5.4.46", current = "v5.4.0") 
 }
 
 describe("Composer", () => {
+  it("excludes path packages, even with public names and release versions, in both dependency groups", () => {
+    const local = [{ name: "guzzlehttp/psr7", version: "1.8.1", dist: { type: "path", url: "../psr7" } },
+      { name: "acme/internal-billing", version: "1.0.0", dist: { type: "path", url: "../billing" } }];
+    const parsed = composerLockCopy(JSON.stringify({ packages: local, "packages-dev": local }));
+    expect(parsed.packageCount).toBe(0);
+    expect(parsed.content).not.toContain("guzzlehttp"); expect(parsed.content).not.toContain("internal-billing");
+    expect(parsed.issues).toHaveLength(2); expect(parsed.warnings).toEqual([]);
+  });
+  it("warns about uncertain source without treating notification-url as proof", () => {
+    const parsed = composerLockCopy(JSON.stringify({ packages: [
+      { name: "vendor/public", version: "1.0.0", "notification-url": "https://packagist.org/downloads/" },
+      { name: "vendor/fork", version: "1.0.0", source: { type: "git", url: "https://private.invalid/fork" } },
+    ] }));
+    expect(parsed.packageCount).toBe(2); expect(parsed.warnings).toHaveLength(1);
+    expect(parsed.warnings[0]).toContain("1 Composer package");
+    expect(parsed.warnings[0]).toContain("does not prove origin");
+    expect(parsed.content).not.toContain("private.invalid");
+  });
+  it("propagates path exclusion and source warnings to both tools without querying local packages", async () => {
+    await fixture({ "composer.lock": JSON.stringify({ packages: [...lock.packages,
+      { name: "guzzlehttp/psr7", version: "1.8.1", dist: { type: "path" } },
+      { name: "acme/internal-billing", version: "1.0.0", dist: { type: "path" } }] }) });
+    vi.mocked(runOsvScan).mockImplementation(async targets => {
+      const content = await readFile(targets[0]!.path, "utf8");
+      expect(content).not.toContain("guzzlehttp/psr7"); expect(content).not.toContain("acme/internal-billing");
+      return report(targets[0]!.path);
+    });
+    for (const result of [await handleScanProject({ project_path: dir }), await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled" })]) {
+      const p = JSON.parse(result.content[0]!.text);
+      expect(p.coverage.complete).toBe(false);
+      expect(p.coverage.skipped_files[0].reason).toContain("2 local path");
+      expect(p.coverage.composer_warnings[0]).toContain("notification URL");
+    }
+  });
+  it("capitalizes safe-read failures for Composer", async () => {
+    await fixture({ "composer.lock": JSON.stringify(lock), "bad/composer.lock": "x".repeat(16 * 1024 * 1024 + 1) });
+    const project = await detectProject(dir);
+    expect(project.skippedFiles.find(f => f.path === path.join("bad", "composer.lock"))?.reason).toBe("The file exceeds the size limit");
+  });
+  it("never starts the scanner for a project containing only local path packages", async () => {
+    await fixture({ "composer.lock": JSON.stringify({ packages: [{ name: "guzzlehttp/psr7", version: "1.8.1", dist: { type: "path" } }],
+      "packages-dev": [{ name: "acme/internal-billing", version: "1.0.0", dist: { type: "path" } }] }) });
+    const scan = JSON.parse((await handleScanProject({ project_path: dir })).content[0]!.text);
+    const fix = JSON.parse((await handleSuggestFix({ project_path: dir })).content[0]!.text);
+    expect(scan.coverage.complete).toBe(false); expect(scan.vulnerability_count).toBe(0);
+    expect(fix.suggestions).toEqual([]); expect(fix.coverage.complete).toBe(false);
+    expect(runOsvScan).not.toHaveBeenCalled();
+  });
   it.each([
     ["v1.2", "1.2.0.0", 0], ["1.2.0.1", "1.2.0", 1], ["1.2.0RC2", "1.2.0-RC10", -1],
     ["1.2.0-alpha1", "1.2.0-beta1", -1], ["1.2.0-RC1", "1.2.0", -1], ["1.2.0", "1.2.0-p1", -1],

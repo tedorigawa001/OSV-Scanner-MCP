@@ -194,6 +194,7 @@ export interface DetectedProject {
   requirementsCopies: RequirementsCopy[];
   cargoCopies: CargoCopy[];
   composerCopies?: ComposerCopy[];
+  composerWarnings?: string[];
   /** sourceなし(workspaceのメンバー・pathの依存)で、スキャンしなかったcrateの数(Cargo.lockごとに数えた合計) */
   localCrateCount: number;
   unscannableCrates: UnscannableCrateEntry[];
@@ -452,6 +453,7 @@ async function finalize(
     requirementsCopies: [],
     cargoCopies: [],
     composerCopies: [],
+    composerWarnings: [],
     localCrateCount: 0,
     unscannableCrates: [],
     lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache),
@@ -485,7 +487,7 @@ async function finalize(
     if (manifest.format === "composer.lock") {
       const read = await readRegularFile(absolute, { maxBytes: Math.min(MAX_NPM_LOCK_BYTES, composerBytes), boundary: projectDir });
       if (!read.ok) {
-        result.skippedFiles.push({ path: manifest.path, reason: read.message });
+        result.skippedFiles.push({ path: manifest.path, reason: capitalizeReason(read.message) });
         continue;
       }
       composerBytes -= read.bytes.length;
@@ -493,6 +495,7 @@ async function finalize(
         const parsed = composerLockCopy(read.bytes.toString("utf8"), composerBudget);
         if (parsed.packageCount > 0) result.composerCopies!.push({ path: manifest.path, content: parsed.content });
         result.skippedFiles.push(...parsed.issues.map((reason) => ({ path: manifest.path, reason })));
+        result.composerWarnings!.push(...parsed.warnings.map((warning) => `${manifest.path}: ${warning}`));
       } catch {
         result.skippedFiles.push({ path: manifest.path, reason: "composer.lock could not be parsed within the JSON size and work limits" });
         continue;

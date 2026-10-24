@@ -125,6 +125,7 @@ export function buildCoverage(project: DetectedProject) {
         }
       : {}),
     skipped_files: skipped.items.map((s) => ({ path: sanitizeExternalText(s.path), reason: sanitizeExternalText(s.reason) })),
+    ...((project.composerWarnings?.length ?? 0) > 0 ? { composer_warnings: project.composerWarnings!.slice(0, MAX_COVERAGE_ITEMS).map(sanitizeExternalText) } : {}),
     ...(omitted > 0 ? { omitted_items: omitted } : {}),
   };
 }
