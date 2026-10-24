@@ -7,13 +7,13 @@
 
 An MCP server that wraps Google's [OSV-Scanner](https://github.com/google/osv-scanner). Ask an MCP client such as Claude to "check this project for vulnerabilities", and it returns the known vulnerabilities (CVE / GHSA) in your dependencies as a report sorted by severity, together with recommended upgrades.
 
-> **Status**: [Published on npm](https://www.npmjs.com/package/osv-scanner-mcp) (`npx -y osv-scanner-mcp`). Supports lockfiles and manifests for Java (Maven / Gradle), JavaScript (npm / yarn / pnpm / bun), Python (Poetry / uv / Pipenv / PDM / requirements.txt), Go, Rust (`Cargo.lock`), and .NET (NuGet: `packages.lock.json`, `obj/project.assets.json`, `packages.config`, `*.deps.json`, and project files), with upgrade recommendations for Maven, npm, PyPI, Go, and crates.io. Setup instructions are provided for Claude Code, Claude Desktop, Codex CLI, Antigravity, and VS Code (GitHub Copilot).
+> **Status**: [Published on npm](https://www.npmjs.com/package/osv-scanner-mcp) (`npx -y osv-scanner-mcp`). Supports lockfiles and manifests for Java (Maven / Gradle), JavaScript (npm / yarn / pnpm / bun), Python (Poetry / uv / Pipenv / PDM / requirements.txt), Go, Rust (`Cargo.lock`), and .NET (NuGet: `packages.lock.json`, `obj/project.assets.json`, `packages.config`, `*.deps.json`, and project files), and PHP (Composer: `composer.lock`), with upgrade recommendations for Maven, npm, PyPI, Go, crates.io, and Packagist. Setup instructions are provided for Claude Code, Claude Desktop, Codex CLI, Antigravity, and VS Code (GitHub Copilot).
 
 ## Features
 
 - **PHP / Composer (source checkout)**: `scan_project` scans `composer.lock`, including both `packages` and `packages-dev`, as Packagist packages. `suggest_fix` recommends release versions and checks candidates against OSV. Composer and PHP code are never executed. See [Composer support](#composer-support).
-- **One-shot multi-language scan**: Pass a project path to `scan_project`, and it detects and scans the Java, JavaScript, Python, Go, Rust, and .NET lockfiles in the project together. Dependencies that could not be scanned (for example, a manifest without a lockfile or an unpinned requirement) are reported up front in `coverage`
-- **Upgrade recommendations**: `suggest_fix` recommends, for each vulnerable package, the upgrade closest to the current release line that addresses its fix targets, for Maven, npm, PyPI, Go, and Rust (crates.io). Known unfixed and informational advisories remain visible. The recommended version is also checked against the OSV database for additional fix-target vulnerabilities
+- **One-shot multi-language scan**: Pass a project path to `scan_project`, and it detects and scans the Java, JavaScript, Python, Go, Rust, .NET, and PHP lockfiles in the project together. Dependencies that could not be scanned (for example, a manifest without a lockfile or an unpinned requirement) are reported up front in `coverage`
+- **Upgrade recommendations**: `suggest_fix` recommends, for each vulnerable package, the upgrade closest to the current release line that addresses its fix targets, for Maven, npm, PyPI, Go, Rust (crates.io), and PHP (Packagist). Known unfixed and informational advisories remain visible. The recommended version is also checked against the OSV database for additional fix-target vulnerabilities
 - **Rust without false positives**: For `Cargo.lock`, only crates from crates.io are scanned. Your own workspace crates, git dependencies, and crates from private registries are not looked up as crates.io crates (OSV-Scanner alone would match them by name, and send their names to the OSV API). RustSec notices about unmaintained or unsound crates are labeled `informational` and counted apart from vulnerabilities
 - **.NET without guessing versions**: Each project file is matched to its own lockfile or `obj/project.assets.json`. Without one, only its direct `PackageReference` items are scanned, and a `Version="x"` (which means x or higher) is reported as a lower bound. References whose version cannot be known without running MSBuild (properties, conditions, floating versions, `Update` / `Remove`) are listed instead of being looked up: OSV treats an unparsable version as older than every release and would report every vulnerability for it
 - **Direct and transitive dependencies**: Packages are marked as direct or transitive dependencies (from `package-lock.json`, `go.mod`, `requirements.txt`, `pom.xml`, `Cargo.lock`, and the .NET files), and update hints are tailored accordingly, for example by naming the direct dependency that pulls in a transitive one
@@ -22,7 +22,7 @@ An MCP server that wraps Google's [OSV-Scanner](https://github.com/google/osv-sc
 - **SBOM scan**: `scan_sbom` checks the dependencies recorded in a CycloneDX/SPDX JSON SBOM. It states explicitly that the SBOM's completeness and its match with the actual artifacts are not verified
 - **Scan history (opt-in)**: With `OSV_MCP_HISTORY=1`, each scan is recorded locally, and `scan_history` lists past runs and shows what changed since the previous run (new and resolved vulnerabilities, version changes, coverage changes)
 - **Severity-sorted reports**: Vulnerabilities are grouped by package and sorted by CVSS score, with five severity labels (critical / high / medium / low / unknown) and summary counts
-- **Fixed versions**: Each vulnerability includes `fixed_versions`, sorted correctly by Maven version precedence (including non-semver forms such as `2.17.1-RELEASE`), Semantic Versioning precedence for npm, Go, and Rust, and PEP 440 for PyPI
+- **Fixed versions**: Each vulnerability includes `fixed_versions`, sorted correctly by Maven version precedence (including non-semver forms such as `2.17.1-RELEASE`), Semantic Versioning precedence for npm, Go, and Rust, PEP 440 for PyPI, and Composer ordering for Packagist
 - **Security first**: No shell execution, a fixed argument allowlist, path normalization and boundary checks, scanning private copies instead of the original files, and timeouts and output size limits are built in
 
 ## Composer support
@@ -219,7 +219,7 @@ Both api.osv.dev and deps.dev are operated by Google. **In every configuration, 
 
 ### `scan_project`
 
-Detects the lockfiles and manifests in a project and scans the Java / JavaScript / Python / Go / Rust / .NET dependencies together. Package managers and builds are never run.
+Detects the lockfiles and manifests in a project and scans the Java / JavaScript / Python / Go / Rust / .NET / PHP dependencies together. Package managers and builds are never run.
 
 **Input**
 
@@ -237,6 +237,7 @@ Detects the lockfiles and manifests in a project and scans the Java / JavaScript
 | Go | `go.mod` |
 | Rust (crates.io) | `Cargo.lock` (lockfile versions 1 to 4) |
 | .NET (NuGet) | `packages.lock.json` / `packages.<project>.lock.json`, `obj/project.assets.json`, `packages.config` / `packages.<project>.config`, `*.deps.json`, and `*.csproj` / `*.fsproj` / `*.vbproj` (direct references only, when no lockfile matches) |
+| PHP (Packagist) | `composer.lock` (`packages` and `packages-dev`; see [Composer support](#composer-support)) |
 
 `.git`, `node_modules`, `target`, `build`, `.idea`, `.vscode`, `.venv`, `venv`, `site-packages`, `__pycache__`, `.tox`, `vendor`, `.cargo`, `bin` and `obj` in a directory that contains a .NET project file (build output of that project), and symbolic links are not searched. Only the detected files are passed to OSV-Scanner, each with its format given explicitly (`coverage.manifests` in the response is exactly the scan scope). The search limits are the same as for `scan_java_project`.
 
@@ -309,7 +310,7 @@ Detects the lockfiles and manifests in a project and scans the Java / JavaScript
   - .NET: `Direct` / `Transitive` in `packages.lock.json`; the dependencies of `project.frameworks` in `project.assets.json`; the dependencies of the project library in `*.deps.json`; and every reference read from a project file are direct. `packages.config` does not say, so it is `unknown`. `introduced_by` and `declared_in` are not available yet
   - Other formats (`gradle.lockfile`, `yarn.lock`, `pnpm-lock.yaml`, `bun.lock`, `poetry.lock`, `uv.lock`, `Pipfile.lock`, and `pdm.lock`), npm lockfile version 1, and entries not reachable from the project are `unknown`. If lockfiles disagree, the value is `mixed`
 - `dependency_groups` is the raw dependency group reported by OSV-Scanner (for example `dev`). It is missing or inaccurate for some lockfile formats (absent for pnpm, `optional` for pdm, and so on), so treat it as informational
-- Upgrade recommendations (`suggest_fix`) are available for Maven, npm, PyPI, Go, and Rust (crates.io). NuGet packages are returned with `verification: "unsupported_ecosystem"` for now
+- Upgrade recommendations (`suggest_fix`) are available for Maven, npm, PyPI, Go, Rust (crates.io), and PHP (Packagist). NuGet packages are returned with `verification: "unsupported_ecosystem"` for now
 
 ### `scan_java_project`
 
@@ -374,7 +375,7 @@ If an existing parent POM cannot be read (larger than 10 MiB, not a regular file
 ```
 
 - `packages` is sorted by the most severe vulnerability, and each `vulnerabilities` list by severity (unknown last)
-- `fixed_versions` lists the fixed versions recorded in OSV, in ascending order: by Maven precedence for Maven, Semantic Versioning precedence for npm, Go, and Rust (values that are not valid SemVer come last), and PEP 440 for PyPI (in the order listed by OSV up to v0.5.0); other ecosystems keep the order listed by OSV (the order is not guaranteed). Several release lines may be mixed (for example a 2.12 backport and the 2.15 line). Pre-releases (`5.0.0-beta.3`) and Go pseudo-versions (`0.0.0-20180925071336-cf3bd585ca2a`) may be included. An empty array means that OSV lists no fixed version. Up to v0.4.1, this was always empty for packages outside Maven
+- `fixed_versions` lists the fixed versions recorded in OSV, in ascending order: by Maven precedence for Maven, Semantic Versioning precedence for npm, Go, and Rust (values that are not valid SemVer come last), PEP 440 for PyPI (in the order listed by OSV up to v0.5.0), and Composer ordering for Packagist (since v0.17.0); other ecosystems keep the order listed by OSV (the order is not guaranteed). Several release lines may be mixed (for example a 2.12 backport and the 2.15 line). Pre-releases (`5.0.0-beta.3`) and Go pseudo-versions (`0.0.0-20180925071336-cf3bd585ca2a`) may be included. An empty array means that OSV lists no fixed version. Up to v0.4.1, this was always empty for packages outside Maven
 - Vulnerabilities without a severity score are reported as `null` / `"unknown"`
 
 ### `scan_java_artifact`
@@ -431,7 +432,7 @@ Invalid JSON returns `invalid_sbom`, an unsupported format `unsupported_sbom_for
 
 ### `suggest_fix`
 
-Runs the same detection and scan as `scan_project` and recommends an **upgrade version** for each vulnerable package. Recommendations are available for Java (Maven / Gradle), JavaScript (npm), Python (PyPI), Go, and Rust (crates.io). Instead of simply taking the highest fixed version, it picks the fixed version closest to the current release line, falling back through three tiers:
+Runs the same detection and scan as `scan_project` and recommends an **upgrade version** for each vulnerable package. Recommendations are available for Java (Maven / Gradle), JavaScript (npm), Python (PyPI), Go, Rust (crates.io), and PHP (Packagist / Composer). Instead of simply taking the highest fixed version, it picks the fixed version closest to the current release line, falling back through three tiers:
 
 | Tier | Meaning |
 |---|---|
@@ -643,6 +644,7 @@ Design notes and open items are in [docs/DESIGN_TODO.md](docs/DESIGN_TODO.md) (i
 - [x] `suggest_fix` and direct/transitive dependencies for Rust
 - [x] Scan history and changes between runs (`scan_history`, opt-in)
 - [x] `scan_project` for .NET (NuGet), with per-project matching and lower bounds for project files
+- [x] `scan_project` and `suggest_fix` for PHP (Composer `composer.lock`)
 - [ ] `suggest_fix` for .NET (NuGet)
 - [ ] Direct and transitive dependencies for `gradle.lockfile` and the YAML/TOML lockfiles
 
