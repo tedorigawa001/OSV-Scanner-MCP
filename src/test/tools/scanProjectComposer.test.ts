@@ -37,7 +37,8 @@ describe("Composer", () => {
     const parsed = composerLockCopy(JSON.stringify({ packages: local, "packages-dev": local }));
     expect(parsed.packageCount).toBe(0);
     expect(parsed.content).not.toContain("guzzlehttp"); expect(parsed.content).not.toContain("internal-billing");
-    expect(parsed.issues).toHaveLength(2); expect(parsed.warnings).toEqual([]);
+    // 自分のコードは範囲の欠けにせず、数だけ返す(local_crates・local_projectsと同じ)
+    expect(parsed.issues).toEqual([]); expect(parsed.localPackages).toBe(4); expect(parsed.warnings).toEqual([]);
   });
   it("warns about uncertain source without treating notification-url as proof", () => {
     const parsed = composerLockCopy(JSON.stringify({ packages: [
@@ -60,8 +61,9 @@ describe("Composer", () => {
     });
     for (const result of [await handleScanProject({ project_path: dir }), await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled" })]) {
       const p = JSON.parse(result.content[0]!.text);
-      expect(p.coverage.complete).toBe(false);
-      expect(p.coverage.skipped_files[0].reason).toContain("2 local path");
+      expect(p.coverage.complete).toBe(true);
+      expect(p.coverage.local_composer_packages).toBe(2);
+      expect(p.coverage.skipped_files).toEqual([]);
       expect(p.coverage.composer_warnings[0]).toContain("notification URL");
     }
   });
@@ -75,8 +77,9 @@ describe("Composer", () => {
       "packages-dev": [{ name: "acme/internal-billing", version: "1.0.0", dist: { type: "path" } }] }) });
     const scan = JSON.parse((await handleScanProject({ project_path: dir })).content[0]!.text);
     const fix = JSON.parse((await handleSuggestFix({ project_path: dir })).content[0]!.text);
-    expect(scan.coverage.complete).toBe(false); expect(scan.vulnerability_count).toBe(0);
-    expect(fix.suggestions).toEqual([]); expect(fix.coverage.complete).toBe(false);
+    // 照会する第三者のパッケージが無いだけで、範囲の欠けではない
+    expect(scan.coverage).toMatchObject({ complete: true, local_composer_packages: 2, skipped_files: [] }); expect(scan.vulnerability_count).toBe(0);
+    expect(fix.suggestions).toEqual([]); expect(fix.coverage.complete).toBe(true);
     expect(runOsvScan).not.toHaveBeenCalled();
   });
   it.each([
@@ -98,8 +101,14 @@ describe("Composer", () => {
   it("reports unscannable branch versions and malformed entries", () => {
     const parsed = composerLockCopy(JSON.stringify({ packages: [null, { name: "vendor/pkg", version: "dev-main" }, { name: "vendor/ok", version: "1.2.3" }] }));
     expect(JSON.parse(parsed.content).packages).toHaveLength(1);
-    expect(parsed.issues[0]).toContain("2 packages entries");
+    expect(parsed.issues[0]).toContain("2 entries in packages");
     expect(() => composerLockCopy('{"packages":{}}')).toThrow();
+  });
+  it("does not add local_composer_packages to projects without composer.lock", async () => {
+    await fixture({ "go.mod": "module x\n" });
+    vi.mocked(runOsvScan).mockResolvedValue(parseOsvScanOutput({ results: [] }));
+    const scan = JSON.parse((await handleScanProject({ project_path: dir })).content[0]!.text);
+    expect(Object.keys(scan.coverage)).not.toContain("local_composer_packages");
   });
   it("detects nested lockfiles, ignores vendor, and reports independent composer.json without its own lock", async () => {
     await fixture({ "composer.lock": JSON.stringify(lock), "composer.json": "{}", "child/composer.json": "{}", "vendor/ignored/composer.lock": JSON.stringify(lock) });
@@ -125,6 +134,7 @@ describe("Composer", () => {
     });
     const scan = JSON.parse((await handleScanProject({ project_path: dir })).content[0]!.text);
     expect(scan.coverage.complete).toBe(true); expect(scan.ecosystem_breakdown.Packagist.vulnerability_count).toBe(1);
+    expect(scan.coverage.local_composer_packages).toBe(0);
     const fixes = JSON.parse((await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled" })).content[0]!.text);
     expect(fixes.suggestions[0]).toMatchObject({ recommended_upgrade: "5.4.46", verification: "verified", candidate_check: "disabled" });
     expect(fixes.suggestions[0].update_hint).toContain("composer.json");

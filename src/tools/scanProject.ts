@@ -125,6 +125,8 @@ export function buildCoverage(project: DetectedProject) {
         }
       : {}),
     skipped_files: skipped.items.map((s) => ({ path: sanitizeExternalText(s.path), reason: sanitizeExternalText(s.reason) })),
+    // Composer: 自分のコード(dist.type=path)は数だけ示し、completeには影響させない(local_crates・local_projectsと同じ)
+    ...(project.manifests.some((m) => m.format === "composer.lock") ? { local_composer_packages: project.composerLocalPackages ?? 0 } : {}),
     ...((project.composerWarnings?.length ?? 0) > 0 ? { composer_warnings: project.composerWarnings!.slice(0, MAX_COVERAGE_ITEMS).map(sanitizeExternalText) } : {}),
     ...(omitted > 0 ? { omitted_items: omitted } : {}),
   };

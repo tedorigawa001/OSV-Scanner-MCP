@@ -195,6 +195,8 @@ export interface DetectedProject {
   cargoCopies: CargoCopy[];
   composerCopies?: ComposerCopy[];
   composerWarnings?: string[];
+  /** composer.lockのdist.type=path(自分のコード)で、照会しなかったパッケージの数 */
+  composerLocalPackages?: number;
   /** sourceなし(workspaceのメンバー・pathの依存)で、スキャンしなかったcrateの数(Cargo.lockごとに数えた合計) */
   localCrateCount: number;
   unscannableCrates: UnscannableCrateEntry[];
@@ -454,6 +456,7 @@ async function finalize(
     cargoCopies: [],
     composerCopies: [],
     composerWarnings: [],
+    composerLocalPackages: 0,
     localCrateCount: 0,
     unscannableCrates: [],
     lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache),
@@ -496,6 +499,7 @@ async function finalize(
         if (parsed.packageCount > 0) result.composerCopies!.push({ path: manifest.path, content: parsed.content });
         result.skippedFiles.push(...parsed.issues.map((reason) => ({ path: manifest.path, reason })));
         result.composerWarnings!.push(...parsed.warnings.map((warning) => `${manifest.path}: ${warning}`));
+        result.composerLocalPackages! += parsed.localPackages;
       } catch {
         result.skippedFiles.push({ path: manifest.path, reason: "composer.lock could not be parsed within the JSON size and work limits" });
         continue;
