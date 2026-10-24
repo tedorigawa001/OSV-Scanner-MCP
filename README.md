@@ -11,6 +11,7 @@ An MCP server that wraps Google's [OSV-Scanner](https://github.com/google/osv-sc
 
 ## Features
 
+- **PHP / Composer (source checkout)**: `scan_project` scans `composer.lock`, including both `packages` and `packages-dev`, as Packagist packages. `suggest_fix` recommends release versions and checks candidates against OSV. Composer and PHP code are never executed. See [Composer support](#composer-support).
 - **One-shot multi-language scan**: Pass a project path to `scan_project`, and it detects and scans the Java, JavaScript, Python, Go, Rust, and .NET lockfiles in the project together. Dependencies that could not be scanned (for example, a manifest without a lockfile or an unpinned requirement) are reported up front in `coverage`
 - **Upgrade recommendations**: `suggest_fix` recommends, for each vulnerable package, the upgrade closest to the current release line that addresses its fix targets, for Maven, npm, PyPI, Go, and Rust (crates.io). Known unfixed and informational advisories remain visible. The recommended version is also checked against the OSV database for additional fix-target vulnerabilities
 - **Rust without false positives**: For `Cargo.lock`, only crates from crates.io are scanned. Your own workspace crates, git dependencies, and crates from private registries are not looked up as crates.io crates (OSV-Scanner alone would match them by name, and send their names to the OSV API). RustSec notices about unmaintained or unsound crates are labeled `informational` and counted apart from vulnerabilities
@@ -23,6 +24,16 @@ An MCP server that wraps Google's [OSV-Scanner](https://github.com/google/osv-sc
 - **Severity-sorted reports**: Vulnerabilities are grouped by package and sorted by CVSS score, with five severity labels (critical / high / medium / low / unknown) and summary counts
 - **Fixed versions**: Each vulnerability includes `fixed_versions`, sorted correctly by Maven version precedence (including non-semver forms such as `2.17.1-RELEASE`), Semantic Versioning precedence for npm, Go, and Rust, and PEP 440 for PyPI
 - **Security first**: No shell execution, a fixed argument allowlist, path normalization and boundary checks, scanning private copies instead of the original files, and timeouts and output size limits are built in
+
+## Composer support
+
+Pass a project directory, `composer.lock`, or `composer.json` to `scan_project` or `suggest_fix`. The lockfile records both direct and transitive dependencies; their relationship is currently reported as `unknown`. A `composer.json` without a lockfile in the same directory is reported as missing/unconfirmed in `coverage.lockfile_missing` (a project with no scannable files returns `no_manifest_found`). An ancestor's lockfile does not establish coverage for an independent child project. `vendor` directories are not traversed.
+
+The server reads each lockfile safely and scans a private sanitized copy containing only package names and release versions. Repository URLs, dist/source commit references, scripts, and credentials are not passed to OSV-Scanner. Both production and development packages are included. JSON is limited to 16 MiB per lockfile and 64 MiB per scan, with structural work limits. Invalid JSON is excluded; invalid entries and unsupported versions are omitted and reported in `skipped_files`, making `coverage.complete` false.
+
+Composer version comparison supports classical numeric releases with one to four components, an optional `v` prefix, and alpha/beta/RC/stable/patch suffixes (including their short forms). Branch/dev versions, aliases, and other formats such as date-based tags are not evaluated. An advisory with unsupported version boundaries cannot establish a verified fix. Upgrade tiers follow the existing cautious 0.x rules; they do not guarantee compatibility with your constraints or PHP runtime. Update the applicable constraints in `composer.json` and regenerate the lockfile in a trusted environment; check PHP and extension requirements first. The server does not run Composer or change project files.
+
+**Privacy:** private Composer package names and versions are also sent to `api.osv.dev`. A lockfile alone cannot establish whether a package comes from public Packagist; same-name private packages can produce false positives. `coverage.complete` describes inspected dependency entries, not the lockfile's freshness or its match with `composer.json`, and does not verify the PHP runtime or extensions.
 
 ## Requirements
 

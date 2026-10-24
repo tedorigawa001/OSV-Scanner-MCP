@@ -13,6 +13,7 @@
 import { compareMavenVersions, mavenVersionSeries } from "../utils/mavenVersion.js";
 import { compareParsedPep440, parsePep440, type Pep440Version } from "../utils/pep440Version.js";
 import { compareParsedSemver, parseSemver } from "../utils/semverVersion.js";
+import { compareComposerVersions, parseComposerVersion } from "../utils/composerVersion.js";
 
 const SEMVER_ECOSYSTEMS = new Set(["npm", "Go", "crates.io"]);
 
@@ -126,8 +127,26 @@ const PEP440_SCHEME: VersionScheme = {
   },
 };
 
+/** Composer: classical release ordering, with conservative 0.x upgrade tiers. */
+const COMPOSER_SCHEME: VersionScheme = {
+  isValid: (v) => parseComposerVersion(v) !== null,
+  compare: compareComposerVersions,
+  isPrerelease: (v) => (parseComposerVersion(v)?.stability ?? 3) < 3,
+  classify(current, candidate) {
+    const a = parseComposerVersion(current), b = parseComposerVersion(candidate);
+    if (!a || !b) return "cross_major";
+    return classifyCaret({ major: a.parts[0]!, minor: a.parts[1]!, patch: a.parts[2]! },
+      { major: b.parts[0]!, minor: b.parts[1]!, patch: b.parts[2]! });
+  },
+  seriesLabel(v) {
+    const parsed = parseComposerVersion(v);
+    return parsed ? `${parsed.parts[0]}.${parsed.parts[1]}` : null;
+  },
+};
+
 /** 修正版の推奨に対応するエコシステムの操作。未対応ならnull */
 export function versionSchemeFor(ecosystem: string): VersionScheme | null {
+  if (ecosystem === "Packagist") return COMPOSER_SCHEME;
   if (ecosystem === "Maven") return MAVEN_SCHEME;
   if (SEMVER_ECOSYSTEMS.has(ecosystem)) return SEMVER_SCHEME;
   if (ecosystem === "PyPI") return PEP440_SCHEME;

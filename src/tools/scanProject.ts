@@ -356,6 +356,11 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
       targets.push({ path: generated, format: "packages.lock.json" });
       relationSources.push({ copy: generated, format: "packages.lock.json", originalRelative: copy.path, nugetPackages: copy.packages });
     }
+    for (const copy of project.composerCopies ?? []) {
+      const generated = await snapshot.writeGenerated(copy.content);
+      targets.push({ path: generated, format: "composer.lock" });
+      relationSources.push({ copy: generated, format: "composer.lock", originalRelative: copy.path });
+    }
     if (targets.length === 0) return parseOsvScanOutput({ results: [] });
     const report = await withScopeNotes(project.skippedFiles, () => snapshot.guard(() => runOsvScan(targets, options)));
     // 判定はコピーを読むため、スナップショットを消す前に行う

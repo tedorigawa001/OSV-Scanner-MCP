@@ -20,6 +20,7 @@ export const MANIFEST_FORMATS = [
   "go.mod",
   "Cargo.lock",
   "packages.lock.json",
+  "composer.lock",
 ] as const;
 
 export type ManifestFormat = (typeof MANIFEST_FORMATS)[number];

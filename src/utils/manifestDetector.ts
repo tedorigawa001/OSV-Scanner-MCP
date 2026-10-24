@@ -58,7 +58,9 @@ import {
 } from "./nugetProject.js";
 import type { UnresolvedReason } from "./nugetFiles.js";
 
-export type Ecosystem = "Maven" | "npm" | "PyPI" | "Go" | "crates.io" | "NuGet";
+import { composerLockCopy, type ComposerCopy } from "./composerLock.js";
+
+export type Ecosystem = "Maven" | "npm" | "PyPI" | "Go" | "crates.io" | "NuGet" | "Packagist";
 
 /** ファイル名→(エコシステム, 解析形式)。npm-shrinkwrap.jsonはpackage-lock.json形式で解析する */
 const LOCKFILES = new Map<string, { ecosystem: Ecosystem; format: ManifestFormat }>([
@@ -76,12 +78,13 @@ const LOCKFILES = new Map<string, { ecosystem: Ecosystem; format: ManifestFormat
   ["pdm.lock", { ecosystem: "PyPI", format: "pdm.lock" }],
   ["go.mod", { ecosystem: "Go", format: "go.mod" }],
   ["Cargo.lock", { ecosystem: "crates.io", format: "Cargo.lock" }],
+  ["composer.lock", { ecosystem: "Packagist", format: "composer.lock" }],
 ]);
 
 /** requirements.txt / requirements-dev.txt / dev-requirements.txt 等 */
 const REQUIREMENTS_NAME = /^(?:[\w.]+[-_])?requirements(?:[-_][\w.]+)?\.txt$/;
 
-type LockGroup = "npm" | "pypi" | "gradle" | "cargo";
+type LockGroup = "npm" | "pypi" | "gradle" | "cargo" | "composer";
 
 /** lockfileが無ければスキャンできないマニフェスト */
 const LOCK_MARKERS = new Map<string, LockGroup>([
@@ -95,11 +98,13 @@ const LOCK_MARKERS = new Map<string, LockGroup>([
   ["settings.gradle", "gradle"],
   ["settings.gradle.kts", "gradle"],
   ["Cargo.toml", "cargo"],
+  ["composer.json", "composer"],
 ]);
 
-const LOCK_GROUP_ECOSYSTEM: Record<LockGroup, Ecosystem> = { npm: "npm", pypi: "PyPI", gradle: "Maven", cargo: "crates.io" };
+const LOCK_GROUP_ECOSYSTEM: Record<LockGroup, Ecosystem> = { npm: "npm", pypi: "PyPI", gradle: "Maven", cargo: "crates.io", composer: "Packagist" };
 
 const LOCKFILE_HINTS: Record<LockGroup, string> = {
+  composer: "No composer.lock. Generate it in a trusted environment with `composer update --no-install --no-scripts --no-plugins`, then scan again. Composer and PHP code are never executed by this server",
   npm:
     "No lockfile. Run `npm install --package-lock-only --ignore-scripts` in a trusted environment " +
     "(for yarn / pnpm / bun, generate the lockfile with that tool), then scan again",
@@ -188,6 +193,7 @@ export interface DetectedProject {
   targets: ManifestTarget[];
   requirementsCopies: RequirementsCopy[];
   cargoCopies: CargoCopy[];
+  composerCopies?: ComposerCopy[];
   /** sourceなし(workspaceのメンバー・pathの依存)で、スキャンしなかったcrateの数(Cargo.lockごとに数えた合計) */
   localCrateCount: number;
   unscannableCrates: UnscannableCrateEntry[];
@@ -445,6 +451,7 @@ async function finalize(
     targets: [],
     requirementsCopies: [],
     cargoCopies: [],
+    composerCopies: [],
     localCrateCount: 0,
     unscannableCrates: [],
     lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache),
@@ -460,6 +467,8 @@ async function finalize(
     hasNuget: Object.values(nugetFiles).some((list) => list.length > 0),
   };
   const readContext = createRequirementsReadContext();
+  const composerBudget = createNpmLockWorkBudget();
+  let composerBytes = MAX_NPM_LOCK_TOTAL_BYTES;
   // A null value permanently marks a crate name with multiple declaration paths.
   const cargoManifests = new Map<string, string | null>();
   const cargoMarkers = new Set([
@@ -473,7 +482,22 @@ async function finalize(
   }
   for (const manifest of manifests) {
     const absolute = path.join(projectDir, manifest.path);
-    if (manifest.format === "requirements.txt") {
+    if (manifest.format === "composer.lock") {
+      const read = await readRegularFile(absolute, { maxBytes: Math.min(MAX_NPM_LOCK_BYTES, composerBytes), boundary: projectDir });
+      if (!read.ok) {
+        result.skippedFiles.push({ path: manifest.path, reason: read.message });
+        continue;
+      }
+      composerBytes -= read.bytes.length;
+      try {
+        const parsed = composerLockCopy(read.bytes.toString("utf8"), composerBudget);
+        if (parsed.packageCount > 0) result.composerCopies!.push({ path: manifest.path, content: parsed.content });
+        result.skippedFiles.push(...parsed.issues.map((reason) => ({ path: manifest.path, reason })));
+      } catch {
+        result.skippedFiles.push({ path: manifest.path, reason: "composer.lock could not be parsed within the JSON size and work limits" });
+        continue;
+      }
+    } else if (manifest.format === "requirements.txt") {
       const analysis = await analyzeRequirementsFile(absolute, projectDir, readContext);
       if (!analysis.ok) {
         result.skippedFiles.push({ path: manifest.path, reason: analysis.reason });

@@ -75,6 +75,7 @@ export interface PackageUpgradeSuggestion {
 const TIER_ORDER: readonly UpgradeTier[] = ["same_minor", "major_internal", "cross_major"];
 
 const UPDATE_HINTS: Record<string, string> = {
+  Packagist: "Update the applicable constraints in composer.json, then regenerate composer.lock in a trusted environment with composer update vendor/package --with-all-dependencies --no-scripts --no-plugins. For a transitive dependency, update the package that requires it or adjust its constraints. Check PHP and extension requirements and application compatibility before updating; Composer is not executed by this server",
   npm:
     "For a direct dependency, update the version in package.json. For a transitive dependency, update the direct dependency that requires it, " +
     "or set the version with overrides in the root package.json (effective only in the root project)",

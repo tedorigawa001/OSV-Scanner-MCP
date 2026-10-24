@@ -90,11 +90,11 @@ const recorded = (tool: HistoryTool, input: string, run: () => Promise<ToolResul
 server.registerTool(
   "scan_project",
   {
-    title: "Scan project dependencies for vulnerabilities (Java / JavaScript / Python / Go / Rust / .NET)",
+    title: "Scan project dependencies for vulnerabilities (Java / JavaScript / Python / Go / Rust / .NET / PHP)",
     description:
       "Detects the lockfiles and manifests in a project and scans the dependencies for known vulnerabilities (CVE/GHSA). " +
       "Supported: Java (pom.xml / gradle.lockfile), JavaScript (package-lock.json / npm-shrinkwrap.json / yarn.lock / pnpm-lock.yaml / bun.lock), " +
-      "Python (poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt), Go (go.mod), Rust (Cargo.lock), " +
+      "Python (poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt), Go (go.mod), Rust (Cargo.lock), PHP (composer.lock, including packages-dev), " +
       ".NET (packages.lock.json / obj/project.assets.json / packages.config / *.deps.json, and the direct PackageReference items of .csproj / .fsproj / .vbproj files without them). " +
       "Package managers and builds are never run. " +
       "Always check coverage at the top of the response: it lists manifests without a lockfile, requirements lines without a pinned version, and excluded files. " +
@@ -105,7 +105,8 @@ server.registerTool(
       "The project's own projects are counted in local_projects. Names of packages from private NuGet feeds are also sent to api.osv.dev; see nuget_warnings. " +
       "Vulnerabilities marked informational (RustSec notices such as unmaintained or unsound crates) are not counted in vulnerability_count; they are counted in informational_count. " +
       "Each package's dependency_relation tells whether it is a direct or transitive dependency (determined for package-lock.json, go.mod, requirements.txt, and pom.xml; unknown otherwise). " +
-      "If coverage.complete is false, do not conclude that the project is safe even with zero findings. Upgrade recommendations (suggest_fix) are available for Java, JavaScript, Python, Go, and Rust (not yet for .NET). Cargo.lock dependency graphs provide direct/transitive relations, introduced_by, and uniquely mapped declaring Cargo.toml paths in declared_in.",
+      "Composer files are scanned from sanitized copies containing package names and release versions only; branch/dev versions and invalid entries are excluded and reported in skipped_files. Composer and PHP code are never run. Private Composer package names are sent to api.osv.dev, since their origin cannot be established from a lockfile alone. " +
+      "If coverage.complete is false, do not conclude that the project is safe even with zero findings. Upgrade recommendations (suggest_fix) are available for Java, JavaScript, Python, Go, Rust, and PHP (not yet for .NET). Cargo.lock dependency graphs provide direct/transitive relations, introduced_by, and uniquely mapped declaring Cargo.toml paths in declared_in.",
     inputSchema: {
       project_path: z
         .string()
@@ -146,7 +147,8 @@ server.registerTool(
     title: "Recommend upgrades that fix vulnerabilities",
     description:
       "Scans the project with the same detection as scan_project and recommends an upgrade version for each vulnerable package. " +
-      "Recommendations are available for Java (Maven / Gradle), JavaScript (npm), Python (PyPI), Go, and Rust (crates.io). " +
+      "Recommendations are available for Java (Maven / Gradle), JavaScript (npm), Python (PyPI), Go, Rust (crates.io), and PHP (Packagist / Composer). " +
+      "Composer recommendations support classical numeric release versions with up to four components and alpha/beta/RC/patch suffixes; dev branches, aliases, and unsupported version formats are not evaluated. Check PHP/extension constraints and application compatibility before upgrading. " +
       "The fixed version closest to the current release line is chosen with a three-tier fallback " +
       "(same_minor: same release line -> major_internal: same major version -> cross_major: major upgrade), " +
       "and the response gives the recommended version, the upgrade distance (upgrade_tier), and the fixed version per CVE. For npm, Go, PyPI, and Rust, a minor update within 0.x is also cross_major (may include breaking changes). " +
