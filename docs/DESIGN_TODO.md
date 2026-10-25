@@ -1338,6 +1338,14 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - MCPと実際のOSV-Scanner 2.7.0で、lockfile・assets・packages.config・deps.json・直接参照のみ・不正XML混在・ランタイムパックの7ケースを確認。Newtonsoft.Json 12.0.1 → 13.0.1、Microsoft.NETCore.App.Runtime.linux-x64 8.0.0 → 8.0.32。候補のOSV再照会はいずれもclean。検証用ファイルは不変。
 - `introduced_by`/`declared_in`の拡張と復元の実行はこの実装に含めない。パッケージの推奨版はNuGetフィードでの存在確認や対象TFM/RIDでの復元を代替しない。リリース番号は変更しない。
 
+## Composerの依存関係(2026-10-26、ソース実装)
+
+- lockfileと同じディレクトリのcomposer.jsonを安全に一度読み、require/require-devを直接依存とする。lockfileの各パッケージのrequireをたどり、到達する依存にintroduced_byを付ける。依存パッケージのrequire-dev/suggest/conflictはたどらない。直接宣言はプロジェクト相対のcomposer.jsonをdeclared_inに示す(推移的依存に直接宣言は付けない)。同じ依存が直接かつ別ルート由来ならdirectとintroduced_byを併記。
+- 名前の重複、provide/replaceにより曖昧な参照、仮想依存、到達できない依存は推測しない。制約の充足やlockfileの鮮度を検証するソルバーではない。循環は訪問済み集合で止め、全Composerファイルで共有する2,000,000操作の予算を超えた解析はunknown。introduced_byは既存の10件/省略数の上限に従う。
+- path/branch依存はグラフの中継点にはなるが、スキャナー入力には引き続き含めない。pathのURLや依存パッケージの実ファイルをたどらない。composer.jsonは4MiBまでで、入力・JSON予算をComposer全体で共有する。無い/読めない/解釈できない場合は関係だけunknownとし、lockfileの検査は継続する。
+- scan_project/suggest_fixとも同じ捕捉済みグラフを使う。Composerの更新案内は直接依存のdeclared_in、推移的依存のintroduced_byに合わせる。
+- MCPとOSV-Scanner 2.7.0で、symfony/http-kernel v5.4.0(直接) → symfony/http-foundation v5.4.0(推移的)、開発依存のsymfony/process v5.4.0(直接)を確認。修正提案は順に5.4.20/5.4.50/5.4.51、候補照会は全てclean。検証用ファイルは不変。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。

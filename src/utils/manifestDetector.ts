@@ -59,6 +59,7 @@ import {
 import type { UnresolvedReason } from "./nugetFiles.js";
 
 import { composerLockCopy, type ComposerCopy } from "./composerLock.js";
+import { composerRelations, composerRootRequirements, createComposerRelationBudget } from "./composerRelations.js";
 
 export type Ecosystem = "Maven" | "npm" | "PyPI" | "Go" | "crates.io" | "NuGet" | "Packagist";
 
@@ -473,6 +474,7 @@ async function finalize(
   };
   const readContext = createRequirementsReadContext();
   const composerBudget = createNpmLockWorkBudget();
+  const composerRelationBudget = createComposerRelationBudget();
   let composerBytes = MAX_NPM_LOCK_TOTAL_BYTES;
   // A null value permanently marks a crate name with multiple declaration paths.
   const cargoManifests = new Map<string, string | null>();
@@ -496,7 +498,21 @@ async function finalize(
       composerBytes -= read.bytes.length;
       try {
         const parsed = composerLockCopy(read.bytes.toString("utf8"), composerBudget);
-        if (parsed.packageCount > 0) result.composerCopies!.push({ path: manifest.path, content: parsed.content });
+        if (parsed.packageCount > 0) {
+          let relations = null;
+          const companion = await readRegularFile(path.join(path.dirname(absolute), "composer.json"), {
+            maxBytes: Math.min(4 * 1024 * 1024, composerBytes), boundary: projectDir,
+          });
+          if (companion.ok) {
+            composerBytes -= companion.bytes.length;
+            try {
+              const roots = composerRootRequirements(companion.bytes.toString("utf8"), composerBudget);
+              if (roots !== null) relations = composerRelations(parsed.relationPackages, roots, composerRelationBudget);
+            } catch { /* A companion failure affects relationships, not the scanned lockfile. */ }
+          }
+          if (relations === null) result.composerWarnings!.push(`${manifest.path}: Dependency relationships are unknown because its companion composer.json is unavailable/uninterpretable or the dependency analysis limit was reached; locked release packages are still scanned`);
+          result.composerCopies!.push({ path: manifest.path, content: parsed.content, relations });
+        }
         result.skippedFiles.push(...parsed.issues.map((reason) => ({ path: manifest.path, reason })));
         result.composerWarnings!.push(...parsed.warnings.map((warning) => `${manifest.path}: ${warning}`));
         result.composerLocalPackages! += parsed.localPackages;

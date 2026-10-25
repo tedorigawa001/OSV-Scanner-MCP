@@ -199,6 +199,7 @@ interface RelationSource {
   cargoPackages?: readonly CargoPackage[];
   declaringManifests?: ReadonlyMap<string, string>;
   nugetPackages?: readonly NugetPackage[];
+  composerLookup?: RelationLookup;
 }
 
 /**
@@ -212,7 +213,7 @@ export async function buildRelationLookups(
   const lookups = new Map<string, SourceRelations>();
   const npmWorkBudget = createNpmLockWorkBudget();
   let remaining = maxTotalBytes;
-  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages } of copies) {
+  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages, composerLookup } of copies) {
     const lockDir = originalRelative === null ? "" : path.dirname(originalRelative);
     let lookup: RelationLookup = null;
     try {
@@ -232,6 +233,8 @@ export async function buildRelationLookups(
         lookup = cargoLockRelations(cargoPackages, declaringManifests);
       } else if (format === "packages.lock.json" && nugetPackages !== undefined) {
         lookup = nugetRelations(nugetPackages);
+      } else if (format === "composer.lock") {
+        lookup = composerLookup ?? null;
       }
     } catch {
       lookup = null; // 解析できないファイルはunknown(スキャン自体は続ける)
@@ -362,7 +365,7 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
     for (const copy of project.composerCopies ?? []) {
       const generated = await snapshot.writeGenerated(copy.content);
       targets.push({ path: generated, format: "composer.lock" });
-      relationSources.push({ copy: generated, format: "composer.lock", originalRelative: copy.path });
+      relationSources.push({ copy: generated, format: "composer.lock", originalRelative: copy.path, composerLookup: copy.relations });
     }
     if (targets.length === 0) return parseOsvScanOutput({ results: [] });
     const report = await withScopeNotes(project.skippedFiles, () => snapshot.guard(() => runOsvScan(targets, options)));

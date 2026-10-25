@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -64,7 +64,7 @@ describe("Composer", () => {
       expect(p.coverage.complete).toBe(true);
       expect(p.coverage.local_composer_packages).toBe(2);
       expect(p.coverage.skipped_files).toEqual([]);
-      expect(p.coverage.composer_warnings[0]).toContain("notification URL");
+      expect(p.coverage.composer_warnings.some((w: string) => w.includes("notification URL"))).toBe(true);
     }
   });
   it("capitalizes safe-read failures for Composer", async () => {
@@ -151,6 +151,53 @@ describe("Composer", () => {
     const scan = JSON.parse((await handleScanProject({ project_path: dir })).content[0]!.text);
     expect(scan.coverage.complete).toBe(false); expect(scan.vulnerability_count).toBe(0);
     expect(runOsvScan).not.toHaveBeenCalled();
+  });
+  it("propagates direct/transitive origins and declaration paths to scan_project and suggest_fix", async () => {
+    await fixture({ "app/composer.json": JSON.stringify({ require: { "vendor/root": "^1" } }),
+      "app/composer.lock": JSON.stringify({ packages: [{ name: "vendor/root", version: "1.0.0", require: { "symfony/http-foundation": "^5.4" } }, ...lock.packages] }) });
+    vi.mocked(runOsvScan).mockImplementation(async targets => {
+      // Keep scanner source metadata for both package objects.
+      const raw = JSON.parse(JSON.stringify({ results: [{ source: { path: targets[0]!.path, type: "lockfile" }, packages: [
+        { package: { name: "symfony/http-foundation", version: "v5.4.0", ecosystem: "Packagist" }, groups: [{ ids: ["GHSA-test"], aliases: [] }] },
+        { package: { name: "vendor/root", version: "1.0.0", ecosystem: "Packagist" }, groups: [{ ids: ["GHSA-root"], aliases: [] }] },
+      ] }] }));
+      const sourced = parseOsvScanOutput(raw);
+      sourced.packages.find(p => p.name === "symfony/http-foundation")!.vulnerabilities = report().packages[0]!.vulnerabilities;
+      // Once captured, a changed original manifest must not change the relationship analysis.
+      await writeFile(path.join(dir, "app/composer.json"), "{}");
+      return sourced;
+    });
+    const scan = JSON.parse((await handleScanProject({ project_path: dir })).content[0]!.text);
+    expect(scan.packages.find((p: { name: string }) => p.name === "vendor/root")).toMatchObject({ dependency_relation: "direct", declared_in: [path.join("app", "composer.json")] });
+    expect(scan.packages.find((p: { name: string }) => p.name === "symfony/http-foundation")).toMatchObject({ dependency_relation: "transitive", introduced_by: ["vendor/root"] });
+    await writeFile(path.join(dir, "app/composer.json"), JSON.stringify({ require: { "vendor/root": "^1" } }));
+    const fix = JSON.parse((await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled" })).content[0]!.text);
+    expect(fix.suggestions.find((p: { package: string }) => p.package === "symfony/http-foundation")).toMatchObject({ dependency_relation: "transitive", introduced_by: ["vendor/root"], recommended_upgrade: "5.4.46" });
+    expect(fix.suggestions.find((p: { package: string }) => p.package === "symfony/http-foundation").update_hint).toContain("vendor/root");
+  });
+  it.each(["missing", "malformed"])("%s composer.json leaves scanning intact and relations unknown", async mode => {
+    await fixture({ "composer.lock": JSON.stringify(lock), ...(mode === "malformed" ? { "composer.json": "not-json" } : {}) });
+    vi.mocked(runOsvScan).mockImplementation(async targets => report(targets[0]!.path));
+    const scan = JSON.parse((await handleScanProject({ project_path: dir })).content[0]!.text);
+    expect(scan.coverage.complete).toBe(true); expect(scan.packages[0].dependency_relation).toBe("unknown");
+    expect(scan.coverage.composer_warnings.some((w: string) => w.includes("relationships are unknown"))).toBe(true);
+  });
+  it.skipIf(process.platform === "win32")("does not follow a symlinked companion manifest", async () => {
+    await fixture({ "composer.lock": JSON.stringify(lock), "other.json": JSON.stringify({ require: { "symfony/http-foundation": "*" } }) });
+    await symlink(path.join(dir, "other.json"), path.join(dir, "composer.json"));
+    vi.mocked(runOsvScan).mockImplementation(async targets => report(targets[0]!.path));
+    const scan = JSON.parse((await handleScanProject({ project_path: dir })).content[0]!.text);
+    expect(scan.coverage.complete).toBe(true); expect(scan.packages[0].dependency_relation).toBe("unknown");
+  });
+  it("does not reuse an ancestor manifest and isolates companions for independent projects", async () => {
+    await fixture({ "composer.json": JSON.stringify({ require: { "symfony/http-foundation": "*" } }),
+      "a/composer.lock": JSON.stringify(lock), "a/composer.json": JSON.stringify({ require: { "symfony/http-foundation": "*" } }),
+      "b/composer.lock": JSON.stringify(lock), "b/composer.json": "{}", "c/composer.lock": JSON.stringify(lock) });
+    const project = await detectProject(dir);
+    const copies = new Map(project.composerCopies!.map(c => [c.path, c]));
+    expect(copies.get(path.join("a", "composer.lock"))!.relations!("symfony/http-foundation", "v5.4.0").relation).toBe("direct");
+    expect(copies.get(path.join("b", "composer.lock"))!.relations!("symfony/http-foundation", "v5.4.0").relation).toBe("unknown");
+    expect(copies.get(path.join("c", "composer.lock"))!.relations).toBeNull();
   });
   it.each([["0.1.0", "0.2.0", "cross_major"], ["1.0.0", "1.1.0", "major_internal"], ["1.0.0", "1.0.1", "same_minor"]])("classifies %s -> %s", (current, fixed, tier) => {
     expect(suggestUpgradeForPackage(report("composer.lock", fixed, current).packages[0]!)).toMatchObject({ recommended_upgrade: fixed, upgrade_tier: tier });

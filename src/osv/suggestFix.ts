@@ -100,6 +100,13 @@ function updateHint(pkg: ScanReportPackage): string | undefined {
   const relation = pkg.dependency_relation;
   const by = pkg.introduced_by?.join(", ");
   switch (pkg.ecosystem) {
+    case "Packagist": {
+      if (relation === "direct") return `Direct dependency. Update its constraint in ${pkg.declared_in?.join(", ") ?? "composer.json"}` +
+        (by ? `. It is also required transitively by ${by}, whose constraints may need updating` : "") +
+        ". Regenerate composer.lock in a trusted environment with Composer scripts and plugins disabled; check PHP, extension and dependency constraints. Composer is not executed by this server";
+      if (relation === "transitive") return `Transitive dependency. Update ${by ? `the direct dependencies that require it (${by})` : "the direct dependency that requires it"} or adjust their constraints, then regenerate composer.lock with --with-all-dependencies --no-scripts --no-plugins in a trusted environment. Check PHP and extension requirements. Composer is not executed by this server`;
+      return UPDATE_HINTS.Packagist;
+    }
     case "NuGet": {
       if (/^Microsoft\.(?:NETCore|AspNetCore|WindowsDesktop)\.App\.Runtime\./i.test(pkg.name)) {
         return "Runtime pack. Update the .NET SDK/runtime or target framework that supplies this pack and regenerate restore/build outputs; do not add an explicit PackageReference merely to change the runtime pack. Check framework/RID compatibility and rescan. This server does not run dotnet restore or MSBuild";
