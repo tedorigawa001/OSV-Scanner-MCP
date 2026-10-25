@@ -145,11 +145,26 @@ describe("scan_project: .NET", () => {
     expect(p.ecosystem_breakdown.NuGet).toMatchObject({ vulnerable_package_count: 2 });
   });
 
-  it("suggest_fixは.NETを未対応のエコシステムとして示す(v0.17.0まで)", async () => {
+  it("suggest_fixはNuGetを評価し、不足した範囲情報からは推奨しない", async () => {
     const dir = await makeProject({ "App/App.csproj": "<Project />", "App/packages.lock.json": FILES["App/packages.lock.json"] });
     const { bin } = await fakeScanner({ results: [nugetResult("/x/packages.lock.json", "Newtonsoft.Json", "12.0.1")] });
     const p = payload(await handleSuggestFix({ project_path: dir }, { binaryPath: bin }));
-    expect(p.suggestions).toEqual([expect.objectContaining({ package: "Newtonsoft.Json", ecosystem: "NuGet", verification: "unsupported_ecosystem" })]);
+    expect(p.suggestions).toEqual([expect.objectContaining({ package: "Newtonsoft.Json", ecosystem: "NuGet", verification: "no_verified_candidate", recommended_upgrade: null })]);
+  });
+  it.each([true, false])("NuGetの修正版を提案し、下限の指定かどうかを維持する(direct-only=%s)", async directOnly => {
+    const files = { "App/App.csproj": '<Project><ItemGroup><PackageReference Include="Newtonsoft.Json" Version="12.0.1" /></ItemGroup></Project>',
+      ...(directOnly ? {} : { "App/packages.lock.json": FILES["App/packages.lock.json"] }) };
+    const dir = await makeProject(files);
+    const result = nugetResult("/x/packages.lock.json", "Newtonsoft.Json", "12.0.1");
+    const output = { ...result, packages: result.packages.map(pkg => ({ ...pkg, vulnerabilities: [{ id: "GHSA-Newtonsoft.Json", affected: [{
+      package: { name: "newtonsoft.json", ecosystem: "NuGet" },
+      ranges: [{ type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "13.0.1" }] }],
+    }] }] })) };
+    const { bin } = await fakeScanner({ results: [output] });
+    const p = payload(await handleSuggestFix({ project_path: dir }, { binaryPath: bin, candidateCheck: "disabled" }));
+    expect(p.suggestions[0]).toMatchObject({ package: "Newtonsoft.Json", recommended_upgrade: "13.0.1", verification: "verified", candidate_check: "disabled" });
+    expect(p.suggestions[0].version_is_lower_bound).toBe(directOnly ? true : undefined);
+    if (directOnly) { expect(p.coverage.complete).toBe(false); expect(p.suggestions[0].upgrade_note).toContain("PackageReference"); }
   });
 
   it(".NETのファイルが無いプロジェクトの応答に.NETの項目を付けない", async () => {

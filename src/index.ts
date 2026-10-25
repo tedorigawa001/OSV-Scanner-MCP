@@ -106,7 +106,7 @@ server.registerTool(
       "Vulnerabilities marked informational (RustSec notices such as unmaintained or unsound crates) are not counted in vulnerability_count; they are counted in informational_count. " +
       "Each package's dependency_relation tells whether it is a direct or transitive dependency (determined for package-lock.json, go.mod, requirements.txt, and pom.xml; unknown otherwise). " +
       "Composer files are scanned from sanitized copies containing package names and release versions only; local dist.type=path packages are not looked up and are counted in local_composer_packages; branch/dev versions and invalid entries are excluded and reported in skipped_files. Composer and PHP code are never run. Other private Composer package names are sent to api.osv.dev; composer_warnings flags missing standard Packagist notification URLs, which are only a heuristic for origin. " +
-      "If coverage.complete is false, do not conclude that the project is safe even with zero findings. Upgrade recommendations (suggest_fix) are available for Java, JavaScript, Python, Go, Rust, and PHP (not yet for .NET). Cargo.lock dependency graphs provide direct/transitive relations, introduced_by, and uniquely mapped declaring Cargo.toml paths in declared_in.",
+      "If coverage.complete is false, do not conclude that the project is safe even with zero findings. Upgrade recommendations (suggest_fix) are available for Java, JavaScript, Python, Go, Rust, PHP, and .NET (NuGet). Cargo.lock dependency graphs provide direct/transitive relations, introduced_by, and uniquely mapped declaring Cargo.toml paths in declared_in.",
     inputSchema: {
       project_path: z
         .string()
@@ -147,12 +147,13 @@ server.registerTool(
     title: "Recommend upgrades that fix vulnerabilities",
     description:
       "Scans the project with the same detection as scan_project and recommends an upgrade version for each vulnerable package. " +
-      "Recommendations are available for Java (Maven / Gradle), JavaScript (npm), Python (PyPI), Go, Rust (crates.io), and PHP (Packagist / Composer). " +
+      "Recommendations are available for Java (Maven / Gradle), JavaScript (npm), Python (PyPI), Go, Rust (crates.io), PHP (Packagist / Composer), and .NET (NuGet). " +
+      "NuGet versions support up to four numeric components, case-insensitive prerelease labels, and ignored build metadata. Updates must satisfy target-framework and dependency constraints; runtime packs generally require SDK/runtime or target-framework updates. No dotnet restore or MSBuild is run. " +
       "Composer recommendations support classical numeric release versions with up to four components and alpha/beta/RC/patch suffixes; dev branches, aliases, and unsupported version formats are not evaluated. Check PHP/extension constraints and application compatibility before upgrading. " +
       "The fixed version closest to the current release line is chosen with a three-tier fallback " +
       "(same_minor: same release line -> major_internal: same major version -> cross_major: major upgrade), " +
       "and the response gives the recommended version, the upgrade distance (upgrade_tier), and the fixed version per CVE. For npm, Go, PyPI, and Rust, a minor update within 0.x is also cross_major (may include breaking changes). " +
-      "Dependencies scanned at a requirements.txt lower bound (>=) are marked version_is_lower_bound, and the recommendation then means raising the lower bound. " +
+      "Dependencies scanned at a requirements.txt lower bound (>=) or a NuGet PackageReference minimum/range are marked version_is_lower_bound, and the recommendation then means raising the lower bound rather than confirming the installed version. " +
       "update_hint explains how to upgrade, depending on whether the package is a direct or transitive dependency (dependency_relation; for npm and Cargo.lock also introduced_by and declared_in). Cargo updates are conditional on parent version requirements; cross-major updates may require Cargo.toml changes. " +
       "The recommended version is checked against api.osv.dev, and versions with known vulnerabilities that do not affect the current version are avoided (result in candidate_check). " +
       "clean excludes known unfixed advisories, known informational advisories that are not fix targets, and new Rust unmaintained/notice records; these may still apply. New unsound records are fix targets. " +

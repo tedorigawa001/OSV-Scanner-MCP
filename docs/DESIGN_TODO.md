@@ -1330,6 +1330,14 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - **実物での確認(2026-10-23)**: 公開リポジトリの実物7件(Project-MONAI/monai-deploy-informatics-gatewayの`packages.lock.json`と`.csproj`、EasyPost/easypost-csharpの`packages.lock.json`(6つのフレームワーク)と`.csproj`、Tophness/StickyMouseの`obj/project.assets.json`と`.csproj`、bitmono-project/BitMonoの`*.deps.json`。利用者の許可を得てダウンロード、作業用の領域のみ)で確認。コピーのパッケージは、osv-scannerが元のファイルから読む全パッケージ(`--all-packages`)から自分のプロジェクトだけを除いたものと一致した(MONAI: 43件中`Project`の1件、BitMono: 16件中`type: project`の4件(`Echo`等。osv-scannerだけではNuGetとして照会される))。StickyMouseの`projectPath`(Windowsのパス)で対応付けできた
 - 実物の確認で判明: ダウンロード(`git clone`も同じ)はファイルを任意の順に書くため、更新日時のわずかな差で`project.assets.json`を古いと誤って示した。差が60秒を超える場合だけ示す
 
+## NuGetの修正提案(2026-10-26、ソース実装)
+
+- `nugetVersion.ts`と`versionScheme.ts`でNuGet VersionReleaseの比較を追加。1〜4個の数値部、ゼロ埋めによる正規化、4つ目のrevision、プレリリースの大文字小文字を区別しない比較、メタデータの無視。純数字のプレリリース識別子の先頭ゼロや解釈できない境界は推奨の根拠にしない。IDの照合は大文字小文字を区別しない。
+- `suggest_fix`は既存の影響範囲検証・候補のOSV再照会を利用する。NuGetの範囲はECOSYSTEM型。情報不足なら保留し、修正版なし・照会失敗・conflictは既存の区別を維持する。
+- 更新案内は直接/推移的依存・中央管理とランタイムパックで分ける。`.csproj`の下限から検査した場合は`version_is_lower_bound`を維持し、requirements.txtではなくPackageReferenceの下限であると示す。互換性・制約の充足や実際の復元版は保証せず、dotnet/MSBuildを実行しない。
+- MCPと実際のOSV-Scanner 2.7.0で、lockfile・assets・packages.config・deps.json・直接参照のみ・不正XML混在・ランタイムパックの7ケースを確認。Newtonsoft.Json 12.0.1 → 13.0.1、Microsoft.NETCore.App.Runtime.linux-x64 8.0.0 → 8.0.32。候補のOSV再照会はいずれもclean。検証用ファイルは不変。
+- `introduced_by`/`declared_in`の拡張と復元の実行はこの実装に含めない。パッケージの推奨版はNuGetフィードでの存在確認や対象TFM/RIDでの復元を代替しない。リリース番号は変更しない。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。

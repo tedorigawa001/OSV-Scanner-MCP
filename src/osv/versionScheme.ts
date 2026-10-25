@@ -14,6 +14,7 @@ import { compareMavenVersions, mavenVersionSeries } from "../utils/mavenVersion.
 import { compareParsedPep440, parsePep440, type Pep440Version } from "../utils/pep440Version.js";
 import { compareParsedSemver, parseSemver } from "../utils/semverVersion.js";
 import { compareComposerVersions, parseComposerVersion } from "../utils/composerVersion.js";
+import { compareNugetVersions, parseNugetVersion } from "../utils/nugetVersion.js";
 
 const SEMVER_ECOSYSTEMS = new Set(["npm", "Go", "crates.io"]);
 
@@ -144,8 +145,27 @@ const COMPOSER_SCHEME: VersionScheme = {
   },
 };
 
+/** NuGet VersionRelease ordering; prerelease names and package IDs ignore ASCII case. */
+const NUGET_SCHEME: VersionScheme = {
+  isValid: (v) => parseNugetVersion(v) !== null,
+  compare: compareNugetVersions,
+  isPrerelease: (v) => (parseNugetVersion(v)?.prerelease.length ?? 0) > 0,
+  classify(current, candidate) {
+    const a = parseNugetVersion(current), b = parseNugetVersion(candidate);
+    if (!a || !b) return "cross_major";
+    return classifyCaret({ major: a.parts[0]!, minor: a.parts[1]!, patch: a.parts[2]! },
+      { major: b.parts[0]!, minor: b.parts[1]!, patch: b.parts[2]! });
+  },
+  seriesLabel(v) {
+    const parsed = parseNugetVersion(v);
+    return parsed ? parsed.parts[0] === 0 && parsed.parts[1] === 0
+      ? `0.0.${parsed.parts[2]}` : `${parsed.parts[0]}.${parsed.parts[1]}` : null;
+  },
+};
+
 /** 修正版の推奨に対応するエコシステムの操作。未対応ならnull */
 export function versionSchemeFor(ecosystem: string): VersionScheme | null {
+  if (ecosystem === "NuGet") return NUGET_SCHEME;
   if (ecosystem === "Packagist") return COMPOSER_SCHEME;
   if (ecosystem === "Maven") return MAVEN_SCHEME;
   if (SEMVER_ECOSYSTEMS.has(ecosystem)) return SEMVER_SCHEME;
@@ -158,6 +178,7 @@ export function versionSchemeFor(ecosystem: string): VersionScheme | null {
  * PyPIはPEP 503の正規化(小文字化、`-` `_` `.`の連続を`-`)で比較する(実データでは完全一致したが防御的に)
  */
 export function samePackageName(a: string, b: string, ecosystem: string): boolean {
+  if (ecosystem === "NuGet") return a.toLowerCase() === b.toLowerCase();
   if (ecosystem !== "PyPI") return a === b;
   const normalize = (name: string) => name.toLowerCase().replace(/[-_.]+/g, "-");
   return normalize(a) === normalize(b);

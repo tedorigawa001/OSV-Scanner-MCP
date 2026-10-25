@@ -310,7 +310,13 @@ Detects the lockfiles and manifests in a project and scans the Java / JavaScript
   - .NET: `Direct` / `Transitive` in `packages.lock.json`; the dependencies of `project.frameworks` in `project.assets.json`; the dependencies of the project library in `*.deps.json`; and every reference read from a project file are direct. `packages.config` does not say, so it is `unknown`. `introduced_by` and `declared_in` are not available yet
   - Other formats (`gradle.lockfile`, `yarn.lock`, `pnpm-lock.yaml`, `bun.lock`, `poetry.lock`, `uv.lock`, `Pipfile.lock`, and `pdm.lock`), npm lockfile version 1, and entries not reachable from the project are `unknown`. If lockfiles disagree, the value is `mixed`
 - `dependency_groups` is the raw dependency group reported by OSV-Scanner (for example `dev`). It is missing or inaccurate for some lockfile formats (absent for pnpm, `optional` for pdm, and so on), so treat it as informational
-- Upgrade recommendations (`suggest_fix`) are available for Maven, npm, PyPI, Go, Rust (crates.io), and PHP (Packagist). NuGet packages are returned with `verification: "unsupported_ecosystem"` for now
+- Upgrade recommendations (`suggest_fix`) are available for Maven, npm, PyPI, Go, Rust (crates.io), PHP (Packagist), and .NET (NuGet; source checkout).
+
+**NuGet recommendations (source checkout).** `suggest_fix` compares NuGet release versions with one to four numeric components (missing components become zero), including legacy revisions such as `1.2.3.4`. Numeric components must fit a nonnegative 32-bit integer; unsupported formats withhold a recommendation. Prerelease identifiers compare numerically when they fit signed 32-bit integers, and otherwise by ASCII case-insensitive lexical order, matching NuGet VersionRelease; numeric prerelease identifiers with leading zeroes are rejected. Build metadata does not affect ordering. Package IDs match case-insensitively. Recommendations use OSV `ECOSYSTEM` affected ranges and are rechecked against OSV; unsupported or incomplete ranges cannot establish a verified fix. Stable candidates are preferred; prerelease-only fixes are labeled. The existing cautious 0.x upgrade tiers apply.
+
+For direct dependencies, update the `PackageReference` (or `packages.config` in older projects); with central management, update `PackageVersion` in `Directory.Packages.props`. For transitive dependencies, update the parent dependency or explicitly reference a compatible fixed version if NuGet resolution allows it. Runtime packs (`Microsoft.NETCore.App.Runtime.*`, `Microsoft.AspNetCore.App.Runtime.*`, `Microsoft.WindowsDesktop.App.Runtime.*`) generally require an SDK/runtime or target-framework update rather than a new explicit package reference. Check target-framework/RID compatibility and all version constraints, regenerate restore/lockfiles, and rescan. These are suggestions, not edits; `dotnet restore` and MSBuild are not run.
+
+`PackageReference Version="x"` or an inclusive minimum range is scanned at its lower bound, not at a confirmed restored version. Its recommendation retains `version_is_lower_bound: true`, and the note means raising that bound. Coverage still records missing restore/lockfiles and unresolved references. Neither a verified affected-range check nor `candidate_check: "clean"` proves framework compatibility, availability on a private feed, or absence of unknown vulnerabilities.
 
 ### `scan_java_project`
 
@@ -432,7 +438,7 @@ Invalid JSON returns `invalid_sbom`, an unsupported format `unsupported_sbom_for
 
 ### `suggest_fix`
 
-Runs the same detection and scan as `scan_project` and recommends an **upgrade version** for each vulnerable package. Recommendations are available for Java (Maven / Gradle), JavaScript (npm), Python (PyPI), Go, Rust (crates.io), and PHP (Packagist / Composer). Instead of simply taking the highest fixed version, it picks the fixed version closest to the current release line, falling back through three tiers:
+Runs the same detection and scan as `scan_project` and recommends an **upgrade version** for each vulnerable package. Recommendations are available for Java (Maven / Gradle), JavaScript (npm), Python (PyPI), Go, Rust (crates.io), PHP (Packagist / Composer), and .NET (NuGet; source checkout). Instead of simply taking the highest fixed version, it picks the fixed version closest to the current release line, falling back through three tiers:
 
 | Tier | Meaning |
 |---|---|
@@ -645,7 +651,7 @@ Design notes and open items are in [docs/DESIGN_TODO.md](docs/DESIGN_TODO.md) (i
 - [x] Scan history and changes between runs (`scan_history`, opt-in)
 - [x] `scan_project` for .NET (NuGet), with per-project matching and lower bounds for project files
 - [x] `scan_project` and `suggest_fix` for PHP (Composer `composer.lock`)
-- [ ] `suggest_fix` for .NET (NuGet)
+- [x] `suggest_fix` for .NET (NuGet; source checkout)
 - [ ] Direct and transitive dependencies for `gradle.lockfile` and the YAML/TOML lockfiles
 
 ## License

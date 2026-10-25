@@ -100,6 +100,15 @@ function updateHint(pkg: ScanReportPackage): string | undefined {
   const relation = pkg.dependency_relation;
   const by = pkg.introduced_by?.join(", ");
   switch (pkg.ecosystem) {
+    case "NuGet": {
+      if (/^Microsoft\.(?:NETCore|AspNetCore|WindowsDesktop)\.App\.Runtime\./i.test(pkg.name)) {
+        return "Runtime pack. Update the .NET SDK/runtime or target framework that supplies this pack and regenerate restore/build outputs; do not add an explicit PackageReference merely to change the runtime pack. Check framework/RID compatibility and rescan. This server does not run dotnet restore or MSBuild";
+      }
+      const shared = "If centrally managed, change PackageVersion in Directory.Packages.props. Regenerate restore/lockfiles and rescan in a trusted environment; verify target-framework compatibility and dependency constraints. This server does not run dotnet restore or MSBuild";
+      if (relation === "direct") return "Direct dependency. Update its PackageReference in the project file (or packages.config for older projects). " + shared;
+      if (relation === "transitive") return "Transitive dependency. Update the direct dependency that requires it, or explicitly reference a compatible fixed version when NuGet dependency resolution permits it. " + shared;
+      return "Update the dependency version in the project file or packages.config; for a transitive dependency, update its parent or explicitly reference a compatible fixed version. " + shared;
+    }
     case "npm":
       if (relation === "direct") {
         return `Direct dependency. Update the version in ${pkg.declared_in?.join(", ") ?? "package.json"}` +
@@ -197,6 +206,7 @@ function hintFields(pkg: ScanReportPackage, recommended: string | null = null, t
 /** スキャン結果に付いた直接/推移的依存の項目を提案にも写す(無ければ何も出さない) */
 function relationFields(pkg: ScanReportPackage) {
   return {
+    ...(pkg.version_is_lower_bound ? { version_is_lower_bound: true as const } : {}),
     ...(pkg.dependency_relation !== undefined ? { dependency_relation: pkg.dependency_relation } : {}),
     ...(pkg.introduced_by !== undefined ? { introduced_by: pkg.introduced_by } : {}),
     ...(pkg.introduced_by_omitted !== undefined ? { introduced_by_omitted: pkg.introduced_by_omitted } : {}),
@@ -286,14 +296,18 @@ function buildNote(
     }
     if (unfixedCount > 0) note += `. The remaining ${unfixedCount} CVEs have no fixed version newer than the current one and are excluded from the fix. Check recommended_status`;
   }
-  if (pkg.version_is_lower_bound) {
-    note += `. The current version (${pkg.version}) is the lower bound in requirements.txt (>= or ~=) and may differ from the installed version. ` +
-      "The recommendation means raising the lower bound to at least that version";
-  }
+  note += lowerBoundNote(pkg);
   if (pkg.ecosystem === "Go" && GO_PSEUDO_VERSION.test(pkg.version)) {
     note += ". The current version is a pseudo-version (an untagged commit)";
   }
   return note;
+}
+
+function lowerBoundNote(pkg: ScanReportPackage): string {
+  if (!pkg.version_is_lower_bound) return "";
+  const source = pkg.ecosystem === "NuGet" ? "PackageReference (NuGet minimum/range)" : "requirements.txt (>= or ~=)";
+  return `. The current version (${pkg.version}) is the lower bound in ${source} and may differ from the installed version. ` +
+    "Any recommendation means raising the lower bound to at least that version";
 }
 
 /**
@@ -404,9 +418,9 @@ export function suggestUpgradeForPackage(pkg: ScanReportPackage, context: Sugges
     upgrade_note: (recommended === null && fixableCount > 0
       ? "No known fixed version could be confirmed to be outside the affected ranges of every CVE to fix. The recommendation is also withheld when the data are insufficient or use unsupported range types." +
         (unparseableCount > 0 ? ` ${unparseableCount} CVEs list fixed versions that cannot be parsed as versions (tier: unparseable_fix), so the recommendation is withheld.` : "")
-      : buildNote(scheme, pkg, recommended, upgradeTier, fixableCount, unfixedCount)) + (informationalNotes ? ` ${informationalNotes}` : ""),
+      : buildNote(scheme, pkg, recommended, upgradeTier, fixableCount, unfixedCount)) +
+      (recommended === null && fixableCount > 0 ? lowerBoundNote(pkg) : "") + (informationalNotes ? ` ${informationalNotes}` : ""),
     ...hintFields(pkg, recommended, upgradeTier),
-    ...(pkg.version_is_lower_bound ? { version_is_lower_bound: true as const } : {}),
     per_cve_detail: details,
     verification: recommended === null ? "no_verified_candidate" : "verified",
   };
