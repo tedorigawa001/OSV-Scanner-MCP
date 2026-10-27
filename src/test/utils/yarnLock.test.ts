@@ -134,3 +134,54 @@ leaf@^1:
     expect(analyzeYarn("[".repeat(129), manifests).lookup).toBeNull();
   });
 });
+
+describe("Yarn coverage is independent of relationship limits (review, 2026-10-27)", () => {
+  // 関係の解析は直接依存の数×パッケージ数で増える。5,000パッケージ×直接依存500で予算を超え、収録確認まで不明になっていた
+  const large = (n: number, edges: number, direct: number) => {
+    let seed = 1;
+    const next = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
+    let source = "# yarn lockfile v1\n\n";
+    for (let i = 0; i < n; i++) {
+      source += `p${i}@^1.0.0:\n  version "1.0.0"\n`;
+      const deps = new Set<number>();
+      for (let k = 0; k < edges && i + 1 < n; k++) deps.add(i + 1 + Math.floor(next() * (n - i - 1)));
+      if (deps.size) source += `  dependencies:\n${[...deps].map(d => `    p${d} "^1.0.0"\n`).join("")}`;
+      source += "\n";
+    }
+    const dependencies = Object.fromEntries(Array.from({ length: direct }, (_, i) => [`p${Math.floor(i * n / direct)}`, "^1.0.0"]));
+    return { source, inputs: [
+      { path: "package.json", data: { private: true, workspaces: ["apps/*"], dependencies } },
+      { path: "apps/web/package.json", data: { name: "web", version: "1.0.0", dependencies: { p1: "^1.0.0" } } },
+    ] satisfies YarnManifest[] };
+  };
+
+  it("回帰: 関係の予算を超えても、確認済みのworkspaceの収録は保つ", () => {
+    const { source, inputs } = large(5_000, 5, 500);
+    const relationBudget = { remaining: 2_000_000 };
+    const result = analyzeYarn(source, inputs, { remaining: 2_000_000 }, relationBudget);
+    expect(relationBudget.remaining).toBeLessThan(0);
+    expect(result.lookup).toBeNull();
+    expect([...result.members]).toEqual([["package.json", true], ["apps/web/package.json", true]]);
+  });
+
+  it.each([["Classic", classic], ["Berry", berry()]])("%s: an exhausted relationship budget from an earlier lockfile does not affect later coverage", (_label, source) => {
+    const result = analyzeYarn(source, manifests, { remaining: 2_000_000 }, { remaining: 0 });
+    expect(result.lookup).toBeNull();
+    expect(result.members).toEqual(analyzeYarn(source, manifests).members);
+    expect([...result.members.values()]).toContain(true);
+  });
+
+  it("coverage limits still leave membership unconfirmed", () => {
+    expect([...analyzeYarn(classic, manifests, { remaining: 1 }).members.values()].every(v => v === null)).toBe(true);
+  });
+
+  it.each([["packages/*/", true], ["./packages/*/", true], ["packages//*", null], ["packages/*//", null]] as const)(
+    "workspace pattern %s gives %s", (pattern, expected) => {
+      const lock = "# yarn lockfile v1\n\nleft-pad@^1.3.0:\n  version \"1.3.0\"\n";
+      const result = analyzeYarn(lock, [
+        { path: "package.json", data: { private: true, workspaces: [pattern] } },
+        { path: "packages/a/package.json", data: { name: "a", version: "1.0.0", dependencies: { "left-pad": "^1.3.0" } } },
+      ]);
+      expect(result.members.get("packages/a/package.json")).toBe(expected);
+    });
+});

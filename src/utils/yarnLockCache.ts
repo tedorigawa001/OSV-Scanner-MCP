@@ -10,6 +10,8 @@ export class YarnLockCache {
   private readonly manifests = new Map<string, Record<string, unknown> | null>();
   private readonly jsonBudget = createNpmLockWorkBudget();
   private readonly budget = createPnpmWorkBudget();
+  /** Relationship traversal has its own budget so it cannot make coverage unconfirmed. */
+  private readonly relationBudget = createPnpmWorkBudget();
   private remainingJson = MAX_NPM_LOCK_TOTAL_BYTES;
   constructor(private remaining = MAX_NPM_LOCK_TOTAL_BYTES) {}
 
@@ -47,7 +49,7 @@ export class YarnLockCache {
           inputs.push({ path: member.split(path.sep).join("/"), data: await this.manifest(absolute, projectDir) });
         }
         const content = read.bytes.toString("utf8");
-        result = { content, ...analyzeYarn(content, inputs, this.budget) };
+        result = { content, ...analyzeYarn(content, inputs, this.budget, this.relationBudget) };
       }
     }
     this.locks.set(file, result); return result;

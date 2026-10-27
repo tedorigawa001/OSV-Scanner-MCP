@@ -70,7 +70,9 @@ function classic(source: string, tick: () => void): Map<string, Record<string, u
 /** Bounded glob matching (*, ?, whole-segment **); no generated regular expressions. */
 function glob(pattern: string, target: string, tick: () => void): boolean | null {
   if (!safePath(pattern) || /[\[\]{}()!]/.test(pattern) || pattern.split("/").some(s => s.includes("**") && s !== "**")) return null;
-  const parts = pattern.replace(/^\.\//, "").split("/"), names = target.split("/");
+  // Yarn strips one trailing slash before matching; other empty segments remain unconfirmed.
+  const parts = pattern.replace(/^\.\//, "").replace(/\/$/, "").split("/"), names = target.split("/");
+  if (parts.includes("")) return null;
   let row = new Array<boolean>(names.length + 1).fill(false); row[0] = true;
   for (const part of parts) {
     const next = new Array<boolean>(names.length + 1).fill(false);
@@ -118,10 +120,16 @@ function workspaceMatch(root: Record<string, unknown> | null, member: string, ti
   return matched;
 }
 
-/** Captured inputs only. Unsupported identities never fall back to a same-named release. */
-export function analyzeYarn(source: string, manifests: readonly YarnManifest[], budget: PnpmWorkBudget = { remaining: MAX_DEPENDENCY_EDGES }): YarnAnalysis {
+/**
+ * Captured inputs only. Unsupported identities never fall back to a same-named release.
+ * Coverage and relationships use separate budgets: relationship traversal grows with direct roots x packages,
+ * and exhausting it must not turn already confirmed workspace coverage into unconfirmed.
+ */
+export function analyzeYarn(source: string, manifests: readonly YarnManifest[], budget: PnpmWorkBudget = { remaining: MAX_DEPENDENCY_EDGES },
+  relationBudget: PnpmWorkBudget = { remaining: MAX_DEPENDENCY_EDGES }): YarnAnalysis {
   const unknown = (): YarnAnalysis => ({ lookup: null, members: new Map(manifests.map(m => [m.path, null])) });
-  const tick = () => { if (--budget.remaining < 0) throw new Error("Yarn work limit"); };
+  let active = budget;
+  const tick = () => { if (--active.remaining < 0) throw new Error("Yarn work limit"); };
   try {
     if (Buffer.byteLength(source) > 16 * 1024 * 1024 || source.split(/\r?\n/).length > 200_000) return unknown();
     const isClassic = /^# yarn lockfile v1\s*$/m.test(source);
@@ -200,12 +208,6 @@ export function analyzeYarn(source: string, manifests: readonly YarnManifest[], 
       if (node.workspace !== undefined) return;
       const declared = declarations.get(node) ?? new Set<string>(); declared.add(manifest); declarations.set(node, declared);
     };
-    if (!isClassic) for (const [directory, node] of workspaceNodes) {
-      tick(); if (!node) continue;
-      for (const field of fields) if (record(node.value[field])) for (const [name, ref] of Object.entries(node.value[field])) {
-        const target = resolve(name, ref); if (target) add(target, directory === "." ? "package.json" : `${directory}/package.json`);
-      }
-    }
     for (const [directory, manifest] of included) {
       let confirmed = true;
       const data = manifest.data!;
@@ -227,31 +229,40 @@ export function analyzeYarn(source: string, manifests: readonly YarnManifest[], 
       }
       if (!confirmed) members.set(manifest.path, null);
     }
-    const origins = new Map<Node, Set<string>>();
-    for (const origin of declarations.keys()) {
-      const seen = new Set([origin]), queue = [origin];
-      while (queue.length) {
-        tick(); const node = queue.pop()!;
+    active = relationBudget;
+    try {
+      if (!isClassic) for (const [directory, node] of workspaceNodes) {
+        tick(); if (!node) continue;
         for (const field of fields) if (record(node.value[field])) for (const [name, ref] of Object.entries(node.value[field])) {
-          const target = resolve(name, ref);
-          if (!target || seen.has(target) || target.workspace !== undefined) continue;
-          seen.add(target); queue.push(target);
-          const by = origins.get(target) ?? new Set<string>(); by.add(origin.name); origins.set(target, by);
+          const target = resolve(name, ref); if (target) add(target, directory === "." ? "package.json" : `${directory}/package.json`);
         }
       }
-    }
-    const merged = new Map<string, { declaredIn: Set<string>; introducedBy: Set<string> }>();
-    for (const node of byValue.values()) {
-      tick(); if (node.workspace !== undefined) continue;
-      const id = key(node.name, node.version), info = merged.get(id) ?? { declaredIn: new Set<string>(), introducedBy: new Set<string>() };
-      for (const p of declarations.get(node) ?? []) { tick(); info.declaredIn.add(p); }
-      for (const p of origins.get(node) ?? []) { tick(); info.introducedBy.add(p); }
-      merged.set(id, info);
-    }
-    return { members, lookup: (name, version): RelationInfo => {
-      const info = merged.get(key(name, version));
-      return info ? { relation: info.declaredIn.size ? "direct" : info.introducedBy.size ? "transitive" : "unknown",
-        ...(info.declaredIn.size ? { declaredIn: info.declaredIn } : {}), ...(info.introducedBy.size ? { introducedBy: info.introducedBy } : {}) } : { relation: "unknown" };
-    } };
+      const origins = new Map<Node, Set<string>>();
+      for (const origin of declarations.keys()) {
+        const seen = new Set([origin]), queue = [origin];
+        while (queue.length) {
+          tick(); const node = queue.pop()!;
+          for (const field of fields) if (record(node.value[field])) for (const [name, ref] of Object.entries(node.value[field])) {
+            const target = resolve(name, ref);
+            if (!target || seen.has(target) || target.workspace !== undefined) continue;
+            seen.add(target); queue.push(target);
+            const by = origins.get(target) ?? new Set<string>(); by.add(origin.name); origins.set(target, by);
+          }
+        }
+      }
+      const merged = new Map<string, { declaredIn: Set<string>; introducedBy: Set<string> }>();
+      for (const node of byValue.values()) {
+        tick(); if (node.workspace !== undefined) continue;
+        const id = key(node.name, node.version), info = merged.get(id) ?? { declaredIn: new Set<string>(), introducedBy: new Set<string>() };
+        for (const p of declarations.get(node) ?? []) { tick(); info.declaredIn.add(p); }
+        for (const p of origins.get(node) ?? []) { tick(); info.introducedBy.add(p); }
+        merged.set(id, info);
+      }
+      return { members, lookup: (name, version): RelationInfo => {
+        const info = merged.get(key(name, version));
+        return info ? { relation: info.declaredIn.size ? "direct" : info.introducedBy.size ? "transitive" : "unknown",
+          ...(info.declaredIn.size ? { declaredIn: info.declaredIn } : {}), ...(info.introducedBy.size ? { introducedBy: info.introducedBy } : {}) } : { relation: "unknown" };
+      } };
+    } catch { return { members, lookup: null }; }
   } catch { return unknown(); }
 }
