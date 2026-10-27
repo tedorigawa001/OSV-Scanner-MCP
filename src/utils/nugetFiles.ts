@@ -13,6 +13,7 @@ import { ScanToolError } from "../errors.js";
 import { createNpmLockWorkBudget, parseNpmLock, type NpmLockWorkBudget } from "./npmLockCopy.js";
 import { decodeEntities } from "./pomParent.js";
 import type { RelationLookup } from "./dependencyRelations.js";
+import { nugetLockGraphs, nugetTargetGraphs, type NugetGraph } from "./nugetDependencyGraph.js";
 
 /** NuGetの版の形式(4つ目の数・プレリリース・ビルドメタデータを含む)。これ以外は確定版とみなさない */
 const NUGET_VERSION = /^\d{1,9}(?:\.\d{1,9}){0,3}(?:-[0-9A-Za-z][0-9A-Za-z.-]{0,63})?(?:\+[0-9A-Za-z.-]{1,64})?$/;
@@ -47,6 +48,7 @@ export interface UnscannableNugetPackage {
 }
 
 export interface NugetParseResult {
+  graphs?: NugetGraph[];
   packages: NugetPackage[];
   /** 自分のプロジェクト(照会しない)の数 */
   localProjects: number;
@@ -122,7 +124,7 @@ export function parsePackagesLock(source: string, budget: NpmLockWorkBudget = cr
       else out.unscannable.push({ name: name.slice(0, 200), version: text(entry.resolved).slice(0, 100), reason: "unknown_type" });
     }
   }
-  return { ok: true, ...out, packages: dedupe(out.packages), localProjects: localProjects.size };
+  return { ok: true, ...out, packages: dedupe(out.packages), localProjects: localProjects.size, graphs: nugetLockGraphs(data) };
 }
 
 const RUNTIME_PACK_PREFIX = "runtimepack.";
@@ -188,6 +190,7 @@ export function parseProjectAssets(
     // Windowsのパスも区切る
     projectFileName: projectPath === "" ? null : projectPath.split(/[\\/]/).pop() || null,
     projectName: text(restore.projectName) || null,
+    graphs: nugetTargetGraphs(data, "assets"),
   };
 }
 
@@ -237,7 +240,7 @@ export function parseDepsJson(source: string, budget: NpmLockWorkBudget = create
       out.unscannable.push({ name: id.name, version: id.version, reason: "unknown_type" });
     }
   }
-  return { ok: true, ...out, packages: dedupe(out.packages) };
+  return { ok: true, ...out, packages: dedupe(out.packages), graphs: nugetTargetGraphs(data, "deps") };
 }
 
 // ---- XML ----

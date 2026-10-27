@@ -1346,6 +1346,14 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - scan_project/suggest_fixとも同じ捕捉済みグラフを使う。Composerの更新案内は直接依存のdeclared_in、推移的依存のintroduced_byに合わせる。
 - MCPとOSV-Scanner 2.7.0で、symfony/http-kernel v5.4.0(直接) → symfony/http-foundation v5.4.0(推移的)、開発依存のsymfony/process v5.4.0(直接)を確認。修正提案は順に5.4.20/5.4.50/5.4.51、候補照会は全てclean。検証用ファイルは不変。
 
+## NuGetの導入元・宣言元(2026-10-27、ソース実装)
+
+- packages.lock.jsonはTFM/RIDごとのdependencies、project.assets.json/deps.jsonはtargetsごとのグラフを保存し、DirectなNuGet依存から到達するパッケージへintroduced_byを付ける。deps.jsonは依存先の正規化した確定版も照合する。ターゲット間で辺をつなげず、報告する同じ名前・版ごとに導入元をまとめる。循環、複数ルート、大文字小文字、4桁・メタデータ等の版の正規化を扱い、曖昧な名前や不正な根は推測しない。
+- declared_inは既存の安全な読み取り・プロジェクト対応付けで所有者が一意に決まり、捕捉済みプロジェクトに無条件・重複なし・除去/上書きなしのPackageReferenceがある直接依存だけに付ける。復元結果のある参照ではproperty/range/floating/central managementの版でも名前を確認できれば宣言元は示せる。バージョンの格納先やMSBuild評価の結果までは示さない。
+- packages.configや単独のビルド成果物から宣言元を推測しない。復元情報中のprojectPathをたどって外部ファイルを読まない。直接参照のみの検査ではdeclared_inと下限の注記/coverageを維持する。中央管理の版や条件付き参照の解決、ProjectReferenceの導入元判定は行わない。
+- 関係解析は全NuGetファイルで2,000,000操作の予算を共有し、上限時は不確実な導入元/宣言元を省略して警告する。既存の検査対象・直接/推移的判定は維持し、graphsはosv-scanner用コピーに書かない。suggest_fixは宣言元ファイル/導入元パッケージを更新案内に使う。
+- 実際のOSV-Scanner 2.7.0とMCPでlock/assets/deps/直接参照のみの4プロジェクト×2ツールを確認。Newtonsoft.Json.Bson → Newtonsoft.Json 12.0.1の導入元、System.Net.Http 4.3.0の宣言元を表示し、修正提案13.0.1/4.3.4の候補照会はいずれもclean。depsでは宣言元を省略し、直接参照のみのcoverage=falseを維持。検証用ファイルは不変。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。

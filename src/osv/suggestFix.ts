@@ -112,8 +112,8 @@ function updateHint(pkg: ScanReportPackage): string | undefined {
         return "Runtime pack. Update the .NET SDK/runtime or target framework that supplies this pack and regenerate restore/build outputs; do not add an explicit PackageReference merely to change the runtime pack. Check framework/RID compatibility and rescan. This server does not run dotnet restore or MSBuild";
       }
       const shared = "If centrally managed, change PackageVersion in Directory.Packages.props. Regenerate restore/lockfiles and rescan in a trusted environment; verify target-framework compatibility and dependency constraints. This server does not run dotnet restore or MSBuild";
-      if (relation === "direct") return "Direct dependency. Update its PackageReference in the project file (or packages.config for older projects). " + shared;
-      if (relation === "transitive") return "Transitive dependency. Update the direct dependency that requires it, or explicitly reference a compatible fixed version when NuGet dependency resolution permits it. " + shared;
+      if (relation === "direct") return `Direct dependency. Update its PackageReference in ${pkg.declared_in?.join(", ") ?? "the project file"} (or packages.config for older projects). ` + shared;
+      if (relation === "transitive") return `Transitive dependency. Update ${by ? `the direct dependencies that require it (${by})` : "the direct dependency that requires it"}, or explicitly reference a compatible fixed version when NuGet dependency resolution permits it. ` + shared;
       return "Update the dependency version in the project file or packages.config; for a transitive dependency, update its parent or explicitly reference a compatible fixed version. " + shared;
     }
     case "npm":

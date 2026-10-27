@@ -199,6 +199,7 @@ interface RelationSource {
   cargoPackages?: readonly CargoPackage[];
   declaringManifests?: ReadonlyMap<string, string>;
   nugetPackages?: readonly NugetPackage[];
+  nugetLookup?: RelationLookup;
   composerLookup?: RelationLookup;
 }
 
@@ -213,7 +214,7 @@ export async function buildRelationLookups(
   const lookups = new Map<string, SourceRelations>();
   const npmWorkBudget = createNpmLockWorkBudget();
   let remaining = maxTotalBytes;
-  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages, composerLookup } of copies) {
+  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages, nugetLookup, composerLookup } of copies) {
     const lockDir = originalRelative === null ? "" : path.dirname(originalRelative);
     let lookup: RelationLookup = null;
     try {
@@ -232,7 +233,7 @@ export async function buildRelationLookups(
       } else if (format === "Cargo.lock" && cargoPackages !== undefined) {
         lookup = cargoLockRelations(cargoPackages, declaringManifests);
       } else if (format === "packages.lock.json" && nugetPackages !== undefined) {
-        lookup = nugetRelations(nugetPackages);
+        lookup = nugetLookup ?? nugetRelations(nugetPackages);
       } else if (format === "composer.lock") {
         lookup = composerLookup ?? null;
       }
@@ -360,7 +361,7 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
     for (const copy of project.nugetCopies) {
       const generated = await snapshot.writeGenerated(nugetLockCopyContent(copy.packages));
       targets.push({ path: generated, format: "packages.lock.json" });
-      relationSources.push({ copy: generated, format: "packages.lock.json", originalRelative: copy.path, nugetPackages: copy.packages });
+      relationSources.push({ copy: generated, format: "packages.lock.json", originalRelative: copy.path, nugetPackages: copy.packages, nugetLookup: copy.relations });
     }
     for (const copy of project.composerCopies ?? []) {
       const generated = await snapshot.writeGenerated(copy.content);

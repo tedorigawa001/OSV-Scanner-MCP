@@ -24,11 +24,14 @@ import {
   parsePackagesLock,
   parseProjectAssets,
   parseXml,
+  nugetRelations,
   type NugetPackage,
   type NugetParseOutcome,
   type ProjectAssets,
   type UnresolvedReason,
 } from "./nugetFiles.js";
+import { createNugetGraphBudget, enrichNugetRelations, nugetGraphOrigins, type NugetGraph } from "./nugetDependencyGraph.js";
+import type { RelationLookup } from "./dependencyRelations.js";
 
 export const NUGET_LOCKFILE = /^packages(?:\.(.+))?\.lock\.json$/i;
 export const NUGET_PACKAGES_CONFIG = /^packages(?:\.(.+))?\.config$/i;
@@ -73,6 +76,8 @@ export interface NugetCopy {
   path: string;
   format: NugetSourceFormat;
   packages: NugetPackage[];
+  graphs?: NugetGraph[];
+  relations?: RelationLookup;
 }
 
 export interface NugetAnalysis {
@@ -193,6 +198,10 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
   let lowerBounds = false;
   let directOnly = false;
   const staleAssets: string[] = [];
+  const sourceOwners = new Map<string, Set<string>>();
+  const recordOwner = (file: string, owner: string) => {
+    const owners = sourceOwners.get(file) ?? new Set<string>(); owners.add(owner); sourceOwners.set(file, owners);
+  };
 
   const addCopy = (file: string, format: NugetSourceFormat, outcome: Extract<NugetParseOutcome, { ok: true }>) => {
     let packages = outcome.packages;
@@ -209,7 +218,7 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
     result.localProjects += outcome.localProjects;
     result.unscannable.push(...outcome.unscannable.map((u) => ({ file, ...u })));
     result.manifests.push({ path: file, format });
-    if (packages.length > 0) result.copies.push({ path: file, format, packages });
+    if (packages.length > 0) result.copies.push({ path: file, format, packages, graphs: outcome.graphs });
   };
 
   const parseFile = async (
@@ -293,7 +302,7 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
       if (parsed === null) continue;
       addCopy(file, format, parsed);
       const owner = ownerOf(file, pattern, projectsByDir, customLockPath, chargeAssociation);
-      if (owner !== null) covered.add(owner);
+      if (owner !== null) { covered.add(owner); recordOwner(file, owner); }
       else if (format === "packages.lock.json") unownedLockDirs.add(path.dirname(file));
     }
   }
@@ -325,6 +334,7 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
         : assets.projectName !== null && assets.projectName.toLowerCase() === projectBaseName(project);
       if (matches) {
         assetsAddCopy(assetsFile, assets);
+        recordOwner(assetsFile, project);
         covered.add(project);
         const [assetsStat, projectStat] = await Promise.all([
           stat(path.join(projectDir, assetsFile)).catch(() => null),
@@ -351,7 +361,43 @@ export async function analyzeNuget(projectDir: string, files: NugetFiles): Promi
     result.unresolved.push(...analysis.unresolved.map((u) => ({ file: project, ...u })));
     if (analysis.references.some((r) => r.lowerBound)) lowerBounds = true;
     addCopy(project, "PackageReference", { ok: true, packages: analysis.references, localProjects: 0, unscannable: [] });
+    recordOwner(project, project);
   }
+
+  const graphBudget = createNugetGraphBudget();
+  let limitedGraphs = 0;
+  const declarationCache = new Map<string, Set<string>>();
+  for (const copy of result.copies) {
+    const declared = new Map<string, string>();
+    const owners = sourceOwners.get(copy.path);
+    if (owners?.size === 1 && graphBudget.remaining > 0) {
+      const owner = [...owners][0]!;
+      const analysis = projectAnalyses.get(owner);
+      let names = declarationCache.get(owner);
+      if (!names && analysis?.ok) {
+        names = new Set<string>();
+        for (const ref of analysis.references) {
+          if (--graphBudget.remaining < 0) break;
+          names.add(ref.name.toLowerCase());
+        }
+        for (const ref of analysis.unresolved) {
+          if (--graphBudget.remaining < 0) break;
+          if (["property", "range", "floating", "central_package_management"].includes(ref.reason) && /^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}$/.test(ref.name)) names.add(ref.name.toLowerCase());
+        }
+        if (graphBudget.remaining < 0) names.clear();
+        declarationCache.set(owner, names);
+      }
+      if (names) for (const pkg of copy.packages) {
+        if (--graphBudget.remaining < 0) { declared.clear(); break; }
+        if (pkg.relation === "direct" && names.has(pkg.name.toLowerCase())) declared.set(pkg.name.toLowerCase(), path.relative(path.dirname(copy.path), owner));
+      }
+    }
+    const origins = nugetGraphOrigins(copy.graphs ?? [], graphBudget);
+    if (origins === null || graphBudget.remaining < 0) limitedGraphs++;
+    copy.relations = enrichNugetRelations(nugetRelations(copy.packages), origins, declared);
+    delete copy.graphs;
+  }
+  if (limitedGraphs > 0) result.warnings.push(`NuGet relationship analysis reached its per-scan work limit for ${limitedGraphs} source(s); introduced_by/declared_in may be unavailable. Package vulnerability scanning still ran`);
 
   if (staleAssets.length > 0) {
     // プロジェクトごとに1件ずつ並べると応答が際限なく大きくなるため、1件にまとめる
