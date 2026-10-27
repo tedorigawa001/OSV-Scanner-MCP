@@ -3,7 +3,8 @@ import path from "node:path";
 import os from "node:os";
 import { afterEach, expect, it, vi } from "vitest";
 import { stringify } from "yaml";
-import { handleScanProject, buildRelationLookups } from "../../tools/scanProject.js";
+import { handleScanProject, buildRelationLookups, scanFromSnapshot, buildCoverage } from "../../tools/scanProject.js";
+import { detectProject } from "../../utils/manifestDetector.js";
 import { handleSuggestFix } from "../../tools/suggestFix.js";
 import { runOsvScan } from "../../osv/runner.js";
 import { parseOsvScanOutput } from "../../osv/scanReport.js";
@@ -51,4 +52,31 @@ it("leaves pnpm relationships unknown when the shared read budget is exhausted",
   await writeFile(file, lock);
   const result = await buildRelationLookups([{ copy: file, format: "pnpm-lock.yaml", originalRelative: "pnpm-lock.yaml" }], 10);
   expect(result.get(file)!.lookup).toBeNull();
+});
+
+it.each(["included", "absent", "unsupported"])("reports pnpm workspace coverage in both tools: %s", async scenario => {
+  dir = await mkdtemp(path.join(os.tmpdir(), "osv-pnpm-tool-coverage-"));
+  await mkdir(path.join(dir, "apps/web"), { recursive: true });
+  await writeFile(path.join(dir, "package.json"), "{}");
+  await writeFile(path.join(dir, "apps/web/package.json"), "{}");
+  const content = scenario === "absent" ? lock.replace("apps/web:", "apps/other:") : scenario === "unsupported" ? lock.replace('"9.0"', '"99.0"') : lock;
+  await writeFile(path.join(dir, "pnpm-lock.yaml"), content);
+  vi.mocked(runOsvScan).mockImplementation(async targets => {
+    expect(await readFile(targets[0]!.path, "utf8")).toBe(content);
+    return parseOsvScanOutput({ results: [{ source: { path: targets[0]!.path, type: "lockfile" }, packages: [{
+      package: { name: "dev", version: "1.0.0", ecosystem: "npm" }, groups: [{ ids: ["GHSA-dev"], aliases: [] }],
+      vulnerabilities: [{ id: "GHSA-dev", affected: [{ package: { name: "dev", ecosystem: "npm" }, ranges: [{ type: "SEMVER", events: [{ introduced: "0" }, { fixed: "1.0.1" }] }] }] }],
+    }] }] });
+  });
+  for (const result of [await handleScanProject({ project_path: dir }), await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled" })]) {
+    const payload = JSON.parse(result.content[0]!.text);
+    expect(payload.coverage.complete).toBe(scenario === "included");
+    if (scenario === "included") expect(payload.coverage.lockfile_missing).toEqual([]);
+    else expect(payload.coverage.lockfile_missing).toMatchObject([{ path: "apps/web/package.json", status: scenario === "absent" ? "missing" : "unconfirmed" }]);
+  }
+  // Coverage and scanner input both use the original capture after a source mutation.
+  const project = await detectProject(dir);
+  await writeFile(path.join(dir, "pnpm-lock.yaml"), "changed original after detection");
+  await scanFromSnapshot(project, {});
+  expect(buildCoverage(project).complete).toBe(scenario === "included");
 });

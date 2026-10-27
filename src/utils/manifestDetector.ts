@@ -11,6 +11,7 @@
  */
 
 import { stat } from "node:fs/promises";
+import { PnpmLockCache } from "./pnpmLockCache.js";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import { isManifestFormat, type ManifestFormat, type ManifestTarget } from "./manifestFormats.js";
@@ -195,6 +196,7 @@ export interface DetectedProject {
   requirementsCopies: RequirementsCopy[];
   cargoCopies: CargoCopy[];
   composerCopies?: ComposerCopy[];
+  pnpmCopies?: { path: string; content: string }[];
   composerWarnings?: string[];
   /** composer.lockのdist.type=path(自分のコード)で、照会しなかったパッケージの数 */
   composerLocalPackages?: number;
@@ -389,17 +391,22 @@ async function npmLockfileRecords(
   return keys.has(key);
 }
 
-/**
- * lockfileの無いマーカー(package.json等)を判定する。
- * - 同じディレクトリに同じエコシステムのlockfileがあれば充足
- * - 上位のlockfileだけの場合は、収録を確認できたときだけ充足(npm workspacesのpackage-lock.json)。
- *   workspace設定の無いルートのlockfileで、独立した子プロジェクトの欠落を隠さないため
- */
+/** pnpmのimporterの完全一致で収録を確認する。親や同名のpackageからは推測しない。 */
+async function pnpmLockfileRecords(cache: PnpmLockCache, projectDir: string, lockfile: DetectedManifest, memberDir: string): Promise<boolean | null> {
+  const lockAbs = path.join(projectDir, lockfile.path);
+  const captured = await cache.get(lockAbs, projectDir);
+  if ("reason" in captured || captured.importers === null) return null;
+  const key = path.relative(path.dirname(lockAbs), path.join(projectDir, memberDir)).split(path.sep).join("/");
+  return captured.importers.has(key);
+}
+
+/** 同じディレクトリのlockfile、または収録を確認できた上位lockfileだけで充足とする。 */
 async function findLockfileMissing(
   projectDir: string,
   markers: readonly { path: string; group: LockGroup }[],
   manifests: readonly DetectedManifest[],
   cargoCache: CargoLockCache,
+  pnpmCache: PnpmLockCache,
 ): Promise<LockfileMissing[]> {
   const cache = new LockfileKeyCache();
   const missing: LockfileMissing[] = [];
@@ -419,9 +426,11 @@ async function findLockfileMissing(
     for (const candidate of candidates) {
       const result = candidate.format === "package-lock.json"
         ? await npmLockfileRecords(cache, projectDir, candidate, markerDir)
-        : candidate.format === "Cargo.lock"
-          ? await cargoLockfileRecords(cargoCache, projectDir, candidate, marker.path)
-          : null;
+        : candidate.format === "pnpm-lock.yaml"
+          ? await pnpmLockfileRecords(pnpmCache, projectDir, candidate, markerDir)
+          : candidate.format === "Cargo.lock"
+            ? await cargoLockfileRecords(cargoCache, projectDir, candidate, marker.path)
+            : null;
       if (result === true) recorded = true;
       if (result !== false) confirmedAbsent = false;
     }
@@ -448,6 +457,7 @@ async function finalize(
   nugetFiles: NugetFiles = emptyNugetFiles(),
 ): Promise<DetectedProject> {
   const cargoCache = new CargoLockCache();
+  const pnpmCache = new PnpmLockCache();
   const result: DetectedProject = {
     projectDir,
     allowedRootReal,
@@ -456,11 +466,12 @@ async function finalize(
     requirementsCopies: [],
     cargoCopies: [],
     composerCopies: [],
+    pnpmCopies: [],
     composerWarnings: [],
     composerLocalPackages: 0,
     localCrateCount: 0,
     unscannableCrates: [],
-    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache),
+    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache, pnpmCache),
     requirementIssues: [],
     requirementReferences: [],
     lowerBounds: [],
@@ -489,7 +500,14 @@ async function finalize(
   }
   for (const manifest of manifests) {
     const absolute = path.join(projectDir, manifest.path);
-    if (manifest.format === "composer.lock") {
+    if (manifest.format === "pnpm-lock.yaml") {
+      const captured = await pnpmCache.get(absolute, projectDir);
+      if ("reason" in captured) {
+        result.skippedFiles.push({ path: manifest.path, reason: captured.reason });
+        continue;
+      }
+      result.pnpmCopies!.push({ path: manifest.path, content: captured.content });
+    } else if (manifest.format === "composer.lock") {
       const read = await readRegularFile(absolute, { maxBytes: Math.min(MAX_NPM_LOCK_BYTES, composerBytes), boundary: projectDir });
       if (!read.ok) {
         result.skippedFiles.push({ path: manifest.path, reason: capitalizeReason(read.message) });

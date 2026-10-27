@@ -69,3 +69,48 @@ describe("pnpm lockfile relations", () => {
     expect(pnpmLockRelations(source)).toBeNull();
   });
 });
+
+describe("pnpm lockfile parsing limits (vulnerability check, 2026-10-27)", () => {
+  // yamlのparseDocumentは大きなマップで二次時間になり、5.5MiBで11秒同期的に止まった。構文木から線形時間で読む
+  const large = (n: number) => {
+    let packages = "", snapshots = "";
+    for (let i = 0; i < n; i++) {
+      packages += `  pkg${i}@1.0.0:\n    resolution: {integrity: sha512-${"A".repeat(86)}==}\n\n`;
+      snapshots += `  pkg${i}@1.0.0:\n    dependencies:\n      pkg${(i + 1) % n}: 1.0.0\n\n`;
+    }
+    return `lockfileVersion: "9.0"\nimporters:\n  .:\n    dependencies:\n      pkg0:\n        specifier: ^1.0.0\n        version: 1.0.0\npackages:\n${packages}snapshots:\n${snapshots}`;
+  };
+
+  it("回帰: 大きなlockfile(28,000パッケージ)を有界な時間で読み、関係を返す", () => {
+    const source = large(28_000);
+    const started = performance.now();
+    const lookup = pnpmLockRelations(source);
+    // 二次時間の実装では10秒を超える。線形時間なら1秒前後(負荷に備えて余裕を取る)
+    expect(performance.now() - started).toBeLessThan(5_000);
+    expect(lookup!("pkg0", "1.0.0").relation).toBe("direct");
+    expect(lookup!("pkg27999", "1.0.0")).toMatchObject({ relation: "transitive", introducedBy: new Set(["pkg0"]) });
+  });
+
+  it.each([
+    ["anchor and alias", `lockfileVersion: "9.0"\na: &x {b: c}\nd: *x\n`],
+    ["tag", `lockfileVersion: !!str "9.0"\nimporters: {}\npackages: {}\nsnapshots: {}\n`],
+    ["duplicate key", `lockfileVersion: "9.0"\nlockfileVersion: "9.0"\n`],
+    ["several documents", `lockfileVersion: "9.0"\n---\nx: y\n`],
+    ["invalid syntax", `lockfileVersion: "9.0"\nimporters: {a: [}\n`],
+  ])("rejects %s without expanding or guessing", (_label, source) => {
+    expect(pnpmLockRelations(source)).toBeNull();
+  });
+
+  it("does not pollute prototypes through __proto__ keys", () => {
+    const lookup = pnpmLockRelations(`lockfileVersion: "9.0"\n__proto__:\n  polluted: yes\nimporters:\n  .:\n    dependencies: {}\npackages: {}\nsnapshots: {}\n`);
+    expect(lookup).not.toBeNull();
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
+  it("shares the work budget across lockfiles in a scan", () => {
+    const budget = { remaining: 2_000_000 };
+    expect(pnpmLockRelations(stringify(fixture()), budget)).not.toBeNull();
+    budget.remaining = 0;
+    expect(pnpmLockRelations(stringify(fixture()), budget)).toBeNull();
+  });
+});

@@ -1360,7 +1360,15 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - declared_inはlockfile内のimporterが宣言するpackage.jsonの相対パス(現在の実ファイルの内容との照合ではない)。introduced_byは到達元の直接依存名で、既存の10件/省略数制限を使う。ローカルリンクやGit参照をたどらず、未解決・曖昧な参照・未到達ノードはunknown。workspaceのlock収録確認は今回拡張せず、既存のunconfirmed/coverageを維持。
 - YAML依存を追加。捕捉済みコピーだけを最大16MiB、既存の関係解析全体の読み取り予算内で読む。行数20万、インデント256、flow入れ子128の保守的な事前制限。重複キー・alias展開・複数文書・未知の形式は解析しない。ノード/辺/起点走査・結果統合に1ファイル200万操作の上限を設け、上限時は関係全体をunknownにして脆弱性スキャンを継続する。
 - 両ツールで宣言元・導入元を付加し、npmの更新案内はpnpmでも誤ったoverride配置を指示しないよう、利用するパッケージマネージャーのルートoverride設定を案内する。pnpmや依存スクリプトはスキャン時に実行しない。
+- **脆弱性チェック(2026-10-27)での修正**: yamlの`parseDocument`は大きなマップの組み立てが二次時間で(新しいキーごとに既存のキーを線形に探す)、0.4MiBで128ms、1.6MiBで1.3秒、上限内の5.5MiB(28,000パッケージ)で11秒、同期的にサーバーが止まった。大きなmonorepoの実際のlockfileでも数秒止まりうる。構文木(`Parser`。線形時間)から文字列・マップ・配列だけを原型の無いオブジェクトに変換するようにした(5.5MiBで0.9秒)。anchor・alias・tag・ディレクティブ・複数文書は字句の段階で拒否し、重複キー・解釈できない構文はnull。従来は`!!str`等のタグを受け入れていた。作業量の上限はスキャン全体で共有する(従来は1ファイルごと)
 - pnpm 7.33.7/8.15.9/9.15.9自身が生成した形式5.4/6.0/9.0のworkspaceプロジェクトで、OSV-Scanner 2.7.0をMCP経由で実行(3形式×2ツール)。express 4.17.1/lodash 4.17.20はpackage.json、開発依存minimist 1.2.5はapps/web/package.jsonをdeclared_inに表示。qs 6.7.0はtransitive、introduced_by=[express]。修正候補express 4.20.0/lodash 4.18.0/minimist 1.2.6/qs 6.16.0のOSV再照会はいずれもclean。ロックファイル不変、coverage.complete=false(workspaceの収録未確認)を維持。
+
+## pnpm workspaceの収録確認(2026-10-27、ソース実装)
+
+- 形式5.3/5.4/6.0/9.0のimportersを、上位lockfileの位置から見た子package.jsonのディレクトリと完全一致で照合。日本語/空白・空のimporterも収録とし、確認済みはlockfile_missingから外す。未収録はmissing、形式不明/解析不能/重複や曖昧なパス/予算超過はunconfirmed。importerの配下全体や同名packageによる推測はしない。5.xの単独プロジェクト形式は子を収録しない。
+- PnpmLockCacheで1件16MiB/合計64MiB、安全な読み込みと既存の線形時間YAML解析を共有。解析/索引に全pnpmファイル共有200万操作の予算を使い、同じlockfileの読み込みと収録解析は1回。収録確認に使った元の内容をpnpmCopiesへ保持し、両ツールとも同じ捕捉済みの内容をスキャンする。読めない/サイズ超過のlockfileは理由付きでskipped_filesへ。スキャン範囲の外の上位lockfileやworkspace設定を探しに行かず、pnpmや依存コードを実行しない。
+- importerの存在はlockfileへの収録の根拠であり、現在のpackage.jsonとの一致や鮮度、pnpm-workspace.yamlの再評価ではない。他の欠落があればcoverage.complete=falseを維持する。
+- 実接続: pnpm 7/8/9が生成した既知の脆弱性を含むworkspaceの3形式×2ツールでcoverage.complete=trueを確認。子importerだけを外した構成×2ツールではapps/web/package.jsonがmissingでcomplete=false。lodash/minimist/qs等の脆弱性検出と修正候補のOSV再照会(clean)を維持し、検証用lockfileは不変。未収録/解析不能/範囲外/正規化後の重複/読み込み・作業予算/捕捉後の変更は自動テストでも確認。
 
 ## バックログ(2026-10-07)
 

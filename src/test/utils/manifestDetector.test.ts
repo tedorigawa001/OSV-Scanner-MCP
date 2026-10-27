@@ -137,10 +137,10 @@ describe("detectProject: 検出", () => {
       "p5/dev-requirements.txt": "PyPI:requirements.txt",
       "go/go.mod": "Go:go.mod",
     });
-    // requirements.txtは元ファイルを渡さず、検証済みの内容を専用コピーでスキャンする
+    // requirements.txt/pnpm-lock.yamlは、検証・収録確認に使った捕捉済みの内容を専用コピーでスキャンする
     expect(project.targets).toEqual(
       project.manifests
-        .filter((m) => m.format !== "requirements.txt")
+        .filter((m) => m.format !== "requirements.txt" && m.format !== "pnpm-lock.yaml")
         .map((m) => ({ path: path.join(dir, m.path), format: m.format })),
     );
     expect(project.requirementsCopies.map((c) => [c.path, c.entries])).toEqual([

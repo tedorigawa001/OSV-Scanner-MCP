@@ -6,7 +6,7 @@
  */
 
 import { writeFile } from "node:fs/promises";
-import { pnpmLockRelations } from "../utils/pnpmRelations.js";
+import { createPnpmWorkBudget, pnpmLockRelations } from "../utils/pnpmRelations.js";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import { isRemoteResolutionDisabled, runOsvScan, type RunOsvScanOptions } from "../osv/runner.js";
@@ -214,6 +214,8 @@ export async function buildRelationLookups(
 ): Promise<Map<string, SourceRelations>> {
   const lookups = new Map<string, SourceRelations>();
   const npmWorkBudget = createNpmLockWorkBudget();
+  // pnpmの関係の解析の作業量はスキャン全体で共有する(Composer・NuGetと同じ)
+  const pnpmWorkBudget = createPnpmWorkBudget();
   let remaining = maxTotalBytes;
   for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages, nugetLookup, composerLookup } of copies) {
     const lockDir = originalRelative === null ? "" : path.dirname(originalRelative);
@@ -225,7 +227,7 @@ export async function buildRelationLookups(
         if (read.ok) {
           remaining -= read.bytes.length;
           const text = read.bytes.toString("utf8");
-          lookup = format === "go.mod" ? goModRelations(text) : format === "pnpm-lock.yaml" ? pnpmLockRelations(text) : npmLockRelations(parseNpmLock(text, npmWorkBudget));
+          lookup = format === "go.mod" ? goModRelations(text) : format === "pnpm-lock.yaml" ? pnpmLockRelations(text, pnpmWorkBudget) : npmLockRelations(parseNpmLock(text, npmWorkBudget));
         }
       } else if (format === "pom.xml") {
         lookup = pomRelations(); // ファイルは読まず、osv-scannerのsource.typeで判定する
@@ -345,6 +347,11 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
           `No lockfile or manifest can be scanned (${project.skippedFiles.map((s) => `${s.path}: ${s.reason}`).join(" / ")})`,
         );
       }
+    }
+    for (const copy of project.pnpmCopies ?? []) {
+      const generated = await snapshot.writeGenerated(copy.content);
+      targets.push({ path: generated, format: "pnpm-lock.yaml" });
+      relationSources.push({ copy: generated, format: "pnpm-lock.yaml", originalRelative: copy.path });
     }
     for (const copy of project.requirementsCopies) {
       if (copy.entries.length === 0) continue;
