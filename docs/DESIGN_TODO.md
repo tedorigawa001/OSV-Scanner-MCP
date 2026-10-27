@@ -1354,6 +1354,14 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - 関係解析は全NuGetファイルで2,000,000操作の予算を共有し、上限時は不確実な導入元/宣言元を省略して警告する。既存の検査対象・直接/推移的判定は維持し、graphsはosv-scanner用コピーに書かない。suggest_fixは宣言元ファイル/導入元パッケージを更新案内に使う。
 - 実際のOSV-Scanner 2.7.0とMCPでlock/assets/deps/直接参照のみの4プロジェクト×2ツールを確認。Newtonsoft.Json.Bson → Newtonsoft.Json 12.0.1の導入元、System.Net.Http 4.3.0の宣言元を表示し、修正提案13.0.1/4.3.4の候補照会はいずれもclean。depsでは宣言元を省略し、直接参照のみのcoverage=falseを維持。検証用ファイルは不変。
 
+## pnpmの依存関係(2026-10-27、ソース実装)
+
+- `pnpmRelations.ts`でlockfile形式5.3/5.4/6.0/9.0を解析。5.x/6.xのpackages、9.0のsnapshotsを別々の確定ノードとして扱い、peerコンテキストを省略して辺をつながない。importers(旧形式の単独ルートも対応)のdependencies/devDependencies/optionalDependenciesが直接依存、dependencies/optionalDependenciesの到達先が推移的依存。別名・scope付きID・循環・複数ルートを扱い、同じ名前/版は直接優先で統合する。
+- declared_inはlockfile内のimporterが宣言するpackage.jsonの相対パス(現在の実ファイルの内容との照合ではない)。introduced_byは到達元の直接依存名で、既存の10件/省略数制限を使う。ローカルリンクやGit参照をたどらず、未解決・曖昧な参照・未到達ノードはunknown。workspaceのlock収録確認は今回拡張せず、既存のunconfirmed/coverageを維持。
+- YAML依存を追加。捕捉済みコピーだけを最大16MiB、既存の関係解析全体の読み取り予算内で読む。行数20万、インデント256、flow入れ子128の保守的な事前制限。重複キー・alias展開・複数文書・未知の形式は解析しない。ノード/辺/起点走査・結果統合に1ファイル200万操作の上限を設け、上限時は関係全体をunknownにして脆弱性スキャンを継続する。
+- 両ツールで宣言元・導入元を付加し、npmの更新案内はpnpmでも誤ったoverride配置を指示しないよう、利用するパッケージマネージャーのルートoverride設定を案内する。pnpmや依存スクリプトはスキャン時に実行しない。
+- pnpm 7.33.7/8.15.9/9.15.9自身が生成した形式5.4/6.0/9.0のworkspaceプロジェクトで、OSV-Scanner 2.7.0をMCP経由で実行(3形式×2ツール)。express 4.17.1/lodash 4.17.20はpackage.json、開発依存minimist 1.2.5はapps/web/package.jsonをdeclared_inに表示。qs 6.7.0はtransitive、introduced_by=[express]。修正候補express 4.20.0/lodash 4.18.0/minimist 1.2.6/qs 6.16.0のOSV再照会はいずれもclean。ロックファイル不変、coverage.complete=false(workspaceの収録未確認)を維持。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。

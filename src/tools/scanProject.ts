@@ -6,6 +6,7 @@
  */
 
 import { writeFile } from "node:fs/promises";
+import { pnpmLockRelations } from "../utils/pnpmRelations.js";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import { isRemoteResolutionDisabled, runOsvScan, type RunOsvScanOptions } from "../osv/runner.js";
@@ -218,13 +219,13 @@ export async function buildRelationLookups(
     const lockDir = originalRelative === null ? "" : path.dirname(originalRelative);
     let lookup: RelationLookup = null;
     try {
-      if (format === "package-lock.json" || format === "go.mod") {
+      if (format === "package-lock.json" || format === "pnpm-lock.yaml" || format === "go.mod") {
         // 残りの予算を上限に、読み込みの途中で打ち切る(予算を超えるファイルは全体を読まずにunknownにする)
-        const read = await readRegularFile(copy, { maxBytes: format === "package-lock.json" ? Math.min(MAX_NPM_LOCK_BYTES, remaining) : remaining });
+        const read = await readRegularFile(copy, { maxBytes: format !== "go.mod" ? Math.min(MAX_NPM_LOCK_BYTES, remaining) : remaining });
         if (read.ok) {
           remaining -= read.bytes.length;
           const text = read.bytes.toString("utf8");
-          lookup = format === "go.mod" ? goModRelations(text) : npmLockRelations(parseNpmLock(text, npmWorkBudget));
+          lookup = format === "go.mod" ? goModRelations(text) : format === "pnpm-lock.yaml" ? pnpmLockRelations(text) : npmLockRelations(parseNpmLock(text, npmWorkBudget));
         }
       } else if (format === "pom.xml") {
         lookup = pomRelations(); // ファイルは読まず、osv-scannerのsource.typeで判定する

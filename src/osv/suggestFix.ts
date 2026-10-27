@@ -123,7 +123,7 @@ function updateHint(pkg: ScanReportPackage): string | undefined {
       }
       if (relation === "transitive") {
         return `Transitive dependency. Update ${by ? `the direct dependency that requires it (${by})` : "the direct dependency that requires it"} to a version that requires the recommended version or later. ` +
-          "If updating the direct dependency does not fix it, set the version with overrides in the root package.json (effective only in the root project)";
+          "If updating the direct dependency does not fix it, use the package manager's root override configuration to select a compatible fixed version, regenerate the lockfile, and rescan";
       }
       return UPDATE_HINTS.npm;
     case "Go": {
