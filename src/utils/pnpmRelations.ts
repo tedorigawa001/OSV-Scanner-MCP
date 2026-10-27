@@ -77,7 +77,7 @@ function lockfileToJs(source: string, tick: () => void): unknown {
 }
 
 /** Bounded YAML parsing shared by relationships and workspace coverage. */
-export function parsePnpmLock(source: string, workBudget: number | PnpmWorkBudget = MAX_DEPENDENCY_EDGES): Record<string, unknown> | null {
+export function parseLockYaml(source: string, workBudget: number | PnpmWorkBudget = MAX_DEPENDENCY_EDGES): Record<string, unknown> | null {
   // 予算は数(この呼び出しだけ)か、スキャン全体で共有するオブジェクト
   const budget = typeof workBudget === "number" ? { remaining: workBudget } : workBudget;
   const tick = () => { if (--budget.remaining < 0) throw new Error("pnpm relationship work limit"); };
@@ -95,9 +95,13 @@ export function parsePnpmLock(source: string, workBudget: number | PnpmWorkBudge
       }
     }
     const data = lockfileToJs(source, tick);
-    if (!record(data) || !["5.3", "5.4", "6.0", "9.0"].includes(String(data.lockfileVersion))) return null;
-    return data;
+    return record(data) ? data : null;
   } catch { return null; }
+}
+
+export function parsePnpmLock(source: string, workBudget: number | PnpmWorkBudget = MAX_DEPENDENCY_EDGES): Record<string, unknown> | null {
+  const data = parseLockYaml(source, workBudget);
+  return data && ["5.3", "5.4", "6.0", "9.0"].includes(String(data.lockfileVersion)) ? data : null;
 }
 
 /** Importer paths establish inclusion without following any source paths. */

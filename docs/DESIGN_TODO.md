@@ -1370,6 +1370,14 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - importerの存在はlockfileへの収録の根拠であり、現在のpackage.jsonとの一致や鮮度、pnpm-workspace.yamlの再評価ではない。他の欠落があればcoverage.complete=falseを維持する。
 - 実接続: pnpm 7/8/9が生成した既知の脆弱性を含むworkspaceの3形式×2ツールでcoverage.complete=trueを確認。子importerだけを外した構成×2ツールではapps/web/package.jsonがmissingでcomplete=false。lodash/minimist/qs等の脆弱性検出と修正候補のOSV再照会(clean)を維持し、検証用lockfileは不変。未収録/解析不能/範囲外/正規化後の重複/読み込み・作業予算/捕捉後の変更は自動テストでも確認。
 
+## Yarnの依存関係・workspace収録確認(2026-10-27、ソース実装)
+
+- Classic v1は専用の行解析、Berryは既存の線形時間・予算付きYAML走査を共用(__metadata.version 4/5/6/8)。descriptorを完全一致で解決し、dependencies/optionalDependenciesをたどる。root/workspaceの直接依存を起点とし、introduced_byとdeclared_inを既存の応答へ反映。複数selector・scope/npm alias・循環・複数起点・直接優先を扱う。ローカル/Git/patch/portal/virtual等の未対応IDを同名レジストリ版として推測しない。
+- Classicはlockfileにworkspace一覧が無いため、捕捉したprivateルートpackage.jsonのworkspaces配列/object.packagesと子の依存descriptorの収録を確認。ローカルworkspaceは名前が一意で設定内にあり、捕捉した版が要求範囲を満たす場合だけ確認(semverを依存追加)。Berryはworkspace:の正規化したパスを照合し、捕捉した宣言とも照合。未収録はmissing、不明・曖昧・予算超過はunconfirmed。*, ?, セグメント単位**、除外、日本語/空白のパスに対応し、brace/extglob/文字クラス等は推測しない。
+- YarnLockCacheでlockfileとpackage.jsonを1回捕捉し、coverage・関係解析・スキャンの入力を一致させる。lockfile 16MiB/件・64MiB合計、manifest 4MiB/件・64MiB合計とJSON構造予算。全Yarnファイルでparse/graph/glob等の200万操作の予算を共有する。対象外のパスやlockfile内の参照をたどらず、Yarn・依存スクリプト・plugin・設定を実行しない。構文/形式/制約を扱えなければ関係unknown・収録unconfirmed、読み込み失敗/サイズ超過は理由付きでskipped_files。
+- Berryの宣言元はlockfileのworkspaceエントリから示せる。Classicの直接指定lockfileで子manifestを捕捉していない場合、その子の関係は推測しない。peer依存のインストールやconstraints/resolutionsの再評価、lockfileの鮮度・互換性の保証はしない。
+- 実接続: Yarn 1.22.22/4.9.2自身が生成した既知の脆弱性を含むworkspaceでOSV-Scanner 2.7.0をMCP経由で実行。両形式で収録済み/未収録/確認不能の3構成×2ツール(計12回)を確認し、complete=true/missing(false)/unconfirmed(false)を検証。express 4.17.1とlodash 4.17.20はpackage.json、minimist 1.2.5はapps/日本語 app/package.jsonの直接依存。qs 6.7.0はexpress由来の推移的依存。修正候補4.20.0/4.18.0/1.2.6/6.16.0はいずれもOSV再照会clean。検証用lockfile不変。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。

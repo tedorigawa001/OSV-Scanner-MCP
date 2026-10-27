@@ -12,6 +12,8 @@
 
 import { stat } from "node:fs/promises";
 import { PnpmLockCache } from "./pnpmLockCache.js";
+import { YarnLockCache } from "./yarnLockCache.js";
+import type { RelationLookup } from "./dependencyRelations.js";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import { isManifestFormat, type ManifestFormat, type ManifestTarget } from "./manifestFormats.js";
@@ -197,6 +199,7 @@ export interface DetectedProject {
   cargoCopies: CargoCopy[];
   composerCopies?: ComposerCopy[];
   pnpmCopies?: { path: string; content: string }[];
+  yarnCopies?: { path: string; content: string; relations: RelationLookup }[];
   composerWarnings?: string[];
   /** composer.lockのdist.type=path(自分のコード)で、照会しなかったパッケージの数 */
   composerLocalPackages?: number;
@@ -400,6 +403,14 @@ async function pnpmLockfileRecords(cache: PnpmLockCache, projectDir: string, loc
   return captured.importers.has(key);
 }
 
+async function yarnLockfileRecords(cache: YarnLockCache, projectDir: string, lockfile: DetectedManifest, member: string, packageFiles: readonly string[]): Promise<boolean | null> {
+  const absolute = path.join(projectDir, lockfile.path);
+  const captured = await cache.get(absolute, projectDir, packageFiles);
+  if ("reason" in captured) return null;
+  const key = path.relative(path.dirname(absolute), path.join(projectDir, member)).split(path.sep).join("/");
+  return captured.members.get(key) ?? null;
+}
+
 /** 同じディレクトリのlockfile、または収録を確認できた上位lockfileだけで充足とする。 */
 async function findLockfileMissing(
   projectDir: string,
@@ -407,8 +418,10 @@ async function findLockfileMissing(
   manifests: readonly DetectedManifest[],
   cargoCache: CargoLockCache,
   pnpmCache: PnpmLockCache,
+  yarnCache: YarnLockCache,
 ): Promise<LockfileMissing[]> {
   const cache = new LockfileKeyCache();
+  const packageFiles = markers.filter(m => m.group === "npm").map(m => m.path);
   const missing: LockfileMissing[] = [];
   for (const marker of markers) {
     const markerDir = path.dirname(marker.path);
@@ -428,6 +441,8 @@ async function findLockfileMissing(
         ? await npmLockfileRecords(cache, projectDir, candidate, markerDir)
         : candidate.format === "pnpm-lock.yaml"
           ? await pnpmLockfileRecords(pnpmCache, projectDir, candidate, markerDir)
+          : candidate.format === "yarn.lock"
+            ? await yarnLockfileRecords(yarnCache, projectDir, candidate, marker.path, packageFiles)
           : candidate.format === "Cargo.lock"
             ? await cargoLockfileRecords(cargoCache, projectDir, candidate, marker.path)
             : null;
@@ -458,6 +473,8 @@ async function finalize(
 ): Promise<DetectedProject> {
   const cargoCache = new CargoLockCache();
   const pnpmCache = new PnpmLockCache();
+  const yarnCache = new YarnLockCache();
+  const packageFiles = markers.filter(m => m.group === "npm").map(m => m.path);
   const result: DetectedProject = {
     projectDir,
     allowedRootReal,
@@ -467,11 +484,12 @@ async function finalize(
     cargoCopies: [],
     composerCopies: [],
     pnpmCopies: [],
+    yarnCopies: [],
     composerWarnings: [],
     composerLocalPackages: 0,
     localCrateCount: 0,
     unscannableCrates: [],
-    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache, pnpmCache),
+    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache, pnpmCache, yarnCache),
     requirementIssues: [],
     requirementReferences: [],
     lowerBounds: [],
@@ -500,7 +518,11 @@ async function finalize(
   }
   for (const manifest of manifests) {
     const absolute = path.join(projectDir, manifest.path);
-    if (manifest.format === "pnpm-lock.yaml") {
+    if (manifest.format === "yarn.lock") {
+      const captured = await yarnCache.get(absolute, projectDir, packageFiles);
+      if ("reason" in captured) { result.skippedFiles.push({ path: manifest.path, reason: captured.reason }); continue; }
+      result.yarnCopies!.push({ path: manifest.path, content: captured.content, relations: captured.lookup });
+    } else if (manifest.format === "pnpm-lock.yaml") {
       const captured = await pnpmCache.get(absolute, projectDir);
       if ("reason" in captured) {
         result.skippedFiles.push({ path: manifest.path, reason: captured.reason });
