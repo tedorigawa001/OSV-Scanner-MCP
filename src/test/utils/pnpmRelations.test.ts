@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { stringify } from "yaml";
-import { pnpmLockRelations } from "../../utils/pnpmRelations.js";
+import { parseLockYaml, pnpmLockRelations } from "../../utils/pnpmRelations.js";
 
 const fixture = (version = "9.0") => {
   const modern = version === "9.0", old = version.startsWith("5");
@@ -81,12 +81,20 @@ describe("pnpm lockfile parsing limits (vulnerability check, 2026-10-27)", () =>
     return `lockfileVersion: "9.0"\nimporters:\n  .:\n    dependencies:\n      pkg0:\n        specifier: ^1.0.0\n        version: 1.0.0\npackages:\n${packages}snapshots:\n${snapshots}`;
   };
 
-  it("回帰: 大きなlockfile(28,000パッケージ)を有界な時間で読み、関係を返す", () => {
-    const source = large(28_000);
-    const started = performance.now();
-    const lookup = pnpmLockRelations(source);
-    // 二次時間の実装では10秒を超える。線形時間なら1秒前後(負荷に備えて余裕を取る)
-    expect(performance.now() - started).toBeLessThan(5_000);
+  /** Parse and graph operations; unlike wall-clock time, they do not vary with CI runner load. */
+  const measure = (source: string) => {
+    const parse = { remaining: Number.MAX_SAFE_INTEGER }, graph = { remaining: Number.MAX_SAFE_INTEGER };
+    expect(parseLockYaml(source, parse)).not.toBeNull();
+    const started = performance.now(), lookup = pnpmLockRelations(source, graph);
+    return { lookup, elapsed: performance.now() - started, operations: 2 * Number.MAX_SAFE_INTEGER - parse.remaining - graph.remaining };
+  };
+
+  it("回帰: 大きなlockfile(28,000パッケージ)を線形の作業量で読み、関係を返す", () => {
+    const { lookup, elapsed, operations } = measure(large(28_000));
+    // 10倍の入力で作業量が約10倍(二次なら約100倍)。CIで5秒の実時間の上限を負荷で超えたため作業量で確かめる(2026-10-28)
+    expect(operations / measure(large(2_800)).operations).toBeLessThan(12);
+    // 実時間は二次時間の実装(10秒超)だけを捕まえる緩い上限にする。CIでは負荷により2〜5秒程度
+    expect(elapsed).toBeLessThan(10_000);
     expect(lookup!("pkg0", "1.0.0").relation).toBe("direct");
     expect(lookup!("pkg27999", "1.0.0")).toMatchObject({ relation: "transitive", introducedBy: new Set(["pkg0"]) });
   });
