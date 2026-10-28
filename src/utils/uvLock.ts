@@ -1,7 +1,7 @@
 import path from "node:path";
 import { parse } from "smol-toml";
 import { comparePep440 } from "./pep440Version.js";
-import { MAX_DEPENDENCY_EDGES, type RelationInfo, type RelationLookup } from "./dependencyRelations.js";
+import { MAX_DEPENDENCY_EDGES, createParseBudget, type RelationInfo, type RelationLookup } from "./dependencyRelations.js";
 
 export interface UvWorkBudget { remaining: number }
 export const createUvWorkBudget = (): UvWorkBudget => ({ remaining: MAX_DEPENDENCY_EDGES });
@@ -14,6 +14,8 @@ const safePath = (s: string) => s.length > 0 && !path.posix.isAbsolute(s) && !pa
 export function parseUvLock(source: string): Record<string, unknown> | null {
   try {
     if (Buffer.byteLength(source) > 16 * 1024 * 1024) return null;
+    // Structural work is bounded per file in proportion to its size, as for the other lockfile parsers.
+    const maxStructure = createParseBudget(source).remaining;
     let quote = "", triple = false, escaped = false, comment = false, depth = 0, structure = 0, dots = 0;
     for (let i = 0; i < source.length; i++) {
       const c = source[i]!;
@@ -33,7 +35,7 @@ export function parseUvLock(source: string): Record<string, unknown> | null {
       if (c === "." && ++dots > 128) return null;
       if (c === "[" || c === "{") { if (++depth > 128) return null; }
       else if (c === "]" || c === "}") { if (--depth < 0) return null; }
-      if ("[]{}=,.".includes(c) && ++structure > 1_000_000) return null;
+      if ("[]{}=,.".includes(c) && ++structure > maxStructure) return null;
     }
     if (depth || quote) return null;
     const value = parse(source, { unsafeKeyBehaviour: "throw" });
@@ -77,7 +79,8 @@ export function uvWorkspaceIndex(data: Record<string, unknown>, budget = createU
     const locations = new Map<string, boolean | null>();
     for (const node of packages) {
       tick(); if (node.location === undefined) continue;
-      const member = node.location === "." ? true : rawMembers === undefined ? null : members.has(node.name);
+      // A recorded nonmember (such as a path dependency) is locked but not a workspace root, so it is unconfirmed, not missing.
+      const member = node.location === "." || members.has(node.name) ? true : null;
       locations.set(node.location, locations.has(node.location) || names.get(node.name)! > 1 ? null : member);
     }
     return locations;
@@ -149,8 +152,13 @@ export function uvLockRelations(data: Record<string, unknown>, membership: Reado
       if (typeof ref.marker !== "string") throw new Error("invalid uv marker");
       return ref.marker;
     };
+    // The same root may be declared by several members; its reachable set depends only on the node, extras and marker.
+    const started = new Map<UvNode, Set<string>>();
     for (const start of starts) {
-      const seen = new Map<UvNode, Set<string>>(), queue = [{ node: start.node, extra: extras(start.ref), marker: marker(start.ref) }];
+      const extra = extras(start.ref), condition = marker(start.ref), key = JSON.stringify([extra, condition]);
+      const done = started.get(start.node) ?? new Set<string>(); if (done.has(key)) continue;
+      done.add(key); started.set(start.node, done);
+      const seen = new Map<UvNode, Set<string>>(), queue = [{ node: start.node, extra, marker: condition }];
       while (queue.length) {
         tick(); const current = queue.pop()!, state = JSON.stringify([current.extra, current.marker]);
         const states = seen.get(current.node) ?? new Set<string>(); if (states.has(state)) continue;

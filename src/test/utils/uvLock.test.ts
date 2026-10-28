@@ -18,7 +18,9 @@ describe("uv lockfile origins and membership", () => {
   });
   it("requires manifest membership, not merely a local dependency path", () => {
     const data = { ...base(), package: [...base().package, local("independent", "other/project")] };
-    expect(uvWorkspaceIndex(data)?.get("other/project")).toBe(false);
+    // Locked but not a member (for example a path dependency): unconfirmed, not missing (review, 2026-10-28)
+    expect(uvWorkspaceIndex(data)?.get("other/project")).toBeNull();
+    expect(uvWorkspaceIndex(data)?.has("absent/project")).toBe(false);
     const { manifest, ...single } = data;
     expect(uvWorkspaceIndex(single)?.get("other/project")).toBeNull();
     expect(uvWorkspaceIndex(single)?.get(".")).toBe(true);
@@ -77,6 +79,19 @@ describe("uv lockfile origins and membership", () => {
   });
   it.each(['version=2', 'version=1\nrevision=99', 'version=1\nversion=1', 'version=1\nx=[1 # no closing array', 'version=1\nx=' + '['.repeat(129) + ']'.repeat(129)])("rejects invalid, duplicate, unknown or deep TOML: %s", source => {
     expect(parseUvLock(source)).toBeNull();
+  });
+  it("回帰: 構造記号の上限はファイルの大きさに比例し、16MiB未満の密なlockfileを拒否しない(レビュー、2026-10-28)", () => {
+    expect(parseUvLock(`version=1\nx=[${"1,".repeat(1_000_001)}]\npackage=[]`)).not.toBeNull();
+  });
+  it("回帰: 複数のメンバーが宣言する同じ依存は1回だけたどり、関係の予算を使い切らない(レビュー、2026-10-28)", () => {
+    const names = Array.from({ length: 5 }, (_, i) => `m${i}`), shared = Array.from({ length: 30 }, (_, k) => ({ name: `p${k}` }));
+    const data = { version: 1, manifest: { members: names }, package: [
+      ...names.map((name, i) => ({ ...local(name, i === 0 ? "." : `packages/${name}`, shared) })),
+      ...Array.from({ length: 2_000 }, (_, i) => registry(`p${i}`, Array.from({ length: 5 }, (_, k) => ({ name: `p${(i + k + 1) % 2_000}` })))),
+    ] };
+    const lookup = uvLockRelations(data, uvWorkspaceIndex(data))!;
+    expect(lookup("p0", "1.0.0").declaredIn).toEqual(new Set(["pyproject.toml", ...names.slice(1).map(n => `packages/${n}/pyproject.toml`)]));
+    expect(lookup("p100", "1.0.0").relation).toBe("transitive");
   });
   it("does not mistake quoted/commented structure for nested TOML", () => {
     expect(parseUvLock('version=1\n# [ { comment\ntext="""[[[\n# not a comment inside a string\n"""\npackage=[]')).not.toBeNull();

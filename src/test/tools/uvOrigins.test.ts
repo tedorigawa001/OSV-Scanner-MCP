@@ -16,9 +16,9 @@ const member = "apps/日本語 app";
 async function fixture(status = "included") {
   dir = await realpath(await mkdtemp(path.join(os.tmpdir(), "osv-uv-")));
   const content = stringify({ version: status === "unconfirmed" ? 99 : 1, revision: 5,
-    manifest: { members: status === "missing" ? ["app"] : ["app", "web"] }, package: [
+    manifest: { members: status === "nonmember" || status === "missing" ? ["app"] : ["app", "web"] }, package: [
       { name: "app", version: "0.1.0", source: { virtual: "." }, dependencies: [{ name: "parent" }] },
-      { name: "web", version: "0.1.0", source: { editable: member }, "dev-dependencies": { dev: [{ name: "dev" }] } },
+      ...status === "missing" ? [] : [{ name: "web", version: "0.1.0", source: { editable: member }, "dev-dependencies": { dev: [{ name: "dev" }] } }],
       { name: "parent", version: "1.0.0", source: { registry: "https://pypi.org/simple" }, dependencies: [{ name: "leaf" }] },
       { name: "leaf", version: "1.0.0", source: { registry: "https://pypi.org/simple" } },
       { name: "dev", version: "1.0.0", source: { registry: "https://pypi.org/simple" } },
@@ -37,12 +37,13 @@ async function fixture(status = "included") {
   });
   return content;
 }
-it.each(["included", "missing", "unconfirmed"])("propagates uv origins and %s coverage to both tools", async status => {
+// nonmember: locked as a path dependency but not a workspace member, so unconfirmed (review, 2026-10-28)
+it.each(["included", "missing", "unconfirmed", "nonmember"])("propagates uv origins and %s coverage to both tools", async status => {
   await fixture(status);
   for (const result of [await handleScanProject({ project_path: dir }), await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled" })]) {
     const payload = JSON.parse(result.content[0]!.text);
     expect(payload.coverage.complete).toBe(status === "included");
-    if (status !== "included") expect(payload.coverage.lockfile_missing).toMatchObject([{ path: `${member}/pyproject.toml`, status }]);
+    if (status !== "included") expect(payload.coverage.lockfile_missing).toMatchObject([{ path: `${member}/pyproject.toml`, status: status === "nonmember" ? "unconfirmed" : status }]);
     else {
       const packages = payload.packages ?? payload.suggestions;
       const get = (name: string) => packages.find((p: { name?: string; package?: string }) => (p.name ?? p.package) === name);
