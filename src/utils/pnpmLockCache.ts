@@ -1,6 +1,7 @@
 import { MAX_NPM_LOCK_BYTES, MAX_NPM_LOCK_TOTAL_BYTES } from "./npmLockCopy.js";
 import { capitalizeReason, readRegularFile } from "./safeRead.js";
 import { createPnpmWorkBudget, parsePnpmLock, pnpmImporterKeys } from "./pnpmRelations.js";
+import { createParseBudget } from "./dependencyRelations.js";
 
 export type CapturedPnpmLock = { content: string; importers: Set<string> | null } | { reason: string };
 
@@ -21,7 +22,7 @@ export class PnpmLockCache {
       if (!read.ok) captured = { reason: capitalizeReason(read.message) };
       else {
         this.remaining -= read.bytes.length;
-        const content = read.bytes.toString("utf8"), data = parsePnpmLock(content, this.budget);
+        const content = read.bytes.toString("utf8"), data = parsePnpmLock(content, createParseBudget(content));
         captured = { content, importers: data === null ? null : pnpmImporterKeys(data, this.budget) };
       }
     }

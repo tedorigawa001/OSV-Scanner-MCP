@@ -1,6 +1,6 @@
 import { CST, Lexer, Parser } from "yaml";
 import path from "node:path";
-import { MAX_DEPENDENCY_EDGES, type RelationInfo, type RelationLookup } from "./dependencyRelations.js";
+import { MAX_DEPENDENCY_EDGES, MAX_LOCKFILE_LINES, createParseBudget, type RelationInfo, type RelationLookup } from "./dependencyRelations.js";
 
 const record = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === "object" && !Array.isArray(v);
 const identity = (name: string, version: string) => JSON.stringify([name, version]);
@@ -84,7 +84,7 @@ export function parseLockYaml(source: string, workBudget: number | PnpmWorkBudge
   try {
     if (Buffer.byteLength(source) > 16 * 1024 * 1024) return null;
     const lines = source.split(/\r?\n/);
-    if (lines.length > 200_000) return null;
+    if (lines.length > MAX_LOCKFILE_LINES) return null;
     // Conservative pre-parse nesting bounds, including flow collections.
     let flow = 0;
     for (const line of lines) {
@@ -131,7 +131,8 @@ export function pnpmLockRelations(source: string, workBudget: number | PnpmWorkB
   const budget = typeof workBudget === "number" ? { remaining: workBudget } : workBudget;
   const tick = () => { if (--budget.remaining < 0) throw new Error("pnpm relationship work limit"); };
   try {
-    const data = parsePnpmLock(source, budget);
+    // Parsing has its own size-based budget; the shared budget bounds the graph work.
+    const data = parsePnpmLock(source, createParseBudget(source));
     if (data === null) return null;
     const modern = data.lockfileVersion === "9.0";
     const packages = record(data.packages) ? data.packages : {};

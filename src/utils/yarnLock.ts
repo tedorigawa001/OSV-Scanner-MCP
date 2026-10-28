@@ -1,6 +1,6 @@
 import path from "node:path";
 import { satisfies, valid, validRange } from "semver";
-import { MAX_DEPENDENCY_EDGES, type RelationInfo, type RelationLookup } from "./dependencyRelations.js";
+import { MAX_DEPENDENCY_EDGES, MAX_LOCKFILE_LINES, createParseBudget, type RelationInfo, type RelationLookup } from "./dependencyRelations.js";
 import { parseLockYaml, type PnpmWorkBudget } from "./pnpmRelations.js";
 
 const record = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === "object" && !Array.isArray(v);
@@ -128,16 +128,19 @@ function workspaceMatch(root: Record<string, unknown> | null, member: string, ti
 export function analyzeYarn(source: string, manifests: readonly YarnManifest[], budget: PnpmWorkBudget = { remaining: MAX_DEPENDENCY_EDGES },
   relationBudget: PnpmWorkBudget = { remaining: MAX_DEPENDENCY_EDGES }): YarnAnalysis {
   const unknown = (): YarnAnalysis => ({ lookup: null, members: new Map(manifests.map(m => [m.path, null])) });
-  let active = budget;
+  // Parsing uses a per-file budget sized from the input; indexing and coverage then use the shared budget.
+  let active = createParseBudget(source);
   const tick = () => { if (--active.remaining < 0) throw new Error("Yarn work limit"); };
   try {
-    if (Buffer.byteLength(source) > 16 * 1024 * 1024 || source.split(/\r?\n/).length > 200_000) return unknown();
+    if (Buffer.byteLength(source) > 16 * 1024 * 1024 || source.split(/\r?\n/).length > MAX_LOCKFILE_LINES) return unknown();
     const isClassic = /^# yarn lockfile v1\s*$/m.test(source);
     let entries: Map<string, Record<string, unknown>>;
     if (isClassic) {
       const parsed = classic(source, tick); if (!parsed) return unknown(); entries = parsed;
+      active = budget;
     } else {
-      const data = parseLockYaml(source, budget);
+      const data = parseLockYaml(source, active);
+      active = budget;
       if (!data || !record(data.__metadata) || !["4", "5", "6", "8"].includes(String(data.__metadata.version))) return unknown();
       entries = new Map();
       for (const [combined, value] of Object.entries(data)) {

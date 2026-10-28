@@ -36,6 +36,20 @@ export type RelationLookup = ((name: string, version: string, sourceType?: strin
 /** たどる依存の辺の上限(巨大・悪意あるlockfileで処理が膨らまないように) */
 export const MAX_DEPENDENCY_EDGES = 2_000_000;
 
+/** Lockfile parsing operations allowed per KiB (dense pnpm lockfiles measured at about 440). */
+export const PARSE_OPERATIONS_PER_KIB = 1024;
+
+/** Line limit for YAML-like lockfiles; 200,000 lines rejected pnpm/Yarn lockfiles of about 6 MiB, below the 16 MiB limit. */
+export const MAX_LOCKFILE_LINES = 1_000_000;
+
+/**
+ * Parsing is linear and already bounded by the byte limits, so each lockfile gets its own budget sized from its length.
+ * A shared parse budget ran out at about 7.5 MiB of pnpm/Yarn input in a scan, well below the 16 MiB / 64 MiB read limits.
+ */
+export function createParseBudget(source: string): { remaining: number } {
+  return { remaining: Math.max(MAX_DEPENDENCY_EDGES, Math.ceil(Buffer.byteLength(source) / 1024) * PARSE_OPERATIONS_PER_KIB) };
+}
+
 const UNKNOWN: RelationInfo = { relation: "unknown" };
 
 /** Cargoの省略されたpackage IDは、一意に解決できるときだけたどる。 */
