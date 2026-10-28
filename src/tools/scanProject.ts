@@ -204,6 +204,7 @@ interface RelationSource {
   composerLookup?: RelationLookup;
   yarnLookup?: RelationLookup;
   bunLookup?: RelationLookup;
+  poetryLookup?: RelationLookup;
   uvLookup?: RelationLookup;
 }
 
@@ -220,7 +221,7 @@ export async function buildRelationLookups(
   // pnpmの関係の解析の作業量はスキャン全体で共有する(Composer・NuGetと同じ)
   const pnpmWorkBudget = createPnpmWorkBudget();
   let remaining = maxTotalBytes;
-  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages, nugetLookup, composerLookup, yarnLookup, bunLookup, uvLookup } of copies) {
+  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages, nugetLookup, composerLookup, yarnLookup, bunLookup, uvLookup, poetryLookup } of copies) {
     const lockDir = originalRelative === null ? "" : path.dirname(originalRelative);
     let lookup: RelationLookup = null;
     try {
@@ -232,6 +233,8 @@ export async function buildRelationLookups(
           const text = read.bytes.toString("utf8");
           lookup = format === "go.mod" ? goModRelations(text) : format === "pnpm-lock.yaml" ? pnpmLockRelations(text, pnpmWorkBudget) : npmLockRelations(parseNpmLock(text, npmWorkBudget));
         }
+      } else if (format === "poetry.lock") {
+        lookup = poetryLookup ?? null;
       } else if (format === "uv.lock") {
         lookup = uvLookup ?? null;
       } else if (format === "bun.lock") {
@@ -356,6 +359,11 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
           `No lockfile or manifest can be scanned (${project.skippedFiles.map((s) => `${s.path}: ${s.reason}`).join(" / ")})`,
         );
       }
+    }
+    for (const copy of project.poetryCopies ?? []) {
+      const generated = await snapshot.writeGenerated(copy.content);
+      targets.push({ path: generated, format: "poetry.lock" });
+      relationSources.push({ copy: generated, format: "poetry.lock", originalRelative: copy.path, poetryLookup: copy.relations });
     }
     for (const copy of project.uvCopies ?? []) {
       const generated = await snapshot.writeGenerated(copy.content);

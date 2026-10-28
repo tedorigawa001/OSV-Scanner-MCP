@@ -14,6 +14,7 @@ import { stat } from "node:fs/promises";
 import { PnpmLockCache } from "./pnpmLockCache.js";
 import { YarnLockCache } from "./yarnLockCache.js";
 import { BunLockCache } from "./bunLockCache.js";
+import { PoetryLockCache } from "./poetryLockCache.js";
 import { UvLockCache } from "./uvLockCache.js";
 import type { RelationLookup } from "./dependencyRelations.js";
 import path from "node:path";
@@ -203,6 +204,7 @@ export interface DetectedProject {
   pnpmCopies?: { path: string; content: string }[];
   yarnCopies?: { path: string; content: string; relations: RelationLookup }[];
   bunCopies?: { path: string; content: string; relations: RelationLookup }[];
+  poetryCopies?: { path: string; content: string; relations: RelationLookup }[];
   uvCopies?: { path: string; content: string; relations: RelationLookup }[];
   composerWarnings?: string[];
   /** composer.lockのdist.type=path(自分のコード)で、照会しなかったパッケージの数 */
@@ -432,6 +434,15 @@ async function uvLockfileRecords(cache: UvLockCache, projectDir: string, lockfil
   return captured.workspaces.get(directory) ?? (captured.workspaces.has(directory) ? null : false);
 }
 
+async function poetryLockfileRecords(cache: PoetryLockCache, projectDir: string, lockfile: DetectedManifest, marker: string, files: readonly string[]): Promise<boolean | null> {
+  if (path.basename(marker) !== "pyproject.toml") return null;
+  const absolute = path.join(projectDir, lockfile.path);
+  const captured = await cache.get(absolute, projectDir, files);
+  if ("reason" in captured || captured.workspaces === null) return null;
+  const directory = path.relative(path.dirname(absolute), path.join(projectDir, path.dirname(marker))).split(path.sep).join("/");
+  return captured.workspaces.get(directory) ?? null;
+}
+
 /** 同じディレクトリのlockfile、または収録を確認できた上位lockfileだけで充足とする。 */
 async function findLockfileMissing(
   projectDir: string,
@@ -442,9 +453,11 @@ async function findLockfileMissing(
   yarnCache: YarnLockCache,
   bunCache: BunLockCache,
   uvCache: UvLockCache,
+  poetryCache: PoetryLockCache,
 ): Promise<LockfileMissing[]> {
   const cache = new LockfileKeyCache();
   const packageFiles = markers.filter(m => m.group === "npm").map(m => m.path);
+  const pythonFiles = markers.filter(m => path.basename(m.path) === "pyproject.toml").map(m => m.path);
   const missing: LockfileMissing[] = [];
   for (const marker of markers) {
     const markerDir = path.dirname(marker.path);
@@ -470,6 +483,8 @@ async function findLockfileMissing(
             ? await bunLockfileRecords(bunCache, projectDir, candidate, markerDir)
             : candidate.format === "uv.lock"
               ? await uvLockfileRecords(uvCache, projectDir, candidate, marker.path)
+            : candidate.format === "poetry.lock"
+              ? await poetryLockfileRecords(poetryCache, projectDir, candidate, marker.path, pythonFiles)
             : candidate.format === "Cargo.lock"
             ? await cargoLockfileRecords(cargoCache, projectDir, candidate, marker.path)
             : null;
@@ -503,6 +518,8 @@ async function finalize(
   const yarnCache = new YarnLockCache();
   const bunCache = new BunLockCache();
   const uvCache = new UvLockCache();
+  const poetryCache = new PoetryLockCache();
+  const pythonFiles = markers.filter(m => path.basename(m.path) === "pyproject.toml").map(m => m.path);
   const packageFiles = markers.filter(m => m.group === "npm").map(m => m.path);
   const result: DetectedProject = {
     projectDir,
@@ -516,11 +533,12 @@ async function finalize(
     yarnCopies: [],
     bunCopies: [],
     uvCopies: [],
+    poetryCopies: [],
     composerWarnings: [],
     composerLocalPackages: 0,
     localCrateCount: 0,
     unscannableCrates: [],
-    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache, pnpmCache, yarnCache, bunCache, uvCache),
+    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache, pnpmCache, yarnCache, bunCache, uvCache, poetryCache),
     requirementIssues: [],
     requirementReferences: [],
     lowerBounds: [],
@@ -549,7 +567,11 @@ async function finalize(
   }
   for (const manifest of manifests) {
     const absolute = path.join(projectDir, manifest.path);
-    if (manifest.format === "uv.lock") {
+    if (manifest.format === "poetry.lock") {
+      const captured = await poetryCache.get(absolute, projectDir, pythonFiles);
+      if ("reason" in captured) { result.skippedFiles.push({ path: manifest.path, reason: captured.reason }); continue; }
+      result.poetryCopies!.push({ path: manifest.path, content: captured.content, relations: captured.relations });
+    } else if (manifest.format === "uv.lock") {
       const captured = await uvCache.get(absolute, projectDir);
       if ("reason" in captured) { result.skippedFiles.push({ path: manifest.path, reason: captured.reason }); continue; }
       result.uvCopies!.push({ path: manifest.path, content: captured.content, relations: captured.relations });
