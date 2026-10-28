@@ -147,10 +147,10 @@ function updateHint(pkg: ScanReportPackage): string | undefined {
       return undefined; // gradle.lockfile等: 判定できないため具体的な案内はしない(従来どおり)
     case "PyPI":
       if (relation === "direct") {
-        return "Direct dependency. Update the version in requirements.txt, pyproject.toml, or Pipfile, and regenerate the lockfile";
+        return `Direct dependency. Update the version in ${pkg.declared_in?.join(", ") ?? "requirements.txt, pyproject.toml, or Pipfile"}, and regenerate the lockfile`;
       }
       if (relation === "transitive") {
-        return "Transitive dependency. Update the direct dependency that requires it, or set the version with a pip constraints file (-c) or the override settings of uv, Poetry, and similar tools";
+        return `Transitive dependency. Update ${by ? `the direct dependencies that require it (${by})` : "the direct dependency that requires it"}, or set the version with a pip constraints file (-c) or the override settings of uv, Poetry, and similar tools`;
       }
       return UPDATE_HINTS.PyPI;
     default:

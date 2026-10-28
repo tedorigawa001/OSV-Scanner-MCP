@@ -1388,6 +1388,14 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - 今後の改善候補: 関係の走査は直接依存ごとに到達先をたどるため、1万パッケージ×直接依存200程度で関係の予算を超えunknownになる(pnpm/Yarn/Bun共通、収録には影響しない)。到達先の再利用で改善できる。
 - Bun 1.4.4(形式2)と1.2.23(形式1)自身が生成した既知の脆弱性を含むworkspaceで、OSV-Scanner 2.7.0をMCP経由で実行。収録済み2形式・未収録・確認不能の4構成×2ツールを確認。express 4.17.1/lodash 4.17.20はpackage.json、minimist 1.2.5はapps/日本語 app/package.jsonの直接依存、qs 6.7.0はexpress由来の推移的依存。修正候補4.20.0/4.18.0/1.2.6/6.16.1はいずれもOSV再照会clean。complete=true/missing(false)/unconfirmed(false)を検証し、検証用lockfile不変。
 
+## uvの依存関係・workspace収録確認(2026-10-28、ソース実装)
+
+- uv.lock version=1/revision=0〜5をTOML解析。捕捉済みeditable/virtual/directoryパッケージとmanifest.membersからworkspaceを対応付け、ローカルrootの通常/optional/dev依存を直接依存にする。declared_inはlocked pathのpyproject.toml。名前はPEP 503、依存参照の明示版はPEP 440で比較し、版/取得元で一意に特定できない参照は推測しない。
+- introduced_byは直接依存からの到達元。optional edgeは要求されたextraだけをたどり、レジストリ依存のdevグループをたどらない。同一経路で異なるmarker式を結合せず、解決できない条件はunknown。Python/OS/環境の評価や依存ソルバーは実行しない。ワークスペースの全optional/dev宣言はuniversal lockfileのスキャン範囲として扱う。ローカルpathは中継できるが実ファイルは読まず、workspace外の同名path依存で収録を推測しない。
+- 子pyproject.tomlが収録済みならlockfile_missingから除外、未収録はmissing、名前/パスの曖昧さやmanifest未記録等はunconfirmed。legacy setup.py/setup.cfg/Pipfileをuvのworkspaceと推測しない。現在のpyprojectとの一致/鮮度確認は対象外。UvLockCacheで安全に1回捕捉した内容をcoverage・関係・スキャンへ共用し、uvやbuild backendをスキャン時に実行しない。
+- smol-tomlを追加し、パーサーの前に文字列/コメントを区別して深さ128・行中の引用外dot128・構造記号100万で制限。1件16MiB/合計64MiB。workspace索引と関係の予算200万をそれぞれ全uvファイルで共有し、関係の上限で確認済みcoverageを崩さない。未知/構文不明は関係unknown/収録unconfirmed、読み込み不可/サイズ超過はskipped_files。
+- 実接続: uv 0.12.23自身が--no-build/--no-python-downloadsで生成したworkspaceで、OSV-Scanner 2.7.0をMCP経由で実行。収録済み/未収録/確認不能×2ツール(計6回)を確認。requests 2.25.0はpyproject.toml、jinja2 3.1.4はapps/日本語 app/pyproject.tomlの直接依存(開発グループ)、urllib3 1.26.20はrequests由来の推移的依存。候補requests 2.33.0/jinja2 3.1.6/urllib3 2.8.0はいずれもOSV再照会clean。complete=true/missing(false)/unconfirmed(false)、lockfile不変を検証。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
