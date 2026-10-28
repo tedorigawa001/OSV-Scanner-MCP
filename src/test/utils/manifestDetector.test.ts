@@ -140,7 +140,7 @@ describe("detectProject: 検出", () => {
     // requirements.txt/pnpm-lock.yaml/yarn.lock/bun.lock/uv.lockは捕捉済みの内容を使う
     expect(project.targets).toEqual(
       project.manifests
-        .filter((m) => m.format !== "requirements.txt" && m.format !== "pnpm-lock.yaml" && m.format !== "yarn.lock" && m.format !== "bun.lock" && m.format !== "uv.lock" && m.format !== "poetry.lock")
+        .filter((m) => m.format !== "requirements.txt" && m.format !== "pnpm-lock.yaml" && m.format !== "yarn.lock" && m.format !== "bun.lock" && m.format !== "uv.lock" && m.format !== "poetry.lock" && m.format !== "pdm.lock")
         .map((m) => ({ path: path.join(dir, m.path), format: m.format })),
     );
     expect(project.requirementsCopies.map((c) => [c.path, c.entries])).toEqual([
