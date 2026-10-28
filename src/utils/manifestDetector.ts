@@ -13,6 +13,7 @@
 import { stat } from "node:fs/promises";
 import { PnpmLockCache } from "./pnpmLockCache.js";
 import { YarnLockCache } from "./yarnLockCache.js";
+import { BunLockCache } from "./bunLockCache.js";
 import type { RelationLookup } from "./dependencyRelations.js";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
@@ -200,6 +201,7 @@ export interface DetectedProject {
   composerCopies?: ComposerCopy[];
   pnpmCopies?: { path: string; content: string }[];
   yarnCopies?: { path: string; content: string; relations: RelationLookup }[];
+  bunCopies?: { path: string; content: string; relations: RelationLookup }[];
   composerWarnings?: string[];
   /** composer.lockのdist.type=path(自分のコード)で、照会しなかったパッケージの数 */
   composerLocalPackages?: number;
@@ -411,6 +413,14 @@ async function yarnLockfileRecords(cache: YarnLockCache, projectDir: string, loc
   return captured.members.get(key) ?? null;
 }
 
+async function bunLockfileRecords(cache: BunLockCache, projectDir: string, lockfile: DetectedManifest, memberDir: string): Promise<boolean | null> {
+  const absolute = path.join(projectDir, lockfile.path);
+  const captured = await cache.get(absolute, projectDir);
+  if ("reason" in captured || captured.workspaces === null) return null;
+  const key = path.relative(path.dirname(absolute), path.join(projectDir, memberDir)).split(path.sep).join("/");
+  return captured.workspaces.has(key);
+}
+
 /** 同じディレクトリのlockfile、または収録を確認できた上位lockfileだけで充足とする。 */
 async function findLockfileMissing(
   projectDir: string,
@@ -419,6 +429,7 @@ async function findLockfileMissing(
   cargoCache: CargoLockCache,
   pnpmCache: PnpmLockCache,
   yarnCache: YarnLockCache,
+  bunCache: BunLockCache,
 ): Promise<LockfileMissing[]> {
   const cache = new LockfileKeyCache();
   const packageFiles = markers.filter(m => m.group === "npm").map(m => m.path);
@@ -443,6 +454,8 @@ async function findLockfileMissing(
           ? await pnpmLockfileRecords(pnpmCache, projectDir, candidate, markerDir)
           : candidate.format === "yarn.lock"
             ? await yarnLockfileRecords(yarnCache, projectDir, candidate, marker.path, packageFiles)
+          : candidate.format === "bun.lock"
+            ? await bunLockfileRecords(bunCache, projectDir, candidate, markerDir)
           : candidate.format === "Cargo.lock"
             ? await cargoLockfileRecords(cargoCache, projectDir, candidate, marker.path)
             : null;
@@ -474,6 +487,7 @@ async function finalize(
   const cargoCache = new CargoLockCache();
   const pnpmCache = new PnpmLockCache();
   const yarnCache = new YarnLockCache();
+  const bunCache = new BunLockCache();
   const packageFiles = markers.filter(m => m.group === "npm").map(m => m.path);
   const result: DetectedProject = {
     projectDir,
@@ -485,11 +499,12 @@ async function finalize(
     composerCopies: [],
     pnpmCopies: [],
     yarnCopies: [],
+    bunCopies: [],
     composerWarnings: [],
     composerLocalPackages: 0,
     localCrateCount: 0,
     unscannableCrates: [],
-    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache, pnpmCache, yarnCache),
+    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache, pnpmCache, yarnCache, bunCache),
     requirementIssues: [],
     requirementReferences: [],
     lowerBounds: [],
@@ -518,7 +533,11 @@ async function finalize(
   }
   for (const manifest of manifests) {
     const absolute = path.join(projectDir, manifest.path);
-    if (manifest.format === "yarn.lock") {
+    if (manifest.format === "bun.lock") {
+      const captured = await bunCache.get(absolute, projectDir);
+      if ("reason" in captured) { result.skippedFiles.push({ path: manifest.path, reason: captured.reason }); continue; }
+      result.bunCopies!.push({ path: manifest.path, content: captured.content, relations: captured.relations });
+    } else if (manifest.format === "yarn.lock") {
       const captured = await yarnCache.get(absolute, projectDir, packageFiles);
       if ("reason" in captured) { result.skippedFiles.push({ path: manifest.path, reason: captured.reason }); continue; }
       result.yarnCopies!.push({ path: manifest.path, content: captured.content, relations: captured.lookup });

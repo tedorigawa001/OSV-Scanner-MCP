@@ -1379,6 +1379,13 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - レビュー修正(2026-10-27): 関係の解析(直接依存の数×パッケージ数で増える)と収録確認が同じ予算で、5,000パッケージ×直接依存500(1MB)で予算を超えると収録まで全てunconfirmedになっていた。解析・収録確認と関係の解析の予算を分け(各200万、スキャン全体で共有)、関係の予算超過では関係だけunknownにし、確認済みの収録を保つ。workspacesの末尾の/はYarnと同じく1つ取り除き(以前はmissing)、他の空セグメントはunconfirmed。
 - 実接続: Yarn 1.22.22/4.9.2自身が生成した既知の脆弱性を含むworkspaceでOSV-Scanner 2.7.0をMCP経由で実行。両形式で収録済み/未収録/確認不能の3構成×2ツール(計12回)を確認し、complete=true/missing(false)/unconfirmed(false)を検証。express 4.17.1とlodash 4.17.20はpackage.json、minimist 1.2.5はapps/日本語 app/package.jsonの直接依存。qs 6.7.0はexpress由来の推移的依存。修正候補4.20.0/4.18.0/1.2.6/6.16.0はいずれもOSV再照会clean。検証用lockfile不変。
 
+## Bunの依存関係・workspace収録確認(2026-10-28、ソース実装)
+
+- テキストbun.lockのJSONC形式0/1/2に対応。jsonc-parserのvisitorでコメント/末尾カンマを扱い、構文エラー・重複キー・深さ128超過を値の構築中に拒否。1件16MiB・合計64MiB。構文/索引/関係ごとに全Bunファイルで共有する200万操作の予算を使い、関係の上限で確認済みのcoverageをunconfirmedにしない。
+- 捕捉済みworkspacesのdependencies/devDependencies/optionalDependencies/インストール済みpeerを直接依存とし、packagesの配置を親へたどって依存先を解決。scope付きの名前を1単位として扱い、入れ子の複数版とnpm aliasを区別。INFOのdependencies/optionalDependencies/配置のあるpeerをたどってintroduced_byを付加し、直接依存はlocked workspaceのpackage.jsonをdeclared_inに表示。直接優先・複数ルート・循環を扱う。optionalの同名上書きとunresolvedを尊重し、ローカル/Git/tarballの実ファイルを読まず同名公開版へフォールバックしない。
+- workspaceはlockfileからの正規化した相対パスを完全一致で照合。収録済みはlockfile_missingから外し、未収録はmissing、不正/未知/解析上限はunconfirmed。日本語/空白・空のworkspaceにも対応。BunLockCacheで1回捕捉した内容をcoverage・関係解析・両ツールのスキャンに共用し、元ファイルの差し替えの影響を防ぐ。読み込み不可/サイズ超過は理由付きでskipped_files。Bun/依存コードはスキャン時に実行せず、bun.lockb・現在のpackage.jsonとの一致/鮮度検証は対象外。
+- Bun 1.4.4(形式2)と1.2.23(形式1)自身が生成した既知の脆弱性を含むworkspaceで、OSV-Scanner 2.7.0をMCP経由で実行。収録済み2形式・未収録・確認不能の4構成×2ツールを確認。express 4.17.1/lodash 4.17.20はpackage.json、minimist 1.2.5はapps/日本語 app/package.jsonの直接依存、qs 6.7.0はexpress由来の推移的依存。修正候補4.20.0/4.18.0/1.2.6/6.16.1はいずれもOSV再照会clean。complete=true/missing(false)/unconfirmed(false)を検証し、検証用lockfile不変。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
