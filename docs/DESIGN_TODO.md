@@ -1397,6 +1397,14 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - 実接続: uv 0.12.23自身が--no-build/--no-python-downloadsで生成したworkspaceで、OSV-Scanner 2.7.0をMCP経由で実行。収録済み/未収録/確認不能×2ツール(計6回)を確認。requests 2.25.0はpyproject.toml、jinja2 3.1.4はapps/日本語 app/pyproject.tomlの直接依存(開発グループ)、urllib3 1.26.20はrequests由来の推移的依存。候補requests 2.33.0/jinja2 3.1.6/urllib3 2.8.0はいずれもOSV再照会clean。complete=true/missing(false)/unconfirmed(false)、lockfile不変を検証。
 - レビュー修正(2026-10-28): (1) 複数メンバーが同じ依存を同じextra/markerで宣言すると起点ごとに同じ到達先を再走査し、2,000パッケージ×共通直接依存30でメンバー5件から関係の予算(200万)を超えunknownになっていた。起点を(パッケージ, extra, marker)で一意にして1回だけたどる(declared_inは宣言ファイルごとに維持)。(2) 構造記号の上限が固定100万で、依存の密な約7MiBのlockfileを解析せず収録unconfirmed・関係unknownになっていた。他形式と同じくファイルごとの予算(createParseBudget、1KiBあたり1,024・最低200万)にした。(3) manifest.membersにないローカルパッケージ(path依存など)をmissingとしていた。lockfileに記録され実行時依存はスキャンされるため、Cargoのpath依存と同じくunconfirmedにする。lockfileにない子は従来どおりmissing。
 
+## Poetryの依存関係・子プロジェクトの収録確認(2026-10-28、ソース実装)
+
+- poetry.lock lock-version 1.1/2.0/2.1をboundedToml(uvと共通の事前制限+smol-toml)で解析。Poetryにはworkspaceがないため、root pyproject.tomlから到達できるpath依存(source.type=directory、lockのディレクトリ内の安全な相対パス)を子として対応付ける。子は名前/版の一意一致、動的dependenciesなし、開発グループなし(path依存では書き出されない)、宣言がすべてlockのedgeと一致する場合だけ収録済み。lockにない子はmissing、曖昧/確認不能はunconfirmed。
+- 直接依存はrootの通常/optional/dev/group/PEP 735グループと、収録済みの子の実行時宣言。introduced_byは無条件の文字列edgeだけをたどり、markers/extras/optionalのテーブルはソルバーが要るため未解決(unknown)。名前はPEP 503、版はPEP 440。Poetry・プラグイン・build backendは実行しない。lockは1回捕捉してcoverage・関係・スキャンに共用(1件16MiB/合計64MiB)、companionのpyproject.tomlは別枠(1件4MiB/合計64MiB)。収録と関係の予算(各200万)は別で、関係の上限で確認済みの収録を崩さない。
+- 挙動の変化: 16MiBを超えるpoetry.lockはskipped_files。path依存でない入れ子のpyproject.toml(例やテスト用など)はunconfirmedからmissingになる。
+- レビュー修正(2026-10-28): Poetryはpath依存のedgeを常にテーブル({path, develop})で書くため、文字列edgeだけを受け付ける判定で、兄弟の子へのpath依存(../core)を持つ子が収録unconfirmedになり、その宣言も直接依存にならなかった(ローカルパスの比較が到達不能)。宣言のパスを子のディレクトリから解決してlockのディレクトリ内に収め、無条件の{path, develop}テーブルで同じ場所を指すedgeを一致とする。markers等の付いたedgeや別の場所は従来どおりunconfirmed。
+- 実接続: 手書きのroot+libs/core(path依存)のPoetryプロジェクトで、OSV-Scanner 2.7.0をMCP経由で実行。complete=true、requests 2.25.0はpyproject.toml、jinja2 3.1.4はlibs/core/pyproject.tomlの直接依存、urllib3 1.26.4はrequests由来の推移的依存。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。

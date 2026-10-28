@@ -7,6 +7,15 @@ const record = (v: unknown): v is Record<string, unknown> => v !== null && typeo
 const norm = (s: string) => s.toLowerCase().replace(/[-_.]+/g, "-");
 const validName = (s: string) => /^[A-Za-z0-9][A-Za-z0-9._-]{0,511}$/.test(s);
 const safePath = (s: string) => !!s && !path.posix.isAbsolute(s) && !path.win32.isAbsolute(s) && !/^[A-Za-z]:|[\\\x00-\x1f\x7f]/.test(s) && !s.split("/").includes("..");
+/** A declared path, relative to its manifest directory, resolved inside the lock directory (siblings use ".."). */
+const within = (directory: string, local: string): string | undefined => {
+  if (!local || path.posix.isAbsolute(local) || path.win32.isAbsolute(local) || /^[A-Za-z]:|[\\\x00-\x1f\x7f]/.test(local)) return undefined;
+  const resolved = path.posix.normalize(path.posix.join(directory, local)).replace(/\/$/, "");
+  return resolved !== "." && safePath(resolved) ? resolved : undefined;
+};
+/** Poetry locks a path dependency as a table; only an unconditional {path, develop} edge is accepted. */
+const localEdge = (edge: unknown, directory: string, target: string) => record(edge) && typeof edge.path === "string"
+  && Object.keys(edge).every(key => key === "path" || key === "develop") && within(directory, edge.path) === target;
 export interface PoetryManifest { path: string; data: Record<string, unknown> | null }
 interface Declaration { name: string; local?: string; constraint?: string; external: boolean }
 interface Declarations { name?: string; version?: string; runtime: Declaration[]; development: Declaration[]; runtimeComplete: boolean }
@@ -103,7 +112,7 @@ export function analyzePoetry(source: string, manifests: readonly PoetryManifest
       tick(); const candidates = named.get(declaration.name) ?? [];
       if (candidates.length !== 1) continue;
       const node = candidates[0]!;
-      if (declaration.local !== undefined ? safePath(declaration.local) && node.location === path.posix.normalize(declaration.local) : !declaration.external && node.registry) queue.push(declaration.name);
+      if (declaration.local !== undefined ? node.location !== undefined && within(".", declaration.local) === node.location : !declaration.external && node.registry) queue.push(declaration.name);
     }
     while (queue.length) {
       tick(); const name = queue.pop()!, candidates = named.get(name) ?? [];
@@ -124,10 +133,10 @@ export function analyzePoetry(source: string, manifests: readonly PoetryManifest
       if (record(node.raw.dependencies)) for (const [name, spec] of Object.entries(node.raw.dependencies)) { tick(); edges.set(norm(name), spec); }
       const complete = input.runtimeComplete && input.development.length === 0 && input.runtime.every(d => {
         tick(); const candidates = named.get(d.name) ?? [], edge = edges.get(d.name);
-        if (candidates.length !== 1 || edge === undefined || typeof edge !== "string") return false;
+        if (candidates.length !== 1 || edge === undefined) return false;
         const target = candidates[0]!;
-        if (d.local !== undefined) return safePath(d.local) && target.location === path.posix.normalize(path.posix.join(directory, d.local));
-        if (d.external || !target.registry) return false;
+        if (d.local !== undefined) return target.location !== undefined && within(directory, d.local) === target.location && localEdge(edge, directory, target.location);
+        if (typeof edge !== "string" || d.external || !target.registry) return false;
         const constraint = d.constraint?.replace(/\s/g, "") ?? "*";
         // Exact locked constraints or exact versions can establish agreement without a solver.
         return constraint === "*" || constraint === edge.replace(/\s/g, "") || comparePep440(constraint.replace(/^==|^=/, ""), target.version) === 0;
@@ -146,7 +155,7 @@ export function analyzePoetry(source: string, manifests: readonly PoetryManifest
         step(); const candidates = named.get(declaration.name) ?? []; if (candidates.length !== 1) continue;
         const node = candidates[0]!;
         if (declaration.local !== undefined) {
-          if (!safePath(declaration.local) || node.location !== path.posix.normalize(path.posix.join(directory, declaration.local))) continue;
+          if (node.location === undefined || within(directory, declaration.local) !== node.location) continue;
         } else if (declaration.external || !node.registry) continue;
         if (node.registry) { const files = declared.get(node) ?? new Set<string>(); files.add(file); declared.set(node, files); }
         if (node.location === undefined || workspaces.get(node.location) !== true) starts.add(node);

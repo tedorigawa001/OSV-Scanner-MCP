@@ -73,3 +73,21 @@ it.each(["", "[metadata]\nlock-version='99'", "x=" + "[".repeat(130) + "0" + "]"
   expect(analyzePoetry(source, []).relations).toBeNull();
   expect(analyzePoetry(source, []).workspaces).toBeNull();
 });
+it("回帰: 兄弟の子へのpath依存(lockではテーブル)を収録確認し、子の宣言を直接依存にする(レビュー、2026-10-28)", () => {
+  const edge = (extra: Record<string, unknown> = {}) => ({ path: "../../libs/core", develop: true, ...extra });
+  const source = (core: unknown) => lock([
+    { name: "api", version: "0.1.0", source: { type: "directory", url: "services/api" }, dependencies: { core, requests: ">=2" } },
+    { name: "core", version: "0.1.0", source: { type: "directory", url: "libs/core" } }, { name: "requests", version: "2.25.0" },
+  ]);
+  const manifests = (local = "../../libs/core"): PoetryManifest[] => [
+    ...root({ tool: { poetry: { dependencies: { api: { path: "services/api", develop: true } } } } }),
+    { path: "services/api/pyproject.toml", data: { tool: { poetry: { name: "api", version: "0.1.0", dependencies: { core: { path: local, develop: true }, requests: ">=2" } } } } },
+  ];
+  const result = analyzePoetry(source(edge()), manifests());
+  expect(result.workspaces?.get("services/api")).toBe(true);
+  expect(result.relations?.("requests", "2.25.0")).toMatchObject({ relation: "direct", declaredIn: new Set(["services/api/pyproject.toml"]) });
+  // 条件付きのedge、別の場所、lockのディレクトリの外への参照は確認しない
+  for (const [core, local] of [[edge({ markers: "sys_platform == 'win32'" }), undefined], [edge({ path: "../other" }), undefined], [edge(), "../../../outside/core"]] as const) {
+    expect(analyzePoetry(source(core), manifests(local)).workspaces?.get("services/api")).toBeNull();
+  }
+});
