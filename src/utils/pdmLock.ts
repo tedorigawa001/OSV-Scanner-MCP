@@ -17,6 +17,17 @@ export const createPdmBudget = () => ({ remaining: MAX_DEPENDENCY_EDGES });
 interface Ref { name: string; extras: string[]; constraint: string; marker?: string; local?: string; external: boolean }
 interface Node { name: string; version: string; extras: string[]; raw: Record<string, unknown>; refs: Ref[]; registry: boolean; location?: string }
 interface Input { name?: string; version?: string; runtime: Ref[]; groups: Map<string, Ref[]>; development: boolean; complete: boolean; workspace?: unknown }
+/** PDM writes locked requirements through packaging: specifiers sorted, markers double-quoted. Compare those forms, not solver semantics. */
+const specifiers = (body: string) => body.split(",").filter(Boolean).sort().join(",");
+const markerText = (marker: string) => {
+  let out = "", quote = "";
+  for (const c of marker) {
+    if (quote) { if (c === quote) { quote = ""; out += '"'; } else out += c; }
+    else if (c === "'" || c === '"') { quote = c; out += '"'; }
+    else if (!/\s/.test(c)) out += c;
+  }
+  return out;
+};
 const extrasKey = (name: string, extras: readonly string[]) => JSON.stringify([name, extras]);
 
 /** A bounded name/extras/marker reader, not a PEP 508 environment or constraint solver. */
@@ -40,7 +51,7 @@ function requirement(raw: unknown, directory: string): Ref {
   const extras = [...new Set((match[2] ? match[2].split(",").map(s => norm(s.trim())) : []))].sort();
   if (!extras.every(validName)) throw Error("invalid PDM extras");
   const tail = match[3]!, separator = tail.indexOf(";"), body = (separator < 0 ? tail : tail.slice(0, separator)).trim();
-  const marker = separator < 0 ? undefined : tail.slice(separator + 1).trim();
+  const marker = separator < 0 ? undefined : markerText(tail.slice(separator + 1)) || undefined;
   const external = body.startsWith("@");
   if (body && !external && !/^(?:[<>=!~]|\()/.test(body)) throw Error("invalid PDM constraint");
   let local: string | undefined;
@@ -50,7 +61,7 @@ function requirement(raw: unknown, directory: string): Ref {
     if (url.startsWith(prefix)) local = location(directory, decodeURIComponent(url.slice(prefix.length)));
     else if (url.startsWith("file:./") || url.startsWith("file:../")) local = location(directory, decodeURIComponent(url.slice(5)));
   }
-  return { name: norm(match[1]!), extras, constraint: external ? "" : body.replace(/^\((.*)\)$/, "$1").replace(/\s/g, "") || "*", external,
+  return { name: norm(match[1]!), extras, constraint: external ? "" : specifiers(body.replace(/^\((.*)\)$/, "$1").replace(/\s/g, "")) || "*", external,
     ...(marker ? { marker } : {}), ...(local !== undefined ? { local } : {}) };
 }
 

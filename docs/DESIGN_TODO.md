@@ -1405,6 +1405,14 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - レビュー修正(2026-10-28): Poetryはpath依存のedgeを常にテーブル({path, develop})で書くため、文字列edgeだけを受け付ける判定で、兄弟の子へのpath依存(../core)を持つ子が収録unconfirmedになり、その宣言も直接依存にならなかった(ローカルパスの比較が到達不能)。宣言のパスを子のディレクトリから解決してlockのディレクトリ内に収め、無条件の{path, develop}テーブルで同じ場所を指すedgeを一致とする。markers等の付いたedgeや別の場所は従来どおりunconfirmed。
 - 実接続: 手書きのroot+libs/core(path依存)のPoetryプロジェクトで、OSV-Scanner 2.7.0をMCP経由で実行。complete=true、requests 2.25.0はpyproject.toml、jinja2 3.1.4はlibs/core/pyproject.tomlの直接依存、urllib3 1.26.4はrequests由来の推移的依存。
 
+## PDMの依存関係・子プロジェクトの収録確認(2026-10-28、ソース実装)
+
+- pdm.lock lock_version 4.0〜4.4・4.5.0/4.5.1をboundedTomlで解析。子は`[tool.pdm.workspace].members`のパターン(完全一致・*・?・セグメント全体の**)、またはrootから到達できる明示的なpath依存(`file:///${PROJECT_ROOT}/...`、PDMが書くeditableの`-e ...#egg=name`)で、lockの安全な`path`と一致する場合だけ対象。名前だけでは収録としない。子の名前/版、実行時/optional宣言がlockの一意な依存と一致し、開発グループ・動的dependenciesがない場合だけ収録済み。lockにない子はmissing、曖昧/確認不能はunconfirmed。
+- 直接依存はmetadata.groupsで選ばれたrootのグループ(通常/optional/PEP 735/tool.pdm.dev-dependencies、include-group展開)と収録済みの子の実行時宣言。extrasは別の同一性として厳密に扱い、markerは評価せず同一経路で異なる式を結合しない。PDM・プラグイン・build backendは実行しない。lockは1回捕捉(1件16MiB/合計64MiB)、companionは別枠(1件4MiB/合計64MiB)。収録と関係の予算(各200万)は別。
+- 挙動の変化: 16MiBを超えるpdm.lockはskipped_files。含まれない入れ子のpyproject.tomlはunconfirmedからmissingになる。
+- レビュー修正(2026-10-28): PDMはlockにローカルパッケージの依存をpackaging経由で書くため、指定子は並べ替え(`<1.27,>=1.21.1`)、markerは二重引用符になる。子の宣言との比較が文字列の完全一致で、範囲指定やプラットフォーム条件を持つ子が収録unconfirmedになっていた。解析時に指定子を並べ替え、markerの引用符を二重引用符に揃え、引用外の空白を除いて比較する。論理式の書き換え(and/orの順序等)は解かずunconfirmedのまま。PDM自身が生成したlockでの確認はPDM未導入のため未実施。
+- 実接続: 手書きのroot+packages/api(path依存)のPDMプロジェクトで、OSV-Scanner 2.7.0をMCP経由で実行。complete=true、requests 2.25.0はpyproject.toml、jinja2 3.1.4はpackages/api/pyproject.tomlの直接依存、urllib3 1.26.4はrequests由来の推移的依存。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。

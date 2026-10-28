@@ -143,3 +143,20 @@ it("keeps confirmed membership when the independent relationship budget is exhau
 it.each(["", "[metadata]\nlock_version='99'", "[metadata]\nlock_version='4.5.2'", "x=" + "[".repeat(130) + "0" + "]".repeat(130), "__proto__.x=1"])("rejects malformed or unsupported metadata", source => {
   expect(analyzePdm(source, [])).toEqual({ workspaces: null, relations: null });
 });
+it("回帰: lockのpackaging形式(指定子の並べ替え・二重引用符のmarker)と子の宣言を一致とする(レビュー、2026-10-28)", () => {
+  const source = (dependencies: string[]) => lock([
+    { name: "api", version: "0.1.0", path: "./packages/api", dependencies }, { name: "urllib3", version: "1.26.4" }, { name: "pywin32", version: "306" },
+  ]);
+  const manifests = (dependencies: string[]): PdmManifest[] => [
+    ...root({ project: { name: "root", version: "0", dependencies: ["api @ file:///${PROJECT_ROOT}/packages/api"] } }),
+    { path: "packages/api/pyproject.toml", data: { project: { name: "api", version: "0.1.0", dependencies } } },
+  ];
+  const locked = ["urllib3<1.27,>=1.21.1", 'pywin32; sys_platform == "win32" and python_version < "3.13"'];
+  const result = analyzePdm(source(locked), manifests(["urllib3 >= 1.21.1, < 1.27", "pywin32;sys_platform=='win32' and  python_version<'3.13'"]));
+  expect(result.workspaces?.get("packages/api")).toBe(true);
+  expect(result.relations?.("pywin32", "306")).toMatchObject({ relation: "direct", declaredIn: new Set(["packages/api/pyproject.toml"]) });
+  // 指定子・markerの内容が違えば従来どおりunconfirmed
+  for (const child of [["urllib3>=1.21.1,<1.28", locked[1]!], [locked[0]!, "pywin32; sys_platform == 'linux' and python_version < '3.13'"]]) {
+    expect(analyzePdm(source(locked), manifests(child)).workspaces?.get("packages/api")).toBeNull();
+  }
+});
