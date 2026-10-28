@@ -17,16 +17,30 @@ export const createPdmBudget = () => ({ remaining: MAX_DEPENDENCY_EDGES });
 interface Ref { name: string; extras: string[]; constraint: string; marker?: string; local?: string; external: boolean }
 interface Node { name: string; version: string; extras: string[]; raw: Record<string, unknown>; refs: Ref[]; registry: boolean; location?: string }
 interface Input { name?: string; version?: string; runtime: Ref[]; groups: Map<string, Ref[]>; development: boolean; complete: boolean; workspace?: unknown }
-/** PDM writes locked requirements through packaging: specifiers sorted, markers double-quoted. Compare those forms, not solver semantics. */
+/** PDM writes sorted specifiers; marker comparison preserves tokens without evaluating conditions. */
 const specifiers = (body: string) => body.split(",").filter(Boolean).sort().join(",");
 const markerText = (marker: string) => {
-  let out = "", quote = "";
-  for (const c of marker) {
-    if (quote) { if (c === quote) { quote = ""; out += '"'; } else out += c; }
-    else if (c === "'" || c === '"') { quote = c; out += '"'; }
-    else if (!/\s/.test(c)) out += c;
+  const tokens: [string, string][] = [];
+  for (let i = 0; i < marker.length;) {
+    const c = marker[i]!;
+    if (/\s/.test(c)) { i++; continue; }
+    if (c === "'" || c === '"') {
+      const quote = c, start = ++i;
+      while (i < marker.length && marker[i] !== quote) i++;
+      if (i === marker.length) throw Error("unterminated PDM marker literal");
+      tokens.push(["literal", marker.slice(start, i++)]);
+    } else if (/[A-Za-z_]/.test(c)) {
+      const start = i++;
+      while (i < marker.length && /[A-Za-z0-9_]/.test(marker[i]!)) i++;
+      tokens.push(["word", marker.slice(start, i)]);
+    } else {
+      const operator = ["===", "==", "!=", "<=", ">=", "~=", "<", ">", "(", ")"].find(op => marker.startsWith(op, i));
+      if (!operator) throw Error("unsupported PDM marker token");
+      tokens.push(["symbol", operator]); i += operator.length;
+    }
   }
-  return out;
+  // JSON keeps token types and boundaries, and escapes quotes inside literal values.
+  return tokens.length ? JSON.stringify(tokens) : "";
 };
 const extrasKey = (name: string, extras: readonly string[]) => JSON.stringify([name, extras]);
 

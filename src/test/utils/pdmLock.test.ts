@@ -160,3 +160,46 @@ it("回帰: lockのpackaging形式(指定子の並べ替え・二重引用符の
     expect(analyzePdm(source(locked), manifests(child)).workspaces?.get("packages/api")).toBeNull();
   }
 });
+const compoundMarker = 'platform_release == "x" and platform_system == "y"';
+const literalMarker = 'platform_release == \'x"andplatform_system=="y\'';
+it("does not confirm a child when a quoted literal collides with marker syntax", () => {
+  const result = analyzePdm(lock([
+    { name: "web", version: "1", path: "child", dependencies: [`leaf; ${compoundMarker}`] }, { name: "leaf", version: "1" },
+  ]), [
+    ...root({ project: { dependencies: ["web @ file:///${PROJECT_ROOT}/child"] } }),
+    { path: "child/pyproject.toml", data: { project: { name: "web", version: "1", dependencies: [`leaf; ${literalMarker}`] } } },
+  ]);
+  expect(result.workspaces?.get("child")).toBeNull();
+  expect(result.relations?.("leaf", "1").relation).not.toBe("direct");
+});
+it("does not join differing traversal conditions whose old normalized strings collided", () => {
+  const result = analyzePdm(lock([
+    { name: "parent", version: "1", dependencies: [`leaf; ${compoundMarker}`] }, { name: "leaf", version: "1" },
+  ]), root({ project: { dependencies: [`parent; ${literalMarker}`] } }));
+  expect(result.relations?.("leaf", "1").relation).toBe("unknown");
+});
+it.each([
+  ["os_name == 'posix'", 'os_name=="posix"'],
+  ["os_name not in 'nt, java'", 'os_name  not  in "nt, java"'],
+  ['platform_release == \'x"andplatform_system=="y\'', 'platform_release==\'x"andplatform_system=="y\''],
+])("preserves equivalent marker tokens and literal contents: %s", (declared, locked) => {
+  const result = analyzePdm(lock([
+    { name: "web", version: "1", path: "child", dependencies: [`leaf; ${locked}`] }, { name: "leaf", version: "1" },
+  ]), [
+    ...root({ project: { dependencies: ["web @ file:///${PROJECT_ROOT}/child"] } }),
+    { path: "child/pyproject.toml", data: { project: { name: "web", version: "1", dependencies: [`leaf; ${declared}`] } } },
+  ]);
+  expect(result.workspaces?.get("child")).toBe(true);
+});
+it.each([
+  "platform_release == 'x y'", // Literal whitespace is significant.
+  "platform_release == 'xy", // An unterminated literal cannot establish membership.
+])("does not confirm different or malformed marker literals: %s", marker => {
+  const result = analyzePdm(lock([
+    { name: "web", version: "1", path: "child", dependencies: ['leaf; platform_release == "xy"'] }, { name: "leaf", version: "1" },
+  ]), [
+    ...root({ project: { dependencies: ["web @ file:///${PROJECT_ROOT}/child"] } }),
+    { path: "child/pyproject.toml", data: { project: { name: "web", version: "1", dependencies: [`leaf; ${marker}`] } } },
+  ]);
+  expect(result.workspaces?.get("child")).toBeNull();
+});

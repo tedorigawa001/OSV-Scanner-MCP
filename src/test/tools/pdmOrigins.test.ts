@@ -35,6 +35,31 @@ async function fixture(status = "included", optionalRoot = false) {
   });
   return content;
 }
+it("keeps conflicting literal/syntax markers unconfirmed in both tools", async () => {
+  const original = await fixture();
+  const declared = 'platform_release == \'x"andplatform_system=="y\'';
+  const locked = 'platform_release == "x" and platform_system == "y"';
+  await writeFile(path.join(dir, member, "pyproject.toml"), stringify({ project: { name: "web", version: "0.1.0", dependencies: [`dev==1.0.0; ${declared}`] } }));
+  // Reuse the scanner's captured-input assertion with a lock containing the differing marker.
+  const { parse } = await import("smol-toml");
+  const data = parse(original);
+  (data.package as { name: string; dependencies?: string[] }[]).find(p => p.name === "web")!.dependencies = [`dev==1.0.0; ${locked}`];
+  const content = stringify(data);
+  await writeFile(path.join(dir, "pdm.lock"), content);
+  vi.mocked(runOsvScan).mockImplementation(async targets => {
+    expect(await readFile(targets[0]!.path, "utf8")).toBe(content);
+    return parseOsvScanOutput({ results: [{ source: { path: targets[0]!.path, type: "lockfile" }, packages: [{
+      package: { name: "dev", version: "1.0.0", ecosystem: "PyPI" }, groups: [{ ids: ["GHSA-dev"], aliases: [] }],
+      vulnerabilities: [{ id: "GHSA-dev", affected: [{ package: { name: "dev", ecosystem: "PyPI" }, ranges: [{ type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "1.0.1" }] }] }] }],
+    }] }] });
+  });
+  for (const result of [await handleScanProject({ project_path: dir }), await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled" })]) {
+    const payload = JSON.parse(result.content[0]!.text);
+    expect(payload.coverage.complete).toBe(false);
+    expect(payload.coverage.lockfile_missing).toContainEqual(expect.objectContaining({ path: `${member}/pyproject.toml`, status: "unconfirmed" }));
+    expect((payload.packages ?? payload.suggestions)[0].dependency_relation).not.toBe("direct");
+  }
+});
 it.each(["legacy", "standard"])("preserves origins and complete coverage with %s editable group declarations in both tools", async kind => {
   await fixture();
   const file = path.join(dir, "pyproject.toml");
