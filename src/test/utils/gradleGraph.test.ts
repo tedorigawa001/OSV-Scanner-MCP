@@ -226,7 +226,7 @@ it("keeps the lightweight path when only cross-origin revisits or private diamon
 });
 
 it("reports a newer schema version of our own document apart from invalid metadata", () => {
-  const newer = { ...graphFixture(), schemaVersion: 3, declarations: {} };
+  const newer = { ...graphFixture(), schemaVersion: 4, declarations: {} };
   expect(() => parseGradleGraph(JSON.stringify(newer))).toThrow(UnsupportedGradleSchemaVersion);
   // Other schemas, older/non-integer versions and corrupt v1 documents stay invalid.
   for (const doc of [{ ...newer, schema: "other" }, { ...graphFixture(), schemaVersion: 0 }, { ...graphFixture(), schemaVersion: 1.5 }, { ...graphFixture(), extra: true }]) {

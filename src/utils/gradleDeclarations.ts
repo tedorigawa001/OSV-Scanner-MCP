@@ -1,3 +1,4 @@
+import { pluginSpecSchema, pluginApplicationSchema, pluginOrigin, type PluginAnalysis } from "./gradlePlugins.js";
 import { validateCatalogGroups } from "./gradleCatalogs.js";
 import { z } from "zod";
 import { parseGradleJson } from "./gradleJson.js";
@@ -66,9 +67,11 @@ const declarationsV4 = z.object({ adapterVersion: z.literal(4), ...declarationFi
   records: z.array(z.object({ ...recordFields, registrationKind: z.enum(["synchronous", "provider", "bundle-member"]),
     registrationForm: z.enum(["synchronous", "provider", "provider-convertible"]), catalogGroupId: id.nullable(),
     callbackCount: z.number().int().min(0).safe(), materializations: z.array(snapshot).max(128) }).strict()).max(100_000) }).strict();
-export const declarationsSchema = z.union([declarationsV2, declarationsV3, declarationsV4]);
+const declarationsV5 = declarationsV4.extend({adapterVersion:z.literal(5),pluginApplications:z.array(pluginApplicationSchema).max(10000),
+ records:z.array(declarationsV4.shape.records.element.extend({origin:pluginOrigin})).max(100000)});
+export const declarationsSchema = z.union([declarationsV2, declarationsV3, declarationsV4, declarationsV5]);
 export const declarationEnvelope = z.union([declarationsSchema,
-  z.object({ adapterVersion: z.number().int().refine(v => v !== 2 && v !== 3 && v !== 4) }).passthrough()]);
+  z.object({ adapterVersion: z.number().int().refine(v => v !== 2 && v !== 3 && v !== 4 && v !== 5) }).passthrough()]);
 export const catalogSchema = z.object({ inventoryComplete: z.boolean(), entries: z.array(z.object({ id,
   kind: z.enum(["local-toml", "programmatic", "remote"]), state: z.enum(["verifiable", "unverifiable"]),
   graphInputPaths: z.array(declarationPath).max(10_000), reason: reason.nullable() }).strict()).max(10_000) }).strict();
@@ -82,6 +85,7 @@ const catalogManifest = z.object({ id, name: id, kind: z.enum(["local-toml", "pr
   bundleMembers: z.record(id, z.array(id).max(128)) }).strict();
 const contractFields = { trustModel: z.literal(DECLARATION_MODEL), sources: z.array(declarationPath).max(10_000) };
 const contractSchema = z.union([
+  z.object({...contractFields,contractVersion:z.literal(3),catalogPolicy:z.enum(["none","explicit-local-v1"]),catalogs:z.array(catalogManifest).max(100),pluginPolicy:z.literal("explicit-local-build-v1"),plugins:z.array(pluginSpecSchema).min(1).max(100),scopes:z.array(z.object({...scopeFields,catalogIds:z.array(id).max(100),pluginIds:z.array(id).max(100)}).strict()).max(2000)}).strict(),
   z.object({ ...contractFields, catalogPolicy: z.literal("none"), contractVersion: z.literal(1),
     scopes: z.array(z.object(scopeFields).strict()).max(2000) }).strict(),
   z.object({ ...contractFields, catalogPolicy: z.literal("explicit-local-v1"), contractVersion: z.literal(2),
@@ -93,7 +97,7 @@ export function parseDeclarationContract(text: string): DeclarationContract {
   if (new Set(c.sources).size !== c.sources.length || new Set(c.scopes.map(s => s.id)).size !== c.scopes.length ||
     new Set(c.scopes.map(s => JSON.stringify([s.projectPath, s.resolvableConfiguration]))).size !== c.scopes.length ||
     c.scopes.some(s => new Set(s.declarationConfigurations).size !== s.declarationConfigurations.length)) throw new Error("invalid_declaration_contract");
-  if (c.contractVersion === 2) {
+  if (c.contractVersion >= 2 && "catalogs" in c) {
     const ids = new Set(c.catalogs.map(x => x.id));
     if (ids.size !== c.catalogs.length || new Set(c.catalogs.map(x => x.name)).size !== c.catalogs.length ||
       c.scopes.some(s => new Set(s.catalogIds).size !== s.catalogIds.length || s.catalogIds.some(x => !ids.has(x)))) throw new Error("invalid_catalog_manifest");
@@ -108,10 +112,22 @@ export function parseDeclarationContract(text: string): DeclarationContract {
       if (references > 100_000) throw new Error("catalog_manifest_budget_exceeded");
     }
   }
+  if(c.contractVersion===3){
+    if((c.catalogPolicy==='none')!==(!c.catalogs.length))throw new Error('invalid_catalog_manifest');
+    const ids=new Set(c.plugins.map(p=>p.id));if(ids.size!==c.plugins.length)throw new Error('invalid_plugin_manifest');
+    for(const p of c.plugins){
+      if(new Set(p.inputPaths).size!==p.inputPaths.length||new Set(p.sourcePaths).size!==p.sourcePaths.length||new Set(p.sourceMappings.map(m=>m.id)).size!==p.sourceMappings.length||new Set(p.outputRoots.map(o=>o.path)).size!==p.outputRoots.length||p.outputRoots.filter(o=>o.role==='plugin-artifact').length!==1||p.producer.rootDirectory==='buildSrc'&&p.producer.kind!=='build-src'||p.producer.kind==='build-src'&&p.producer.rootDirectory!=='buildSrc'||p.producer.projectPath!==':')throw new Error('invalid_plugin_manifest');
+      if(!p.inputPaths.includes(p.producer.rootDirectory+'/build.gradle')&&!p.inputPaths.includes(p.producer.rootDirectory+'/build.gradle.kts'))throw new Error('invalid_plugin_manifest');
+      if(!p.inputPaths.some(x=>x===p.producer.rootDirectory+'/settings.gradle'||x===p.producer.rootDirectory+'/settings.gradle.kts')||p.inputPaths.some(x=>!x.startsWith(p.producer.rootDirectory+'/')||!/\.(?:gradle(?:\.kts)?|properties|toml|kt|java|groovy|jar|lock|lockfile|json)$/.test(x))||p.outputRoots.some(o=>!o.path.startsWith(p.producer.rootDirectory+'/build/')))throw new Error('invalid_plugin_manifest');
+      if(p.sourcePaths.some(x=>!c.sources.includes(x)||!p.inputPaths.includes(x))||p.sourceMappings.some(m=>!p.sourcePaths.includes(m.sourcePath)||m.implementationClass!==p.implementationClass))throw new Error('invalid_plugin_manifest');
+      if(p.registrationForm==='precompiled-pending'&&(!p.sourcePaths.some(x=>x.endsWith('.gradle'))||p.sourcePaths.some(x=>x.endsWith('.gradle.kts'))))throw new Error('unsupported_precompiled_plugin');
+    }
+    if(c.scopes.some(s=>new Set(s.pluginIds).size!==s.pluginIds.length||s.pluginIds.some(id=>!ids.has(id))))throw new Error('invalid_plugin_scope');
+  }
   return c;
 }
 export function knownDeclarations(c: GradleContext): Declarations | undefined {
-  if (!("declarations" in c) || ![2, 3, 4].includes(c.declarations.adapterVersion)) return undefined;
+  if (!("declarations" in c) || ![2, 3, 4, 5].includes(c.declarations.adapterVersion)) return undefined;
   return c.declarations as Declarations;
 }
 export function catalogVerified(c: GradleContext, graph: GradleGraph): boolean {
@@ -125,12 +141,13 @@ function supported(k: z.infer<typeof resolutionKeySchema>) {
   return k.status === "supported" && !k.attributes.length && !k.capabilitySelectors.length && !k.versionConstraint.preferred && !k.versionConstraint.strict && !k.versionConstraint.rejected.length && k.versionConstraint.branch === null;
 }
 /** Recompute bindings from all records; never trust producer complete=true alone. */
-export function analyzeDeclarations(c: GradleContext, graph: GradleGraph, contract: DeclarationContract, budget: GradleBudget, catalogs?: import("./gradleCatalogs.js").CatalogModels): { sources: Map<string, Set<string>>; reasons: string[] } {
+export function analyzeDeclarations(c: GradleContext, graph: GradleGraph, contract: DeclarationContract, budget: GradleBudget, catalogs?: import("./gradleCatalogs.js").CatalogModels, plugins?: PluginAnalysis): { sources: Map<string, Set<string>>; reasons: string[] } {
   const d = knownDeclarations(c), sources = new Map<string, Set<string>>();
+  if(d?.adapterVersion===5&&contract.contractVersion!==3)return {sources,reasons:["unsupported_plugin_adapter"]};
   if (!d || !("catalogInputs" in c)) return { sources, reasons: ["unsupported_declaration_adapter"] };
   const fail = (r: string) => ({ sources: new Map<string, Set<string>>(), reasons: [r] });
-  if (contract.contractVersion === 2 && d.adapterVersion !== 4) return fail("unsupported_catalog_adapter");
-  if (c.catalogInputs.entries.length && (d.adapterVersion !== 4 || !catalogs)) return fail("declaration_inventory_incomplete");
+  if ((contract.contractVersion === 2 && d.adapterVersion !== 4 && d.adapterVersion !== 5) || (contract.contractVersion === 3 && d.adapterVersion !== 5)) return fail("unsupported_catalog_adapter");
+  if (c.catalogInputs.entries.length && ((d.adapterVersion !== 4 && d.adapterVersion !== 5) || !catalogs)) return fail("declaration_inventory_incomplete");
   if (!d.inventoryComplete || d.reasons.length) return { sources, reasons: ["declaration_inventory_incomplete",
     ...d.reasons.filter(r => ["provider_stability_assertion_missing", "provider_unobserved", "provider_unstable", "provider_observation_incomplete", "catalog_scope_assertion_missing", "catalog_observation_incomplete"].includes(r))] };
   const project = graph.projects.find(p => p.id === c.projectId);
@@ -174,14 +191,15 @@ export function analyzeDeclarations(c: GradleContext, graph: GradleGraph, contra
     const after = r.declarationAtResolve;
     if (!a || !after || !equal(a, after)) return fail("declaration_mutation_detected");
     if (!supported(a.key) || a.shape.status !== "supported" || a.shape.artifacts.length || a.shape.targetConfiguration !== null || a.shape.endorseStrictVersions || !a.shape.transitive || a.shape.excludes.length) return fail("unsupported_declaration_shape");
-    if (r.source?.kind === "convention-plugin") return fail("declaration_source_unverifiable");
-    if (!r.source || !/\.gradle(?:\.kts)?$/.test(r.source.path) || !prepared.has(r.source.path) || inputHashes.get(r.source.path) !== r.source.sha256) return fail("declaration_source_unverifiable");
+    if (r.source?.kind === "convention-plugin") {
+      if(d.adapterVersion!==5||!plugins?.declarationsComplete||plugins.sources.get(r.id)!==r.source.path)return fail('declaration_source_unverifiable');
+    } else if (!r.source || !/\.gradle(?:\.kts)?$/.test(r.source.path) || !prepared.has(r.source.path) || inputHashes.get(r.source.path) !== r.source.sha256) return fail("declaration_source_unverifiable");
     for (const use of r.catalogUses) { tick(budget); if (!catalogIds.has(use.catalogInputId)) return fail("declaration_inventory_incomplete"); }
     configsWithRecords.add(r.configuration); recordPaths.set(r.id, r.source.path);
     const key = JSON.stringify(a.key); const list = groups.get(key) ?? []; list.push(r.id); groups.set(key, list);
   }
   for (const n of topology.values()) { tick(budget); if (n.hasDependencies && !configsWithRecords.has(n.name)) return fail("declaration_inventory_incomplete"); }
-  if (d.adapterVersion === 4) {
+  if (d.adapterVersion === 4 || d.adapterVersion === 5) {
     const catalogReasons = validateCatalogGroups(d, contract, scope.id, catalogs, budget);
     if (catalogReasons) return fail(catalogReasons);
   }

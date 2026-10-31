@@ -172,7 +172,7 @@ it("all three tools retain origins across 24 sparse-sharing contexts in three do
 
 it("keeps lock scanning and reports a newer metadata version as unsupported in all three tools", async () => {
   const graph = await fixture();
-  await writeFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify({ ...graph, schemaVersion: 3 }));
+  await writeFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify({ ...graph, schemaVersion: 4 }));
   for (const handler of [handleScanProject, handleScanJavaProject, handleSuggestFix]) {
     const payload = JSON.parse((await handler({ project_path: dir }, { candidateCheck: "disabled" })).content[0]!.text);
     expect(payload.coverage.complete).toBe(true);

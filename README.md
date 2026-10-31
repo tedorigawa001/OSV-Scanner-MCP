@@ -151,6 +151,9 @@ npm run build
 | `OSV_MCP_NO_REMOTE_RESOLUTION` | If `1` or `true`, transitive dependencies of `pom.xml` and `requirements.txt` are not resolved through deps.dev. **This stops only the requests to deps.dev; package names and versions are still sent to `api.osv.dev` for the vulnerability lookup.** Vulnerabilities in transitive dependencies are then not detected, and responses say so in `dependency_resolution.warning`. See [Network destinations and privacy](#network-destinations-and-privacy) |
 | `OSV_MCP_GRADLE_DECLARATION_TRUST` | Set to `registered-helper-v1` to accept author-attested Gradle C1a declaration maps. Unset by default. Read once at server startup. Any other value does not stop the server: it prints a warning to stderr, leaves declaration sources disabled, and adds `declaration_trust_config_invalid` to the Gradle metadata reasons. See [Gradle declaration sources](#gradle-declaration-sources-c1a) |
 | `OSV_MCP_GRADLE_CATALOG_TRUST` | Set to `local-catalog-inputs-v1`, together with `OSV_MCP_GRADLE_DECLARATION_TRUST`, to accept declaration sources from contract-v2 version catalog aliases/bundles. Unset by default. Read once at server startup. Any other value prints a warning to stderr, leaves catalog declaration sources disabled, and adds `catalog_trust_config_invalid` to the Gradle metadata reasons. See [Gradle version catalogs](#gradle-version-catalogs-and-providerconvertible) |
+| `OSV_MCP_GRADLE_PLUGIN_TRUST` | Opt-in convention-plugin trust: `local-plugin-build-v1` or `local-plugin-loader-attested-v2`. Unset disables plugin declaration sources. Read once at startup; unknown values warn and disable. See [plugin setup](docs/GRADLE_CONVENTION_PLUGIN_USAGE.md) |
+| `OSV_MCP_GRADLE_PLUGIN_TOOLCHAIN_PROFILES` | Comma-separated approved toolchain SHA-256 digests (lowercase hex, unique, at most 32). Unset allows none. Read once at startup |
+| `OSV_MCP_GRADLE_PLUGIN_LOADER_PROFILES` | Independently approved loader SHA-256 digests, same format. Required only for `approved-gradle-loader-v1`; does not change strict-policy requirements |
 | `OSV_MCP_HISTORY` | If `1` or `true`, records each scan in the local scan history (disabled by default). See [`scan_history`](#scan_history) |
 | `OSV_MCP_HISTORY_DIR` | Absolute path of the history directory (default `$XDG_STATE_HOME/osv-scanner-mcp/history`, or `~/.local/state/osv-scanner-mcp/history`) |
 | `OSV_MCP_HISTORY_MAX_ENTRIES` | Number of runs kept (default `500`, maximum `5000`). Older runs are deleted, and the total size is also capped at 100 MiB |
@@ -605,6 +608,12 @@ Hashes and public catalog names cannot independently prove that every constructi
 input was declared, detect a temporary change restored before inspection, or count
 internal bundle Provider evaluations. Use matching adapter/reader versions for v4.
 The schema-v1 export mode retains captured catalog input hashes but omits declarations.
+
+### Gradle convention plugin declaration sources
+
+Contract v3 / graph v3 / adapter v5 add explicitly registered local buildSrc and included convention plugins. The helper trust remains required; plugin declarations also require `OSV_MCP_GRADLE_PLUGIN_TRUST` and separately approved toolchain profiles. The loader-attested policy needs `local-plugin-loader-attested-v2` and a separate loader profile allowlist. Precompiled Groovy uses pending registration and the actual public Plugin after application. JAR/directory snapshots are saved by the trusted exporter and revalidated statically within the scan boundary. Missing registration suppresses the entire contributing declaration list; unverifiable artifact inputs reject graph adoption. Gradle is never run during scanning.
+
+This accepts an explicit runtime/transform trust contract, not independently observed executed bytecode. The strict policy keeps its unverified-transform rejection. Precompiled Kotlin, standard kotlin-dsl, published plugins, configuration cache and parallel export remain unsupported. See [setup, manifest, profile and helper contract](docs/GRADLE_CONVENTION_PLUGIN_USAGE.md).
 
 ### `scan_java_project`
 

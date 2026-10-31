@@ -1,0 +1,282 @@
+// Loaded explicitly before register-declarations.init.gradle. Trusted exporter only; never run by MCP.
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
+import java.nio.channels.FileChannel
+import java.nio.ByteBuffer
+import java.security.MessageDigest
+import org.gradle.api.tasks.compile.AbstractCompile
+import org.gradle.api.tasks.bundling.Jar
+import org.gradle.language.jvm.tasks.ProcessResources
+import java.util.zip.ZipFile
+
+class OsvPluginCoordinator {
+    def registry,gradle
+    String invocationId,buildId
+    File stateDirectory
+    Map toolchain,loader,toolchainPaths=[:],agentPaths=[:]
+    List receipts=[],buildInputs=[],specs=[]
+    long bytesRead=0,toolchainBytes=0
+    int entriesRead=0
+    boolean budgetReady=false
+    void charge(long bytes,int entries=0){
+        if(!budgetReady)return
+        def file=registry.path('.osv-mcp/plugin-build-state/budget.bin')
+        FileChannel.open(file.toPath(),StandardOpenOption.READ,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS).withCloseable { channel ->
+            channel.lock().withCloseable { lock ->
+                def buffer=ByteBuffer.allocate(16);if(channel.read(buffer,0)!=16)throw new GradleException('OSV plugin budget state');buffer.flip()
+                long remaining=buffer.getLong()-bytes,count=buffer.getLong()-entries
+                if(remaining<0||count<0)throw new GradleException('OSV shared plugin read budget')
+                buffer.clear();buffer.putLong(remaining);buffer.putLong(count);buffer.flip();if(channel.write(buffer,0)!=16)throw new GradleException('OSV plugin budget state')
+            }
+        }
+    }
+    IdentityHashMap sessions=new IdentityHashMap()
+    Map applied=[:],observedInstances=[:]
+    static String hash(byte[] bytes){MessageDigest.getInstance('SHA-256').digest(bytes).encodeHex().toString()}
+    static Object sorted(Object value){value instanceof Map ? new TreeMap(value.collectEntries { k,v -> [(k):sorted(v)] }) : value instanceof List ? value.collect { sorted(it) } : value}
+    static String profileDigest(Object value){hash(JsonOutput.toJson(sorted(value)).getBytes('UTF-8'))}
+    String relative(File file){
+        def base=registry.root.toPath(),target=file.toPath().toAbsolutePath().normalize()
+        if(!target.startsWith(base))throw new GradleException('OSV plugin path outside boundary')
+        def rel=base.relativize(target).toString().replace('\\','/')
+        if(rel)registry.path(rel);rel ?: 'main'
+    }
+    byte[] read(File file){
+        def raw=file.toPath().toAbsolutePath().normalize(),cursor=raw.root
+        for(def part:raw){cursor=cursor.resolve(part);if(Files.isSymbolicLink(cursor))throw new GradleException('OSV plugin symlink')}
+        if(!Files.isRegularFile(raw,LinkOption.NOFOLLOW_LINKS)||file.length()>4L*1024*1024||(bytesRead+=file.length())>64L*1024*1024)throw new GradleException('OSV plugin read budget')
+        charge(file.length());file.bytes
+    }
+    List tree(File root){
+        def raw=root.toPath().toAbsolutePath().normalize(),cursor=raw.root
+        for(def part:raw){cursor=cursor.resolve(part);if(Files.isSymbolicLink(cursor))throw new GradleException('OSV plugin tree symlink')}
+        def entries=[],pending=[[file:root,path:'',depth:0]]
+        if(!Files.isDirectory(root.toPath(),LinkOption.NOFOLLOW_LINKS)||Files.isSymbolicLink(root.toPath()))throw new GradleException('OSV plugin directory')
+        for(int i=0;i<pending.size();i++){
+            def node=pending[i]
+            def children=node.file.listFiles();if(children==null)throw new GradleException('OSV plugin directory unreadable')
+            children.each { file ->
+                charge(0,1)
+                if(++entriesRead>10000||node.depth>=64)throw new GradleException('OSV plugin tree budget')
+                def name=node.path ? node.path+'/'+file.name : file.name
+                if(!(name && !(name =~ /[\\:\x00-\x1f\x7f]/) && name.split('/',-1).every {it && it!='.' && it!='..'})||name.getBytes('UTF-8').length>4096||Files.isSymbolicLink(file.toPath()))throw new GradleException('OSV plugin tree path')
+                if(Files.isDirectory(file.toPath(),LinkOption.NOFOLLOW_LINKS)){entries << [kind:'directory',path:name];pending << [file:file,path:name,depth:node.depth+1]}
+                else {def b=read(file);entries << [kind:'file',path:name,size:b.length,sha256:hash(b)]}
+            }
+        }
+        entries.sort { a,b -> compareUtf8(a.path,b.path) }
+    }
+    static int compareUtf8(String a,String b){
+        def x=a.getBytes('UTF-8'),y=b.getBytes('UTF-8')
+        for(int i=0;i<Math.min(x.length,y.length);i++){int d=(x[i]&255)-(y[i]&255);if(d!=0)return d}
+        x.length-y.length
+    }
+    static String treeDigest(List entries){
+        def bytes=new ByteArrayOutputStream(),data=new DataOutputStream(bytes)
+        data.write('OSV-MCP-DIRECTORY-SNAPSHOT-V1\u0000'.getBytes('UTF-8'));data.writeInt(entries.size())
+        entries.each { e -> def name=e.path.getBytes('UTF-8');data.writeByte(e.kind=='directory'?0:1);data.writeInt(name.length);data.write(name);if(e.kind=='file'){data.writeLong(e.size as long);data.write(e.sha256.decodeHex())} }
+        data.close();hash(bytes.toByteArray())
+    }
+    Map artifact(File file){
+        def p=relative(file)
+        Files.isDirectory(file.toPath(),LinkOption.NOFOLLOW_LINKS) ? [kind:'directory',path:p,treeDigest:treeDigest(tree(file))] : { def b=read(file);[kind:'jar',path:p,size:b.length,sha256:hash(b)] }()
+    }
+    void atomic(File dest,byte[] bytes){
+        def cursor=registry.root.toPath()
+        for(def part:registry.root.toPath().relativize(dest.parentFile.toPath())){
+            cursor=cursor.resolve(part);if(!Files.exists(cursor,LinkOption.NOFOLLOW_LINKS))Files.createDirectory(cursor)
+            if(Files.isSymbolicLink(cursor)||!Files.isDirectory(cursor,LinkOption.NOFOLLOW_LINKS))throw new GradleException('OSV snapshot parent')
+        }
+        if(Files.isSymbolicLink(dest.toPath()))throw new GradleException('OSV snapshot symlink')
+        if(dest.exists()){if(!Arrays.equals(read(dest),bytes))throw new GradleException('OSV snapshot existing mismatch');return}
+        def temporary=Files.createTempFile(dest.parentFile.toPath(),'pending-','.bin')
+        try{Files.write(temporary,bytes);Files.move(temporary,dest.toPath(),StandardCopyOption.ATOMIC_MOVE)}finally{Files.deleteIfExists(temporary)}
+    }
+    Map snapshot(File origin){
+        if(!Files.isDirectory(origin.toPath(),LinkOption.NOFOLLOW_LINKS)){
+            def b=read(origin),h=hash(b),p='.osv-mcp/plugin-runtime/'+invocationId+'/jars/'+h+'.jar'
+            atomic(new File(registry.root,p),b)
+            if(hash(read(origin))!=h)throw new GradleException('OSV runtime artifact changed')
+            return [kind:'jar',snapshotVersion:1,invocationId:invocationId,capturePhase:'export-task',size:b.length,sha256:h,snapshotPath:p]
+        }
+        def entries=tree(origin),h=treeDigest(entries),prefix='.osv-mcp/plugin-runtime/'+invocationId+'/directories'
+        def parent=registry.path(prefix)
+        // Establish checked parents using the same atomic publication path helper.
+        atomic(new File(parent,'marker'),new byte[0])
+        def pending=Files.createTempDirectory(parent.toPath(),'pending-').toFile(),dest=new File(parent,h)
+        try{
+            new File(pending,'blobs').mkdir()
+            def blobs=new HashSet()
+            entries.findAll {it.kind=='file'}.each { e ->
+                def b=read(new File(origin,e.path));if(hash(b)!=e.sha256||b.length!=e.size)throw new GradleException('OSV runtime artifact changed')
+                if(blobs.add(e.sha256))Files.write(new File(pending,'blobs/'+e.sha256).toPath(),b)
+            }
+            def manifest=[snapshotVersion:1,kind:'directory',digestAlgorithm:'sha256-tree-v1',treeDigest:h,entries:entries]
+            Files.write(new File(pending,'manifest.json').toPath(),(JsonOutput.toJson(manifest)+'\n').getBytes('UTF-8'))
+            if(treeDigest(tree(origin))!=h)throw new GradleException('OSV runtime artifact changed')
+            def staged=tree(pending)
+            if(staged.findAll {it.kind=='file'&&it.path.startsWith('blobs/')}.any {it.sha256!=it.path.substring(6)}||staged.size()!=blobs.size()+2)throw new GradleException('OSV snapshot copy mismatch')
+            if(dest.exists()){
+                if(treeDigest(tree(dest))!=treeDigest(staged))throw new GradleException('OSV snapshot existing mismatch')
+            }else Files.move(pending.toPath(),dest.toPath(),StandardCopyOption.ATOMIC_MOVE)
+        }finally{if(pending.exists())pending.deleteDir()}
+        [kind:'directory',snapshotVersion:1,invocationId:invocationId,capturePhase:'export-task',treeDigest:h,manifestPath:prefix+'/'+h+'/manifest.json']
+    }
+    String streaming(File file){
+        if(!file.isFile()||file.length()>512L*1024*1024)throw new GradleException('OSV toolchain file budget')
+        toolchainBytes+=file.length();if(toolchainBytes>2L*1024*1024*1024)throw new GradleException('OSV toolchain read budget')
+        def md=MessageDigest.getInstance('SHA-256'),buffer=new byte[1024*1024]
+        file.withInputStream { stream -> int count;while((count=stream.read(buffer))!=-1)md.update(buffer,0,count) }
+        md.digest().encodeHex().toString()
+    }
+    void verifyToolchain(){
+        ['jdk/java':'bin/java','jdk/modules':'lib/modules','jdk/release':'release'].each { id,suffix ->
+            def expected=new File(System.getProperty('java.home'),suffix).canonicalPath
+            if(toolchainPaths[expected]!=id || !toolchain.entries.any {it.id==id&&it.role=='jdk-runtime'})throw new GradleException('OSV selected JDK not bound to approved profile')
+        }
+        toolchain.entries.findAll {it.id.startsWith('lib/')}.each { entry ->
+            if(toolchainPaths[new File(gradle.gradleHomeDir,entry.id).canonicalPath]!=entry.id)throw new GradleException('OSV selected Gradle distribution not bound to approved profile')
+        }
+        toolchain.entries.each { e ->def file=toolchainPaths.find {it.value==e.id}?.key;if(!file||new File(file).length()!=e.size||streaming(new File(file))!=e.sha256)throw new GradleException('OSV toolchain mismatch') }
+    }
+    void install(){
+        if(gradle.startParameter.configurationCacheRequested||gradle.startParameter.parallelProjectExecutionEnabled)throw new GradleException('OSV plugin export requires configuration cache and parallel execution disabled')
+        def configPath=System.getProperty('osvMcpPluginToolchainProfile')
+        if(!configPath)throw new GradleException('OSV plugin toolchain profile must be prepared before export')
+        if(new File(configPath).length()>1024*1024)throw new GradleException('OSV plugin profile budget')
+        def config=new JsonSlurper().parse(new File(configPath));toolchain=config.profile
+        if(new File(configPath).length()>1024*1024||toolchain.entries.size()>2000||config.paths.size()!=toolchain.entries.size())throw new GradleException('OSV plugin profile budget')
+        config.paths.each { p ->toolchainPaths[new File(p.path).canonicalPath]=p.id }
+        def loaderPath=System.getProperty('osvMcpPluginLoaderProfile');if(loaderPath && registry.contract.plugins.any {it.loadPolicy=='approved-gradle-loader-v1'}){if(new File(loaderPath).length()>1024*1024)throw new GradleException('OSV loader profile budget');loader=new JsonSlurper().parse(new File(loaderPath))}
+        stateDirectory=new File(registry.root,'.osv-mcp/plugin-build-state')
+        gradle.beforeSettings { settings ->
+            if(settings.settingsDir.canonicalFile==registry.root){
+                invocationId=UUID.randomUUID().toString()
+                def parent=registry.root.toPath()
+                for(def part:registry.root.toPath().relativize(stateDirectory.toPath())){parent=parent.resolve(part);if(!Files.exists(parent,LinkOption.NOFOLLOW_LINKS))Files.createDirectory(parent);if(Files.isSymbolicLink(parent)||!Files.isDirectory(parent,LinkOption.NOFOLLOW_LINKS))throw new GradleException('OSV plugin state directory')}
+                registry.path('.osv-mcp/plugin-build-state/invocation');registry.path('.osv-mcp/plugin-build-state/baseline.json')
+                def budget=ByteBuffer.allocate(16);budget.putLong(64L*1024*1024);budget.putLong(10000)
+                Files.write(registry.path('.osv-mcp/plugin-build-state/budget.bin').toPath(),budget.array(),StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS)
+                budgetReady=true;charge(registry.hashes.findAll {k,v -> v!='absent'}.keySet().sum {registry.file(it).length()} as long)
+                new File(stateDirectory,'invocation').text=invocationId
+                new File(stateDirectory,'baseline.json').text=JsonOutput.toJson([invocationId:invocationId,hashes:registry.hashes])
+                verifyToolchain()
+            }else {
+                invocationId=registry.file('.osv-mcp/plugin-build-state/invocation').text.trim()
+                budgetReady=true;charge(registry.hashes.findAll {k,v -> v!='absent'}.keySet().sum {registry.file(it).length()} as long)
+                def baseline=new JsonSlurper().parse(new File(stateDirectory,'baseline.json'))
+                if(baseline.invocationId!=invocationId || baseline.hashes!=registry.hashes)throw new GradleException('OSV plugin inputs changed before producer evaluation')
+            }
+            def root=settings.settingsDir.canonicalFile
+            buildId=relative(root)
+            specs=registry.contract.plugins.findAll {it.producer.rootDirectory==buildId}
+            buildInputs=specs.collectMany {it.inputPaths}.unique().collect { p -> [path:p,sha256:registry.hashes[p]] }
+        }
+        gradle.taskGraph.afterTask { task,state ->
+            if(!specs.empty && (task instanceof AbstractCompile || task instanceof Jar || task instanceof ProcessResources || task.name in ['compileProofKotlin','pluginImage']) && state.didWork && !state.skipped){
+                def cp=[]
+                if(task instanceof AbstractCompile || task.name=='compileProofKotlin'){
+                    def files=task.classpath.files.toList()
+                    if(task.extensions.extraProperties.has('proofDependencyClasspath'))files.addAll(task.extensions.extraProperties.get('proofDependencyClasspath').files)
+                    files.unique().each { f ->
+                        def entry=toolchainPaths[f.canonicalPath]
+                        if(entry){def expected=toolchain.entries.find {it.id==entry};if(f.length()!=expected.size)throw new GradleException('OSV compile classpath mismatch');cp << [kind:'toolchain',entryId:entry,size:expected.size,sha256:expected.sha256]}
+                        else cp << [kind:'plugin-input',artifact:artifact(f)]
+                    }
+                }
+                // A receipt describes only this task's declared outputs. Existing sibling
+                // artifacts can belong to the previous invocation until their own task runs.
+                def taskOutputs=task.outputs.files.files.collect {it.canonicalFile.toPath()}
+                def outputs=specs.collectMany {it.outputRoots}.unique().findAll { output ->
+                    def file=new File(registry.root,output.path)
+                    file.exists() && taskOutputs.any {actual -> file.canonicalFile.toPath()==actual || (Files.isDirectory(actual,LinkOption.NOFOLLOW_LINKS) && file.canonicalFile.toPath().startsWith(actual))}
+                }.collect {artifact(new File(registry.root,it.path))}
+                receipts << [id:buildId+':'+receipts.size(),task:task.path,type:task instanceof AbstractCompile || task.name=='compileProofKotlin'?'compile':'package',executed:state.executed,didWork:state.didWork,skipped:!!state.skipped,failure:state.failure!=null,classpath:cp,outputs:outputs]
+                flush()
+            }
+        }
+    }
+    void flush(){
+        if(!specs.empty)registry.path('.osv-mcp/plugin-build-state/'+hash(buildId.getBytes('UTF-8'))+'.json').text=JsonOutput.toJson([id:buildId,producer:specs.first().producer,invocationId:invocationId,inputs:buildInputs,receipts:receipts])
+    }
+    void observe(adapter){
+        registry.contract.plugins.each { spec ->
+            def key=adapter.project.path+'\u0000'+spec.id
+            applied[key]=false
+            adapter.project.pluginManager.withPlugin(spec.pluginIds.first()) { ignored -> applied[key]=true;observedInstances[key]=adapter.project.plugins.findPlugin(spec.pluginIds.first()) }
+        }
+    }
+    Object begin(adapter,String specId,Object instance,String form){
+        def spec=registry.contract.plugins.find {it.id==specId};if(!spec||form!=spec.registrationForm)throw new GradleException('Unknown OSV plugin registration')
+        def key=adapter.project.path+'\u0000'+specId
+        def session=[id:adapter.project.path+':plugin'+adapter.pluginApplications.size(),spec:spec,instance:instance,ended:false,endOutcome:'failed',registrationUnique:true,beginBeforeApplied:applied[key]==false]
+        def previous=adapter.pluginApplications.findAll {it.spec.id==specId};if(!previous.empty){session.registrationUnique=false;previous.each {it.registrationUnique=false}}
+        if(adapter.pluginApplications.size()>=10000)throw new GradleException('OSV plugin application budget')
+        def token=Collections.unmodifiableMap([id:session.id]);adapter.pluginApplications.add(session);sessions[token]=session;token
+    }
+    Object source(adapter,Object session,String mappingId){
+        def state=sessions[session]
+        if(state==null||!adapter.pluginApplications.any {it.is(state)})throw new GradleException('Unknown OSV plugin session')
+        def mapping=state.spec.sourceMappings.find {it.id==mappingId};if(!mapping)throw new GradleException('Unknown OSV plugin source mapping')
+        registry.verifyRegistration(['osv-mcp-gradle-declarations.json',mapping.sourcePath])
+        def handle=Collections.unmodifiableMap([kind:'convention-plugin',path:mapping.sourcePath,sha256:registry.hashes[mapping.sourcePath]])
+        registry.handles.add(handle);adapter.pluginHandles[handle]=[kind:'plugin',applicationId:state.id,sourceMappingId:mappingId];handle
+    }
+    void end(adapter,Object session,String outcome){
+        def state=sessions[session]
+        if(state==null||!adapter.pluginApplications.any {it.is(state)}||state.ended||!['complete','failed'].contains(outcome))throw new GradleException('Invalid OSV plugin end')
+        state.ended=true;state.endOutcome=state.actionFailed?'failed':outcome
+    }
+    List exportApplications(adapter,scope,List records,String projectId){
+        adapter.pluginApplications.findAll {scope?.pluginIds?.contains(it.spec.id)}.collect { session ->
+            def spec=session.spec,key=adapter.project.path+'\u0000'+spec.id,actual=observedInstances[key],klass=actual?.getClass()
+            def origin=klass?.protectionDomain?.codeSource?.location,location=origin?.protocol=='file'?new File(origin.toURI()):null
+            def built=spec.outputRoots.find {it.role=='plugin-artifact'&&it.kind=='jar'&&new File(registry.root,it.path).isFile()} ?: spec.outputRoots.find {it.role=='plugin-artifact'&&it.kind=='directory'&&new File(registry.root,it.path).isDirectory()}
+            def descriptor=null
+            if(built){
+                def name='META-INF/gradle-plugins/'+spec.pluginIds.first()+'.properties',lines=[]
+                if(built.kind=='jar'){read(new File(registry.root,built.path));def zip=new ZipFile(new File(registry.root,built.path));try{def entry=zip.getEntry(name);if(entry!=null&&entry.size>=0&&entry.size<=4096)lines=zip.getInputStream(entry).withCloseable { stream -> def b=stream.readNBytes(4097);if(b.length>4096)throw new GradleException('OSV descriptor budget');new String(b,'UTF-8').readLines()}}finally{zip.close()}}
+                else {def f=new File(registry.root,built.path+'/'+name);if(f.isFile())lines=new String(read(f),'UTF-8').readLines()}
+                def found=lines.findAll {it.startsWith('implementation-class=')};if(found.size()==1)descriptor=found.first().substring(21)
+            }
+            def app=[id:session.id,pluginSpecId:spec.id,ownerProjectId:projectId,invocationId:invocationId,producerBuildId:spec.producer.rootDirectory,
+                registrationForm:spec.registrationForm,registrationUnique:session.registrationUnique,beginBeforeApplied:session.beginBeforeApplied,ended:session.ended,endOutcome:session.endOutcome,
+                observerFired:applied[key]==true,instanceMatches:actual!=null&&(session.instance==null||actual.is(session.instance)),implementationClass:klass?.name ?: 'unavailable',descriptorImplementation:descriptor,
+                loadObservationPhase:'export-task',builtArtifact:built?artifact(new File(registry.root,built.path)):null,
+                expectedRecordIds:records.findAll {it.origin?.kind=='plugin'&&it.origin.applicationId==session.id}.collect {it.id},loadPolicy:spec.loadPolicy]
+            if(spec.loadPolicy=='prepared-output-only-v1'){app.directLoadObserved=location!=null&&built!=null&&location.canonicalFile==new File(registry.root,built.path).canonicalFile;app.unverifiedTransform=true}
+            else {
+                app.loaderProfileDigest=spec.loaderProfileDigest;app.runtimeSnapshotRef=null;app.originRelation=null
+                app.runtimeAttestations=[approvedRuntimeOnly:true,noUnregisteredAgentsOrLoaders:true,artifactsImmutableThroughLoad:true]
+                if(location!=null){
+                    def roots=(System.getProperty('osvMcpPluginRuntimeRoots','').split(java.util.regex.Pattern.quote(File.pathSeparator)).findAll {it}.collect {new File(it).canonicalFile})+[registry.root]
+                    if(!roots.any {location.canonicalFile.toPath().startsWith(it.toPath())})throw new GradleException('OSV plugin runtime origin not approved')
+                    app.runtimeSnapshotRef=snapshot(location)
+                    if(app.runtimeSnapshotRef.kind=='directory' && built!=null)app.originRelation=location.canonicalFile==new File(registry.root,built.path).canonicalFile ? 'same-path-origin' : 'distinct-path-origin'
+                }
+            }
+            app
+        }
+    }
+    Map evidence(){
+        verifyToolchain()
+        def builds=registry.contract.plugins.collect {it.producer.rootDirectory}.unique().collect { producer ->
+            def file=registry.path('.osv-mcp/plugin-build-state/'+hash(producer.getBytes('UTF-8'))+'.json')
+            def build=new JsonSlurper().parseText(new String(read(file),'UTF-8'))
+            if(build.invocationId!=invocationId)throw new GradleException('OSV stale producer receipt');build
+        }
+        def agents=java.lang.management.ManagementFactory.runtimeMXBean.inputArguments.findAll {it.startsWith('-javaagent:')||it.startsWith('-agentlib:')||it.startsWith('-agentpath:')}.collect { arg ->
+            def prefix=arg.startsWith('-javaagent:')?'-javaagent:':arg.startsWith('-agentlib:')?'-agentlib:':'-agentpath:'
+            def p=arg.substring(prefix.length()),entry=toolchainPaths[new File(p).canonicalPath],record=toolchain.entries.find {it.id==entry}
+            [kind:prefix.substring(1,prefix.length()-1),entryId:entry ?: 'unapproved',sha256:record?.sha256 ?: ('0'*64)]
+        }
+        [invocationId:invocationId,toolchainProfiles:[toolchain],loaderProfiles:loader ? [loader] : [],toolchainReceipts:[[profileDigest:profileDigest(toolchain),beforeVerified:true,afterVerified:true,runtimeIdentityVerified:true,bytesRead:toolchainBytes,maxBuffer:1024*1024]],
+         runtime:[gradleVersion:gradle.gradleVersion,jdkIdentity:System.getProperty('java.runtime.version'),agents:agents,configurationCache:false,parallel:false],builds:builds]
+    }
+}
+// Expose a factory through Gradle's public extra properties; init script classloaders stay independent.
+gradle.extensions.extraProperties.set('osvMcpPluginCoordinatorFactory',{ registry -> new OsvPluginCoordinator(registry:registry,gradle:gradle) })

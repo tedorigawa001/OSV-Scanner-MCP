@@ -1,3 +1,5 @@
+import {loadBudget} from "./gradlePluginSnapshots.js";
+import { GradlePluginReader, startupPluginSettings, type PluginSettings, type PluginAnalysis, type PluginStatus } from "./gradlePlugins.js";
 import { catalogEntriesMatch, loadCatalogModels, UnsupportedCatalogModel, type CatalogModels } from "./gradleCatalogs.js";
 import { sanitizeExternalText } from "./externalText.js";
 import { createHash } from "node:crypto";
@@ -12,12 +14,12 @@ export const GRADLE_COMPANION = "osv-mcp-gradle-dependencies.json";
 export const sha256 = (bytes: Buffer | string) => createHash("sha256").update(bytes).digest("hex");
 type DeclarationTrustStatus = "accepted" | "disabled" | "missing_assertion" | "invalid";
 interface DeclarationContextProvenance {
-  configuration: string; trust_status: DeclarationTrustStatus; assurance: string | null; contract_paths: string[]; catalog_trust_status?: DeclarationTrustStatus;
+  configuration: string; trust_status: DeclarationTrustStatus; assurance: string | null; contract_paths: string[]; catalog_trust_status?: DeclarationTrustStatus; plugin_trust_status?:PluginStatus; plugin_applications?:PluginAnalysis["applications"];
 }
 export interface GradleMetadata {
   path: string; metadata_paths: string[]; status: "complete" | "partial" | "unavailable";
   declaration_provenance?: { trust_model: string; trust_status: DeclarationTrustStatus;
-    catalog_trust_model?: string; catalog_trust_status?: DeclarationTrustStatus; contract_paths: string[]; assurance: string | null; limitations: string[]; contexts: DeclarationContextProvenance[] };
+    plugin_trust_model?:string;plugin_trust_status?:PluginStatus;catalog_trust_model?: string; catalog_trust_status?: DeclarationTrustStatus; contract_paths: string[]; assurance: string | null; limitations: string[]; contexts: DeclarationContextProvenance[] };
   relations_complete: boolean; declarations_complete: boolean; contexts: string[]; reasons: string[];
 }
 export interface GradleCaptureResult { lookup: RelationLookup; metadata: GradleMetadata; coverageReasons: string[] }
@@ -35,16 +37,17 @@ export class GradleGraphCache {
   private readonly catalogInputBudget = createGradleBudget();
   private remaining = 64 * 1024 * 1024;
   private lockRemaining = 64 * 1024 * 1024;
-  private inputRemaining = 64 * 1024 * 1024;
+  private readonly pluginBudget=loadBudget();
   private readonly trust: DeclarationTrust;
   private readonly trustInvalid: boolean;
   private readonly catalogTrust: CatalogTrust;
   private readonly catalogTrustInvalid: boolean;
-  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), trustSetting: DeclarationTrust | DeclarationTrustConfig = startupDeclarationTrust(), private readonly declarationBudget: GradleBudget = createGradleBudget(), catalogSetting: CatalogTrust | CatalogTrustConfig = startupCatalogTrust()) {
+  private readonly pluginReader:GradlePluginReader;
+  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), trustSetting: DeclarationTrust | DeclarationTrustConfig = startupDeclarationTrust(), private readonly declarationBudget: GradleBudget = createGradleBudget(), catalogSetting: CatalogTrust | CatalogTrustConfig = startupCatalogTrust(), private readonly pluginSettings:PluginSettings=startupPluginSettings()) {
     const setting = typeof trustSetting === "object" ? trustSetting : { trust: trustSetting, invalid: false };
     this.trust = setting.trust; this.trustInvalid = setting.invalid;
     const catalog = typeof catalogSetting === "object" ? catalogSetting : { trust: catalogSetting, invalid: false };
-    this.catalogTrust = catalog.trust; this.catalogTrustInvalid = catalog.invalid;
+    this.catalogTrust = catalog.trust; this.catalogTrustInvalid = catalog.invalid;this.pluginReader=new GradlePluginReader(pluginSettings,this.pluginBudget);
   }
 
   private document(file: string) {
@@ -68,9 +71,9 @@ export class GradleGraphCache {
         // Only declared Gradle companion kinds can be read, never arbitrary JSON paths.
         const name = path.basename(file);
         if (!(/\.gradle(?:\.kts)?$/.test(name) || name === "gradle.properties" || name.endsWith(".versions.toml") || /\.(?:kt|java|groovy)$/.test(name) || name === DECLARATION_CONTRACT)) return null;
-        const read = await readRegularFile(file, { boundary: this.boundary, maxBytes: Math.min(4 * 1024 * 1024, this.inputRemaining) });
+        const read = await readRegularFile(file, { boundary: this.boundary, maxBytes: Math.min(4 * 1024 * 1024, this.pluginBudget.bytes) });
         if (!read.ok) return read.failure === "not_found" ? "absent" : null;
-        this.inputRemaining -= read.bytes.length;
+        this.pluginBudget.bytes -= read.bytes.length;
         this.inputBytes.set(file, read.bytes);
         return sha256(read.bytes);
       })();
@@ -89,7 +92,7 @@ export class GradleGraphCache {
   private requiresCatalogValidation(file: string): boolean {
     if (!this.catalogRequirements.has(file)) {
       const contract = this.capturedContract(file);
-      let required = contract?.contractVersion === 2;
+      let required = contract?.catalogPolicy === "explicit-local-v1";
       if (!contract) {
         // This fallback can only require validation, never authorize declarations.
         // Preserve legacy declaration-only errors for an identifiable v1/none
@@ -154,7 +157,7 @@ export class GradleGraphCache {
     const contextTrust = new Map<string, DeclarationContextProvenance>([...lock.keys()].map(configuration => [configuration, {
       configuration, trust_status: this.trust ? "missing_assertion" : "disabled", assurance: null, contract_paths: [],
     }]));
-    if (candidate.graph.schemaVersion === 2) metadata.declaration_provenance = {
+    if (candidate.graph.schemaVersion >= 2) metadata.declaration_provenance = {
       trust_model: DECLARATION_MODEL, trust_status: this.trust ? "missing_assertion" : "disabled", contract_paths: [], assurance: null,
       limitations: ["unregistered_equal_additions_not_detectable", "reverted_external_mutations_not_detectable"], contexts: [],
     };
@@ -168,6 +171,15 @@ export class GradleGraphCache {
     // The manifest has a fixed reserved name. Discover it independently of the
     // producer's input list, then require its hash reference for catalog use.
     const contractState = await this.input(contractPath);
+    const author=this.capturedContract(contractPath);
+    let pluginRequired=author?.contractVersion===3 || candidate.graph.schemaVersion===3;
+    if(!author && contractState!=='absent'){
+      try{const raw=JSON.parse(this.inputBytes.get(contractPath)?.toString('utf8')??'');pluginRequired ||=raw.contractVersion>=3||Object.hasOwn(raw,'plugins')||Object.hasOwn(raw,'pluginPolicy');}catch{/* existing contract validation fails closed below */}
+    }
+    if(pluginRequired && (!author||author.contractVersion!==3||candidate.graph.schemaVersion!==3||!hasContractInput)){
+      metadata.reasons.push('plugin_contract_mismatch');return result;
+    }
+    if(this.pluginSettings.invalid)metadata.reasons.push('plugin_trust_config_invalid');
     const catalogRequired = contractState !== "absent" && this.requiresCatalogValidation(contractPath);
     const schemaOneCatalog = candidate.graph.schemaVersion === 1 && catalogRequired;
     if (candidate.graph.schemaVersion === 1 && hasContractInput && !this.capturedContract(contractPath)) {
@@ -213,6 +225,21 @@ export class GradleGraphCache {
     }
     // Identity/freshness verified above: only now may graph differences affect coverage.
     for (const c of validContexts) {
+      let pluginAnalysis:PluginAnalysis|undefined;
+      if(pluginRequired){
+        const graph=candidate.graph;
+        const d=knownDeclarations(c);
+        if(graph.schemaVersion!==3||author?.contractVersion!==3||d?.adapterVersion!==5){metadata.reasons.push('unsupported_plugin_adapter');continue;}
+        const scope=author.scopes.find(s=>s.id===d.trust.scopeId&&s.projectPath===candidate.graph.projects.find(p=>p.id===c.projectId)!.projectPath&&s.resolvableConfiguration===c.configuration);
+        if(!scope){metadata.reasons.push('plugin_scope_missing');continue;}
+        pluginAnalysis=await this.pluginReader.analyze(candidate.root,graph.pluginEvidence,author.plugins,scope.pluginIds,d.pluginApplications,d.records,c.projectId,!!this.trust);
+        metadata.reasons.push(...pluginAnalysis.reasons);
+        const provenance=contextTrust.get(c.configuration)!;
+        provenance.plugin_trust_status=pluginAnalysis.status;provenance.plugin_applications=pluginAnalysis.applications;
+        metadata.declaration_provenance!.plugin_trust_model=this.pluginSettings.trust??'disabled';
+        metadata.declaration_provenance!.limitations=[...new Set([...metadata.declaration_provenance!.limitations,...pluginAnalysis.limitations])];
+        if(!pluginAnalysis.inputVerified)continue;
+      }
       if (!catalogVerified(c, candidate.graph)) { metadata.reasons.push("catalog_graph_inputs_unverifiable"); continue; }
       metadata.contexts.push(sanitizeExternalText(c.configuration));
       try {
@@ -235,28 +262,30 @@ export class GradleGraphCache {
             const provenance = contextTrust.get(c.configuration)!;
             provenance.trust_status = "accepted"; provenance.assurance = "author-attested-and-structurally-checked";
             provenance.contract_paths = [sanitizeExternalText(path.relative(this.boundary, contractPath))];
-            const needsCatalogTrust = contract.contractVersion === 2 || (d.adapterVersion === 4 && d.catalogAdditions.length > 0);
+            const needsCatalogTrust = contract.catalogPolicy === "explicit-local-v1" || ((d.adapterVersion === 4 || d.adapterVersion === 5) && d.catalogAdditions.length > 0);
             if (needsCatalogTrust) {
               provenance.catalog_trust_status = this.catalogTrust ? "accepted" : "disabled";
               metadata.declaration_provenance!.catalog_trust_model = CATALOG_MODEL;
             }
-            const declarations = needsCatalogTrust && !this.catalogTrust ? { sources: new Map<string, Set<string>>(), reasons: [this.catalogTrustInvalid ? "catalog_trust_config_invalid" : "catalog_trust_disabled"] } :
-              analyzeDeclarations(c, candidate.graph, contract, this.declarationBudget, models);
+            const declarations = pluginAnalysis&&!pluginAnalysis.declarationsComplete?{sources:new Map<string,Set<string>>(),reasons:pluginAnalysis.reasons}:needsCatalogTrust && !this.catalogTrust ? { sources: new Map<string, Set<string>>(), reasons: [this.catalogTrustInvalid ? "catalog_trust_config_invalid" : "catalog_trust_disabled"] } :
+              analyzeDeclarations(c, candidate.graph, contract, this.declarationBudget, models,pluginAnalysis);
             metadata.reasons.push(...declarations.reasons);
             if (declarations.reasons.includes("declaration_assertion_missing") || declarations.reasons.includes("provider_stability_assertion_missing") || declarations.reasons.includes("catalog_scope_assertion_missing")) {
               provenance.trust_status = "missing_assertion"; provenance.assurance = null;
             }
             if (needsCatalogTrust && declarations.reasons.includes("catalog_scope_assertion_missing")) provenance.catalog_trust_status = "missing_assertion";
+            if(pluginAnalysis&&!pluginAnalysis.declarationsComplete&&(pluginAnalysis.status==='invalid'||pluginAnalysis.status==='missing_assertion')){provenance.trust_status=pluginAnalysis.status==='invalid'?'invalid':'missing_assertion';provenance.assurance=null;}
+            if(pluginAnalysis?.declarationsComplete)provenance.assurance=pluginAnalysis.assurance;
             const adopted = provenance.trust_status === "accepted" && !declarations.reasons.length;
             if (adopted) {
               declarationContexts.add(c.configuration);
-              if ((d.adapterVersion === 3 || d.adapterVersion === 4) && d.records.some(r => "registrationKind" in r && r.registrationKind !== "synchronous")) {
+              if ((d.adapterVersion === 3 || d.adapterVersion === 4 || d.adapterVersion === 5) && d.records.some(r => "registrationKind" in r && r.registrationKind !== "synchronous")) {
                 const limitations = metadata.declaration_provenance!.limitations;
                 for (const limitation of ["provider_evaluations_outside_materialization_not_observable", "provider_stability_author_asserted"]) {
                   if (!limitations.includes(limitation)) limitations.push(limitation);
                 }
               }
-              if (d.adapterVersion === 4 && d.catalogAdditions.some(g => g.kind === "bundle") && !metadata.declaration_provenance!.limitations.includes("bundle_materialization_boundaries_not_observable")) {
+              if ((d.adapterVersion === 4 || d.adapterVersion === 5) && d.catalogAdditions.some(g => g.kind === "bundle") && !metadata.declaration_provenance!.limitations.includes("bundle_materialization_boundaries_not_observable")) {
                 metadata.declaration_provenance!.limitations.push("bundle_materialization_boundaries_not_observable");
               }
             }
@@ -290,11 +319,13 @@ export class GradleGraphCache {
       // Severity precedence makes aggregation commutative, including missing contexts.
       provenance.trust_status = !this.trust ? "disabled" : contexts.some(c => c.trust_status === "invalid") ? "invalid" :
         !contexts.length || contexts.some(c => c.trust_status !== "accepted") ? "missing_assertion" : "accepted";
-      provenance.assurance = provenance.trust_status === "accepted" ? "author-attested-and-structurally-checked" : null;
+      provenance.assurance = provenance.trust_status === "accepted" ? contexts.some(c=>c.assurance==="author-attested-loader-and-structurally-checked")?"author-attested-loader-and-structurally-checked":"author-attested-and-structurally-checked" : null;
       provenance.contract_paths = [...new Set(contexts.flatMap(c => c.contract_paths))].sort();
       const catalogContexts = contexts.filter(c => c.catalog_trust_status !== undefined);
       if (catalogContexts.length) provenance.catalog_trust_status = catalogContexts.some(c => c.catalog_trust_status === "disabled") ? "disabled" :
         catalogContexts.some(c => c.catalog_trust_status === "missing_assertion") ? "missing_assertion" : "accepted";
+      const pluginContexts=contexts.filter(c=>c.plugin_trust_status);
+      if(pluginContexts.length){const rank:PluginStatus[]=['invalid','unverifiable','disabled_for_required_policy','missing_assertion','accepted'];provenance.plugin_trust_status=!this.trust||!this.pluginSettings.trust?'disabled':rank.find(s=>pluginContexts.some(c=>c.plugin_trust_status===s))??'missing_assertion';}
       provenance.contexts = contexts.map(c => ({ ...c, configuration: sanitizeExternalText(c.configuration) }));
     }
     const allComplete = invalidConfigurations.size === 0 && [...lock.keys()].every(config => completeContexts.has(config));

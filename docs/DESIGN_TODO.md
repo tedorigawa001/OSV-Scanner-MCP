@@ -1746,3 +1746,14 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 
 - 実証レビュー修正: 同じentrypointの重複beginを先行・後続sessionとも不完全に固定し、終了後の再開始も拒否。load元観測とJAR snapshotはverification-task、directory snapshotはpost-buildという実際のphaseを記録する。両Gradle版のnative回帰へ重複2条件・phase確認を追加（各280件）。本番未採用と追加信頼の限界は維持。
 - 06aa8f3レビュー修正: directory artifactはload元が準備済み出力と同じpathで、事後に同じ実体を比較していたため、`same-path-origin`として内容一致と区別し、事後snapshot・比較なしのlimitationを付ける。比較種別をartifact種別へ束縛し、snapshot単体回帰は対象の検査（順序・blob size）へ届く対照と拒否理由の検証に改めた。strict不採用は変換不明の前提による結果と明記。実Gradle各280件、単体60件が成功。
+
+
+### 2026-11-01: convention pluginの本番adapter・静的取込
+
+contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader profile、binaryとprecompiledの二段階登録、JAR／directory snapshotのatomic保存・現在bytesの再検証、originの双方向被覆、declared_in完全性と信頼metadataを実装した。旧helper／catalog信頼の意味は維持し、scope・contextをまたいだ部分一覧を返さない。手順と対応範囲は[利用手順](GRADLE_CONVENTION_PLUGIN_USAGE.md)、詳細と回帰は[設計書§13](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md#13-本番adapter静的取込2026-11-01)。次は本番変更のレビュー、続いて3ツール／OSV実接続。未検証gateを今回完了した扱いにはしない。
+
+検証: 本番native各280件、既存adapter native各44件、通常全体1,763件、plugin static単体72件が成功。typecheck・build・配布dry-runを確認済み。観測46件とsource hashはvalidation/gradle-plugin-production-2026-11-01.jsonへ保存。3ツール／OSV実接続は未実施。
+
+- 本番レビュー修正: receiptをtask自身の出力へ限定し、前回artifactが残る同一projectの再exportを誤失効させない。ProcessResourcesの独立記録でresource鮮度を維持。directoryのsame-path-origin／distinct-path-originを本番schemaへ持ち、comparisonと必須limitationsをmetadataへ引き継ぐ。再export・同一／別path・不正なkind組合せの回帰と検証データを更新する。
+
+- 再検証: 両Gradle版各328件、通常全体1,770件、plugin static単体79件が成功。40件の同一project再exportでsource・artifactの変更と採用を確認し、initial／reexport計86観測を保存。directory 32観測でsame-path-originと必須limitationsを確認した。先行native各44件は今回未再実行、3ツール／OSV実接続も未実施。

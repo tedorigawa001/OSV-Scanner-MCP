@@ -1,3 +1,4 @@
+import {pluginEvidenceSchema} from "./gradlePlugins.js";
 /** Static Gradle graph contract. No build code is evaluated here. */
 import { collectGradleOrigins } from "./gradleOrigins.js";
 import { parseGradleJson } from "./gradleJson.js";
@@ -42,7 +43,8 @@ const schemaV1 = z.object({
 }).strict();
 const contextV2 = context.extend({ edges: z.array(context.shape.edges.element.extend({ id, resolutionKey: resolutionKeySchema })).max(200_000), declarations: declarationEnvelope, catalogInputs: catalogSchema });
 const schemaV2 = schemaV1.extend({ schemaVersion: z.literal(2), contexts: z.array(contextV2).max(2000) });
-const schema = z.discriminatedUnion("schemaVersion", [schemaV1, schemaV2]);
+const schemaV3=schemaV2.extend({schemaVersion:z.literal(3),pluginEvidence:pluginEvidenceSchema});
+const schema = z.discriminatedUnion("schemaVersion", [schemaV1, schemaV2,schemaV3]);
 export type GradleGraph = z.infer<typeof schema>;
 export type GradleContext = GradleGraph["contexts"][number];
 export interface GradleBudget { index: number; traversal: number }
@@ -62,7 +64,7 @@ export function parseGradleGraph(text: string, budget = createGradleBudget()): G
   // Only our own schema identifier with a later integer version counts as "newer"; anything else stays invalid.
   if (raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
     const { schema: name, schemaVersion: version } = raw as Record<string, unknown>;
-    if (name === "osv-mcp.gradle-graph" && Number.isSafeInteger(version) && (version as number) > 2) throw new UnsupportedGradleSchemaVersion();
+    if (name === "osv-mcp.gradle-graph" && Number.isSafeInteger(version) && (version as number) > 3) throw new UnsupportedGradleSchemaVersion();
   }
   const graph = schema.parse(raw);
   const locks = unique(graph.lockfiles), projects = unique(graph.projects);

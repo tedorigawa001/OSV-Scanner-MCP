@@ -53,6 +53,7 @@ gradle.projectsEvaluated {
             }
             verifyInputs()
             def registration = root.extensions.findByName('osvMcpDeclarations')
+            boolean v3=registration?.registry?.contract?.contractVersion==3
             boolean v2 = registration != null && root.findProperty('osvMcpSchemaVersion')?.toString() != '1'
             if (registration != null) registration.registry.verify()
             def relative = { File file ->
@@ -83,7 +84,7 @@ gradle.projectsEvaluated {
             }
             if(registration != null) {
                 registration.registry.hashes.each { file, hash ->
-                    if(!inputRecords.any { it.path==file }) inputRecords << (hash=='absent' ? [path:file,absent:true] : [path:file,sha256:hash])
+                    if((!v3 || registration.registry.contract.sources.contains(file) || file=='osv-mcp-gradle-declarations.json' || registration.registry.contract.catalogs.any {it.inputPaths.contains(file)}) && !inputRecords.any { it.path==file }) inputRecords << (hash=='absent' ? [path:file,absent:true] : [path:file,sha256:hash])
                 }
             }
             def requestedSelector = { selector ->
@@ -181,9 +182,10 @@ gradle.projectsEvaluated {
             lockFiles.each { id, file -> if (digest(file) != before[id]) throw new GradleException('Lock changed during OSV graph export') }
             verifyInputs()
             if(registration != null) registration.registry.verify()
-            def document = [schema: 'osv-mcp.gradle-graph', schemaVersion: v2 ? 2 : 1,
-                producer: [exporterVersion: v2 ? '2' : '1', gradleVersion: gradle.gradleVersion], lockfiles: lockRecords, projects: projectRecords,
+            def document = [schema: 'osv-mcp.gradle-graph', schemaVersion: v3 ? 3 : v2 ? 2 : 1,
+                producer: [exporterVersion: v3 ? '3' : v2 ? '2' : '1', gradleVersion: gradle.gradleVersion], lockfiles: lockRecords, projects: projectRecords,
                 inputs: [complete: false, files: inputRecords], contexts: contexts]
+            if(v3){if(!v2)throw new GradleException('Plugin export requires schema v3');document.pluginEvidence=registration.registry.plugins.evidence()}
             def output = new File(root.projectDir, 'osv-mcp-gradle-dependencies.json')
             def temporary = Files.createTempFile(root.projectDir.toPath(), '.osv-mcp-gradle-', '.json')
             try {

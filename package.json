@@ -27,7 +27,8 @@
   "files": [
     "dist",
     "gradle/export-dependency-graph.init.gradle",
-    "gradle/register-declarations.init.gradle"
+    "gradle/register-declarations.init.gradle",
+    "gradle/plugin-provenance.init.gradle"
   ],
   "repository": {
     "type": "git",

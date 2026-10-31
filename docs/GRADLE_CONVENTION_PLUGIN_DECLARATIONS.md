@@ -577,3 +577,51 @@ load元の最初の観測はafter-apply callbackではなく検証taskのreport�
 3. snapshot単体回帰は拒否理由まで検証する。manifestの順序不正は兄弟entryの入替えで祖先検査を通した上でsnapshot_entry_orderを確認し、宣言sizeとblobの不一致は自己整合したmanifest・digest・containerを作ってsnapshot_blob_mismatchを確認する。修正前の順序／size対照はそれぞれ祖先欠落・digest不一致で拒否されており、対象の検査を通っていなかった。
 
 修正後、Gradle 8.11.1／9.2.1とも280件成功、snapshot／policy／JAR単体60件成功。directory 8件はsame-path-originで、JAR 24件の比較結果は変わらない。更新後のsource hashと判定は検証JSONのpostReviewRevisionに記録した。
+
+
+## 13. 本番adapter・静的取込（2026-11-01）
+
+公開API実証に続き、contract v3／graph schema v3／adapter v5を実装した。設定・完全なmanifest例・profileのfield・起動／export手順は[利用手順](GRADLE_CONVENTION_PLUGIN_USAGE.md)。旧v1／v2契約、adapter v2〜v4の意味は維持する。
+
+- 本番の独立plugin-provenance init scriptがmain評価前baseline、producer評価前の一致、同一invocationのcompile／package receipt、全出力とclasspath分類を捕捉する。承認toolchainの実bytesをstreamingで構築前後に照合し、実際のJDK bin/java・lib/modules・releaseとの対応を必須にした。loader profileは別承認で、公開VM引数のagent構成・Gradle／JDK identityと比較する。
+- binary-instanceとprecompiled-pendingの二段階helperを公開extensionへ実装。適用前observer、適用後の実Plugin、descriptor、source mappingを照合する。sessionはopaqueなidentity handle、重複beginは終了後の再開始も不完全に固定する。configure Action失敗はcatchして継続・end completeとしても復旧しない。
+- load元観測とsnapshot取得はexport-task。元JAR bytes、directoryの完全tree／空directory／共有blobを固定prefixへatomic保存し、既存containerの不一致・途中失敗ではcompanionを更新しない。source／snapshotのexport側読取はbuild間で共有する64 MiB／10,000 entry予算、toolchainは別のstreaming予算を使う。
+- 静的readerはboundary内だけを安全に読み、source・構築出力・snapshotの現在bytesと集合を再検証する。JAR全file内容の比較では許可したZIP envelope差だけを無視し、未知prefix／隙間も拒否する。toolchain／loader profileの承認は起動時固定の別集合。strictには不要なloader設定を伝播させない。生runtime pathはMCPへ渡さない。
+- adapter v5の同期／Provider記録にscript／pluginのoriginとapplication逆参照を持たせる。既存key／shape、scope継承・保持実体・全追加試行の被覆とANDし、片方が不完全な同一GAVはscript部分だけを返さない。context順序でも結果を変えない。plugin consumer trustが無効でもhelper自体の信頼状態は保持し、plugin_trust_statusへ別途表示する。
+
+metadataはcontext別plugin_trust_statusとapplicationのload_policy／input_status／trust_status／source_artifact_status／transform_status、最上位assurance・limitationsを返す。外部由来のapplication IDは内部照合時には変更せず、返却時だけ不可視文字を除去する。入力の検証不能は影響graph不採用、出自・sessionだけの不足はrelation／introduced_byを保持して宣言元一覧を省略する。脆弱性coverageはmetadata不足だけでは下げない。
+
+### 13.1 対応範囲・独立した未対応gate
+
+本番の実行検証はbuildSrc／included root producer、Groovy／Kotlin consumer、Gradle 8.11.1／9.2.1、binary Java／明示K2 JavaExec binary Kotlin／precompiled Groovyを対象とする。Java・Groovy precompiledはJAR／directory両方、Kotlin binaryはJARで確認した。新policyのassuranceは作者・運用者のruntime／変換表明を含み、実行bytecodeの独立観測ではない。実runtimeのstrict policyは未確認変換の拒否を維持し、strict陽性はsynthetic分類だけとする。
+
+precompiled Kotlin、標準kotlin-dsl／Kotlin Gradle plugin、発行済み外部plugin、plugin ID alias、producer子project、plugin内部catalog／bundle、configuration cache、並行exportは未採用。classpathのcompile開始時完全inventory、復元された一時変更、全native library／動的agent／未知loaderの独立棚卸しも保証しない。MCP用のprofile自動取得／自動承認は追加せず、利用者が事前に準備・確認する。3ツール・OSV実接続は本番レビュー後の別作業。
+
+### 13.2 検証・回帰
+
+本番のpluginExporter.integration.test.tsは、通常16構成（2 consumer DSL×2 producer×2 form×2 artifact）にKotlin binary 4構成、重複session、Provider、Action失敗、誤ったJDK対応付けを加えた。信頼無効／旧trust／profile不足、出自・session・classpath・descriptorの改変、入力・snapshot・構築出力の実disk変更を検証する。static-onlyの回帰はpolicy別のfield禁止、起動時設定、完全性・context順序、snapshot／ZIPの境界・予算を確認する。
+
+再現はOSV_MCP_TEST_GRADLE、JAVA_HOME、準備済みGRADLE_USER_HOMEを指定し、対象testを実行する。OSV_MCP_GRADLE_PLUGIN_OUTPUTを指定するとnative exportの観測JSONを保存する。検証用fixture／blobは終了後に削除し、再実行で再生成する。検証結果・source hashは[gradle-plugin-production-2026-11-01.json](validation/gradle-plugin-production-2026-11-01.json)に記録する。旧公開API実証のJSONは変更しない。
+
+```sh
+env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
+  JAVA_HOME=/trusted/jdk-21 GRADLE_USER_HOME=/trusted/prepared-gradle-cache \
+  OSV_MCP_GRADLE_PLUGIN_OUTPUT=/tmp/plugin-production \
+  npm test -- src/test/gradle/pluginExporter.integration.test.ts
+```
+
+
+検証結果: Gradle 8.11.1／9.2.1の本番native回帰は各280件成功。既存C1a／C1b／catalogのnative互換回帰は各44件成功。通常全体は1,763件成功・835件skip、plugin関連のstatic単体は72件成功（文書回帰を含め73件）。typecheck・build・package dry-run・diff checkも成功した。各版23件のexport観測（計46件）を記録し、誤JDK profileは各版1件でexport拒否を確認した。配布対象の3 init scriptと新しい静的readerがpackageに含まれることを確認した。
+
+
+### 13.3 本番レビュー後: 再exportとsame-path directoryの修正（2026-11-01）
+
+1. task終了時のreceiptは、そのtaskの宣言出力へ対応するoutputRootsだけを捕捉する。存在する全rootを一律に記録すると、compile時の前回JAR／plugin-imageとpackage後の今回出力が同じinvocationに混在し、正常な再exportがplugin_artifact_staleになるため。ProcessResourcesの出力も独立に記録し、resourcesの鮮度確認を省略しない。
+2. exporterがdirectoryの公開CodeSourceと準備済み出力のcanonical pathを比較してoriginRelationを記録する。same-path-originとdistinct-path-originを区別し、JARはnull限定。readerはkindとの整合を検証し、現在bytes／treeの再検証後のcomparisonをmetadataへ返す。同一pathの候補にはplugin_directory_origin_same_path_not_compared、directoryの事後捕捉にはplugin_directory_snapshot_post_buildを追加する。same-pathの採用は明示的loader trustの下で維持するが、独立した内容比較とは扱わない。
+
+修正前の再exportと必須limitation確認の回帰が失敗することを確認した。再exportではsourceの実classを変えるmarkerを追加し、同じbuild directoryで改めてexport／静的取込する。Groovy／Kotlin consumer、buildSrc／included、binary Java／Kotlin・precompiled Groovy、JAR／directoryの対応構成で確認する。distinct directoryの一致／不一致、originRelationの欠落・null・未知値・JARへの混入もstatic回帰へ追加した。検証JSONはinitial／reexportの両観測と、各静的取込metadataへ更新する。
+
+
+再検証結果: Gradle 8.11.1／9.2.1とも各328件成功。各版20 projectでsourceと構築artifactの両方を変更して同じbuild directoryから再exportし、relation／declared_inの採用を確認した（計40再export）。initial 46件＋reexport 40件の計86観測を保存し、source hash、異なるinvocation、変更されたartifact、静的取込metadataを照合した。directoryの32観測はsame-path-originで、両必須limitationsを確認。distinct directoryの一致／不一致はstatic回帰で確認したもので、nativeの別path実証とは扱わない。
+
+通常全体は1,770件成功・883件skip、plugin static単体79件（文書回帰を含め80件）、typecheck・build・diff checkも成功。先行検証の既存adapter native各44件は今回再実行していない。旧観測のsource hash・集計は検証JSONのpreReviewへ残し、最新観測・結果をrootとpostReviewRevisionへ更新した。本番3ツール／OSV実接続は引き続き未実施。

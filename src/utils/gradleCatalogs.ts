@@ -27,7 +27,7 @@ export class UnsupportedCatalogModel extends Error {
 /** Inputs are already safely captured and hash-checked by the shared scan cache. */
 export function loadCatalogModels(contract: DeclarationContract, graph: GradleGraph, bytes: Map<string, Buffer>, budget: GradleBudget): CatalogModels {
   const models: CatalogModels = new Map();
-  if (contract.contractVersion !== 2) throw new Error("catalog_contract_missing");
+  if ((contract.contractVersion !== 2 && contract.contractVersion !== 3)) throw new Error("catalog_contract_missing");
   const inputs = new Map(graph.inputs.files.map(f => [f.path, f]));
   let unsupported: UnsupportedCatalogModel | undefined;
   for (const cat of contract.catalogs) {
@@ -80,7 +80,7 @@ function catalogModel(cat: Extract<DeclarationContract, { contractVersion: 2 }>[
 }
 
 export function catalogEntriesMatch(entries: { id: string; kind: string; graphInputPaths: string[] }[], contract: DeclarationContract, budget: GradleBudget): boolean {
-  if (contract.contractVersion !== 2 || entries.length !== contract.catalogs.length) return false;
+  if ((contract.contractVersion !== 2 && contract.contractVersion !== 3) || entries.length !== contract.catalogs.length) return false;
   const expected = new Map(contract.catalogs.map(c => [c.id, { kind: c.kind, paths: new Set(c.inputPaths.map(p => { tick(budget); return p; })) }]));
   return entries.every(e => {
     tick(budget); const c = expected.get(e.id);
@@ -90,14 +90,14 @@ export function catalogEntriesMatch(entries: { id: string; kind: string; graphIn
 }
 
 /** Recompute all group/member evidence. Callback order never identifies an alias. */
-export function validateCatalogGroups(d: Extract<Declarations, { adapterVersion: 4 }>, contract: DeclarationContract,
+export function validateCatalogGroups(d: Extract<Declarations, { adapterVersion: 4 | 5 }>, contract: DeclarationContract,
   scopeId: string, models: CatalogModels | undefined, budget: GradleBudget): string | undefined {
   const records = new Map(d.records.map(r => { tick(budget); return [r.id, r] as const; }));
   const groupIds = new Set<string>(), members = new Set<string>();
   const scope = contract.scopes.find(s => s.id === scopeId);
   for (const group of d.catalogAdditions) {
     tick(budget);
-    if (contract.contractVersion !== 2 || !scope || !("catalogIds" in scope) || !Array.isArray(scope.catalogIds) || !scope.catalogIds.includes(group.catalogInputId)) return "catalog_scope_assertion_missing";
+    if ((contract.contractVersion !== 2 && contract.contractVersion !== 3) || !scope || !("catalogIds" in scope) || !Array.isArray(scope.catalogIds) || !scope.catalogIds.includes(group.catalogInputId)) return "catalog_scope_assertion_missing";
     const model = models?.get(group.catalogInputId), alias = normalizedCatalogAlias(group.alias);
     if (!model || group.normalizedAlias !== alias || groupIds.has(group.id) || !group.observationComplete || group.reasons.length ||
       !group.source || !group.memberIds.length || new Set(group.memberIds).size !== group.memberIds.length) return "catalog_observation_incomplete";

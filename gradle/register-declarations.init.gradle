@@ -3,6 +3,10 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.StandardCopyOption
+import org.gradle.api.tasks.compile.AbstractCompile
+import org.gradle.api.tasks.bundling.Jar
+import java.util.zip.ZipFile
 import java.security.MessageDigest
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -15,6 +19,7 @@ import org.gradle.api.artifacts.component.ModuleComponentSelector
 class OsvDeclarationRegistry {
     File root
     Map contract
+    def plugins
     String contractHash
     Map<String,String> hashes = [:]
     Set handles = Collections.newSetFromMap(new IdentityHashMap())
@@ -40,7 +45,7 @@ class OsvDeclarationRegistry {
     }
     String state(String p) {
         def f=path(p)
-        Files.exists(f.toPath(),LinkOption.NOFOLLOW_LINKS) ? digest(file(p).bytes) : 'absent'
+        Files.exists(f.toPath(),LinkOption.NOFOLLOW_LINKS) ? {def input=file(p);if(plugins!=null)plugins.charge(input.length());digest(input.bytes)}() : 'absent'
     }
     static String alias(String value) { value.replace('-','.').replace('_','.') }
     void prepare() {
@@ -62,9 +67,10 @@ class OsvDeclarationRegistry {
             else if(ch=='}' || ch==']') { if(stack.empty) throw new GradleException('Invalid OSV declaration JSON'); stack.remove(stack.size()-1) }
         }
         contract=slurper.parseText(raw)
-        boolean catalogs=contract.contractVersion==2 && contract.catalogPolicy=='explicit-local-v1'
-        def keys=['contractVersion','trustModel','sources','scopes','catalogPolicy']+(catalogs ? ['catalogs'] : [])
-        if(contract.keySet()!=keys.toSet() || (!catalogs && (contract.contractVersion!=1 || contract.catalogPolicy!='none')) || contract.trustModel!='registered-helper-v1' || !(contract.sources instanceof List) || !(contract.scopes instanceof List) || contract.sources.size()>10000 || contract.scopes.size()>2000) throw new GradleException('Unsupported OSV declaration contract')
+        boolean pluginContract=contract.contractVersion==3
+        boolean catalogs=contract.contractVersion in [2,3] && contract.catalogPolicy=='explicit-local-v1'
+        def keys=['contractVersion','trustModel','sources','scopes','catalogPolicy']+(catalogs || pluginContract ? ['catalogs'] : [])+(pluginContract ? ['pluginPolicy','plugins'] : [])
+        if(contract.keySet()!=keys.toSet() || (!catalogs && !pluginContract && (contract.contractVersion!=1 || contract.catalogPolicy!='none')) || contract.trustModel!='registered-helper-v1' || !(contract.sources instanceof List) || !(contract.scopes instanceof List) || contract.sources.size()>10000 || contract.scopes.size()>2000) throw new GradleException('Unsupported OSV declaration contract')
         def catalogIds=new HashSet(), catalogNames=new HashSet()
         int references=0
         if(catalogs) {
@@ -93,7 +99,7 @@ class OsvDeclarationRegistry {
         if(contract.sources.toSet().size()!=contract.sources.size()) throw new GradleException('Duplicate OSV declaration source')
         def ids=new HashSet(), scopes=new HashSet()
         contract.scopes.each { s ->
-            if((s.keySet()-['providerPolicy']-(catalogs ? ['catalogIds'] : []))!=['id','projectPath','resolvableConfiguration','declarationConfigurations','assertion','mutationPolicy'].toSet() || (s.containsKey('providerPolicy') && s.providerPolicy!='stable-during-export') || (catalogs && (!(s.catalogIds instanceof List) || s.catalogIds.size()>100 || s.catalogIds.toSet().size()!=s.catalogIds.size() || s.catalogIds.any { !catalogIds.contains(it) })) || !(s.id instanceof String) || !s.id || !(s.projectPath instanceof String) || !(s.resolvableConfiguration instanceof String) || !(s.declarationConfigurations instanceof List) || s.declarationConfigurations.size()>2000 || s.declarationConfigurations.any { !(it instanceof String) || !it } || s.declarationConfigurations.toSet().size()!=s.declarationConfigurations.size() || s.assertion!='all-contributing-additions-use-helper' || s.mutationPolicy!='immutable-after-add' || !ids.add(s.id) || !scopes.add([s.projectPath,s.resolvableConfiguration])) throw new GradleException('Invalid OSV declaration scope')
+            if((s.keySet()-['providerPolicy']-(catalogs || pluginContract ? ['catalogIds'] : [])-(pluginContract ? ['pluginIds'] : []))!=['id','projectPath','resolvableConfiguration','declarationConfigurations','assertion','mutationPolicy'].toSet() || (s.containsKey('providerPolicy') && s.providerPolicy!='stable-during-export') || ((catalogs || pluginContract) && (!(s.catalogIds instanceof List) || s.catalogIds.size()>100 || s.catalogIds.toSet().size()!=s.catalogIds.size() || s.catalogIds.any { !catalogIds.contains(it) })) || !(s.id instanceof String) || !s.id || !(s.projectPath instanceof String) || !(s.resolvableConfiguration instanceof String) || !(s.declarationConfigurations instanceof List) || s.declarationConfigurations.size()>2000 || s.declarationConfigurations.any { !(it instanceof String) || !it } || s.declarationConfigurations.toSet().size()!=s.declarationConfigurations.size() || s.assertion!='all-contributing-additions-use-helper' || s.mutationPolicy!='immutable-after-add' || !ids.add(s.id) || !scopes.add([s.projectPath,s.resolvableConfiguration])) throw new GradleException('Invalid OSV declaration scope')
         }
         long total=file(CONTRACT).length(); contractHash=digest(raw.getBytes('UTF-8'))
         hashes[CONTRACT]=contractHash
@@ -109,6 +115,18 @@ class OsvDeclarationRegistry {
             file(p); capture(p)
         }
         if(catalogs) contract.catalogs.each { cat -> cat.tomlPaths.each { file(it) }; cat.inputPaths.each { capture(it) } }
+        if(pluginContract) {
+            if(contract.pluginPolicy!='explicit-local-build-v1' || !(contract.plugins instanceof List) || contract.plugins.empty || contract.plugins.size()>100 || (!catalogs && contract.catalogs!=[]))throw new GradleException('Invalid OSV plugin manifest')
+            def pluginIds=new HashSet()
+            contract.plugins.each { spec ->
+                if(!pluginIds.add(spec.id) || !(spec.inputPaths instanceof List) || spec.inputPaths.empty || spec.inputPaths.size()>10000 || !(spec.sourcePaths instanceof List) || spec.sourcePaths.empty || !(spec.outputRoots instanceof List) || spec.outputRoots.empty || !(spec.pluginIds instanceof List) || spec.pluginIds.size()!=1 || !(spec.sourceMappings instanceof List) || spec.sourceMappings.empty || !(spec.producer instanceof Map) || !['build-src','included-build'].contains(spec.producer.kind) || spec.producer.projectPath!=':' || !relative(spec.producer.rootDirectory) || !['binary-instance','precompiled-pending'].contains(spec.registrationForm) || !['prepared-output-only-v1','approved-gradle-loader-v1'].contains(spec.loadPolicy))throw new GradleException('Invalid OSV plugin manifest')
+                if(spec.registrationForm=='precompiled-pending' && spec.sourcePaths.any { it.endsWith('.gradle.kts') })throw new GradleException('Precompiled Kotlin is not yet supported')
+                if(spec.assertions!=[buildInputs:'all-plugin-build-inputs-listed',additions:'all-contributing-plugin-additions-use-helper',mapping:'source-artifact-mapping-reviewed',mutation:'immutable-during-export'])throw new GradleException('Missing OSV plugin assertion')
+                spec.inputPaths.each { value -> if(!relative(value) || !value.startsWith(spec.producer.rootDirectory+'/'))throw new GradleException('Invalid OSV plugin input');file(value);capture(value) }
+                if(spec.sourcePaths.any { !contract.sources.contains(it) || !spec.inputPaths.contains(it) } || spec.outputRoots.any { !relative(it.path) || !it.path.startsWith(spec.producer.rootDirectory+'/build/') })throw new GradleException('Invalid OSV plugin source/output')
+            }
+            if(contract.scopes.any { !(it.pluginIds instanceof List) || it.pluginIds.toSet().size()!=it.pluginIds.size() || it.pluginIds.any { !pluginIds.contains(it) } })throw new GradleException('Invalid OSV plugin scope')
+        }
     }
     void verify() { hashes.each { p,h -> if(state(p)!=h) throw new GradleException('Build input changed during OSV graph export') } }
     boolean verifyRegistration(Collection paths) {
@@ -121,7 +139,7 @@ class OsvDeclarationRegistry {
         true
     }
     Map catalogSource(String id) {
-        def cat=contract.contractVersion==2 ? contract.catalogs.find { it.id==id } : null
+        def cat=contract.contractVersion in [2,3] ? contract.catalogs.find { it.id==id } : null
         if(!cat) throw new GradleException('Unknown OSV catalog registration')
         def handle=Collections.unmodifiableMap([id:cat.id,name:cat.name])
         catalogHandles.add(handle); handle
@@ -139,6 +157,8 @@ class OsvMcpDeclarations {
     Map retainedIndex=[:]
     boolean overflow=false
     int materializationRecords=0
+    List pluginApplications=[]
+    IdentityHashMap pluginHandles=new IdentityHashMap()
     Map catalogInputSnapshot
     static Map unsupported(String reason) { [version:1,status:'unsupported',reason:reason] }
     static Map resolutionKey(selector) {
@@ -156,6 +176,10 @@ class OsvMcpDeclarations {
             [version:1,status:'supported',artifacts:[],targetConfiguration:null,endorseStrictVersions:false,transitive:true,excludes:[]] : unsupported('unsupported_declaration_shape')
         [key:k,shape:shape]
     }
+    Object beginPlugin(String specId,Object instance) { registry.plugins.begin(this,specId,instance,'binary-instance') }
+    Object beginPrecompiled(String specId) { registry.plugins.begin(this,specId,null,'precompiled-pending') }
+    Object pluginSource(Object session,String mappingId) { registry.plugins.source(this,session,mappingId) }
+    void endPlugin(Object session,String outcome='complete') { registry.plugins.end(this,session,outcome) }
     Map source(String path,String kind='build-script') { registry.source(path,kind) }
     Map add(String name,Object notation,Object handle,Action action=null) {
         def token=Collections.unmodifiableMap([id:'d'+records.size()])
@@ -167,7 +191,11 @@ class OsvMcpDeclarations {
             return token
         }
         def dep=project.dependencies.create(notation)
-        if(action) action.execute(dep)
+        try {if(action) action.execute(dep)}catch(Exception error){
+            def origin=pluginHandles[handle]
+            if(origin!=null)pluginApplications.findAll {it.id==origin.applicationId}.each {it.actionFailed=true;it.endOutcome='failed'}
+            throw error
+        }
         def before=snapshot(dep)
         boolean added=project.configurations.getByName(name).dependencies.add(dep)
         // Never enumerate the collection here: that could realize an unrelated Provider.
@@ -178,8 +206,9 @@ class OsvMcpDeclarations {
         def retained=candidates.size()==1 && snapshot(candidates.first())==before ? candidates.first() : null
         if(added && retained!=null) { prior.add(retained); retainedIndex[indexKey]=prior }
         def src=registry.handles.contains(handle) ? new LinkedHashMap(handle) : null
+        def origin=pluginHandles[handle] ?: [kind:'script']
         def state=retained!=null && src!=null && notation instanceof CharSequence ? 'materialized' : 'unsupported'
-        if(records.size()<100000) records.add([token:token,id:token.id,configuration:name,state:state,atAdd:before,retained:retained,source:src,reason:state=='materialized' ? null : 'declaration_inventory_incomplete'])
+        if(records.size()<100000) records.add([token:token,id:token.id,configuration:name,state:state,atAdd:before,retained:retained,source:src,origin:origin,reason:state=='materialized' ? null : 'declaration_inventory_incomplete'])
         else overflow=true
         token
     }
@@ -207,9 +236,10 @@ class OsvMcpDeclarations {
         }
         if(records.size()>=100000) { overflow=true; delegate(action); return token }
         def src=registry.handles.contains(handle) ? new LinkedHashMap(handle) : null
+        def origin=pluginHandles[handle] ?: [kind:'script']
         def record=[token:token,id:token.id,configuration:name,registrationKind:use?.kind=='bundle' ? 'bundle' : 'provider',
             registrationForm:convertible ? 'provider-convertible' : 'provider',catalogUse:use,state:'pending',
-            atAdd:null,retained:null,source:src,reason:null,callbackCount:0,observations:[],observationIncomplete:false,actionFailed:false]
+            atAdd:null,retained:null,source:src,origin:origin,reason:null,callbackCount:0,observations:[],observationIncomplete:false,actionFailed:false]
         records.add(record)
         delegate({ dep ->
             try { if(action) action.execute(dep) } catch(Exception error) { record.actionFailed=true; throw error }
@@ -224,7 +254,7 @@ class OsvMcpDeclarations {
     }
     Map catalogInputs() {
         if(catalogInputSnapshot!=null) return catalogInputSnapshot
-        if(registry.contract.contractVersion!=2) return [inventoryComplete:true,entries:[]]
+        if(!(registry.contract.contractVersion in [2,3]) || registry.contract.catalogPolicy=='none') return [inventoryComplete:true,entries:[]]
         def model=project.extensions.getByType(VersionCatalogsExtension)
         boolean complete=model.catalogNames.toSet()==registry.contract.catalogs.collect { it.name }.toSet()
         def entries=registry.contract.catalogs.collect { cat ->
@@ -266,11 +296,13 @@ class OsvMcpDeclarations {
                 liveByConfiguration[name]=live
                 registeredByConfiguration[name]=Collections.newSetFromMap(new IdentityHashMap())
             }
+            boolean pluginContext=registry.contract.contractVersion==3
             boolean providerContext=attempts.any { it.registrationKind in ['provider','bundle'] }
-            boolean catalogContext=registry.contract.contractVersion==2 || attempts.any { it.registrationForm=='provider-convertible' }
+            boolean catalogContext=registry.contract.catalogPolicy=='explicit-local-v1' || attempts.any { it.registrationForm=='provider-convertible' }
             if(catalogContext) { d.adapterVersion=4; d.catalogAdditions=[] }
+            if(pluginContext) { d.adapterVersion=5;d.catalogAdditions=[] }
             if(providerContext) {
-                if(!catalogContext) d.adapterVersion=3
+                if(!catalogContext && !pluginContext) d.adapterVersion=3
                 liveByConfiguration.each { name,live ->
                     def index=[:]
                     live.each { dep ->
@@ -333,15 +365,16 @@ class OsvMcpDeclarations {
                 if(before?.key?.status!='supported' || before?.shape?.status!='supported') reasons << 'unsupported_declaration_shape'
                 def exported=[id:r.id,state:state,ownerProjectId:c.projectId,configuration:r.configuration,
                     declarationAtAdd:r.registrationKind in ['provider','bundle-member'] ? null : before,declarationAtResolve:after,source:r.source,catalogUses:r.catalogUse ? [[catalogInputId:r.catalogUse.catalogInputId,alias:r.catalogUse.alias]] : [],reasons:reasons.unique()]
-                if(providerContext || catalogContext) {
+                if(providerContext || catalogContext || pluginContext) {
                     exported.registrationKind=r.registrationKind ?: 'synchronous'
                     exported.callbackCount=r.callbackCount ?: 0
                     exported.materializations=r.observations?.collect { it.snapshot } ?: []
                 }
-                if(catalogContext) {
+                if(catalogContext || pluginContext) {
                     exported.registrationForm=r.registrationForm ?: 'synchronous'
                     exported.catalogGroupId=r.catalogGroupId ?: null
                 }
+                if(pluginContext)exported.origin=r.origin ?: [kind:'script']
                 d.records << exported
                 d.reasons.addAll(reasons)
             }
@@ -360,12 +393,21 @@ class OsvMcpDeclarations {
         } catch(Exception ignored) {
             d.inventoryComplete=false; d.records=[]; d.bindings=[]; d.configurationClosure=[]; d.configurationTopology=[]; d.reasons=['declaration_budget_exceeded']
         }
+        if(registry.contract.contractVersion==3){
+            d.adapterVersion=5;if(!d.containsKey('catalogAdditions'))d.catalogAdditions=[]
+            d.pluginApplications=registry.plugins.exportApplications(this,scope,d.records,c.projectId)
+        }
         d
     }
 }
-if(gradle.startParameter.projectProperties['osvMcpDeclarationContract']!=OsvDeclarationRegistry.CONTRACT) throw new GradleException('Use -PosvMcpDeclarationContract=osv-mcp-gradle-declarations.json with the registration adapter')
-def registry=new OsvDeclarationRegistry(root:(gradle.startParameter.projectDir ?: gradle.startParameter.currentDir).canonicalFile)
+if(gradle.startParameter.projectProperties['osvMcpDeclarationContract']!=OsvDeclarationRegistry.CONTRACT && !System.getProperty('osvMcpPluginBoundary')) throw new GradleException('Use -PosvMcpDeclarationContract=osv-mcp-gradle-declarations.json with the registration adapter')
+def registry=new OsvDeclarationRegistry(root:new File(System.getProperty('osvMcpPluginBoundary',(gradle.startParameter.projectDir ?: gradle.startParameter.currentDir).absolutePath)).canonicalFile)
 registry.prepare()
+if(registry.contract.contractVersion==3){
+    if(!gradle.extensions.extraProperties.has('osvMcpPluginCoordinatorFactory'))throw new GradleException('Load plugin-provenance.init.gradle before the registration adapter')
+    registry.plugins=gradle.extensions.extraProperties.get('osvMcpPluginCoordinatorFactory').call(registry)
+    registry.plugins.install()
+}
 gradle.beforeProject { p ->
-    if(p.rootDir.canonicalFile==registry.root) p.extensions.add('osvMcpDeclarations',new OsvMcpDeclarations(project:p,registry:registry))
+    if(p.rootDir.canonicalFile==registry.root) {def adapter=new OsvMcpDeclarations(project:p,registry:registry);p.extensions.add('osvMcpDeclarations',adapter);if(registry.plugins!=null)registry.plugins.observe(adapter)}
 }
