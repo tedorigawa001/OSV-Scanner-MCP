@@ -169,3 +169,5 @@ env OSV_MCP_TEST_GRADLE=/trusted/gradle/bin/gradle \
 4構成・計72回帰条件。各構成のnone／evaluation／taskの12報告でも、nativeとの比較と期待した鮮度判定を機械検証した。通常のsupplier計測はalias=1、countedConvertible=1、map付きbundle陰性のsupplier=1、明示Convertible変換はlibrary／bundle合わせて2回。bundle／bundle Convertibleは各3member観測、独立二重bundleは各3観測・二group。settings上書きは版2、strict aliasはstrict=1を保持した。空bundleと未使用map付きbundleはそれぞれcallback0とsupplier0。
 
 Gradle 8を含む全体実行では1,609件成功、公開文書のコマンドprefixチェック1件が失敗した。実行例を通常のenvコマンドへ修正後、同チェック1件を再実行して成功。さらに現在の文書を含む通常npm testは1,486件成功・124件skip（実Gradle／性能比較のopt-in条件）だった。失敗した文書チェックを含む全体実行を、全件成功の記録へ読み替えていない。Gradle 9のfocused実行は36件成功。型チェック・ビルド・diff checkも成功。本番コードの変更・MCP／OSV実接続・catalog採用の有効化は行っていない。
+
+記録後、回帰を補強した。上記のsupplier／変換回数・strict=1・上書き後のalpha:2をnativeとの一致だけでなく固定値でも確認し（両経路とも評価ゼロの場合に通らないように）、鮮度対照の変更対象へ実際にimportするcatalog/company.versions.tomlを加えた（変更検出4件）。Gradle 8.11.1／9.2.1のfocused実行で各36件成功。保存済み報告は変更なし構成のもので、補強の影響を受けない。

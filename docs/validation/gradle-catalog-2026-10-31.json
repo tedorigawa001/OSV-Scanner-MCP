@@ -6,7 +6,7 @@
   "offline": true,
   "sourceSha256": {
     "src/test/fixtures/gradle-catalog-registration.init.gradle": "b3e858cfc3cf2a82c266af9b2c1720758cde47a24cd11a18b7d22038f3c1d905",
-    "src/test/gradle/catalogRegistration.integration.test.ts": "7b70a904e099f2d1b45b00749fa8f690c12f766084052c41dfe6f978af13c8e5"
+    "src/test/gradle/catalogRegistration.integration.test.ts": "74385c8cbafb16b6bdb4377cd315380556588aecfb872f0233050739fe1d9f89"
   },
   "timingMeaning": "Logical phase and event ordering; no wall clock equivalence claim",
   "countMeasurement": "Application-instrumented library supplier calls and explicit public ProviderConvertible.asProvider calls; bundle member Actions measured, internal catalog bundle get calls not observable transparently",
@@ -4645,6 +4645,11 @@
       "testsSkipped": 124,
       "note": "Real Gradle and performance cases are opt-in; their real runs are recorded separately."
     },
-    "diffCheck": "passed"
+    "diffCheck": "passed",
+    "assertionRevision": {
+      "change": "Absolute supplier/conversion counts, strict and override results asserted; imported catalog/company.versions.toml added to the freshness mutations",
+      "realGradleFocused": {"8.11.1": {"testsPassed": 36}, "9.2.1": {"testsPassed": 36}},
+      "recordedReports": "Unchanged: the stored reports are the no-mutation runs, whose build scripts the revision does not alter"
+    }
   }
 }

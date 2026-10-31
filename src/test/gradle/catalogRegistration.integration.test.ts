@@ -12,7 +12,7 @@ const dirs: string[] = [];
 afterAll(async () => { for (const dir of dirs.splice(0)) await rm(dir, { recursive: true, force: true }); });
 interface Scenario {
   failed: boolean; failure: string | null; graph: string[];
-  additions: { id: string; source: string; callbacks: number; members: { name: string; version: string; matched: boolean }[] }[];
+  additions: { id: string; source: string; callbacks: number; members: { name: string; version: string; strict: string | null; matched: boolean }[] }[];
 }
 interface ProjectReport { catalogs: { name: string; libraries: string[]; bundles: string[] }[]; trace: string[]; producerCalls: Record<string, number>; conversionCalls: number; scenarios: Record<string, Scenario>; }
 interface Report { gradleVersion: string; projects: Record<string, ProjectReport>; inputs: { publicationAllowed: boolean; changed: string[]; baseline: Record<string, string>; final: Record<string, string> }; }
@@ -107,10 +107,12 @@ probe.add('duplicateBundle',catalog.findBundle('pair').get(),'extra.gradle','bun
     await writeFile(path.join(dir, mode, kotlin ? "extra.gradle.kts" : "extra.gradle"), extra);
     const change = kotlin ? `
 rootProject.file("gradle/libs.versions.toml").appendText("\\n# changed\\n")
+rootProject.file("catalog/company.versions.toml").appendText("\\n# changed\\n")
 rootProject.file("settings.gradle").appendText("\\n// changed\\n")
 rootProject.file("catalog/generated.versions.toml").writeText("# generated")
 ` : `
 rootProject.file('gradle/libs.versions.toml').append('\\n# changed\\n')
+rootProject.file('catalog/company.versions.toml').append('\\n# changed\\n')
 rootProject.file('settings.gradle').append('\\n// changed\\n')
 rootProject.file('catalog/generated.versions.toml').text='# generated'
 `;
@@ -148,6 +150,9 @@ for (const kotlin of [false, true]) describe.skipIf(!binary)(`Catalog registrati
     expect(control!.trace).toEqual(plain!.trace);
     expect(registered!.producerCalls).toEqual(plain!.producerCalls);
     expect(registered!.conversionCalls).toEqual(plain!.conversionCalls);
+    // Absolute counts keep the equality checks above from passing when nothing is evaluated at all.
+    expect(registered!.producerCalls).toEqual({ alias: 1, countedConvertible: 1, countedBundle: 1 });
+    expect(registered!.conversionCalls).toBe(2);
     expect(registered!.scenarios.alias!.graph).toEqual(plain!.scenarios.alias!.graph);
     expect(registered!.scenarios.alias!.additions[0]!.members).toMatchObject([{ name: "review:alpha", version: "1", matched: true }]);
     expect(report.inputs.changed).toEqual([]);
@@ -170,7 +175,11 @@ for (const kotlin of [false, true]) describe.skipIf(!binary)(`Catalog registrati
         expect(r.additions.map(a=>a.source)).toEqual([kotlin?"build.gradle.kts":"build.gradle",kotlin?"extra.gradle.kts":"extra.gradle"]);
         expect(r.additions.every(a=>a.callbacks===3 && a.members.every(m=>m.matched))).toBe(true);
       }
-      if (name==="override") expect(r.additions[0]!.members[0]!.version).toBe("2");
+      if (name==="override") {
+        expect(r.additions[0]!.members[0]!.version).toBe("2");
+        expect(r.graph).toEqual(["review:alpha:2"]);
+      }
+      if (name==="rich") expect(r.additions[0]!.members).toMatchObject([{ name: "review:beta", strict: "1", matched: true }]);
       if (name==="empty") expect(r.additions[0]!.callbacks).toBe(0);
     });
   }
@@ -184,7 +193,7 @@ for (const kotlin of [false, true]) describe.skipIf(!binary)(`Catalog registrati
   });
   for(const mutation of ["evaluation","task"] as const) it(`rejects stale catalog/settings and newly generated input during ${mutation}`, async () => {
     const r=await fixture(kotlin,mutation);
-    expect(r.inputs.changed.sort()).toEqual(["catalog/generated.versions.toml","gradle/libs.versions.toml","settings.gradle"]);
+    expect(r.inputs.changed.sort()).toEqual(["catalog/company.versions.toml","catalog/generated.versions.toml","gradle/libs.versions.toml","settings.gradle"]);
     expect(r.inputs.publicationAllowed).toBe(false);
     expect(r.inputs.baseline["catalog/generated.versions.toml"]).toBe("absent");
   },150_000);
