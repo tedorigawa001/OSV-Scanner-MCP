@@ -1467,6 +1467,7 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - 低共有グラフのレビュー修正: 共有先の有無だけでSCCへ移行せず、個別探索で実際の起点間再訪と重複queue処理の両方が到達variant数を超えた場合だけ切り替える。probeの作業も同じ予算へ計上し、部分結果は破棄。400起点/6,000 module/24 contextの共有辺1本ケースで、レビュー時2,256,552→修正後432,408操作、完全contextは21→24。回帰テストと性能比較へ追加。
 - Stage C1設計を具体化(2026-10-31、未実装): 宣言元登録adapter API、評価前source準備、v2宣言棚卸し／edge binding、GAV別完全性と併合、catalogと物理宣言元の分離、convention plugin／applied script、予算と安全な取込、22群の回帰条件を[設計書6.6節](GRADLE_DEPENDENCY_RELATIONS.md#66-stage-c-宣言元adapterの確定契約実装予定)へ追加。公開APIで重複・遅延宣言の完全性を実証できない形は未対応として省略する。
 - Stage C1設計レビューの2件を反映: catalogの種類別graph入力と検証不能時のcontext不採用を統一。宣言追加時／解決直前／edge要求のfingerprint v1、型付き正規化、exporterとreaderの検証責任を定義し、C04・C10と3ツールの回帰条件を拡充（設計のみ、未実装）。
+- Stage C1設計レビュー(2回目、2026-10-31): 宣言元処理はrelationの残予算ではなく専用予算とする(無関係なsubproject追加でdeclared_inが消える・lockfile単位captureの二段階化を避ける。6.6.8)。C22の前提として、v1 readerが自schemaの新しい整数versionを`unsupported_schema_version`として破損文書と区別するよう先行実装(他schema・0・非整数・不正v1は従来どおりinvalid、重複key/深さ検査が先)。3ツールでlockスキャン継続・coverage維持・relation unknownを回帰テスト。
 
 ## バックログ(2026-10-07)
 

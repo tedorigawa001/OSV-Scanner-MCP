@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { readRegularFile } from "./safeRead.js";
 import { isInsideDir } from "./projectWalk.js";
-import { analyzeGradleContext, createGradleBudget, gradleKey, parseGradleGraph, parseGradleLock, type GradleGraph, type GradleBudget } from "./gradleGraph.js";
+import { analyzeGradleContext, createGradleBudget, gradleKey, parseGradleGraph, parseGradleLock, UnsupportedGradleSchemaVersion, type GradleGraph, type GradleBudget } from "./gradleGraph.js";
 import type { RelationInfo, RelationLookup } from "./dependencyRelations.js";
 
 export const GRADLE_COMPANION = "osv-mcp-gradle-dependencies.json";
@@ -33,7 +33,7 @@ export class GradleGraphCache {
         if (!read.ok) return { reason: read.failure === "not_found" ? "metadata_missing" : `metadata_${read.failure}` };
         this.remaining -= read.bytes.length;
         try { return { graph: parseGradleGraph(read.bytes.toString("utf8"), this.budget) }; }
-        catch { return { reason: "invalid_or_over_budget_metadata" }; }
+        catch (error) { return { reason: error instanceof UnsupportedGradleSchemaVersion ? "unsupported_schema_version" : "invalid_or_over_budget_metadata" }; }
       })();
       this.documents.set(file, pending);
     }

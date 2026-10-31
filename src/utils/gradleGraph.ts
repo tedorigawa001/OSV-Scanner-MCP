@@ -49,6 +49,10 @@ function unique<T extends { id: string }>(items: T[]): Map<string, T> {
   if (map.size !== items.length) throw new Error("duplicate_id");
   return map;
 }
+/** A well-formed document from a newer exporter; reported apart from corrupt metadata. */
+export class UnsupportedGradleSchemaVersion extends Error {
+  constructor() { super("unsupported_schema_version"); }
+}
 export function parseGradleGraph(text: string, budget = createGradleBudget()): GradleGraph {
   if (Buffer.byteLength(text) > 16 * 1024 * 1024) throw new Error("graph_size_limit");
   // Validate depth and duplicate keys before JSON.parse/zod recurse into untrusted input.
@@ -59,7 +63,13 @@ export function parseGradleGraph(text: string, budget = createGradleBudget()): G
     onObjectEnd: () => { stack.pop(); }, onArrayEnd: () => { stack.pop(); },
     onError: () => { throw new Error("invalid_json"); },
   }, { disallowComments: true, allowTrailingComma: false });
-  const graph = schema.parse(JSON.parse(text));
+  const raw: unknown = JSON.parse(text);
+  // Only our own schema identifier with a later integer version counts as "newer"; anything else stays invalid.
+  if (raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
+    const { schema: name, schemaVersion: version } = raw as Record<string, unknown>;
+    if (name === "osv-mcp.gradle-graph" && Number.isSafeInteger(version) && (version as number) > 1) throw new UnsupportedGradleSchemaVersion();
+  }
+  const graph = schema.parse(raw);
   const locks = unique(graph.lockfiles), projects = unique(graph.projects);
   unique(graph.contexts);
   if (new Set(graph.lockfiles.map(l => l.path)).size !== graph.lockfiles.length ||

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { combineRelations } from "../../utils/dependencyRelations.js";
 import { describe, expect, it } from "vitest";
-import { parseGradleLock, analyzeGradleContext, parseGradleGraph, createGradleBudget } from "../../utils/gradleGraph.js";
+import { parseGradleLock, analyzeGradleContext, parseGradleGraph, createGradleBudget, UnsupportedGradleSchemaVersion } from "../../utils/gradleGraph.js";
 
 import { syntheticGradleGraph, syntheticGradleTrees } from "../fixtures/gradleSyntheticGraph.js";
 import { graphFixture } from "../fixtures/gradleGraphFixture.js";
@@ -223,4 +223,16 @@ it("keeps the lightweight path when only cross-origin revisits or private diamon
     expect(result.lookup!("g:p1199", "1").introducedBy).toEqual(expected);
     expect(budget.traversal).toBeGreaterThan(0);
   }
+});
+
+it("reports a newer schema version of our own document apart from invalid metadata", () => {
+  const newer = { ...graphFixture(), schemaVersion: 2, declarations: {} };
+  expect(() => parseGradleGraph(JSON.stringify(newer))).toThrow(UnsupportedGradleSchemaVersion);
+  // Other schemas, older/non-integer versions and corrupt v1 documents stay invalid.
+  for (const doc of [{ ...newer, schema: "other" }, { ...graphFixture(), schemaVersion: 0 }, { ...graphFixture(), schemaVersion: 1.5 }, { ...graphFixture(), extra: true }]) {
+    let error: unknown; try { parseGradleGraph(JSON.stringify(doc)); } catch (e) { error = e; }
+    expect(error).toBeInstanceOf(Error); expect(error).not.toBeInstanceOf(UnsupportedGradleSchemaVersion);
+  }
+  // Depth and duplicate-key checks still run before the version check.
+  expect(() => parseGradleGraph('{"schema":"osv-mcp.gradle-graph","schemaVersion":2,"schemaVersion":2}')).toThrow("duplicate_json_key");
 });

@@ -229,7 +229,7 @@ register(project, configurationName, actualDependencyObject,
 
 #### 6.6.3 JSON v2の出力
 
-v1の厳格parserへ非空`declarationEvidence`を追加しない。v2を明示導入し、新readerはv1/v2を受け付ける。v1は従来どおり宣言元未提供、旧readerにv2を渡した場合はmetadata未対応として通常lockスキャンを継続する。v2利用者向けにv1 exportモードも残す。ファイル名・companion探索境界は変更しない。
+v1の厳格parserへ非空`declarationEvidence`を追加しない。v2を明示導入し、新readerはv1/v2を受け付ける。v1は従来どおり宣言元未提供、旧readerにv2を渡した場合はmetadata未対応として通常lockスキャンを継続する。v1 readerは自身のschema識別子でより新しい整数versionの文書を`unsupported_schema_version`として報告し、破損した文書(`invalid_or_over_budget_metadata`)と区別する(実装済み、2026-10-31)。v2利用者向けにv1 exportモードも残す。ファイル名・companion探索境界は変更しない。
 
 v2では各contextの`edges`に一意な`id`と`requestFingerprint`を追加し、`declarations`を追加する。以下はcontext内の追加部分の例であり、graph本体・lock／input hashは省略している。
 
@@ -349,7 +349,7 @@ catalogは依存の要求を共有する仕組みで、選択版そのものを�
 
 recordsは10万/context、bindingsはroot非constraint edge数以下（最大20万/context）、source inventoryは1万/document、catalogUsesは各record最大32件を初期上限とする。JSONの既存16 MiB/件・64 MiB/scan制限が先に効く場合も黙って切り詰めない。構造の上限超過は文書無効、対応探索の予算超過は宣言元不完全とし、部分一覧を出さない。
 
-binding索引の構築は既存index共有200万操作、宣言・継承・bindingの走査は既存traversal共有200万操作へ計上する。contextごとの予算リセットや、全宣言×全edgeの総当たりを避ける。source捕捉はscan内キャッシュを共用し、source数×context数の再読込をしない。宣言元処理で予算が尽きても既に確定したrelation／originの結果を破棄しないよう、scan内の全contextの既存解析を先に完了し、その後に残予算で宣言処理を行い、failureを別に保持する。宣言処理が先行して後続contextのorigin予算を奪わない。
+宣言元処理はrelation解析と別の専用予算(index・traversal各200万操作のscan共有)とする。relationの残予算を使う方式では、無関係なsubprojectの追加だけで同じGAVの`declared_in`が消え、またlockfile単位の現行captureをscan全体の二段階処理へ組み替える必要がある。専用予算ならC21の「宣言予算が後続contextのrelation解析を悪化させない」を構造的に満たし、coverage・relationで予算を分けた既存方針とも一致する。contextごとの予算リセットや、全宣言×全edgeの総当たりを避ける。source捕捉はscan内キャッシュを共用し、source数×context数の再読込をしない。宣言元処理で予算が尽きても、確定したrelation／originの結果は破棄せず、failureを宣言元の不完全性として別に保持する。
 
 順序は、(1)登録と棚卸しのGradle実証、(2)v2 schema・安全なcapture、(3)GAV別完全性と併合、(4)3ツールの案内・実接続、(5)convention pluginのsource/artifact対応を満たすadapter、の順とする。各段階で未対応形を省略し、C1の完了条件に含まれる対応形とC2送りの形を検証記録へ明記する。
 

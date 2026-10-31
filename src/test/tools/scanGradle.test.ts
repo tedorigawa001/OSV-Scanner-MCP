@@ -167,3 +167,18 @@ it("all three tools retain origins across 24 sparse-sharing contexts in three do
     expect(pkg.dependency_relation).toBe("transitive"); expect(pkg.introduced_by).toEqual(["g:p399"]);
   }
 });
+
+it("keeps lock scanning and reports a newer metadata version as unsupported in all three tools", async () => {
+  const graph = await fixture();
+  await writeFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify({ ...graph, schemaVersion: 2 }));
+  for (const handler of [handleScanProject, handleScanJavaProject, handleSuggestFix]) {
+    const payload = JSON.parse((await handler({ project_path: dir }, { candidateCheck: "disabled" })).content[0]!.text);
+    expect(payload.coverage.complete).toBe(true);
+    const metadata = payload.coverage.dependency_metadata.gradle[0];
+    expect(metadata.status).toBe("unavailable");
+    expect(metadata.reasons).toContain("unsupported_schema_version");
+    expect(metadata.reasons).not.toContain("invalid_or_over_budget_metadata");
+    const packages = payload.packages ?? payload.suggestions;
+    expect(packages.map((p: any) => p.dependency_relation)).toEqual(["unknown", "unknown"]);
+  }
+});
