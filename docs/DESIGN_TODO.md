@@ -1415,6 +1415,16 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 
 - marker正規化のレビュー修正(2026-10-28): 引用符を一律に置換すると、引用符・andを含む単一リテラルが複合条件と衝突し、子の収録や推移的依存の経路を誤って一致とした。リテラル・識別子・演算子を型付きトークン列としてJSON化し、リテラル内容とトークン境界を保持する。引用符の種類と引用外の空白だけを同一視し、閉じていない引用符は未確認とする。収録判定・経路の結合・両ツールのcoverageに回帰テストを追加。
 
+## Pipenvの依存関係・子プロジェクトの収録確認(2026-10-31、ソース実装)
+
+- Pipfile.lock spec 6と捕捉したPipfileを照合。packages/default・dev-packages/develop・カスタムカテゴリの直接依存をdeclared_in=Pipfileとして示す。確認済みpath依存の子pyproject.tomlの実行時宣言も直接依存。カテゴリの宣言が全て収録されていれば残りのレジストリ版は推移的依存。lockがフラットで依存辺を持たないため、introduced_byは有効な直接ルートが一意のカテゴリだけで確定し、複数候補は推測しない。
+- 子は宣言とlockの安全な相対path・名前が一致し、静的実行時依存が同一カテゴリの固定版で満たされる場合のみ収録済み。未収録はmissing、動的依存・開発グループ・未対応制約・markers/extras・旧backend宣言等はunconfirmed。子Pipfileはpath依存からexportされず、独立した環境としてunconfirmed。lockの鮮度・ローカル版・backend生成メタデータの同一性は保証しない。
+- JSONは重複キー/深さ/作業量を制限。lock捕捉16MiB/件・64MiB/scan、companion4MiB/件・別枠64MiB。coverage/関係の作業量は各200万。Pipenv/Python/backendはスキャン時に実行しない。
+- OSV-Scanner 2.7.0はカスタムカテゴリを直接読まないことを実接続で確認。カテゴリを別のdefaultカテゴリ一時コピーにして照会する(元のファイルは変更せず、別枠64MiB/200コピーまで)。上限超過・解釈できないカスタム情報はskipped_filesとしてcoverage不完全。
+- 実接続: Pipenv 2026.10.4生成のroot+日本語名path依存。requests 2.25.0はPipfile、jinja2 3.1.4は子pyproject.tomlの直接依存。urllib3 1.26.20はrequests由来の推移的依存。scan_project/suggest_fix、候補のOSV再照会cleanを確認。未収録/未対応メタデータ/子の開発グループ/カスタムカテゴリも確認。空白を含むeditableパスではPipenv自身のlock生成が失敗したため、実接続は空白なしの日本語パスで実施し、空白・日本語の解析は回帰テストで確認。
+
+- Pipenvレビュー修正(2026-10-31): 子のPoetry形式のgroup.*.dependencies/旧dev-dependencies/include-groupsも検出し、上位lockでは開発用依存が収録されたと確認できないためunconfirmedとする。空のdevテーブルは依存なしとして扱う。カスタムカテゴリの一時コピーには元カテゴリ名を保持し、既存のscannerグループと併合してscan_project/suggest_fixのdependency_groupsに戻す。両ツールに回帰テストを追加。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。

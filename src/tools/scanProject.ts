@@ -188,6 +188,7 @@ const MAX_INTRODUCED_BY = 10;
 
 interface SourceRelations {
   lookup: RelationLookup;
+  dependencyGroup?: string;
   /** declared_inをプロジェクトからの相対パスにするための、lockfileのディレクトリ */
   lockDir: string;
 }
@@ -196,6 +197,7 @@ interface RelationSource {
   copy: string;
   format: string;
   originalRelative: string | null;
+  dependencyGroup?: string;
   entries?: readonly string[];
   cargoPackages?: readonly CargoPackage[];
   declaringManifests?: ReadonlyMap<string, string>;
@@ -204,6 +206,7 @@ interface RelationSource {
   composerLookup?: RelationLookup;
   yarnLookup?: RelationLookup;
   bunLookup?: RelationLookup;
+  pipenvLookup?: RelationLookup;
   pdmLookup?: RelationLookup;
   poetryLookup?: RelationLookup;
   uvLookup?: RelationLookup;
@@ -222,7 +225,7 @@ export async function buildRelationLookups(
   // pnpmの関係の解析の作業量はスキャン全体で共有する(Composer・NuGetと同じ)
   const pnpmWorkBudget = createPnpmWorkBudget();
   let remaining = maxTotalBytes;
-  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages, nugetLookup, composerLookup, yarnLookup, bunLookup, uvLookup, poetryLookup, pdmLookup } of copies) {
+  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages, nugetLookup, composerLookup, yarnLookup, bunLookup, uvLookup, poetryLookup, pdmLookup, pipenvLookup, dependencyGroup } of copies) {
     const lockDir = originalRelative === null ? "" : path.dirname(originalRelative);
     let lookup: RelationLookup = null;
     try {
@@ -234,6 +237,8 @@ export async function buildRelationLookups(
           const text = read.bytes.toString("utf8");
           lookup = format === "go.mod" ? goModRelations(text) : format === "pnpm-lock.yaml" ? pnpmLockRelations(text, pnpmWorkBudget) : npmLockRelations(parseNpmLock(text, npmWorkBudget));
         }
+      } else if (format === "Pipfile.lock") {
+        lookup = pipenvLookup ?? null;
       } else if (format === "pdm.lock") {
         lookup = pdmLookup ?? null;
       } else if (format === "poetry.lock") {
@@ -258,7 +263,7 @@ export async function buildRelationLookups(
     } catch {
       lookup = null; // 解析できないファイルはunknown(スキャン自体は続ける)
     }
-    lookups.set(copy, { lookup, lockDir });
+    lookups.set(copy, { lookup, lockDir, ...(dependencyGroup !== undefined ? { dependencyGroup } : {}) });
   }
   return lookups;
 }
@@ -271,9 +276,11 @@ function annotateRelations(packages: readonly ScanReportPackage[], lookups: Read
     const byFile = new Map<string, RelationInfo>();
     const declaredIn = new Set<string>();
     const declaringCrates = new Set<string>();
+    const dependencyGroups = new Set(pkg.dependency_groups ?? []);
     const rank = { direct: 2, transitive: 1, unknown: 0 } as const;
     for (const source of packageSources(pkg)) {
       const entry = lookups.get(source.path);
+      if (entry?.dependencyGroup !== undefined) dependencyGroups.add(entry.dependencyGroup);
       const info = entry?.lookup ? entry.lookup(pkg.name, pkg.version, source.type) : { relation: "unknown" as const };
       const previous = byFile.get(source.path);
       if (previous === undefined || rank[info.relation] > rank[previous.relation]) byFile.set(source.path, info);
@@ -285,6 +292,7 @@ function annotateRelations(packages: readonly ScanReportPackage[], lookups: Read
     const { vulnerabilities, ...rest } = pkg;
     return {
       ...rest,
+      ...(dependencyGroups.size ? { dependency_groups: [...dependencyGroups].sort().map(sanitizeExternalText) } : {}),
       dependency_relation: relation,
       ...(introducedBy.length > 0 ? { introduced_by: introducedBy.slice(0, MAX_INTRODUCED_BY).map(sanitizeExternalText) } : {}),
       ...(introducedBy.length > MAX_INTRODUCED_BY ? { introduced_by_omitted: introducedBy.length - MAX_INTRODUCED_BY } : {}),
@@ -362,6 +370,11 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
           `No lockfile or manifest can be scanned (${project.skippedFiles.map((s) => `${s.path}: ${s.reason}`).join(" / ")})`,
         );
       }
+    }
+    for (const copy of project.pipenvCopies ?? []) {
+      const generated = await snapshot.writeGenerated(copy.content);
+      targets.push({ path: generated, format: "Pipfile.lock" });
+      relationSources.push({ copy: generated, format: "Pipfile.lock", originalRelative: copy.path, pipenvLookup: copy.relations, dependencyGroup: copy.category });
     }
     for (const copy of project.pdmCopies ?? []) {
       const generated = await snapshot.writeGenerated(copy.content);

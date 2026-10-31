@@ -47,6 +47,7 @@ export interface PackageUpgradeSuggestion {
   ecosystem: string;
   /** 直接/推移的依存の別と関連情報(scan_projectのpackagesと同じ。scan_project・suggest_fixが付ける) */
   dependency_relation?: ScanReportPackage["dependency_relation"];
+  dependency_groups?: string[];
   introduced_by?: string[];
   introduced_by_omitted?: number;
   declared_in?: string[];
@@ -215,6 +216,7 @@ function relationFields(pkg: ScanReportPackage) {
   return {
     ...(pkg.version_is_lower_bound ? { version_is_lower_bound: true as const } : {}),
     ...(pkg.dependency_relation !== undefined ? { dependency_relation: pkg.dependency_relation } : {}),
+    ...(pkg.dependency_groups !== undefined ? { dependency_groups: pkg.dependency_groups } : {}),
     ...(pkg.introduced_by !== undefined ? { introduced_by: pkg.introduced_by } : {}),
     ...(pkg.introduced_by_omitted !== undefined ? { introduced_by_omitted: pkg.introduced_by_omitted } : {}),
     ...(pkg.declared_in !== undefined ? { declared_in: pkg.declared_in } : {}),

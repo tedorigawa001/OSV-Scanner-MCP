@@ -14,6 +14,7 @@ import { stat } from "node:fs/promises";
 import { PnpmLockCache } from "./pnpmLockCache.js";
 import { YarnLockCache } from "./yarnLockCache.js";
 import { BunLockCache } from "./bunLockCache.js";
+import { PipenvLockCache } from "./pipenvLockCache.js";
 import { PdmLockCache } from "./pdmLockCache.js";
 import { PoetryLockCache } from "./poetryLockCache.js";
 import { UvLockCache } from "./uvLockCache.js";
@@ -205,6 +206,7 @@ export interface DetectedProject {
   pnpmCopies?: { path: string; content: string }[];
   yarnCopies?: { path: string; content: string; relations: RelationLookup }[];
   bunCopies?: { path: string; content: string; relations: RelationLookup }[];
+  pipenvCopies?: { path: string; content: string; relations: RelationLookup; category?: string }[];
   pdmCopies?: { path: string; content: string; relations: RelationLookup }[];
   poetryCopies?: { path: string; content: string; relations: RelationLookup }[];
   uvCopies?: { path: string; content: string; relations: RelationLookup }[];
@@ -454,6 +456,15 @@ async function pdmLockfileRecords(cache: PdmLockCache, projectDir: string, lockf
   return captured.workspaces.get(directory) ?? null;
 }
 
+async function pipenvLockfileRecords(cache: PipenvLockCache, projectDir: string, lockfile: DetectedManifest, marker: string, files: readonly string[]): Promise<boolean | null> {
+  if (path.basename(marker) !== "pyproject.toml") return null;
+  const absolute = path.join(projectDir, lockfile.path);
+  const captured = await cache.get(absolute, projectDir, files);
+  if ("reason" in captured || captured.workspaces === null) return null;
+  const directory = path.relative(path.dirname(absolute), path.join(projectDir, path.dirname(marker))).split(path.sep).join("/");
+  return captured.workspaces.get(directory) ?? null;
+}
+
 /** 同じディレクトリのlockfile、または収録を確認できた上位lockfileだけで充足とする。 */
 async function findLockfileMissing(
   projectDir: string,
@@ -466,6 +477,7 @@ async function findLockfileMissing(
   uvCache: UvLockCache,
   poetryCache: PoetryLockCache,
   pdmCache: PdmLockCache,
+  pipenvCache: PipenvLockCache,
 ): Promise<LockfileMissing[]> {
   const cache = new LockfileKeyCache();
   const packageFiles = markers.filter(m => m.group === "npm").map(m => m.path);
@@ -495,6 +507,8 @@ async function findLockfileMissing(
             ? await bunLockfileRecords(bunCache, projectDir, candidate, markerDir)
             : candidate.format === "uv.lock"
               ? await uvLockfileRecords(uvCache, projectDir, candidate, marker.path)
+            : candidate.format === "Pipfile.lock"
+              ? await pipenvLockfileRecords(pipenvCache, projectDir, candidate, marker.path, pythonFiles)
             : candidate.format === "pdm.lock"
               ? await pdmLockfileRecords(pdmCache, projectDir, candidate, marker.path, pythonFiles)
             : candidate.format === "poetry.lock"
@@ -534,6 +548,7 @@ async function finalize(
   const uvCache = new UvLockCache();
   const poetryCache = new PoetryLockCache();
   const pdmCache = new PdmLockCache();
+  const pipenvCache = new PipenvLockCache();
   const pythonFiles = markers.filter(m => path.basename(m.path) === "pyproject.toml").map(m => m.path);
   const packageFiles = markers.filter(m => m.group === "npm").map(m => m.path);
   const result: DetectedProject = {
@@ -550,11 +565,12 @@ async function finalize(
     uvCopies: [],
     poetryCopies: [],
     pdmCopies: [],
+    pipenvCopies: [],
     composerWarnings: [],
     composerLocalPackages: 0,
     localCrateCount: 0,
     unscannableCrates: [],
-    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache, pnpmCache, yarnCache, bunCache, uvCache, poetryCache, pdmCache),
+    lockfileMissing: await findLockfileMissing(projectDir, markers, manifests, cargoCache, pnpmCache, yarnCache, bunCache, uvCache, poetryCache, pdmCache, pipenvCache),
     requirementIssues: [],
     requirementReferences: [],
     lowerBounds: [],
@@ -583,7 +599,13 @@ async function finalize(
   }
   for (const manifest of manifests) {
     const absolute = path.join(projectDir, manifest.path);
-    if (manifest.format === "pdm.lock") {
+    if (manifest.format === "Pipfile.lock") {
+      const captured = await pipenvCache.get(absolute, projectDir, pythonFiles);
+      if ("reason" in captured) { result.skippedFiles.push({ path: manifest.path, reason: captured.reason }); continue; }
+      result.pipenvCopies!.push({ path: manifest.path, content: captured.content, relations: captured.relations });
+      for (const copy of captured.additionalCopies) result.pipenvCopies!.push({ path: manifest.path, content: copy.content, category: copy.category, relations: captured.relations });
+      for (const reason of captured.issues) result.skippedFiles.push({ path: manifest.path, reason });
+    } else if (manifest.format === "pdm.lock") {
       const captured = await pdmCache.get(absolute, projectDir, pythonFiles);
       if ("reason" in captured) { result.skippedFiles.push({ path: manifest.path, reason: captured.reason }); continue; }
       result.pdmCopies!.push({ path: manifest.path, content: captured.content, relations: captured.relations });
