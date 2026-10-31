@@ -1,0 +1,169 @@
+// Test-only public API feasibility prototype. Never shipped or loaded by MCP.
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import org.gradle.api.Action
+import org.gradle.api.tasks.compile.AbstractCompile
+import org.gradle.api.tasks.bundling.Jar
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+
+class ConventionProofFiles {
+    static String hash(File file) {
+        def md=MessageDigest.getInstance('SHA-256'); byte[] buffer=new byte[1024*1024]
+        file.withInputStream { stream -> int n; while((n=stream.read(buffer))!=-1) md.update(buffer,0,n) }
+        md.digest().encodeHex().toString()
+    }
+    static String classHash(File jar,String entryName) {
+        if(!jar?.isFile() || jar.length()>4*1024*1024) return null
+        def zip=new java.util.zip.ZipFile(jar)
+        try {
+            def names=new HashSet();int count=0
+            def entries=zip.entries()
+            while(entries.hasMoreElements()) {
+                def entry=entries.nextElement()
+                if(++count>10000 || !names.add(entry.name) || entry.size>4*1024*1024) return null
+            }
+            def entry=zip.getEntry(entryName);if(entry==null || entry.directory) return null
+            def md=MessageDigest.getInstance('SHA-256');byte[] buffer=new byte[16384];long total=0
+            zip.getInputStream(entry).withCloseable { stream -> int n;while((n=stream.read(buffer))!=-1) {if((total+=n)>4*1024*1024) throw new IllegalStateException('class-entry-budget');md.update(buffer,0,n)} }
+            md.digest().encodeHex().toString()
+        } finally {zip.close()}
+    }
+    static String relative(File root,File file) { root.toPath().relativize(file.canonicalFile.toPath()).toString().replace('\\','/') }
+    static Map files(File root,Collection<File> roots) {
+        def result=[:];long bytes=0
+        roots.each { f ->
+            def visit={ File x ->
+                if(!x.isFile()) return
+                def p=relative(root,x)
+                if(p.startsWith('../') || java.nio.file.Files.isSymbolicLink(x.toPath())) throw new IllegalStateException('unsafe-output')
+                if(x.length()>4*1024*1024 || (bytes+=x.length())>64*1024*1024 || result.size()>=10000) throw new IllegalStateException('output-budget')
+                result[p]=hash(x)
+            }
+            if(f.isDirectory()) f.eachFileRecurse(groovy.io.FileType.FILES,visit)
+            else visit(f)
+        }
+        result
+    }
+}
+class ConventionProofProbe {
+    def project
+    File root
+    String mode
+    Map baseline
+    List records=[],applications=[],trace=[],providerRecords=[]
+    Map producerCalls=[:].withDefault {0}
+    String phase='configuration'
+    IdentityHashMap handles=new IdentityHashMap()
+    def scriptSource(String source) { handle([kind:'script'],source) }
+    def pluginSource(Object instance,String id,String source) {
+        if(source!=baseline.source) throw new IllegalStateException('wrong-plugin-source')
+        def application=[id:project.path+':a'+applications.size(),instance:instance,pluginId:id,source:source,expectedRecordIds:[]]
+        applications.add(application)
+        handle([kind:'plugin',pluginApplicationId:application.id,sourceMappingId:source],source)
+    }
+    def handle(Map origin,String source) {
+        if(!baseline.inputs.containsKey(source)) throw new IllegalStateException('unprepared-source')
+        if(origin.kind=='script' && source==baseline.source) throw new IllegalStateException('plugin-source-as-script')
+        def token=Collections.unmodifiableMap([id:'h'+handles.size()]);handles[token]=[origin:origin,source:source]; token
+    }
+    def add(String cfg,Object notation,Object token) {
+        def source=handles[token];if(source==null) throw new IllegalStateException('unknown-source-handle')
+        def r=[id:'r'+records.size(),origin:source.origin,source:source.source,dependency:null,snapshot:null]
+        if(mode=='registered') {
+            records.add(r)
+            if(source.origin.kind=='plugin') applications.find {it.id==source.origin.pluginApplicationId}.expectedRecordIds.add(r.id)
+        }
+        Action configure={ dep -> trace.add('configure:'+cfg+':'+dep.group+':'+dep.name) } as Action
+        Action capture={ dep -> configure.execute(dep);r.dependency=dep;r.snapshot=dep.group+':'+dep.name+':'+dep.version } as Action
+        def dep=project.dependencies.create(notation)
+        if(mode=='registered') capture.execute(dep); else configure.execute(dep)
+        project.dependencies.add(cfg,dep)
+    }
+    void produced(String cfg) { producerCalls[cfg]++;trace.add('produce:'+cfg+':'+phase) }
+    void addProvider(String cfg,org.gradle.api.provider.Provider value,Object token) {
+        def source=handles[token];if(source==null) throw new IllegalStateException('unknown-source-handle')
+        def r=[id:'p'+providerRecords.size(),configuration:cfg,origin:source.origin,source:source.source,callbacks:0]
+        if(mode=='registered') {
+            providerRecords.add(r)
+            if(source.origin.kind=='plugin') applications.find {it.id==source.origin.pluginApplicationId}.expectedRecordIds.add(r.id)
+        }
+        Action original={dep -> trace.add('configure:'+cfg+':'+phase)} as Action
+        Action capture={dep -> original.execute(dep);r.callbacks++} as Action
+        project.dependencies.addProvider(cfg,value,mode=='registered'?capture:original)
+    }
+    Map report(List receipts) {
+        def cfg=project.configurations.getByName('probe')
+        phase='resolve:probe';trace.add('resolve')
+        def rr=cfg.incoming.resolutionResult
+        def component=rr.rootComponent.get()
+        def graph=component.getDependenciesForVariant(rr.rootVariant.get()).findAll {it instanceof ResolvedDependencyResult && !it.constraint}.collect {it.selected.id.displayName}.sort()
+        phase='resolve:lazy'
+        def lazy=project.configurations.getByName('lazy').incoming.resolutionResult
+        def lazyGraph=lazy.rootComponent.get().getDependenciesForVariant(lazy.rootVariant.get()).findAll {it instanceof ResolvedDependencyResult && !it.constraint}.collect {it.selected.id.displayName}.sort()
+        def live=mode=='plain' ? [] : cfg.allDependencies.toList()
+        def apps=applications.collect { a ->
+            def klass=a.instance.getClass(), url=klass.protectionDomain?.codeSource?.location
+            def location=url?.protocol=='file'?new File(url.toURI()).canonicalFile:null
+            def origin=location?ConventionProofFiles.relative(root,location):null
+            def classPath=klass.name.replace('.','/')+'.class'
+            def resource=klass.getResource('/'+classPath)?.toString()
+            def loadedDigest=location?.isFile() && location.length()<=4*1024*1024?ConventionProofFiles.hash(location):null
+            def digestMatches=loadedDigest && receipts.any {it.outputs.values().contains(loadedDigest)}
+            def loadedClassDigest=ConventionProofFiles.classHash(location,classPath)
+            def classMatches=loadedClassDigest && receipts.any {it.outputs.any {p,h -> p.endsWith('/'+classPath) && h==loadedClassDigest}}
+            def output=location?.isDirectory()?new File(location,classPath):null
+            def outputPath=output?.isFile()?ConventionProofFiles.relative(root,output):null
+            def observed=outputPath && receipts.any { it.outputs[outputPath] && it.outputs[outputPath]==ConventionProofFiles.hash(output) }
+            [id:a.id,expectedRecordIds:a.expectedRecordIds,pluginId:a.pluginId,implementationClass:klass.name,instanceMatches:project.plugins.findPlugin(a.pluginId)?.is(a.instance)?:false,
+             loadedOrigin:origin,loadedResource:resource,loadedSha256:loadedDigest,loadedArtifactDigestMatches:digestMatches?:false,loadedClassSha256:loadedClassDigest,loadedClassDigestMatches:classMatches?:false,loadedClassOutput:outputPath,artifactMatched:observed?:false,source:a.source,reason:observed?null:'loaded_origin_outside_prepared_outputs']
+        }
+        def resultRecords=records.collect { r -> [id:r.id,origin:r.origin,source:r.source,snapshot:r.snapshot,
+            retained:live.any {it.is(r.dependency) || (it==r.dependency && it.group+':'+it.name+':'+it.version==r.snapshot)}] }
+        def complete=mode=='registered' && apps.every {it.instanceMatches && it.artifactMatched} && resultRecords.every {it.retained}
+        [graph:graph,lazyGraph:lazyGraph,producerCalls:producerCalls,providerRecords:providerRecords,trace:trace,records:resultRecords,applications:apps,sourceArtifactVerified:complete,
+         candidateSources:resultRecords.collect {it.source}.unique().sort(),declaredIn:complete?resultRecords.collect {it.source}.unique().sort():[]]
+    }
+}
+def root=new File(System.getProperty('osv.convention.root')).canonicalFile
+// Cross-build state is persisted per build; no shared daemon/static registry is assumed.
+def settingsRoot, events=[], receipts=[]
+def flush={ ->
+    if(settingsRoot!=null) {
+        def id=ConventionProofFiles.relative(root,settingsRoot);if(id=='') id='main'
+        def dest=new File(root,'.proof/build-'+id.replace('/','_')+'.json')
+        dest.text=JsonOutput.toJson([build:id,invocationId:new JsonSlurper().parse(new File(root,'.proof/baseline.json')).invocationId,events:events,receipts:receipts])
+    }
+}
+gradle.beforeSettings { settings -> settingsRoot=settings.settingsDir.canonicalFile;events.add('beforeSettings');flush() }
+gradle.taskGraph.beforeTask { task ->
+    if(task instanceof AbstractCompile || task instanceof Jar || task.name=='compileProofKotlin') {events.add('before:'+task.path);flush()}
+}
+gradle.taskGraph.afterTask { task,state ->
+    if(task instanceof AbstractCompile || task instanceof Jar || task.name=='compileProofKotlin') {
+        def cp=(state.didWork && (task instanceof AbstractCompile || task.name=='compileProofKotlin'))?task.classpath.files.collect { f -> [path:f.canonicalPath,size:f.length(),sha256:f.isFile()?ConventionProofFiles.hash(f):null] }:[]
+        def receipt=[task:task.path,type:(task instanceof AbstractCompile || task.name=='compileProofKotlin')?'compile':'jar',executed:state.executed,didWork:state.didWork,skipped:state.skipped,upToDate:state.upToDate,noSource:state.noSource,failure:state.failure?.class?.name,
+            classpath:cp,dependencyClasspath:task.extensions.extraProperties.has('proofDependencyClasspath')?task.extensions.extraProperties.get('proofDependencyClasspath').files.collect {f -> [path:f.canonicalPath,size:f.length(),sha256:f.isFile()?ConventionProofFiles.hash(f):null]}:[],outputs:ConventionProofFiles.files(root,task.outputs.files.files)]
+        receipts.add(receipt);events.add('after:'+task.path);flush()
+    }
+}
+gradle.beforeProject { p ->
+    if(p.rootProject.projectDir.canonicalFile==root && p.parent!=null) {
+        def baseline=new JsonSlurper().parse(new File(root,'.proof/baseline.json'))
+        ['probe','lazy','unused'].each { name -> p.configurations.create(name) {canBeResolved=true;canBeConsumed=false} }
+        p.repositories.maven {url=p.uri(new File(root,'repo'))}
+        p.extensions.add('osvConventionProbe',new ConventionProofProbe(project:p,root:root,baseline:baseline,mode:p.name in ['registered','script']?'registered':p.name))
+    }
+}
+gradle.projectsEvaluated {
+    if(gradle.rootProject.projectDir.canonicalFile==root) gradle.rootProject.tasks.register('osvProveConventions') { doLast {
+        def builds=new File(root,'.proof').listFiles().findAll {it.name.startsWith('build-') && it.name.endsWith('.json')}.collect {new JsonSlurper().parse(it)}
+        def allReceipts=builds.collectMany {it.receipts}
+        def projects=[:]
+        gradle.rootProject.subprojects.sort {it.name}.each {p -> projects[p.name]=p.extensions.getByName('osvConventionProbe').report(allReceipts)}
+        def baseline=new JsonSlurper().parse(new File(root,'.proof/baseline.json'))
+        def changed=baseline.inputs.findAll {p,h -> !new File(root,p).isFile() || ConventionProofFiles.hash(new File(root,p))!=h}.keySet().sort()
+        def report=[gradleVersion:gradle.gradleVersion,builds:builds,projects:projects,inputs:[baseline:baseline.inputs,changed:changed]]
+        new File(root,'convention-proof.json').text=JsonOutput.prettyPrint(JsonOutput.toJson(report))+'\n'
+    } }
+}

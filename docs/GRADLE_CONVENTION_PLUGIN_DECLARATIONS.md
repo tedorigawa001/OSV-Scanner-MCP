@@ -238,3 +238,75 @@ API実証は通常追加、登録なし棚卸し、登録付きの経路を比�
 - 公開APIの根拠は§2のJavadoc。いずれも現行版の説明であり、8.11.1／9.2.1での実測結果ではない。
 
 今回追加するのは設計・回帰テスト条件のみ。本番adapter、reader、信頼設定、公開API実証テスト、実接続ハーネスは変更しない。既存のconvention-plugin sourceは引き続き未採用。
+
+
+## 10. 公開API実証の結果（2026-10-31）
+
+**登録試行・混在source・toolchain分類は実証できたが、今回のload形ではsource-artifact対応の陽性gateは未成立。** 本番のconvention-plugin採用は有効化しない。これは公開API全般で対応が不可能という証明ではなく、以下の構成・観測方法で採用条件を満たせなかった記録である。
+
+### 実行行列と再現方法
+
+Groovy／Kotlin consumer × Gradle 8.11.1／9.2.1の4構成それぞれで、次のproducer 3種を別fixtureとして実行した（通常12 fixture）。レビュー修正後は、未記録classpath resourceを追加する陰性fixtureを各consumer／Gradle版に追加し、計16 fixtureで再検証した。各fixtureはplain（通常委譲）、control（解決後棚卸し）、registered（登録付き）の3 projectに同じpluginを適用し、別にscript単独projectを用意する。
+
+| producer | 構築方法 | 物理source候補 |
+| --- | --- | --- |
+| buildSrc binary Java plugin | 標準java-gradle-plugin／JavaCompile | buildSrc/src/main/java/proof/Convention.java |
+| 独立build-logic binary Kotlin plugin | includeBuild、公開JavaExecと同梱Kotlin compiler CLI | build-logic/src/main/kotlin/proof/Convention.kt |
+| 独立build-logic precompiled Groovy plugin | includeBuild、標準groovy-gradle-plugin | build-logic/src/main/groovy/proof.convention.gradle |
+
+Kotlin binaryのcompilerはGradle同梱のK2JVMCompiler CLIを明示実行する試作経路。標準kotlin-dsl／Kotlin Gradle Pluginの対応実証には読み替えない。compiler／DSL pluginの追加downloadはせず、Gradle API JARは事前準備済みcacheを使用する。JDKは21.0.13+9。binary Groovy、precompiled Kotlin、buildSrc内のprecompiled plugin、発行済みの外部binary pluginは今回未実証。
+
+回帰は[src/test/gradle/conventionRegistration.integration.test.ts](../src/test/gradle/conventionRegistration.integration.test.ts)、試作は[init fixture](../src/test/fixtures/gradle-convention-registration.init.gradle)、診断用の参照検証は[test-only helper](../src/test/fixtures/gradleConventionProof.ts)。本番schema／静的readerではない。各版で128件のnative回帰を再実行して成功。別の[policy・実ディスク回帰](../src/test/gradle/conventionProofPolicy.test.ts)32件は参照・信頼・予算判定と制限付きディレクトリ捕捉を確認し、実pluginの採用成功には数えない。最終結果は末尾に記録する。
+
+```sh
+env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
+  JAVA_HOME=/trusted/jdk-21 GRADLE_USER_HOME=/trusted/prepared-gradle-cache \
+  OSV_MCP_GRADLE_CONVENTION_OUTPUT=/tmp/convention-proof \
+  npm test -- src/test/gradle/conventionRegistration.integration.test.ts
+```
+
+同じコマンドの実行ファイルを9.2.1へ替えて再実行する。cacheに生成gradle-api JARがなければ、この試験より前の信頼済み準備が必要。出力prefix指定時は版・consumer DSL・producer・kindごとのJSONを保存し、一時fixtureは終了時に削除する。compilerやJARをMCPが実行する手順ではない。
+
+### 確認できたこと
+
+- Node側の起動前baselineと最終source hashが一致。各producerのbeforeSettingsとcompile／jarの公開task callbackを記録し、mainとproducerを別identity・同一invocationで対応付けた。static変数のbuild間共有は不要だった。任意の複雑なbuildの入力完全性を自動発見した実証ではない。
+- 3経路の解決GAV・元Actionのtraceが一致。pluginとscriptが同じreview:parent:1を独立追加して一つの保持依存へ合流しても、registeredはplugin／scriptの別origin・試行ID・両source候補を保持した。applicationの期待試行集合は追加時に別台帳へ記録し、recordから事後生成しない。レビュー修正でProviderにもp0／p1の安定IDを付け、未実現を含め同期recordと同じapplication被覆で検証する。未使用Providerを検証のために評価しない。
+- plugin IDから公開PluginContainerでbinary plugin実体を照合できた。precompiled scriptで登録コードのthisは生成Pluginの実体とは同一でなかった。この形のbeginPluginに実体を渡す方法は追加検討が必要。
+- lazy configurationのProviderは1回、unused configurationは0回。通常／棚卸し／登録付きで評価phase・回数・結果が一致した。callback数とsupplier数は別々に記録する。plugin内catalog／bundle／Convertibleの実証を代替する結果ではない。
+- script単独projectはplugin applicationを作らず、script originと物理sourceを維持。pluginを含むprojectは下記のgateが未成立なので、確定したscriptだけの部分declaredInも返さない。これらはtest-only報告の値であり、MCP本番応答ではない。
+
+### source-artifact対応が未成立の理由
+
+binary pluginの公開CodeSource／class resourceは、準備したproducerのclasses directoryやJARではなく、scan boundary外のGradle管理cacheにあるJARを指した。そこから診断用に読んだ対象classの内容hashはcompile出力と一致した。JAR全体のraw hashは一致する場合と一致しない場合があり、class内容一致とarchive全体一致を分けて記録した。
+
+この一致だけから、classloaderが実行した変換後bytecodeまで対応を証明したとはしない。cacheの探索・private reflection・内部instrumentation設定の変更は行っていない。公開CodeSourceが示したファイルの有界な診断読取は信頼済みexport試験側のみで行い、MCPの境界を広げる案ではない。test-only helperはloaded_origin_outside_prepared_outputsとしてsourceArtifactVerified=false、診断結果はplugin_loaded_origin_unverifiable、混在一覧は空とした。precompiled scriptの実体照合不足も陽性へ丸めない。
+
+したがって、次は実行artifact／変換の信頼契約とprecompiled plugin instanceの登録方法を再検討し、公開APIで十分な対応を観測できる形を追加実証する。classpath／outputのhashが両方あるだけで本番adapter／v5 readerの実装へ進めない。
+
+### toolchainと迂回対照
+
+試験runnerが実行前に選んだGradle配布JAR群と生成gradle-apiをstreaming hashし、profile digestを別のconsumer policyへ許可した。生成API JARは各版とも64 MiBを超えるが、plugin source／outputを読む4 MiB/件・64 MiBの枠へ入れずに分類・検証できた。toolchainのbufferは1 MiB、準備・最終照合・観測したcompile classpathの読取合計は各fixtureで2 GiB以内。profileの完全な本番schema、実環境での独立したprofile配布・承認運用を実装した試験ではない。
+
+compile classpathに含まれるproducerの生成classes directoryはtoolchainへ昇格しない。レビュー修正後は実ディレクトリを列挙して現在の全ファイル集合とhashを捕捉し、観測済みoutput inventoryとの完全一致を確認する。記録済みファイルだけの再hashではない。precompiled Groovyの通常fixtureにもHelper.groovyを追加してGroovyCompileを実行し、この分岐を通る陽性対照を設けた。NO-SOURCE／skipped taskのclasspathは追加実現しない。toolchain外の一般的な外部plugin依存の捕捉、全resource inventoryの攻撃耐性までは今回実証していない。
+
+各native報告を基に、未承認profile、profile改変、entry hash偽装、plugin recordのscript化・参照null化、application側だけの参照削除、scriptへのplugin参照混入、origin欠落を診断回帰で拒否した。synthetic回帰では容量・buffer・entry数上限、source stale、plugin信頼無効、script単独scope等も確認。これらはJSON/schemaの全攻撃条件や全CP01〜CP36の達成を意味しない。
+
+### 証跡と未実証範囲
+
+[機械可読記録](validation/gradle-convention-plugin-2026-10-31.json)にはソースhash、各版の承認profile、通常12件と未記録resource追加4件のpublic API報告・候補source・不採用理由・toolchain読取量を保存する。個人環境の絶対pathを含めず、診断用cache URLは変数名へ置き換える。
+
+今回未実証なのは、実行artifact対応の陽性、完全な契約v3／graph v3／adapter v5、本番の起動設定・safe reader・全予算・atomic publication、評価／先行taskによる入力変更のnative対照、継承diamond、plugin間委譲、settings plugin、cache再利用、並行実行、configuration cache、外部配布plugin。既知脆弱版のOSV実接続も実施していない。既存C1a／C1b／catalogの実接続結果を今回のplugin gateの達成へ流用しない。
+
+初回実証の72件／版・通常全体1,611件成功の記録は、レビュー修正前のもの。レビューで見つかった2件を成功済みと読み替えず、以下の追加回帰と更新したJSONで再検証する。
+
+### レビュー修正と追加回帰
+
+1. classpath directoryはsourceと共有するbyte予算・entry予算で実際に列挙し、各ファイルのhashと集合を取得する。記録との追加・削除・内容変更のいずれもplugin_classpath_directory_mismatch。snapshot不在／読取失敗も記録済みhashへfallbackしない。symlink、過大file、entry数、共有byte予算の対照も追加した。scan内では同一directoryの捕捉をcacheする。
+2. Providerにも安定した試行IDを付け、追加時にapplicationの期待試行集合へ登録する。診断ではrecordsとproviderRecordsを一緒に走査し、IDの一意性、origin／source mapping、application側の期待集合を双方向照合する。sourceをscriptへ書き換える、origin／ID／参照を消す、recordだけを削除する、逆参照だけを削除する、重複IDを作る対照を追加した。pendingなunused Providerも出自は検証でき、supplierを追加実行しない。
+
+修正前には、現在のdirectoryに追加fileがあるのにinputVerified=trueとなる対照と、Providerのorigin欠落でもoriginsVerified=trueとなる対照が失敗した。修正後はこれらを拒否し、変更のないdirectoryと正常なmaterialized／pending Providerは通る。
+
+陰性のnative fixtureでは、compileJavaのoutput receipt記録後、compileGroovyの直前にclasses directoryへunrecorded.propertiesを追加する。現在snapshotには存在し、元receiptには存在しないことを確認し、inputVerified=falseかつplugin_classpath_directory_mismatchを必須にした。解決GAVの一致とplugin宣言元の未採用は維持する。
+
+
+レビュー修正後の最終確認: Gradle 8.11.1は128件成功（113.97秒）、9.2.1は128件成功（112.45秒）。通常12 fixtureは入力・出自検証を通過し、未記録classpath resource追加の4 fixtureは入力不一致として拒否した。policy・実ディスク回帰32件を含む通常全体は1,631件成功／273件skip（計1,904件）。型チェック・ビルドも成功。plugin由来declared_inの採用は全16 fixtureで0件のまま、本番拒否を維持する。

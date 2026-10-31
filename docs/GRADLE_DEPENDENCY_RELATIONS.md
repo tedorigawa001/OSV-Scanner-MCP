@@ -744,3 +744,10 @@ GRADLE_CATALOG_DECLARATIONS.md §9のとおり、契約v2・宣言adapter v4・�
 ### Catalog本番実接続の確認（2026-10-31）
 
 Groovy／Gradle 8.11.1とKotlin／Gradle 9.2.1の脆弱版projectで、local TOML alias／bundleと生成ProviderConvertibleを登録。3ツール×4信頼条件の24呼出しで、declared_in・追加catalog信頼metadata・候補案内の採用／抑制を確認。候補32照会が独立OSV再照会でもHTTP 200・脆弱性0件。GAV／検出ID／relation／introduced_by／coverage／提案版の条件間一致、入力hash不変、MCP中のビルド非起動を確認した。詳細はGRADLE_LIVE_VALIDATION.mdのcatalog節、検証データはvalidation/gradle-catalog-live-2026-10-31.json、再現はsrc/test/manual/gradleCatalogLive.mjs。更新後のビルド互換性や残る独立gateの完了は含めない。
+
+
+### Convention plugin公開API実証（2026-10-31）
+
+Groovy／Kotlin consumer×Gradle 8.11.1／9.2.1のbuildSrc Java・独立Kotlin binary・独立Groovy precompiledを計12 fixtureで確認。登録／通常のgraph・Action・Provider評価、混在source候補、toolchain分類の実証は成功したが、公開load元と準備済みartifactの対応は陽性条件未達。convention-pluginの本番拒否を維持し、次は変換／loadの契約とprecompiled実体登録を再検討する。[詳細と実証範囲](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md#10-公開api実証の結果2026-10-31)。
+
+実証レビューの修正では、classpath directoryを記録済み一覧だけでなく現在の全ファイル集合・hashへ照合し、Providerも安定IDと共通application台帳で出自を検証する。未記録resource追加とProvider参照改変の対照を追加。詳細・更新結果は上記の設計書§10を参照する。

@@ -1719,3 +1719,12 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 - CP01〜CP36を追加。次はGroovy／Kotlin×Gradle 8.11.1／9.2.1の公開API実証。今回は設計のみで、本番実装・API実証・pluginのOSV実接続は未実施。configuration cache、task-output Provider、並行実行、settings plugin、remote pluginのsource取得は別gate。
 
 - convention plugin設計レビューの2件を反映: trusted-toolchainをconsumer起動時承認profile＋準備側の有界streaming検証へ分離し、plugin固有source／artifactの境界・4 MiB/件・64 MiB/scanを維持。script／plugin／unverifiedのorigin union、参照の必須／禁止、source役割とapplication台帳の双方向検証を定義。CP31〜CP36に大容量標準toolchain・分類偽装・予算・通常script混在・origin変更による信頼迂回の条件を追加。設計のみで、本番実装・公開API実証は未実施。
+
+
+### 2026-10-31: Gradle convention pluginの公開API実証
+
+- Groovy／Kotlin consumer×Gradle 8.11.1／9.2.1で、buildSrc binary Java・独立build-logic binary Kotlin・独立precompiled Groovyの計12 fixtureを実行。各版72件のnative回帰とsynthetic診断12件を追加。
+- 起動前baseline、build間identity／invocation、通常／棚卸し／登録のgraph・Action・Provider評価一致、script／pluginの同値試行保持とscript単独scope、toolchainの別予算分類・改変対照を確認。
+- 実行source-artifactの陽性gateは未成立。binary pluginは公開load元が境界外のGradle cache JAR、precompiledは登録側thisとPlugin実体も不一致。class hash一致だけで採用せず、混在declaredInを省略する。次はload／変換の信頼契約とprecompiled実体の登録方法の再検討・追加実証。本番採用・reader実装・OSV実接続へ進んだ記録ではない。詳細は[設計書§10](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md#10-公開api実証の結果2026-10-31)、データはvalidation/gradle-convention-plugin-2026-10-31.json。
+
+- convention plugin実証レビューの2件を修正: classpath directoryの現在ファイル集合・hashを制限付きで捕捉し、未記録追加／削除／変更を拒否。Providerに安定IDを付けて同期追加と共通のapplication台帳・出自・双方向被覆を検証。実GroovyCompile前のresource追加、Provider origin／ID／参照の書換え・削除の回帰を4構成で再検証し、検証JSONを更新した。各Gradle版128件、通常全体1,631件が成功。実行artifact対応の陽性gateと本番採用は引き続き未成立。
