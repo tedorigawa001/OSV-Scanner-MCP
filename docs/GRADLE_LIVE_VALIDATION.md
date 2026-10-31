@@ -1,4 +1,4 @@
-# Gradle Stage A/B・C1a 実装・実接続検証
+# Gradle Stage A/B・C1a・C1b 実装・実接続検証
 
 検証日: 2026-10-31。リリース・コミットは今回の作業に含めない。
 
@@ -226,4 +226,63 @@ env \
 
 ## 残る制約
 
-C1bのProvider／catalog／bundle、convention pluginのsource-artifact対応、buildscript lock、composite/included build、独自lock path、Android固有構成などは引き続き未対応。C1aの物理宣言元は明示helperと作者表明の信頼契約に限定する。入力hashの一致だけでは環境変数・外部init script・remote plugin等を含む完全な鮮度は保証しない。artifact有無・Java/Android/variant互換性もOSVのclean判定とは別に確認が必要。
+C1bの明示Provider登録は次節のとおり実装・実接続検証済み。catalog／bundle・ProviderConvertible、convention pluginのsource-artifact対応、configuration cache・task output由来Provider・並行実行、buildscript lock、composite/included build、独自lock path、Android固有構成などは引き続き未対応／未検証。C1aの物理宣言元は明示helperと作者表明の信頼契約に限定する。入力hashの一致だけでは環境変数・外部init script・remote plugin等を含む完全な鮮度は保証しない。artifact有無・Java/Android/variant互換性もOSVのclean判定とは別に確認が必要。
+
+
+## Stage C1b Provider 実接続検証（2026-10-31）
+
+対象revisionは`7bea3a6`。Groovy／Gradle 8.11.1とKotlin／Gradle 9.2.1で、同じ既知脆弱版を明示`addProvider`から登録した。JDKは21.0.13+9、scannerは2.7.0。Gradleは既存のMaven cacheを用いてofflineでlock生成・exportし、脆弱性検査と候補確認は実scanner／実OSVへ接続した。4通り全てのDSL／Gradle版の実証は別の公開API回帰であり、今回のlive行列は上記2組に限定する。
+
+[再現ハーネス](../src/test/manual/gradleC1bLive.mjs)と[機械可読の検証結果](validation/gradle-c1b-live-2026-10-31.json)を追加。JSONにはソースhash、fixture source／lock、信頼条件別のexport宣言記録、全ツールのpackage／metadata要約、独立OSV照会のrequest／HTTP status／response／時刻を保存した。
+
+### 構成と実行範囲
+
+- main build scriptからlog4j-core 2.14.1をimplementationへ登録。
+- applied scriptから同じlog4j-coreをruntimeOnlyへ独立登録し、jackson-databind 2.9.10.7をimplementationへ登録。
+- runtimeClasspathではProvider試行3件を保持し、全てcallbackCount=1、materializations=1、declarationAtAdd=null。同値の二試行は別IDと両sourceを維持した。Provider入りcontextはadapterVersion=3、空のannotationProcessor contextはv2。
+- `scan_project`／`scan_java_project`／`suggest_fix` × 信頼有効／信頼設定無効／安定性表明なし × 2 project、計18回をMCP stdio経由で実行。
+- 安定性表明なしは、同一projectの契約から全scopeのproviderPolicyだけを削除し、明示的に再exportしてから別MCPプロセスで確認した。古いhashのJSONをそのまま使うstale対照ではない。
+
+### declared_in・信頼metadata
+
+| 条件 | trust_status | declarations_complete | directのdeclared_in |
+| --- | --- | --- | --- |
+| consumer信頼有効＋stable-during-export表明 | accepted | true | log4j-coreはmain＋applied script、databindはapplied script |
+| consumer信頼設定なし | disabled | false | 全省略 |
+| consumer信頼有効＋providerPolicyなし | missing_assertion | false | 全省略 |
+
+3条件とも3ツールでcoverage.complete=true、relations_complete=true。検出GAV／版、脆弱性ID、direct／transitive、introduced_by、提案版はproject内の条件間で一致した。推移的なlog4j-api／jackson-coreにはdeclared_inを付けず、それぞれlog4j-core／databindを導入元に表示した。
+
+acceptedのassuranceはauthor-attested-and-structurally-checked。既存の同値追加・復元mutationの検出限界に加え、provider_evaluations_outside_materialization_not_observableとprovider_stability_author_assertedが表示された。disabled／missing_assertionのassuranceはnull。安定性表明なしではprovider_stability_assertion_missingを理由に記録し、依存を持つ4つのClasspath contextだけがmissing_assertion、空のannotationProcessorの2 contextはacceptedだった。最上位summaryはmissing_assertionであり、空のcontextを根拠に他contextを採用しない。
+
+suggest_fixの更新案内はaccepted時に全確定sourceを列挙し、disabled／missing_assertionでは特定sourceを挙げないGradle向けの案内へ戻った。Gradle-onlyのprojectでpom.xmlの案内は出なかった。
+
+### 脆弱性・修正候補・OSV再照会
+
+両project・全信頼条件で以下が一致した。件数と候補版は検証時点のOSV応答であり、将来固定の期待値ではない。
+
+| パッケージ | 使用版 | 関係 | 検出ID数／package | 提案版 |
+| --- | --- | --- | --- | --- |
+| org.apache.logging.log4j:log4j-core | 2.14.1 | direct | 8 | 2.25.4 |
+| org.apache.logging.log4j:log4j-api | 2.14.1 | transitive | 1 | 2.25.5 |
+| com.fasterxml.jackson.core:jackson-databind | 2.9.10.7 | direct | 24 | 2.18.11 |
+| com.fasterxml.jackson.core:jackson-core | 2.9.10 | transitive | 4 | 2.18.11 |
+
+全6回のsuggest_fixで4候補ともcandidate_check=clean。さらにハーネスから各候補版をPOST https://api.osv.dev/v1/queryへ独立に再照会し、計24件がHTTP 200、bodyは全て`{}`、脆弱性IDは0件、next_page_tokenなしだった。候補版への更新・compileやartifact存在／Java／variant互換性の検証は行っていない。
+
+### 不変性と再現
+
+各条件の3ツール実行前後で、両source、settings、lock、契約、companion、Wrapperのhashが一致した。fake java／gradle／Wrapperの実行markerは全条件で存在せず、MCP中にGradleを起動していない。条件間の契約変更・再exportはハーネスの明示した準備操作に限る。
+
+```sh
+bdo npm run build
+bdo proxy env \
+  JAVA_HOME=/trusted/jdk-21 \
+  GRADLE_USER_HOME=/trusted/gradle-cache \
+  OSV_MCP_LIVE_SCANNER=/trusted/osv-scanner \
+  OSV_MCP_LIVE_GRADLE_8=/trusted/gradle-8.11.1/bin/gradle \
+  OSV_MCP_LIVE_GRADLE_9=/trusted/gradle-9.2.1/bin/gradle \
+  node src/test/manual/gradleC1bLive.mjs
+```
+
+ハーネスはscanner／Gradleを自動取得せず、通常のnpm testからも起動しない。全入力・生MCP応答・OSV照会・server stderrは表示した新規一時ディレクトリのevidenceへ保存する。リポジトリのJSONは出力summaryへexport宣言記録とOSV生照会を併合し、Gradle版表示を版番号へ正規化したもの。sourceの完全性・信頼契約の限界はC1b本体と同じで、入力hashからProviderの安定性を自動証明したとは扱わない。

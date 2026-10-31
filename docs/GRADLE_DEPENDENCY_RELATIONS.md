@@ -1,6 +1,6 @@
 # Gradleの依存関係・導入元・宣言元の設計
 
-設計日: 2026-10-31。Stage A/Bのexporter・静的取込・応答拡張を実装。Stage C1aの同期登録adapterとv2静的取込を実装（未リリース）。C1b等は未実装。宣言元登録adapterの入出力・完全性・回帰条件は6.6節とStage C1テスト計画へ具体化済み。
+設計日: 2026-10-31。Stage A/Bのexporter・静的取込・応答拡張を実装。Stage C1aの同期登録adapterとC1bの明示Provider登録・v2/v3静的取込を実装（未リリース）。C1bの3ツール・OSV実接続も検証済み。catalog等の拡張は未対応。宣言元登録adapterの入出力・完全性・回帰条件は6.6節とStage C1テスト計画へ具体化済み。
 
 実装メモ: exporterは`gradle/export-dependency-graph.init.gradle`としてnpm配布にも同梱する。`-PosvMcpConfigurations=*`は全resolvable configuration、既定は存在する4つのclasspathを選択する。metadata状態は`coverage.dependency_metadata.gradle`へ出し、relationの完全性と物理宣言元の完全性を区別する。Stage Bの`declarationEvidence`は空配列のみ対応し、未知のsource-map形式を検証済みとは扱わない。Gradle 8.11.1／9.2.1とGroovy／Kotlin DSLで実export、既知の脆弱版で3ツールからのOSV実接続を確認。詳細は[実接続検証記録](GRADLE_LIVE_VALIDATION.md)を参照。
 
@@ -720,3 +720,10 @@ bdo proxy env OSV_MCP_TEST_GRADLE=/path/to/gradle/bin/gradle JAVA_HOME=/path/to/
 - Gradle 9.2.1: 本番adapter回帰23件＋公開API実証24件、計47件成功。
 - 両版でGroovy／KotlinのProvider陽性、版変更Action、supplier／Actionの例外を確認。型チェック・ビルド・diff checkも成功。
 - 実行はJDK 21.0.13+9、offline／configuration cache無効。ソースhashと具体的な確認範囲は上記JSONに保存。今回OSVへの実接続は実行していない。
+
+
+## 13. C1b 3ツール・OSV実接続検証
+
+2026-10-31、revision 7bea3a6でGroovy／Gradle 8.11.1とKotlin／Gradle 9.2.1を実行。Provider由来の既知脆弱版でscan_project／scan_java_project／suggest_fixを、consumer信頼有効・無効・providerPolicyなしの3条件で検証し、18呼出し成功。acceptedだけが完全なdeclared_inとProvider固有の信頼限界を表示し、disabled／missing_assertionでは宣言元を全省略した。安定性表明なしでは契約変更後に同一projectを再exportし、stale hashでの省略と区別した。
+
+全条件でcoverage・relation・introduced_by・検出ID・候補版を維持。全候補がcandidate_check=cleanで、独立OSV再照会24件はHTTP 200・脆弱性0件。元入力のhash不変とMCP中のGradle非起動も確認。詳細はGRADLE_LIVE_VALIDATION.mdのC1b節、機械可読結果はvalidation/gradle-c1b-live-2026-10-31.json、再現はsrc/test/manual/gradleC1bLive.mjs。catalog／bundle、ProviderConvertible、configuration cache、task output、並行実行、convention plugin等のgateを完了した証拠には含めない。

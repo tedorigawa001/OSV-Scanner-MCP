@@ -1678,3 +1678,10 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 - 明示`addProvider`とscopeの`providerPolicy: stable-during-export`を追加。Provider入りcontextをadapter v3で出力し、readerが全観測と信頼契約を再検証する。同期C1aのv2互換性を維持。
 - 空値・表明不足・非既定shape・mutation・観測不完全ではscopeのdeclared_inを省略し、relation／introduced_by／coverageを保持。未使用configurationを追加実現しない。元Actionによる版変更・例外を含む本番回帰を追加。
 - 次の実接続課題はC1b入り検証projectでscan_project／scan_java_project／suggest_fixの宣言元・信頼metadata・候補再照会を確認すること。catalog／bundle、ProviderConvertible、configuration cache、task output、convention-pluginのgateは残る。
+
+
+### 2026-10-31: Gradle C1b 3ツール・OSV実接続検証完了
+
+- Groovy／Gradle 8.11.1、Kotlin／Gradle 9.2.1のProvider由来log4j／Jackson依存で、3ツール×信頼有効・無効・安定性表明なし、計18呼出しを検証。
+- declared_in・信頼metadata・候補案内の採用／抑制を確認し、GAV・検出ID・relation・introduced_by・coverage・提案版は条件間で維持。24候補照会が独立OSV再照会でもHTTP 200・脆弱性0件。
+- 検証記録／データ／手動再現ハーネスを追加。次はversion catalog alias／bundle・ProviderConvertibleの独立設計／公開API実証。configuration cache、task output、並行実行、convention pluginのsource-artifact対応、buildscript／composite／Android等は引き続き残課題。
