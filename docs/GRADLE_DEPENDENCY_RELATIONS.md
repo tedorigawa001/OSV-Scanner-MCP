@@ -1,6 +1,6 @@
 # Gradleの依存関係・導入元・宣言元の設計
 
-設計日: 2026-10-31。Stage A/Bのexporter・静的取込・応答拡張を実装。Stage Cの物理宣言元source-map等は未実装。
+設計日: 2026-10-31。Stage A/Bのexporter・静的取込・応答拡張を実装。Stage Cの物理宣言元source-map等は未実装。宣言元登録adapterの入出力・完全性・回帰条件は6.6節とStage C1テスト計画へ具体化済み。
 
 実装メモ: exporterは`gradle/export-dependency-graph.init.gradle`としてnpm配布にも同梱する。`-PosvMcpConfigurations=*`は全resolvable configuration、既定は存在する4つのclasspathを選択する。metadata状態は`coverage.dependency_metadata.gradle`へ出し、relationの完全性と物理宣言元の完全性を区別する。Stage Bの`declarationEvidence`は空配列のみ対応し、未知のsource-map形式を検証済みとは扱わない。Gradle 8.11.1／9.2.1とGroovy／Kotlin DSLで実export、既知の脆弱版で3ツールからのOSV実接続を確認。詳細は[実接続検証記録](GRADLE_LIVE_VALIDATION.md)を参照。
 
@@ -192,6 +192,167 @@ variantごとの依存集合は異なり得るため、`getDependencies()`の単
 - `combineRelations`の単純な集合併合だけでは満たせないため、`annotateRelations`を含む最終整形まで完全性を伝播する。宣言元を別途収集する経路にも同じ抑制を適用し、単一lock内だけで一覧を省略して済ませない。既存の他形式は完全性の契約を明示して移行するか、Gradleを含む併合に限定して適用し、従来の出力を暗黙に変更しない。
 - 完全性は一覧の出力可否を制御する情報であり、`dependency_relation`の既存のファイル間`mixed`判定とは分離する。不完全な理由はmetadataに残す。
 
+
+### 6.6 Stage C: 宣言元adapterの確定契約（実装予定）
+
+以下は実装前の契約であり、現行v1 exporterが提供する機能ではない。Stage C1は通常project configurationの明示登録に限定する。buildscript、Android固有モデル、外部included buildの探索拡張はC2以降とし、対応前は従来のunknown／省略を維持する。
+
+#### 6.6.1 宣言元と信頼の意味
+
+`declared_in`は「実依存の追加を記述した物理ファイル」の完全な集合とする。versionの格納先、pluginを適用しただけのconsumer、所有projectのbuild fileは代用しない。行番号・呼出し元stack・ソース文字列検索は証拠にしない。登録adapterはビルド作者の明示的な出所表明であり、悪意のあるビルドが偽のsource-mapを生成することを防ぐ署名機構ではない。MCPが確認するのは契約の整合性・捕捉ファイルの鮮度・対応の完全性である。
+
+公式APIの`DependencyHandler`は依存の追加、`Configuration`は宣言集合・継承を提供するが、任意の宣言オブジェクトから物理ファイルを得る契約ではない。Gradleのpluginはscript／precompiled script／binaryの形を取り得るため、plugin IDからソースパスを推測しない。[DependencyHandler](https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/dsl/DependencyHandler.html)、[Configuration](https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/Configuration.html)、[pluginの実装形態](https://docs.gradle.org/current/userguide/implementing_gradle_plugins.html)
+
+#### 6.6.2 登録APIの入力・返却値
+
+配布する登録pluginのproject extensionを`osvMcpDeclarations`（API version 1）とする。exporterはこのversionだけを読む。以下は言語非依存の擬似APIで、実装時にはGroovy／Kotlinの型付き入口を同じ意味で提供する。
+
+```text
+// 信頼済みinit/settings段階、対象ソースを評価・コンパイルする前
+prepareSources(buildId, [rootRelativeSourcePath, ...]) -> SourceHandle[]
+
+// 宣言するその場所で、追加と登録を一つの操作として行う
+add(project, configurationName, dependencyNotationOrProvider,
+    sourceHandle, optionalCatalogUse) -> RegistrationHandle
+
+// 既存のplugin作者向け。追加済みの「同じ実体」を登録する
+register(project, configurationName, actualDependencyObject,
+         sourceHandle, optionalCatalogUse) -> RegistrationHandle
+```
+
+- `prepareSources`の一覧はビルド評価前の信頼済み設定から供給する。既知build/settings/catalog入力に加えてapplied script、convention pluginの実装ソースとそのローカル構成入力を含める。build scriptからの遅い初回hash取得は認めない。
+- `SourceHandle`はbuild ID・正規化したroot相対path・評価前SHA-256を保持するopaque値。登録時のpath文字列をそのままhashしてhandleへ昇格しない。未準備sourceは登録を記録するが不完全理由を付け、宣言元として採用しない。
+- `add`は通常の依存追加の結果を変えず、Gradleが対象configurationへ実際に追加したDependency実体を登録する。`Provider`は通常の追加時点に合わせて遅延評価し、情報収集のための早期`get()`をしない。bundleは展開後の各実体へ個別IDを付ける。未実現・対応不能なら不完全とする。
+- `register`は同じproject／configurationの宣言集合に所属する実体のidentityを検証する。座標が同じ別インスタンス、copy、未追加オブジェクト、他projectからの流用は対応済みとしない。copyされた依存には新しい登録が必要。
+- 返却handleはopaqueな宣言IDとpending／registered状態を持つ。解決済みGAVや`complete=true`を返すAPIにはしない。公開JSONのIDはexport単位で生成し、JVM identity値・絶対パスは出力しない。
+- adapterの無効化・未適用でも通常の依存追加は継続する。証拠取得だけに失敗した場合は宣言元を省略する。元のGradle依存追加・解決のエラーは握り潰さない。
+
+#### 6.6.3 JSON v2の出力
+
+v1の厳格parserへ非空`declarationEvidence`を追加しない。v2を明示導入し、新readerはv1/v2を受け付ける。v1は従来どおり宣言元未提供、旧readerにv2を渡した場合はmetadata未対応として通常lockスキャンを継続する。v2利用者向けにv1 exportモードも残す。ファイル名・companion探索境界は変更しない。
+
+v2では各contextの`edges`に一意な`id`と`requestFingerprint`を追加し、`declarations`を追加する。以下はcontext内の追加部分の例であり、graph本体・lock／input hashは省略している。
+
+```json
+{
+  "declarations": {
+    "adapterVersion": 1,
+    "inventoryComplete": true,
+    "records": [
+      {
+        "id": "d1",
+        "ownerProjectId": "main::app",
+        "configuration": "implementation",
+        "requested": { "kind": "module", "group": "org.example", "name": "client", "selector": "1.+" },
+        "fingerprintAtAdd": {
+          "version": 1, "status": "supported", "kind": "module",
+          "group": "org.example", "name": "client",
+          "versionConstraint": { "required": "1.+", "preferred": "", "strict": "", "rejected": [], "branch": null },
+          "attributes": [], "capabilities": [], "artifacts": [], "targetConfiguration": null,
+          "endorseStrictVersions": false
+        },
+        "fingerprintAtResolve": {
+          "version": 1, "status": "supported", "kind": "module",
+          "group": "org.example", "name": "client",
+          "versionConstraint": { "required": "1.+", "preferred": "", "strict": "", "rejected": [], "branch": null },
+          "attributes": [], "capabilities": [], "artifacts": [], "targetConfiguration": null,
+          "endorseStrictVersions": false
+        },
+        "source": { "kind": "build-script", "path": "app/build.gradle.kts", "sha256": "<64-hex>" },
+        "catalogUses": []
+      }
+    ],
+    "bindings": [
+      { "edgeId": "e1", "declarationIds": ["d1"], "complete": true, "reasons": [] }
+    ],
+    "reasons": []
+  }
+}
+```
+
+- `records`は登録済みのものだけでなく、解決contextへ寄与する全ての直接宣言を含む棚卸し。未登録宣言も独立IDで残し、`source: null`・理由`unregistered_declaration`とする。`source`のkindは`build-script | applied-script | convention-plugin`。複数の物理宣言は複数recordで表す。
+- rootの非constraint edgeごとにbindingを一件作る。`declarationIds`はその辺へ寄与した全宣言の集合。空binding・未対応宣言は`complete=false`とする。ID参照はcontext内に閉じる。
+- `inventoryComplete`は棚卸し処理の成功を示し、登録済み割合を示さない。全宣言の追加／削除を観測できず重複が消えた可能性がある場合もfalse。未知adapter versionや中断・上限到達をtrueへ丸めない。
+- requestedは追加時と解決直前の構造化fingerprintを比較する。通信形式と検証責任は下記の通り固定する。単純な`group:name`一致、opaqueなhashだけ、producerの`complete=true`だけではbindingを採用しない。
+
+**fingerprint v1の通信契約:** 上の二つのfingerprintとedgeの`requestFingerprint`は同一のdiscriminated unionを使う。supported形は全フィールド必須・未知key拒否とし、`version=1`、`status=supported`、`kind=module`を固定する。group/nameは既存のmodule atom、文字列は最大4,096文字、配列は各最大128件。版制約は`required/preferred/strict`（未指定は空文字）、`rejected`（文字列集合）、`branch`（文字列またはnull）。attributesは`{name, type, value}`の集合で、typeは`string | boolean | integer | named`、valueは対応するJSON primitive。namedはGradleのNamed値を`{className, name}`として持ち、型の同一性を保持する。任意オブジェクトのtoString()は許可しない。capabilitiesは`{group, name, version}`（versionは文字列またはnull）の集合、artifactsは`{name, type, extension, classifier, url}`（未指定値はnull）の集合、targetConfigurationは文字列またはnull、endorseStrictVersionsはbooleanとする。URL付きartifactはC1ではsupportedにせず、URL値自体も出力しない。
+
+**正規化:** objectのkey順は意味を持たず、集合配列は全構成フィールドの型付きtupleで辞書順に並べる。重複attribute名、重複capability／artifact tupleは不正として拒否する。rejectedだけは完全一致の重複を除去する。大文字小文字、空白、版文字列、nullと空文字は保持し、GradleやMavenの版比較器による同一視をしない。JSONの数値はsafe integer限定。文字列化による型の同一視や区切り文字連結によるfingerprint化をしない。
+
+**取得不能形:** `{version: 1, status: "unsupported", reason: "unsupported_declaration_selector"}`を宣言・edgeの両方で明示可能とする。公開APIから要求の全フィールドを取得・対応できない場合はこの形を使い、空配列やnullで取得成功を装わない。project／unknown要求、未知の型・capability selector・artifact selectorはC1ではunsupported。fingerprintの欠落・未知version・型違反はschema不正として文書無効、明示unsupportedは該当bindingのみ不完全とする。これは「対応できたsubsetだけを完全扱いする」許可ではない。
+
+**責任分担:** exporterは追加時・解決直前の完全な値を取得し、mutationがあればC1ではbindingを不完全とする。edge側は実際のroot要求の値から独立に構築し、宣言側の値をコピーして穴埋めしない。ResolutionResult等の公開APIが要求のartifact／endorsement等を提供しない形では、独立な対応を実証できる公開API adapterがない限りunsupportedとする。readerは三つのfingerprintの正規化後の完全一致、requestedのgroup/nameとの整合性、root非constraint edgeへの参照、全宣言群と全bindingの被覆、source/hashを再検証する。bindingの宣言ID重複・欠落や、completeを称する未被覆宣言を拒否する。readerはGradleを再実行せず、棚卸しが真実であること自体は既定のproducer信頼範囲に残る。
+- `catalogUses`は任意の補助情報であり、`declared_in`へ混ぜない。各要素にcatalog名、library alias、bundle alias（該当時）、ローカルcatalog path/hash、version.ref（該当時）を保持する。リモートcatalogは`location: unknown`として表現し、ローカル更新先を捏造しない。programmatic catalogは下記のgraph入力規則を満たす場合に限り利用可能とする。URL・資格情報は出力しない。
+- `source`は共通の評価前source inventoryにも同じpath/hashで存在する必要がある。catalog補助情報も検証済み入力へ結び付ける。必須schema・参照の破損はv2文書を無効化するが、正しく表現されたsource未登録／範囲外／未対応は宣言元だけの不完全性として扱う。
+
+#### 6.6.4 棚卸しと解決edgeの対応手順
+
+1. projectの構成前にadapterを導入し、各宣言configurationと`extendsFrom`の閉包から寄与する依存を収集する。`getAllDependencies()`の最終集合だけでは同一宣言の重複が畳まれる可能性があるため、追加試行と登録handleの履歴も照合する。途中導入、同値依存の未観測追加、defaultDependencies／withDependenciesによる遅延追加を十分観測できない場合は棚卸し不完全とする。
+2. configuration解決直前までの追加・削除・置換・mutationを反映し、解決後にも整合性を確認する。削除済み宣言はbindingへ入れず、同じ座標で再追加されても古いsourceを継承しない。解決時のmutationやコピーを追えなければ不完全とする。
+3. 継承された同一宣言は同じIDで重複除去し、独立の同座標宣言は別IDのまま保持する。rootからのselected variant／requested／constraint区分へ対応付ける。非公開Gradle実装クラスへの依存や、辺の配列順で対応付けない。
+4. Gradle APIから個別オブジェクトとedgeの一対一対応が得られない場合は、完全に同じ対応fingerprintを持つ宣言群と辺群を一単位として検証する。群内全宣言が登録済みで、全てが同じselected GAVへ解決されると確認できた場合だけ全sourceの和集合を採用する。variantごとに宣言を分離できない場合、同名別版、異なるcapability等は曖昧として省略する。
+5. force／conflictで版だけ変わる場合もrequestedとselectedを分け、実際に選ばれたGAVへbindingする。module名変更のsubstitution、module→project、project→moduleはC1では`unsupported_substitution_mapping`とし、宣言元を推測しない。グラフのdirect／transitive判定は既存契約を維持する。
+6. constraint宣言やBOMのversion制御をlibraryの直接宣言元へ流用しない。`platform(...)`の実依存辺自身は登録可能。project-only経路上のmoduleへappのproject宣言fileを付けない。
+
+**実装着手の判定条件:** 8.11.1／9.2.1の両方で同値依存の重複・遅延追加・copy・mutationの棚卸しとbindingを実証する。公開APIだけで完全性を確認できない構成は不完全を既定値にし、対応済みと広告しない。最終集合に一個しか見えないことを「宣言元は一個」の証明にしない。
+
+#### 6.6.5 sourceの鮮度・読取範囲
+
+- 既存の評価前hash捕捉を維持し、source inventoryも評価／pluginコンパイル前に捕捉する。export task実行時の初回hashでは不十分。buildSrc／included plugin buildのソースを捕捉するには、それらの評価・コンパイルより先の信頼済み起動段階が必要。準備できなければconvention pluginのsourceは未検証とする。
+- 登録時、export開始時、解決後・atomic write直前に基準と比較する。既知sourceや既知inputの変更／生成／削除はexport全体を失敗させ、既存JSONを上書きしない。評価前不在のsourceを後から生成して登録しても採用しない。
+- MCPは現在のscan boundary内にある列挙済みローカルsourceだけを安全に捕捉する。root相対path、symlink拒否、通常ファイル限定、4 MiB/件・64 MiB/scan、同じbytesをhash照合と案内に使用する。境界外のbuild-logicをJSONを手掛かりに探索しない。
+- C1のsource許可種別は`.gradle`／`.gradle.kts`、convention plugin実装の`.kt`／`.java`／`.groovy`。catalog補助入力は`.versions.toml`。任意suffixを許可せず、既存input readerの拡張を明示的に実装する。ファイル本文をOSVへ送らず、snapshotのスキャナー入力にも追加しない。
+- グラフ用inputと宣言元専用inputをv2で分離する。依存を追加するscript・plugin実装・使用catalogは解決に影響し得るため必ずgraph入力にも含め、宣言元専用へ格下げしない。宣言元専用は解決へ影響しない登録対応表等に限り、C1でその種別を実装しない場合は空とする。前者が不一致なら従来どおりcontext全体をstaleとする。後者だけ不一致／検証不能ならそのsourceを使うbindingを不完全とし、検証済みgraphのrelation・introduced_by・coverage証拠は保持する。同じファイルが両役割なら厳しいgraph側を優先する。
+- catalogのgraph入力は種類別に固定する。ローカルTOMLは実際にimportされた全TOMLとcatalogを構成・上書きするsettings／pluginソースを評価前捕捉し、MCPが同じpath/hashを確認する。programmatic catalogは構築コードと参照したローカル入力の全てを同じ契約で捕捉できた場合のみ対応し、編集先キーだけが不明でもgraphと宣言元を維持できる。環境変数・外部サービス・未捕捉ファイルに依存して内容が決まる場合はC1では検証不能とする。
+- v2 contextに必須の`catalogInputs: {inventoryComplete: boolean, entries: [...]}`を設ける。各entryはcontext内一意ID、kind（local-toml／programmatic／remote）、state（verifiable／unverifiable）、graphInputPaths（既存graph入力への参照集合）、reason（nullまたはcatalog_graph_inputs_unverifiable）を持つ。verifiableはremote不可・全参照のpath/hash検証必須。catalog不使用は棚卸し済みの空集合として表す。inventoryComplete=falseは影響不明として全文書を採用不可にする。任意のcatalogUsesを省略しても必須のcatalog入力検査を回避できない。catalogUsesに出す場合はcatalogInputIdで対応するentryへ結び付け、未知IDはschema参照不正とする。
+- リモート配布catalogはartifactの同一性と評価前入力をローカルpath/hash契約だけでは確認できないため、C1では`catalog_graph_inputs_unverifiable`とする。未捕捉入力を持つprogrammatic catalogも同じ扱い。該当catalogの使用が確認されたcontextはgraph採用不可としてrelation=unknown、introduced_by／declared_inを省略し、relations_complete／declarations_complete=falseとする。catalog影響contextを列挙できない場合は文書の全contextへ適用する。独立に検証できた別contextの証拠は保持する。これはスキャン範囲の欠けの証拠ではなくmetadataの検証制限なので、lockスキャン由来のcoverageは維持する。編集先が不明なだけの対応済みローカルcatalogと混同しない。
+- adapter source-mapの鮮度もビルド全体の再現性は保証しない。binary pluginの実行バイナリとローカルsourceの対応を証明できない場合、同名ソースがあるだけでは採用しない。C1のconvention-plugin対応は同じexport実行で準備済みローカルソースから構築されたことをadapterが確認できる形に限る。
+
+#### 6.6.6 宣言方法ごとの扱い
+
+| 宣言方法 | `declared_in` | 補助情報／省略条件 |
+|---|---|---|
+| build scriptのliteral／変数 | 実際に追加したbuild script | 変数の定義元やversion保持元は自動推定しない |
+| `implementation(libs.client)` | aliasを使用して追加したscript／plugin実装 | catalogは別のversion編集候補。alias未使用なら証拠なし |
+| catalog bundle | 使用箇所のscriptを展開後の各依存へ登録 | 同じmoduleを含む複数alias／bundleも全独立宣言を保持 |
+| version.ref／rich version／上書きcatalog（graph入力検証済み） | 使用箇所のscript | catalogから最終versionの編集先を一意に取れないときは具体的な編集キーを案内しない。library alias・version alias・bundle aliasを混同しない |
+| precompiled convention plugin | 依存を追加した`.gradle.kts`／`.gradle`ソース | consumerの`plugins {}`だけを宣言元にしない |
+| ローカルbinary convention plugin | 依存を追加した`.kt`／`.java`／`.groovy`ソース | sourceと実行artifactの対応未確認なら省略 |
+| 外部配布plugin／remote script | 確認できなければ省略 | 外部ソースを取得せず、consumer build fileへ置換しない |
+| `apply(from=...)`・多段apply | 実際に依存を追加した末端script | applyした側を追加しない。末端scriptの評価前準備が必要 |
+| rootの`subprojects`／`allprojects` | 追加処理を書いたroot側script | ownerは対象子project。同名projectでもbuild IDで分離 |
+| `extendsFrom` | 元の宣言を追加したscript | consumer configurationやbuild fileに付け替えない |
+| helperを利用する呼出し | API契約で指定した追加箇所 | helperが内部で座標を決め追加するならhelper実装、callerが具体依存を渡して追加する登録helperならcaller。汎用のstack推定をしない |
+
+catalogは依存の要求を共有する仕組みで、選択版そのものを保証しない。実際の出力GAVは引き続き解決graphのselectedを使う。[公式: Version catalogs](https://docs.gradle.org/current/userguide/version_catalogs.html)。convention pluginの構成例は[公式ガイド](https://docs.gradle.org/current/userguide/implementing_gradle_plugins_convention.html)を参照する。
+
+#### 6.6.7 完全性と応答の判定
+
+完全性の単位はまず`(lock, context, selected GAV)`、その後に同GAVの全context／全sourceへANDで併合する。contextの他GAVの未登録宣言だけで、独立に完全性を証明できるGAVまで一律に不完全としない。ただし棚卸し全体が不明な場合は、追加宣言を除外できないためそのcontextの全direct GAVを不完全とする。
+
+| 状態 | `declaredInComplete` | `declared_in`への寄与 |
+|---|---|---|
+| directで全binding・全宣言の検証成功 | true | 全宣言sourceの重複除去集合（非空必須） |
+| directの一件でも未登録／曖昧／source検証不能 | false | 既知部分も最終一覧から省略 |
+| graphが完全で確定transitive、直接宣言なし | true | 完全な空集合。親の宣言fileを付けない |
+| unknown／context不足／graph予算超過 | false | 宣言元を補完しない |
+| v1／adapter未提供 | directはfalse、確定transitiveはtrue | 既存挙動を維持 |
+
+- 解決graph自体が不完全なcontextからdirectの証拠だけ得られる場合も、C1では宣言元の完全性はfalseとする。完全な別contextで穴埋めしない。
+- bindingの不完全性はintroducedByCompleteへ伝播しない。逆にorigin探索の失敗時は、独立に完全な宣言bindingを得る実装契約がないC1ではfalse。将来独立計算へ移行する場合も、最終併合の二つのflagは分ける。
+- `declarations_complete`は対象lockの全必要contextで全direct GAVの宣言元が完全な場合のみtrue。`relations_complete`とは独立。metadata `status`は現行どおりグラフ関係の状態を保ち、宣言元の不足は専用flagとreasonsで示す。空のcontextもadapter棚卸しが未完了なら宣言元完全とは宣言しない。
+- 理由code: `declaration_adapter_missing`、`unsupported_declaration_adapter`、`declaration_inventory_incomplete`、`unregistered_declaration`、`ambiguous_declaration_binding`、`unsupported_declaration_selector`、`unsupported_substitution_mapping`、`declaration_source_unprepared`、`declaration_source_unverifiable`、`stale_declaration_source`、`declaration_budget_exceeded`、`catalog_graph_inputs_unverifiable`。パス・件数の診断は上限付きでsanitizeし、例外全文は出さない。
+- source-mapだけの欠如・stale・制限では`coverage.complete`を下げない。graphに基づく既存のスキャン範囲の欠けは維持する。catalog編集情報だけが不明でも、catalogのgraph入力と使用箇所の証拠が完全なら`declared_in`は維持する。catalogのgraph入力自体が検証不能な場合は6.6.5のcontext不採用規則を優先する。
+- `suggest_fix`は確定した全宣言元を案内する。catalog等は別の編集候補として扱い、版の実際の管理先が不明なら一般的なGradle制約の確認を促す。`declared_in`にcatalogを混ぜる、POM編集を案内する、source-mapだけで版互換性を保証する、という動作は禁止する。新しい公開catalogフィールドの追加はC1の必須要件にせず、追加する場合は別の応答契約を定義する。
+
+#### 6.6.8 制限と実装順
+
+recordsは10万/context、bindingsはroot非constraint edge数以下（最大20万/context）、source inventoryは1万/document、catalogUsesは各record最大32件を初期上限とする。JSONの既存16 MiB/件・64 MiB/scan制限が先に効く場合も黙って切り詰めない。構造の上限超過は文書無効、対応探索の予算超過は宣言元不完全とし、部分一覧を出さない。
+
+binding索引の構築は既存index共有200万操作、宣言・継承・bindingの走査は既存traversal共有200万操作へ計上する。contextごとの予算リセットや、全宣言×全edgeの総当たりを避ける。source捕捉はscan内キャッシュを共用し、source数×context数の再読込をしない。宣言元処理で予算が尽きても既に確定したrelation／originの結果を破棄しないよう、scan内の全contextの既存解析を先に完了し、その後に残予算で宣言処理を行い、failureを別に保持する。宣言処理が先行して後続contextのorigin予算を奪わない。
+
+順序は、(1)登録と棚卸しのGradle実証、(2)v2 schema・安全なcapture、(3)GAV別完全性と併合、(4)3ツールの案内・実接続、(5)convention pluginのsource/artifact対応を満たすadapter、の順とする。各段階で未対応形を省略し、C1の完了条件に含まれる対応形とC2送りの形を検証記録へ明記する。
+
 ## 7. coverage・応答・更新案内
 
 - グラフ未提供、source-mapなし、関係だけの予算超過は、lock自体の脆弱性スキャンが完了していれば`coverage.complete=false`の理由にしない。
@@ -254,6 +415,39 @@ variantごとの依存集合は異なり得るため、`getDependencies()`の単
 - unknownでも所属projectは診断に使えるが、物理宣言元とは区別する。
 - 複数lockの回帰条件: 同一GAVを含むlock Aでは由来・宣言元が確定し、lock Bではcompanion欠如／stale／context不足／予算超過となる組合せを作る。最終応答で`introduced_by`・`introduced_by_omitted`・`declared_in`がすべて省略され、入力順を逆にしても一致することを確認する。併合処理の単体テストはStage Bから追加し、実際の複数project取込はStage Cで検証する。
 - 完全性を独立して検証するため、両lockの由来は完全だが片方の宣言元だけ不明な場合は`introduced_by`を維持し`declared_in`だけを省略する。逆の場合は宣言元だけを維持する。両方完全なら重複除去した和集合を返し、由来が10件を超えた場合だけ正しいomitted件数を返す。relationの順位処理や`mixed`判定でも完全性が失われないことを確認し、3ツールの最終出力まで検証する。
+
+### Stage C1の回帰テスト条件（実装時の必須条件）
+
+以下は未実装のテスト計画。parser／binding／captureの単体テスト、実Gradle exporterテスト、3ツールの最終応答テストを分け、合成JSONだけで対応済みとはしない。実Gradleは8.11.1／9.2.1、通常script・applied scriptはGroovy／Kotlinの両DSLを確認する。未対応構成の陰性は全環境で省略を確認する。
+
+| ID | 入力・操作 | 必須の期待結果 |
+|---|---|---|
+| C01 | literal／変数／versionなしの直接依存をhelperで追加 | 使用scriptだけがdeclared_in。selected GAVと対応し、版変数の定義元を混ぜない |
+| C02 | 同じGAVを二つのscript、二つの宣言configurationから追加し、一つのroot edgeへ合流 | 全sourceの和集合。片方だけ未登録にすると一覧全体を省略。追加順・JSON順を逆転しても同じ |
+| C03 | 同値のDependencyを複数追加しGradleの集合では一つに見える／adapterを途中導入 | 未登録追加を検知できなければinventory不完全。既知の一件だけを完全として返さない |
+| C04 | 同じ座標でattributesの値／型、capabilities、classifier、endorsementだけが異なる宣言・edge。版制約の差、配列順・object key順の差、nullと空文字、未取得フィールド | 三つのfingerprintが正規化後完全一致する場合のみ採用。値／型差やmutationはbinding不完全。順序差だけなら同一。明示unsupportedは省略、欠落・未知versionは文書無効。偽のcomplete=trueでも被覆不足・重複ID・別edgeへの付替えを拒否 |
+| C05 | force／conflict後にselected版が変わる／module名変更／project substitution | 版だけの変更は実selected版へ対応。C1の非対応substitutionは宣言元省略、既存relationは保持 |
+| C06 | extendsFromのdiamond、同じ宣言の多重継承、独立の同座標宣言 | 同じIDだけ重複除去。元scriptを保持し、独立宣言を潰さない。継承consumerのbuild fileを生成しない |
+| C07 | defaultDependencies／withDependencies／Providerの遅延追加、未実現provider | 追加・解決の結果とタイミングを変えず、実体化した全宣言を棚卸し。未観測なら不完全、metadata目的の早期getなし |
+| C08 | registerへ同座標別実体／copy／他projectの実体を渡す、削除後の再追加・mutation | 古い登録が新実体へ移らない。未対応mutationは省略。削除した宣言のsourceを返さない |
+| C09 | catalog library alias／version.ref／rich version／bundle、重複alias | declared_inは使用script。bundleの全実体を登録し、catalog TOMLを一覧へ入れない。未使用aliasは何も追加しない |
+| C10 | catalog版と選択版の差、ローカルTOML上書き、全入力捕捉済みprogrammatic catalog、remote catalog、外部値依存のprogrammatic catalog | 対応済みローカル／programmatic形はselected版・relation・declared_inを維持し、編集先不明ならキーを案内しない。remote／未捕捉入力形は該当contextのrelation=unknown・introduced_byとdeclared_in省略、両完全性flag=false、catalog_graph_inputs_unverifiableを記録。lockのcoverageは維持。影響context不明時は全文書、独立contextの欠けの証拠は保持 |
+| C11 | buildSrc／ローカルbuild-logicのprecompiled・binary convention pluginを複数consumerで適用 | 準備済み実装ソースと実行artifactの対応を確認できるときのみplugin実装を返す。consumerのplugins blockを返さない |
+| C12 | 外部plugin、同名ローカルsourceが存在するが実行artifactと不一致、境界外included build | sourceを取得・推定しない。known部分だけの一覧も出さず、lockスキャンは継続 |
+| C13 | 多段apply、root subprojectsで子へ依存追加、日本語・空白パス | 実際の末端追加script／root scriptへ対応。子project所有情報と物理sourceを分離し、パスを正しく正規化 |
+| C14 | BOM constraintのみ、platform実依存、project-only経路、直接＋推移的の重なり | constraintはlibraryの宣言元にならない。platform自身は対応可能。transitiveへ親scriptを付けず、直接宣言は全件維持 |
+| C15 | sourceが評価中／先行task／解決中に更新・削除・生成される、sourceが遅くprepareされる | 既知入力の変更はexport失敗・既存JSON不変。未準備sourceは不完全。buildSrcコンパイル前後の差し替えも検出 |
+| C16 | export後に宣言対応表等の専用入力だけ変更／実依存を追加するscript・plugin sourceを変更 | 専用入力対応を実装した場合、前者はdeclared_inだけ省略、relation・origin・coverageを維持。後者は必ずgraph入力不一致としてcontext全体stale。source-only不一致をcoverage欠けにしない |
+| C17 | ../、絶対path、symlink、FIFO、境界外、過大ファイル、hash検証不能、捕捉中差し替え | 安全な読取制限を維持し、停止・範囲外読取なし。対応sourceは不完全。捕捉後の元ファイル差し替えは結果に影響しない |
+| C18 | 未知schema／adapter version、重複edge・宣言ID、dangling binding、別contextのID、sourceとinventoryのhash矛盾 | schema参照破損は文書無効。明示された未対応adapterは宣言元不完全。無効部分を取り除いて完全扱いにしない |
+| C19 | 同じGAVの複数context／複数lockに完全・未登録・stale・context不足を混在 | 宣言元の完全性をAND。入力順に依存せず不完全な一覧を抑制。originが完全ならintroduced_byは残る |
+| C20 | 両contextとも完全、sourceの重複・direct/transitive混在、別形式との併合 | 全sourceを重複除去。確定transitiveの空集合は欠けでない。別形式のdirect不明sourceも省略へ伝播 |
+| C21 | 大量sourceを多数contextから参照、宣言予算超過、構造／byte上限超過 | source読込はscan内一回。部分一覧なし。宣言予算が後続contextのrelation解析を悪化させず、上限を引き上げない |
+| C22 | adapterなしv1、新readerへv1/v2、旧readerへv2、v1 exportモード | 通常lockスキャンと既存出力互換性を維持。source-mapがなくてもdirect／originを失わない |
+
+3ツール共通の最終応答では、C02・C04・C09・C10・C11・C13・C16・C19・C20・C21の代表ケースを最低限実行する。`dependency_relation`、`introduced_by`とomitted件数、`declared_in`、二つのmetadata完全性flag、`coverage.complete`、`suggest_fix`の更新案内をまとめて確認する。推移的依存だけの確定contextと、宣言が空だが棚卸し未完了のcontextの違いも確認する。
+
+実接続では既知の脆弱版をliteral・catalog alias・applied script・対応済みconvention plugin経由で追加したprojectをexportし、scan_project／scan_java_project／suggest_fixでOSV検出、declared_in、候補版の再照会を確認する。未登録宣言の追加を陰性対照とし、宣言元だけ省略されることを確認する。元lock／source不変、MCP中のGradle非起動、追加source・catalog・plugin情報のOSV非送信を確認する。OSVの件数・固定版を将来の固定期待値にはしない。
 
 ### 実接続・境界検証
 

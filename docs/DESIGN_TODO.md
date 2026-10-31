@@ -1465,6 +1465,8 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - 未存在の入力: exporterは評価前に存在しなかった候補を内部で保持していたが、JSONへは存在するファイルだけを出力していたため、後から作成されたbuild fileでstaleにならなかった。`inputs.files`に`{ path, absent: true }`を追加し、取込時に存在すればstale_input_hashとする。実Gradle 8.11.1・9.2.1の回帰(各9件)でabsent記録を確認。
 - 導入元探索を効率化(2026-10-31): 多数の起点が共有するvariantグラフを反復型SCCへ縮約し、疎な32起点wordをDAG上で伝播する。少数起点・共有のない木は軽い探索を維持し、由来を出せない不完全contextでは探索を省略する。scan共有200万予算は増やさず、結果展開も計上して超過時は部分一覧を返さない。200起点/1,200 module/3 contextの同一入力で、旧2,421,540→新844,302操作となり、通常予算で完全なcontextが2→3へ改善。中央値129.356→31.549ms。[性能比較・再現手順](GRADLE_LIVE_VALIDATION.md)と生データを記録。
 - 低共有グラフのレビュー修正: 共有先の有無だけでSCCへ移行せず、個別探索で実際の起点間再訪と重複queue処理の両方が到達variant数を超えた場合だけ切り替える。probeの作業も同じ予算へ計上し、部分結果は破棄。400起点/6,000 module/24 contextの共有辺1本ケースで、レビュー時2,256,552→修正後432,408操作、完全contextは21→24。回帰テストと性能比較へ追加。
+- Stage C1設計を具体化(2026-10-31、未実装): 宣言元登録adapter API、評価前source準備、v2宣言棚卸し／edge binding、GAV別完全性と併合、catalogと物理宣言元の分離、convention plugin／applied script、予算と安全な取込、22群の回帰条件を[設計書6.6節](GRADLE_DEPENDENCY_RELATIONS.md#66-stage-c-宣言元adapterの確定契約実装予定)へ追加。公開APIで重複・遅延宣言の完全性を実証できない形は未対応として省略する。
+- Stage C1設計レビューの2件を反映: catalogの種類別graph入力と検証不能時のcontext不採用を統一。宣言追加時／解決直前／edge要求のfingerprint v1、型付き正規化、exporterとreaderの検証責任を定義し、C04・C10と3ツールの回帰条件を拡充（設計のみ、未実装）。
 
 ## バックログ(2026-10-07)
 
