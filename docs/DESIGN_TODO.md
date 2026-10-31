@@ -1427,6 +1427,12 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 
 - Pipenv introduced_byのレビュー修正(2026-10-31): 同じ名前・版の結果をカテゴリ間で併合する際、根が一意のカテゴリの由来だけが残り、別カテゴリ(根が複数・宣言が不完全)の未確定の由来が欠けたまま一意に見えた(default: requests由来、develop: pytest/botocoreの2根でintroduced_by=[requests]、suggest_fixのhintもrequestsの更新を案内)。宣言せずに収録するカテゴリのいずれかで由来を一意に決められなければintroduced_byを出さない。全カテゴリで同じ一意の根なら保持、直接依存との重なり(直接+一意の由来)は従来どおり。両ツールに回帰テストを追加。
 
+## Gradle依存関係対応の実装方式設計(2026-10-31)
+
+- [詳細設計](GRADLE_DEPENDENCY_RELATIONS.md): 信頼済み環境でResolutionResultをcontext/variant別JSONへ事前exportし、MCPは捕捉lockとhash・収録内容を照合して静的取込する。MCPからGradle/Wrapperを実行しない。
+- direct/transitive・introduced_byは実依存辺から取得し、BOM/lockのconstraint辺を由来にしない。物理宣言元は標準APIだけでは確定できないため、ownerBuildFileをdeclared_inに代用せず、明示的source-mapのある宣言から対応する。
+- 取得API/JSON契約の検証→単一projectの関係判定→宣言元・複数project/buildscriptの順で実装。グラフだけの欠けと脆弱性スキャン範囲の欠けを区別し、Gradleの修正案内をpom.xmlへ誘導しない。今回は設計のみで、実装・実接続検証は未実施。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
