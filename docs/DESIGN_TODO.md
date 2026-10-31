@@ -1728,6 +1728,7 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 - 実行source-artifactの陽性gateは未成立。binary pluginは公開load元が境界外のGradle cache JAR、precompiledは登録側thisとPlugin実体も不一致。class hash一致だけで採用せず、混在declaredInを省略する。次はload／変換の信頼契約とprecompiled実体の登録方法の再検討・追加実証。本番採用・reader実装・OSV実接続へ進んだ記録ではない。詳細は[設計書§10](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md#10-公開api実証の結果2026-10-31)、データはvalidation/gradle-convention-plugin-2026-10-31.json。
 
 - convention plugin実証レビューの2件を修正: classpath directoryの現在ファイル集合・hashを制限付きで捕捉し、未記録追加／削除／変更を拒否。Providerに安定IDを付けて同期追加と共通のapplication台帳・出自・双方向被覆を検証。実GroovyCompile前のresource追加、Provider origin／ID／参照の書換え・削除の回帰を4構成で再検証し、検証JSONを更新した。各Gradle版128件、通常全体1,631件が成功。実行artifact対応の陽性gateと本番採用は引き続き未成立。
+- 6d9b1e5レビュー対応: classpath directory照合はGradle終了後の事後snapshotで、compile中だけ存在したファイルや復元された変更は検出できない制限（plugin_classpath_transient_changes_not_detectable）を明記。compileGroovyのdoFirstで追加しdoLastで削除する未検出固定の対照を4構成に追加し、synthetic回帰は拒否理由まで検証する。各Gradle版130件（policy込み162件）が成功。task開始時点のsnapshotは未実装。
 
 
 ### 2026-10-31: convention pluginのload信頼・precompiled登録の改訂設計

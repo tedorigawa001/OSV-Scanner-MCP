@@ -32,7 +32,7 @@ async function toolchain(){
   return {profile:{schemaVersion:1,gradleVersion:version,jdk:process.env.JAVA_HOME?.split(path.sep).slice(-3).join("/"),entries},paths,files,bytesRead};
  })();
 }
-async function fixture(kotlin=false, included=false, kind="binary-java",directoryMutation=false):Promise<any>{
+async function fixture(kotlin=false, included=false, kind="binary-java",directoryMutation:""|"extra"|"transient"=""):Promise<any>{
  const proofFiles=[fileURLToPath(import.meta.url),init,fileURLToPath(new URL("../fixtures/gradleConventionProof.ts",import.meta.url))];
  const proofSources=Object.fromEntries(await Promise.all(proofFiles.map(async f=>[path.basename(f),await digest(f)])));
  const invocationId=randomUUID();
@@ -62,7 +62,7 @@ public class Convention implements Plugin<Project> {
 `);
  if(kind==="precompiled-groovy") {
   await writeFile(path.join(root,producer,"build.gradle"),`plugins { id 'groovy-gradle-plugin' }
-${directoryMutation?"tasks.named('compileGroovy') { doFirst { def extra=file('build/classes/java/main/unrecorded.properties');extra.parentFile.mkdirs();extra.text='unrecorded=true' } }":""}
+${directoryMutation?`tasks.named('compileGroovy') { doFirst { def extra=file('build/classes/java/main/unrecorded.properties');extra.parentFile.mkdirs();extra.text='unrecorded=true' }${directoryMutation==="transient"?"; doLast { file('build/classes/java/main/unrecorded.properties').delete() }":""} }`:""}
 `);
   await mkdir(path.join(root,producer,"src/main/groovy/proof"),{recursive:true});
   await writeFile(path.join(root,producer,"src/main/groovy/proof/Helper.groovy"),"package proof; class Helper {}\n");
@@ -157,7 +157,7 @@ probe.add('probe','review:parent:1',probe.scriptSource('${name}/build${suffix}')
   if(a.loadedResource) a.loadedResource=a.loadedResource.replaceAll(root,"$FIXTURE").replaceAll(process.env.GRADLE_USER_HOME??path.join(os.homedir(),".gradle"),"$GRADLE_CACHE");
  }
  report.assessment=assessConventionProof(report,{approvedProfiles:new Set([approvedDigest]),pluginTrust:true});
- if(process.env.OSV_MCP_GRADLE_CONVENTION_OUTPUT) await writeFile(`${process.env.OSV_MCP_GRADLE_CONVENTION_OUTPUT}-${report.gradleVersion}-${kotlin?"kotlin":"groovy"}-${producer}-${kind}${directoryMutation?"-extra":""}.json`,JSON.stringify(report,null,2)+"\n");
+ if(process.env.OSV_MCP_GRADLE_CONVENTION_OUTPUT) await writeFile(`${process.env.OSV_MCP_GRADLE_CONVENTION_OUTPUT}-${report.gradleVersion}-${kotlin?"kotlin":"groovy"}-${producer}-${kind}${directoryMutation?`-${directoryMutation}`:""}.json`,JSON.stringify(report,null,2)+"\n");
  return report;
 }
 for(const kotlin of [false,true]) for(const [included,kind] of [[false,"binary-java"],[true,"binary-kotlin"],[true,"precompiled-groovy"]] as const) {
@@ -272,7 +272,7 @@ for(const kotlin of [false,true]) for(const [included,kind] of [[false,"binary-j
 }
 
 for(const kotlin of [false,true]) it.skipIf(!binary)(`rejects an unrecorded classpath file on disk (Kotlin=${kotlin})`,async()=>{
- const r=await fixture(kotlin,true,"precompiled-groovy",true);
+ const r=await fixture(kotlin,true,"precompiled-groovy","extra");
  const dirs=r.builds.flatMap((b:any)=>b.receipts).flatMap((c:any)=>c.classpath).filter((e:any)=>e.pluginOutputRoot);
  expect(dirs.length).toBeGreaterThan(0);
  const directory=dirs.find((e:any)=>Object.keys(e.currentPluginOutputs??{}).some(p=>p.endsWith("/unrecorded.properties")));
@@ -282,4 +282,15 @@ for(const kotlin of [false,true]) it.skipIf(!binary)(`rejects an unrecorded clas
  expect(r.assessment.reasons).toContain("plugin_classpath_directory_mismatch");
  expect(r.assessment.declaredIn).toEqual([]);
  expect(r.projects.registered.graph).toEqual(r.projects.plain.graph);
+},210000);
+
+// Known limit: the snapshot is taken after the build, so a file present only while compileGroovy ran is not detected.
+for(const kotlin of [false,true]) it.skipIf(!binary)(`records a transient classpath file as currently undetected (Kotlin=${kotlin})`,async()=>{
+ const r=await fixture(kotlin,true,"precompiled-groovy","transient");
+ const dirs=r.builds.flatMap((b:any)=>b.receipts).flatMap((c:any)=>c.classpath).filter((e:any)=>e.pluginOutputRoot);
+ expect(dirs.length).toBeGreaterThan(0);
+ expect(dirs.some((e:any)=>Object.keys(e.currentPluginOutputs??{}).some(p=>p.endsWith("/unrecorded.properties")))).toBe(false);
+ expect(r.assessment.inputVerified).toBe(true);
+ expect(r.assessment.reasons).toEqual(["plugin_loaded_origin_unverifiable"]);
+ expect(r.assessment.declaredIn).toEqual([]);
 },210000);

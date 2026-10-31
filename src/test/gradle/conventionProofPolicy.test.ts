@@ -46,7 +46,8 @@ describe("Convention proof diagnostic policy (synthetic)",()=>{
   const {report,policy}=sample();
   report.projects.registered.providerRecords=[{id:"p0",configuration:"lazy",source:report.pluginSource,origin:{kind:"plugin",pluginApplicationId:"a0",sourceMappingId:report.pluginSource}}];
   report.projects.registered.providerRecords[0].origin=null;
-  expect(assessConventionProof(report,policy).originsVerified).toBe(false);
+  const result=assessConventionProof(report,policy);
+  expect(result.originsVerified).toBe(false);expect(result.reasons).toContain("origin_unverified");
  });
  it("validates both materialized and pending Provider origins without requiring evaluation",()=>{
   const {report,policy}=sample();
@@ -74,11 +75,13 @@ describe("Convention proof diagnostic policy (synthetic)",()=>{
   const expected={"build/classes/Convention.class":"a".repeat(64)};
   report.builds[0].receipts[0].outputs=expected;
   report.builds[0].receipts[0].classpath.push({pluginOutputRoot:"build/classes",pluginOutputs:expected,currentPluginOutputs:{...expected,"build/classes/unrecorded.properties":"b".repeat(64)}});
-  expect(assessConventionProof(report,policy).inputVerified).toBe(false);
+  const result=assessConventionProof(report,policy);
+  expect(result.inputVerified).toBe(false);expect(result.reasons).toContain("plugin_classpath_directory_mismatch");
  });
  it("rejects unclassified independent classpath inputs instead of trusting their labels",()=>{
   const {report,policy}=sample();report.builds[0].receipts[0].classpath.push({toolchainId:"arbitrary-plugin.jar",size:9000000,sha256:"a".repeat(64)});
-  expect(assessConventionProof(report,policy).inputVerified).toBe(false);
+  const result=assessConventionProof(report,policy);
+  expect(result.inputVerified).toBe(false);expect(result.reasons).toContain("toolchain_classpath_unverified");
  });
 });
 

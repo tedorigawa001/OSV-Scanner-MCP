@@ -750,7 +750,7 @@ Groovy／Gradle 8.11.1とKotlin／Gradle 9.2.1の脆弱版projectで、local TOM
 
 Groovy／Kotlin consumer×Gradle 8.11.1／9.2.1のbuildSrc Java・独立Kotlin binary・独立Groovy precompiledを計12 fixtureで確認。登録／通常のgraph・Action・Provider評価、混在source候補、toolchain分類の実証は成功したが、公開load元と準備済みartifactの対応は陽性条件未達。convention-pluginの本番拒否を維持し、次は変換／loadの契約とprecompiled実体登録を再検討する。[詳細と実証範囲](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md#10-公開api実証の結果2026-10-31)。
 
-実証レビューの修正では、classpath directoryを記録済み一覧だけでなく現在の全ファイル集合・hashへ照合し、Providerも安定IDと共通application台帳で出自を検証する。未記録resource追加とProvider参照改変の対照を追加。詳細・更新結果は上記の設計書§10を参照する。
+実証レビューの修正では、classpath directoryを記録済み一覧だけでなく現在の全ファイル集合・hashへ照合し、Providerも安定IDと共通application台帳で出自を検証する。未記録resource追加とProvider参照改変の対照を追加。directory照合はビルド後の事後snapshotで、compile中だけの追加・復元された変更は検出できない（未検出を固定する対照を追加）。詳細・更新結果は上記の設計書§10を参照する。
 
 
 ### 2026-10-31: convention pluginのload信頼・precompiled登録の改訂設計
