@@ -1745,3 +1745,4 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 本番は未採用。実行class bytesの独立観測ではなく追加信頼契約による候補化で、compile中だけのclasspath変更は引き続き検出不能。precompiled Kotlin／標準kotlin-dslは未検証。次は実証レビュー、成立範囲の本番schema・adapter・reader、続いて3ツール／OSV実接続。機械可読結果はvalidation/gradle-plugin-load-2026-10-31.json。
 
 - 実証レビュー修正: 同じentrypointの重複beginを先行・後続sessionとも不完全に固定し、終了後の再開始も拒否。load元観測とJAR snapshotはverification-task、directory snapshotはpost-buildという実際のphaseを記録する。両Gradle版のnative回帰へ重複2条件・phase確認を追加（各280件）。本番未採用と追加信頼の限界は維持。
+- 06aa8f3レビュー修正: directory artifactはload元が準備済み出力と同じpathで、事後に同じ実体を比較していたため、`same-path-origin`として内容一致と区別し、事後snapshot・比較なしのlimitationを付ける。比較種別をartifact種別へ束縛し、snapshot単体回帰は対象の検査（順序・blob size）へ届く対照と拒否理由の検証に改めた。strict不採用は変換不明の前提による結果と明記。実Gradle各280件、単体60件が成功。

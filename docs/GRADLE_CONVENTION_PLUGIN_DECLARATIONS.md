@@ -522,7 +522,7 @@ Groovy／Kotlin consumer × Gradle 8.11.1／9.2.1を基本行列にし、produce
 
 ## 12. 改訂したload信頼・二段階登録の公開API実証（2026-10-31）
 
-§11の契約を本番とは独立したtest-only exporter／検証器で実証した。明示承認された `approved-gradle-loader-v1` は32 fixtureで宣言元の採用候補になった。これは作者・運用者のruntime／変換表明を信頼した結果であり、実行中の変換済みclass bytesを独立観測した証拠ではない。実runtimeの `prepared-output-only-v1` は変換不明のため全件不採用を維持した。strictの正常証拠・loader profile不要という判定はsynthetic policy回帰で確認しており、実runtimeのstrict陽性実証とは区別する。本番schema／adapter／reader、MCP設定の採用は有効化していない。
+§11の契約を本番とは独立したtest-only exporter／検証器で実証した。明示承認された `approved-gradle-loader-v1` は32 fixtureで宣言元の採用候補になった。これは作者・運用者のruntime／変換表明を信頼した結果であり、実行中の変換済みclass bytesを独立観測した証拠ではない。実runtimeの `prepared-output-only-v1` は変換不明のため全件不採用を維持した。この実証harnessは変換を観測する公開APIを持たないため、strict証拠のunverifiedTransformを常にtrueとして渡す。strictの不採用は観測による否定ではなく、この前提による結果である。strictの正常証拠・loader profile不要という判定はsynthetic policy回帰で確認しており、実runtimeのstrict陽性実証とは区別する。本番schema／adapter／reader、MCP設定の採用は有効化していない。
 
 ### 12.1 構成と公開API
 
@@ -537,6 +537,8 @@ precompiledは評価前に `PluginManager.withPlugin` のobserverを準備し、
 公開Sync taskとruntimeElementsのoutgoing directory artifactを使い、buildSrc／included双方で実際のdirectory CodeSourceを得た。directoryはJARに変換せず、全file／directory（空directoryを含む）の順序付きtree、内容addressed blob、strict manifestとして境界内にatomic保存する。readerは保存済みcontainerだけを読み、元runtime pathを追わない。全entry集合・祖先・size・hash・blob過不足を再検証する。`sha256-tree-v1` のbinary encodingには独立Python計算のgolden vectorを追加した。
 
 JARはraw SHAとZIP全file内容を別途照合する。manifest、descriptor、service、resourceも対象とし、class hashだけで採用しない。directory blobの変更・削除・追加とJARの変更を実保存先で行う48対照は全件拒否し、復元後の再検証も成功した。予算超過、symlink、不正path、重複JSON、tree順序／祖先不正、不完全な既存container、atomic公開前の失敗は単体回帰でも確認する。
+
+directory runtime artifactの8件では、公開CodeSourceのload元が準備済みの `plugin-image` directoryそのものだった。同じ実体をビルド終了後に2回読む比較は失敗し得ないので、内容一致とは数えず `same-path-origin` として記録する。load時点の内容は捕捉していない（`plugin_directory_snapshot_post_build`、`plugin_directory_origin_same_path_not_compared`）。load元が別directoryの場合だけtree digestで `directory-content-exact` を判定し、その分岐は単体回帰で確認する。policyは比較種別をartifact種別へ束縛し、JARにdirectory比較、directoryにJAR比較を使う証拠を拒否する。
 
 classpathは従来どおりビルド終了後のsnapshotであり、compile時点の完全inventoryではない。途中だけの変更や復元された変更は検出できないという `plugin_classpath_transient_changes_not_detectable` を保持する。新policyでもこの制限を解消したとは扱わない。
 
@@ -567,3 +569,11 @@ npm test -- src/test/gradle/pluginLoadSnapshot.test.ts src/test/gradle/pluginLoa
 load元の最初の観測はafter-apply callbackではなく検証taskのreport処理なので、loadObservationPhase=verification-taskと記録する。JAR snapshotも同task内の取得としてsnapshotCapturePhase=verification-task、directoryはGradle終了後のNode側取得としてsnapshotCapturePhaseとDirectoryRef.capturePhaseをpost-buildにした。after-applyはPlugin実体を解決するcallbackの時刻だけを意味し、そこでartifactを捕捉したとは記録しない。全applicationについてphaseの回帰を追加した。snapshotの保存／再検証がload時不変の独立証明ではない制限は維持する。
 
 修正前の対象native回帰3件が失敗することを確認した後、修正後の同3件が成功した。両DSL・両producer種別を含む全32 fixtureをGradle 8.11.1／9.2.1で再実行し、各280件を確認した。検証JSONは今回のsource hashと再実行観測へ更新し、重複sessionの拒否と実際の取得phaseを保持する。
+
+### 12.5 06aa8f3レビュー後の修正
+
+1. directory artifactのload元と準備済み出力が同じpathの場合は `same-path-origin` とし、`directory-content-exact` と区別する。上記2件のlimitationを必須表示する。loader-attested policyでの候補化は維持するが、内容比較の証拠には数えない。別pathの一致・不一致は単体回帰で判定する。
+2. 証拠に `artifactKind`（jar／directory／unavailable）を追加し、比較種別との組合せが不整合ならplugin_load_inputs_unverifiableとする。
+3. snapshot単体回帰は拒否理由まで検証する。manifestの順序不正は兄弟entryの入替えで祖先検査を通した上でsnapshot_entry_orderを確認し、宣言sizeとblobの不一致は自己整合したmanifest・digest・containerを作ってsnapshot_blob_mismatchを確認する。修正前の順序／size対照はそれぞれ祖先欠落・digest不一致で拒否されており、対象の検査を通っていなかった。
+
+修正後、Gradle 8.11.1／9.2.1とも280件成功、snapshot／policy／JAR単体60件成功。directory 8件はsame-path-originで、JAR 24件の比較結果は変わらない。更新後のsource hashと判定は検証JSONのpostReviewRevisionに記録した。

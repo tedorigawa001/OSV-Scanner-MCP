@@ -2,7 +2,7 @@
 import { expect,it } from "vitest";
 import { assessPluginLoad,type LoadApproval } from "../fixtures/gradlePluginLoadPolicy.js";
 const tool="a".repeat(64),loader="b".repeat(64);
-const common=()=>({applicationId:"app",registrationForm:"binary-instance",toolchainProfileDigest:tool,inputsVerified:true,originsVerified:true,registrationUnique:true,constructedThisInvocation:true,instanceMatches:true,descriptorMatches:true,beginBeforeApplied:true,ended:true,endOutcome:"complete",observerFired:true,comparison:"raw-exact"});
+const common=()=>({applicationId:"app",registrationForm:"binary-instance",artifactKind:"jar",toolchainProfileDigest:tool,inputsVerified:true,originsVerified:true,registrationUnique:true,constructedThisInvocation:true,instanceMatches:true,descriptorMatches:true,beginBeforeApplied:true,ended:true,endOutcome:"complete",observerFired:true,comparison:"raw-exact"});
 const strict=()=>({...common(),loadPolicy:"prepared-output-only-v1",directLoadObserved:true,unverifiedTransform:false});
 const attested=()=>({...common(),loadPolicy:"approved-gradle-loader-v1",loaderProfileDigest:loader,runtimeConfigMatches:true,snapshotVerified:true,runtimeAttested:true});
 const policy=():LoadApproval=>({toolchains:new Set([tool]),loaders:new Set([loader]),helper:true,trust:"local-plugin-loader-attested-v2"});
@@ -20,7 +20,7 @@ it.each(["disabled","local-plugin-build-v1"] as const)("does not adopt loader-at
 it.each(["toolchain","loader","runtime","snapshot","contents","lineage","descriptor","instance"])("rejects missing or inconsistent load evidence: %s",kind=>{
  const e:any=attested(),p=policy();
  if(kind==="toolchain")p.toolchains.clear();if(kind==="loader")p.loaders.clear();if(kind==="runtime")e.runtimeConfigMatches=false;if(kind==="snapshot")e.snapshotVerified=false;if(kind==="contents")e.comparison="unverifiable";if(kind==="lineage")e.constructedThisInvocation=false;if(kind==="descriptor")e.descriptorMatches=false;if(kind==="instance")e.instanceMatches=false;
- expect(assessPluginLoad(e,p).inputVerified).toBe(false);
+ const r=assessPluginLoad(e,p);expect(r.inputVerified).toBe(false);expect(r.reasons).toContain(["loader","runtime","snapshot"].includes(kind)?"approved_loader_unverifiable":"plugin_load_inputs_unverifiable");
 });
 it.each(["late","unclosed","failed","origins","observer","duplicate"])("preserves valid graph inputs but rejects an incomplete registration: %s",kind=>{
  const e:any=attested();if(kind==="duplicate")e.registrationUnique=false;if(kind==="late")e.beginBeforeApplied=false;if(kind==="unclosed")e.ended=false;if(kind==="failed")e.endOutcome="failed";if(kind==="origins")e.originsVerified=false;if(kind==="observer")e.observerFired=false;
@@ -35,4 +35,12 @@ it("does not elevate strict evidence with unverified transforms merely because a
 });
 it("keeps strict independent of a loader rejection in a mixed-policy set",()=>{
  const p={...policy(),loaders:new Set<string>()};expect(assessPluginLoad(strict(),p).declarationsComplete).toBe(true);expect(assessPluginLoad(attested(),p).inputVerified).toBe(false);
+});
+it.each([["jar","directory-content-exact"],["jar","same-path-origin"],["directory","raw-exact"],["directory","entry-content-exact"],["unavailable","raw-exact"]])("rejects a %s artifact with a %s comparison",(artifactKind,comparison)=>{
+ const r=assessPluginLoad({...attested(),artifactKind,comparison},policy());expect(r.inputVerified).toBe(false);expect(r.reasons).toContain("plugin_load_inputs_unverifiable");
+});
+it("adopts a same-path directory origin only with explicit post-build and no-comparison limitations",()=>{
+ const r=assessPluginLoad({...attested(),artifactKind:"directory",comparison:"same-path-origin"},policy());
+ expect(r.declarationsComplete).toBe(true);expect(r.limitations).toEqual(expect.arrayContaining(["plugin_directory_snapshot_post_build","plugin_directory_origin_same_path_not_compared"]));
+ expect(assessPluginLoad({...attested(),artifactKind:"directory",comparison:"directory-content-exact"},policy()).limitations).not.toContain("plugin_directory_origin_same_path_not_compared");
 });

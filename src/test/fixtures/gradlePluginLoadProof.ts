@@ -111,3 +111,11 @@ export async function saveDirectorySnapshot(root:string,source:string,invocation
   return ref;
  }finally{await rm(temp,{recursive:true,force:true});}
 }
+/** Compares a directory load origin with the prepared output; an identical path is reported separately, not as a content match. */
+export async function compareDirectoryOrigin(root:string,builtPath:string,originRoot:string,originRelative:string,invocationId:string,budget=loadBudget()){
+ const built=await safePath(root,builtPath),origin=await safePath(originRoot,originRelative);
+ const ref=await saveDirectorySnapshot(root,originRelative,invocationId,budget,"post-build",originRoot),snapshot=await verifyDirectorySnapshot(root,ref,budget);
+ if(built===origin)return {comparison:"same-path-origin" as const,ref,snapshot};
+ const comparison=treeDigest(await captureLoadTree(root,builtPath,budget))===snapshot.treeDigest?"directory-content-exact" as const:"unverifiable" as const;
+ return {comparison,ref,snapshot};
+}

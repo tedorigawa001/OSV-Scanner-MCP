@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { assessConventionProof, captureConventionDirectory, proofDigest } from "../fixtures/gradleConventionProof.js";
 import { compareJars } from "../fixtures/gradlePluginJarProof.js";
 import { assessPluginLoad } from "../fixtures/gradlePluginLoadPolicy.js";
-import { readProofFile,sha,saveDirectorySnapshot,verifyDirectorySnapshot,captureLoadTree,treeDigest,loadBudget } from "../fixtures/gradlePluginLoadProof.js";
+import { readProofFile,sha,verifyDirectorySnapshot,compareDirectoryOrigin,loadBudget } from "../fixtures/gradlePluginLoadProof.js";
 const binary=process.env.OSV_MCP_TEST_GRADLE;
 const init=fileURLToPath(new URL("../fixtures/gradle-plugin-load.init.gradle",import.meta.url));
 const dirs:string[]=[];
@@ -195,7 +195,7 @@ probe.add('probe','review:parent:1',probe.scriptSource('${name}/build${suffix}')
  const approval={toolchains:new Set([approvedDigest]),loaders:new Set([loaderDigest]),helper:true,trust:"local-plugin-loader-attested-v2" as const};
  const budget=loadBudget();
  for(const p of Object.values<any>(report.projects)) for(const a of p.applications){
-  let comparison:"raw-exact"|"entry-content-exact"|"directory-content-exact"|"unverifiable"="unverifiable",snapshotVerified=false;
+  let comparison:"raw-exact"|"entry-content-exact"|"directory-content-exact"|"same-path-origin"|"unverifiable"="unverifiable",snapshotVerified=false;
   if(a.runtimeSnapshotPath&&a.builtJarPath){
    const runtimeBytes=await readProofFile(root,a.runtimeSnapshotPath,budget),builtBytes=await readProofFile(root,a.builtJarPath,budget);
    snapshotVerified=sha(runtimeBytes)===a.runtimeSnapshotSha256;
@@ -207,15 +207,14 @@ probe.add('probe','review:parent:1',probe.scriptSource('${name}/build${suffix}')
    const originRoot=external?runtimeRoot:root;
    const originRelative=path.relative(originRoot,a.directoryOriginPath).split(path.sep).join("/");
    if(a.originApproved){
-    const ref=await saveDirectorySnapshot(root,originRelative,invocationId,budget,"post-build",originRoot);
-    const snapshot=await verifyDirectorySnapshot(root,ref,budget);
-    const built=await captureLoadTree(root,a.builtDirectoryPath,budget);
-    comparison=treeDigest(built)===snapshot.treeDigest?"directory-content-exact":"unverifiable";
+    const {comparison:result,ref,snapshot}=await compareDirectoryOrigin(root,a.builtDirectoryPath,originRoot,originRelative,invocationId,budget);
+    comparison=result;
     snapshotVerified=true;a.snapshotCapturePhase="post-build";a.directorySnapshotRef=ref;a.directorySnapshotEntries=snapshot.entries;
    }
   }
-  const common={applicationId:a.id,registrationForm:a.registrationForm,toolchainProfileDigest:approvedDigest,inputsVerified:report.assessment.inputVerified,registrationUnique:a.registrationUnique,originsVerified:p.recordingEnabled&&assessConventionProof({...report,projects:{registered:p}},{approvedProfiles:new Set([approvedDigest]),pluginTrust:true}).originsVerified,constructedThisInvocation:report.builds.some((b:any)=>b.build===producer&&b.invocationId===invocationId&&b.receipts.some((c:any)=>c.type==="compile"&&c.didWork&&!c.failure&&!c.skipped)),instanceMatches:a.instanceMatches,descriptorMatches:a.descriptorMatches,beginBeforeApplied:a.beginBeforeApplied,ended:a.ended,endOutcome:a.endOutcome??"failed",observerFired:a.observerFired,comparison};
+  const common={applicationId:a.id,registrationForm:a.registrationForm,artifactKind:a.loadedOriginKind,toolchainProfileDigest:approvedDigest,inputsVerified:report.assessment.inputVerified,registrationUnique:a.registrationUnique,originsVerified:p.recordingEnabled&&assessConventionProof({...report,projects:{registered:p}},{approvedProfiles:new Set([approvedDigest]),pluginTrust:true}).originsVerified,constructedThisInvocation:report.builds.some((b:any)=>b.build===producer&&b.invocationId===invocationId&&b.receipts.some((c:any)=>c.type==="compile"&&c.didWork&&!c.failure&&!c.skipped)),instanceMatches:a.instanceMatches,descriptorMatches:a.descriptorMatches,beginBeforeApplied:a.beginBeforeApplied,ended:a.ended,endOutcome:a.endOutcome??"failed",observerFired:a.observerFired,comparison};
   const evidence={...common,loadPolicy:"approved-gradle-loader-v1",loaderProfileDigest:loaderDigest,runtimeConfigMatches,snapshotVerified:snapshotVerified&&a.originApproved,runtimeAttested:true};
+  // No public API observes the loader transform here, so strict evidence is rejected by assumption, not by observation.
   const strict={...common,loadPolicy:"prepared-output-only-v1",directLoadObserved:a.loadedOrigin===(a.builtJarPath??a.builtDirectoryPath),unverifiedTransform:true};
   a.loadEvidence=evidence;
   a.policies={attested:assessPluginLoad(evidence,approval),strict:assessPluginLoad(strict,{...approval,loaders:new Set<string>(),trust:"local-plugin-build-v1"})};
@@ -270,7 +269,9 @@ for(const kotlin of [false,true])for(const item of cases)describe.skipIf(!binary
   const a=r.projects.registered.applications[0];
   expect(a.loadEvidence.snapshotVerified).toBe(true);
   if(item.artifactMode==="directory"){
-   expect(a.loadedOriginKind).toBe("directory");expect(a.loadEvidence.comparison).toBe("directory-content-exact");expect(a.directorySnapshotEntries.length).toBeGreaterThan(0);
+   // The public directory artifact is loaded from the prepared output itself, so no independent content comparison happens.
+   expect(a.loadedOriginKind).toBe("directory");expect(a.loadEvidence.comparison).toBe("same-path-origin");expect(a.directorySnapshotEntries.length).toBeGreaterThan(0);
+   expect(a.policies.attested.limitations).toEqual(expect.arrayContaining(["plugin_directory_snapshot_post_build","plugin_directory_origin_same_path_not_compared"]));
   }else expect(["raw-exact","entry-content-exact"]).toContain(a.loadEvidence.comparison);
  });
  it.each(["late","unfinished","failed","duplicate","duplicateClosed"])("keeps an invalid registration session incomplete: %s",name=>{
@@ -301,7 +302,7 @@ for(const kotlin of [false,true])for(const item of cases)describe.skipIf(!binary
   const file=path.join(base,entry.sha256),before=await readFile(file),extra=path.join(base,"0".repeat(64));
   try{
    if(mutation==="changed")await writeFile(file,"tampered");if(mutation==="deleted")await unlink(file);if(mutation==="extra")await writeFile(extra,"extra");
-   await expect(verifyDirectorySnapshot(r.fixtureRoot,ref)).rejects.toThrow();
+   await expect(verifyDirectorySnapshot(r.fixtureRoot,ref)).rejects.toThrow(mutation==="changed"?"snapshot_blob_mismatch":"snapshot_storage_mismatch");
   }finally{if(mutation==="extra")await rm(extra,{force:true});else await writeFile(file,before);}
   await expect(verifyDirectorySnapshot(r.fixtureRoot,ref)).resolves.toBeDefined();
   (r.snapshotMutationChecks??=[]).push({mutation,rejected:true,restoredAndVerified:true});await r.saveProof?.();

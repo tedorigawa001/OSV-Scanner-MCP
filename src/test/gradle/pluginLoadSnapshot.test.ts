@@ -1,8 +1,8 @@
 import { afterEach,beforeEach,expect,it } from "vitest";
-import { mkdir,mkdtemp,rm,writeFile,readFile,readdir,unlink,symlink,truncate } from "node:fs/promises";
+import { cp,mkdir,mkdtemp,rm,writeFile,readFile,readdir,unlink,symlink,truncate } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { saveDirectorySnapshot,verifyDirectorySnapshot,captureLoadTree,treeDigest,loadBudget } from "../fixtures/gradlePluginLoadProof.js";
+import { saveDirectorySnapshot,verifyDirectorySnapshot,captureLoadTree,treeDigest,loadBudget,compareDirectoryOrigin } from "../fixtures/gradlePluginLoadProof.js";
 let root:string;
 beforeEach(async()=>{root=await mkdtemp(path.join(os.tmpdir(),"osv-plugin-snapshot-"));await mkdir(path.join(root,"producer/日本語 space/empty"),{recursive:true});await writeFile(path.join(root,"producer/日本語 space/A.class"),"abc");});
 afterEach(async()=>{await rm(root,{recursive:true,force:true});});
@@ -25,26 +25,33 @@ it("shares content blobs without dropping duplicate logical files or empty direc
  expect(await readdir(path.join(root,path.dirname(ref.manifestPath),"blobs"))).toHaveLength(2);
  const second=await saveDirectorySnapshot(root,"producer","proof-invocation");expect(second).toEqual(ref);
 });
-it.each(["changed","deleted","extra"])("rejects a container with a blob %s",async mutation=>{
+it.each([["changed","snapshot_blob_mismatch"],["deleted","snapshot_storage_mismatch"],["extra","snapshot_storage_mismatch"]])("rejects a container with a blob %s",async (mutation,reason)=>{
  const ref=await saveDirectorySnapshot(root,"producer","proof-invocation"),base=path.join(root,path.dirname(ref.manifestPath),"blobs"),file=path.join(base,(await readdir(base))[0]!);
  if(mutation==="changed")await writeFile(file,"tampered");
  if(mutation==="deleted")await unlink(file);
  if(mutation==="extra")await writeFile(path.join(base,"0".repeat(64)),"extra");
- await expect(verifyDirectorySnapshot(root,ref)).rejects.toThrow();
+ await expect(verifyDirectorySnapshot(root,ref)).rejects.toThrow(reason);
 });
-it.each(["digest","size","duplicate","ancestor","order","unknown"])("rejects an invalid manifest: %s",async mutation=>{
+it.each([["digest","snapshot_digest_mismatch"],["duplicate","duplicate_snapshot_path"],["ancestor","snapshot_ancestor_missing"],["order","snapshot_entry_order"],["unknown","unrecognized_keys"]])("rejects an invalid manifest: %s",async (mutation,reason)=>{
  const ref=await saveDirectorySnapshot(root,"producer","proof-invocation"),file=path.join(root,ref.manifestPath),m=JSON.parse(await readFile(file,"utf8"));
  if(mutation==="digest")m.treeDigest="0".repeat(64);
- if(mutation==="size")m.entries.find((e:any)=>e.kind==="file").size++;
  if(mutation==="duplicate")m.entries.push(m.entries[0]);
  if(mutation==="ancestor")m.entries.shift();
- if(mutation==="order")m.entries.reverse();
+ // Swap siblings so ancestors stay present and only the order check can fail.
+ if(mutation==="order"){const i=m.entries.findIndex((e:any)=>e.path==="日本語 space/A.class");[m.entries[i],m.entries[i+1]]=[m.entries[i+1],m.entries[i]];}
  if(mutation==="unknown")m.extra=true;
- await writeFile(file,JSON.stringify(m));await expect(verifyDirectorySnapshot(root,ref)).rejects.toThrow();
+ await writeFile(file,JSON.stringify(m));await expect(verifyDirectorySnapshot(root,ref)).rejects.toThrow(reason);
+});
+it("rejects a self-consistent manifest whose declared size disagrees with its blob",async()=>{
+ const ref=await saveDirectorySnapshot(root,"producer","proof-invocation"),m=JSON.parse(await readFile(path.join(root,ref.manifestPath),"utf8"));
+ m.entries.find((e:any)=>e.kind==="file").size++;m.treeDigest=treeDigest(m.entries);
+ const parent=path.dirname(path.dirname(ref.manifestPath)),target=path.join(root,parent,m.treeDigest);
+ await cp(path.join(root,path.dirname(ref.manifestPath)),target,{recursive:true});await writeFile(path.join(target,"manifest.json"),JSON.stringify(m));
+ await expect(verifyDirectorySnapshot(root,{...ref,treeDigest:m.treeDigest,manifestPath:`${parent}/${m.treeDigest}/manifest.json`})).rejects.toThrow("snapshot_blob_mismatch");
 });
 it("rejects duplicate JSON keys and a forged snapshot reference",async()=>{
  const ref=await saveDirectorySnapshot(root,"producer","proof-invocation");
- await expect(verifyDirectorySnapshot(root,{...ref,manifestPath:"producer/manifest.json"})).rejects.toThrow();
+ await expect(verifyDirectorySnapshot(root,{...ref,manifestPath:"producer/manifest.json"})).rejects.toThrow("snapshot_reference_mismatch");
  const file=path.join(root,ref.manifestPath),text=await readFile(file,"utf8");await writeFile(file,text.replace('{','{"kind":"directory",'));
  await expect(verifyDirectorySnapshot(root,ref)).rejects.toThrow();
 });
@@ -69,4 +76,12 @@ it("detects a changed prepared directory instead of reopening the runtime source
  const ref=await saveDirectorySnapshot(root,"producer","proof-invocation"),verified=await verifyDirectorySnapshot(root,ref);
  await writeFile(path.join(root,"producer/extra"),"extra");
  expect(treeDigest(await captureLoadTree(root,"producer",loadBudget()))).not.toBe(verified.treeDigest);
+});
+it("reports a same-path directory origin separately and compares a distinct origin by content",async()=>{
+ const same=await compareDirectoryOrigin(root,"producer",root,"producer","proof-invocation");
+ expect(same.comparison).toBe("same-path-origin");
+ await cp(path.join(root,"producer"),path.join(root,"runtime"),{recursive:true});
+ expect((await compareDirectoryOrigin(root,"producer",root,"runtime","proof-invocation")).comparison).toBe("directory-content-exact");
+ await writeFile(path.join(root,"runtime/日本語 space/A.class"),"changed");
+ expect((await compareDirectoryOrigin(root,"producer",root,"runtime","proof-invocation")).comparison).toBe("unverifiable");
 });
