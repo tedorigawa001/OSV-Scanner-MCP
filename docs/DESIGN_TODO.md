@@ -1686,3 +1686,10 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 - Groovy／Gradle 8.11.1、Kotlin／Gradle 9.2.1のProvider由来log4j／Jackson依存で、3ツール×信頼有効・無効・安定性表明なし、計18呼出しを検証。
 - declared_in・信頼metadata・候補案内の採用／抑制を確認し、GAV・検出ID・relation・introduced_by・coverage・提案版は条件間で維持。24候補照会が独立OSV再照会でもHTTP 200・脆弱性0件。
 - 検証記録／データ／手動再現ハーネスを追加。次はversion catalog alias／bundle・ProviderConvertibleの独立設計／公開API実証。configuration cache、task output、並行実行、convention pluginのsource-artifact対応、buildscript／composite／Android等は引き続き残課題。
+
+
+### 2026-10-31: Gradle catalog alias／bundle・ProviderConvertibleの設計・公開API実証
+
+- GRADLE_CATALOG_DECLARATIONS.mdへ使用script／bundle group-memberの対応、catalog入力inventoryと鮮度、設定上書き時の編集案内、追加信頼契約・次版schema案を具体化。
+- 通常APIと登録Actionの比較、元bundleの型保持、生成／明示ProviderConvertible、同値member・独立追加、例外・strict版、設定上書き、評価／先行task中の入力変更の公開API回帰を追加。
+- 今回は設計・test-only実証。本番catalog adapter／静的取込、厳格なinput manifest、信頼metadataと3ツール・OSV実接続は次段階。公開APIだけでcatalog構築入力やbundleの内部supplier回数を自動証明したとは扱わない。

@@ -1,0 +1,4650 @@
+{
+  "date": "2026-10-31",
+  "purpose": "Version catalog alias/bundle and ProviderConvertible public API proof and design only; no production support enabled",
+  "java": "21.0.13+9",
+  "configurationCache": false,
+  "offline": true,
+  "sourceSha256": {
+    "src/test/fixtures/gradle-catalog-registration.init.gradle": "b3e858cfc3cf2a82c266af9b2c1720758cde47a24cd11a18b7d22038f3c1d905",
+    "src/test/gradle/catalogRegistration.integration.test.ts": "7b70a904e099f2d1b45b00749fa8f690c12f766084052c41dfe6f978af13c8e5"
+  },
+  "timingMeaning": "Logical phase and event ordering; no wall clock equivalence claim",
+  "countMeasurement": "Application-instrumented library supplier calls and explicit public ProviderConvertible.asProvider calls; bundle member Actions measured, internal catalog bundle get calls not observable transparently",
+  "matrix": [
+    {
+      "gradle": "8.11.1",
+      "dsl": "groovy",
+      "testConditions": 18,
+      "nativeEventTraceCountsResultsAndFailuresEqual": true,
+      "report": {
+        "gradleVersion": "8.11.1",
+        "projects": {
+          "control": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": []
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": []
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          },
+          "plain": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": []
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": []
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          },
+          "registered": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a0",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a1",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a2",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a3",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a4",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a5",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a6",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": [
+                  {
+                    "id": "a7",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a8",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  },
+                  {
+                    "id": "a15",
+                    "source": "extra.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a9",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": [
+                  {
+                    "id": "a10",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a11",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "tools",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a12",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "rich",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "1",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a13",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "empty",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "inputs": {
+          "publicationAllowed": true,
+          "baseline": {
+            "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+            "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/generated.versions.toml": "absent"
+          },
+          "final": {
+            "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+            "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/generated.versions.toml": "absent"
+          },
+          "changed": []
+        }
+      },
+      "freshnessContrasts": {
+        "evaluation": {
+          "inputs": {
+            "publicationAllowed": false,
+            "baseline": {
+              "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+              "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "absent"
+            },
+            "final": {
+              "settings.gradle": "82d4cee1aae6590b82be32b2153d9aa41d0119cdd1c961d6a212176a89397ec6",
+              "gradle/libs.versions.toml": "a316efaec7f5f78fd5980c6b0157737eb68d9ebe945b4f62f960e74415c26471",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "b44e9664c3cb770af0984fe55ee075dcbfec8777b1e69fe8bff416419855ee0a"
+            },
+            "changed": [
+              "settings.gradle",
+              "gradle/libs.versions.toml",
+              "catalog/generated.versions.toml"
+            ]
+          },
+          "nativeComparisonsEqual": true,
+          "oldPublicationMarkerPreservedByTest": true
+        },
+        "task": {
+          "inputs": {
+            "publicationAllowed": false,
+            "baseline": {
+              "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+              "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "absent"
+            },
+            "final": {
+              "settings.gradle": "82d4cee1aae6590b82be32b2153d9aa41d0119cdd1c961d6a212176a89397ec6",
+              "gradle/libs.versions.toml": "a316efaec7f5f78fd5980c6b0157737eb68d9ebe945b4f62f960e74415c26471",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "b44e9664c3cb770af0984fe55ee075dcbfec8777b1e69fe8bff416419855ee0a"
+            },
+            "changed": [
+              "settings.gradle",
+              "gradle/libs.versions.toml",
+              "catalog/generated.versions.toml"
+            ]
+          },
+          "nativeComparisonsEqual": true,
+          "oldPublicationMarkerPreservedByTest": true
+        }
+      }
+    },
+    {
+      "gradle": "8.11.1",
+      "dsl": "kotlin",
+      "testConditions": 18,
+      "nativeEventTraceCountsResultsAndFailuresEqual": true,
+      "report": {
+        "gradleVersion": "8.11.1",
+        "projects": {
+          "control": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": []
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": []
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle.kts",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          },
+          "plain": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": []
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": []
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle.kts",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          },
+          "registered": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a0",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a1",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a2",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a3",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a4",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a5",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a6",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": [
+                  {
+                    "id": "a7",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a8",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  },
+                  {
+                    "id": "a15",
+                    "source": "extra.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a9",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": [
+                  {
+                    "id": "a10",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a11",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "tools",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a12",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "rich",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "1",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a13",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "empty",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle.kts",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "inputs": {
+          "publicationAllowed": true,
+          "baseline": {
+            "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+            "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/generated.versions.toml": "absent"
+          },
+          "final": {
+            "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+            "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/generated.versions.toml": "absent"
+          },
+          "changed": []
+        }
+      },
+      "freshnessContrasts": {
+        "evaluation": {
+          "inputs": {
+            "publicationAllowed": false,
+            "baseline": {
+              "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+              "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "absent"
+            },
+            "final": {
+              "settings.gradle": "82d4cee1aae6590b82be32b2153d9aa41d0119cdd1c961d6a212176a89397ec6",
+              "gradle/libs.versions.toml": "a316efaec7f5f78fd5980c6b0157737eb68d9ebe945b4f62f960e74415c26471",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "b44e9664c3cb770af0984fe55ee075dcbfec8777b1e69fe8bff416419855ee0a"
+            },
+            "changed": [
+              "settings.gradle",
+              "gradle/libs.versions.toml",
+              "catalog/generated.versions.toml"
+            ]
+          },
+          "nativeComparisonsEqual": true,
+          "oldPublicationMarkerPreservedByTest": true
+        },
+        "task": {
+          "inputs": {
+            "publicationAllowed": false,
+            "baseline": {
+              "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+              "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "absent"
+            },
+            "final": {
+              "settings.gradle": "82d4cee1aae6590b82be32b2153d9aa41d0119cdd1c961d6a212176a89397ec6",
+              "gradle/libs.versions.toml": "a316efaec7f5f78fd5980c6b0157737eb68d9ebe945b4f62f960e74415c26471",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "b44e9664c3cb770af0984fe55ee075dcbfec8777b1e69fe8bff416419855ee0a"
+            },
+            "changed": [
+              "settings.gradle",
+              "gradle/libs.versions.toml",
+              "catalog/generated.versions.toml"
+            ]
+          },
+          "nativeComparisonsEqual": true,
+          "oldPublicationMarkerPreservedByTest": true
+        }
+      }
+    },
+    {
+      "gradle": "9.2.1",
+      "dsl": "groovy",
+      "testConditions": 18,
+      "nativeEventTraceCountsResultsAndFailuresEqual": true,
+      "report": {
+        "gradleVersion": "9.2.1",
+        "projects": {
+          "control": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": []
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": []
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          },
+          "plain": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": []
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": []
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          },
+          "registered": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a0",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a1",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a2",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a3",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a4",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a5",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a6",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": [
+                  {
+                    "id": "a7",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a8",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  },
+                  {
+                    "id": "a15",
+                    "source": "extra.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a9",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": [
+                  {
+                    "id": "a10",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a11",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "tools",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a12",
+                    "source": "build.gradle",
+                    "kind": "library",
+                    "alias": "rich",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "1",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a13",
+                    "source": "build.gradle",
+                    "kind": "bundle",
+                    "alias": "empty",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "inputs": {
+          "publicationAllowed": true,
+          "baseline": {
+            "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+            "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/generated.versions.toml": "absent"
+          },
+          "final": {
+            "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+            "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/generated.versions.toml": "absent"
+          },
+          "changed": []
+        }
+      },
+      "freshnessContrasts": {
+        "evaluation": {
+          "inputs": {
+            "publicationAllowed": false,
+            "baseline": {
+              "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+              "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "absent"
+            },
+            "final": {
+              "settings.gradle": "82d4cee1aae6590b82be32b2153d9aa41d0119cdd1c961d6a212176a89397ec6",
+              "gradle/libs.versions.toml": "a316efaec7f5f78fd5980c6b0157737eb68d9ebe945b4f62f960e74415c26471",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "b44e9664c3cb770af0984fe55ee075dcbfec8777b1e69fe8bff416419855ee0a"
+            },
+            "changed": [
+              "settings.gradle",
+              "gradle/libs.versions.toml",
+              "catalog/generated.versions.toml"
+            ]
+          },
+          "nativeComparisonsEqual": true,
+          "oldPublicationMarkerPreservedByTest": true
+        },
+        "task": {
+          "inputs": {
+            "publicationAllowed": false,
+            "baseline": {
+              "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+              "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "absent"
+            },
+            "final": {
+              "settings.gradle": "82d4cee1aae6590b82be32b2153d9aa41d0119cdd1c961d6a212176a89397ec6",
+              "gradle/libs.versions.toml": "a316efaec7f5f78fd5980c6b0157737eb68d9ebe945b4f62f960e74415c26471",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "b44e9664c3cb770af0984fe55ee075dcbfec8777b1e69fe8bff416419855ee0a"
+            },
+            "changed": [
+              "settings.gradle",
+              "gradle/libs.versions.toml",
+              "catalog/generated.versions.toml"
+            ]
+          },
+          "nativeComparisonsEqual": true,
+          "oldPublicationMarkerPreservedByTest": true
+        }
+      }
+    },
+    {
+      "gradle": "9.2.1",
+      "dsl": "kotlin",
+      "testConditions": 18,
+      "nativeEventTraceCountsResultsAndFailuresEqual": true,
+      "report": {
+        "gradleVersion": "9.2.1",
+        "projects": {
+          "control": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": []
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": []
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle.kts",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          },
+          "plain": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": []
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": []
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": []
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle.kts",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          },
+          "registered": {
+            "catalogs": [
+              {
+                "name": "libs",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              },
+              {
+                "name": "tools",
+                "libraries": [
+                  "client",
+                  "client.tools",
+                  "rich",
+                  "same"
+                ],
+                "bundles": [
+                  "empty",
+                  "pair",
+                  "pair.extra"
+                ]
+              }
+            ],
+            "trace": [
+              "asProvider:configuration",
+              "asProvider:configuration",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleAction:configuration:review:beta",
+              "configure:bundleAction:configuration:review:alpha",
+              "configure:bundleFailure:configuration:review:alpha",
+              "caught:bundleFailure:configuration",
+              "phase:configured",
+              "phase:resolve:alias",
+              "produce:alias:1:resolve:alias",
+              "phase:inspect:alias",
+              "phase:after:alias",
+              "phase:resolve:nativeAlias",
+              "phase:inspect:nativeAlias",
+              "phase:after:nativeAlias",
+              "phase:resolve:generatedConvertible",
+              "phase:inspect:generatedConvertible",
+              "phase:after:generatedConvertible",
+              "phase:resolve:countedConvertible",
+              "produce:countedConvertible:1:resolve:countedConvertible",
+              "phase:inspect:countedConvertible",
+              "phase:after:countedConvertible",
+              "phase:resolve:bundle",
+              "phase:inspect:bundle",
+              "phase:after:bundle",
+              "phase:resolve:generatedBundleConvertible",
+              "phase:inspect:generatedBundleConvertible",
+              "phase:after:generatedBundleConvertible",
+              "phase:resolve:countedBundleConvertible",
+              "phase:inspect:countedBundleConvertible",
+              "phase:after:countedBundleConvertible",
+              "phase:resolve:countedBundle",
+              "produce:countedBundle:1:resolve:countedBundle",
+              "phase:inspect:countedBundle",
+              "phase:after:countedBundle",
+              "phase:resolve:duplicateBundle",
+              "phase:inspect:duplicateBundle",
+              "phase:after:duplicateBundle",
+              "phase:resolve:bundleAction",
+              "phase:inspect:bundleAction",
+              "phase:after:bundleAction",
+              "phase:resolve:bundleFailure",
+              "phase:inspect:bundleFailure",
+              "phase:after:bundleFailure",
+              "phase:resolve:override",
+              "phase:inspect:override",
+              "phase:after:override",
+              "phase:resolve:rich",
+              "phase:inspect:rich",
+              "phase:after:rich",
+              "phase:resolve:empty",
+              "phase:inspect:empty",
+              "phase:after:empty"
+            ],
+            "producerCalls": {
+              "alias": 1,
+              "countedConvertible": 1,
+              "countedBundle": 1
+            },
+            "conversionCalls": 2,
+            "scenarios": {
+              "alias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a0",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "nativeAlias": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a1",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "generatedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a2",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedConvertible": {
+                "graph": [
+                  "review:alpha:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a3",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a4",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "generatedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a5",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedBundleConvertible": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a6",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "countedBundle": {
+                "graph": [],
+                "failed": true,
+                "failure": "resolution_failed",
+                "additions": [
+                  {
+                    "id": "a7",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "duplicateBundle": {
+                "graph": [
+                  "review:alpha:1",
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a8",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  },
+                  {
+                    "id": "a15",
+                    "source": "extra.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundleAction": {
+                "graph": [
+                  "review:alpha:2",
+                  "review:beta:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a9",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 3,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      },
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "bundleFailure": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "additions": [
+                  {
+                    "id": "a10",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "pair",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "override": {
+                "graph": [
+                  "review:alpha:2"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a11",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "client",
+                    "catalog": "tools",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:alpha",
+                        "version": "2",
+                        "preferred": "",
+                        "strict": "",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "rich": {
+                "graph": [
+                  "review:beta:1"
+                ],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a12",
+                    "source": "build.gradle.kts",
+                    "kind": "library",
+                    "alias": "rich",
+                    "catalog": "libs",
+                    "callbacks": 1,
+                    "incomplete": false,
+                    "members": [
+                      {
+                        "supported": true,
+                        "name": "review:beta",
+                        "version": "1",
+                        "preferred": "",
+                        "strict": "1",
+                        "rejected": [],
+                        "branch": null,
+                        "matched": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              "empty": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "additions": [
+                  {
+                    "id": "a13",
+                    "source": "build.gradle.kts",
+                    "kind": "bundle",
+                    "alias": "empty",
+                    "catalog": "libs",
+                    "callbacks": 0,
+                    "incomplete": false,
+                    "members": []
+                  }
+                ]
+              },
+              "unused": {
+                "failed": false,
+                "failure": null,
+                "graph": [],
+                "additions": [
+                  {
+                    "id": "a14",
+                    "source": "build.gradle.kts",
+                    "callbacks": 0,
+                    "members": []
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "inputs": {
+          "publicationAllowed": true,
+          "baseline": {
+            "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+            "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/generated.versions.toml": "absent"
+          },
+          "final": {
+            "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+            "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+            "catalog/generated.versions.toml": "absent"
+          },
+          "changed": []
+        }
+      },
+      "freshnessContrasts": {
+        "evaluation": {
+          "inputs": {
+            "publicationAllowed": false,
+            "baseline": {
+              "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+              "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "absent"
+            },
+            "final": {
+              "settings.gradle": "82d4cee1aae6590b82be32b2153d9aa41d0119cdd1c961d6a212176a89397ec6",
+              "gradle/libs.versions.toml": "a316efaec7f5f78fd5980c6b0157737eb68d9ebe945b4f62f960e74415c26471",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "b44e9664c3cb770af0984fe55ee075dcbfec8777b1e69fe8bff416419855ee0a"
+            },
+            "changed": [
+              "settings.gradle",
+              "gradle/libs.versions.toml",
+              "catalog/generated.versions.toml"
+            ]
+          },
+          "nativeComparisonsEqual": true,
+          "oldPublicationMarkerPreservedByTest": true
+        },
+        "task": {
+          "inputs": {
+            "publicationAllowed": false,
+            "baseline": {
+              "settings.gradle": "535b35a59c832848a99a9ee0cfc826ad6bb5150c0d51f7d8cc9ec2ce0e95de43",
+              "gradle/libs.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "absent"
+            },
+            "final": {
+              "settings.gradle": "82d4cee1aae6590b82be32b2153d9aa41d0119cdd1c961d6a212176a89397ec6",
+              "gradle/libs.versions.toml": "a316efaec7f5f78fd5980c6b0157737eb68d9ebe945b4f62f960e74415c26471",
+              "catalog/company.versions.toml": "26dfb2c0f8afd7503b18af937865290e41bab990acd8b6f60b8aa3ed41d24f2e",
+              "catalog/generated.versions.toml": "b44e9664c3cb770af0984fe55ee075dcbfec8777b1e69fe8bff416419855ee0a"
+            },
+            "changed": [
+              "settings.gradle",
+              "gradle/libs.versions.toml",
+              "catalog/generated.versions.toml"
+            ]
+          },
+          "nativeComparisonsEqual": true,
+          "oldPublicationMarkerPreservedByTest": true
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Public catalog inventories expose names/aliases, not the full construction input provenance",
+    "Prototype source labels are project-relative usage labels, not production trusted source handles",
+    "Bundle callback count is not the Provider supplier evaluation count",
+    "Mapped-bundle failure is an observed negative for this expression and versions, not a universal classification of Provider transformations",
+    "Prototype publicationAllowed checks only fixture input baseline hashes, not catalog inventory or graph adoption completeness",
+    "Rich versions, ambiguous bundle generations, remote/programmatic catalog inputs, production manifest validation and final MCP/OSV flows need separate implementation/gates"
+  ],
+  "verification": {
+    "realGradleCatalogTests": 72,
+    "gradle9Focused": {
+      "filesPassed": 1,
+      "testsPassed": 36
+    },
+    "gradle8FullBeforeDocumentationFix": {
+      "filesPassed": 75,
+      "filesFailed": 1,
+      "testsPassed": 1609,
+      "testsFailed": 1,
+      "failure": "Public documentation command proxy prefix; corrected without changing proof/runtime sources",
+      "documentationRecheck": {
+        "testsPassed": 1
+      }
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "finalDefaultSuite": {
+      "filesPassed": 69,
+      "filesSkipped": 7,
+      "testsPassed": 1486,
+      "testsSkipped": 124,
+      "note": "Real Gradle and performance cases are opt-in; their real runs are recorded separately."
+    },
+    "diffCheck": "passed"
+  }
+}

@@ -1,0 +1,129 @@
+// Test-only public API prototype. Never shipped or used by the MCP server.
+import groovy.json.JsonOutput
+import java.security.MessageDigest
+import org.gradle.api.Action
+import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderConvertible
+import org.gradle.api.artifacts.ExternalModuleDependency
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+
+class OsvCatalogConvertible implements ProviderConvertible {
+    Provider delegate
+    OsvCatalogProbe probe
+    Provider asProvider() {
+        probe.conversionCalls++
+        probe.trace.add('asProvider:'+probe.phase)
+        delegate
+    }
+}
+class OsvCatalogProbe {
+    def project
+    String mode, phase='configuration'
+    List trace=[], additions=[]
+    Map producerCalls=[:].withDefault { 0 }
+    int conversionCalls=0
+    Map callerFailures=[:]
+    void mark(String phase) { this.phase=phase; trace.add('phase:'+phase) }
+    void produced(String id) { producerCalls[id]++; trace.add('produce:'+id+':'+producerCalls[id]+':'+phase) }
+    void caught(String id,Exception error) {
+        def current=error; boolean sentinel=false
+        for(int i=0;current!=null && i<20;i++,current=current.cause) if(current.message?.contains('action-sentinel')) sentinel=true
+        if(!sentinel) throw error
+        callerFailures[id]='action-sentinel'
+        trace.add('caught:'+id+':'+phase)
+    }
+    void configure(String id, dep) {
+        trace.add('configure:'+id+':'+phase+':'+dep.group+':'+dep.name)
+        if(id=='bundleFailure') throw new IllegalStateException('action-sentinel')
+        dep.version { require('2') }
+    }
+    def convertible(Provider provider) { new OsvCatalogConvertible(delegate:provider,probe:this) }
+    static Map snapshot(dep) {
+        if(!(dep instanceof ExternalModuleDependency)) return [supported:false]
+        def vc=dep.versionConstraint
+        [supported:dep.attributes.keySet().empty && dep.capabilitySelectors.empty && dep.artifacts.empty &&
+            dep.targetConfiguration==null && !dep.endorsingStrictVersions && dep.transitive && dep.excludeRules.empty,
+         name:dep.group+':'+dep.name,version:vc.requiredVersion,preferred:vc.preferredVersion,
+         strict:vc.strictVersion,rejected:vc.rejectedVersions.toList().sort(),branch:vc.branch]
+    }
+    Map add(String cfg,Object value,String source,String kind,String alias,Action original=null,String catalog='libs') {
+        def r=[id:'a'+additions.size(),configuration:cfg,source:source,kind:kind,alias:alias,catalog:catalog,seen:[],callbacks:0,incomplete:false]
+        additions.add(r)
+        Action action=original
+        if(mode=='registered') action={ dep ->
+            if(original) original.execute(dep)
+            r.callbacks++
+            try {
+                if(r.seen.size()<128) r.seen.add([dependency:dep,snapshot:snapshot(dep)])
+                else r.incomplete=true
+            } catch(Exception ignored) { r.incomplete=true }
+        } as Action
+        if(value instanceof ProviderConvertible) {
+            if(action) project.dependencies.addProviderConvertible(cfg,value,action)
+            else project.dependencies.addProviderConvertible(cfg,value)
+        } else {
+            if(action) project.dependencies.addProvider(cfg,value,action)
+            else project.dependencies.addProvider(cfg,value)
+        }
+        [id:r.id]
+    }
+    Map run(String name) {
+        def cfg=project.configurations.getByName(name), graph=[], failed=false, failure=null
+        mark('resolve:'+name)
+        if(callerFailures.containsKey(name)) { failed=true;failure=callerFailures[name] }
+        try {
+            if(failed) throw new IllegalStateException(failure)
+            def rr=cfg.incoming.resolutionResult
+            def root=rr.rootComponent.get()
+            def edges=root.getDependenciesForVariant(rr.rootVariant.get())
+            failed=edges.any { it instanceof UnresolvedDependencyResult }
+            graph=edges.findAll { it instanceof ResolvedDependencyResult && !it.constraint }.collect { it.selected.id.displayName }.sort()
+        } catch(Exception error) {
+            failed=true; failure='resolution_failed'
+            def current=error
+            for(int i=0;current!=null && i<20;i++,current=current.cause) {
+                if(current.message?.contains('sentinel')) failure='action-sentinel'
+            }
+        }
+        mark('inspect:'+name)
+        def live=mode!='plain' && !failed ? cfg.dependencies.toList() : []
+        def records=mode=='registered' ? additions.findAll {it.configuration==name}.collect { r ->
+            [id:r.id,source:r.source,kind:r.kind,alias:r.alias,catalog:r.catalog,callbacks:r.callbacks,incomplete:r.incomplete,
+             members:r.seen.collect { e -> e.snapshot + [matched:live.count {d -> (d.is(e.dependency) || d==e.dependency) && snapshot(d)==e.snapshot}==1] }]
+        } : []
+        mark('after:'+name)
+        [graph:graph,failed:failed,failure:failure,additions:records]
+    }
+    Map report() {
+        def scenarios=[:]
+        ['alias','nativeAlias','generatedConvertible','countedConvertible','bundle','generatedBundleConvertible','countedBundleConvertible','countedBundle','duplicateBundle','bundleAction','bundleFailure','override','rich','empty'].each { scenarios[it]=run(it) }
+        scenarios.unused=[failed:false,failure:null,graph:[],additions:additions.findAll {it.configuration=='unused'}.collect {[id:it.id,source:it.source,callbacks:it.callbacks,members:[]]}]
+        def catalogs=project.extensions.getByType(org.gradle.api.artifacts.VersionCatalogsExtension)
+        def inventory=catalogs.catalogNames.sort().collect { name -> def c=catalogs.named(name); [name:name,libraries:c.libraryAliases,bundles:c.bundleAliases] }
+        [catalogs:inventory,trace:trace,producerCalls:producerCalls,conversionCalls:conversionCalls,scenarios:scenarios]
+    }
+}
+def baseline=[:], root
+def hash={ File file -> file.exists() ? MessageDigest.getInstance('SHA-256').digest(file.bytes).encodeHex().toString() : 'absent' }
+def paths=['settings.gradle','gradle/libs.versions.toml','catalog/company.versions.toml','catalog/generated.versions.toml']
+gradle.beforeSettings { settings ->
+    root=settings.settingsDir
+    paths.each { baseline[it]=hash(new File(root,it)) }
+}
+gradle.beforeProject { p ->
+    if(p.parent!=null) p.extensions.add('osvCatalogProbe',new OsvCatalogProbe(project:p,mode:p.name))
+}
+gradle.projectsEvaluated {
+    gradle.rootProject.tasks.register('osvProveCatalogRegistration') {
+        doLast {
+            def reports=[:]
+            gradle.rootProject.subprojects.sort {it.name}.each { p -> reports[p.name]=p.extensions.getByName('osvCatalogProbe').report() }
+            def finalHashes=paths.collectEntries {[(it):hash(new File(root,it))]}
+            def allowed=paths.every { baseline[it]==finalHashes[it] }
+            if(allowed) new File(root,'catalog-published.json').text='verified\n'
+            def report=[gradleVersion:gradle.gradleVersion,projects:reports,inputs:[publicationAllowed:allowed,baseline:baseline,final:finalHashes,changed:paths.findAll {baseline[it]!=finalHashes[it]}]]
+            new File(root,'catalog-proof.json').text=JsonOutput.prettyPrint(JsonOutput.toJson(report))+'\n'
+        }
+    }
+}

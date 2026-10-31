@@ -727,3 +727,8 @@ env OSV_MCP_TEST_GRADLE=/path/to/gradle/bin/gradle JAVA_HOME=/path/to/jdk GRADLE
 2026-10-31、revision 7bea3a6でGroovy／Gradle 8.11.1とKotlin／Gradle 9.2.1を実行。Provider由来の既知脆弱版でscan_project／scan_java_project／suggest_fixを、consumer信頼有効・無効・providerPolicyなしの3条件で検証し、18呼出し成功。acceptedだけが完全なdeclared_inとProvider固有の信頼限界を表示し、disabled／missing_assertionでは宣言元を全省略した。安定性表明なしでは契約変更後に同一projectを再exportし、stale hashでの省略と区別した。
 
 全条件でcoverage・relation・introduced_by・検出ID・候補版を維持。全候補がcandidate_check=cleanで、独立OSV再照会24件はHTTP 200・脆弱性0件。元入力のhash不変とMCP中のGradle非起動も確認。詳細はGRADLE_LIVE_VALIDATION.mdのC1b節、機械可読結果はvalidation/gradle-c1b-live-2026-10-31.json、再現はsrc/test/manual/gradleC1bLive.mjs。catalog／bundle、ProviderConvertible、configuration cache、task output、並行実行、convention plugin等のgateを完了した証拠には含めない。
+
+
+## 14. version catalog alias／bundle・ProviderConvertibleの設計・公開API実証
+
+詳細は[GRADLE_CATALOG_DECLARATIONS.md](GRADLE_CATALOG_DECLARATIONS.md)。元の型付きProvider／ProviderConvertibleを通常APIへ渡し、member Actionで使用scriptを登録する方式を検討した。libraryの再実現世代とbundle memberを別モデルにし、catalog入力の完全性には公開model一覧以外の明示inventory・作者表明・追加信頼契約が必要とする。設定上書きでversion.refの編集先が一意でなくなる対照と、mapによるbundle型喪失の陰性を含む。本番catalog採用を今回有効化したものではない。
