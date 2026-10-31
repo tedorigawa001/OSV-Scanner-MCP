@@ -1,4 +1,4 @@
-import { catalogEntriesMatch, loadCatalogModels, type CatalogModels } from "./gradleCatalogs.js";
+import { catalogEntriesMatch, loadCatalogModels, UnsupportedCatalogModel, type CatalogModels } from "./gradleCatalogs.js";
 import { sanitizeExternalText } from "./externalText.js";
 import { createHash } from "node:crypto";
 import path from "node:path";
@@ -31,7 +31,7 @@ export class GradleGraphCache {
   private readonly inputBytes = new Map<string, Buffer>();
   private readonly contracts = new Map<string, ReturnType<typeof parseDeclarationContract> | null>();
   private readonly catalogRequirements = new Map<string, boolean>();
-  private readonly catalogModels = new Map<string, CatalogModels | null>();
+  private readonly catalogModels = new Map<string, CatalogModels | UnsupportedCatalogModel | null>();
   private readonly catalogInputBudget = createGradleBudget();
   private remaining = 64 * 1024 * 1024;
   private lockRemaining = 64 * 1024 * 1024;
@@ -179,17 +179,24 @@ export class GradleGraphCache {
         const contract = this.capturedContract(contractPath);
         if (!contract || (!schemaOneCatalog && contexts.some((c: GradleContext) => !("catalogInputs" in c) || !catalogEntriesMatch(c.catalogInputs.entries, contract, this.catalogInputBudget)))) throw new Error("catalog_manifest_mismatch");
         if (this.catalogModels.has(contractPath) && this.catalogModels.get(contractPath) === null) throw new Error("catalog_graph_inputs_unverifiable");
-        models = this.catalogModels.get(contractPath) ?? undefined;
-        if (!models) {
+        let loaded = this.catalogModels.get(contractPath);
+        if (!loaded) {
           const captured = new Map(candidate.graph.inputs.files.flatMap(i => {
             const b = this.inputBytes.get(path.resolve(candidate.root, i.path)); return b ? [[i.path, b] as const] : [];
           }));
-          try {
-            models = loadCatalogModels(contract, candidate.graph, captured, this.catalogInputBudget);
-            this.catalogModels.set(contractPath, models);
-          } catch (error) { this.catalogModels.set(contractPath, null); throw error; }
+          try { loaded = loadCatalogModels(contract, candidate.graph, captured, this.catalogInputBudget); }
+          catch (error) {
+            if (!(error instanceof UnsupportedCatalogModel)) { this.catalogModels.set(contractPath, null); throw error; }
+            loaded = error;
+          }
+          this.catalogModels.set(contractPath, loaded);
         }
-        metadata.declaration_provenance?.limitations.push("catalog_inputs_author_attested", "catalog_input_transient_changes_not_detectable");
+        // Verified inputs whose catalog shape is not modelled only lose declaration sources (no models → declarations incomplete).
+        if (loaded instanceof UnsupportedCatalogModel) metadata.reasons.push("unsupported_catalog_model");
+        else {
+          models = loaded;
+          metadata.declaration_provenance?.limitations.push("catalog_inputs_author_attested", "catalog_input_transient_changes_not_detectable");
+        }
       } catch {
         metadata.reasons.push("catalog_graph_inputs_unverifiable"); return result;
       }

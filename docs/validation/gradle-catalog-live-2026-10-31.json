@@ -18822,5 +18822,19 @@
     "independent_candidate_queries": 32,
     "independent_queries_http_200_and_no_vulnerabilities": true,
     "scenario_comparison": "GAVs, vulnerability IDs, relations, introduced_by and candidate versions identical within each profile; declaration adoption and hints differ."
+  },
+  "post_review_revision": {
+    "change": "Verified catalog inputs whose content the static reader does not model (bundle over 128 members, version or bundle member defined outside the TOML, bundleMembers disagreeing with the TOML, catalog work budget) now keep graph relations and introduced_by and omit only declared_in with reason unsupported_catalog_model. TOML that does not parse, stale or uncaptured inputs and inventory mismatches still withhold graph metadata, including when an earlier catalog is unsupported.",
+    "sources_sha256": {
+      "src/utils/gradleCatalogs.ts": "42b5dc541e9e62cefabb94b945c79f875091f1427cdbc242d3fa419608c0c30c",
+      "src/utils/gradleGraphCache.ts": "73663876a4ada94d93091e672d8a53631de147e0021f4c80fc1e6441bfd4d20e",
+      "src/index.ts": "25c404109c0cd616c1f0718b995561f68018efe6d0f0300773ae63647b64da11",
+      "src/test/utils/gradleDeclarations.test.ts": "8966d598032d6e250ba854195add564f70034a90f89018af9a2ad3260459fe6b"
+    },
+    "live_rerun": {
+      "profiles": 2,
+      "toolCallsPassed": 24,
+      "note": "Supported catalogs only; all harness assertions passed after the revision"
+    }
   }
 }

@@ -150,6 +150,7 @@ npm run build
 | `OSV_MCP_NO_CANDIDATE_CHECK` | If `1` or `true`, `suggest_fix` does not query OSV about recommended versions (`candidate_check` is `disabled`, and recommended versions are not checked for known vulnerabilities that do not affect the current version) |
 | `OSV_MCP_NO_REMOTE_RESOLUTION` | If `1` or `true`, transitive dependencies of `pom.xml` and `requirements.txt` are not resolved through deps.dev. **This stops only the requests to deps.dev; package names and versions are still sent to `api.osv.dev` for the vulnerability lookup.** Vulnerabilities in transitive dependencies are then not detected, and responses say so in `dependency_resolution.warning`. See [Network destinations and privacy](#network-destinations-and-privacy) |
 | `OSV_MCP_GRADLE_DECLARATION_TRUST` | Set to `registered-helper-v1` to accept author-attested Gradle C1a declaration maps. Unset by default. Read once at server startup. Any other value does not stop the server: it prints a warning to stderr, leaves declaration sources disabled, and adds `declaration_trust_config_invalid` to the Gradle metadata reasons. See [Gradle declaration sources](#gradle-declaration-sources-c1a) |
+| `OSV_MCP_GRADLE_CATALOG_TRUST` | Set to `local-catalog-inputs-v1`, together with `OSV_MCP_GRADLE_DECLARATION_TRUST`, to accept declaration sources from contract-v2 version catalog aliases/bundles. Unset by default. Read once at server startup. Any other value prints a warning to stderr, leaves catalog declaration sources disabled, and adds `catalog_trust_config_invalid` to the Gradle metadata reasons. See [Gradle version catalogs](#gradle-version-catalogs-and-providerconvertible) |
 | `OSV_MCP_HISTORY` | If `1` or `true`, records each scan in the local scan history (disabled by default). See [`scan_history`](#scan_history) |
 | `OSV_MCP_HISTORY_DIR` | Absolute path of the history directory (default `$XDG_STATE_HOME/osv-scanner-mcp/history`, or `~/.local/state/osv-scanner-mcp/history`) |
 | `OSV_MCP_HISTORY_MAX_ENTRIES` | Number of runs kept (default `500`, maximum `5000`). Older runs are deleted, and the total size is also capped at 100 MiB |
@@ -585,8 +586,12 @@ inputs too. Include custom `.versions.toml`, the actual settings script and ever
 construction/override input. Use `overridePolicy: "registered-local"` only for captured
 local version overrides; module and bundle-membership overrides are outside this initial
 implementation. Remote and programmatic catalogs are reported as unverifiable. Unknown
-catalog inventories, malformed/mismatched TOML, missing graph-input references and stale
+catalog inventories, TOML that does not parse, missing graph-input references and stale
 inputs withhold graph metadata; vulnerability scanning of the lock still proceeds.
+Verified inputs whose catalog the static reader does not model (for example a bundle
+over 128 members, a version or bundle member defined outside the TOML, or a
+`bundleMembers` map that disagrees with the TOML) keep relations and `introduced_by`;
+only `declared_in` is omitted, with reason `unsupported_catalog_model`.
 
 Inputs retain the existing 4 MiB/file and 64 MiB/scan limits. Registration hash verification
 has a 64 MiB read budget; exhaustion leaves declaration metadata incomplete while normal

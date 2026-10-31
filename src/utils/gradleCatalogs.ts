@@ -17,51 +17,66 @@ function aliases<T>(entries: Record<string, T>, budget: GradleBudget): Map<strin
   }
   return result;
 }
+/**
+ * The captured inputs are verified, but their content is a catalog shape or size this reader does not model.
+ * Only declaration sources depend on the model, so callers keep the verified graph relations.
+ */
+export class UnsupportedCatalogModel extends Error {
+  constructor(readonly reason: string) { super(reason); }
+}
 /** Inputs are already safely captured and hash-checked by the shared scan cache. */
 export function loadCatalogModels(contract: DeclarationContract, graph: GradleGraph, bytes: Map<string, Buffer>, budget: GradleBudget): CatalogModels {
   const models: CatalogModels = new Map();
   if (contract.contractVersion !== 2) throw new Error("catalog_contract_missing");
   const inputs = new Map(graph.inputs.files.map(f => [f.path, f]));
+  let unsupported: UnsupportedCatalogModel | undefined;
   for (const cat of contract.catalogs) {
     tick(budget);
     if (cat.kind !== "local-toml" || cat.tomlPaths.length !== 1 ||
       !cat.inputPaths.some(p => (p === "settings.gradle" || p === "settings.gradle.kts") && bytes.has(p)) ||
       cat.inputPaths.some(p => { tick(budget); return !inputs.has(p) || ("sha256" in inputs.get(p)! && !bytes.has(p)); })) throw new Error("catalog_graph_inputs_unverifiable");
     const raw = bytes.get(cat.tomlPaths[0]!); if (!raw) throw new Error("catalog_graph_inputs_unverifiable");
+    // TOML that does not parse cannot be what Gradle built the exported graph from, so it stays an input failure.
     const toml = parseToml(raw.toString("utf8"));
-    if (!object(toml.libraries ?? {}) || !object(toml.bundles ?? {}) || !object(toml.versions ?? {})) throw new Error("invalid_catalog_model");
-    const versions = aliases(toml.versions as Record<string, unknown> ?? {}, budget);
-    const libraries = new Map<string, Library>();
-    for (const [name, value] of aliases(toml.libraries as Record<string, unknown> ?? {}, budget)) {
-      let module: string, version: unknown;
-      if (typeof value === "string") {
-        const parts = value.split(":"); if (parts.length !== 3) throw new Error("invalid_catalog_library");
-        module = parts.slice(0, 2).join(":"); version = parts[2];
-      } else if (object(value)) {
-        module = typeof value.module === "string" ? value.module : typeof value.group === "string" && typeof value.name === "string" ? `${value.group}:${value.name}` : "";
-        version = value.version;
-      } else throw new Error("invalid_catalog_library");
-      if (!/^[^:\s]+:[^:\s]+$/.test(module) || module.length > 2049) throw new Error("invalid_catalog_library");
-      if (object(version) && Object.keys(version).length === 1 && typeof version.ref === "string") {
-        if (!versions.has(normalizedCatalogAlias(version.ref))) throw new Error("invalid_catalog_version_reference");
-        version = versions.get(normalizedCatalogAlias(version.ref));
-      }
-      libraries.set(name, { module, simple: version === undefined || typeof version === "string" });
-    }
-    const bundles = new Map<string, string[]>();
-    for (const [name, value] of aliases(toml.bundles as Record<string, unknown> ?? {}, budget)) {
-      if (!Array.isArray(value) || value.length > 128 || value.some(v => typeof v !== "string" || !libraries.has(normalizedCatalogAlias(v)))) throw new Error("invalid_catalog_bundle");
-      for (const _ of value) tick(budget);
-      bundles.set(name, value.map(v => normalizedCatalogAlias(v as string)));
-    }
-    const expected = aliases(cat.bundleMembers, budget);
-    if (expected.size !== bundles.size) throw new Error("catalog_bundle_manifest_mismatch");
-    for (const [name, refs] of expected) {
-      if (JSON.stringify(refs.map(normalizedCatalogAlias)) !== JSON.stringify(bundles.get(name))) throw new Error("catalog_bundle_manifest_mismatch");
-    }
-    models.set(cat.id, { libraries, bundles });
+    try { models.set(cat.id, catalogModel(cat, toml, budget)); }
+    // Keep checking the remaining catalogs: their unverified inputs must still reject the graph.
+    catch (error) { unsupported ??= new UnsupportedCatalogModel(error instanceof Error ? error.message : "invalid_catalog_model"); }
   }
+  if (unsupported) throw unsupported;
   return models;
+}
+function catalogModel(cat: Extract<DeclarationContract, { contractVersion: 2 }>["catalogs"][number], toml: Record<string, unknown>, budget: GradleBudget): CatalogModel {
+  if (!object(toml.libraries ?? {}) || !object(toml.bundles ?? {}) || !object(toml.versions ?? {})) throw new Error("invalid_catalog_model");
+  const versions = aliases(toml.versions as Record<string, unknown> ?? {}, budget);
+  const libraries = new Map<string, Library>();
+  for (const [name, value] of aliases(toml.libraries as Record<string, unknown> ?? {}, budget)) {
+    let module: string, version: unknown;
+    if (typeof value === "string") {
+      const parts = value.split(":"); if (parts.length !== 3) throw new Error("invalid_catalog_library");
+      module = parts.slice(0, 2).join(":"); version = parts[2];
+    } else if (object(value)) {
+      module = typeof value.module === "string" ? value.module : typeof value.group === "string" && typeof value.name === "string" ? `${value.group}:${value.name}` : "";
+      version = value.version;
+    } else throw new Error("invalid_catalog_library");
+    if (!/^[^:\s]+:[^:\s]+$/.test(module) || module.length > 2049) throw new Error("invalid_catalog_library");
+    if (object(version) && Object.keys(version).length === 1 && typeof version.ref === "string") {
+      if (!versions.has(normalizedCatalogAlias(version.ref))) throw new Error("invalid_catalog_version_reference");
+      version = versions.get(normalizedCatalogAlias(version.ref));
+    }
+    libraries.set(name, { module, simple: version === undefined || typeof version === "string" });
+  }
+  const bundles = new Map<string, string[]>();
+  for (const [name, value] of aliases(toml.bundles as Record<string, unknown> ?? {}, budget)) {
+    if (!Array.isArray(value) || value.length > 128 || value.some(v => typeof v !== "string" || !libraries.has(normalizedCatalogAlias(v)))) throw new Error("invalid_catalog_bundle");
+    for (const _ of value) tick(budget);
+    bundles.set(name, value.map(v => normalizedCatalogAlias(v as string)));
+  }
+  const expected = aliases(cat.bundleMembers, budget);
+  if (expected.size !== bundles.size) throw new Error("catalog_bundle_manifest_mismatch");
+  for (const [name, refs] of expected) {
+    if (JSON.stringify(refs.map(normalizedCatalogAlias)) !== JSON.stringify(bundles.get(name))) throw new Error("catalog_bundle_manifest_mismatch");
+  }
+  return { libraries, bundles };
 }
 
 export function catalogEntriesMatch(entries: { id: string; kind: string; graphInputPaths: string[] }[], contract: DeclarationContract, budget: GradleBudget): boolean {

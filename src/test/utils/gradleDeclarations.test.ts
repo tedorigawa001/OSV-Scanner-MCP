@@ -235,7 +235,7 @@ it.each(["accepted", "disabled", "invalid-policy", "declarations-disabled", "bad
   }
 });
 
-it.each(["toml-stale", "generated-input", "manifest-path", "duplicate-id", "unknown-reference", "missing-input", "bundle-manifest", "remote", "malformed-toml", "duplicate-key"])("rejects catalog input evidence before graph adoption (%s)", async kind => {
+it.each(["toml-stale", "generated-input", "manifest-path", "duplicate-id", "unknown-reference", "missing-input", "remote", "malformed-toml", "duplicate-key", "unsupported-plus-unverified"])("rejects catalog input evidence before graph adoption (%s)", async kind => {
   const data = await catalogFixture(), d = data.graph.contexts[0]!.declarations;
   const author = JSON.parse(data.contract);
   if (kind === "toml-stale") await writeFile(path.join(data.dir, "gradle/libs.versions.toml"), data.toml + "\n# changed");
@@ -244,7 +244,14 @@ it.each(["toml-stale", "generated-input", "manifest-path", "duplicate-id", "unkn
   if (kind === "duplicate-id") author.catalogs.push(structuredClone(author.catalogs[0]));
   if (kind === "unknown-reference") author.scopes[0].catalogIds = ["unknown"];
   if (kind === "missing-input") data.graph.inputs.files = data.graph.inputs.files.filter(f => f.path !== "gradle/libs.versions.toml");
-  if (kind === "bundle-manifest") author.catalogs[0].bundleMembers.pair = ["parent"];
+  if (kind === "unsupported-plus-unverified") {
+    // An unsupported first catalog must not skip the input check of the next one.
+    author.catalogs[0].bundleMembers.pair = ["parent"];
+    author.catalogs.push({ ...structuredClone(author.catalogs[0]), id: "tools", name: "tools", tomlPaths: ["catalog/tools.versions.toml"],
+      inputPaths: ["settings.gradle", "catalog/tools.versions.toml"], bundleMembers: {} });
+    for (const c of data.graph.contexts) c.catalogInputs.entries.push({ id: "tools", kind: "local-toml", state: "verifiable",
+      graphInputPaths: ["settings.gradle", "catalog/tools.versions.toml"], reason: null });
+  }
   if (kind === "remote") author.catalogs[0].kind = "remote";
   if (kind === "malformed-toml") {
     const file = "[broken"; await writeFile(path.join(data.dir, "gradle/libs.versions.toml"), file);
@@ -261,6 +268,35 @@ it.each(["toml-stale", "generated-input", "manifest-path", "duplicate-id", "unkn
 });
 
 
+it.each(["oversized-bundle", "bundle-manifest", "missing-version-reference", "unknown-bundle-member"])("keeps verified relations when the catalog model is unsupported (%s)", async kind => {
+  const data = await catalogFixture();
+  let toml = data.toml;
+  const author = JSON.parse(data.contract);
+  if (kind === "oversized-bundle") {
+    // Gradle accepts bundles beyond the 128 members this reader models.
+    const names = Array.from({ length: 129 }, (_, i) => `m${i}`);
+    toml = toml.replace("[bundles]", `${names.map(n => `${n} = "g:${n}:1"`).join("\n")}\n[bundles]`) + `big = [${names.map(n => `"${n}"`).join(",")}]\n`;
+  }
+  if (kind === "bundle-manifest") author.catalogs[0].bundleMembers.pair = ["parent"];
+  if (kind === "missing-version-reference") toml = toml.replace('same = "g:a:1"', 'same = { module = "g:a", version.ref = "settings-only" }');
+  if (kind === "unknown-bundle-member") toml = toml.replace('pair = ["parent", "same"]', 'pair = ["parent", "same", "settings-only"]');
+  await writeFile(path.join(data.dir, "gradle/libs.versions.toml"), toml);
+  data.graph.inputs.files.find(f => f.path === "gradle/libs.versions.toml")!.sha256 = sha256(toml);
+  data.contract = JSON.stringify(author);
+  data.graph.inputs.files.find(f => f.path === "osv-mcp-gradle-declarations.json")!.sha256 = sha256(data.contract);
+  for (const c of data.graph.contexts) c.declarations.trust.contractSha256 = sha256(data.contract);
+  await saveCatalog(data);
+  const result = await new GradleGraphCache(data.dir, undefined, "registered-helper-v1", undefined, "local-catalog-inputs-v1").capture(path.join(data.dir, "gradle.lockfile"), Buffer.from(lock));
+  expect(result.metadata.relations_complete, JSON.stringify(result.metadata)).toBe(true);
+  expect(result.lookup!("g:a", "1").relation).toBe("direct");
+  expect(result.coverageReasons).toEqual([]);
+  expect(result.metadata.declarations_complete).toBe(false);
+  expect(result.lookup!("g:a", "1").declaredIn).toBeUndefined();
+  expect(result.metadata.reasons).toContain("unsupported_catalog_model");
+  expect(result.metadata.reasons).not.toContain("catalog_graph_inputs_unverifiable");
+  expect(result.metadata.declaration_provenance!.limitations).not.toContain("catalog_inputs_author_attested");
+});
+
 it("snapshots the catalog trust policy once and disables unknown settings", () => {
   expect(parseCatalogTrust(undefined)).toEqual({ trust: undefined, invalid: false });
   expect(parseCatalogTrust("local-catalog-inputs-v1")).toEqual({ trust: "local-catalog-inputs-v1", invalid: false });
@@ -273,22 +309,25 @@ it("snapshots the catalog trust policy once and disables unknown settings", () =
 });
 
 
-it.each([false, true])("verifies captured catalog inputs even in graph schema v1 (bad manifest=%s)", async bad => {
+it.each(["valid", "bundle-manifest", "stale-toml"] as const)("verifies captured catalog inputs even in graph schema v1 (%s)", async kind => {
   const data = await catalogFixture();
   const raw = JSON.parse(JSON.stringify(data.graph)); raw.schemaVersion = 1;
   for (const context of raw.contexts) {
     delete context.declarations; delete context.catalogInputs;
     for (const edge of context.edges) { delete edge.id; delete edge.resolutionKey; }
   }
-  if (bad) {
+  if (kind === "bundle-manifest") {
     const author = JSON.parse(data.contract); author.catalogs[0].bundleMembers.pair = ["same"];
     data.contract = JSON.stringify(author);
     raw.inputs.files.find((f: { path: string }) => f.path === "osv-mcp-gradle-declarations.json").sha256 = sha256(data.contract);
   }
+  if (kind === "stale-toml") await writeFile(path.join(data.dir, "gradle/libs.versions.toml"), data.toml + "\n# changed");
   await writeFile(path.join(data.dir, "osv-mcp-gradle-declarations.json"), data.contract);
   await writeFile(path.join(data.dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify(raw));
   const captured = await new GradleGraphCache(data.dir).capture(path.join(data.dir, "gradle.lockfile"), Buffer.from(lock));
-  expect(captured.metadata.relations_complete).toBe(!bad);
+  // A manifest that disagrees with the verified TOML only affects the declaration model; stale input rejects the graph.
+  expect(captured.metadata.relations_complete).toBe(kind !== "stale-toml");
+  if (kind === "bundle-manifest") expect(captured.metadata.reasons).toContain("unsupported_catalog_model");
   expect(captured.lookup!("g:a", "1").declaredIn).toBeUndefined();
   expect(captured.coverageReasons).toEqual([]);
 });
