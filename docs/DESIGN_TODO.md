@@ -1476,6 +1476,7 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - 信頼契約レビュー(2026-10-31): `OSV_MCP_GRADLE_DECLARATION_TRUST`はサーバー起動時に一度だけ読み固定(scanごとに読まない)。未知値は起動を止めずstderr警告・disabled扱い・`declaration_trust_config_invalid`(宣言元は採用しない側)。C23を更新。公開API実証にC1aが依存する`ComponentSelector.getCapabilitySelectors()`の存在確認を追加(8.11.1／9.2.1で存在、shape用のgetArtifacts／getTargetConfiguration／isEndorsingStrictVersions／isTransitive／getExcludeRulesもModuleDependencyに存在)。
 - C1a実装レビュー修正(2026-10-31): 実装は未知値でprocess.exit(1)し(誤記で全ツールが使えなくなる)、設定をscanごとのcache生成時に読んでいたため、合意済みの6.6.2/C23と矛盾していた。起動時に一度だけ読んで固定し、未知値は起動継続・stderr警告・disabled・`declaration_trust_config_invalid`(全Gradle lock)とする。`invalid_configuration`エラー種別を削除。ビルドしたサーバーの起動テストと3ツールの回帰テスト、起動後の環境変更を無視するテストを追加。README: C1aはmodule宣言のみで、project依存を含むscopeは宣言元を省略することを明記。
 - C1a実接続記録のレビュー修正(2026-10-31): 記録の版・4ソースとハーネスのhashがコミットと一致することを確認。公開文書の実行例から個人環境の`bdo`を除き(GRADLE_LIVE_VALIDATION・設計書の計3箇所)、端末固有の一時pathを削除。コミットした証跡JSONはハーネス出力の要約で形式が異なることを明記。
+- C1b実接続記録のレビュー修正(2026-10-31): 証跡の版(7bea3a6)・4ソース・ハーネスのhashが一致。e7ba01cで除いた個人環境の`bdo`が直後の文書コミットで再混入した(計3箇所)ため戻し、README・docs配下のMarkdownでコマンド行が`bdo`で始まると失敗する回帰テストを追加。
 - Stage C1設計レビュー(2回目、2026-10-31): 宣言元処理はrelationの残予算ではなく専用予算とする(無関係なsubproject追加でdeclared_inが消える・lockfile単位captureの二段階化を避ける。6.6.8)。C22の前提として、v1 readerが自schemaの新しい整数versionを`unsupported_schema_version`として破損文書と区別するよう先行実装(他schema・0・非整数・不正v1は従来どおりinvalid、重複key/深さ検査が先)。3ツールでlockスキャン継続・coverage維持・relation unknownを回帰テスト。
 
 ## バックログ(2026-10-07)

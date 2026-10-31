@@ -275,8 +275,8 @@ suggest_fixの更新案内はaccepted時に全確定sourceを列挙し、disable
 各条件の3ツール実行前後で、両source、settings、lock、契約、companion、Wrapperのhashが一致した。fake java／gradle／Wrapperの実行markerは全条件で存在せず、MCP中にGradleを起動していない。条件間の契約変更・再exportはハーネスの明示した準備操作に限る。
 
 ```sh
-bdo npm run build
-bdo proxy env \
+npm run build
+env \
   JAVA_HOME=/trusted/jdk-21 \
   GRADLE_USER_HOME=/trusted/gradle-cache \
   OSV_MCP_LIVE_SCANNER=/trusted/osv-scanner \

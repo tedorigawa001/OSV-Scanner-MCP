@@ -680,7 +680,7 @@ C1bの陽性化には既存作者表明に加え、登録Providerの値／由来
 再現コマンド（各Gradle実行ファイルとJDKを指定）:
 
 ```bash
-bdo proxy env OSV_MCP_TEST_GRADLE=/path/to/gradle/bin/gradle JAVA_HOME=/path/to/jdk GRADLE_USER_HOME=/path/to/cache OSV_MCP_GRADLE_PROVIDER_OUTPUT=/tmp/provider-proof npm test -- src/test/gradle/providerRegistration.integration.test.ts
+env OSV_MCP_TEST_GRADLE=/path/to/gradle/bin/gradle JAVA_HOME=/path/to/jdk GRADLE_USER_HOME=/path/to/cache OSV_MCP_GRADLE_PROVIDER_OUTPUT=/tmp/provider-proof npm test -- src/test/gradle/providerRegistration.integration.test.ts
 ```
 
 `OSV_MCP_GRADLE_PROVIDER_OUTPUT`を指定すると版・DSL別JSONを保存する。結果とソースhashは`docs/validation/gradle-provider-2026-10-31.json`に保存する。本番adapter＋静的取込、実接続テストはこの設計を実装した後の段階とする。
