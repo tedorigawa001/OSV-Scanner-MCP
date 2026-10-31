@@ -149,6 +149,7 @@ npm run build
 | `OSV_MCP_PREFER_DOWNLOAD` | If `1` or `true`, always use the checksum-verified downloaded binary instead of osv-scanner on `PATH` (protects against a fake binary planted on `PATH`; an explicit `OSV_SCANNER_PATH` still takes precedence) |
 | `OSV_MCP_NO_CANDIDATE_CHECK` | If `1` or `true`, `suggest_fix` does not query OSV about recommended versions (`candidate_check` is `disabled`, and recommended versions are not checked for known vulnerabilities that do not affect the current version) |
 | `OSV_MCP_NO_REMOTE_RESOLUTION` | If `1` or `true`, transitive dependencies of `pom.xml` and `requirements.txt` are not resolved through deps.dev. **This stops only the requests to deps.dev; package names and versions are still sent to `api.osv.dev` for the vulnerability lookup.** Vulnerabilities in transitive dependencies are then not detected, and responses say so in `dependency_resolution.warning`. See [Network destinations and privacy](#network-destinations-and-privacy) |
+| `OSV_MCP_GRADLE_DECLARATION_TRUST` | Set to `registered-helper-v1` to accept author-attested Gradle C1a declaration maps. Unset by default; other values are configuration errors. See [Gradle declaration sources](#gradle-declaration-sources-c1a) |
 | `OSV_MCP_HISTORY` | If `1` or `true`, records each scan in the local scan history (disabled by default). See [`scan_history`](#scan_history) |
 | `OSV_MCP_HISTORY_DIR` | Absolute path of the history directory (default `$XDG_STATE_HOME/osv-scanner-mcp/history`, or `~/.local/state/osv-scanner-mcp/history`) |
 | `OSV_MCP_HISTORY_MAX_ENTRIES` | Number of runs kept (default `500`, maximum `5000`). Older runs are deleted, and the total size is also capped at 100 MiB |
@@ -383,7 +384,63 @@ Relations follow selected component/variant edges, excluding constraints from de
 
 `coverage.dependency_metadata.gradle` reports the captured companion paths, configurations, relation/declaration completeness and diagnostic reasons. Missing, invalid, stale or over-budget metadata alone does not lower vulnerability coverage; metadata from a newer exporter schema version is reported as `unsupported_schema_version`, separately from invalid metadata. A context with verified identity and hashes can establish missing lock modules, unresolved requirements or unrepresented file dependencies, which do lower coverage. Known settings inputs are captured before settings evaluation, and all project build files before any project is evaluated. The exporter verifies these baselines before graph resolution and again before writing JSON; changes made during evaluation or by preceding tasks reject the export without overwriting an existing companion. Run a fresh Gradle invocation after updating declarations. A module that the root also reaches through a project dependency has no complete public-module origin list, so its `introduced_by` is omitted. Known input hashes are checked, including candidates that were absent at export time (creating one later marks the metadata stale), but cannot prove freshness across environment variables, external init scripts or remote plugin changes. JSON input is bounded to 16 MiB/file and 64 MiB/scan, with strict schema, duplicate-key, depth and reference checks; graph indexing and traversal each share a 2,000,000-operation scan budget.
 
-Stage B does **not** infer `declared_in` from the owning build file. Physical declaration source maps are Stage C work; `declarations_complete` remains false. Gradle update hints refer to dependency declarations, catalogs or constraints and trusted lock regeneration, rather than suggesting a POM edit. OSV candidate checks do not establish artifact availability, variant or Java compatibility.
+Stage B does **not** infer `declared_in` from the owning build file. Optional Stage C1a maps are available in this source checkout as described below. Gradle update hints use verified declaration paths when available and otherwise refer to applicable Gradle declarations or constraints. OSV candidate checks do not establish artifact availability, variant or Java compatibility.
+
+### Gradle declaration sources (C1a)
+
+C1a supports explicitly registered synchronous module declarations in Groovy and Kotlin builds. The build author asserts that **every contributing addition uses the helper** and dependencies are not mutated after its configure action. The consumer must also set `OSV_MCP_GRADLE_DECLARATION_TRUST=registered-helper-v1`. Without this setting, graph relations remain available but direct declaration lists are omitted.
+
+Create `osv-mcp-gradle-declarations.json` at the build root before Gradle starts. For example, a project whose lock contains only `runtimeClasspath` can use:
+
+```json
+{
+  "contractVersion": 1,
+  "trustModel": "registered-helper-v1",
+  "catalogPolicy": "none",
+  "sources": ["build.gradle"],
+  "scopes": [{
+    "id": "runtime", "projectPath": ":", "resolvableConfiguration": "runtimeClasspath",
+    "declarationConfigurations": ["implementation"],
+    "assertion": "all-contributing-additions-use-helper",
+    "mutationPolicy": "immutable-after-add"
+  }]
+}
+```
+
+Include every contributing configuration in each scope, every declaration source in `sources`, and scopes for all required locked configurations. Partial registration or export suppresses incomplete lists. Applied scripts retain their own paths; add them to `sources` and obtain their handles with `source(path, "applied-script")`.
+
+Groovy declaration:
+
+```groovy
+def osv = extensions.getByName('osvMcpDeclarations')
+osv.add('implementation', 'org.example:client:1.2.3', osv.source('build.gradle'))
+```
+
+Kotlin declaration (use `build.gradle.kts` in the contract):
+
+```kotlin
+import org.gradle.kotlin.dsl.withGroovyBuilder
+val osv = extensions.getByName("osvMcpDeclarations")
+val source = osv.withGroovyBuilder { "source"("build.gradle.kts") }
+osv.withGroovyBuilder { "add"("implementation", "org.example:client:1.2.3", source) }
+```
+
+Run both shipped init scripts explicitly in the trusted build environment, from the actual build root:
+
+```sh
+./gradlew -p . \
+  -I /trusted/path/register-declarations.init.gradle \
+  -I /trusted/path/export-dependency-graph.init.gradle \
+  -PosvMcpDeclarationContract=osv-mcp-gradle-declarations.json \
+  -PosvMcpConfigurations=runtimeClasspath osvMcpExportDependencies \
+  --no-configuration-cache
+```
+
+The adapter prepares source hashes before evaluation and rejects source/contract changes without overwriting an existing companion. With the adapter it exports schema v2; add `-PosvMcpSchemaVersion=1` for older readers. Scanning still only reads captured files and never executes Gradle.
+
+`coverage.dependency_metadata.gradle[].declaration_provenance` identifies this as **author-attested and structurally checked**. Unregistered equal additions can disappear from Gradle's collection, and mutations reverted before inspection can be invisible. These limitations are always reported when declarations are adopted; hashes and matching bindings do not independently prove the author's assertion. All sources for a package must be complete before `declared_in` is emitted. The provenance summary combines context states deterministically (`invalid` before `missing_assertion` before `accepted`; an unset consumer policy stays `disabled`). Its `contexts` entries show the status, assurance and contract paths for each locked configuration. An invalid unrelated context does not erase another package’s verified declarations; a package present in both accepted and incomplete contexts still has its entire list omitted.
+
+C1a requires the explicit `catalogPolicy: "none"` assertion. Provider/catalog/bundle, convention-plugin provenance, custom artifacts/classifiers, non-default attributes/capabilities, rich versions, exclusions and other unsupported shapes do not acquire a complete declaration map. They keep normal Gradle dependency behavior, while declaration metadata is incomplete. This is not the broader Stage C1b/buildscript/composite/Android implementation. Source/contract files are never sent to OSV or added to scanner inputs.
 
 ### `scan_java_project`
 
@@ -657,6 +714,7 @@ Returns JSON with a machine-readable `kind`, together with `isError: true`:
 | `binary_download_failed` | The binary download failed (including unsupported platforms) |
 | `binary_checksum_mismatch` | The downloaded binary's checksum does not match (possible tampering or corruption) |
 | `gradle_lockfile_missing` | A Gradle project without `gradle.lockfile` (`scan_java_project`; the message explains how to generate it) |
+| `invalid_configuration` | An unsupported Gradle declaration trust setting was supplied |
 | `path_outside_allowed_root` | The path is outside `OSV_MCP_ALLOWED_ROOT` (including when every manifest is excluded because its parent POM references a file outside the allowed root) |
 | `no_packages_found` | No packages to scan (for example a `pom.xml` without dependencies) |
 | `scan_failed` | OSV-Scanner exited abnormally (an excerpt of stderr is in `detail`) |
@@ -721,7 +779,8 @@ Design notes and open items are in [docs/DESIGN_TODO.md](docs/DESIGN_TODO.md) (i
 - [x] `scan_project` and `suggest_fix` for PHP (Composer `composer.lock`)
 - [x] `suggest_fix` for .NET (NuGet; source checkout)
 - [x] Gradle Stage A/B: pre-exported dependency graphs, direct/transitive relations, origins and coverage diagnostics (source checkout)
-- [ ] Gradle Stage C: physical declaration source maps, broader buildscript/composite/custom-lock/Android support
+- [x] Gradle Stage C1a: opt-in author-attested synchronous declaration maps and static v2 import (source checkout)
+- [ ] Gradle Stage C1b and broader buildscript/composite/custom-lock/Android support
 
 ## License
 

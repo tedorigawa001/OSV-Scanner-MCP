@@ -1,0 +1,933 @@
+{
+  "date": "2026-10-31",
+  "purpose": "C1a synchronous helper feasibility; not a production exporter/reader",
+  "java": "21.0.13+9",
+  "offline": true,
+  "repository": "fixture-local Maven POMs; no library artifacts requested",
+  "source_sha256": {
+    "src/test/fixtures/gradle-c1a-helper.init.gradle": "75a63243c325bbba5bb060c08d9ab7435a8d25ee6173cdd2eda0da701e415e1e",
+    "src/test/gradle/synchronousHelper.integration.test.ts": "4e29a878a2d1c278327f340ee479e82c81e4d8b8e26de2afb9bebe8e1f905067"
+  },
+  "runs": [
+    {
+      "gradle": "8.11.1",
+      "dsl": "groovy",
+      "regression_tests": 13,
+      "normal_addition_graph_matches": true,
+      "disabled_lists_suppressed": true,
+      "unrequested_provider_realized": false,
+      "configure_calls": 2,
+      "trust": "accepted",
+      "limitations": [
+        "unregistered_equal_additions_not_detectable",
+        "reverted_external_mutations_not_detectable"
+      ],
+      "scenarios": {
+        "duplicates": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 2,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle",
+            "helper/extra.gradle"
+          ],
+          "reasons": []
+        },
+        "diamond": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle"
+          ],
+          "reasons": []
+        },
+        "mutated": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:2",
+              "selected": "review:sample:2"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "ambiguous_declaration_binding",
+            "declaration_mutation_detected",
+            "unbound_declaration"
+          ]
+        },
+        "rogue": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 2,
+          "edges": [
+            {
+              "requested": "review:rogue:1",
+              "selected": "review:rogue:1"
+            },
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "ambiguous_declaration_binding",
+            "unregistered_declaration"
+          ]
+        },
+        "copied": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "declaration_identity_lost",
+            "unregistered_declaration"
+          ]
+        },
+        "scopeGap": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "scope_incomplete"
+          ]
+        },
+        "equalRogue": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle"
+          ],
+          "reasons": []
+        },
+        "reverted": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle"
+          ],
+          "reasons": []
+        },
+        "forced": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:2"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle"
+          ],
+          "reasons": []
+        },
+        "configured": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle"
+          ],
+          "reasons": []
+        },
+        "removed": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 0,
+          "edges": [],
+          "declared_in": [],
+          "reasons": [
+            "declaration_identity_lost",
+            "unbound_declaration"
+          ]
+        },
+        "nondefault": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "unsupported_declaration_shape"
+          ]
+        },
+        "noAssertion": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "declaration_assertion_missing",
+            "scope_incomplete"
+          ]
+        }
+      }
+    },
+    {
+      "gradle": "8.11.1",
+      "dsl": "kotlin",
+      "regression_tests": 13,
+      "normal_addition_graph_matches": true,
+      "disabled_lists_suppressed": true,
+      "unrequested_provider_realized": false,
+      "configure_calls": 2,
+      "trust": "accepted",
+      "limitations": [
+        "unregistered_equal_additions_not_detectable",
+        "reverted_external_mutations_not_detectable"
+      ],
+      "scenarios": {
+        "duplicates": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 2,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts",
+            "helper/extra.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "diamond": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "mutated": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:2",
+              "selected": "review:sample:2"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "ambiguous_declaration_binding",
+            "declaration_mutation_detected",
+            "unbound_declaration"
+          ]
+        },
+        "rogue": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 2,
+          "edges": [
+            {
+              "requested": "review:rogue:1",
+              "selected": "review:rogue:1"
+            },
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "ambiguous_declaration_binding",
+            "unregistered_declaration"
+          ]
+        },
+        "copied": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "declaration_identity_lost",
+            "unregistered_declaration"
+          ]
+        },
+        "scopeGap": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "scope_incomplete"
+          ]
+        },
+        "equalRogue": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "reverted": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "forced": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:2"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "configured": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "removed": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 0,
+          "edges": [],
+          "declared_in": [],
+          "reasons": [
+            "declaration_identity_lost",
+            "unbound_declaration"
+          ]
+        },
+        "nondefault": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "unsupported_declaration_shape"
+          ]
+        },
+        "noAssertion": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "declaration_assertion_missing",
+            "scope_incomplete"
+          ]
+        }
+      }
+    },
+    {
+      "gradle": "9.2.1",
+      "dsl": "groovy",
+      "regression_tests": 13,
+      "normal_addition_graph_matches": true,
+      "disabled_lists_suppressed": true,
+      "unrequested_provider_realized": false,
+      "configure_calls": 2,
+      "trust": "accepted",
+      "limitations": [
+        "unregistered_equal_additions_not_detectable",
+        "reverted_external_mutations_not_detectable"
+      ],
+      "scenarios": {
+        "duplicates": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 2,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle",
+            "helper/extra.gradle"
+          ],
+          "reasons": []
+        },
+        "diamond": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle"
+          ],
+          "reasons": []
+        },
+        "mutated": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:2",
+              "selected": "review:sample:2"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "ambiguous_declaration_binding",
+            "declaration_mutation_detected",
+            "unbound_declaration"
+          ]
+        },
+        "rogue": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 2,
+          "edges": [
+            {
+              "requested": "review:rogue:1",
+              "selected": "review:rogue:1"
+            },
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "ambiguous_declaration_binding",
+            "unregistered_declaration"
+          ]
+        },
+        "copied": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "declaration_identity_lost",
+            "unregistered_declaration"
+          ]
+        },
+        "scopeGap": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "scope_incomplete"
+          ]
+        },
+        "equalRogue": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle"
+          ],
+          "reasons": []
+        },
+        "reverted": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle"
+          ],
+          "reasons": []
+        },
+        "forced": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:2"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle"
+          ],
+          "reasons": []
+        },
+        "configured": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle"
+          ],
+          "reasons": []
+        },
+        "removed": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 0,
+          "edges": [],
+          "declared_in": [],
+          "reasons": [
+            "declaration_identity_lost",
+            "unbound_declaration"
+          ]
+        },
+        "nondefault": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "unsupported_declaration_shape"
+          ]
+        },
+        "noAssertion": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "declaration_assertion_missing",
+            "scope_incomplete"
+          ]
+        }
+      }
+    },
+    {
+      "gradle": "9.2.1",
+      "dsl": "kotlin",
+      "regression_tests": 13,
+      "normal_addition_graph_matches": true,
+      "disabled_lists_suppressed": true,
+      "unrequested_provider_realized": false,
+      "configure_calls": 2,
+      "trust": "accepted",
+      "limitations": [
+        "unregistered_equal_additions_not_detectable",
+        "reverted_external_mutations_not_detectable"
+      ],
+      "scenarios": {
+        "duplicates": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 2,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts",
+            "helper/extra.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "diamond": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "mutated": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:2",
+              "selected": "review:sample:2"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "ambiguous_declaration_binding",
+            "declaration_mutation_detected",
+            "unbound_declaration"
+          ]
+        },
+        "rogue": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 2,
+          "edges": [
+            {
+              "requested": "review:rogue:1",
+              "selected": "review:rogue:1"
+            },
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "ambiguous_declaration_binding",
+            "unregistered_declaration"
+          ]
+        },
+        "copied": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "declaration_identity_lost",
+            "unregistered_declaration"
+          ]
+        },
+        "scopeGap": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "scope_incomplete"
+          ]
+        },
+        "equalRogue": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "reverted": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "forced": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:2"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "configured": {
+          "complete": true,
+          "inventory_complete": true,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [
+            "helper/build.gradle.kts"
+          ],
+          "reasons": []
+        },
+        "removed": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 0,
+          "edges": [],
+          "declared_in": [],
+          "reasons": [
+            "declaration_identity_lost",
+            "unbound_declaration"
+          ]
+        },
+        "nondefault": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "unsupported_declaration_shape"
+          ]
+        },
+        "noAssertion": {
+          "complete": false,
+          "inventory_complete": false,
+          "attempts": 1,
+          "dependencies": 1,
+          "edges": [
+            {
+              "requested": "review:sample:1",
+              "selected": "review:sample:1"
+            }
+          ],
+          "declared_in": [],
+          "reasons": [
+            "declaration_assertion_missing",
+            "scope_incomplete"
+          ]
+        }
+      }
+    }
+  ]
+}

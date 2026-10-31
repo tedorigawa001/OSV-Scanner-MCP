@@ -1,0 +1,137 @@
+// Test-only C1a prototype. Not a production adapter, not included in npm files.
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import org.gradle.api.Action
+import org.gradle.api.Project
+import org.gradle.api.artifacts.ExternalModuleDependency
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.component.ModuleComponentSelector
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+
+class OsvC1aPrototype {
+    Project project
+    String mode
+    Map contract
+    Map sourceHashes
+    List<Map> records = []
+    int configureCalls = 0
+    static String digest(File f) { MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex().toString() }
+    static Map key(group, name, version, attributes, capabilities) {
+        if (!attributes.keySet().empty || !capabilities.empty || version.preferredVersion || version.strictVersion || !version.rejectedVersions.empty || version.branch != null) return [status:'unsupported']
+        [status:'supported', group:group, name:name, required:version.requiredVersion,
+         preferred:version.preferredVersion, strict:version.strictVersion,
+         rejected:version.rejectedVersions.toList().sort(), branch:version.branch]
+    }
+    static Map snapshot(dep) {
+        if (!(dep instanceof ExternalModuleDependency)) return [key:[status:'unsupported'], shape:[status:'unsupported']]
+        def k = key(dep.group, dep.name, dep.versionConstraint, dep.attributes, dep.capabilitySelectors)
+        def shape = dep.artifacts.empty && dep.targetConfiguration == null && !dep.endorsingStrictVersions && dep.transitive && dep.excludeRules.empty ?
+            [status:'supported', artifacts:[], targetConfiguration:null, endorseStrictVersions:false, transitive:true, excludes:[]] : [status:'unsupported']
+        [key:k, shape:shape]
+    }
+    Map add(String name, Object notation, String source, Action action = null) {
+        def id = 'd' + records.size()
+        def dep = project.dependencies.create(notation)
+        if (action != null) { configureCalls++; action.execute(dep) }
+        if (mode == 'plain') { project.dependencies.add(name, dep); return [id:id] }
+        def before = snapshot(dep)
+        def cfg = project.configurations.getByName(name)
+        boolean added = cfg.dependencies.add(dep)
+        def candidates = cfg.dependencies.findAll { candidate -> added ? candidate.is(dep) : candidate == dep }
+        def retained = candidates.size() == 1 && snapshot(candidates.first()) == before ? candidates.first() : null
+        records << [id:id, configuration:name, source:source, retained:retained, atAdd:before,
+            state:retained == null ? 'unsupported' : 'materialized']
+        [id:id]
+    }
+    void remove(Map handle) {
+        def record = records.find { it.id == handle.id }
+        if (record == null) throw new IllegalArgumentException('Unknown registration')
+        project.configurations.getByName(record.configuration).dependencies.remove(record.retained)
+        record.state = 'removed'
+    }
+    Map analyze(String name) {
+        def cfg = project.configurations.getByName(name)
+        def resolution = cfg.incoming.resolutionResult
+        def root = resolution.rootComponent.get()
+        def dependencies = root.getDependenciesForVariant(resolution.rootVariant.get())
+        def edges = dependencies.findAll { it instanceof ResolvedDependencyResult && !it.constraint }
+        def closure = [:], pending = [cfg]
+        for (int i=0; i<pending.size(); i++) {
+            def c = pending[i]
+            if (closure.containsKey(c.name)) continue
+            closure[c.name]=c; pending.addAll(c.extendsFrom)
+        }
+        def scope = contract.scopes.find { it.projectPath == project.path && it.resolvableConfiguration == name }
+        def reasons = []
+        if (scope == null) reasons << 'declaration_assertion_missing'
+        closure.values().each { c ->
+            if (!c.dependencies.empty && !(scope?.declarationConfigurations?.contains(c.name))) reasons << 'scope_incomplete'
+        }
+        def attempts = records.findAll { closure.containsKey(it.configuration) }
+        def live = cfg.allDependencies.toList()
+        if (mode != 'plain') {
+            live.each { dep -> if (!attempts.any { it.retained != null && it.retained.is(dep) && it.state == 'materialized' }) reasons << 'unregistered_declaration' }
+            attempts.each { r ->
+                if (r.state != 'materialized' || !live.any { it.is(r.retained) }) reasons << 'declaration_identity_lost'
+                if (r.retained != null && snapshot(r.retained) != r.atAdd) reasons << 'declaration_mutation_detected'
+                if (!sourceHashes.containsKey(r.source)) reasons << 'declaration_source_unprepared'
+                if (r.atAdd.key.status != 'supported' || r.atAdd.shape.status != 'supported') reasons << 'unsupported_declaration_shape'
+            }
+        }
+        if (dependencies.any { it instanceof UnresolvedDependencyResult }) reasons << 'unresolved_dependencies'
+        def origins = []
+        edges.each { edge ->
+            if (!(edge.requested instanceof ModuleComponentSelector) || !(edge.selected.id instanceof ModuleComponentIdentifier)) {
+                reasons << 'unsupported_resolution_key'; return
+            }
+            def selector = edge.requested
+            def k = key(selector.group, selector.module, selector.versionConstraint, selector.attributes, selector.capabilitySelectors)
+            if (edge.selected.id.group != selector.group || edge.selected.id.module != selector.module) reasons << 'unsupported_substitution_mapping'
+            def matching = attempts.findAll { it.atAdd.key == k && it.state == 'materialized' }
+            if (mode != 'plain' && (k.status != 'supported' || matching.empty)) reasons << 'ambiguous_declaration_binding'
+            origins.addAll(matching.collect { it.source })
+        }
+        attempts.each { r ->
+            if (!edges.any { edge -> edge.requested instanceof ModuleComponentSelector &&
+                key(edge.requested.group, edge.requested.module, edge.requested.versionConstraint, edge.requested.attributes, edge.requested.capabilitySelectors) == r.atAdd.key }) reasons << 'unbound_declaration'
+        }
+        boolean inventory = reasons.empty && mode != 'plain'
+        boolean complete = inventory && mode == 'helper'
+        [inventoryComplete:inventory, complete:complete, reasons:reasons.unique().sort(), declaredIn:complete ? origins.unique().sort() : [],
+         attempts:attempts.collect { [id:it.id, source:it.source, state:it.state] }, dependencies:live.size(),
+         edges:edges.collect { edge -> [requested:edge.requested.displayName, selected:edge.selected.id.displayName] }.sort { it.requested + it.selected }]
+    }
+    Map report() {
+        def names = contract.scopes.findAll { it.projectPath == project.path }.collect { it.resolvableConfiguration }
+        names = (names + ['noAssertion']).unique()
+        def scenarios = [:]
+        names.each { scenarios[it] = analyze(it) }
+        [scenarios:scenarios, providerRealized:project.findProperty('probeProviderRealized') ?: false, configureCalls:configureCalls,
+         trust:mode == 'helper' ? 'accepted' : 'disabled',
+         limitations:['unregistered_equal_additions_not_detectable','reverted_external_mutations_not_detectable']]
+    }
+}
+
+def directory = gradle.startParameter.projectDir ?: gradle.startParameter.currentDir
+def contractFile = new File(directory, 'osv-mcp-gradle-declarations.json')
+def contract = new JsonSlurper().parse(contractFile)
+def hashes = contract.sources.collectEntries { name -> [(name):OsvC1aPrototype.digest(new File(directory, name))] }
+def contractHash = OsvC1aPrototype.digest(contractFile)
+gradle.beforeProject { p ->
+    if (p.parent == null) return
+    p.extensions.add('osvMcpC1a', new OsvC1aPrototype(project:p, mode:p.name, contract:contract, sourceHashes:hashes))
+}
+gradle.projectsEvaluated {
+    gradle.rootProject.tasks.register('osvMcpProveC1a') {
+        doLast {
+            def results = [:]
+            gradle.rootProject.subprojects.sort { it.name }.each { p -> results[p.name] = p.extensions.getByName('osvMcpC1a').report() }
+            if (OsvC1aPrototype.digest(contractFile) != contractHash || hashes.any { name, hash -> OsvC1aPrototype.digest(new File(directory, name)) != hash }) {
+                throw new GradleException('C1a input changed')
+            }
+            new File(directory, 'c1a-probe.json').text = JsonOutput.prettyPrint(JsonOutput.toJson([gradleVersion:gradle.gradleVersion, projects:results])) + '\n'
+        }
+    }
+}

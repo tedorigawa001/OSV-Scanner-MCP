@@ -1,6 +1,6 @@
 # Gradleの依存関係・導入元・宣言元の設計
 
-設計日: 2026-10-31。Stage A/Bのexporter・静的取込・応答拡張を実装。Stage Cの物理宣言元source-map等は未実装。宣言元登録adapterの入出力・完全性・回帰条件は6.6節とStage C1テスト計画へ具体化済み。
+設計日: 2026-10-31。Stage A/Bのexporter・静的取込・応答拡張を実装。Stage C1aの同期登録adapterとv2静的取込を実装（未リリース）。C1b等は未実装。宣言元登録adapterの入出力・完全性・回帰条件は6.6節とStage C1テスト計画へ具体化済み。
 
 実装メモ: exporterは`gradle/export-dependency-graph.init.gradle`としてnpm配布にも同梱する。`-PosvMcpConfigurations=*`は全resolvable configuration、既定は存在する4つのclasspathを選択する。metadata状態は`coverage.dependency_metadata.gradle`へ出し、relationの完全性と物理宣言元の完全性を区別する。Stage Bの`declarationEvidence`は空配列のみ対応し、未知のsource-map形式を検証済みとは扱わない。Gradle 8.11.1／9.2.1とGroovy／Kotlin DSLで実export、既知の脆弱版で3ツールからのOSV実接続を確認。詳細は[実接続検証記録](GRADLE_LIVE_VALIDATION.md)を参照。
 
@@ -195,7 +195,7 @@ variantごとの依存集合は異なり得るため、`getDependencies()`の単
 
 ### 6.6 Stage C: 宣言元adapterの確定契約（実装予定）
 
-以下は実装前の契約であり、現行v1 exporterが提供する機能ではない。Stage C1は通常project configurationの明示登録に限定する。buildscript、Android固有モデル、外部included buildの探索拡張はC2以降とし、対応前は従来のunknown／省略を維持する。
+以下はsource checkoutのC1a実装契約（未リリース）。v1は従来どおり物理宣言元を提供せず、明示adapterでv2を生成する。Stage C1は通常project configurationの明示登録に限定する。buildscript、Android固有モデル、外部included buildの探索拡張はC2以降とし、対応前は従来のunknown／省略を維持する。
 
 #### 6.6.1 宣言元と信頼の意味
 
@@ -205,7 +205,7 @@ variantごとの依存集合は異なり得るため、`getDependencies()`の単
 
 #### 6.6.2 改訂した信頼契約と登録API（registered-helper-v1）
 
-公開API実証を受け、C1は**全ての寄与する追加試行を明示helperへ通すというビルド作者の表明を、利用者が明示的に採用する方式**に改訂する。宣言集合の列挙やreaderの再検証だけで、未登録の同値追加がないことを証明できるとは扱わない。以降の契約は未実装。旧adapter version 1／三者の全fingerprint一致案を置き換え、登録APIはversion 2、信頼モデル名は`registered-helper-v1`とする。未公開のJSON schema v2案の中で改訂し、既存schema v1は変更しない。
+公開API実証を受け、C1は**全ての寄与する追加試行を明示helperへ通すというビルド作者の表明を、利用者が明示的に採用する方式**に改訂する。宣言集合の列挙やreaderの再検証だけで、未登録の同値追加がないことを証明できるとは扱わない。以下はC1aの実装契約（未リリース）。旧adapter version 1／三者の全fingerprint一致案を置き換え、登録APIはversion 2、信頼モデル名は`registered-helper-v1`とする。未公開のJSON schema v2案の中で改訂し、既存schema v1は変更しない。
 
 信頼と検証を次の二層に分ける。
 
@@ -224,6 +224,7 @@ variantごとの依存集合は異なり得るため、`getDependencies()`の単
 {
   "contractVersion": 1,
   "trustModel": "registered-helper-v1",
+  "catalogPolicy": "none",
   "sources": ["app/build.gradle.kts", "gradle/dependencies.gradle.kts"],
   "scopes": [
     {
@@ -365,7 +366,26 @@ sourceのkindはbuild-script／applied-script／convention-plugin。未登録を
 | 作者表明が偽だが未計装同値追加が畳まれ検出不能 | 独立検証できない。受理され得る限界をmetadataに必須表示 | 自動検出保証と表現しない |
 | source／契約等のgraph入力hash不一致 | 不採用・省略 | context全体stale。lockスキャンのcoverageを維持 |
 
-**改訂後の実装gate:** C1aはGroovy／Kotlin、Gradle 8.11.1／9.2.1で同期literal・同値重複試行・scope継承・force後の版・未登録実体・mutation・起動設定disabledを実証する。ビルド作者の表明が偽の未計装同値追加を検出できない陰性例も残し、metadataがその限界を伝えることを確認する。C1bはProvider／bundleの実現時刻・実行回数・結果・台帳identityがadapterなしと一致することを追加実証するまで未対応。同期helper核の実証は下記のC1a結果を参照する。本番adapter／v2 readerの統合やC1bを実証済み・有効化済みとは扱わない。
+**改訂後の実装gate:** C1aはGroovy／Kotlin、Gradle 8.11.1／9.2.1で同期literal・同値重複試行・scope継承・force後の版・未登録実体・mutation・起動設定disabledを実証する。ビルド作者の表明が偽の未計装同値追加を検出できない陰性例も残し、metadataがその限界を伝えることを確認する。C1bはProvider／bundleの実現時刻・実行回数・結果・台帳identityがadapterなしと一致することを追加実証するまで未対応。同期helper核の実証は下記のC1a結果を参照する。本番adapter／v2 readerの実装と結合検証は次節を参照。C1bは引き続き未対応。
+
+#### C1a本番adapter・静的取込（2026-10-31、未リリース）
+
+- `gradle/register-declarations.init.gradle`を追加し、既存exporterとともにnpm配布対象へ登録。利用者が両init scriptを明示実行する。adapterなしはv1、adapterありはv2、互換用にosvMcpSchemaVersion=1を指定可能。MCPはinit scriptを実行しない。
+- C1aはcatalog利用を自動証明できないため、契約の必須項目にcatalogPolicy=noneを追加した。これは作者表明であり、未知のcatalog利用を独立検出する保証ではない。Provider／bundleとconvention-plugin sourceの採用は未対応。契約のsources・scopes・固定名・hash・重複・境界・サイズを検証し、評価前source baselineを準備する。
+- project extensionはosvMcpDeclarations。source(path, kind=build-script)で準備済みのopaque handleを取り、add(configuration, notation, handle, Action?)で追加する。remove(handle)はtombstoneを保持し不完全にする。Groovy／Kotlinの使用例はREADMEへ記載。型付きの独立plugin artifactの配布は今回含めず、KotlinはwithGroovyBuilderで同じ公開extensionを使用する。
+- scalarの通常追加は追加試行を全件保持し、集合が同値追加を捨てても既知保持実体へ結び付ける。追加時の集合列挙は行わず、未解決Providerを早期実現しない。Providerは通常のaddProvider経路へ委譲し、台帳をunsupportedとする。観測可能な未登録実体・削除・mutation・scope不足はinventoryComplete=falseとして出力する。
+- レビュー修正: 保持実体はallDependenciesの集約集合ではなく、継承閉包内の各configurationのdependenciesをidentity集合にして照合する。異なるconfigurationの同値実体が集約時に消えても両試行を保持し、逆に同値の未登録実体が集約から消えても各宣言集合で検出する。同じ試行がdiamondで継承される場合のID重複除去は維持する。
+- readerはschema v1/v2を受け付け、未知の将来versionと不正文書を区別する。v2のedge ID、declaration ID・binding参照、JSON重複key・深さ・型・上限を検証する。宣言解析はrelationから独立したscan共有index／traversal各200万操作を使用する。契約とsourceは安全に一度だけ捕捉し、許可suffix、4 MiB/件・64 MiB/scan、symlink拒否・境界制約を維持する。
+- scope閉包・topology・全試行のbinding被覆、key／shapeの前後一致、既定shape、要求とselected GAV、source/input/lock hashを再検証する。convention-pluginや非既定shape、variant対応の曖昧さを成功へ丸めない。宣言元の失敗だけでは既存relation・introduced_by・脆弱性coverageを落とさない。graph入力の不一致や参照破損は従来どおりgraph採用不可。
+- `OSV_MCP_GRADLE_DECLARATION_TRUST`は未設定で不採用、registered-helper-v1だけ有効、その他は設定エラー。scan内cacheが設定を固定する。採用時はdeclaration_provenanceのtrust_model／trust_status／assurance／contract_paths／limitationsを返す。同じGAVの全context／lockで完全性をANDし、不完全なsource一覧を抑制する。
+- レビュー修正: trustはconfiguration別に保持し、一覧の採用は当該contextの検証結果だけで決める。lock全体のprovenanceはinvalid > missing_assertion > accepted（利用者未採用時はdisabled）の優先順位で集約する診断情報とし、一覧抑制のglobal switchにしない。contexts配列をconfiguration名順に返し、各contextのtrust_status・assurance・contract_pathsを示す。全体がinvalidでも独立した正常GAVの宣言元は維持し、同GAVが不正contextにも現れる場合は既存AND併合で全省略する。
+- scan_project／scan_java_project／suggest_fixの共通captureへ接続した。declared_inはlock位置からの相対pathへ変換して既存のscan-root prefix処理に渡し、suggest_fixは確定したGradle宣言元を更新案内に示す。sourceや契約JSONをOSV入力へ追加しない。
+
+最終検証（レビュー修正後）: 全72ファイル／1,522テスト、typecheck・buildが通過。Gradle 9.2.1でも本番結合10件が通過。npm packのdry-runで両init scriptの同梱とテスト／文書の除外を確認した。
+
+結合検証は`src/test/gradle/registeredExporter.integration.test.ts`。外部OSVの新規実接続は今回未実施であり、3ツールの応答回帰ではscannerをmockしてsource情報の接続と抑制を確認した。本番の二つのinit scriptから実JSONを生成し、Groovy／Kotlin × Gradle 8.11.1／9.2.1で両sourceの静的取込、信頼未採用時の省略、v1互換export、applied scriptによる評価中のsource変更拒否・既存companion不変を確認する。単体／3ツール回帰は改ざんbinding、snapshot mutation、source/契約のstale・symlink、scope不足、専用予算、別variant、複数lockの順序非依存の一覧抑制、信頼設定の固定を確認する。元の試作テストと新しい本番結合テストの役割は区別する。
+
+追加した回帰条件: C02へimplementation／runtimeOnlyの同値依存の陽性と、登録済み集合が先に集約される場合の未登録同値依存の陰性を両DSLで追加。C19／C28へ正常・契約hash不一致contextの順序逆転を追加し、別GAVなら正常なdeclared_inを保持、同GAVなら全省略、provenance集約とcontext別診断は同一になることを単体と3ツールで確認する。修正前にこれらが失敗することも確認した。
 
 #### C1a同期helperの実証結果（2026-10-31）
 

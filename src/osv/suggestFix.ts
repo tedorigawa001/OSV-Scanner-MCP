@@ -142,7 +142,7 @@ function updateHint(pkg: ScanReportPackage): string | undefined {
     case "Maven":
       if (pkg.build_systems?.includes("gradle")) {
         const gradle = (relation === "transitive" ? `Transitive dependency. Update ${by ? `the direct dependencies that require it (${by})` : "its direct parent dependencies"} or compatible Gradle constraints. ` :
-          "Update the applicable dependency declarations, version catalog entries, or constraints in the Gradle build. ") +
+          `Update the applicable dependency declarations${pkg.declared_in?.length ? ` in ${pkg.declared_in.join(", ")}` : ", version catalog entries, or constraints in the Gradle build"}. `) +
           "Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper";
         return gradle + (pkg.build_systems.includes("maven") ? ". Also update the applicable dependency or dependencyManagement in pom.xml for Maven sources" : "");
       }

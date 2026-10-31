@@ -1,0 +1,185 @@
+// C1a: explicit trusted-build registration. Never executed by the MCP server.
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.security.MessageDigest
+import org.gradle.api.Action
+import org.gradle.api.Project
+import org.gradle.api.provider.Provider
+import org.gradle.api.provider.ProviderConvertible
+import org.gradle.api.artifacts.ExternalModuleDependency
+import org.gradle.api.artifacts.component.ModuleComponentSelector
+
+class OsvDeclarationRegistry {
+    File root
+    Map contract
+    String contractHash
+    Map<String,String> hashes = [:]
+    Set handles = Collections.newSetFromMap(new IdentityHashMap())
+    int work = 2000000
+    static final String CONTRACT = 'osv-mcp-gradle-declarations.json'
+    static String digest(byte[] bytes) { MessageDigest.getInstance('SHA-256').digest(bytes).encodeHex().toString() }
+    static boolean relative(String p) { p && !(p =~ /[\\:\x00-\x1f\x7f]/) && p.split('/',-1).every { it && it != '.' && it != '..' } }
+    void tick() { if (--work < 0) throw new GradleException('declaration_budget_exceeded') }
+    File file(String p) {
+        if (!relative(p)) throw new GradleException('Invalid OSV declaration path')
+        def f = new File(root,p)
+        def part = root.toPath()
+        p.split('/').each { name -> part = part.resolve(name); if (Files.isSymbolicLink(part)) throw new GradleException('OSV declaration symlink is not allowed') }
+        if (!Files.isRegularFile(f.toPath(), LinkOption.NOFOLLOW_LINKS) || f.length() > 4L*1024*1024) throw new GradleException('OSV declaration input is missing or too large')
+        f
+    }
+    void prepare() {
+        def raw = file(CONTRACT).getText('UTF-8')
+        // Reject duplicate keys and excessive depth before the ordinary JSON parser.
+        def stack=[]; def slurper=new JsonSlurper()
+        for (int i=0;i<raw.length();i++) {
+            char ch=raw.charAt(i)
+            if (ch == '"') {
+                int start=i; boolean escaped=false
+                for (i++;i<raw.length();i++) { char c=raw.charAt(i); if (!escaped && c=='"') break; if (!escaped && c=='\\') escaped=true; else escaped=false }
+                if (i>=raw.length()) throw new GradleException('Invalid OSV declaration JSON')
+                int next=i+1; while(next<raw.length() && Character.isWhitespace(raw.charAt(next))) next++
+                if(next<raw.length() && raw.charAt(next)==':') {
+                    def key=slurper.parseText(raw.substring(start,i+1))
+                    if(stack.empty || stack.last()==null || !stack.last().add(key)) throw new GradleException('Duplicate OSV declaration JSON key')
+                }
+            } else if(ch=='{' || ch=='[') { if(stack.size()>=128) throw new GradleException('OSV declaration JSON depth limit'); stack.add(ch=='{' ? new HashSet() : null) }
+            else if(ch=='}' || ch==']') { if(stack.empty) throw new GradleException('Invalid OSV declaration JSON'); stack.remove(stack.size()-1) }
+        }
+        contract=slurper.parseText(raw)
+        if(contract.keySet() != ['contractVersion','trustModel','sources','scopes','catalogPolicy'].toSet() || contract.contractVersion != 1 || contract.trustModel != 'registered-helper-v1' || contract.catalogPolicy != 'none' || !(contract.sources instanceof List) || !(contract.scopes instanceof List) || contract.sources.size()>10000 || contract.scopes.size()>2000) throw new GradleException('Unsupported OSV declaration contract')
+        if(contract.sources.toSet().size()!=contract.sources.size()) throw new GradleException('Duplicate OSV declaration source')
+        def ids=new HashSet(), scopes=new HashSet()
+        contract.scopes.each { s ->
+            if(s.keySet()!=['id','projectPath','resolvableConfiguration','declarationConfigurations','assertion','mutationPolicy'].toSet() || !(s.id instanceof String) || !s.id || !(s.projectPath instanceof String) || !(s.resolvableConfiguration instanceof String) || !(s.declarationConfigurations instanceof List) || s.declarationConfigurations.size()>2000 || s.declarationConfigurations.any { !(it instanceof String) || !it } || s.declarationConfigurations.toSet().size()!=s.declarationConfigurations.size() || s.assertion!='all-contributing-additions-use-helper' || s.mutationPolicy!='immutable-after-add' || !ids.add(s.id) || !scopes.add([s.projectPath,s.resolvableConfiguration])) throw new GradleException('Invalid OSV declaration scope')
+        }
+        long total=file(CONTRACT).length(); contractHash=digest(raw.getBytes('UTF-8'))
+        hashes[CONTRACT]=contractHash
+        contract.sources.each { p ->
+            if(!(p instanceof String) || !(p ==~ /.*\.(gradle|gradle\.kts|kt|java|groovy)/)) throw new GradleException('Unsupported OSV declaration source')
+            def f=file(p); total+=f.length(); if(total>64L*1024*1024) throw new GradleException('OSV declaration input limit')
+            hashes[p]=digest(f.bytes)
+        }
+    }
+    void verify() { hashes.each { p,h -> if(digest(file(p).bytes)!=h) throw new GradleException('Build input changed during OSV graph export') } }
+    Map source(String p,String kind) {
+        def handle=Collections.unmodifiableMap([kind:kind,path:p,sha256:hashes[p]])
+        if(hashes.containsKey(p) && p!=CONTRACT && (p ==~ /.*\.gradle(\.kts)?/) && ['build-script','applied-script'].contains(kind)) handles.add(handle)
+        handle
+    }
+}
+class OsvMcpDeclarations {
+    Project project
+    OsvDeclarationRegistry registry
+    List<Map> records=[]
+    Map retainedIndex=[:]
+    boolean overflow=false
+    static Map unsupported(String reason) { [version:1,status:'unsupported',reason:reason] }
+    static Map resolutionKey(selector) {
+        if(!(selector instanceof ModuleComponentSelector)) return unsupported('unsupported_resolution_key')
+        key(selector.group,selector.module,selector.versionConstraint,selector.attributes,selector.capabilitySelectors)
+    }
+    static Map key(group,name,vc,attributes,caps) {
+        if(!attributes.keySet().empty || !caps.empty || vc.preferredVersion || vc.strictVersion || !vc.rejectedVersions.empty || vc.branch!=null) return unsupported('unsupported_resolution_key')
+        [version:1,status:'supported',kind:'module',group:group,name:name,versionConstraint:[required:vc.requiredVersion,preferred:'',strict:'',rejected:[],branch:null],attributes:[],capabilitySelectors:[]]
+    }
+    static Map snapshot(dep) {
+        if(!(dep instanceof ExternalModuleDependency)) return [key:unsupported('unsupported_resolution_key'),shape:unsupported('unsupported_declaration_shape')]
+        def k=key(dep.group,dep.name,dep.versionConstraint,dep.attributes,dep.capabilitySelectors)
+        def shape=dep.artifacts.empty && dep.targetConfiguration==null && !dep.endorsingStrictVersions && dep.transitive && dep.excludeRules.empty ?
+            [version:1,status:'supported',artifacts:[],targetConfiguration:null,endorseStrictVersions:false,transitive:true,excludes:[]] : unsupported('unsupported_declaration_shape')
+        [key:k,shape:shape]
+    }
+    Map source(String path,String kind='build-script') { registry.source(path,kind) }
+    Map add(String name,Object notation,Object handle,Action action=null) {
+        def token=Collections.unmodifiableMap([id:'d'+records.size()])
+        if(notation instanceof Provider || notation instanceof ProviderConvertible) {
+            if(notation instanceof Provider) { if(action) project.dependencies.addProvider(name,notation,action); else project.dependencies.addProvider(name,notation) }
+            else { if(action) project.dependencies.addProviderConvertible(name,notation,action); else project.dependencies.addProviderConvertible(name,notation) }
+            if(records.size()<100000) records.add([token:token,id:token.id,configuration:name,state:'unsupported',atAdd:null,retained:null,source:null,reason:'deferred_registration_not_supported'])
+            else overflow=true
+            return token
+        }
+        def dep=project.dependencies.create(notation)
+        if(action) action.execute(dep)
+        def before=snapshot(dep)
+        boolean added=project.configurations.getByName(name).dependencies.add(dep)
+        // Never enumerate the collection here: that could realize an unrelated Provider.
+        if(records.size()>=100000) { overflow=true; return token }
+        def indexKey=JsonOutput.toJson([name,before])
+        def prior=retainedIndex[indexKey] ?: []
+        def candidates=added ? [dep] : prior.findAll { it==dep }
+        def retained=candidates.size()==1 && snapshot(candidates.first())==before ? candidates.first() : null
+        if(added && retained!=null) { prior.add(retained); retainedIndex[indexKey]=prior }
+        def src=registry.handles.contains(handle) ? new LinkedHashMap(handle) : null
+        def state=retained!=null && src!=null && notation instanceof CharSequence ? 'materialized' : 'unsupported'
+        if(records.size()<100000) records.add([token:token,id:token.id,configuration:name,state:state,atAdd:before,retained:retained,source:src,reason:state=='materialized' ? null : 'declaration_inventory_incomplete'])
+        else overflow=true
+        token
+    }
+    void remove(Map handle) {
+        def r=records.find { it.token.is(handle) }
+        if(!r) throw new GradleException('Unknown OSV declaration registration')
+        if(r.retained!=null) project.configurations.getByName(r.configuration).dependencies.remove(r.retained)
+        r.state='removed'
+    }
+    void registerExisting(Object... ignored) { overflow=true }
+    Map exportContext(cfg,Map c) {
+        def scope=registry.contract.scopes.find { it.projectPath==project.path && it.resolvableConfiguration==c.configuration }
+        def d=[adapterVersion:2,trust:[model:'registered-helper-v1',contractPath:OsvDeclarationRegistry.CONTRACT,contractSha256:registry.contractHash,scopeId:scope?.id ?: 'unavailable'],
+            inventoryComplete:true,configurationClosure:[],configurationTopology:[],records:[],bindings:[],reasons:[]]
+        try {
+            def topology=[:], pending=[cfg]
+            for(int i=0;i<pending.size();i++) { registry.tick(); def node=pending[i]; if(topology.containsKey(node.name)) continue; if(topology.size()>=2000) throw new GradleException('declaration_budget_exceeded'); topology[node.name]=node; pending.addAll(node.extendsFrom) }
+            d.configurationClosure=topology.keySet().sort()
+            d.configurationTopology=topology.values().collect { node -> registry.tick(); [name:node.name,extendsFrom:node.extendsFrom.collect { it.name }.sort(),hasDependencies:!node.dependencies.empty] }
+            if(!scope) d.reasons << 'declaration_assertion_missing'
+            if(overflow) d.reasons << 'declaration_inventory_incomplete'
+            def attempts=records.findAll { registry.tick(); topology.containsKey(it.configuration) }
+            // allDependencies is an equality-deduplicated union. Keep each declaring
+            // configuration's identity set so equal declarations in different scopes
+            // neither disappear nor hide an unregistered dependency.
+            def liveByConfiguration=[:], registeredByConfiguration=[:]
+            topology.each { name,node ->
+                def live=Collections.newSetFromMap(new IdentityHashMap())
+                node.dependencies.each { registry.tick(); live.add(it) }
+                liveByConfiguration[name]=live
+                registeredByConfiguration[name]=Collections.newSetFromMap(new IdentityHashMap())
+            }
+            attempts.each { r ->
+                registry.tick()
+                if(r.state=='materialized' && r.retained!=null) registeredByConfiguration[r.configuration].add(r.retained)
+                def after=r.retained!=null ? snapshot(r.retained) : null
+                def reasons=[]
+                if(r.state!='materialized' || !liveByConfiguration[r.configuration].contains(r.retained)) reasons << (r.reason ?: 'declaration_inventory_incomplete')
+                if(r.atAdd!=after) reasons << 'declaration_mutation_detected'
+                if(r.atAdd?.key?.status!='supported' || r.atAdd?.shape?.status!='supported') reasons << 'unsupported_declaration_shape'
+                d.records << [id:r.id,state:r.state,ownerProjectId:c.projectId,configuration:r.configuration,declarationAtAdd:r.atAdd,declarationAtResolve:after,source:r.source,catalogUses:[],reasons:reasons.unique()]
+                d.reasons.addAll(reasons)
+            }
+            liveByConfiguration.each { name,live ->
+                if(live.any { dependency -> registry.tick(); !registeredByConfiguration[name].contains(dependency) }) d.reasons << 'unregistered_declaration'
+            }
+            topology.values().each { node -> if(!node.dependencies.empty && !scope?.declarationConfigurations?.contains(node.name)) d.reasons << 'declaration_inventory_incomplete' }
+            def groups=[:]
+            d.records.each { r -> registry.tick(); def key=JsonOutput.toJson(r.declarationAtAdd?.key); if(!groups.containsKey(key)) groups[key]=[]; groups[key].add(r.id) }
+            c.edges.findAll { it.fromVariant==c.rootVariant && !it.constraint }.each { e ->
+                registry.tick(); def ids=groups[JsonOutput.toJson(e.resolutionKey)] ?: []
+                d.bindings << [edgeId:e.id,declarationIds:ids,complete:!ids.empty && e.resolutionKey.status=='supported',reasons:[]]
+                if(ids.empty || e.resolutionKey.status!='supported') d.reasons << 'ambiguous_declaration_binding'
+            }
+            d.reasons=d.reasons.unique(); d.inventoryComplete=d.reasons.empty
+        } catch(Exception ignored) {
+            d.inventoryComplete=false; d.records=[]; d.bindings=[]; d.configurationClosure=[]; d.configurationTopology=[]; d.reasons=['declaration_budget_exceeded']
+        }
+        d
+    }
+}
+if(gradle.startParameter.projectProperties['osvMcpDeclarationContract']!=OsvDeclarationRegistry.CONTRACT) throw new GradleException('Use -PosvMcpDeclarationContract=osv-mcp-gradle-declarations.json with the registration adapter')
+def registry=new OsvDeclarationRegistry(root:(gradle.startParameter.projectDir ?: gradle.startParameter.currentDir).canonicalFile)
+registry.prepare()
+gradle.beforeProject { p ->
+    if(p.rootDir.canonicalFile==registry.root) p.extensions.add('osvMcpDeclarations',new OsvMcpDeclarations(project:p,registry:registry))
+}

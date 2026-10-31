@@ -1,6 +1,7 @@
 /** Static Gradle graph contract. No build code is evaluated here. */
 import { collectGradleOrigins } from "./gradleOrigins.js";
-import { visit } from "jsonc-parser";
+import { parseGradleJson } from "./gradleJson.js";
+import { declarationEnvelope, resolutionKeySchema, catalogSchema, knownDeclarations } from "./gradleDeclarations.js";
 import { z } from "zod";
 import type { RelationInfo, RelationLookup } from "./dependencyRelations.js";
 
@@ -30,7 +31,7 @@ const context = z.object({
   declarationEvidence: z.array(z.never()).max(0),
   reasons: z.array(z.string().max(128)).max(128).optional(),
 }).strict();
-const schema = z.object({
+const schemaV1 = z.object({
   schema: z.literal("osv-mcp.gradle-graph"), schemaVersion: z.literal(1),
   producer: z.object({ exporterVersion: id, gradleVersion: id }).strict(),
   lockfiles: z.array(z.object({ id, path: relative, sha256: hash }).strict()).max(2000),
@@ -39,6 +40,9 @@ const schema = z.object({
   inputs: z.object({ complete: z.boolean(), files: z.array(z.union([z.object({ path: relative, sha256: hash }).strict(), z.object({ path: relative, absent: z.literal(true) }).strict()])).max(10_000) }).strict(),
   contexts: z.array(context).max(2000),
 }).strict();
+const contextV2 = context.extend({ edges: z.array(context.shape.edges.element.extend({ id, resolutionKey: resolutionKeySchema })).max(200_000), declarations: declarationEnvelope, catalogInputs: catalogSchema });
+const schemaV2 = schemaV1.extend({ schemaVersion: z.literal(2), contexts: z.array(contextV2).max(2000) });
+const schema = z.discriminatedUnion("schemaVersion", [schemaV1, schemaV2]);
 export type GradleGraph = z.infer<typeof schema>;
 export type GradleContext = GradleGraph["contexts"][number];
 export interface GradleBudget { index: number; traversal: number }
@@ -54,20 +58,11 @@ export class UnsupportedGradleSchemaVersion extends Error {
   constructor() { super("unsupported_schema_version"); }
 }
 export function parseGradleGraph(text: string, budget = createGradleBudget()): GradleGraph {
-  if (Buffer.byteLength(text) > 16 * 1024 * 1024) throw new Error("graph_size_limit");
-  // Validate depth and duplicate keys before JSON.parse/zod recurse into untrusted input.
-  const stack: (Set<string> | null)[] = [];
-  const enter = (object: boolean) => { if (stack.length >= 128) throw new Error("graph_depth_limit"); stack.push(object ? new Set() : null); };
-  visit(text, { onObjectBegin: () => enter(true), onArrayBegin: () => enter(false),
-    onObjectProperty: key => { const keys = stack.at(-1); if (keys?.has(key)) throw new Error("duplicate_json_key"); keys?.add(key); },
-    onObjectEnd: () => { stack.pop(); }, onArrayEnd: () => { stack.pop(); },
-    onError: () => { throw new Error("invalid_json"); },
-  }, { disallowComments: true, allowTrailingComma: false });
-  const raw: unknown = JSON.parse(text);
+  const raw = parseGradleJson(text);
   // Only our own schema identifier with a later integer version counts as "newer"; anything else stays invalid.
   if (raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
     const { schema: name, schemaVersion: version } = raw as Record<string, unknown>;
-    if (name === "osv-mcp.gradle-graph" && Number.isSafeInteger(version) && (version as number) > 1) throw new UnsupportedGradleSchemaVersion();
+    if (name === "osv-mcp.gradle-graph" && Number.isSafeInteger(version) && (version as number) > 2) throw new UnsupportedGradleSchemaVersion();
   }
   const graph = schema.parse(raw);
   const locks = unique(graph.lockfiles), projects = unique(graph.projects);
@@ -79,6 +74,17 @@ export function parseGradleGraph(text: string, budget = createGradleBudget()): G
     const key = JSON.stringify([c.projectId, c.kind, c.configuration]);
     if (contexts.has(key) || !locks.has(c.lockfileId) || !projects.has(c.projectId) || c.configuration !== c.lockConfiguration) throw new Error("invalid_context_mapping");
     contexts.add(key);
+    if ("declarations" in c) {
+      const edges = unique(c.edges), d = knownDeclarations(c);
+      if (d) {
+        const records = unique(d.records);
+        unique(d.bindings.map(b => ({ id: b.edgeId })));
+        for (const binding of d.bindings) {
+          if (!edges.has(binding.edgeId) || new Set(binding.declarationIds).size !== binding.declarationIds.length || binding.declarationIds.some(id => !records.has(id))) throw new Error("invalid_declaration_reference");
+        }
+      }
+      unique(c.catalogInputs.entries);
+    }
     const cs = unique(c.components), vs = unique(c.variants);
     const root = vs.get(c.rootVariant);
     const rootComponent = root && cs.get(root.componentId);

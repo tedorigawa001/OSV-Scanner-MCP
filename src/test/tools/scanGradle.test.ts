@@ -9,10 +9,11 @@ import { runOsvScan } from "../../osv/runner.js";
 import { parseOsvScanOutput } from "../../osv/scanReport.js";
 import { sha256 } from "../../utils/gradleGraphCache.js";
 import { syntheticGradleGraph, syntheticGradleTrees } from "../fixtures/gradleSyntheticGraph.js";
+import { declarationFixture, mixedTrustFixture } from "../fixtures/gradleDeclarationsFixture.js";
 import { graphFixture } from "../fixtures/gradleGraphFixture.js";
 vi.mock("../../osv/runner.js", async original => ({ ...await original<object>(), runOsvScan: vi.fn() }));
 let dir: string;
-afterEach(async () => { if (dir) await rm(dir, { recursive: true, force: true }); vi.resetAllMocks(); });
+afterEach(async () => { if (dir) await rm(dir, { recursive: true, force: true }); vi.resetAllMocks(); vi.unstubAllEnvs(); });
 const lock = "g:a:1=runtimeClasspath\ng:b:2=runtimeClasspath\n";
 async function fixture() {
   dir = await mkdtemp(path.join(os.tmpdir(), "osv-gradle-test-"));
@@ -170,7 +171,7 @@ it("all three tools retain origins across 24 sparse-sharing contexts in three do
 
 it("keeps lock scanning and reports a newer metadata version as unsupported in all three tools", async () => {
   const graph = await fixture();
-  await writeFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify({ ...graph, schemaVersion: 2 }));
+  await writeFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify({ ...graph, schemaVersion: 3 }));
   for (const handler of [handleScanProject, handleScanJavaProject, handleSuggestFix]) {
     const payload = JSON.parse((await handler({ project_path: dir }, { candidateCheck: "disabled" })).content[0]!.text);
     expect(payload.coverage.complete).toBe(true);
@@ -180,5 +181,98 @@ it("keeps lock scanning and reports a newer metadata version as unsupported in a
     expect(metadata.reasons).not.toContain("invalid_or_over_budget_metadata");
     const packages = payload.packages ?? payload.suggestions;
     expect(packages.map((p: any) => p.dependency_relation)).toEqual(["unknown", "unknown"]);
+  }
+});
+
+async function registeredFixture() {
+  await fixture(); const d=declarationFixture(); d.graph.lockfiles[0]!.sha256=sha256(lock);
+  await writeFile(path.join(dir,"build.gradle"),d.source);
+  await writeFile(path.join(dir,"osv-mcp-gradle-declarations.json"),d.contract);
+  await writeFile(path.join(dir,"osv-mcp-gradle-dependencies.json"),JSON.stringify(d.graph));
+  return d;
+}
+it("all three tools expose trusted declarations and their assurance without adding source files to OSV inputs",async()=>{
+  await registeredFixture();
+  for(const handler of [handleScanProject,handleScanJavaProject,handleSuggestFix]) {
+    vi.stubEnv("OSV_MCP_GRADLE_DECLARATION_TRUST","registered-helper-v1");
+    const payload=JSON.parse((await handler({project_path:dir},{candidateCheck:"disabled"})).content[0]!.text);
+    expect(payload.coverage.complete).toBe(true);
+    const a=(payload.packages??payload.suggestions).find((p:any)=>(p.name??p.package)==="g:a");
+    expect(a.declared_in).toEqual(["build.gradle"]);
+    const metadata=payload.coverage.dependency_metadata.gradle[0];
+    expect(metadata.declarations_complete).toBe(true);
+    expect(metadata.declaration_provenance.trust_status).toBe("accepted");
+    expect(metadata.declaration_provenance.limitations).toContain("unregistered_equal_additions_not_detectable");
+    if(payload.suggestions) expect(a.update_hint).toContain("build.gradle");
+  }
+});
+it("all tools suppress partial declarations across locks in both source orders",async()=>{
+  await registeredFixture();vi.stubEnv("OSV_MCP_GRADLE_DECLARATION_TRUST","registered-helper-v1");
+  await mkdir(path.join(dir,"child"));await writeFile(path.join(dir,"child/gradle.lockfile"),lock);
+  for(const reverse of [false,true]) {
+    vi.mocked(runOsvScan).mockImplementation(async targets=>parseOsvScanOutput({results:(reverse?[...targets].reverse():targets).map(t=>({
+      source:{path:t.path,type:"lockfile"},packages:[{package:{name:"g:a",version:"1",ecosystem:"Maven"},groups:[{ids:["GHSA-test"],max_severity:"7.5"}]}],
+    }))}));
+    for(const handler of [handleScanProject,handleScanJavaProject,handleSuggestFix]) {
+      const payload=JSON.parse((await handler({project_path:dir},{candidateCheck:"disabled"})).content[0]!.text);
+      expect((payload.packages??payload.suggestions)[0].declared_in).toBeUndefined();
+      expect(payload.coverage.complete).toBe(true);
+    }
+  }
+});
+it("snapshots the declaration trust setting before scanner execution",async()=>{
+  await registeredFixture();vi.stubEnv("OSV_MCP_GRADLE_DECLARATION_TRUST","registered-helper-v1");
+  const runner=vi.mocked(runOsvScan).getMockImplementation()!;
+  vi.mocked(runOsvScan).mockImplementation(async(targets,options)=>{vi.stubEnv("OSV_MCP_GRADLE_DECLARATION_TRUST","invalid");return runner(targets,options);});
+  const payload=JSON.parse((await handleScanProject({project_path:dir})).content[0]!.text);
+  expect(payload.packages.find((p:any)=>p.name==="g:a").declared_in).toEqual(["build.gradle"]);
+});
+
+it("converts companion-root declaration paths to scan-root paths for child locks",async()=>{
+  const {graph,source,contract}=await registeredFixture();vi.stubEnv("OSV_MCP_GRADLE_DECLARATION_TRUST","registered-helper-v1");
+  await mkdir(path.join(dir,"child"));await mkdir(path.join(dir,"gradle"));
+  await rm(path.join(dir,"gradle.lockfile"));await rm(path.join(dir,"build.gradle"));
+  await writeFile(path.join(dir,"child/gradle.lockfile"),lock);await writeFile(path.join(dir,"gradle/deps.gradle"),source);
+  graph.lockfiles[0]!.path="child/gradle.lockfile";graph.projects[0]!.directory="child";graph.projects[0]!.projectPath=":child";
+  const author=JSON.parse(contract);author.sources=["gradle/deps.gradle"];author.scopes[0].projectPath=":child";
+  const text=JSON.stringify(author);await writeFile(path.join(dir,"osv-mcp-gradle-declarations.json"),text);
+  graph.inputs.files.find(f=>f.path==="osv-mcp-gradle-declarations.json")!.sha256=sha256(text);
+  graph.inputs.files.find(f=>f.path==="build.gradle")!.path="gradle/deps.gradle";
+  graph.contexts[0]!.declarations.trust.contractSha256=sha256(text);
+  graph.contexts[0]!.declarations.records[0]!.source.path="gradle/deps.gradle";
+  graph.contexts[0]!.declarations.records[0]!.source.kind="applied-script";
+  await writeFile(path.join(dir,"osv-mcp-gradle-dependencies.json"),JSON.stringify(graph));
+  for(const handler of [handleScanProject,handleScanJavaProject,handleSuggestFix]) {
+    const payload=JSON.parse((await handler({project_path:dir},{candidateCheck:"disabled"})).content[0]!.text);
+    const a=(payload.packages??payload.suggestions).find((p:any)=>(p.name??p.package)==="g:a");
+    expect(a.declared_in).toEqual(["gradle/deps.gradle"]);
+  }
+});
+
+it.each([false,true])("all tools keep context trust and adopted paths stable across context order (same package=%s)",async samePackage=>{
+  await fixture();vi.stubEnv("OSV_MCP_GRADLE_DECLARATION_TRUST","registered-helper-v1");
+  const data=mixedTrustFixture(samePackage);
+  await writeFile(path.join(dir,"gradle.lockfile"),data.lock);
+  await writeFile(path.join(dir,"build.gradle"),data.source);
+  await writeFile(path.join(dir,"osv-mcp-gradle-declarations.json"),data.contract);
+  vi.mocked(runOsvScan).mockImplementation(async targets=>parseOsvScanOutput({results:[{
+    source:{path:targets[0]!.path,type:"lockfile"},packages:[{package:{name:"g:a",version:"1",ecosystem:"Maven"},groups:[{ids:["GHSA-test"],max_severity:"7.5"}]}],
+  }]}));
+  for(const handler of [handleScanProject,handleScanJavaProject,handleSuggestFix]) {
+    const results=[];
+    for(const reverse of [false,true]) {
+      await writeFile(path.join(dir,"osv-mcp-gradle-dependencies.json"),JSON.stringify({...data.graph,contexts:reverse?[...data.graph.contexts].reverse():data.graph.contexts}));
+      const payload=JSON.parse((await handler({project_path:dir},{candidateCheck:"disabled"})).content[0]!.text);
+      const pkg=(payload.packages??payload.suggestions)[0];
+      const metadata=payload.coverage.dependency_metadata.gradle[0];
+      expect(payload.coverage.complete).toBe(true);
+      expect(metadata.relations_complete).toBe(true);
+      expect(metadata.declarations_complete).toBe(false);
+      expect(metadata.declaration_provenance.trust_status).toBe("invalid");
+      expect(metadata.declaration_provenance.contexts).toEqual(expect.arrayContaining([expect.objectContaining({configuration:"runtimeClasspath",trust_status:"accepted"})]));
+      expect(pkg.declared_in).toEqual(samePackage?undefined:["build.gradle"]);
+      results.push({declaredIn:pkg.declared_in,provenance:metadata.declaration_provenance});
+    }
+    expect(results[0]).toEqual(results[1]);
   }
 });

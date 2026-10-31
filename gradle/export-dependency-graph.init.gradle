@@ -52,6 +52,9 @@ gradle.projectsEvaluated {
                 throw new GradleException('OSV graph export requires Gradle 8.11 or newer')
             }
             verifyInputs()
+            def registration = root.extensions.findByName('osvMcpDeclarations')
+            boolean v2 = registration != null && root.findProperty('osvMcpSchemaVersion')?.toString() != '1'
+            if (registration != null) registration.registry.verify()
             def relative = { File file ->
                 def base = root.projectDir.canonicalFile.toPath()
                 def target = file.canonicalFile.toPath()
@@ -77,6 +80,11 @@ gradle.projectsEvaluated {
             // Absent candidates are recorded too, so a file created after the export marks it stale.
             def inputRecords = inputStates.collect { file, initialHash ->
                 initialHash != null ? [path: relative(file), sha256: initialHash] : [path: relative(file), absent: true]
+            }
+            if(v2) {
+                registration.registry.hashes.each { file, hash ->
+                    if(!inputRecords.any { it.path==file }) inputRecords << [path:file,sha256:hash]
+                }
             }
             def requestedSelector = { selector ->
                 if (selector instanceof ModuleComponentSelector) return [kind: 'module', group: selector.group, name: selector.module, selector: selector.version]
@@ -143,8 +151,10 @@ gradle.projectsEvaluated {
                                 current.component.getDependenciesForVariant(current.variant).each { edge ->
                                     if (edge instanceof ResolvedDependencyResult) {
                                         def target = addVariant(edge.selected, edge.resolvedVariant)
-                                        c.edges << [fromVariant: current.id, selectedVariant: target, constraint: edge.constraint,
+                                        def record = [fromVariant: current.id, selectedVariant: target, constraint: edge.constraint,
                                             requested: requestedSelector(edge.requested), selectionReasons: edge.selected.selectionReason.descriptions.collect { it.cause.toString() }.unique()]
+                                        if(v2) { record.id='e'+c.edges.size(); record.resolutionKey=registration.resolutionKey(edge.requested) }
+                                        c.edges << record
                                     } else if (edge instanceof UnresolvedDependencyResult) {
                                         c.complete = false
                                         c.unresolved << [fromVariant: current.id, requested: requestedSelector(edge.requested), reason: 'resolution_failed']
@@ -156,13 +166,19 @@ gradle.projectsEvaluated {
                             fallback('graph_export_failed')
                         }
                     }
+                    if(v2) {
+                        def adapter=p.extensions.findByName('osvMcpDeclarations')
+                        c.declarations=adapter.exportContext(cfg,c)
+                        c.catalogInputs=[inventoryComplete:true,entries:[]] // explicit catalogPolicy=none in the author contract
+                    }
                     contexts << c
                 }
             }
             lockFiles.each { id, file -> if (digest(file) != before[id]) throw new GradleException('Lock changed during OSV graph export') }
             verifyInputs()
-            def document = [schema: 'osv-mcp.gradle-graph', schemaVersion: 1,
-                producer: [exporterVersion: '1', gradleVersion: gradle.gradleVersion], lockfiles: lockRecords, projects: projectRecords,
+            if(registration != null) registration.registry.verify()
+            def document = [schema: 'osv-mcp.gradle-graph', schemaVersion: v2 ? 2 : 1,
+                producer: [exporterVersion: v2 ? '2' : '1', gradleVersion: gradle.gradleVersion], lockfiles: lockRecords, projects: projectRecords,
                 inputs: [complete: false, files: inputRecords], contexts: contexts]
             def output = new File(root.projectDir, 'osv-mcp-gradle-dependencies.json')
             def temporary = Files.createTempFile(root.projectDir.toPath(), '.osv-mcp-gradle-', '.json')
