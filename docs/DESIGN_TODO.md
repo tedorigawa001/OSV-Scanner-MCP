@@ -1728,3 +1728,10 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 - 実行source-artifactの陽性gateは未成立。binary pluginは公開load元が境界外のGradle cache JAR、precompiledは登録側thisとPlugin実体も不一致。class hash一致だけで採用せず、混在declaredInを省略する。次はload／変換の信頼契約とprecompiled実体の登録方法の再検討・追加実証。本番採用・reader実装・OSV実接続へ進んだ記録ではない。詳細は[設計書§10](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md#10-公開api実証の結果2026-10-31)、データはvalidation/gradle-convention-plugin-2026-10-31.json。
 
 - convention plugin実証レビューの2件を修正: classpath directoryの現在ファイル集合・hashを制限付きで捕捉し、未記録追加／削除／変更を拒否。Providerに安定IDを付けて同期追加と共通のapplication台帳・出自・双方向被覆を検証。実GroovyCompile前のresource追加、Provider origin／ID／参照の書換え・削除の回帰を4構成で再検証し、検証JSONを更新した。各Gradle版128件、通常全体1,631件が成功。実行artifact対応の陽性gateと本番採用は引き続き未成立。
+
+
+### 2026-10-31: convention pluginのload信頼・precompiled登録の改訂設計
+
+[設計書§11](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md#11-改訂案-ロード変換の信頼とprecompiled実体登録)へ追加。旧trustを弱めず、新しいloader-attested trust・独立承認profile・全artifact内容照合・boundary内runtime snapshotを組み合わせる案を定義。precompiledはscript thisを渡さないpending登録と、適用後の公開Plugin実体／descriptor照合へ分離する。buildSrc／included／発行済みpluginの区別、完全性AND、CP37〜CP60を追加。今回は設計のみ。次は新policyの公開API実証で、従来の128件／版を新policyの陽性証拠とはしない。本番未採用を維持する。
+
+- load信頼の設計レビュー2件を反映: policy別の必須field・trust・profileを表にし、strictへ不要なloader profileを要求しない。precompiled-pendingの追加trustはload policyとは別に判定する。runtime snapshotをjar／directoryのunionへ分け、directoryの全tree＋内容blob、binary encodingのdigest、atomic保存、境界内再検証を具体化。CP37／38／43を拡充しCP61〜CP68を追加。設計のみで本番未採用・既存実証データは維持。

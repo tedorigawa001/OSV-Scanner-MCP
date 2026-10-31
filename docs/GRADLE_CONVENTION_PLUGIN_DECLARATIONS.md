@@ -310,3 +310,206 @@ compile classpathに含まれるproducerの生成classes directoryはtoolchain�
 
 
 レビュー修正後の最終確認: Gradle 8.11.1は128件成功（113.97秒）、9.2.1は128件成功（112.45秒）。通常12 fixtureは入力・出自検証を通過し、未記録classpath resource追加の4 fixtureは入力不一致として拒否した。policy・実ディスク回帰32件を含む通常全体は1,631件成功／273件skip（計1,904件）。型チェック・ビルドも成功。plugin由来declared_inの採用は全16 fixtureで0件のまま、本番拒否を維持する。
+
+
+## 11. 改訂案: ロード／変換の信頼とprecompiled実体登録
+
+設計日: 2026-10-31、実証基準6d9b1e5。§10の実行artifact対応は未採用のままである。本節は追加設計で、既存の実証JSON・128件／版の結果を新方式の成功証拠へ読み替えない。§1〜8のsource-artifact要件を以下の二policyへ分ける案であり、矛盾する箇所は本節の将来契約を優先する。本番実装・新policyの公開API実証は今回含めない。
+
+### 11.1 採用の強さを分ける
+
+| policy案 | 必要な証拠と信頼 | 判定 |
+| --- | --- | --- |
+| prepared-output-only-v1 | 準備済み出力へのload対応と、未確認変換がないことを従来の公開API gateで確認 | 既存案のlocal-plugin-build-v1だけで候補化できる。§10のcache由来の形は引き続き未採用 |
+| approved-gradle-loader-v1 | 同一exportで構築したartifactと公開CodeSourceの元artifactの完全な内容対応を確認し、実際のclass定義・変換経路は承認済みruntimeを明示信頼 | 新しいlocal-plugin-loader-attested-v2でのみ候補化。独立した実行bytecode検証とは表示しない |
+
+追加consumer設定案OSV_MCP_GRADLE_PLUGIN_TRUSTは、旧値local-plugin-build-v1か新値local-plugin-loader-attested-v2のいずれか一つ。新値は旧policyの基準も受理できるが、旧値・未設定・未知値で新policyを採用しない。どちらも既存helper信頼が必要で、catalogを含む契約はcatalog信頼も別途必要。起動時に固定し、profileの許可だけでplugin trustを有効化しない。
+
+新policyで作者が表明する追加事項は、approved-runtime-load-chain-only、no-unregistered-agents-or-classloaders、plugin-artifacts-immutable-through-load、precompiled-registration-source-reviewed。これは未知の変換を技術的に検出できるという表明ではなく、承認したruntime以外を使わないという信頼契約である。dynamic attach、native agent、独自classloader、未登録init／settings plugin等の影響を独立列挙できたとはしない。観測した矛盾・未知経路は表明で上書きしない。
+
+新policyのassurance案はauthor-attested-loader-and-structurally-checked、source_artifact_statusはbuild-lineage-and-runtime-attested、transform_statusはtrusted-runtime-not-independently-observedとする。従来の「未確認loadを省略する」契約へ黙って意味を追加しない。既存limitationsに加えplugin_runtime_transform_author_attested、plugin_loaded_bytes_not_independently_observed、precompiled_registration_origin_author_attested（該当時）を必須表示する。元artifactの対応を確認できない場合は、新値でもunverifiable。
+
+### 11.1.1 policyごとの必須証拠（レビュー修正）
+
+loadEvidenceはloadPolicyをdiscriminatorとするstrict unionで、共通fieldとpolicy固有fieldを分ける。共通fieldはapplication／producer／invocation／pluginSpec／公開実体の参照、toolchainProfileDigest、構築artifact inventory、観測phase、source／scope／全試行の対応。loadPolicy未指定・未知値をstrictへ補完しない。
+
+| 必須証拠・条件 | prepared-output-only-v1 | approved-gradle-loader-v1 |
+| --- | --- | --- |
+| 評価前source／input、同一exportの構築lineage、現在の構築出力とtoolchain profile | 必須 | 必須 |
+| 元load場所の関係 | 公開CodeSourceが準備済みproducer出力そのものを指し、従来の未確認変換なしのgateを満たすdirectLoadEvidenceが必須 | 公開CodeSourceの元artifactを、承認rootから取得して構築artifactと全内容照合するruntimeSnapshotRefが必須 |
+| loaderProfileDigest／構成比較／追加runtimeAttestations | fieldを禁止（nullも不可）。loader profile設定は不要で、その未設定・不正値だけを理由にこのpolicyのgraphを拒否しない | 必須。toolchainとは独立の承認profileと比較可能な構成の一致が必要 |
+| runtimeSnapshotRef | 禁止。既存のpreparedArtifactInventoryRefを使い、boundary内のproducer出力をMCPが再検証 | kind=jarまたはdirectoryのsnapshot unionが必須 |
+| binary-instance登録のconsumer plugin trust | local-plugin-build-v1またはlocal-plugin-loader-attested-v2 | local-plugin-loader-attested-v2のみ |
+| precompiled-pending登録のconsumer plugin trust | §11.4の追加の出自表明があるためlocal-plugin-loader-attested-v2のみ。ただしloader profileは不要 | local-plugin-loader-attested-v2とloader profileの両方が必要 |
+| load assurance | 従来のprepared-outputの観測保証を維持。新しい変換信頼のassuranceを付けない | author-attested-loader-and-structurally-checkedと追加limitationsを必須化 |
+
+consumerがv2 trustを選んだだけでstrictをattestedへ変換したり、strictの追加profileを要求したりしない。必要なtrustはloadPolicyとregistrationFormの両方から決定する。helper／catalog等の共通gateはそのまま維持する。precompiledの出自表明はload assuranceと別の登録assurance／limitationsへ記録する。
+
+strictのdirectLoadEvidenceは「CodeSourceの観測対象がproducer receiptの準備済み出力であること」と未確認変換なしの従来gateを結ぶ証拠。コピーしたruntime snapshotをprepared出力に昇格させず、単なるhash一致やloader profileを代用しない。このgate自体の新たな陽性実証はまだない。strict用証拠不足の場合に、無断でattestedへfallbackすることも禁止する。
+
+一つのgraphに両policyが混在した場合はapplicationごとに必須field・設定を判定する。loader profile未設定はattested側の入力不採用理由であり、独立に検証できるstrict側のgraphまで失効させない。影響scope不明なら従来どおり全体不採用。同じGAVの一覧は全contextの完全性ANDで抑制する。
+
+### 11.2 承認runtime profileとload evidence
+
+approved-gradle-loader-v1に限り、§4.1のtoolchain profileに紐付く別のloader profileを事前承認する案とする。strict policyにはこの追加profileを要求しない。設定案OSV_MCP_GRADLE_PLUGIN_LOADER_PROFILESはcontent digestの許可集合。graphから指定されたpath／URLを読み込んで承認しない。旧toolchain profileの許可だけではruntimeのload／変換を承認しない。
+
+必須field案はschemaVersion、toolchainProfileDigest、Gradle／JDK identity、loaderPolicy=gradle-managed-only、transformPolicy=operator-attested-pipeline、許可されたagent／instrumentation構成とそのdigest、外部コード・agent・classloaderを追加しない表明、承認したexport設定。runtimeを選んだ信頼済み利用者が内容を確認してdigestを許可し、producerは自己承認できない。profileは1 MiB／2,000 entry以内、strict schema・重複拒否。実証対象は当面8.11.1／9.2.1と固定JDKの個別profileで、版の前方互換を推定しない。
+
+公開RuntimeMXBean等で取得可能なVM引数・版・明示agent構成を観測してprofileと比較する候補だが、その情報が全変換のinventoryとは主張しない。JDKパス名・Gradle版・CodeSource URLだけが同じでも承認条件を満たさない。観測不能な部分の作者表明と、比較可能な構成の不一致を別fieldへ残す。
+
+applicationごとのloadEvidenceは次を持つ。
+
+| field | 内容 |
+| --- | --- |
+| applicationId／producerReceiptId／invocationId | consumer project、producer build、同一実行との対応。producer receiptを別applicationのload観測の代用品にしない |
+| pluginSpecId／implementationClass／instanceObservationId | 適用後に公開APIで取得した実体に結ぶopaque ID。生objectやclassloaderをJSONへ出さない |
+| toolchainProfileDigest | 両policy共通のtoolchain承認と照合結果 |
+| loaderProfileDigest／runtimeAttestations | approved-gradle-loader-v1だけに必須。strictでは禁止 |
+| codeSourceKind／resourceObservation | CodeSourceのfile-JAR／directory等の種類と診断情報。class resourceは実行済みbytecodeの証明に使わない |
+| builtArtifactInventoryRef | 両policy共通の構築出力inventory |
+| directLoadEvidence／preparedArtifactInventoryRef または runtimeSnapshotRef | strictは前者、attestedは後者だけを持つ。snapshotはjar／directoryのtagged union。path一致・単一class一致では代用しない |
+| comparison | raw-exact、entry-content-exact、directory-content-exact、unverifiableのいずれかと理由 |
+| capturePhase | 最初のload元観測の論理phase。attestedではload時不変を独立観測した値ではないことも明示 |
+
+build receiptには構築lineage、loadEvidenceには各applicationの実体・観測を保持する。同一producerを二つのconsumerが異なるclassloaderで使う場合も、同じprofile／artifact digestだけを根拠にloadEvidenceを共用しない。classloaderそのものの正しさの独立証明は新policyの保証に含めない。
+
+### 11.3 artifact照合と読取境界
+
+同一exportで構築したproducer artifactを正とし、そこへsource baseline・構築入力・compiler receiptを結ぶ。公開Plugin実体のCodeSourceから取得した元artifactだけを比較対象にする。cache全体の探索や、manifest指定の任意URLへのアクセス、class名からのcache path生成は行わない。
+
+| 観測した元artifact | 許可する照合 |
+| --- | --- |
+| JAR raw bytesが同じ | 全artifactのSHA-256／size一致。新policyでもloader信頼等の他gateは必要 |
+| JAR raw bytesは異なるが内容が同じ | 以下のentry-content-exact。ZIP envelopeの差と内容差を区別 |
+| directory | §11.3.2の全tree（空directoryを含む）と各fileのsize／hashの一致。記録済みsubsetだけの一致は禁止 |
+| classのみ一致、descriptorのみ一致、内容不一致、未知scheme／取得不能 | unverifiable。承認loader profileでも陽性へ上書きしない |
+
+entry-content-exactは全file entryの名前・非圧縮size・内容hashを完全照合する。classだけでなくmanifest、plugin descriptor、service定義、resource、署名関連entryも含める。ZIP順序・timestamp・圧縮方法・オフセット・許可したenvelope metadataだけを比較対象外とする。名前の大小文字・Unicode・本文・manifest改行を勝手に正規化しない。重複名、絶対path、..、区切り文字の曖昧さ、未知encoding／特殊entry等は拒否する。directory entryを除外する場合も、その配下fileを一つも落とさないことを検証する。署名を再検証したという保証にはしない。
+
+境界外のGradle cacheをMCPに読ませない。approved-gradle-loader-v1のexport側だけが、利用者が事前承認したcanonical runtime/cache root内で、実Pluginの公開CodeSourceが指す通常JAR fileまたはdirectoryを捕捉する。symlink・非file URL・root逸脱・特殊fileを拒否し、OSVへの本文送信やsnapshotしたartifactの実行はしない。承認rootはgraph由来にはしない。strictはboundary内の準備済み出力を直接検証し、この外部捕捉経路を使わない。
+
+#### 11.3.1 snapshotのtagged union
+
+approved-gradle-loader-v1のruntimeSnapshotRefは次の二種。共通でsnapshotVersion=1、invocationId、capturePhaseを持ち、applicationから参照する。保存場所は固定prefix .osv-mcp/plugin-runtime/<invocation>/以下へadapterが決定し、manifestから任意のコピー先を指定させない。
+
+| kind | 必須field | 保存形式 |
+| --- | --- | --- |
+| jar | size、sha256、snapshotPath | jars/<sha256>.jarへ元JAR bytesをそのまま保存 |
+| directory | treeDigest、manifestPath | directories/<treeDigest>/manifest.jsonとblobs/<sha256>の通常file群。directoryをJARへ詰め直さない |
+
+jarにtreeDigest／manifestPath、directoryにJAR用size／sha256／snapshotPathを混ぜた文書は拒否する。graph v3にはruntime-origin-snapshot-jar／runtime-origin-snapshot-directoryの専用roleを設け、既存text inputのsuffix許可を広げない。loader profile参照はloadEvidence側にあり、snapshotを共有しても各applicationの実体・profile照合は別に必要。
+
+MCPはboundary内snapshotと構築artifactだけを再検証し、保存した外部pathをたどらない。snapshotは解決のために実行する入力ではなく、既に実行された元load artifactを作者信頼で記録した証拠。生成outputとしてcapturePhaseを記録し、評価前source baselineと混同しない。after-applyでの初回hashをload時にも同じだったことの独立証明にはしない。
+
+#### 11.3.2 directory snapshotの捕捉・digest・保存
+
+1. export側は承認rootとCodeSourceからdirectoryを確定し、rootと全path成分のsymlinkを拒否してから再帰列挙する。entryは全directory（空directoryも含む）と全通常file。root自身は暗黙のdirectoryとしentryに入れない。file／directory以外、重複path、fileとdirectoryの衝突を拒否する。
+2. directory相対pathは有効なUTF-8、区切りは/、先頭/・空成分・.・..・逆slash・colon・制御文字は禁止。各pathはUTF-8で4,096 byte以内、深さ64以内。名前の大小文字・Unicode正規化・日本語・空白を変更しない。各fileは安全なopenとopen前後のidentity／size・更新状態検査で捕捉し、内容をhashしながらblobへコピーする。
+3. manifestのstrict schemaはsnapshotVersion:1、kind:directory、digestAlgorithm:sha256-tree-v1、treeDigest、entries。entryは{kind:directory,path}または{kind:file,path,size,sha256}のunion。directoryにsize／sha256は付けず、fileのsizeは0以上4 MiB以下のsafe integer、sha256は小文字hex64桁。全祖先directoryをentriesへ含め、file祖先や同名衝突を拒否する。JSON重複key・未知fieldも拒否する。
+4. treeDigestはJSONの表示順やserializerに依存させない。UTF-8 path byteの辞書順でentryを一意に並べ、ASCIIのOSV-MCP-DIRECTORY-SNAPSHOT-V1と末尾NUL、entry数のuint32 big-endian、各entryのkind byte（directory=0、file=1）＋path長uint32 big-endian＋path bytesを順に連結する。fileだけは続けてsize uint64 big-endian＋sha256の生32 bytesを付け、その全体のSHA-256を小文字hexで表す。manifestはこの順でentriesを保存し、並び違反を黙って補正しない。
+5. file内容は同じsnapshot containerのblobs/<sha256>へ保存する。論理pathをblob取得pathへ展開せず、同じ内容の複数fileは一blobを共有できる。manifestには各fileを別entryで残す。異なる内容が同じdigestを名乗る、sizeが合わない、blobが欠ける場合は拒否する。
+6. 64 MiBの共有plugin読取予算にsource・列挙fileのhash／コピー・再照合を算入し、各file4 MiB、entry数10,000（directoryも数える）、manifest4 MiB、深さ64、既存work予算を維持する。構築出力・runtime snapshot・readerの各実行段階でそれぞれ予算を守り、実際の再読取も算入する。取得エラーや予算超過を記録済みfileのsubset検証へfallbackしない。
+7. 固定prefix内の専用一時containerへmanifestとblobを作成し、再列挙して集合／hash・コピー前後の元treeを検証した後にcontainerをatomicに公開する。公開済み同digest containerがあれば内容を検証して共有し、検証せず上書きしない。manifestだけ先に公開しない。途中失敗は未公開の一時物だけを片付け、既存containerと既存companionを維持する。複数snapshotの完了後にだけgraph companionをatomic writeする。
+
+同じsource／runtimeを共用するapplication間ではcontent digest単位でcontainerを共用できるが、公開実体・捕捉phase・loader profileのapplication固有記録は共用しない。二回の列挙間で変更して復元する等、観測不能な変化は新policyの不変表明に含まれ、独立検出を保証しない。
+
+#### 11.3.3 MCPのdirectory再検証と採用
+
+readerはmanifestPathが固定prefix・invocation・treeDigestから一意に定まる場所であることを確認し、boundary内で安全に読む。実containerの全entryを列挙し、manifest.jsonとblobs/およびmanifestが要求する一意なdigest blobだけがあることを検証する。symlink、余分なblob／file／subdirectory、欠けたblob、特殊fileは不正。論理pathは比較用dataであり、ファイルを開くpathとして使用しない。
+
+strict schema・path・祖先・entry順・上限を検査し、全blobの現在bytesのsize／hash、manifestから再計算したtreeDigest、runtimeSnapshotRefのdigest、container名を全て照合する。manifestのdigest記載だけを信じず、同一blobもcache済みbytesと対応を確認する。manifest／blobのどちらかが変わった、読めない、snapshotが欠落した場合は影響graphを採用しない。
+
+構築側directory inventoryも同じsha256-tree-v1で再捕捉し、runtime側の全entry（directory構造とfileのpath・size・hash）と一致して初めてdirectory-content-exact。構築側の現在の未記録追加・削除・内容変更も拒否する。構築JARとruntime directory等の異種比較は初期未対応とし、勝手にclassだけの比較へ縮退しない。empty treeは表現できるが、descriptor／entrypoint・lineageの別gateを満たすpluginとしては採用しない。
+
+strict policyのdirectory CodeSourceは、このcontainerを必須にせず、boundary内の準備済みproducer directoryとdirectLoadEvidenceを直接照合する。新policyはdirectory containerと承認loader profileを必須にする。どちらも元のsource-pathをdeclared_inに保持し、snapshotやblobを宣言元として返さない。
+
+load時の元artifact不変・承認runtimeがそのartifactに正しく由来するclassを定義／変換したことは、新policyの表明である。raw／entry一致はその信頼対象を限定する観測であり、変換後の実行class bytes一致の証明ではない。sourceや構築入力は従来どおり評価前捕捉必須で、元artifactの初回観測を理由にlate captureを許さない。
+
+§5の4 MiB/件・64 MiBのplugin読取予算、10,000 entry、共有work予算を維持する。JAR圧縮bytes、展開してhashするbytes、directory、snapshotの再確認を共有予算へ算入し、archiveをディスクへ展開しない。toolchainの大容量予算へplugin artifactを逃がさない。予算超過・コピー途中失敗はcomplete扱いにせず、公開companionはatomic writeまで更新しない。export後にsnapshot／構築出力が変更された場合もstale。
+
+### 11.4 precompiled pluginの二段階登録
+
+scriptのthisをPluginとして渡すbeginPlugin案はprecompiledには使わない。以下は未実装のhelper API案。
+
+```text
+preparePluginApplications(targetProject, preparedContract)
+  -> install after-apply observers; no plugin application or source execution
+beginPrecompiled(targetProject, pluginSpecId, sourceMappingId)
+  -> PendingPluginHandle(applicationId, registrationSessionId)
+pluginSource(pendingHandle, sourceMappingId) -> prepared SourceHandle
+add / addProvider / addProviderConvertible / addCatalogLibrary / addCatalogBundle
+  -> record an attempt before normal delegation
+endPrecompiled(pendingHandle, outcome: complete | failed) -> close the explicit registration block
+finalizePluginApplications(targetProject) -> resolved evidence or incomplete reasons
+```
+
+1. root init／beforeProjectの実証済み早期段階で、manifestの対象projectとplugin IDごとに[PluginManager.withPlugin](https://docs.gradle.org/current/javadoc/org/gradle/api/plugins/PluginManager.html)を設置する。このcallbackは適用後の照合用で、追加時刻の観測には使わない。callback引数AppliedPluginはPlugin実体ではない。
+2. 元precompiled scriptの最初の登録対象文より前にbeginPrecompiledを明示する。scriptのthisを渡さず、事前準備済みsource mappingを選ぶ。sourcePathは元.gradle／.gradle.kts、scopeは対象consumerへ固定する。呼出しがその元scriptから行われることはprecompiled-registration-source-reviewedの作者表明であり、IDやcallbackから独立証明したとはしない。
+3. pending handleでも試行ID・source・application参照を委譲前に確保する。Provider／bundle callbackがendより後でも同じ台帳へ記録し、早期get／map／追加asProviderを行わない。endは明示block終了と呼出し側が報告したoutcomeだけを示し、plugin適用成功や全Provider実現の意味ではない。元例外をcatchして再throwする経路ではfailedを記録してからendを完了させ、collector自身の記録失敗だけで元例外を置換しない。
+4. after-apply callbackで[PluginContainer.findPlugin(id)](https://docs.gradle.org/current/javadoc/org/gradle/api/plugins/PluginContainer.html)から実体を取得する。既に適用済みなら公開APIの即時callbackを扱うが、observer設置前の適用やbeginより先に確認した適用はpreexisting-applicationとして不完全にする。beginのない過去試行を後から復元せず、callback後にbeginを呼んでも遡及的に正常化しない。nullならpendingのまま保持し、projectsEvaluatedの最終照合でも取得不能なら不完全。照合のためにapply・getOrCreate・新instance生成をしない。
+5. publicに取得したPluginの実装classを、producerが生成して捕捉したMETA-INF/gradle-plugins/<id>.propertiesのimplementation-class、pluginSpec、producer receiptへ照合する。descriptorはduplicate key等を厳格に検査し、source→descriptor／生成entrypointの対応は作者がレビューしたmappingに限定する。ファイル名から生成クラス名を推定せず、script classと生成wrapper classの同一性も要求しない。未知decoratorをsuffix除去等で一致扱いにしない。
+6. §11.2〜3のapplication固有loadEvidenceを完成させる。単なるplugin IDの存在ではresolvedにせず、実体・entrypoint・lineage・source mapping・全試行被覆・runtime trustをANDする。すべて満たした後にのみ候補となる。precompiledのpending登録は新trust値v2を必須とし、旧v1だけでは採用しない。
+
+applicationのidentityはinvocation＋consumer project＋解決済みproducer/pluginSpec。registrationSessionはそのapplicationで実行した明示blockに付くIDで、plugin本体のapply呼出し回数を推定する値ではない。初期は一source entrypointにつき一begin/endを必須とする。重複begin、別project・別producerのhandle、再入による曖昧さ、期待entrypointの未開始・未終了は不完全。同一実体へ対応する複数plugin IDのcallbackは、manifestが同一specのaliasとして列挙した場合だけidempotentに併合する。異なる実体やproducerへ変わった場合はinvalid。
+
+precompiledのplugins blockがbodyより先にchild pluginを適用する場合、childの過去試行をbegin後の台帳へ移さない。childが自身の準備済み登録契約で全追加を記録すれば別applicationで対応し、未登録なら関連scopeを不完全にする。helperへの委譲は既存handleの承認済みsourceMappingsだけを使う。元例外はそのまま維持し、helperが観測したAction失敗・failed outcome・未終了blockはcatchして継続しても不完全とする。script内部で隠された任意の例外まで独立に検出する保証にはしない。
+
+### 11.5 buildSrc・独立plugin・完全性
+
+| 対象 | 必須対応 |
+| --- | --- |
+| buildSrc binary／precompiled | 起動前のsource／構築入力捕捉、producer側compile→artifact receipt、consumer固有の実体照合。buildSrcだからroot script扱いにはしない |
+| included build-logic／境界内独立checkout | 別build identity・同一export invocation・独立receipt。名前やplugin IDだけでbuildSrcと併合しない |
+| 発行済みbinary／source JAR／境界外checkout | 新loader trustがあっても従来どおり未対応。ローカルsourceから同一exportで構築したというgateは免除しない |
+| class直接適用、未知wrapper／独自loader、settings plugin | ID付きの初期precompiled方式では不採用。独立に実証した別adapterなしに自動fallbackしない |
+
+完全性の判定は次の順序に固定する。
+
+- graph gate: 共通の事前source／input・構築lineage・構築artifact・toolchain profileを検証し、§11.1.1のpolicy固有証拠を追加検証する。strictはdirectLoadEvidenceとprepared出力だけ、新policyはjar／directory snapshotの全内容対応とloader profileの許可・構成比較を必須にする。不一致・未承認・取得不能は影響graphを採用しない。範囲不明なら全文書不採用。lock由来の脆弱性coverageはこのmetadata制限だけでは下げない。
+- declaration gate: graphが有効な場合に、helper／plugin／catalogの必要trust、全source mapping表明、pending解消、session終了、scope継承、同期・Provider・bundle全IDとapplication逆参照、既存key／shape・edge bindingを検証する。出自／登録だけ不足ならgraphのrelation・introduced_byを保持し、宣言元一覧を全省略する。
+- aggregate gate: 同じGAVのscript＋plugin混在、複数context／lockを既存の完全性ANDで併合。scriptだけの部分一覧を返さず、context順に依存しない。非使用を確認したscript単独scopeには不要なplugin trustを要求しない。
+
+そのpolicyに必要なprofileが許可されていてもconsumer plugin trustが無効なら宣言元は省略し、必要なprofile／artifact検証は省略しない。strictに不要なloader profileの状態を伝播させない。新policyが必要なのに旧trustしかない場合、input_statusが有効でもplugin_trust_status=disabled_for_required_policyと診断する案。未知policyはunverifiable、出自の不一致はinvalid、pending未解消／表明不足はmissing_assertion、採用時は上記のattested assuranceを明示する。いずれもdeclarations_completeのANDを緩めない。consumer設定そのものが無効ならplugin_trust_status=disabledを優先し、有効な設定の集約順はinvalid > unverifiable > disabled_for_required_policy > missing_assertion > acceptedとする。applicationごとのload assuranceを保持し、strictとattestedが混在した最上位assuranceはattestedへ揃える。入力状態の失敗は別fieldにも必ず残し、disabledで隠さない。
+
+契約v3／graph v3／adapter v5は未実装の予約案なので、本節の必須loadPolicy、policy別に必須／禁止となるprofile・snapshot参照、session／loadEvidenceをそのstrict schemaへ統合する。既存v1／v2契約や本番v2〜v4 adapterを拡張済みとは扱わない。policy・scope・profile・source mappingから必要性を判定し、空entry、空record、旧adapter／旧trustへの変更やscript origin化でv2信頼を回避できないようにする。未採用flagを単に削除して陽性にしない。
+
+### 11.6 追加回帰条件（未実行）
+
+Groovy／Kotlin consumer × Gradle 8.11.1／9.2.1を基本行列にし、producerのbuildSrc／included、binary／precompiledを区別する。まずJava binary・既存Groovy precompiledで垂直に実証し、Kotlin precompiledと標準kotlin-dsl経路も別途実証する。対象外をskipして全形成功としない。
+
+| ID | 条件 | 必須確認 |
+| --- | --- | --- |
+| CP37 | strict旧policyとapproved-loader新policy、旧／新／無効／未知trust | policy別の必須fieldを検証。strict binaryはtoolchain承認＋旧trust・loader profile未設定で候補化、新policyは旧trustだけで採用しない。precompiled-pendingはstrictでも新trustが必要 |
+| CP38 | toolchainのみ承認、loaderのみ承認、profile改変／版だけ一致 | strictにloader profileを要求せず、新policyでのみ両profileを独立に要求。自己承認・必要profileの不一致で影響graph不採用 |
+| CP39 | 公開CodeSourceのJARとproducer JARのraw完全一致 | 全内容・application固有load証拠を確認し、新policyの候補に進める。実行bytesの独立証明と表示しない |
+| CP40 | ZIP順序／timestamp／圧縮だけ変更、内容集合は同じ | 全file entry照合でentry-content-exact。classだけの比較で成功しない |
+| CP41 | manifest／descriptor／resource／service／classの一件だけ変更 | raw hash不一致をenvelope差へ丸めず、graph不採用 |
+| CP42 | duplicate entry、未知encoding、path曖昧、圧縮膨張・過大archive | bounded parserで拒否。JAR展開・実行・無制限readなし |
+| CP43 | directoryの未記録追加・削除・内容変更、snapshot欠落 | strictの直接参照と新policyのdirectory containerを区別し、全tree／blob検証で拒否。既存修正を維持 |
+| CP44 | 境界外runtime artifactのapproved root内／外、symlink、非file URL | export側だけに限定。MCPはboundary内snapshotだけを読み、JSONの外部pathをたどらない |
+| CP45 | after-applyの初回観測、load前後のartifact変更／復元、未登録agent・loader | 観測可能な不一致は拒否、復元等の未観測分はattestation限界を表示。検出できたと偽らない |
+| CP46 | 同じproducer／digestを二consumer・異なるclassloaderで使用 | 各applicationの実体・loadEvidenceが必須。片方だけ未確認なら両方acceptedにしない |
+| CP47 | precompiled beginがcallbackより前／後、既適用の即時callback | 正常なbegin先行だけを適用後照合で解消。callback先行・既適用への遅い登録は不完全とし、後付けbeginで正常化しない |
+| CP48 | script thisとPlugin実体が異なるGroovy／Kotlin precompiled | this同一性を要求せず、公開実体＋捕捉descriptor＋作者mappingで対応。未知なら未採用 |
+| CP49 | withPluginのAppliedPluginを実体と取り違える、findPlugin=null | 生Pluginを取得するまでpending。callback発火だけで成功しない |
+| CP50 | 同じplugin IDの別producer／別implementation、descriptor偽装 | 実体class・descriptor・receipt・source mapを全照合し、名前だけ一致では拒否 |
+| CP51 | 同一specのalias二通知と、別実体への差替え | 正当aliasはidempotent、別実体はinvalid。再applyしない |
+| CP52 | 重複begin／未begin／未end、例外捕捉して継続、未知decorator | 不完全を保持。元のAction／apply例外の振舞いを維持 |
+| CP53 | end後のProvider／bundle callback、未使用Provider、部分Action失敗 | IDを委譲前確保し全memberを保持。評価時刻・supplier回数を通常経路から変えない |
+| CP54 | precompiled plugins blockが先にchild pluginを適用 | childは別applicationの独立台帳。未登録追加をparentのsourceへ付け替えない |
+| CP55 | Providerのscript化・ID欠落・逆参照削除、pending Provider | 同期と共通の双方向被覆で拒否。pending確認のため追加評価しない |
+| CP56 | script／plugin同値依存、別scopeのscript単独、context順逆転 | 完全時だけ和集合、片方不足は全一覧抑制、不要なtrust要求と順序依存なし |
+| CP57 | 空load inventory・session省略・adapter downgrade・旧trustへ変更 | 契約から必要性を判定し拒否。未知schemaを従来sourceとして採用しない |
+| CP58 | buildSrc／includedの同名project・別invocation receipt流用、発行済みplugin＋source JAR | identityと同一構築実行を検証し拒否。新loader profileでも免除しない |
+| CP59 | snapshotの途中失敗・後変更、予算超過、多context再参照 | atomic publication・旧companion維持、共有cache／予算の境界を確認 |
+| CP60 | 新policy採用候補／無効／表明なしの3ツール実接続（本番実装後） | declared_in／assurance／limits／coverage、候補OSV再照会、入力不変・MCP中ビルド非起動を確認 |
+| CP61 | strict binaryの正常証拠、loader profile未設定／不正設定、新trust選択の有無 | 不要なprofileの状態でstrict graphを拒否しない。新policy固有fieldをstrictへ混入した文書は拒否 |
+| CP62 | strict precompiled-pending、toolchainのみ承認、旧／新trust | loader profile不要のまま、新trustなら登録gateの候補、旧trustなら宣言元だけ不採用。graphまで誤って失効させない |
+| CP63 | strict／attested混在、片側だけloader profile不足、同一GAV／独立scope、順逆 | 必要性をapplication単位で判定し、独立strict graphは保持。同一GAVの不完全一覧は全省略 |
+| CP64 | 正常なdirectory container、空file・空directory・同一blob共有、日本語／空白path | 全tree digestとblobを再計算して新policyのdirectory採用候補へ進める。declared_inは元sourceのみ |
+| CP65 | runtime manifest／blob・構築directoryの追加・削除・内容変更、snapshot欠落 | file集合だけでなく全treeを再照合しgraph不採用。copy元pathをMCPから再読取しない |
+| CP66 | blob欠落／余分なblob、file/dir衝突、祖先欠落、順序違反、digest・size偽装 | strict schemaとcontainerの実集合・現在bytesを照合し拒否。jar／directory用fieldの混入も拒否 |
+| CP67 | symlink、特殊file、深さ／entry／byte予算超過、異なるserializer | 安全に拒否し、同じentry treeは仕様化したbinary encodingで同じdigest。Unicodeやcaseを勝手に併合しない |
+| CP68 | コピー途中失敗、manifest先行公開、既存同digest container不正、contextで共有 | 不完全containerを公開せず旧companion維持。共有storageとapplication固有load証拠を区別 |
+
+完了順は契約レビュー→CP37〜59およびCP61〜68の公開API／artifact照合の実証→成立した形だけの本番schema／adapter／reader→CP60とする。§10で得たclass hash一致だけをCP39〜41の全artifact照合へ流用しない。今回追加したのは契約と条件であり、既存の実証データは変更せず、本番の未採用判定も維持する。

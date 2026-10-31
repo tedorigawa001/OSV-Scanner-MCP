@@ -751,3 +751,10 @@ Groovy／Gradle 8.11.1とKotlin／Gradle 9.2.1の脆弱版projectで、local TOM
 Groovy／Kotlin consumer×Gradle 8.11.1／9.2.1のbuildSrc Java・独立Kotlin binary・独立Groovy precompiledを計12 fixtureで確認。登録／通常のgraph・Action・Provider評価、混在source候補、toolchain分類の実証は成功したが、公開load元と準備済みartifactの対応は陽性条件未達。convention-pluginの本番拒否を維持し、次は変換／loadの契約とprecompiled実体登録を再検討する。[詳細と実証範囲](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md#10-公開api実証の結果2026-10-31)。
 
 実証レビューの修正では、classpath directoryを記録済み一覧だけでなく現在の全ファイル集合・hashへ照合し、Providerも安定IDと共通application台帳で出自を検証する。未記録resource追加とProvider参照改変の対照を追加。詳細・更新結果は上記の設計書§10を参照する。
+
+
+### 2026-10-31: convention pluginのload信頼・precompiled登録の改訂設計
+
+[設計書§11](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md#11-改訂案-ロード変換の信頼とprecompiled実体登録)へ追加。旧trustを弱めず、新しいloader-attested trust・独立承認profile・全artifact内容照合・boundary内runtime snapshotを組み合わせる案を定義。precompiledはscript thisを渡さないpending登録と、適用後の公開Plugin実体／descriptor照合へ分離する。buildSrc／included／発行済みpluginの区別、完全性AND、CP37〜CP60を追加。今回は設計のみ。次は新policyの公開API実証で、従来の128件／版を新policyの陽性証拠とはしない。本番未採用を維持する。
+
+- load信頼の設計レビュー2件を反映: policy別の必須field・trust・profileを表にし、strictへ不要なloader profileを要求しない。precompiled-pendingの追加trustはload policyとは別に判定する。runtime snapshotをjar／directoryのunionへ分け、directoryの全tree＋内容blob、binary encodingのdigest、atomic保存、境界内再検証を具体化。CP37／38／43を拡充しCP61〜CP68を追加。設計のみで本番未採用・既存実証データは維持。
