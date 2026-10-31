@@ -1736,3 +1736,12 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 [設計書§11](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md#11-改訂案-ロード変換の信頼とprecompiled実体登録)へ追加。旧trustを弱めず、新しいloader-attested trust・独立承認profile・全artifact内容照合・boundary内runtime snapshotを組み合わせる案を定義。precompiledはscript thisを渡さないpending登録と、適用後の公開Plugin実体／descriptor照合へ分離する。buildSrc／included／発行済みpluginの区別、完全性AND、CP37〜CP60を追加。今回は設計のみ。次は新policyの公開API実証で、従来の128件／版を新policyの陽性証拠とはしない。本番未採用を維持する。
 
 - load信頼の設計レビュー2件を反映: policy別の必須field・trust・profileを表にし、strictへ不要なloader profileを要求しない。precompiled-pendingの追加trustはload policyとは別に判定する。runtime snapshotをjar／directoryのunionへ分け、directoryの全tree＋内容blob、binary encodingのdigest、atomic保存、境界内再検証を具体化。CP37／38／43を拡充しCP61〜CP68を追加。設計のみで本番未採用・既存実証データは維持。
+
+
+### 2026-10-31: 改訂load信頼・precompiled二段階登録の公開API実証
+
+[設計書§12](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md#12-改訂したload信頼二段階登録の公開api実証2026-10-31)に結果を追加。buildSrc／独立plugin、Groovy／Kotlin consumer、Gradle 8.11.1／9.2.1の32 fixtureで、明示承認loader-attested policyの採用候補とstrict実runtimeの拒否を分離した。precompiled Groovyのpending→適用後実Plugin／descriptor照合、JAR全内容照合、実directory CodeSourceのatomic snapshot保存・境界内再検証を確認。実Gradle各200件、単体52件、通常全体1,683件が成功した。
+
+本番は未採用。実行class bytesの独立観測ではなく追加信頼契約による候補化で、compile中だけのclasspath変更は引き続き検出不能。precompiled Kotlin／標準kotlin-dslは未検証。次は実証レビュー、成立範囲の本番schema・adapter・reader、続いて3ツール／OSV実接続。機械可読結果はvalidation/gradle-plugin-load-2026-10-31.json。
+
+- 実証レビュー修正: 同じentrypointの重複beginを先行・後続sessionとも不完全に固定し、終了後の再開始も拒否。load元観測とJAR snapshotはverification-task、directory snapshotはpost-buildという実際のphaseを記録する。両Gradle版のnative回帰へ重複2条件・phase確認を追加（各280件）。本番未採用と追加信頼の限界は維持。

@@ -373,7 +373,8 @@ applicationごとのloadEvidenceは次を持つ。
 | builtArtifactInventoryRef | 両policy共通の構築出力inventory |
 | directLoadEvidence／preparedArtifactInventoryRef または runtimeSnapshotRef | strictは前者、attestedは後者だけを持つ。snapshotはjar／directoryのtagged union。path一致・単一class一致では代用しない |
 | comparison | raw-exact、entry-content-exact、directory-content-exact、unverifiableのいずれかと理由 |
-| capturePhase | 最初のload元観測の論理phase。attestedではload時不変を独立観測した値ではないことも明示 |
+| loadObservationPhase | 最初のload元観測の論理phase。snapshot取得phaseと分離する。attestedではload時不変を独立観測した値ではないことも明示 |
+| snapshotCapturePhase／runtimeSnapshotRef.capturePhase | snapshotを実際に取得したphase。after-apply callbackで取得しない場合にafter-applyを記録しない。ビルド終了後の捕捉はpost-build |
 
 build receiptには構築lineage、loadEvidenceには各applicationの実体・観測を保持する。同一producerを二つのconsumerが異なるclassloaderで使う場合も、同じprofile／artifact digestだけを根拠にloadEvidenceを共用しない。classloaderそのものの正しさの独立証明は新policyの保証に含めない。
 
@@ -517,3 +518,52 @@ Groovy／Kotlin consumer × Gradle 8.11.1／9.2.1を基本行列にし、produce
 | CP68 | コピー途中失敗、manifest先行公開、既存同digest container不正、contextで共有 | 不完全containerを公開せず旧companion維持。共有storageとapplication固有load証拠を区別 |
 
 完了順は契約レビュー→CP37〜59およびCP61〜68の公開API／artifact照合の実証→成立した形だけの本番schema／adapter／reader→CP60とする。§10で得たclass hash一致だけをCP39〜41の全artifact照合へ流用しない。今回追加したのは契約と条件であり、既存の実証データは変更せず、本番の未採用判定も維持する。
+
+
+## 12. 改訂したload信頼・二段階登録の公開API実証（2026-10-31）
+
+§11の契約を本番とは独立したtest-only exporter／検証器で実証した。明示承認された `approved-gradle-loader-v1` は32 fixtureで宣言元の採用候補になった。これは作者・運用者のruntime／変換表明を信頼した結果であり、実行中の変換済みclass bytesを独立観測した証拠ではない。実runtimeの `prepared-output-only-v1` は変換不明のため全件不採用を維持した。strictの正常証拠・loader profile不要という判定はsynthetic policy回帰で確認しており、実runtimeのstrict陽性実証とは区別する。本番schema／adapter／reader、MCP設定の採用は有効化していない。
+
+### 12.1 構成と公開API
+
+Gradle 8.11.1／9.2.1、Groovy／Kotlin consumer、buildSrc／独立included build-logicを組み合わせた。各producerでbinary Java・binary Kotlin・precompiled GroovyのJARを確認し、binary Javaではdirectory runtime artifactも追加した。計16 fixture／版、32 fixtureとなる。Kotlin binary producerは同梱K2コンパイラを公開JavaExecで実行する制御fixtureであり、標準Kotlin Gradle plugin／kotlin-dslやprecompiled Kotlinの実証は含まない。
+
+precompiledは評価前に `PluginManager.withPlugin` のobserverを準備し、script側のbeginでpending登録、endで結果を記録する。適用後callbackで `PluginContainer.findPlugin` から実Pluginを取り、生成descriptorのimplementation-classと照合した。scriptの `this` をPlugin実体へ代用しない。同期追加とProviderを共通台帳で保持し、通常・棚卸し・登録のgraph／Action／Provider評価を比較した。lazy Providerは各1回、未使用Providerは0回で一致する。遅いobserver、未終了、明示failed outcomeの計96 sessionはgraph入力を保持して宣言元を不採用とした。任意の例外を投げた場合の動作保存までは実証していない。
+
+起動前にtoolchain profileと独立したloader profileを承認し、実際のJDK version・明示agent引数・artifact内容を照合する。後から観測した結果を自動承認する方式ではない。ただし、これは制御fixtureのprofile準備であり、本番の承認配布・全startup設定検証・動的agentや未知classloaderの完全な棚卸しを実装したものではない。
+
+### 12.2 artifactとdirectory snapshot
+
+公開Sync taskとruntimeElementsのoutgoing directory artifactを使い、buildSrc／included双方で実際のdirectory CodeSourceを得た。directoryはJARに変換せず、全file／directory（空directoryを含む）の順序付きtree、内容addressed blob、strict manifestとして境界内にatomic保存する。readerは保存済みcontainerだけを読み、元runtime pathを追わない。全entry集合・祖先・size・hash・blob過不足を再検証する。`sha256-tree-v1` のbinary encodingには独立Python計算のgolden vectorを追加した。
+
+JARはraw SHAとZIP全file内容を別途照合する。manifest、descriptor、service、resourceも対象とし、class hashだけで採用しない。directory blobの変更・削除・追加とJARの変更を実保存先で行う48対照は全件拒否し、復元後の再検証も成功した。予算超過、symlink、不正path、重複JSON、tree順序／祖先不正、不完全な既存container、atomic公開前の失敗は単体回帰でも確認する。
+
+classpathは従来どおりビルド終了後のsnapshotであり、compile時点の完全inventoryではない。途中だけの変更や復元された変更は検出できないという `plugin_classpath_transient_changes_not_detectable` を保持する。新policyでもこの制限を解消したとは扱わない。
+
+### 12.3 回帰・検証データと再現
+
+- 実Gradle: 各版280件成功（32 fixture合計）。新policy候補32件、strict実runtime候補0件。directory 8件、JAR 24件。
+- snapshot／policy／JAR単体: 53件成功。通常全体: 1,684件成功、opt-in等555件skip。typecheck・build成功。
+- 実証ハーネス: [pluginLoad.integration.test.ts](../src/test/gradle/pluginLoad.integration.test.ts)、[test-only exporter](../src/test/fixtures/gradle-plugin-load.init.gradle)。単体は同directoryのpluginLoadSnapshot／pluginLoadPolicy／pluginJarContents.test.ts。
+- 検証データ: [gradle-plugin-load-2026-10-31.json](validation/gradle-plugin-load-2026-10-31.json)。baseline 6460ad4からの追加で、source hash・承認profile・構成別観測と判定を保存する。旧実証JSONは変更しない。保存物は観測値とmanifest entryであり、runtime blobの配布archiveではない。一時fixtureのcontainerはテスト終了時に削除し、再実行で再生成する。
+
+準備済みJDK／Gradle cacheで次を各Gradle版について実行する（実証はoffline、configuration cache／並行実行無効）。
+
+```sh
+env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
+  JAVA_HOME=/trusted/jdk-21 GRADLE_USER_HOME=/trusted/prepared-gradle-cache \
+  OSV_MCP_GRADLE_CONVENTION_OUTPUT=/tmp/plugin-load-proof \
+  npm test -- src/test/gradle/pluginLoad.integration.test.ts
+npm test -- src/test/gradle/pluginLoadSnapshot.test.ts src/test/gradle/pluginLoadPolicy.test.ts src/test/gradle/pluginJarContents.test.ts
+```
+
+次はこの実証のレビュー後、成立した形に限定した本番schema／adapter／静的readerへ進む。CP37〜CP68全条件の本番完了ではない。precompiled Kotlin、標準kotlin-dsl、compile開始時のclasspath捕捉、未知loader、plugin内部catalog、nested child／alias、configuration cache・並行実行は残る。CP60の3ツール／OSV実接続は本番実装後に別途行う。
+
+
+### 12.4 実証レビュー後の修正・再検証
+
+重複beginでは、同じplugin ID／sourceの先行sessionと新sessionの両方にregistrationUnique=falseを保持する。先行sessionが既にcompleteで終了していても解除せず、両方をendした後も宣言元は不採用とする。graph入力と通常の依存追加は保持する。binary Java／Kotlin、precompiled Groovyの実producerから「開始中の重複」「終了後の再開始」を呼ぶ対照を各fixtureへ追加した。
+
+load元の最初の観測はafter-apply callbackではなく検証taskのreport処理なので、loadObservationPhase=verification-taskと記録する。JAR snapshotも同task内の取得としてsnapshotCapturePhase=verification-task、directoryはGradle終了後のNode側取得としてsnapshotCapturePhaseとDirectoryRef.capturePhaseをpost-buildにした。after-applyはPlugin実体を解決するcallbackの時刻だけを意味し、そこでartifactを捕捉したとは記録しない。全applicationについてphaseの回帰を追加した。snapshotの保存／再検証がload時不変の独立証明ではない制限は維持する。
+
+修正前の対象native回帰3件が失敗することを確認した後、修正後の同3件が成功した。両DSL・両producer種別を含む全32 fixtureをGradle 8.11.1／9.2.1で再実行し、各280件を確認した。検証JSONは今回のsource hashと再実行観測へ更新し、重複sessionの拒否と実際の取得phaseを保持する。
