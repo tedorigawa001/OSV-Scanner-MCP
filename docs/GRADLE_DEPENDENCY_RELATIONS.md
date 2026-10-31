@@ -418,7 +418,7 @@ sourceのkindはbuild-script／applied-script／convention-plugin。未登録を
 各構成の結果と試作sourceのSHA-256を[検証データ](validation/gradle-c1a-2026-10-31.json)へ保存した。元の詳細報告は任意の`OSV_MCP_GRADLE_C1A_OUTPUT` prefixへ保存でき、未指定時はfixtureとともに削除する。
 
 ```sh
-bdo proxy env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
+env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
   JAVA_HOME=/trusted/jdk-21 GRADLE_USER_HOME=/trusted/gradle-cache \
   OSV_MCP_GRADLE_C1A_OUTPUT=/tmp/osv-c1a \
   npm test -- src/test/gradle/synchronousHelper.integration.test.ts
@@ -448,7 +448,7 @@ bdo proxy env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
 再現方法（各Gradle版で同じテストを実行）:
 
 ```sh
-bdo proxy env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
+env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
   JAVA_HOME=/trusted/jdk-21 GRADLE_USER_HOME=/trusted/gradle-cache \
   npm test -- src/test/gradle/declarations.integration.test.ts
 ```

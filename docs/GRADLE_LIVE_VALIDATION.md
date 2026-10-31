@@ -212,8 +212,8 @@ MCPのPATHに失敗する偽java／gradleを置き、projectには失敗する�
 明示実行専用の[再現ハーネス](../src/test/manual/gradleC1aLive.mjs)を追加した。通常のnpm testからは実行せず、scannerやGradleを自動取得しない。入力した信頼済み実行バイナリと、必要なMaven metadataを含むGradle cacheを使用する。fixtureと生応答は新しい一時領域へ保存し、その場所をstdoutに表示する。
 
 ```sh
-bdo npm run build
-bdo proxy env \
+npm run build
+env \
   JAVA_HOME=/trusted/jdk-21 \
   GRADLE_USER_HOME=/trusted/gradle-cache \
   OSV_MCP_LIVE_SCANNER=/trusted/osv-scanner \
@@ -222,7 +222,7 @@ bdo proxy env \
   node src/test/manual/gradleC1aLive.mjs
 ```
 
-今回の生応答とserver stderrは`/private/var/folders/s6/2sk4lqmn1_5dp8gdr0_lz1qw0000gn/T/osv-c1a-live-8jV02a/evidence/`へ保存。配布物へは含めない。ライブラリのコード変更はなく、手動ハーネスの構文検査・保存した結果の整合性・差分の空白チェックも確認した。
+生応答とserver stderrは、ハーネスがstdoutに表示する一時ディレクトリの`evidence/`へ保存する（リポジトリ・配布物へは含めない）。コミットした[`docs/validation/gradle-c1a-live-2026-10-31.json`](validation/gradle-c1a-live-2026-10-31.json)はこの出力から作成した要約であり、ハーネスの出力そのものとは形式が異なる（`checks[].scenario`を`trust_setting`、`gradle --version`の全文を版番号に整理し、`fixture`・`manual_harness_sha256`・`scope`を追加）。再実行した結果と比べる場合は、各tool応答・input hash・独立OSV照会の結果を比較する。ライブラリのコード変更はなく、手動ハーネスの構文検査・保存した結果の整合性・差分の空白チェックも確認した。
 
 ## 残る制約
 
