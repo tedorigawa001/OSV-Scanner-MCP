@@ -383,7 +383,7 @@ sourceのkindはbuild-script／applied-script／convention-plugin。未登録を
 
 最終検証（レビュー修正後）: 全72ファイル／1,522テスト、typecheck・buildが通過。Gradle 9.2.1でも本番結合10件が通過。npm packのdry-runで両init scriptの同梱とテスト／文書の除外を確認した。
 
-結合検証は`src/test/gradle/registeredExporter.integration.test.ts`。外部OSVの新規実接続は今回未実施であり、3ツールの応答回帰ではscannerをmockしてsource情報の接続と抑制を確認した。本番の二つのinit scriptから実JSONを生成し、Groovy／Kotlin × Gradle 8.11.1／9.2.1で両sourceの静的取込、信頼未採用時の省略、v1互換export、applied scriptによる評価中のsource変更拒否・既存companion不変を確認する。単体／3ツール回帰は改ざんbinding、snapshot mutation、source/契約のstale・symlink、scope不足、専用予算、別variant、複数lockの順序非依存の一覧抑制、信頼設定の固定を確認する。元の試作テストと新しい本番結合テストの役割は区別する。
+結合検証は`src/test/gradle/registeredExporter.integration.test.ts`。実装時の3ツール応答回帰ではscannerをmockしてsource情報の接続と抑制を確認した。後続のC1a実接続ではGroovy 8.11.1／Kotlin 9.2.1の実scannerで3ツール×信頼設定有無の12呼出しと候補8件の独立OSV照会が成功し、declared_in・信頼metadata・更新案内を確認した。詳細は[実接続記録](GRADLE_LIVE_VALIDATION.md#stage-c1a-本番adapter静的取込の実接続2026-10-31)を参照。本番の二つのinit scriptから実JSONを生成し、Groovy／Kotlin × Gradle 8.11.1／9.2.1で両sourceの静的取込、信頼未採用時の省略、v1互換export、applied scriptによる評価中のsource変更拒否・既存companion不変を確認する。単体／3ツール回帰は改ざんbinding、snapshot mutation、source/契約のstale・symlink、scope不足、専用予算、別variant、複数lockの順序非依存の一覧抑制、信頼設定の固定を確認する。元の試作テストと新しい本番結合テストの役割は区別する。
 
 追加した回帰条件: C02へimplementation／runtimeOnlyの同値依存の陽性と、登録済み集合が先に集約される場合の未登録同値依存の陰性を両DSLで追加。C19／C28へ正常・契約hash不一致contextの順序逆転を追加し、別GAVなら正常なdeclared_inを保持、同GAVなら全省略、provenance集約とcontext別診断は同一になることを単体と3ツールで確認する。修正前にこれらが失敗することも確認した。
 

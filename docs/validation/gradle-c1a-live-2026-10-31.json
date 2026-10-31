@@ -1,0 +1,2397 @@
+{
+  "schema": "osv-mcp.gradle-c1a-live-validation",
+  "timestamp": "2026-10-31T04:52:56.707Z",
+  "revision": "71819b5534d5913910bbd77f1debec16479f85f2",
+  "node": "v26.12.1",
+  "scanner": {
+    "version": "osv-scanner version: 2.7.0\nosv-scalibr version: 0.5.3\ncommit: bfe2f84abd2f09fe0b83ba7f6dad40d296762f40\nbuilt at: 2026-10-12T00:39:39Z",
+    "sha256": "d4926ef8da134332543be276dff157e4c170f99ad91fc48e89448a8816bdf70b"
+  },
+  "sources_sha256": {
+    "gradle/register-declarations.init.gradle": "aae6a1b57b9cddf77e4d2eddc1f357727d5db2823a77fbc4e4873cd55d5b85e5",
+    "gradle/export-dependency-graph.init.gradle": "0e9111622aa5aaeb527c5deb65a55dc33f892f5c0020767e861142e0b388083c",
+    "src/utils/gradleGraphCache.ts": "49154128f33732baafe9ab0468a8b095395ab47c856ed40977f67f0e69b526e1",
+    "src/utils/gradleDeclarations.ts": "6799ee999310b37995fb34897c3988c91e9ecfe6c6556fa741378951c353b5d2"
+  },
+  "manual_harness_sha256": "4a98e20cc035cdb090ed4528850d9a8ed04639fc089fb604b23b5aba174f3e7a",
+  "scope": {
+    "mcp_transport": "stdio",
+    "mcp_server": "dist/index.js",
+    "osv_endpoint": "https://api.osv.dev",
+    "candidate_endpoint": "https://api.osv.dev/v1/query",
+    "remote_manifest_resolution_disabled": true,
+    "gradle_offline": true,
+    "schema_version": 2,
+    "catalog_policy": "none"
+  },
+  "profiles": [
+    {
+      "name": "groovy-8",
+      "dsl": "groovy",
+      "gradle_version": "8.11.1",
+      "checks": [
+        {
+          "trust_setting": "registered-helper-v1",
+          "inputs_unchanged": true,
+          "build_execution_marker_absent": true,
+          "input_sha256": {
+            "build.gradle": "d54dbedbd79c64d4b60659e8226d4527a2e8fbcfd6741e82df09802fdf5b8705",
+            "gradle/extra.gradle": "7113d7f34333054fbfb2a006d93b2b733985c50bf56d6bddaa4694a8370dcfa4",
+            "settings.gradle": "bcce2fe4ef7855d138f8623ed224e21c5f93b215e8347a5d8c6e55893f4bab13",
+            "gradle.lockfile": "2d827a90d0bc19426e4025a664cdc2133042dc0bf3c7b494955d89ab83423a78",
+            "osv-mcp-gradle-declarations.json": "6d589a4c2784073149a1e6cc7112f09901605093c7e63f530cf451b28ef6369c",
+            "osv-mcp-gradle-dependencies.json": "de7d036895668e91aa0a9d1141b29d7ee9b6c58f63a5382436679c90a848f960",
+            "gradlew": "485ba0eb87c71aaacff07f673baa5e5050177aef78200cc9acbcbd1daeb600d0"
+          },
+          "tools": [
+            {
+              "tool": "scan_project",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": true,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "accepted",
+                  "contract_paths": [
+                    "osv-mcp-gradle-declarations.json"
+                  ],
+                  "assurance": "author-attested-and-structurally-checked",
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "build.gradle",
+                    "gradle/extra.gradle"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "gradle/extra.gradle"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "f04f4e1c943fbdc43947ed3b9de257f2636113db9b7e651628154312d576b9fd"
+            },
+            {
+              "tool": "scan_java_project",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": true,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "accepted",
+                  "contract_paths": [
+                    "osv-mcp-gradle-declarations.json"
+                  ],
+                  "assurance": "author-attested-and-structurally-checked",
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "build.gradle",
+                    "gradle/extra.gradle"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "gradle/extra.gradle"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "5453c1194edc8bc630098a4bbd78c8c009bc1e280db1dd6f7677c397ae933943"
+            },
+            {
+              "tool": "suggest_fix",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": true,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "accepted",
+                  "contract_paths": [
+                    "osv-mcp-gradle-declarations.json"
+                  ],
+                  "assurance": "author-attested-and-structurally-checked",
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "build.gradle",
+                    "gradle/extra.gradle"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": "2.25.4",
+                  "candidate_check": "clean",
+                  "update_hint": "Update the applicable dependency declarations in build.gradle, gradle/extra.gradle. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": "2.18.11",
+                  "candidate_check": "clean",
+                  "update_hint": "Transitive dependency. Update the direct dependencies that require it (com.fasterxml.jackson.core:jackson-databind) or compatible Gradle constraints. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "gradle/extra.gradle"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": "2.18.11",
+                  "candidate_check": "clean",
+                  "update_hint": "Update the applicable dependency declarations in gradle/extra.gradle. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": "2.25.5",
+                  "candidate_check": "clean",
+                  "update_hint": "Transitive dependency. Update the direct dependencies that require it (org.apache.logging.log4j:log4j-core) or compatible Gradle constraints. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "040f5e7dfdd2e2536a1f01471f327ad3426675d4ab5b1399be4ca30561ceeec5",
+              "independent_candidate_queries": [
+                {
+                  "endpoint": "https://api.osv.dev/v1/query",
+                  "method": "POST",
+                  "pages": 1,
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.25.4",
+                  "http_status": 200,
+                  "vulnerability_ids": [],
+                  "response_pages": [
+                    {
+                      "request": {
+                        "package": {
+                          "ecosystem": "Maven",
+                          "name": "org.apache.logging.log4j:log4j-core"
+                        },
+                        "version": "2.25.4"
+                      },
+                      "http_status": 200,
+                      "response": {},
+                      "timestamp": "2026-10-31T04:53:08.322Z"
+                    }
+                  ]
+                },
+                {
+                  "endpoint": "https://api.osv.dev/v1/query",
+                  "method": "POST",
+                  "pages": 1,
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.18.11",
+                  "http_status": 200,
+                  "vulnerability_ids": [],
+                  "response_pages": [
+                    {
+                      "request": {
+                        "package": {
+                          "ecosystem": "Maven",
+                          "name": "com.fasterxml.jackson.core:jackson-core"
+                        },
+                        "version": "2.18.11"
+                      },
+                      "http_status": 200,
+                      "response": {},
+                      "timestamp": "2026-10-31T04:53:08.740Z"
+                    }
+                  ]
+                },
+                {
+                  "endpoint": "https://api.osv.dev/v1/query",
+                  "method": "POST",
+                  "pages": 1,
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.18.11",
+                  "http_status": 200,
+                  "vulnerability_ids": [],
+                  "response_pages": [
+                    {
+                      "request": {
+                        "package": {
+                          "ecosystem": "Maven",
+                          "name": "com.fasterxml.jackson.core:jackson-databind"
+                        },
+                        "version": "2.18.11"
+                      },
+                      "http_status": 200,
+                      "response": {},
+                      "timestamp": "2026-10-31T04:53:09.138Z"
+                    }
+                  ]
+                },
+                {
+                  "endpoint": "https://api.osv.dev/v1/query",
+                  "method": "POST",
+                  "pages": 1,
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.25.5",
+                  "http_status": 200,
+                  "vulnerability_ids": [],
+                  "response_pages": [
+                    {
+                      "request": {
+                        "package": {
+                          "ecosystem": "Maven",
+                          "name": "org.apache.logging.log4j:log4j-api"
+                        },
+                        "version": "2.25.5"
+                      },
+                      "http_status": 200,
+                      "response": {},
+                      "timestamp": "2026-10-31T04:53:09.456Z"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trust_setting": null,
+          "inputs_unchanged": true,
+          "build_execution_marker_absent": true,
+          "input_sha256": {
+            "build.gradle": "d54dbedbd79c64d4b60659e8226d4527a2e8fbcfd6741e82df09802fdf5b8705",
+            "gradle/extra.gradle": "7113d7f34333054fbfb2a006d93b2b733985c50bf56d6bddaa4694a8370dcfa4",
+            "settings.gradle": "bcce2fe4ef7855d138f8623ed224e21c5f93b215e8347a5d8c6e55893f4bab13",
+            "gradle.lockfile": "2d827a90d0bc19426e4025a664cdc2133042dc0bf3c7b494955d89ab83423a78",
+            "osv-mcp-gradle-declarations.json": "6d589a4c2784073149a1e6cc7112f09901605093c7e63f530cf451b28ef6369c",
+            "osv-mcp-gradle-dependencies.json": "de7d036895668e91aa0a9d1141b29d7ee9b6c58f63a5382436679c90a848f960",
+            "gradlew": "485ba0eb87c71aaacff07f673baa5e5050177aef78200cc9acbcbd1daeb600d0"
+          },
+          "tools": [
+            {
+              "tool": "scan_project",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": false,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "declaration_trust_disabled",
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "disabled",
+                  "contract_paths": [],
+                  "assurance": null,
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "e32510f0b41976f511fb45177de744eb3ca12e189363b1ffb48750df84284c54"
+            },
+            {
+              "tool": "scan_java_project",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": false,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "declaration_trust_disabled",
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "disabled",
+                  "contract_paths": [],
+                  "assurance": null,
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "953c4e83fb7c9f658a5925ece41053bd05e0edf1ceac82215ca4096356d362c7"
+            },
+            {
+              "tool": "suggest_fix",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": false,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "declaration_trust_disabled",
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "disabled",
+                  "contract_paths": [],
+                  "assurance": null,
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": "2.25.4",
+                  "candidate_check": "clean",
+                  "update_hint": "Update the applicable dependency declarations, version catalog entries, or constraints in the Gradle build. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": "2.18.11",
+                  "candidate_check": "clean",
+                  "update_hint": "Transitive dependency. Update the direct dependencies that require it (com.fasterxml.jackson.core:jackson-databind) or compatible Gradle constraints. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": "2.18.11",
+                  "candidate_check": "clean",
+                  "update_hint": "Update the applicable dependency declarations, version catalog entries, or constraints in the Gradle build. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": "2.25.5",
+                  "candidate_check": "clean",
+                  "update_hint": "Transitive dependency. Update the direct dependencies that require it (org.apache.logging.log4j:log4j-core) or compatible Gradle constraints. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "376f3cb989a4630053cca988e8c2f99e4c02846a127f178818bf1cbdab32ec1d"
+            }
+          ]
+        }
+      ],
+      "fixture": {
+        "settings.gradle": "rootProject.name = 'c1a-live-groovy-8'\n",
+        "gradle.lockfile": "# This is a Gradle generated file for dependency locking.\n# Manual edits can break the build and are not advised.\n# This file is expected to be part of source control.\ncom.fasterxml.jackson.core:jackson-annotations:2.9.10=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath\ncom.fasterxml.jackson.core:jackson-core:2.9.10=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath\ncom.fasterxml.jackson.core:jackson-databind:2.9.10.7=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath\norg.apache.logging.log4j:log4j-api:2.14.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath\norg.apache.logging.log4j:log4j-core:2.14.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath\nempty=annotationProcessor,testAnnotationProcessor\n",
+        "osv-mcp-gradle-declarations.json": "{\n  \"contractVersion\": 1,\n  \"trustModel\": \"registered-helper-v1\",\n  \"catalogPolicy\": \"none\",\n  \"sources\": [\n    \"build.gradle\",\n    \"gradle/extra.gradle\"\n  ],\n  \"scopes\": [\n    {\n      \"id\": \"annotationProcessor\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"annotationProcessor\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    },\n    {\n      \"id\": \"compileClasspath\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"compileClasspath\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    },\n    {\n      \"id\": \"runtimeClasspath\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"runtimeClasspath\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    },\n    {\n      \"id\": \"testAnnotationProcessor\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"testAnnotationProcessor\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    },\n    {\n      \"id\": \"testCompileClasspath\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"testCompileClasspath\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    },\n    {\n      \"id\": \"testRuntimeClasspath\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"testRuntimeClasspath\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    }\n  ]\n}\n",
+        "build.gradle": "\nplugins { id 'java-library' }\nrepositories { mavenCentral() }\ndependencyLocking { lockAllConfigurations() }\ndef h=extensions.getByName('osvMcpDeclarations')\nh.add('implementation','org.apache.logging.log4j:log4j-core:2.14.1',h.source('build.gradle'))\napply from: 'gradle/extra.gradle'\n",
+        "gradle/extra.gradle": "\ndef h=extensions.getByName('osvMcpDeclarations')\ndef source=h.source('gradle/extra.gradle','applied-script')\nh.add('runtimeOnly','org.apache.logging.log4j:log4j-core:2.14.1',source)\nh.add('implementation','com.fasterxml.jackson.core:jackson-databind:2.9.10.7',source)\n"
+      }
+    },
+    {
+      "name": "kotlin-9",
+      "dsl": "kotlin",
+      "gradle_version": "9.2.1",
+      "checks": [
+        {
+          "trust_setting": "registered-helper-v1",
+          "inputs_unchanged": true,
+          "build_execution_marker_absent": true,
+          "input_sha256": {
+            "build.gradle.kts": "21588e7e566d042be7c5b1a7c3ba3b3ac6a9fc7c7c911ec85c8f45f8a693ce31",
+            "gradle/extra.gradle.kts": "d2cfddfd29dbf98a40ac79046f3c1d702a482c3b36c977090213c80d7a8bf546",
+            "settings.gradle": "f42f8aa6c9f2caf52e1bf1016a3f4071df5496542001b9f324077bb074f62c57",
+            "gradle.lockfile": "2d827a90d0bc19426e4025a664cdc2133042dc0bf3c7b494955d89ab83423a78",
+            "osv-mcp-gradle-declarations.json": "c91721c2c5951522db474bfc03c705bc3d471221f5b688db0c3b3bdf0b565223",
+            "osv-mcp-gradle-dependencies.json": "4b3d1d8fc666de9adebb39eea87f7aec40cee30ed9595cd932c49db243818f04",
+            "gradlew": "66fd76165a6a753160c524b9751ed12c483d5e0e667e8c662f3ecea15958f6ab"
+          },
+          "tools": [
+            {
+              "tool": "scan_project",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": true,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "accepted",
+                  "contract_paths": [
+                    "osv-mcp-gradle-declarations.json"
+                  ],
+                  "assurance": "author-attested-and-structurally-checked",
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "build.gradle.kts",
+                    "gradle/extra.gradle.kts"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "gradle/extra.gradle.kts"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "fcdf6eacbd85f13d4b375dab1de369c0110a2d728143037f309f457e1f1a61f6"
+            },
+            {
+              "tool": "scan_java_project",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": true,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "accepted",
+                  "contract_paths": [
+                    "osv-mcp-gradle-declarations.json"
+                  ],
+                  "assurance": "author-attested-and-structurally-checked",
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "build.gradle.kts",
+                    "gradle/extra.gradle.kts"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "gradle/extra.gradle.kts"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "6ce9299837adc0f75e7265e4d67197c7028b05ef8d942048a32c16baf4a26b80"
+            },
+            {
+              "tool": "suggest_fix",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": true,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "accepted",
+                  "contract_paths": [
+                    "osv-mcp-gradle-declarations.json"
+                  ],
+                  "assurance": "author-attested-and-structurally-checked",
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "accepted",
+                      "assurance": "author-attested-and-structurally-checked",
+                      "contract_paths": [
+                        "osv-mcp-gradle-declarations.json"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "build.gradle.kts",
+                    "gradle/extra.gradle.kts"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": "2.25.4",
+                  "candidate_check": "clean",
+                  "update_hint": "Update the applicable dependency declarations in build.gradle.kts, gradle/extra.gradle.kts. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": "2.18.11",
+                  "candidate_check": "clean",
+                  "update_hint": "Transitive dependency. Update the direct dependencies that require it (com.fasterxml.jackson.core:jackson-databind) or compatible Gradle constraints. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": [
+                    "gradle/extra.gradle.kts"
+                  ],
+                  "introduced_by": null,
+                  "recommended_upgrade": "2.18.11",
+                  "candidate_check": "clean",
+                  "update_hint": "Update the applicable dependency declarations in gradle/extra.gradle.kts. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": "2.25.5",
+                  "candidate_check": "clean",
+                  "update_hint": "Transitive dependency. Update the direct dependencies that require it (org.apache.logging.log4j:log4j-core) or compatible Gradle constraints. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "fef0fc3afda4452329613a6542129cd0353a2f09f2840a3dca92961f8f6f4a78",
+              "independent_candidate_queries": [
+                {
+                  "endpoint": "https://api.osv.dev/v1/query",
+                  "method": "POST",
+                  "pages": 1,
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.25.4",
+                  "http_status": 200,
+                  "vulnerability_ids": [],
+                  "response_pages": [
+                    {
+                      "request": {
+                        "package": {
+                          "ecosystem": "Maven",
+                          "name": "org.apache.logging.log4j:log4j-core"
+                        },
+                        "version": "2.25.4"
+                      },
+                      "http_status": 200,
+                      "response": {},
+                      "timestamp": "2026-10-31T04:53:31.057Z"
+                    }
+                  ]
+                },
+                {
+                  "endpoint": "https://api.osv.dev/v1/query",
+                  "method": "POST",
+                  "pages": 1,
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.18.11",
+                  "http_status": 200,
+                  "vulnerability_ids": [],
+                  "response_pages": [
+                    {
+                      "request": {
+                        "package": {
+                          "ecosystem": "Maven",
+                          "name": "com.fasterxml.jackson.core:jackson-core"
+                        },
+                        "version": "2.18.11"
+                      },
+                      "http_status": 200,
+                      "response": {},
+                      "timestamp": "2026-10-31T04:53:31.426Z"
+                    }
+                  ]
+                },
+                {
+                  "endpoint": "https://api.osv.dev/v1/query",
+                  "method": "POST",
+                  "pages": 1,
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.18.11",
+                  "http_status": 200,
+                  "vulnerability_ids": [],
+                  "response_pages": [
+                    {
+                      "request": {
+                        "package": {
+                          "ecosystem": "Maven",
+                          "name": "com.fasterxml.jackson.core:jackson-databind"
+                        },
+                        "version": "2.18.11"
+                      },
+                      "http_status": 200,
+                      "response": {},
+                      "timestamp": "2026-10-31T04:53:31.777Z"
+                    }
+                  ]
+                },
+                {
+                  "endpoint": "https://api.osv.dev/v1/query",
+                  "method": "POST",
+                  "pages": 1,
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.25.5",
+                  "http_status": 200,
+                  "vulnerability_ids": [],
+                  "response_pages": [
+                    {
+                      "request": {
+                        "package": {
+                          "ecosystem": "Maven",
+                          "name": "org.apache.logging.log4j:log4j-api"
+                        },
+                        "version": "2.25.5"
+                      },
+                      "http_status": 200,
+                      "response": {},
+                      "timestamp": "2026-10-31T04:53:32.121Z"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "trust_setting": null,
+          "inputs_unchanged": true,
+          "build_execution_marker_absent": true,
+          "input_sha256": {
+            "build.gradle.kts": "21588e7e566d042be7c5b1a7c3ba3b3ac6a9fc7c7c911ec85c8f45f8a693ce31",
+            "gradle/extra.gradle.kts": "d2cfddfd29dbf98a40ac79046f3c1d702a482c3b36c977090213c80d7a8bf546",
+            "settings.gradle": "f42f8aa6c9f2caf52e1bf1016a3f4071df5496542001b9f324077bb074f62c57",
+            "gradle.lockfile": "2d827a90d0bc19426e4025a664cdc2133042dc0bf3c7b494955d89ab83423a78",
+            "osv-mcp-gradle-declarations.json": "c91721c2c5951522db474bfc03c705bc3d471221f5b688db0c3b3bdf0b565223",
+            "osv-mcp-gradle-dependencies.json": "4b3d1d8fc666de9adebb39eea87f7aec40cee30ed9595cd932c49db243818f04",
+            "gradlew": "66fd76165a6a753160c524b9751ed12c483d5e0e667e8c662f3ecea15958f6ab"
+          },
+          "tools": [
+            {
+              "tool": "scan_project",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": false,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "declaration_trust_disabled",
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "disabled",
+                  "contract_paths": [],
+                  "assurance": null,
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "4262729b11cdc07bb02a3039a1207cdc24bafcd2719f6695cf3ddd8104f4f1ae"
+            },
+            {
+              "tool": "scan_java_project",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": false,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "declaration_trust_disabled",
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "disabled",
+                  "contract_paths": [],
+                  "assurance": null,
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": null,
+                  "candidate_check": null,
+                  "update_hint": null,
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "0ccc26227d8d824b18f9d863416b8936153f086f3ae22c6755c25685c3c498c3"
+            },
+            {
+              "tool": "suggest_fix",
+              "coverage_complete": true,
+              "metadata": {
+                "path": "gradle.lockfile",
+                "metadata_paths": [
+                  "osv-mcp-gradle-dependencies.json"
+                ],
+                "status": "complete",
+                "relations_complete": true,
+                "declarations_complete": false,
+                "contexts": [
+                  "annotationProcessor",
+                  "compileClasspath",
+                  "runtimeClasspath",
+                  "testAnnotationProcessor",
+                  "testCompileClasspath",
+                  "testRuntimeClasspath"
+                ],
+                "reasons": [
+                  "declaration_trust_disabled",
+                  "environment_freshness_not_proven"
+                ],
+                "declaration_provenance": {
+                  "trust_model": "registered-helper-v1",
+                  "trust_status": "disabled",
+                  "contract_paths": [],
+                  "assurance": null,
+                  "limitations": [
+                    "unregistered_equal_additions_not_detectable",
+                    "reverted_external_mutations_not_detectable"
+                  ],
+                  "contexts": [
+                    {
+                      "configuration": "annotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "compileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "runtimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testAnnotationProcessor",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testCompileClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    },
+                    {
+                      "configuration": "testRuntimeClasspath",
+                      "trust_status": "disabled",
+                      "assurance": null,
+                      "contract_paths": []
+                    }
+                  ]
+                }
+              },
+              "packages": [
+                {
+                  "name": "org.apache.logging.log4j:log4j-core",
+                  "version": "2.14.1",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": "2.25.4",
+                  "candidate_check": "clean",
+                  "update_hint": "Update the applicable dependency declarations, version catalog entries, or constraints in the Gradle build. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-jfh8-c2jp-5v3q",
+                    "GHSA-7rjr-3q55-vv33",
+                    "GHSA-p6xc-xr62-6r2g",
+                    "GHSA-3pxv-7cmr-fjr4",
+                    "GHSA-h383-gmxw-35v2",
+                    "GHSA-8489-44mv-ggj8",
+                    "GHSA-6hg6-v5c8-fphq",
+                    "GHSA-vc5p-v9hr-52mj"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-core",
+                  "version": "2.9.10",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "com.fasterxml.jackson.core:jackson-databind"
+                  ],
+                  "recommended_upgrade": "2.18.11",
+                  "candidate_check": "clean",
+                  "update_hint": "Transitive dependency. Update the direct dependencies that require it (com.fasterxml.jackson.core:jackson-databind) or compatible Gradle constraints. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-h46c-h94j-95f3",
+                    "GHSA-r7wm-3cxj-wff9",
+                    "GHSA-7hhh-6rmp-j9qf",
+                    "GHSA-wf8f-6423-gfxg"
+                  ]
+                },
+                {
+                  "name": "com.fasterxml.jackson.core:jackson-databind",
+                  "version": "2.9.10.7",
+                  "dependency_relation": "direct",
+                  "declared_in": null,
+                  "introduced_by": null,
+                  "recommended_upgrade": "2.18.11",
+                  "candidate_check": "clean",
+                  "update_hint": "Update the applicable dependency declarations, version catalog entries, or constraints in the Gradle build. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-rgv9-q543-rqg4",
+                    "GHSA-5r5r-6hpj-8gg9",
+                    "GHSA-89qr-369f-5m5x",
+                    "GHSA-8c4j-34r4-xr8g",
+                    "GHSA-8w26-6f25-cm9x",
+                    "GHSA-9gph-22xh-8x98",
+                    "GHSA-9m6f-7xcq-8vf8",
+                    "GHSA-cvm9-fjm9-3572",
+                    "GHSA-f9xh-2qgp-cq57",
+                    "GHSA-m6x4-97wx-4q27",
+                    "GHSA-r3gr-cxrf-hg25",
+                    "GHSA-r695-7vr9-jgc2",
+                    "GHSA-v585-23hc-c647",
+                    "GHSA-vfqx-33qm-g869",
+                    "GHSA-wh8g-3j2c-rqj5",
+                    "GHSA-57j2-w4cx-62h2",
+                    "GHSA-cxp5-3px4-pw24",
+                    "GHSA-jjjh-jjxp-wpff",
+                    "GHSA-wv8q-qhhj-9h54",
+                    "GHSA-5gvw-p9qm-jgwh",
+                    "GHSA-5jmj-h7xm-6q6v",
+                    "GHSA-hgj6-7826-r7m5",
+                    "GHSA-vvgp-rfg2-7rr6",
+                    "GHSA-wjgm-6hv5-3cvf"
+                  ]
+                },
+                {
+                  "name": "org.apache.logging.log4j:log4j-api",
+                  "version": "2.14.1",
+                  "dependency_relation": "transitive",
+                  "declared_in": null,
+                  "introduced_by": [
+                    "org.apache.logging.log4j:log4j-core"
+                  ],
+                  "recommended_upgrade": "2.25.5",
+                  "candidate_check": "clean",
+                  "update_hint": "Transitive dependency. Update the direct dependencies that require it (org.apache.logging.log4j:log4j-core) or compatible Gradle constraints. Regenerate the lockfile in a trusted environment and rescan; check BOM, variant and Java compatibility. This server does not execute Gradle or the Wrapper",
+                  "vulnerability_ids": [
+                    "GHSA-qv9r-c865-cp47"
+                  ]
+                }
+              ],
+              "raw_response_sha256": "ccb2f13be953ceda2692ba34f95cd9ee388c9b8e4c32e72ce3bd8218a20e6b4a"
+            }
+          ]
+        }
+      ],
+      "fixture": {
+        "settings.gradle": "rootProject.name = 'c1a-live-kotlin-9'\n",
+        "gradle.lockfile": "# This is a Gradle generated file for dependency locking.\n# Manual edits can break the build and are not advised.\n# This file is expected to be part of source control.\ncom.fasterxml.jackson.core:jackson-annotations:2.9.10=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath\ncom.fasterxml.jackson.core:jackson-core:2.9.10=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath\ncom.fasterxml.jackson.core:jackson-databind:2.9.10.7=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath\norg.apache.logging.log4j:log4j-api:2.14.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath\norg.apache.logging.log4j:log4j-core:2.14.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath\nempty=annotationProcessor,testAnnotationProcessor\n",
+        "osv-mcp-gradle-declarations.json": "{\n  \"contractVersion\": 1,\n  \"trustModel\": \"registered-helper-v1\",\n  \"catalogPolicy\": \"none\",\n  \"sources\": [\n    \"build.gradle.kts\",\n    \"gradle/extra.gradle.kts\"\n  ],\n  \"scopes\": [\n    {\n      \"id\": \"annotationProcessor\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"annotationProcessor\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    },\n    {\n      \"id\": \"compileClasspath\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"compileClasspath\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    },\n    {\n      \"id\": \"runtimeClasspath\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"runtimeClasspath\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    },\n    {\n      \"id\": \"testAnnotationProcessor\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"testAnnotationProcessor\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    },\n    {\n      \"id\": \"testCompileClasspath\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"testCompileClasspath\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    },\n    {\n      \"id\": \"testRuntimeClasspath\",\n      \"projectPath\": \":\",\n      \"resolvableConfiguration\": \"testRuntimeClasspath\",\n      \"declarationConfigurations\": [\n        \"implementation\",\n        \"runtimeOnly\"\n      ],\n      \"assertion\": \"all-contributing-additions-use-helper\",\n      \"mutationPolicy\": \"immutable-after-add\"\n    }\n  ]\n}\n",
+        "build.gradle.kts": "\nimport org.gradle.kotlin.dsl.withGroovyBuilder\nplugins { `java-library` }\nrepositories { mavenCentral() }\ndependencyLocking { lockAllConfigurations() }\nval h=extensions.getByName(\"osvMcpDeclarations\")\nval source=h.withGroovyBuilder { \"source\"(\"build.gradle.kts\") }\nh.withGroovyBuilder { \"add\"(\"implementation\",\"org.apache.logging.log4j:log4j-core:2.14.1\",source) }\napply(from=\"gradle/extra.gradle.kts\")\n",
+        "gradle/extra.gradle.kts": "\nimport org.gradle.kotlin.dsl.withGroovyBuilder\nval h=extensions.getByName(\"osvMcpDeclarations\")\nval source=h.withGroovyBuilder { \"source\"(\"gradle/extra.gradle.kts\",\"applied-script\") }\nh.withGroovyBuilder { \"add\"(\"runtimeOnly\",\"org.apache.logging.log4j:log4j-core:2.14.1\",source) }\nh.withGroovyBuilder { \"add\"(\"implementation\",\"com.fasterxml.jackson.core:jackson-databind:2.9.10.7\",source) }\n"
+      }
+    }
+  ]
+}

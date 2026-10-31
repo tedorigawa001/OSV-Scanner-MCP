@@ -1,4 +1,4 @@
-# Gradle Stage A/B 実装・実接続検証
+# Gradle Stage A/B・C1a 実装・実接続検証
 
 検証日: 2026-10-31。リリース・コミットは今回の作業に含めない。
 
@@ -9,7 +9,7 @@
 - selected component・variant単位の非constraint辺からdirect/transitive・introduced_byを生成。configuration間・lock間の完全性を最終出力まで保持。
 - lock hash・既知input hash・project/configuration/scope対応を検証。古い／不正なJSONだけではcoverageを下げず、有効なcontextのlock外module・未解決要求・file依存を欠けとして報告。
 - JSON／lockの関係解析は各16 MiB/件・64 MiB/scan、inputは4 MiB/件・64 MiB/scan。JSONの重複key・深さ128・schema・ID参照を検証し、index/traversal各200万操作を共有。
-- source-mapはStage C。ownerBuildFileを物理宣言元とみなさず、declared_inを省略しdeclarations_complete=falseを返す。
+- Stage A/BではownerBuildFileを物理宣言元とみなさず、declared_inを省略する。C1aの明示登録・信頼設定による宣言元対応と実接続結果は後述。
 
 ## Stage A: 実Gradleのexport
 
@@ -147,6 +147,83 @@ OSV_MCP_GRADLE_BENCH_OUTPUT=/absolute/path/to/comparison.json \
 npm test -- src/test/benchmarks/gradleOrigins.test.ts
 ```
 
+## Stage C1a: 本番adapter・静的取込の実接続（2026-10-31）
+
+対象revisionは`71819b5534d5913910bbd77f1debec16479f85f2`。実行したadapter／exporter／readerのsource SHA-256、scannerのversion／SHA-256、生成した宣言・契約・lock、ツール別の結果と独立OSV照会の応答は[検証データ](validation/gradle-c1a-live-2026-10-31.json)に保存した。これは検証時点の結果であり、将来の推奨版や脆弱性件数の固定期待値ではない。
+
+| 項目 | 実行条件 |
+|---|---|
+| Gradle／DSL | 8.11.1／Groovy、9.2.1／Kotlin |
+| JVM | JDK 21.0.13+9（既存の検証用一時環境） |
+| 外部scanner | OSV-Scanner 2.7.0、osv-scalibr 0.5.3 |
+| 接続経路 | 実MCP stdio → dist/index.js → 実scanner。mock／fetch差替えなし |
+| Gradle実行 | 自作projectでdependencies --write-locksを明示実行後、両init scriptでschema v2をexport。--offline・--no-configuration-cacheを指定 |
+| 信頼契約 | registered-helper-v1、catalogPolicy=none、必要な全6 configurationをscopeへ収録 |
+| OSV接続 | lockスキャンとcandidate check、さらに独立したPOST https://api.osv.dev/v1/query。manifestのremote resolutionは無効 |
+
+### 検証projectと宣言元
+
+通常のjava-library projectに、次の登録を置いた。Kotlin版も同じ構造で、ファイル名に`.kts`を付ける。
+
+| 宣言場所 | configuration | パッケージ／使用版 |
+|---|---|---|
+| build.gradle | implementation | org.apache.logging.log4j:log4j-core:2.14.1 |
+| gradle/extra.gradle（applied script） | runtimeOnly | 同じlog4j-core:2.14.1を別試行として登録 |
+| gradle/extra.gradle | implementation | com.fasterxml.jackson.core:jackson-databind:2.9.10.7 |
+
+これにより、異なるconfigurationの同値依存が解決graphでは合流しても、宣言元は二つとも必要になる。runtimeClasspathのexportにimplementation／runtimeOnly両試行があることを確認した。lockとv2 companionは各projectで新規生成し、既存のStage B検証projectは変更していない。
+
+### 3ツールの実接続結果
+
+両projectで、信頼設定あり／なし × scan_project・scan_java_project・suggest_fixの**計12呼出し**が成功した。全てcoverage.complete=true、relations_complete=true。各呼出しで4つの脆弱packageが応答に含まれた。
+
+信頼設定あり:
+
+- declarations_complete=true、trust_model=registered-helper-v1、trust_status=accepted。
+- assurance=author-attested-and-structurally-checked。全6 configurationのcontext別状態もaccepted。
+- limitationsにはunregistered_equal_additions_not_detectableとreverted_external_mutations_not_detectableを保持。
+- log4j-coreのdeclared_inはbuild.gradleとgradle/extra.gradleの完全な集合。databindはgradle/extra.gradleのみ。Kotlin版は対応する`.gradle.kts`のpath。
+- jackson-core／log4j-apiはtransitiveで宣言元を付けず、それぞれdatabind／log4j-coreをintroduced_byに表示。
+- suggest_fixは全ての確定宣言元を更新案内に表示し、Gradle-onlyの提案へpom.xmlを混入しない。
+
+信頼設定なし（別MCPサーバープロセスで環境変数を未設定）:
+
+- declarations_complete=false、trust_status=disabled、assurance=null。全packageのdeclared_inを省略。
+- 直接／推移的関係、introduced_by、スキャン対象packageと使用版、脆弱性coverageは維持。
+- 3ツールとも同じ抑制となり、JSON自身の作者表明だけでは宣言元を採用しないことを確認した。
+
+### 修正候補と独立したOSV再照会
+
+以下はGroovy／Kotlin両projectで一致した**検証時点の提案**。ツール内のcandidate_checkは全てcleanであり、さらにハーネスから同じpackage／候補版を独立にPOST /v1/queryへ照会した。両project計8照会がHTTP 200、応答bodyは全て`{}`、next_page_tokenなし、vulnerability IDは0件だった。
+
+| パッケージ | 使用版 | 関係 | 提案版 | ツール内検査／独立照会 |
+|---|---|---|---|---|
+| org.apache.logging.log4j:log4j-core | 2.14.1 | direct | 2.25.4 | clean／HTTP 200・0件 |
+| org.apache.logging.log4j:log4j-api | 2.14.1 | transitive | 2.25.5 | clean／HTTP 200・0件 |
+| com.fasterxml.jackson.core:jackson-databind | 2.9.10.7 | direct | 2.18.11 | clean／HTTP 200・0件 |
+| com.fasterxml.jackson.core:jackson-core | 2.9.10 | transitive | 2.18.11 | clean／HTTP 200・0件 |
+
+現在版の検出にはlog4j-coreのGHSA-jfh8-c2jp-5v3q等が含まれた。候補のcleanはOSVがその名前・版へ返した脆弱性情報の結果であり、Maven repositoryでのartifact存在、Java／variant互換性、ビルド・テスト成功を保証するものではない。今回は候補版への依存更新やrestore／compileは行っていない。
+
+### 不変性・再実行
+
+MCPのPATHに失敗する偽java／gradleを置き、projectには失敗する偽Wrapperを置いた。呼び出された場合に作るmarkerは全scenarioで存在しなかった。lock、companion、契約、settings、両宣言source、WrapperのSHA-256は3ツール実行前後で一致し、元ファイルの更新がないことを確認した。
+
+明示実行専用の[再現ハーネス](../src/test/manual/gradleC1aLive.mjs)を追加した。通常のnpm testからは実行せず、scannerやGradleを自動取得しない。入力した信頼済み実行バイナリと、必要なMaven metadataを含むGradle cacheを使用する。fixtureと生応答は新しい一時領域へ保存し、その場所をstdoutに表示する。
+
+```sh
+bdo npm run build
+bdo proxy env \
+  JAVA_HOME=/trusted/jdk-21 \
+  GRADLE_USER_HOME=/trusted/gradle-cache \
+  OSV_MCP_LIVE_SCANNER=/trusted/osv-scanner \
+  OSV_MCP_LIVE_GRADLE_8=/trusted/gradle-8.11.1/bin/gradle \
+  OSV_MCP_LIVE_GRADLE_9=/trusted/gradle-9.2.1/bin/gradle \
+  node src/test/manual/gradleC1aLive.mjs
+```
+
+今回の生応答とserver stderrは`/private/var/folders/s6/2sk4lqmn1_5dp8gdr0_lz1qw0000gn/T/osv-c1a-live-8jV02a/evidence/`へ保存。配布物へは含めない。ライブラリのコード変更はなく、手動ハーネスの構文検査・保存した結果の整合性・差分の空白チェックも確認した。
+
 ## 残る制約
 
-物理宣言元source-map、buildscript lock、composite/included build、独自lock path、Android固有構成などはStage C以降。入力hashの一致だけでは環境変数・外部init script・remote plugin等を含む完全な鮮度は保証しない。artifact有無・Java/Android/variant互換性もOSVのclean判定とは別に確認が必要。
+C1bのProvider／catalog／bundle、convention pluginのsource-artifact対応、buildscript lock、composite/included build、独自lock path、Android固有構成などは引き続き未対応。C1aの物理宣言元は明示helperと作者表明の信頼契約に限定する。入力hashの一致だけでは環境変数・外部init script・remote plugin等を含む完全な鮮度は保証しない。artifact有無・Java/Android/variant互換性もOSVのclean判定とは別に確認が必要。
