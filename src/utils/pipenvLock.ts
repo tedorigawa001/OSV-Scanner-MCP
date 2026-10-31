@@ -175,7 +175,8 @@ export function analyzePipenv(source: string, manifests: readonly PipenvManifest
   if (!root) return { workspaces, relations: null };
   try {
     const step = () => { if (--relationBudget.remaining < 0) throw Error("Pipenv relation limit"); };
-    const results = new Map<string, { direct: Set<string>; transitive: boolean; by: Set<string> }>();
+    // ambiguous: a category locks the release without declaring it and cannot name its unique origin
+    const results = new Map<string, { direct: Set<string>; transitive: boolean; by: Set<string>; ambiguous: boolean }>();
     for (const category of categories) {
       step(); const declared = new Map<string, Set<string>>(), roots = new Set<string>();
       const direct = (name: string, file: string) => { step(); const files = declared.get(name) ?? new Set<string>(); files.add(file); declared.set(name, files); roots.add(name); };
@@ -188,19 +189,21 @@ export function analyzePipenv(source: string, manifests: readonly PipenvManifest
       }
       for (const entry of category.packages.values()) {
         step(); if (!entry.registry) continue;
-        const key = JSON.stringify([entry.name, entry.version]), info = results.get(key) ?? { direct: new Set<string>(), transitive: false, by: new Set<string>() };
+        const key = JSON.stringify([entry.name, entry.version]), info = results.get(key) ?? { direct: new Set<string>(), transitive: false, by: new Set<string>(), ambiguous: false };
         for (const file of declared.get(entry.name) ?? []) { step(); info.direct.add(file); }
-        if (category.complete && roots.size && !declared.has(entry.name)) {
-          info.transitive = true;
-          // With more than one root the flat lock cannot establish which one introduced this release.
-          if (roots.size === 1) { const name = roots.values().next().value!; if (name !== entry.name) info.by.add(name); }
+        if (!declared.has(entry.name)) {
+          if (category.complete && roots.size) info.transitive = true;
+          // With more than one root the flat lock cannot establish which one introduced this release,
+          // so an origin from another category would be incomplete and is withheld.
+          if (category.complete && roots.size === 1) { const name = roots.values().next().value!; if (name !== entry.name) info.by.add(name); }
+          else info.ambiguous = true;
         }
         results.set(key, info);
       }
     }
     return { workspaces, relations: (name, version) => {
       const info = results.get(JSON.stringify([norm(name), version]));
-      return info ? { relation: info.direct.size ? "direct" : info.transitive ? "transitive" : "unknown", ...(info.direct.size ? { declaredIn: info.direct } : {}), ...(info.by.size ? { introducedBy: info.by } : {}) } : { relation: "unknown" };
+      return info ? { relation: info.direct.size ? "direct" : info.transitive ? "transitive" : "unknown", ...(info.direct.size ? { declaredIn: info.direct } : {}), ...(info.by.size && !info.ambiguous ? { introducedBy: info.by } : {}) } : { relation: "unknown" };
     } };
   } catch { return { workspaces, relations: null }; }
 }

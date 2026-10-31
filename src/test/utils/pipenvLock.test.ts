@@ -12,6 +12,18 @@ it("does not guess an origin when a category has multiple direct roots", () => {
   const result = analyzePipenv(lock({ ...releases, jinja2: { version: "==3.1.4" } }), root({ packages: { requests: "*", jinja2: "*" } }));
   expect(result.relations?.("urllib3", "1.26.20")).toEqual({ relation: "transitive" });
 });
+it("withholds a unique origin when another category locking the release cannot name its origin", () => {
+  const develop = { pytest: { version: "==8.0.0" }, botocore: { version: "==1.30.0" }, urllib3: { version: "==1.26.20" } };
+  // Multiple roots in develop: requests alone would be an incomplete origin.
+  const multiple = analyzePipenv(lock(releases, develop), root({ packages: { requests: "*" }, "dev-packages": { pytest: "*", botocore: "*" } }));
+  expect(multiple.relations?.("urllib3", "1.26.20")).toEqual({ relation: "transitive" });
+  // An incomplete develop category cannot establish any origin either.
+  const incomplete = analyzePipenv(lock(releases, develop), root({ packages: { requests: "*" }, "dev-packages": { pytest: "*", absent: "*" } }));
+  expect(incomplete.relations?.("urllib3", "1.26.20")).toEqual({ relation: "transitive" });
+  // The same unique origin in both categories is kept.
+  const same = analyzePipenv(lock(releases, releases), root({ packages: { requests: "*" }, "dev-packages": { requests: "*" } }));
+  expect(same.relations?.("urllib3", "1.26.20")).toMatchObject({ relation: "transitive", introducedBy: new Set(["requests"]) });
+});
 it("keeps development/custom categories separate and merges direct/transitive overlap", () => {
   const result = analyzePipenv(lock(releases, { urllib3: { version: "==1.26.20" } }, { docs: { jinja2: { version: "==3.1.4" }, markupsafe: { version: "==2.0.0" } } }), root({
     packages: { requests: "*" }, "dev-packages": { urllib3: "*" }, docs: { jinja2: "*" },

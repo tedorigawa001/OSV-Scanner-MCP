@@ -132,6 +132,25 @@ it.each(["included", "missing", "unconfirmed", "nonmember"])("propagates Pipenv 
     }
   }
 });
+it("omits a partial introduced_by when another category has several possible origins in both tools", async () => {
+  const data = JSON.parse(await fixture());
+  data.develop.leaf = { version: "==1.0.0" }; data.develop.other = { version: "==1.0.0" };
+  await writeFile(path.join(dir, "Pipfile.lock"), JSON.stringify(data));
+  const file = path.join(dir, "Pipfile");
+  await writeFile(file, (await readFile(file, "utf8")).replace("[dev-packages]\n", '[dev-packages]\nother="==1.0.0"\n'));
+  vi.mocked(runOsvScan).mockImplementation(async targets => parseOsvScanOutput({ results: [{ source: { path: targets[0]!.path, type: "lockfile" }, packages: [{
+    package: { name: "leaf", version: "1.0.0", ecosystem: "PyPI" }, groups: [{ ids: ["GHSA-leaf"], aliases: [] }],
+    vulnerabilities: [{ id: "GHSA-leaf", affected: [{ package: { name: "leaf", ecosystem: "PyPI" }, ranges: [{ type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "1.0.1" }] }] }] }],
+  }] }] }));
+  for (const result of [await handleScanProject({ project_path: dir }), await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled" })]) {
+    const payload = JSON.parse(result.content[0]!.text);
+    expect(payload.coverage.complete).toBe(true);
+    const leaf = (payload.packages ?? payload.suggestions)[0];
+    expect(leaf).toMatchObject({ dependency_relation: "transitive" });
+    expect(leaf.introduced_by).toBeUndefined();
+    if (payload.suggestions) expect(leaf.update_hint).not.toContain("parent");
+  }
+});
 it("does not cover independent descendant projects or legacy marker files by name alone", async () => {
   await fixture(); await mkdir(path.join(dir, member, "independent"));
   await writeFile(path.join(dir, member, "independent/pyproject.toml"), '[project]\nname="web"');

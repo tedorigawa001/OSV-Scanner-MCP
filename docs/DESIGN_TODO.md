@@ -1425,6 +1425,8 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 
 - Pipenvレビュー修正(2026-10-31): 子のPoetry形式のgroup.*.dependencies/旧dev-dependencies/include-groupsも検出し、上位lockでは開発用依存が収録されたと確認できないためunconfirmedとする。空のdevテーブルは依存なしとして扱う。カスタムカテゴリの一時コピーには元カテゴリ名を保持し、既存のscannerグループと併合してscan_project/suggest_fixのdependency_groupsに戻す。両ツールに回帰テストを追加。
 
+- Pipenv introduced_byのレビュー修正(2026-10-31): 同じ名前・版の結果をカテゴリ間で併合する際、根が一意のカテゴリの由来だけが残り、別カテゴリ(根が複数・宣言が不完全)の未確定の由来が欠けたまま一意に見えた(default: requests由来、develop: pytest/botocoreの2根でintroduced_by=[requests]、suggest_fixのhintもrequestsの更新を案内)。宣言せずに収録するカテゴリのいずれかで由来を一意に決められなければintroduced_byを出さない。全カテゴリで同じ一意の根なら保持、直接依存との重なり(直接+一意の由来)は従来どおり。両ツールに回帰テストを追加。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。
