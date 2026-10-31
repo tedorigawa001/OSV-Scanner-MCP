@@ -51,6 +51,8 @@ export interface ScanReportVulnerability {
 }
 
 export interface ScanReportPackage {
+  /** Internal, non-enumerable package-manager context; never emitted. */
+  build_systems?: ("maven" | "gradle")[];
   name: string;
   version: string;
   ecosystem: string;

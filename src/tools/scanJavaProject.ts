@@ -4,6 +4,8 @@
  */
 
 import path from "node:path";
+import { GradleGraphCache, type GradleMetadata } from "../utils/gradleGraphCache.js";
+import { annotateRelations, buildRelationLookups } from "./scanProject.js";
 import { ScanToolError } from "../errors.js";
 import { isRemoteResolutionDisabled, runOsvScan, type RunOsvScanOptions } from "../osv/runner.js";
 import type { ScanReport } from "../osv/scanReport.js";
@@ -74,7 +76,7 @@ export async function withScopeNotes<T>(notes: readonly ManifestNote[], scan: ()
 export async function scanJavaManifests(
   project: DetectedJavaProject,
   options: RunOsvScanOptions,
-): Promise<{ manifests: string[]; skipped: ManifestNote[]; incomplete: ManifestNote[]; report: ScanReport }> {
+): Promise<{ manifests: string[]; skipped: ManifestNote[]; incomplete: ManifestNote[]; report: ScanReport; gradleMetadata: GradleMetadata[]; gradleIncomplete: ManifestNote[] }> {
   const snapshot = await ScanSnapshot.create();
   try {
     const { targets, skipped, incomplete } = await snapshotManifests(snapshot, project.targets, {
@@ -94,12 +96,22 @@ export async function scanJavaManifests(
     }
     const originals = new Map(targets.map((copy, i) => [copy.path, scanned[i]!.path]));
     const incompleteRelative = incomplete.map((s) => ({ path: relative(s.path), reason: s.reason }));
-    const report = await withScopeNotes([...skippedRelative, ...incompleteRelative], () => snapshot.guard(() => runOsvScan(targets, options)));
+    const cache = new GradleGraphCache(project.projectDir);
+    const gradleMetadata: GradleMetadata[] = [], gradleIncomplete: ManifestNote[] = [];
+    const sources = targets.map((copy, i) => ({ copy: copy.path, format: copy.format, originalRelative: relative(scanned[i]!.path), gradleLookup: null as import("../utils/dependencyRelations.js").RelationLookup }));
+    for (const source of sources) {
+      if (source.format !== "gradle.lockfile" && source.format !== "buildscript-gradle.lockfile") continue;
+      const capture = await cache.captureCopy(path.join(project.projectDir, source.originalRelative), source.copy);
+      source.gradleLookup = capture.lookup; gradleMetadata.push(capture.metadata);
+      gradleIncomplete.push(...capture.coverageReasons.map(reason => ({ path: source.originalRelative, reason: `Gradle graph: ${reason}` })));
+    }
+    const report = await withScopeNotes([...skippedRelative, ...incompleteRelative, ...gradleIncomplete], () => snapshot.guard(() => runOsvScan(targets, options)));
     return {
+      gradleMetadata, gradleIncomplete,
       manifests: scanned.map((t) => relative(t.path)),
       skipped: skippedRelative,
       incomplete: incompleteRelative,
-      report: { ...report, source_files: report.source_files.map((file) => originals.get(file) ?? file) },
+      report: { ...report, packages: annotateRelations(report.packages, await buildRelationLookups(sources)), source_files: report.source_files.map((file) => originals.get(file) ?? file) },
     };
   } finally {
     await snapshot.cleanup();
@@ -127,11 +139,15 @@ export async function handleScanJavaProject(
       allowedRoot: options.allowedRoot,
     });
     const noRemoteResolution = isRemoteResolutionDisabled(options);
-    const { manifests, skipped, incomplete, report } = await scanJavaManifests(project, { ...options, noRemoteResolution });
+    const { manifests, skipped, incomplete, report, gradleMetadata, gradleIncomplete } = await scanJavaManifests(project, { ...options, noRemoteResolution });
     return jsonResult({
       project_dir: project.projectDir,
       manifests,
-      ...skippedManifestsFields(skipped, incomplete),
+      ...skippedManifestsFields(skipped, [...incomplete, ...gradleIncomplete]),
+      ...(gradleMetadata.length ? { coverage: {
+        complete: skipped.length === 0 && incomplete.length === 0 && gradleIncomplete.length === 0,
+        dependency_metadata: { gradle: gradleMetadata }, skipped_files: [...skipped, ...incomplete, ...gradleIncomplete].map(note => ({ path: sanitizeExternalText(note.path), reason: sanitizeExternalText(note.reason) })),
+      } } : {}),
       dependency_resolution: dependencyResolution(noRemoteResolution),
       ...report,
     });

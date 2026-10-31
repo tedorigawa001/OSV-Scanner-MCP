@@ -25,7 +25,8 @@
     "sca"
   ],
   "files": [
-    "dist"
+    "dist",
+    "gradle/export-dependency-graph.init.gradle"
   ],
   "repository": {
     "type": "git",

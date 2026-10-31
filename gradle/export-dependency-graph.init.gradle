@@ -1,0 +1,175 @@
+// Run explicitly in a trusted build environment. The MCP server never executes this script.
+import groovy.json.JsonOutput
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.gradle.api.artifacts.component.ModuleComponentSelector
+import org.gradle.api.artifacts.component.ProjectComponentSelector
+import org.gradle.api.artifacts.FileCollectionDependency
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+import org.gradle.util.GradleVersion
+
+def digest = { File file -> MessageDigest.getInstance('SHA-256').digest(file.bytes).encodeHex().toString() }
+// Baselines must describe the files Gradle evaluates, not files rewritten by a later task.
+// Keep absent candidates too: creating/removing one can change the next evaluation.
+def inputStates = new LinkedHashMap<File, String>()
+def captureInput = { File file ->
+    def key = file.toPath().toAbsolutePath().normalize().toFile()
+    if (!inputStates.containsKey(key)) inputStates[key] = key.isFile() ? digest(key) : null
+}
+def captureSettingsInputs = { File directory ->
+    ['settings.gradle', 'settings.gradle.kts', 'gradle.properties', 'gradle/libs.versions.toml'].each { name ->
+        captureInput(new File(directory, name))
+    }
+}
+def verifyInputs = {
+    inputStates.each { file, before ->
+        def current = file.isFile() ? digest(file) : null
+        if (current != before) throw new GradleException('Build input changed during OSV graph export')
+    }
+}
+gradle.beforeSettings { settings -> captureSettingsInputs(settings.settingsDir) }
+gradle.projectsLoaded { loaded ->
+    // Capture every project before any build script runs, including scripts a root project may edit.
+    captureSettingsInputs(loaded.rootProject.projectDir)
+    loaded.rootProject.allprojects.each { project ->
+        captureInput(project.buildFile)
+        captureInput(new File(project.projectDir, 'build.gradle'))
+        captureInput(new File(project.projectDir, 'build.gradle.kts'))
+    }
+}
+
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    root.tasks.register('osvMcpExportDependencies') {
+        group = 'verification'
+        description = 'Export selected dependency graphs for static OSV MCP import (trusted builds only)'
+        doLast {
+            if (GradleVersion.current() < GradleVersion.version('8.11')) {
+                throw new GradleException('OSV graph export requires Gradle 8.11 or newer')
+            }
+            verifyInputs()
+            def relative = { File file ->
+                def base = root.projectDir.canonicalFile.toPath()
+                def target = file.canonicalFile.toPath()
+                if (!target.startsWith(base)) throw new GradleException('OSV export input is outside the build root')
+                def value = base.relativize(target).toString().replace('\\', '/')
+                value ?: '.'
+            }
+            def projects = root.allprojects.sort { it.path }
+            def projectId = { String projectPath -> 'main:' + projectPath }
+            def projectRecords = projects.collect { p -> [id: projectId(p.path), buildId: 'main', projectPath: p.path,
+                directory: relative(p.projectDir), ownerBuildFile: relative(p.buildFile)] }
+            // Only ordinary per-project lockfiles in v1; no buildscript/custom lock paths.
+            def lockRecords = [], before = [:], lockFiles = [:]
+            projects.each { p ->
+                def file = new File(p.projectDir, 'gradle.lockfile')
+                if (file.isFile()) {
+                    def lockId = 'lock:' + p.path
+                    before[lockId] = digest(file); lockFiles[lockId] = file
+                    lockRecords << [id: lockId, path: relative(file), sha256: before[lockId]]
+                }
+            }
+            if (lockRecords.isEmpty()) throw new GradleException('Generate gradle.lockfile before exporting; the exporter does not write locks')
+            def inputRecords = inputStates.findAll { file, initialHash -> initialHash != null }.collect { file, initialHash ->
+                [path: relative(file), sha256: initialHash]
+            }
+            def requestedSelector = { selector ->
+                if (selector instanceof ModuleComponentSelector) return [kind: 'module', group: selector.group, name: selector.module, selector: selector.version]
+                if (selector instanceof ProjectComponentSelector) return [kind: 'project', projectPath: selector.projectPath]
+                [kind: 'unknown']
+            }
+            def contexts = []
+            projects.each { p ->
+                def lockId = 'lock:' + p.path
+                if (!lockFiles.containsKey(lockId)) return
+                def selection = root.findProperty('osvMcpConfigurations')?.toString()
+                def names = selection ? selection.split(',').collect { it.trim() }.findAll { it }.unique() :
+                    ['compileClasspath', 'runtimeClasspath', 'testCompileClasspath', 'testRuntimeClasspath'].findAll { p.configurations.findByName(it) != null }
+                if (selection == '*') names = p.configurations.findAll { it.canBeResolved }.collect { it.name }.sort()
+                names.each { name ->
+                    def c = [id: p.path + ':' + name, projectId: projectId(p.path), kind: 'project', configuration: name,
+                        lockfileId: lockId, lockConfiguration: name, complete: true, rootVariant: 'v0',
+                        components: [], variants: [], edges: [], unresolved: [], unrepresentedDependencies: [], declarationEvidence: [], reasons: []]
+                    def cfg = p.configurations.findByName(name)
+                    def fallback = { reason ->
+                        c.complete = false; c.reasons << reason
+                        c.rootVariant = 'v0'; c.components = [[id: 'c0', kind: 'project', projectId: projectId(p.path)]]
+                        c.variants = [[id: 'v0', componentId: 'c0']]; c.edges = []; c.unresolved = []
+                    }
+                    if (cfg == null || !cfg.canBeResolved) {
+                        fallback(cfg == null ? 'configuration_missing' : 'configuration_not_resolvable')
+                    } else {
+                        try {
+                            def files = cfg.allDependencies.count { it instanceof FileCollectionDependency }
+                            if (files) { c.unrepresentedDependencies << [kind: 'file', count: files]; c.complete = false }
+                            def resolution = cfg.incoming.resolutionResult
+                            def rootComponent = resolution.rootComponent.get()
+                            def rootVariant = resolution.rootVariant.get()
+                            def components = [:], variants = [:], pending = [], visited = new HashSet()
+                            def addComponent = { component ->
+                                def identifier = component.id
+                                if (!components.containsKey(identifier)) {
+                                    def record = [id: 'c' + components.size()]
+                                    if (identifier instanceof ModuleComponentIdentifier) {
+                                        record += [kind: 'module', group: identifier.group, name: identifier.module, version: identifier.version]
+                                    } else if (identifier instanceof ProjectComponentIdentifier && identifier.build.buildPath == ":" && projects.any { it.path == identifier.projectPath }) {
+                                        record += [kind: 'project', projectId: projectId(identifier.projectPath)]
+                                    } else { throw new GradleException('unsupported_identity') }
+                                    components[identifier] = record; c.components << record
+                                }
+                                components[identifier].id
+                            }
+                            def addVariant = { component, variant ->
+                                if (variant.externalVariant.present) throw new GradleException('unsupported_external_variant')
+                                def componentId = addComponent(component)
+                                def key = [component.id, variant]
+                                if (!variants.containsKey(key)) {
+                                    def variantId = 'v' + variants.size(); variants[key] = variantId
+                                    c.variants << [id: variantId, componentId: componentId]
+                                    pending << [component: component, variant: variant, id: variantId]
+                                }
+                                variants[key]
+                            }
+                            c.rootVariant = addVariant(rootComponent, rootVariant)
+                            for (int i = 0; i < pending.size(); i++) {
+                                if (pending.size() > 200000 || c.edges.size() > 200000) throw new GradleException('graph_size_limit')
+                                def current = pending[i]
+                                if (!visited.add(current.id)) continue
+                                current.component.getDependenciesForVariant(current.variant).each { edge ->
+                                    if (edge instanceof ResolvedDependencyResult) {
+                                        def target = addVariant(edge.selected, edge.resolvedVariant)
+                                        c.edges << [fromVariant: current.id, selectedVariant: target, constraint: edge.constraint,
+                                            requested: requestedSelector(edge.requested), selectionReasons: edge.selected.selectionReason.descriptions.collect { it.cause.toString() }.unique()]
+                                    } else if (edge instanceof UnresolvedDependencyResult) {
+                                        c.complete = false
+                                        c.unresolved << [fromVariant: current.id, requested: requestedSelector(edge.requested), reason: 'resolution_failed']
+                                    } else { throw new GradleException('unsupported_edge') }
+                                }
+                            }
+                        } catch (Exception ignored) {
+                            // Never serialize exception messages, repository URLs, credentials or absolute paths.
+                            fallback('graph_export_failed')
+                        }
+                    }
+                    contexts << c
+                }
+            }
+            lockFiles.each { id, file -> if (digest(file) != before[id]) throw new GradleException('Lock changed during OSV graph export') }
+            verifyInputs()
+            def document = [schema: 'osv-mcp.gradle-graph', schemaVersion: 1,
+                producer: [exporterVersion: '1', gradleVersion: gradle.gradleVersion], lockfiles: lockRecords, projects: projectRecords,
+                inputs: [complete: false, files: inputRecords], contexts: contexts]
+            def output = new File(root.projectDir, 'osv-mcp-gradle-dependencies.json')
+            def temporary = Files.createTempFile(root.projectDir.toPath(), '.osv-mcp-gradle-', '.json')
+            try {
+                Files.write(temporary, (JsonOutput.prettyPrint(JsonOutput.toJson(document)) + '\n').getBytes('UTF-8'))
+                Files.move(temporary, output.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } finally { Files.deleteIfExists(temporary) }
+            logger.lifecycle('Wrote OSV dependency graph (no library artifacts requested)')
+        }
+    }
+}

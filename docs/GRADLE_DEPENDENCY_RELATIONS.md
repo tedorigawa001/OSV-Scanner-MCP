@@ -1,6 +1,8 @@
 # Gradleの依存関係・導入元・宣言元の設計
 
-設計日: 2026-10-31。設計案であり、exporter・JSON取込・応答拡張は未実装。
+設計日: 2026-10-31。Stage A/Bのexporter・静的取込・応答拡張を実装。Stage Cの物理宣言元source-map等は未実装。
+
+実装メモ: exporterは`gradle/export-dependency-graph.init.gradle`としてnpm配布にも同梱する。`-PosvMcpConfigurations=*`は全resolvable configuration、既定は存在する4つのclasspathを選択する。metadata状態は`coverage.dependency_metadata.gradle`へ出し、relationの完全性と物理宣言元の完全性を区別する。Stage Bの`declarationEvidence`は空配列のみ対応し、未知のsource-map形式を検証済みとは扱わない。Gradle 8.11.1／9.2.1とGroovy／Kotlin DSLで実export、既知の脆弱版で3ツールからのOSV実接続を確認。詳細は[実接続検証記録](GRADLE_LIVE_VALIDATION.md)を参照。
 
 ## 1. 推奨方式
 
@@ -78,6 +80,7 @@ Graph APIではライブラリartifact自体を要求せずにメタデータを
 - 状態は`(context, component ID, selected variant ID)`。componentだけで全variantの辺を合流させない。
 - unresolved edge、constraint edge、substitution、selection reasonを失わない。例外全文・URL・認証情報・絶対パスは出力しない。
 - graph生成前後でlockのバイト列hashを比較し、途中で変わったら生成失敗とする。JSONは一時ファイルからatomic renameする。
+- 既知settings入力は`beforeSettings`、全projectのbuild fileは`projectsLoaded`で評価前にhashを捕捉する。存在しない既知候補もその状態を保持し、評価中の生成・削除を検出する。export開始時と解決後の書込前に基準と比較し、評価中／先行タスクの変更があれば既存companionを上書きせず失敗とする。変更後の宣言は別のGradle実行で再評価してからexportする。
 
 variantごとの依存集合は異なり得るため、`getDependencies()`の単純な和だけで経路を作らない。[ResolvedComponentResult API](https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/result/ResolvedComponentResult.html)
 

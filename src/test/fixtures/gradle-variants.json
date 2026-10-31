@@ -1,0 +1,435 @@
+{
+  "schema": "osv-mcp.gradle-graph",
+  "schemaVersion": 1,
+  "producer": {
+    "exporterVersion": "1",
+    "gradleVersion": "8.11.1"
+  },
+  "lockfiles": [
+    {
+      "id": "lock::",
+      "path": "gradle.lockfile",
+      "sha256": "ef4b78d31dde0c247e8dfe377a6ab79aa5713c45734a3dbb90d8df0baa68e2d4"
+    }
+  ],
+  "projects": [
+    {
+      "id": "main::",
+      "buildId": "main",
+      "projectPath": ":",
+      "directory": ".",
+      "ownerBuildFile": "build.gradle"
+    },
+    {
+      "id": "main::lib",
+      "buildId": "main",
+      "projectPath": ":lib",
+      "directory": "lib",
+      "ownerBuildFile": "lib/build.gradle"
+    }
+  ],
+  "inputs": {
+    "complete": false,
+    "files": []
+  },
+  "contexts": [
+    {
+      "id": "::testRuntimeClasspath",
+      "projectId": "main::",
+      "kind": "project",
+      "configuration": "testRuntimeClasspath",
+      "lockfileId": "lock::",
+      "lockConfiguration": "testRuntimeClasspath",
+      "complete": true,
+      "rootVariant": "v0",
+      "components": [
+        {
+          "id": "c0",
+          "kind": "project",
+          "projectId": "main::"
+        },
+        {
+          "id": "c1",
+          "kind": "project",
+          "projectId": "main::lib"
+        },
+        {
+          "id": "c2",
+          "kind": "module",
+          "group": "org.junit",
+          "name": "junit-bom",
+          "version": "5.10.0"
+        },
+        {
+          "id": "c3",
+          "kind": "module",
+          "group": "org.junit.jupiter",
+          "name": "junit-jupiter-api",
+          "version": "5.10.0"
+        },
+        {
+          "id": "c4",
+          "kind": "module",
+          "group": "commons-io",
+          "name": "commons-io",
+          "version": "2.6"
+        },
+        {
+          "id": "c5",
+          "kind": "module",
+          "group": "org.opentest4j",
+          "name": "opentest4j",
+          "version": "1.3.0"
+        },
+        {
+          "id": "c6",
+          "kind": "module",
+          "group": "org.junit.platform",
+          "name": "junit-platform-commons",
+          "version": "1.10.0"
+        },
+        {
+          "id": "c7",
+          "kind": "module",
+          "group": "org.yaml",
+          "name": "snakeyaml",
+          "version": "1.26"
+        }
+      ],
+      "variants": [
+        {
+          "id": "v0",
+          "componentId": "c0"
+        },
+        {
+          "id": "v1",
+          "componentId": "c1"
+        },
+        {
+          "id": "v2",
+          "componentId": "c2"
+        },
+        {
+          "id": "v3",
+          "componentId": "c3"
+        },
+        {
+          "id": "v4",
+          "componentId": "c1"
+        },
+        {
+          "id": "v5",
+          "componentId": "c4"
+        },
+        {
+          "id": "v6",
+          "componentId": "c5"
+        },
+        {
+          "id": "v7",
+          "componentId": "c6"
+        },
+        {
+          "id": "v8",
+          "componentId": "c7"
+        }
+      ],
+      "edges": [
+        {
+          "fromVariant": "v0",
+          "selectedVariant": "v1",
+          "constraint": false,
+          "requested": {
+            "kind": "module",
+            "group": "acme",
+            "name": "local",
+            "selector": "1.0"
+          },
+          "selectionReasons": [
+            "REQUESTED",
+            "SELECTED_BY_RULE"
+          ]
+        },
+        {
+          "fromVariant": "v0",
+          "selectedVariant": "v2",
+          "constraint": false,
+          "requested": {
+            "kind": "module",
+            "group": "org.junit",
+            "name": "junit-bom",
+            "selector": "5.10.0"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "REQUESTED",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v0",
+          "selectedVariant": "v3",
+          "constraint": false,
+          "requested": {
+            "kind": "module",
+            "group": "org.junit.jupiter",
+            "name": "junit-jupiter-api",
+            "selector": ""
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "REQUESTED",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v0",
+          "selectedVariant": "v4",
+          "constraint": false,
+          "requested": {
+            "kind": "project",
+            "projectPath": ":lib"
+          },
+          "selectionReasons": [
+            "REQUESTED",
+            "SELECTED_BY_RULE"
+          ]
+        },
+        {
+          "fromVariant": "v0",
+          "selectedVariant": "v3",
+          "constraint": true,
+          "requested": {
+            "kind": "module",
+            "group": "org.junit.jupiter",
+            "name": "junit-jupiter-api",
+            "selector": "5.10.0"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "REQUESTED",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v0",
+          "selectedVariant": "v2",
+          "constraint": true,
+          "requested": {
+            "kind": "module",
+            "group": "org.junit",
+            "name": "junit-bom",
+            "selector": "5.10.0"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "REQUESTED",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v0",
+          "selectedVariant": "v5",
+          "constraint": true,
+          "requested": {
+            "kind": "module",
+            "group": "commons-io",
+            "name": "commons-io",
+            "selector": "2.6"
+          },
+          "selectionReasons": [
+            "REQUESTED",
+            "FORCED",
+            "CONSTRAINT"
+          ]
+        },
+        {
+          "fromVariant": "v0",
+          "selectedVariant": "v6",
+          "constraint": true,
+          "requested": {
+            "kind": "module",
+            "group": "org.opentest4j",
+            "name": "opentest4j",
+            "selector": "1.3.0"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v0",
+          "selectedVariant": "v7",
+          "constraint": true,
+          "requested": {
+            "kind": "module",
+            "group": "org.junit.platform",
+            "name": "junit-platform-commons",
+            "selector": "1.10.0"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v0",
+          "selectedVariant": "v8",
+          "constraint": true,
+          "requested": {
+            "kind": "module",
+            "group": "org.yaml",
+            "name": "snakeyaml",
+            "selector": "1.26"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v1",
+          "selectedVariant": "v5",
+          "constraint": false,
+          "requested": {
+            "kind": "module",
+            "group": "commons-io",
+            "name": "commons-io",
+            "selector": "2.5"
+          },
+          "selectionReasons": [
+            "REQUESTED",
+            "FORCED",
+            "CONSTRAINT"
+          ]
+        },
+        {
+          "fromVariant": "v2",
+          "selectedVariant": "v3",
+          "constraint": true,
+          "requested": {
+            "kind": "module",
+            "group": "org.junit.jupiter",
+            "name": "junit-jupiter-api",
+            "selector": "5.10.0"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "REQUESTED",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v2",
+          "selectedVariant": "v7",
+          "constraint": true,
+          "requested": {
+            "kind": "module",
+            "group": "org.junit.platform",
+            "name": "junit-platform-commons",
+            "selector": "1.10.0"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v3",
+          "selectedVariant": "v2",
+          "constraint": false,
+          "requested": {
+            "kind": "module",
+            "group": "org.junit",
+            "name": "junit-bom",
+            "selector": "5.10.0"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "REQUESTED",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v3",
+          "selectedVariant": "v6",
+          "constraint": false,
+          "requested": {
+            "kind": "module",
+            "group": "org.opentest4j",
+            "name": "opentest4j",
+            "selector": "1.3.0"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v3",
+          "selectedVariant": "v7",
+          "constraint": false,
+          "requested": {
+            "kind": "module",
+            "group": "org.junit.platform",
+            "name": "junit-platform-commons",
+            "selector": "1.10.0"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v4",
+          "selectedVariant": "v1",
+          "constraint": false,
+          "requested": {
+            "kind": "project",
+            "projectPath": ":lib"
+          },
+          "selectionReasons": [
+            "REQUESTED",
+            "SELECTED_BY_RULE"
+          ]
+        },
+        {
+          "fromVariant": "v4",
+          "selectedVariant": "v8",
+          "constraint": false,
+          "requested": {
+            "kind": "module",
+            "group": "org.yaml",
+            "name": "snakeyaml",
+            "selector": "1.26"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "BY_ANCESTOR"
+          ]
+        },
+        {
+          "fromVariant": "v7",
+          "selectedVariant": "v2",
+          "constraint": false,
+          "requested": {
+            "kind": "module",
+            "group": "org.junit",
+            "name": "junit-bom",
+            "selector": "5.10.0"
+          },
+          "selectionReasons": [
+            "CONSTRAINT",
+            "REQUESTED",
+            "BY_ANCESTOR"
+          ]
+        }
+      ],
+      "unresolved": [],
+      "unrepresentedDependencies": [],
+      "declarationEvidence": [],
+      "reasons": []
+    }
+  ]
+}

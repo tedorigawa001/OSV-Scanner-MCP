@@ -17,6 +17,9 @@ export type DependencyRelation = "direct" | "transitive" | "mixed" | "unknown";
 /** 1つのファイルでの、ある名前・版の依存の関係 */
 export interface RelationInfo {
   relation: "direct" | "transitive" | "unknown";
+  /** Gradle: explicit completeness, preserved through cross-file aggregation. */
+  introducedByComplete?: boolean;
+  declaredInComplete?: boolean;
   /** npm: 推移的に要求している直接依存の名前 */
   introducedBy?: ReadonlySet<string>;
   /** npm: 直接依存として宣言しているpackage.json(projectからの相対パスではなく、lockfileの位置からの相対パス) */
@@ -414,6 +417,10 @@ export function combineRelations(infos: readonly RelationInfo[]): {
     for (const name of info.introducedBy ?? []) introducedBy.add(name);
     for (const manifest of info.declaredIn ?? []) declaredIn.add(manifest);
   }
-  const partial = infos.some((info) => info.relation !== "direct" && !info.introducedBy?.size);
-  return { relation, introducedBy: partial ? [] : [...introducedBy].sort(), declaredIn: [...declaredIn].sort(), replaced: infos.some((info) => info.replaced) };
+  const explicit = infos.some(info => info.introducedByComplete !== undefined || info.declaredInComplete !== undefined);
+  const partial = infos.some((info) => info.introducedByComplete === false ||
+    (info.introducedByComplete === undefined && info.relation !== "direct" && !info.introducedBy?.size));
+  const declarationsPartial = explicit && infos.some(info => info.declaredInComplete === false ||
+    (info.declaredInComplete === undefined && (info.relation === "unknown" || (info.relation === "direct" && !info.declaredIn?.size))));
+  return { relation, introducedBy: partial ? [] : [...introducedBy].sort(), declaredIn: declarationsPartial ? [] : [...declaredIn].sort(), replaced: infos.some((info) => info.replaced) };
 }

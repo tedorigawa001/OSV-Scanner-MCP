@@ -5,6 +5,7 @@
  * complete=falseの場合は「検出0件でも安全とは言えない」旨の警告を付ける。
  */
 
+import { GradleGraphCache } from "../utils/gradleGraphCache.js";
 import { writeFile } from "node:fs/promises";
 import { createPnpmWorkBudget, pnpmLockRelations } from "../utils/pnpmRelations.js";
 import path from "node:path";
@@ -73,6 +74,7 @@ export function buildCoverage(project: DetectedProject) {
   const hasCargo = project.manifests.some((m) => m.format === "Cargo.lock");
   return {
     complete,
+    ...(project.gradleMetadata?.length ? { dependency_metadata: { gradle: project.gradleMetadata } } : {}),
     ...(complete ? {} : { warning: INCOMPLETE_WARNING }),
     manifests: project.manifests.map((m) => ({ path: sanitizeExternalText(m.path), ecosystem: m.ecosystem, format: m.format })),
     lockfile_missing: lockfileMissing.items.map((m) => ({
@@ -186,7 +188,8 @@ export function markLowerBounds(project: DetectedProject, packages: readonly Sca
 const MAX_RELATION_LOCKFILE_BYTES = 256 * 1024 * 1024;
 const MAX_INTRODUCED_BY = 10;
 
-interface SourceRelations {
+export interface SourceRelations {
+  format?: string;
   lookup: RelationLookup;
   dependencyGroup?: string;
   /** declared_inをプロジェクトからの相対パスにするための、lockfileのディレクトリ */
@@ -210,6 +213,7 @@ interface RelationSource {
   pdmLookup?: RelationLookup;
   poetryLookup?: RelationLookup;
   uvLookup?: RelationLookup;
+  gradleLookup?: RelationLookup;
 }
 
 /**
@@ -225,7 +229,7 @@ export async function buildRelationLookups(
   // pnpmの関係の解析の作業量はスキャン全体で共有する(Composer・NuGetと同じ)
   const pnpmWorkBudget = createPnpmWorkBudget();
   let remaining = maxTotalBytes;
-  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages, nugetLookup, composerLookup, yarnLookup, bunLookup, uvLookup, poetryLookup, pdmLookup, pipenvLookup, dependencyGroup } of copies) {
+  for (const { copy, format, originalRelative, entries, cargoPackages, declaringManifests, nugetPackages, nugetLookup, composerLookup, yarnLookup, bunLookup, uvLookup, poetryLookup, pdmLookup, pipenvLookup, gradleLookup, dependencyGroup } of copies) {
     const lockDir = originalRelative === null ? "" : path.dirname(originalRelative);
     let lookup: RelationLookup = null;
     try {
@@ -237,6 +241,8 @@ export async function buildRelationLookups(
           const text = read.bytes.toString("utf8");
           lookup = format === "go.mod" ? goModRelations(text) : format === "pnpm-lock.yaml" ? pnpmLockRelations(text, pnpmWorkBudget) : npmLockRelations(parseNpmLock(text, npmWorkBudget));
         }
+      } else if (format === "gradle.lockfile" || format === "buildscript-gradle.lockfile") {
+        lookup = gradleLookup ?? null;
       } else if (format === "Pipfile.lock") {
         lookup = pipenvLookup ?? null;
       } else if (format === "pdm.lock") {
@@ -263,13 +269,13 @@ export async function buildRelationLookups(
     } catch {
       lookup = null; // 解析できないファイルはunknown(スキャン自体は続ける)
     }
-    lookups.set(copy, { lookup, lockDir, ...(dependencyGroup !== undefined ? { dependencyGroup } : {}) });
+    lookups.set(copy, { lookup, lockDir, format, ...(dependencyGroup !== undefined ? { dependencyGroup } : {}) });
   }
   return lookups;
 }
 
 /** パッケージに直接/推移的依存の別を付ける。項目は脆弱性の一覧より前に置く */
-function annotateRelations(packages: readonly ScanReportPackage[], lookups: ReadonlyMap<string, SourceRelations>): ScanReportPackage[] {
+export function annotateRelations(packages: readonly ScanReportPackage[], lookups: ReadonlyMap<string, SourceRelations>): ScanReportPackage[] {
   return packages.map((pkg) => {
     // 同じファイルが複数の結果に分かれる(pom.xml・requirements.txtの宣言と推移的依存)ため、ファイルごとに1つにまとめる。
     // 同じファイルで直接依存と判定された結果があれば直接依存とする
@@ -283,14 +289,19 @@ function annotateRelations(packages: readonly ScanReportPackage[], lookups: Read
       if (entry?.dependencyGroup !== undefined) dependencyGroups.add(entry.dependencyGroup);
       const info = entry?.lookup ? entry.lookup(pkg.name, pkg.version, source.type) : { relation: "unknown" as const };
       const previous = byFile.get(source.path);
-      if (previous === undefined || rank[info.relation] > rank[previous.relation]) byFile.set(source.path, info);
+      const preferred = previous === undefined || rank[info.relation] > rank[previous.relation] ? info : previous;
+      byFile.set(source.path, { ...preferred,
+        ...(info.introducedByComplete === false || previous?.introducedByComplete === false ? { introducedByComplete: false } : {}),
+        ...(info.declaredInComplete === false || previous?.declaredInComplete === false ? { declaredInComplete: false } : {}) });
       for (const manifest of info.declaredIn ?? []) declaredIn.add(path.join(entry!.lockDir, manifest));
       for (const name of info.declaringCrates ?? []) declaringCrates.add(name);
     }
     const infos = [...byFile.values()];
-    const { relation, introducedBy, replaced } = combineRelations(infos);
+    const { relation, introducedBy, declaredIn: mergedDeclaredIn, replaced } = combineRelations(infos);
+    const explicitCompleteness = infos.some(info => info.declaredInComplete !== undefined);
+    if (explicitCompleteness && mergedDeclaredIn.length === 0) declaredIn.clear();
     const { vulnerabilities, ...rest } = pkg;
-    return {
+    const annotated: ScanReportPackage = {
       ...rest,
       ...(dependencyGroups.size ? { dependency_groups: [...dependencyGroups].sort().map(sanitizeExternalText) } : {}),
       dependency_relation: relation,
@@ -302,6 +313,10 @@ function annotateRelations(packages: readonly ScanReportPackage[], lookups: Read
       ...(replaced ? { replaced_in_go_mod: true as const } : {}),
       vulnerabilities,
     };
+    const formats = packageSources(pkg).map(source => lookups.get(source.path)?.format);
+    const systems = [...new Set(formats.flatMap(f => f === "pom.xml" ? ["maven" as const] : f === "gradle.lockfile" || f === "buildscript-gradle.lockfile" ? ["gradle" as const] : []))];
+    if (systems.length) Object.defineProperty(annotated, "build_systems", { value: systems });
+    return annotated;
   });
 }
 
@@ -358,6 +373,14 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
     }
     const relationSources: RelationSource[] =
       targets.map((copy, i) => ({ copy: copy.path, format: copy.format, originalRelative: path.relative(project.projectDir, scannedOriginals[i]!.path) }));
+    const gradleCache = new GradleGraphCache(project.projectDir);
+    for (const source of relationSources) {
+      if (source.format !== "gradle.lockfile" && source.format !== "buildscript-gradle.lockfile") continue;
+      const captured = await gradleCache.captureCopy(path.join(project.projectDir, source.originalRelative!), source.copy);
+      source.gradleLookup = captured.lookup;
+      (project.gradleMetadata ??= []).push(captured.metadata);
+      project.skippedFiles.push(...captured.coverageReasons.map(reason => ({ path: source.originalRelative!, reason: `Gradle graph: ${reason}` })));
+    }
     // 親POMを再現できずにスキャンしたpom.xmlも、欠落の可能性としてcoverageに出す(complete=falseになる)
     project.skippedFiles.push(...incomplete.map((s) => ({ path: path.relative(project.projectDir, s.path), reason: s.reason })));
     if (skipped.length > 0) {

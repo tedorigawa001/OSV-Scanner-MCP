@@ -1437,7 +1437,7 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 
 - [詳細設計](GRADLE_DEPENDENCY_RELATIONS.md): 信頼済み環境でResolutionResultをcontext/variant別JSONへ事前exportし、MCPは捕捉lockとhash・収録内容を照合して静的取込する。MCPからGradle/Wrapperを実行しない。
 - direct/transitive・introduced_byは実依存辺から取得し、BOM/lockのconstraint辺を由来にしない。物理宣言元は標準APIだけでは確定できないため、ownerBuildFileをdeclared_inに代用せず、明示的source-mapのある宣言から対応する。
-- 取得API/JSON契約の検証→単一projectの関係判定→宣言元・複数project/buildscriptの順で実装。グラフだけの欠けと脆弱性スキャン範囲の欠けを区別し、Gradleの修正案内をpom.xmlへ誘導しない。今回は設計のみで、実装・実接続検証は未実施。
+- Stage A/Bを実装: 明示実行のexporter、捕捉lock/inputのhash照合、variant別の関係解析、由来の完全性伝播、coverage診断、3ツールへの共通取込、Gradle向け修正案内。古い／不正なJSONだけではcoverageを下げない。物理宣言元source-map等のStage Cは未実装。実exportとOSV接続の結果は[検証記録](GRADLE_LIVE_VALIDATION.md)を参照。
 
 ## バックログ(2026-10-07)
 

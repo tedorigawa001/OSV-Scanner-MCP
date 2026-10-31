@@ -194,6 +194,7 @@ export interface UnscannableCrateEntry {
 }
 
 export interface DetectedProject {
+  gradleMetadata?: import("./gradleGraphCache.js").GradleMetadata[];
   projectDir: string;
   /** 解決済みの許可ルート(未設定ならundefined)。親POMの検証に使う */
   allowedRootReal: string | undefined;
