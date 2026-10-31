@@ -95,6 +95,8 @@ describe.skipIf(!binary)("Stage C public API feasibility", () => {
   it("lacks complete artifact and endorsement request data on the public selector", () => {
     expect(report.selectorMethods).toContain('getAttributes');
     expect(report.selectorMethods).toContain('getRequestedCapabilities');
+    // C1a checks every capability selector, so the design depends on this accessor existing.
+    expect(report.selectorMethods).toContain('getCapabilitySelectors');
     expect(report.selectorMethods).not.toContain('getArtifacts');
     expect(report.selectorMethods).not.toContain('isEndorsingStrictVersions');
     expect(report.dependencyMethods).toContain('getArtifacts');

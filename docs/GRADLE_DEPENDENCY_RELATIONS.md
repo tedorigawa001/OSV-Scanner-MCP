@@ -216,7 +216,7 @@ variantごとの依存集合は異なり得るため、`getDependencies()`の単
 | MCP利用者 | 起動設定でこの信頼モデルを採用するか決める。JSON内の自己申告だけでは有効化しない |
 | reader | 契約ファイル・source・lockの捕捉hash、scope、台帳・binding・fingerprintの整合性を検証。ビルドを再実行せず、登録されなかった同値の追加試行を発見できない |
 
-**起動設定:** `OSV_MCP_GRADLE_DECLARATION_TRUST=registered-helper-v1`の場合だけ、このモデルに基づくdirectの`declared_in`を採用する。未設定はdisabled、未知値は起動設定エラーとする。モデルの採用はスキャン先のGradleを実行する許可ではない。設定がdisabledでもgraph由来のrelation／introduced_by／coverageは従来どおり処理し、宣言元不足のreasonを残す。環境設定はscan開始時に固定し、3ツール共通とする。
+**起動設定:** `OSV_MCP_GRADLE_DECLARATION_TRUST=registered-helper-v1`の場合だけ、このモデルに基づくdirectの`declared_in`を採用する。未設定はdisabled。値はサーバー起動時に一度だけ読み、プロセス中は固定して3ツールで共通に使う（scanごとに読み直さない）。未知値はサーバーを停止させず、起動時にstderrへ警告してdisabledとして扱い、Gradle metadataのreasonに`declaration_trust_config_invalid`を記録する。誤記で脆弱性スキャン全体が使えなくなることを避けつつ、宣言元は採用しない側へ倒す（他の真偽値設定の未知値は黙ってoffだが、本設定は信頼の採否に関わるため警告とreasonで明示する）。モデルの採用はスキャン先のGradleを実行する許可ではない。設定がdisabledでもgraph由来のrelation／introduced_by／coverageは従来どおり処理し、宣言元不足のreasonを残す。
 
 **ビルド作者の表明:** 信頼済み起動時に`-p <build-root>`と`-PosvMcpDeclarationContract=osv-mcp-gradle-declarations.json`で明示する。固定名のroot相対JSON契約をinit scriptの初期段階で捕捉し、settings／project／buildSrcの評価・コンパイルより前にsource baselineを準備する。契約ファイルは4 MiB以下、通常ファイル・境界内限定、graph入力へ含め、評価中の変更はexport失敗とする。readerも固定名の契約だけを安全に読みhashを確認し、JSONが指す任意の設定ファイルを探索しない。表明のないscopeに自動適用しない。
 
@@ -365,7 +365,46 @@ sourceのkindはbuild-script／applied-script／convention-plugin。未登録を
 | 作者表明が偽だが未計装同値追加が畳まれ検出不能 | 独立検証できない。受理され得る限界をmetadataに必須表示 | 自動検出保証と表現しない |
 | source／契約等のgraph入力hash不一致 | 不採用・省略 | context全体stale。lockスキャンのcoverageを維持 |
 
-**改訂後の実装gate:** C1aはGroovy／Kotlin、Gradle 8.11.1／9.2.1で同期literal・同値重複試行・scope継承・force後の版・未登録実体・mutation・起動設定disabledを実証する。ビルド作者の表明が偽の未計装同値追加を検出できない陰性例も残し、metadataがその限界を伝えることを確認する。C1bはProvider／bundleの実現時刻・実行回数・結果・台帳identityがadapterなしと一致することを追加実証するまで未対応。現時点では新gateは未実証であり、本番adapter／v2 readerを実装済み・有効化済みとは扱わない。
+**改訂後の実装gate:** C1aはGroovy／Kotlin、Gradle 8.11.1／9.2.1で同期literal・同値重複試行・scope継承・force後の版・未登録実体・mutation・起動設定disabledを実証する。ビルド作者の表明が偽の未計装同値追加を検出できない陰性例も残し、metadataがその限界を伝えることを確認する。C1bはProvider／bundleの実現時刻・実行回数・結果・台帳identityがadapterなしと一致することを追加実証するまで未対応。同期helper核の実証は下記のC1a結果を参照する。本番adapter／v2 readerの統合やC1bを実証済み・有効化済みとは扱わない。
+
+#### C1a同期helperの実証結果（2026-10-31）
+
+改訂契約の同期helper核を`src/test/fixtures/gradle-c1a-helper.init.gradle`に試作し、`src/test/gradle/synchronousHelper.integration.test.ts`で検証した。**テスト専用**であり、本番exporterやnpm配布へは追加していない。Groovy／Kotlin DSL × Gradle 8.11.1／9.2.1の4構成で各13テスト、計52件が通過した。JDK 21.0.13+9を使用し、各fixtureのローカルMaven POMだけで`--offline`解決する。外部scanner・OSVは呼び出していない。
+
+| 実証対象 | 4構成共通の結果 |
+|---|---|
+| build scriptとapplied scriptから同値moduleを追加 | 保持実体1・edge1に対し台帳2試行。二つのsourceを完全な集合として保持 |
+| base→left/right→diamondの継承 | baseの試行を一度だけ収録。consumerへsourceを付け替えず、保持実体1・試行1 |
+| 追加後の要求版1→2のmutation | snapshot差を検出。scope不完全、宣言元一覧を全省略。実graphの要求版・選択版は2 |
+| 別moduleの未登録追加 | unregistered_declarationを検出してscope不完全・一覧省略 |
+| 保持実体を削除し同座標copyへ置換 | identity喪失と未登録copyを検出。旧sourceの転用なし |
+| 契約scopeの継承祖先漏れ／表明なし | scope_incomplete／declaration_assertion_missingで一覧省略 |
+| helper removeによるtombstone | 試行IDを残し、不完全として一覧省略 |
+| transitive=falseの非既定shape | unsupported_declaration_shapeで一覧省略。通常moduleとして完全扱いしない |
+| forceで要求1から選択2へ変更 | 元の要求keyに対応したsourceを選択版2へ結び付ける |
+| configure action／通常追加経路との比較 | helper有効・利用者未採用・通常DependencyHandler.addの3経路で全13シナリオの要求／選択graph・保持依存数が一致。action呼出しは各2回で一致 |
+| 無関係な未解決configurationのProvider | 全経路で未評価のまま。網羅的な追加通知やmetadata目的の実現を行わない |
+| 利用者の信頼未採用を模した経路 | graphを維持して全宣言元一覧を省略 |
+| 未計装の同値追加／変更後に元へ戻したmutation | 自動検出できず受理され得ることを確認。両限界をacceptedの報告に併記。検出成功と誤記しない |
+
+この試作は、追加試行のconfigure action完了後snapshotを追加前に保存し、通常集合への追加が畳まれた場合も試行を捨てず保持実体へ対応付ける。解決後にscope閉包・全保持実体・試行snapshot・公開selector keyを照合する。key／shapeの値はGradleのコレクションを変更せずコピーして比較し、非既定shapeは成功値へ丸めない。Kotlin側からはwithGroovyBuilderで同じ試作extensionを呼ぶ。
+
+**到達点:** C1aの同期literal・同値試行保持・継承・force・観測可能な未登録実体・mutation・宣言元抑制の実証条件を満たした。各構成は三つのsubprojectで通常追加経路と比較する。ソースは起動前にfixture契約からhash捕捉し、解決後に不変を確認した。未登録の同値追加と元に戻したmutationを検出できないという作者表明への依存は残る。
+
+**未実証／未実装:** この報告JSONは本番v2通信形式ではない。信頼の有効／無効はsubproject別の試作modeで表し、実際のMCP起動設定の解析、SourceHandleの公開API、契約/schemaの厳格検証・安全な読取、lock hash対応、複数lockの完全性併合、declaration_provenanceの本番応答、Groovy／Kotlin用の型付き配布APIは今後の実装対象。Providerの解決が必要なC1b、失敗するProviderの挙動、platform／catalog bundle／convention pluginのsource-artifact対応も達成証拠には含めない。既存Stage A/Bの挙動は変更していない。
+
+追加後の全体検証は実Gradle 8.11.1・従来の公開API実証・性能比較を含む全70ファイル／1,479テストが通過。Gradle 9.2.1の新しい両DSL実証26テストも通過し、typecheck・build・差分の空白チェックも成功した。
+
+各構成の結果と試作sourceのSHA-256を[検証データ](validation/gradle-c1a-2026-10-31.json)へ保存した。元の詳細報告は任意の`OSV_MCP_GRADLE_C1A_OUTPUT` prefixへ保存でき、未指定時はfixtureとともに削除する。
+
+```sh
+bdo proxy env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
+  JAVA_HOME=/trusted/jdk-21 GRADLE_USER_HOME=/trusted/gradle-cache \
+  OSV_MCP_GRADLE_C1A_OUTPUT=/tmp/osv-c1a \
+  npm test -- src/test/gradle/synchronousHelper.integration.test.ts
+```
+
+同じテストをGradle 9.2.1でも実行する。初回の同値試行テストは試作未配置時の失敗を確認してから通過させた。追加した回帰テストは実Gradleの保持実体・graphと最終報告を確認し、MCP側のモック結果だけを根拠にはしていない。
 
 #### 公開API実証の結果（2026-10-31、旧C1契約のgateは未充足）
 
@@ -547,7 +586,7 @@ recordsは10万/context、bindingsはroot非constraint edge数以下（最大20�
 | C20 | 両contextとも完全、sourceの重複・direct/transitive混在、別形式との併合 | 全sourceを重複除去。確定transitiveの空集合は欠けでない。別形式のdirect不明sourceも省略へ伝播 |
 | C21 | 大量sourceを多数contextから参照、宣言予算超過、構造／byte上限超過 | source読込はscan内一回。部分一覧なし。宣言予算が後続contextのrelation解析を悪化させず、上限を引き上げない |
 | C22 | adapterなしv1、新readerへv1/v2、旧readerへv2、v1 exportモード | 通常lockスキャンと既存出力互換性を維持。source-mapがなくてもdirect／originを失わない |
-| C23 | 起動設定disabled／registered-helper-v1／未知値、JSONにだけtrust=acceptedを埋め込む | disabledはdirectの宣言元省略、未知設定は起動設定エラー。JSON自己申告では有効化できず、3ツールがscan開始時の同じ設定を使う |
+| C23 | 起動設定disabled／registered-helper-v1／未知値、JSONにだけtrust=acceptedを埋め込む、起動後に環境変数を変更 | disabledはdirectの宣言元省略。未知値は起動を継続しstderr警告・disabled扱い・`declaration_trust_config_invalid`を記録。JSON自己申告では有効化できず、起動後の変更は反映せず3ツールが起動時の同じ設定を使う |
 | C24 | 契約hash変更、別project／build／configurationのscope、root閉包や空の祖先nodeの漏れ | 契約入力不一致はgraph stale、scope不一致・topology不備では宣言元を採用しない。別scopeの表明で穴埋めしない |
 | C25 | 二つの同値helper追加が実体・edgeで一つに畳まれる／Providerが同一試行を再評価 | 同期追加試行IDは二件保持。ProviderはC1bまで陰性。C1bでは再評価だけで新宣言を増殖させず、異なる結果は不完全 |
 | C26 | opaqueな全fingerprint一致、edgeに存在しないendorsement／artifactを既定値で追加、未知shape | 廃止した三者全一致契約で採用しない。独立なedge keyと宣言shapeのみを検証し、非既定／未知shapeは省略 |
