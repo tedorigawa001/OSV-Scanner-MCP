@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import { combineRelations } from "../../utils/dependencyRelations.js";
 import { describe, expect, it } from "vitest";
-import { parseGradleLock, analyzeGradleContext, parseGradleGraph } from "../../utils/gradleGraph.js";
+import { parseGradleLock, analyzeGradleContext, parseGradleGraph, createGradleBudget } from "../../utils/gradleGraph.js";
 
+import { syntheticGradleGraph, syntheticGradleTrees } from "../fixtures/gradleSyntheticGraph.js";
 import { graphFixture } from "../fixtures/gradleGraphFixture.js";
 describe("Gradle graph", () => {
   it("classifies selected releases through real edges and ignores root lock constraints", () => {
@@ -107,4 +108,119 @@ it("never treats origins as complete for modules reached through a project depen
   // A module not on any project path keeps its complete origin list.
   const unaffected = withLib([]);
   expect(unaffected.lookup!("g:b", "2")).toMatchObject({ relation: "transitive", introducedBy: new Set(["g:a"]), introducedByComplete: true });
+});
+
+it("keeps complete origins for three large overlapping contexts within the shared scan budget", () => {
+  const { graph, lockText } = syntheticGradleGraph(200, 1200);
+  const budget = createGradleBudget(), parsed = parseGradleGraph(JSON.stringify(graph), budget), lock = parseGradleLock(lockText);
+  const expected = new Set(Array.from({ length: 200 }, (_, i) => `g:p${i}`));
+  for (const context of parsed.contexts) {
+    const result = analyzeGradleContext(context, lock, budget);
+    expect(result.reasons).toEqual([]);
+    expect(result.lookup!("g:p1199", "1")).toMatchObject({ relation: "transitive", introducedBy: expected, introducedByComplete: true });
+    expect(result.lookup!("g:p0", "1")).toMatchObject({ relation: "direct" });
+  }
+  expect(budget.traversal).toBeGreaterThan(0);
+});
+
+it("matches independent reachability on cyclic, variant-specific and project paths", () => {
+  let seed = 19871;
+  const random = (n: number) => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed % n; };
+  for (let sample = 0; sample < 40; sample++) {
+    const { graph, lockText } = syntheticGradleGraph(7, 35, 1);
+    const c = graph.contexts[0]!;
+    graph.projects.push({ id: "lib", buildId: "main", projectPath: ":lib", directory: "lib", ownerBuildFile: "lib/build.gradle" });
+    c.components.push({ id: "lib", kind: "project", projectId: "lib" });
+    c.variants.push({ id: "lib-v", componentId: "lib" }, { id: "other-v", componentId: "p0" });
+    const ids = c.variants.map(v => v.id);
+    for (let i = 0; i < 100; i++) c.edges.push({ fromVariant: ids[random(ids.length)]!, selectedVariant: ids[random(ids.length)]!, constraint: random(5) === 0, requested: { kind: "unknown" } });
+    const parsed = parseGradleGraph(JSON.stringify(graph)).contexts[0]!;
+    const components = new Map(parsed.components.map(v => [v.id, v]));
+    const variants = new Map(parsed.variants.map(v => [v.id, components.get(v.componentId)!]));
+    const keyOf = (v: string) => { const p = variants.get(v)!; return p.kind === "module" ? JSON.stringify([`${p.group}:${p.name}`, p.version]) : null; };
+    const children = (v: string) => parsed.edges.filter(e => !e.constraint && e.fromVariant === v).map(e => e.selectedVariant);
+    const walk = (roots: string[]) => { const seen = new Set<string>(), todo = [...roots]; while (todo.length) { const v = todo.pop()!; if (seen.has(v)) continue; seen.add(v); todo.push(...children(v)); } return seen; };
+    const rootEdges = children(parsed.rootVariant), reachable = walk(rootEdges);
+    const direct = new Set(rootEdges.map(keyOf).filter(k => k !== null));
+    const projectKeys = new Set([...walk(rootEdges.filter(v => variants.get(v)!.kind === "project"))].map(keyOf));
+    const origins = new Map<string, Set<string>>();
+    for (const root of rootEdges) {
+      const p = variants.get(root)!; if (p.kind !== "module") continue;
+      for (const v of walk([root])) {
+        const key = keyOf(v); if (!key || key === keyOf(root)) continue;
+        const by = origins.get(key) ?? new Set<string>(); by.add(`${p.group}:${p.name}`); origins.set(key, by);
+      }
+    }
+    const reached = new Set([...reachable].map(keyOf)), analysis = analyzeGradleContext(parsed, parseGradleLock(lockText));
+    expect(analysis.lookup).not.toBeNull();
+    for (let i = 0; i < 35; i++) {
+      const key = JSON.stringify([`g:p${i}`, "1"]), info = analysis.lookup!(`g:p${i}`, "1");
+      expect(info.relation).toBe(direct.has(key) ? "direct" : reached.has(key) ? "transitive" : "unknown");
+      expect([...(info.introducedBy ?? [])].sort()).toEqual([...(origins.get(key) ?? [])].sort());
+      expect(info.introducedByComplete).toBe(reached.has(key) && !projectKeys.has(key));
+    }
+  }
+});
+it("does not recurse on a long shared cycle", () => {
+  const { graph, lockText } = syntheticGradleGraph(8, 15_000, 1, 4), c = graph.contexts[0]!;
+  c.edges.push({ fromVariant: "v14999", selectedVariant: "v8", constraint: false, requested: { kind: "unknown" } });
+  const result = analyzeGradleContext(parseGradleGraph(JSON.stringify(graph)).contexts[0]!, parseGradleLock(lockText));
+  expect(result.reasons).toEqual([]);
+  expect(result.lookup!("g:p14999", "1").introducedBy).toEqual(new Set(Array.from({ length: 8 }, (_, i) => `g:p${i}`)));
+});
+
+it("does not spend the origin budget on an incomplete context that cannot publish origins", () => {
+  const { graph, lockText } = syntheticGradleGraph(200, 1200, 1), c = graph.contexts[0]!;
+  c.complete = false;
+  c.unresolved.push({ fromVariant: "root-v", requested: { kind: "unknown" }, reason: "resolution_failed" });
+  const budget = createGradleBudget(); budget.traversal = 6000;
+  const result = analyzeGradleContext(parseGradleGraph(JSON.stringify(graph)).contexts[0]!, parseGradleLock(lockText), budget);
+  expect(result.reasons).toEqual(["incomplete_context"]);
+  expect(result.coverageReasons).toContain("unresolved_dependencies");
+  expect(result.lookup!("g:p0", "1")).toMatchObject({ relation: "direct", introducedByComplete: false });
+  expect(result.lookup!("g:p1199", "1")).toMatchObject({ relation: "unknown", introducedByComplete: false });
+  expect(result.lookup!("g:p1199", "1").introducedBy).toBeUndefined();
+});
+
+it.each([10_000, 50_000, 200_000])("does not publish partial origins when shared propagation exceeds %i operations", limit => {
+  const { graph, lockText } = syntheticGradleGraph(200, 1200, 1), budget = createGradleBudget(); budget.traversal = limit;
+  const result = analyzeGradleContext(parseGradleGraph(JSON.stringify(graph)).contexts[0]!, parseGradleLock(lockText), budget);
+  expect(result.lookup).toBeNull(); expect(result.reasons).toContain("relationship_budget_exceeded");
+  expect(result.coverageReasons).toEqual([]); expect(budget.traversal).toBeLessThan(0);
+});
+
+it("keeps 24 mostly independent large tree contexts complete with a single shared edge", () => {
+  const { graph, lockText } = syntheticGradleTrees(400, 6000, 8, true), text = JSON.stringify(graph);
+  expect(Buffer.byteLength(text)).toBeLessThan(16 * 1024 * 1024);
+  expect(Buffer.byteLength(text) * 3).toBeLessThan(64 * 1024 * 1024);
+  const budget = createGradleBudget(), lock = parseGradleLock(lockText);
+  for (let document = 0; document < 3; document++) {
+    const parsed = parseGradleGraph(text, budget);
+    for (const context of parsed.contexts) {
+      const result = analyzeGradleContext(context, lock, budget);
+      expect(result.reasons).toEqual([]);
+      expect(result.lookup!("g:p5999", "1")).toMatchObject({ relation: "transitive", introducedBy: new Set(["g:p399"]), introducedByComplete: true });
+      expect(result.lookup!("g:p5601", "1").introducedBy).toEqual(new Set(["g:p0", "g:p1"]));
+      expect(result.lookup!("g:p1", "1")).toMatchObject({ relation: "direct", introducedBy: new Set(["g:p0"]) });
+    }
+  }
+  expect(2_000_000 - budget.traversal).toBeLessThan(500_000);
+});
+
+it("keeps the lightweight path when only cross-origin revisits or private diamonds are expensive", () => {
+  const chain = syntheticGradleGraph(100, 1200, 1, 1);
+  const privateDag = syntheticGradleTrees(100, 1200, 1), c = privateDag.graph.contexts[0]!;
+  for (let i = 0; i < 1200; i++) for (const offset of [200, 300]) if (i + offset < 1200)
+    c.edges.push({ fromVariant: `v${i}`, selectedVariant: `v${i + offset}`, constraint: false, requested: { kind: "unknown" } });
+  for (const [fixture, limit, expected] of [
+    [chain, 125_000, new Set(Array.from({ length: 100 }, (_, i) => `g:p${i}`))],
+    [privateDag, 11_000, new Set(["g:p99"])],
+  ] as const) {
+    const budget = createGradleBudget(); budget.traversal = limit;
+    const context = parseGradleGraph(JSON.stringify(fixture.graph)).contexts[0]!;
+    const result = analyzeGradleContext(context, parseGradleLock(fixture.lockText), budget);
+    expect(result.reasons).toEqual([]);
+    expect(result.lookup!("g:p1199", "1").introducedBy).toEqual(expected);
+    expect(budget.traversal).toBeGreaterThan(0);
+  }
 });

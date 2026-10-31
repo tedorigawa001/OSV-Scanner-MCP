@@ -1,4 +1,5 @@
 /** Static Gradle graph contract. No build code is evaluated here. */
+import { collectGradleOrigins } from "./gradleOrigins.js";
 import { visit } from "jsonc-parser";
 import { z } from "zod";
 import type { RelationInfo, RelationLookup } from "./dependencyRelations.js";
@@ -106,7 +107,10 @@ export function analyzeGradleContext(c: GradleContext, lock: GradleLock, budget 
   const components = new Map(c.components.map(v => [v.id, v]));
   const variants = new Map(c.variants.map(v => [v.id, components.get(v.componentId)!]));
   const locked = lock.get(c.lockConfiguration);
-  const selected = new Set(c.components.flatMap(v => v.kind === "module" ? [gradleKey(`${v.group}:${v.name}`, v.version)] : []));
+  // Reuse GAV identities across variants and walks instead of serializing them per origin.
+  const moduleKeys = new Map<GradleContext["components"][number], string>();
+  for (const p of c.components) if (p.kind === "module") moduleKeys.set(p, gradleKey(`${p.group}:${p.name}`, p.version));
+  const selected = new Set(moduleKeys.values());
   const coverageReasons: string[] = [];
   if ([...selected].some(k => !locked?.has(k))) coverageReasons.push("graph_modules_missing_from_lock");
   if (c.unresolved.length) coverageReasons.push("unresolved_dependencies");
@@ -116,11 +120,24 @@ export function analyzeGradleContext(c: GradleContext, lock: GradleLock, budget 
   const complete = c.complete && !c.unresolved.length && !c.unrepresentedDependencies.length && matching;
   if (!matching) return { lookup: null, coverageReasons, reasons: ["lock_projection_mismatch"] };
   try {
-    const adjacency = new Map<string, string[]>();
-    for (const e of c.edges) { spend(budget, "traversal"); if (!e.constraint) { const list = adjacency.get(e.fromVariant) ?? []; list.push(e.selectedVariant); adjacency.set(e.fromVariant, list); } }
-    const direct = new Set<string>(), reached = new Set<string>(), origins = new Map<string, Set<string>>();
-    const keyOf = (v: string) => { const p = variants.get(v)!; return p.kind === "module" ? gradleKey(`${p.group}:${p.name}`, p.version) : null; };
+    const adjacency = new Map<string, string[]>(), targets = new Set<string>();
+    let sharedTargets = false;
+    for (const e of c.edges) {
+      spend(budget, "traversal");
+      if (!e.constraint) {
+        const list = adjacency.get(e.fromVariant) ?? []; list.push(e.selectedVariant); adjacency.set(e.fromVariant, list);
+        if (targets.has(e.selectedVariant)) sharedTargets = true;
+        targets.add(e.selectedVariant);
+      }
+    }
+    const direct = new Set<string>(), reached = new Set<string>();
+    const keyOf = (v: string) => moduleKeys.get(variants.get(v)!) ?? null;
     for (const v of adjacency.get(c.rootVariant) ?? []) { const k = keyOf(v); if (k) direct.add(k); }
+    // Incomplete contexts can prove direct edges but cannot publish transitive origins.
+    if (!complete) return { coverageReasons, reasons: ["incomplete_context"], lookup: (name, version) => ({
+      relation: direct.has(gradleKey(name, version)) ? "direct" : "unknown",
+      introducedByComplete: false, declaredInComplete: false,
+    }) };
     // Walk once for relation reachability (including project-only paths).
     const queue = [...(adjacency.get(c.rootVariant) ?? [])], seen = new Set<string>();
     for (let i = 0; i < queue.length; i++) {
@@ -128,17 +145,11 @@ export function analyzeGradleContext(c: GradleContext, lock: GradleLock, budget 
       const k = keyOf(v); if (k) reached.add(k);
       for (const child of adjacency.get(v) ?? []) queue.push(child);
     }
-    // Each origin/variant pair is visited at most once, sharing the scan budget.
-    for (const root of adjacency.get(c.rootVariant) ?? []) {
-      const p = variants.get(root)!; if (p.kind !== "module") continue;
-      const name = `${p.group}:${p.name}`, originKey = keyOf(root);
-      const visited = new Set<string>(), pending = [root];
-      for (let i = 0; i < pending.length; i++) {
-        spend(budget, "traversal"); const v = pending[i]!; if (visited.has(v)) continue; visited.add(v);
-        const k = keyOf(v); if (k && k !== originKey) { const by = origins.get(k) ?? new Set<string>(); by.add(name); origins.set(k, by); }
-        for (const child of adjacency.get(v) ?? []) pending.push(child);
-      }
-    }
+    const roots = [...new Set(adjacency.get(c.rootVariant) ?? [])].flatMap(variant => {
+      const p = variants.get(variant)!;
+      return p.kind === "module" ? [{ variant, key: keyOf(variant)!, name: `${p.group}:${p.name}` }] : [];
+    });
+    const origins = collectGradleOrigins(seen, adjacency, roots, keyOf, sharedTargets, () => spend(budget, "traversal"));
     // Paths through a project dependency have no public module origin; modules on them never get a complete origin list.
     const viaProject = new Set<string>(), projectPending = (adjacency.get(c.rootVariant) ?? []).filter(v => variants.get(v)!.kind === "project"), projectSeen = new Set<string>();
     for (let i = 0; i < projectPending.length; i++) {
@@ -146,11 +157,11 @@ export function analyzeGradleContext(c: GradleContext, lock: GradleLock, budget 
       const k = keyOf(v); if (k) viaProject.add(k);
       for (const child of adjacency.get(v) ?? []) projectPending.push(child);
     }
-    return { coverageReasons, reasons: complete ? (reached.size === selected.size ? [] : ["unreachable_modules"]) : ["incomplete_context"], lookup: (name, version): RelationInfo => {
+    return { coverageReasons, reasons: reached.size === selected.size ? [] : ["unreachable_modules"], lookup: (name, version): RelationInfo => {
       const k = gradleKey(name, version);
-      return { relation: direct.has(k) ? "direct" : complete && reached.has(k) ? "transitive" : "unknown",
-        ...(complete && origins.has(k) ? { introducedBy: origins.get(k) } : {}),
-        introducedByComplete: complete && reached.has(k) && !viaProject.has(k), declaredInComplete: complete && reached.has(k) && !direct.has(k) };
+      return { relation: direct.has(k) ? "direct" : reached.has(k) ? "transitive" : "unknown",
+        ...(origins.has(k) ? { introducedBy: origins.get(k) } : {}),
+        introducedByComplete: reached.has(k) && !viaProject.has(k), declaredInComplete: reached.has(k) && !direct.has(k) };
     } };
   } catch { return { lookup: null, coverageReasons, reasons: ["relationship_budget_exceeded"] }; }
 }

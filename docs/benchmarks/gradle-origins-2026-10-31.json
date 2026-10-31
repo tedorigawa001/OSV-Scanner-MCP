@@ -1,0 +1,189 @@
+{
+  "node": "v26.12.1",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "cpu": "Apple M4",
+  "timed": "analyzeGradleContext only; JSON parsing and fingerprint validation excluded",
+  "repetitions": 7,
+  "rows": [
+    {
+      "scenario": "shared-small",
+      "roots": 40,
+      "modules": 150,
+      "contexts": 3,
+      "contexts_per_document": 3,
+      "documents": 1,
+      "before": {
+        "median_ms": 2.9432910000000163,
+        "min_ms": 2.5886669999999867,
+        "max_ms": 4.599041,
+        "operations": 54900,
+        "complete_with_default_budget": 3
+      },
+      "after": {
+        "median_ms": 1.165582999999998,
+        "min_ms": 1.0641250000000184,
+        "max_ms": 1.3981670000000008,
+        "operations": 32772,
+        "complete_with_default_budget": 3
+      },
+      "equivalent": true
+    },
+    {
+      "scenario": "shared-medium",
+      "roots": 100,
+      "modules": 600,
+      "contexts": 3,
+      "contexts_per_document": 3,
+      "documents": 1,
+      "before": {
+        "median_ms": 31.507334000000014,
+        "min_ms": 29.36891700000001,
+        "max_ms": 32.822915999999964,
+        "operations": 610740,
+        "complete_with_default_budget": 3
+      },
+      "after": {
+        "median_ms": 9.664917000000003,
+        "min_ms": 8.835541000000035,
+        "max_ms": 13.217624999999998,
+        "operations": 249492,
+        "complete_with_default_budget": 3
+      },
+      "equivalent": true
+    },
+    {
+      "scenario": "shared-large",
+      "roots": 200,
+      "modules": 1200,
+      "contexts": 3,
+      "contexts_per_document": 3,
+      "documents": 1,
+      "before": {
+        "median_ms": 129.35629199999994,
+        "min_ms": 127.10516699999994,
+        "max_ms": 130.77470900000003,
+        "operations": 2421540,
+        "complete_with_default_budget": 2
+      },
+      "after": {
+        "median_ms": 31.548958000000084,
+        "min_ms": 30.577084000000013,
+        "max_ms": 33.25479100000007,
+        "operations": 844302,
+        "complete_with_default_budget": 3
+      },
+      "equivalent": true
+    },
+    {
+      "scenario": "shared-cycle",
+      "roots": 200,
+      "modules": 1200,
+      "contexts": 3,
+      "contexts_per_document": 3,
+      "documents": 1,
+      "before": {
+        "median_ms": 129.1283330000001,
+        "min_ms": 127.79616699999997,
+        "max_ms": 139.90329199999996,
+        "operations": 2422146,
+        "complete_with_default_budget": 2
+      },
+      "after": {
+        "median_ms": 27.797166999999718,
+        "min_ms": 25.871208000000024,
+        "max_ms": 30.484084000000166,
+        "operations": 745569,
+        "complete_with_default_budget": 3
+      },
+      "equivalent": true
+    },
+    {
+      "scenario": "single-origin",
+      "roots": 1,
+      "modules": 1200,
+      "contexts": 3,
+      "contexts_per_document": 3,
+      "documents": 1,
+      "before": {
+        "median_ms": 2.2000410000000556,
+        "min_ms": 2.079458000000159,
+        "max_ms": 2.3159169999998994,
+        "operations": 43092,
+        "complete_with_default_budget": 3
+      },
+      "after": {
+        "median_ms": 2.1952919999998812,
+        "min_ms": 2.1324170000002596,
+        "max_ms": 2.4610830000001442,
+        "operations": 43092,
+        "complete_with_default_budget": 3
+      },
+      "equivalent": true
+    },
+    {
+      "scenario": "disjoint-trees",
+      "roots": 400,
+      "modules": 1200,
+      "contexts": 3,
+      "contexts_per_document": 3,
+      "documents": 1,
+      "before": {
+        "median_ms": 2.120832999999948,
+        "min_ms": 1.9900829999996859,
+        "max_ms": 3.1402079999998023,
+        "operations": 10800,
+        "complete_with_default_budget": 3
+      },
+      "after": {
+        "median_ms": 1.887749999999869,
+        "min_ms": 1.7740420000000086,
+        "max_ms": 2.062249999999949,
+        "operations": 10800,
+        "complete_with_default_budget": 3
+      },
+      "equivalent": true
+    },
+    {
+      "scenario": "sparse-sharing",
+      "roots": 400,
+      "modules": 6000,
+      "contexts": 24,
+      "contexts_per_document": 8,
+      "documents": 3,
+      "before": {
+        "median_ms": 116.07324999999946,
+        "min_ms": 105.14350000000013,
+        "max_ms": 135.84804199999962,
+        "operations": 432408,
+        "complete_with_default_budget": 24
+      },
+      "after": {
+        "median_ms": 109.44066699999985,
+        "min_ms": 98.86441699999978,
+        "max_ms": 129.9902920000004,
+        "operations": 432408,
+        "complete_with_default_budget": 24
+      },
+      "reviewed": {
+        "median_ms": 144.2822500000002,
+        "min_ms": 129.3218340000003,
+        "max_ms": 148.4438339999997,
+        "operations": 2256552,
+        "complete_with_default_budget": 21
+      },
+      "equivalent": true
+    }
+  ],
+  "date": "2026-10-31",
+  "baseline_revision": "3aa18e6a80dbbafc40c20fd9d77d796acbd2d3cc",
+  "baseline_compiled_sha256": "8e34b5588977178b28555ec85206f31e8637df8622e0a0be69eceb931bbc855a",
+  "reviewed_compiled_sha256": {
+    "gradleGraph.js": "3695fa80e9f2fbc85181e4c1c46d610999dba8377d9b2fc0c4aac859a7af27e1",
+    "gradleOrigins.js": "9427d02c8206a15fc7a9720cd5c716c8e3e190dff90347dbde70c77709115b11"
+  },
+  "after_sources_sha256": {
+    "src/utils/gradleGraph.ts": "cf40054d000e3b7b7107dbacfdb2a7f52dc59ade217dcd6374122d2d5e40708c",
+    "src/utils/gradleOrigins.ts": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884"
+  }
+}

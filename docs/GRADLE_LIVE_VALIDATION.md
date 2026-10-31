@@ -92,6 +92,61 @@ npm test -- src/test/gradle/exporter.integration.test.ts
 
 修正後の検証: Gradle 8.11.1の実回帰9件を含む全66ファイル・1,418テストが通過。Gradle 9.2.1でも実回帰9件が通過した（両版ともJDK 21、Groovy／Kotlin）。typecheck・build・空白チェックも成功。
 
+## 導入元探索の効率化・性能比較(2026-10-31)
+
+直接起点ごとのBFSで共有グラフを繰り返し訪問していた処理を効率化した。variantごとの非constraintグラフを反復型KosarajuでSCCへ縮約し、DAG上で起点集合を共有伝播する。GAV識別子もcomponentごとに再利用する。起点集合は非ゼロの32起点単位のwordだけを保持し、独立した大量の起点に全幅bitsetを確保しない。起点が4つ以下、または共有targetがないグラフでは軽い個別探索を維持する。その他もまず有用な個別探索を行い、起点間の再訪variant数と同一起点内の重複したqueue処理数が、それぞれ到達variant数を超えた場合だけSCCへ切り替える。共有辺の存在だけでは全体をSCC化しない。切替前の部分結果は破棄し、探索済みの作業は同じ予算に計上したままとする。
+
+project-only経路の不完全性、GAVによる自己由来除外、variant分離、constraint除外、context間の独立性は維持する。導入元を出せない不完全contextは、直接依存の証拠だけを返して由来探索を省略する。
+
+index／traversalのscan共有200万予算は変更しない。縮約・word伝播・結果の各起点への展開も予算へ課金する。大きな出力で予算を超えれば従来どおりlookupを不採用とし、部分的な導入元を完全な一覧として返さない。SCCによっても出力自体に必要な起点×moduleの容量は消えない。
+
+計測環境: Apple M4 / darwin arm64 / Node v26.12.1。比較元は`3aa18e6`から修正前にbuildして保存した解析器。同じ生成グラフを両実装へ渡し、全moduleの関係・導入元・完全性と診断の一致を先に検証した。JSON読込・構文検証・結果比較は時間から除外し、analyzeGradleContextの対象context合計を測定。ウォームアップ後、実装の実行順を交代しながら7回計測した中央値を示す。時間の閾値は回帰テストの合否に使わない。
+
+操作数は上限を十分大きくした場合の全contextの論理的な予算消費。完全context数は通常のscan共有200万予算での結果。共有の少ないケースは8 context×3文書=24件、その他は3件を対象とする。
+
+| ケース | 起点 / module | 旧 → 新の中央値(ms) | 旧 → 新の操作数 | 完全context数: 旧 → 新 |
+|---|---|---|---|---|
+| 共有・小 | 40 / 150 | 2.943 → 1.166 | 54,900 → 32,772 | 3 → 3 |
+| 共有・中 | 100 / 600 | 31.507 → 9.665 | 610,740 → 249,492 | 3 → 3 |
+| 共有・大 | 200 / 1200 | 129.356 → 31.549 | 2,421,540 → 844,302 | 2 → 3 |
+| 共有・循環 | 200 / 1200 | 129.128 → 27.797 | 2,422,146 → 745,569 | 2 → 3 |
+| 単一起点 | 1 / 1200 | 2.200 → 2.195 | 43,092 → 43,092 | 3 → 3 |
+| 独立した木 | 400 / 1200 | 2.121 → 1.888 | 10,800 → 10,800 | 3 → 3 |
+| 共有辺1本の大きな木（24 context） | 400 / 6000 | 116.073 → 109.441 | 432,408 → 432,408 | 24 → 24 |
+
+共有・大は約4倍に短縮し、予算消費を約65%削減した。通常予算で旧実装は3つ目のcontextが失敗し、新実装は3つとも完全な導入元を保持した。単一起点・独立した木では予算消費は同じだった。1ms未満の微小な時間差は実行条件の影響を受ける。全グラフで同じ速度向上を保証する結果ではない。最小・最大時間を含む[生データ](benchmarks/gradle-origins-2026-10-31.json)も保存した。
+
+レビューで指摘された低共有の条件は、400本の独立した鎖・6,000 moduleに`v0→v1`の辺を1本追加したもの。8 contextを含むJSONを3文書として同じscan予算で処理する。1文書9,986,100 bytes、合計29,958,300 bytesで、それぞれ16 MiB／64 MiBの取込上限内である。
+
+| 低共有ケースの実装 | 中央値(ms) | 全24 contextの操作数 | 通常予算で完全なcontext |
+|---|---:|---:|---:|
+| 最初の個別BFS | 116.073 | 432,408 | 24/24 |
+| レビュー時の一律SCC切替 | 144.282 | 2,256,552 | 21/24 |
+| 修正後の適応切替 | 109.441 | 432,408 | 24/24 |
+
+修正後は低共有ケースを個別探索で完了し、レビュー時に比べ予算消費を約81%削減した。比較元・レビュー時・修正後の全moduleの判定・由来・完全性が、十分な予算では一致することも確認した。
+
+回帰条件:
+
+- 200起点／1,200 module／3 contextで完全な導入元を保持し、3ツールの10件上限・omitted=190も一致。
+- 400起点／6,000 module／8 context×3文書の低共有ケースで、予算消費50万未満・全24件を完了。3ツールでも3文書のmetadataと推移的依存・introduced_byを保持。
+- 起点間の再訪だけが多い共有chain、同一起点内の重複だけが多い独立diamondでも、軽い探索を維持する。切替前のprobeで予算超過した場合も部分一覧を返さない。
+- 40個の決定的な生成グラフを独立した単純探索と照合。循環、同一moduleの別variant、project経由、rootとの循環、重複辺、constraintを含む。
+- 15,000 moduleの共有循環を再帰なしで処理。
+- 解決不完全なcontextが不要な探索で予算を消費せず、直接依存の証拠とcoverageの欠けを維持。
+- 低い予算で共有伝播／結果展開を止め、部分的な由来を返さない。
+
+最終検証: 実Gradleの回帰9件・性能比較テストを含む全68ファイル／1,446テストが通過。typecheck・build・空白チェックも成功。
+
+性能比較の再実行: 比較元revisionを別checkoutでbuildし、`dist/utils/gradleGraph.js`を現在のcheckoutの`node_modules/.cache/gradle-origin-baseline/before.mjs`等へ保存する（既存のzod／jsonc-parserを解決できる位置に置く）。そのうえで次を実行する。レビュー時のSCC版も比較する場合は`gradleGraph.js`とその隣の`gradleOrigins.js`を同じフォルダーに保存し、`OSV_MCP_GRADLE_REVIEWED`を指定する。この指定は任意。比較用ファイルはサーバーから実行されず、明示した開発テストだけが読み込む。
+
+```sh
+OSV_MCP_GRADLE_BASELINE=/absolute/path/to/before.mjs \
+OSV_MCP_GRADLE_REVIEWED=/absolute/path/to/reviewed/gradleGraph.js \
+OSV_MCP_GRADLE_BENCH_OUTPUT=/absolute/path/to/comparison.json \
+npm test -- src/test/benchmarks/gradleOrigins.test.ts
+```
+
 ## 残る制約
 
 物理宣言元source-map、buildscript lock、composite/included build、独自lock path、Android固有構成などはStage C以降。入力hashの一致だけでは環境変数・外部init script・remote plugin等を含む完全な鮮度は保証しない。artifact有無・Java/Android/variant互換性もOSVのclean判定とは別に確認が必要。

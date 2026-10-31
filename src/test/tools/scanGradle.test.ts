@@ -8,6 +8,7 @@ import { handleSuggestFix } from "../../tools/suggestFix.js";
 import { runOsvScan } from "../../osv/runner.js";
 import { parseOsvScanOutput } from "../../osv/scanReport.js";
 import { sha256 } from "../../utils/gradleGraphCache.js";
+import { syntheticGradleGraph, syntheticGradleTrees } from "../fixtures/gradleSyntheticGraph.js";
 import { graphFixture } from "../fixtures/gradleGraphFixture.js";
 vi.mock("../../osv/runner.js", async original => ({ ...await original<object>(), runOsvScan: vi.fn() }));
 let dir: string;
@@ -126,5 +127,43 @@ it("omits a partial origin when a project dependency also reaches the module in 
     expect(b.dependency_relation).toBe("transitive");
     expect(b.introduced_by).toBeUndefined();
     if (payload.suggestions) expect(b.update_hint).not.toContain("g:a");
+  }
+});
+
+it("all three tools retain capped complete origins over multiple large contexts", async () => {
+  await fixture(); const { graph, lockText } = syntheticGradleGraph(200, 1200);
+  await writeFile(path.join(dir, "gradle.lockfile"), lockText);
+  await writeFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify(graph));
+  vi.mocked(runOsvScan).mockImplementation(async targets => parseOsvScanOutput({ results: [{
+    source: { path: targets[0]!.path, type: "lockfile" }, packages: [{ package: { name: "g:p1199", version: "1", ecosystem: "Maven" }, groups: [{ ids: ["GHSA-test"], max_severity: "7.5" }] }],
+  }] }));
+  const expected = Array.from({ length: 200 }, (_, i) => `g:p${i}`).sort().slice(0, 10);
+  for (const handler of [handleScanProject, handleScanJavaProject, handleSuggestFix]) {
+    const result = await handler({ project_path: dir }, { candidateCheck: "disabled" });
+    expect(result.isError).toBeUndefined(); const p = JSON.parse(result.content[0]!.text), pkg = (p.packages ?? p.suggestions)[0];
+    expect(p.coverage.complete).toBe(true); expect(p.coverage.dependency_metadata.gradle[0].relations_complete).toBe(true);
+    expect(pkg.dependency_relation).toBe("transitive"); expect(pkg.introduced_by).toEqual(expected); expect(pkg.introduced_by_omitted).toBe(190);
+  }
+});
+
+it("all three tools retain origins across 24 sparse-sharing contexts in three documents", async () => {
+  await fixture();
+  await rm(path.join(dir, "gradle.lockfile")); await rm(path.join(dir, "osv-mcp-gradle-dependencies.json"));
+  const { graph, lockText } = syntheticGradleTrees(400, 6000, 8, true);
+  for (let i = 0; i < 3; i++) {
+    const project = path.join(dir, `project${i}`); await mkdir(project);
+    await writeFile(path.join(project, "gradle.lockfile"), lockText);
+    await writeFile(path.join(project, "osv-mcp-gradle-dependencies.json"), JSON.stringify(graph));
+  }
+  vi.mocked(runOsvScan).mockImplementation(async targets => parseOsvScanOutput({ results: targets.map(target => ({
+    source: { path: target.path, type: "lockfile" }, packages: [{ package: { name: "g:p5999", version: "1", ecosystem: "Maven" }, groups: [{ ids: ["GHSA-test"], max_severity: "7.5" }] }],
+  })) }));
+  for (const handler of [handleScanProject, handleScanJavaProject, handleSuggestFix]) {
+    const result = await handler({ project_path: dir }, { candidateCheck: "disabled" });
+    expect(result.isError).toBeUndefined(); const p = JSON.parse(result.content[0]!.text), pkg = (p.packages ?? p.suggestions)[0];
+    expect(p.coverage.complete).toBe(true);
+    expect(p.coverage.dependency_metadata.gradle).toHaveLength(3);
+    expect(p.coverage.dependency_metadata.gradle.every((m: any) => m.relations_complete)).toBe(true);
+    expect(pkg.dependency_relation).toBe("transitive"); expect(pkg.introduced_by).toEqual(["g:p399"]);
   }
 });
