@@ -3,7 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import { afterEach, expect, it, vi } from "vitest";
 import { GradleGraphCache, sha256 } from "../../utils/gradleGraphCache.js";
-import { declarationFixture, mixedTrustFixture } from "../fixtures/gradleDeclarationsFixture.js";
+import { declarationFixture, mixedTrustFixture, providerDeclarationFixture } from "../fixtures/gradleDeclarationsFixture.js";
 const dirs: string[] = [];
 afterEach(async () => { for (const dir of dirs.splice(0)) await rm(dir, { recursive: true, force: true }); vi.unstubAllEnvs(); });
 const lock = "g:a:1=runtimeClasspath\ng:b:2=runtimeClasspath\n";
@@ -139,4 +139,42 @@ it.each([false, true])("keeps context trust and declaration adoption order-indep
     results.push({ provenance: result.metadata.declaration_provenance, declaredIn: info.declaredIn ? [...info.declaredIn] : null });
   }
   expect(results[0]).toEqual(results[1]);
+});
+
+
+it.each(["accepted", "reobserved", "missing-policy", "unobserved", "unstable", "count-mismatch", "overflow", "at-add-forgery", "unknown-adapter", "sync-forgery"])("recomputes Provider completeness from static evidence (%s)", async kind => {
+  const { dir } = await fixture();
+  const data = providerDeclarationFixture(), d = data.graph.contexts[0]!.declarations, r = d.records[0]!;
+  data.graph.lockfiles[0]!.sha256 = sha256(lock);
+  if (kind === "missing-policy") {
+    const author = JSON.parse(data.contract); delete author.scopes[0].providerPolicy;
+    data.contract = JSON.stringify(author);
+    data.graph.inputs.files.find(f => f.path === "osv-mcp-gradle-declarations.json")!.sha256 = sha256(data.contract);
+    d.trust.contractSha256 = sha256(data.contract);
+  }
+  if (kind === "reobserved") { r.materializations.push(structuredClone(r.materializations[0]!)); r.callbackCount++; }
+  if (kind === "unobserved") { r.callbackCount = 0; r.materializations = []; }
+  if (kind === "unstable") { const other = structuredClone(r.materializations[0]!); other.key.versionConstraint.required = "99"; r.materializations.push(other); r.callbackCount++; }
+  if (kind === "count-mismatch") r.callbackCount++;
+  if (kind === "overflow") { r.callbackCount = 129; r.materializations = Array.from({ length: 128 }, () => structuredClone(r.materializations[0]!)); }
+  if (kind === "at-add-forgery") r.declarationAtAdd = structuredClone(r.materializations[0]!);
+  if (kind === "unknown-adapter") d.adapterVersion = 999;
+  if (kind === "sync-forgery") { r.registrationKind = "synchronous"; r.declarationAtAdd = structuredClone(r.materializations[0]!); }
+  await writeFile(path.join(dir, "osv-mcp-gradle-declarations.json"), data.contract);
+  await writeFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify(data.graph));
+  const result = await new GradleGraphCache(dir, undefined, "registered-helper-v1").capture(path.join(dir, "gradle.lockfile"), Buffer.from(lock));
+  expect(result.metadata.relations_complete, JSON.stringify(result.metadata)).toBe(true);
+  expect(result.lookup!("g:b", "2").introducedBy).toEqual(new Set(["g:a"]));
+  expect(result.coverageReasons).toEqual([]);
+  if (kind === "accepted" || kind === "reobserved") {
+    expect(result.metadata.declarations_complete).toBe(true);
+    expect(result.lookup!("g:a", "1").declaredIn).toEqual(new Set(["build.gradle"]));
+    expect(result.metadata.declaration_provenance!.limitations).toEqual([
+      "unregistered_equal_additions_not_detectable", "reverted_external_mutations_not_detectable",
+      "provider_evaluations_outside_materialization_not_observable", "provider_stability_author_asserted",
+    ]);
+  } else {
+    expect(result.metadata.declarations_complete).toBe(false);
+    expect(result.lookup!("g:a", "1").declaredIn).toBeUndefined();
+  }
 });

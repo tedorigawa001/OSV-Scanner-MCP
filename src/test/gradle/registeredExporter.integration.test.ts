@@ -134,3 +134,126 @@ it.skipIf(!binary).each([false,true])("detects an unregistered equal dependency 
   expect(captured.metadata.relations_complete).toBe(true);
   expect(captured.lookup!("review:parent","1").declaredIn).toBeUndefined();
 },150_000);
+
+
+it.skipIf(!binary).each([false,true])("exports and statically adopts explicitly stable Providers (Kotlin=%s)", async kotlin => {
+  const dir = await fixture(kotlin), suffix = kotlin ? ".gradle.kts" : ".gradle";
+  for (const file of [`build${suffix}`, `extra${suffix}`]) {
+    const target = path.join(dir, file);
+    const text = await readFile(target, "utf8");
+    const replaced = kotlin ? text.replace('val helper=', 'var producerCalls=0\nval helper=').replace('"add"("implementation","review:parent:1",source)',
+      '"addProvider"("implementation",providers.provider { producerCalls++; "review:parent:1" },source)') :
+      text.replace("def helper=", "def producerCalls=0\ndef helper=").replace("helper.add('implementation','review:parent:1',", "helper.addProvider('implementation',providers.provider { producerCalls++; 'review:parent:1' },");
+    await writeFile(target, replaced + (kotlin ? `
+check(producerCalls==0)
+gradle.projectsEvaluated { tasks.named("osvMcpExportDependencies") { doLast { check(producerCalls==1) } } }
+` : `
+assert producerCalls==0
+gradle.projectsEvaluated { tasks.named('osvMcpExportDependencies') { doLast { assert producerCalls==1 } } }
+`));
+  }
+  const authorFile = path.join(dir, "osv-mcp-gradle-declarations.json");
+  const author = JSON.parse(await readFile(authorFile, "utf8"));
+  for (const scope of author.scopes) scope.providerPolicy = "stable-during-export";
+  await writeFile(authorFile, JSON.stringify(author));
+  const result = await run(dir); expect(result.code, result.output).toBe(0);
+  const graph = parseGradleGraph(await readFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), "utf8"));
+  const d = knownDeclarations(graph.contexts.find(c => c.configuration === "runtimeClasspath")!)!;
+  expect(d.adapterVersion).toBe(3);
+  expect(d.inventoryComplete, JSON.stringify(d.reasons)).toBe(true);
+  expect(d.records).toHaveLength(2);
+  const captured = await new GradleGraphCache(dir, undefined, "registered-helper-v1").capture(path.join(dir, "gradle.lockfile"), Buffer.from(lock));
+  expect(captured.metadata.declarations_complete, JSON.stringify(captured.metadata)).toBe(true);
+  expect(captured.lookup!("review:parent", "1").declaredIn).toEqual(new Set([`build${suffix}`, `extra${suffix}`]));
+  expect(captured.metadata.declaration_provenance!.limitations).toContain("provider_stability_author_asserted");
+  const disabled = await new GradleGraphCache(dir, undefined, undefined).capture(path.join(dir, "gradle.lockfile"), Buffer.from(lock));
+  expect(disabled.lookup!("review:parent", "1").declaredIn).toBeUndefined();
+  expect(disabled.metadata.relations_complete).toBe(true);
+}, 150_000);
+
+
+it.skipIf(!binary).each(["missing-policy", "absent", "mutation", "shape", "unused"])("fails closed for Provider boundary %s without losing relations", async kind => {
+  const dir = await fixture(false);
+  const authorFile = path.join(dir, "osv-mcp-gradle-declarations.json");
+  const author = JSON.parse(await readFile(authorFile, "utf8"));
+  if (kind !== "missing-policy") for (const scope of author.scopes) scope.providerPolicy = "stable-during-export";
+  await writeFile(authorFile, JSON.stringify(author));
+  const file = path.join(dir, "extra.gradle");
+  const target = kind === "unused" ? "unused" : "implementation";
+  const addition = `${kind === "unused" ? "configurations.create('unused')\n" : ""}
+def evaluated=false
+helper.addProvider('${target}',providers.provider { evaluated=true; ${kind === "absent" ? "null" : "'review:parent:1'"} },helper.source('extra.gradle','applied-script')${kind === "shape" ? ", { dep -> dep.transitive=false } as org.gradle.api.Action" : ""})
+if(evaluated) throw new GradleException('Provider realized by registration')
+${kind === "mutation" ? "configurations.implementation.withDependencies { deps -> deps.each { it.exclude(group:'unused',module:'unused') } }" : ""}
+`;
+  await writeFile(file, (await readFile(file, "utf8")) + addition);
+  const result = await run(dir); expect(result.code, result.output).toBe(0);
+  const captured = await new GradleGraphCache(dir, undefined, "registered-helper-v1").capture(path.join(dir, "gradle.lockfile"), Buffer.from(lock));
+  expect(captured.metadata.relations_complete, JSON.stringify(captured.metadata)).toBe(true);
+  expect(captured.coverageReasons).toEqual([]);
+  if (kind === "unused") expect(captured.metadata.declarations_complete).toBe(true);
+  else {
+    expect(captured.metadata.declarations_complete).toBe(false);
+    expect(captured.lookup!("review:parent", "1").declaredIn).toBeUndefined();
+  }
+  if (kind === "missing-policy") {
+    expect(captured.metadata.reasons).toContain("provider_stability_assertion_missing");
+    expect(captured.metadata.declaration_provenance!.trust_status).toBe("missing_assertion");
+  }
+  if (kind === "absent") expect(captured.metadata.reasons).toContain("provider_unobserved");
+}, 150_000);
+
+it.skipIf(!binary).each([false,true])("snapshots a Provider after the original version-changing Action (Kotlin=%s)", async kotlin => {
+  const dir = await fixture(kotlin), suffix = kotlin ? ".gradle.kts" : ".gradle";
+  const authorFile = path.join(dir, "osv-mcp-gradle-declarations.json");
+  const author = JSON.parse(await readFile(authorFile, "utf8"));
+  for (const scope of author.scopes) scope.providerPolicy = "stable-during-export";
+  await writeFile(authorFile, JSON.stringify(author));
+  const file = path.join(dir, `extra${suffix}`);
+  await writeFile(file, (await readFile(file, "utf8")) + (kotlin ? `
+helper.withGroovyBuilder { "addProvider"("implementation",providers.provider { "review:parent:2" },source,
+  org.gradle.api.Action<org.gradle.api.artifacts.ExternalModuleDependency> { version { require("1") } }) }
+` : `
+helper.addProvider('implementation',providers.provider { 'review:parent:2' },helper.source('extra.gradle','applied-script'),
+  { dep -> dep.version { require('1') } } as org.gradle.api.Action)
+`));
+  const result = await run(dir); expect(result.code, result.output).toBe(0);
+  const captured = await new GradleGraphCache(dir, undefined, "registered-helper-v1").capture(path.join(dir, "gradle.lockfile"), Buffer.from(lock));
+  expect(captured.metadata.declarations_complete, JSON.stringify(captured.metadata)).toBe(true);
+  expect(captured.lookup!("review:parent", "1").declaredIn).toEqual(new Set([`build${suffix}`, `extra${suffix}`]));
+}, 150_000);
+
+
+it.skipIf(!binary).each([[false,"supplier"], [true,"supplier"], [false,"action"], [true,"action"]] as const)("reports Provider failure and preserves strict-resolution exceptions (Kotlin=%s, %s)", async (kotlin, kind) => {
+  const dir = await fixture(kotlin), suffix = kotlin ? ".gradle.kts" : ".gradle";
+  const file = path.join(dir, `extra${suffix}`);
+  const provider = kind === "supplier" ? 'throw IllegalStateException("supplier-sentinel")' : '"review:parent:1"';
+  const action = kind === "action" ? ', org.gradle.api.Action<org.gradle.api.artifacts.ExternalModuleDependency> { throw IllegalStateException("action-sentinel") }' : '';
+  const addition = kotlin ? `
+helper.withGroovyBuilder { "addProvider"("implementation",providers.provider<String> { ${provider} },source${action}) }
+` : `
+helper.addProvider('implementation',providers.provider { ${kind === "supplier" ? "throw new IllegalStateException('supplier-sentinel')" : "'review:parent:1'"} },helper.source('extra.gradle','applied-script')${kind === "action" ? ", { dep -> throw new IllegalStateException('action-sentinel') } as org.gradle.api.Action" : ""})
+`;
+  await writeFile(file, (await readFile(file, "utf8")) + addition);
+  const result = await run(dir);
+  expect(result.code, result.output).toBe(0);
+  const graph = parseGradleGraph(await readFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), "utf8"));
+  expect(graph.contexts.every(c => !c.complete && (c.reasons?.includes("graph_export_failed") || c.unresolved.some(e => e.reason === "resolution_failed")))).toBe(true);
+  expect(graph.contexts.every(c => knownDeclarations(c)?.inventoryComplete === false)).toBe(true);
+  // The exporter deliberately records resolution failures. A normal strict
+  // resolution must still receive the original exception before export begins.
+  await writeFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), '{}');
+  await writeFile(file, (await readFile(file, "utf8")) + (kotlin ? `
+gradle.projectsEvaluated { tasks.named("osvMcpExportDependencies") {
+  doFirst { configurations["runtimeClasspath"].incoming.resolutionResult.rootComponent.get() }
+} }
+` : `
+gradle.projectsEvaluated { tasks.named('osvMcpExportDependencies') {
+  doFirst { configurations.runtimeClasspath.incoming.resolutionResult.rootComponent.get() }
+} }
+`));
+  const strict = await run(dir);
+  expect(strict.code).not.toBe(0);
+  expect(strict.output).toContain(`${kind}-sentinel`);
+  expect(await readFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), "utf8")).toBe('{}');
+}, 150_000);

@@ -59,3 +59,18 @@ export function mixedTrustFixture(samePackage = false) {
   data.graph.lockfiles[0]!.sha256 = hash(lock);
   return { ...data, lock };
 }
+
+
+export function providerDeclarationFixture() {
+  const base = declarationFixture();
+  const author = JSON.parse(base.contract);
+  author.scopes[0].providerPolicy = "stable-during-export";
+  const contract = JSON.stringify(author);
+  const graph = { ...base.graph, contexts: base.graph.contexts.map(c => ({ ...c, declarations: {
+    ...c.declarations, adapterVersion: 3, trust: { ...c.declarations.trust, contractSha256: hash(contract) },
+    records: c.declarations.records.map(r => ({ ...r, registrationKind: "provider", declarationAtAdd: null as typeof r.declarationAtAdd | null,
+      callbackCount: 1, materializations: [structuredClone(r.declarationAtAdd)] })),
+  } })) };
+  graph.inputs.files.find(f => f.path === "osv-mcp-gradle-declarations.json")!.sha256 = hash(contract);
+  return { ...base, graph, contract };
+}

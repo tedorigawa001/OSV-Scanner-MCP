@@ -1,4 +1,4 @@
-// C1a: explicit trusted-build registration. Never executed by the MCP server.
+// C1a/C1b: explicit trusted-build registration. Never executed by the MCP server.
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import java.nio.file.Files
@@ -53,7 +53,7 @@ class OsvDeclarationRegistry {
         if(contract.sources.toSet().size()!=contract.sources.size()) throw new GradleException('Duplicate OSV declaration source')
         def ids=new HashSet(), scopes=new HashSet()
         contract.scopes.each { s ->
-            if(s.keySet()!=['id','projectPath','resolvableConfiguration','declarationConfigurations','assertion','mutationPolicy'].toSet() || !(s.id instanceof String) || !s.id || !(s.projectPath instanceof String) || !(s.resolvableConfiguration instanceof String) || !(s.declarationConfigurations instanceof List) || s.declarationConfigurations.size()>2000 || s.declarationConfigurations.any { !(it instanceof String) || !it } || s.declarationConfigurations.toSet().size()!=s.declarationConfigurations.size() || s.assertion!='all-contributing-additions-use-helper' || s.mutationPolicy!='immutable-after-add' || !ids.add(s.id) || !scopes.add([s.projectPath,s.resolvableConfiguration])) throw new GradleException('Invalid OSV declaration scope')
+            if((s.keySet()-['providerPolicy'])!=['id','projectPath','resolvableConfiguration','declarationConfigurations','assertion','mutationPolicy'].toSet() || (s.containsKey('providerPolicy') && s.providerPolicy!='stable-during-export') || !(s.id instanceof String) || !s.id || !(s.projectPath instanceof String) || !(s.resolvableConfiguration instanceof String) || !(s.declarationConfigurations instanceof List) || s.declarationConfigurations.size()>2000 || s.declarationConfigurations.any { !(it instanceof String) || !it } || s.declarationConfigurations.toSet().size()!=s.declarationConfigurations.size() || s.assertion!='all-contributing-additions-use-helper' || s.mutationPolicy!='immutable-after-add' || !ids.add(s.id) || !scopes.add([s.projectPath,s.resolvableConfiguration])) throw new GradleException('Invalid OSV declaration scope')
         }
         long total=file(CONTRACT).length(); contractHash=digest(raw.getBytes('UTF-8'))
         hashes[CONTRACT]=contractHash
@@ -119,9 +119,34 @@ class OsvMcpDeclarations {
         else overflow=true
         token
     }
+    Map addProvider(String name,Provider provider,Object handle,Action action=null) {
+        def token=Collections.unmodifiableMap([id:'d'+records.size()])
+        if(records.size()>=100000) {
+            overflow=true
+            if(action) project.dependencies.addProvider(name,provider,action)
+            else project.dependencies.addProvider(name,provider)
+            return token
+        }
+        def src=registry.handles.contains(handle) ? new LinkedHashMap(handle) : null
+        def record=[token:token,id:token.id,configuration:name,registrationKind:'provider',state:'pending',
+            atAdd:null,retained:null,source:src,reason:null,callbackCount:0,observations:[],observationIncomplete:false]
+        records.add(record)
+        project.dependencies.addProvider(name,provider,{ dep ->
+            if(action) action.execute(dep)
+            // This callback is invoked by Gradle. Never query or wrap the Provider.
+            record.callbackCount++
+            try {
+                registry.tick()
+                if(record.observations.size()>=128) record.observationIncomplete=true
+                else record.observations.add([dependency:dep,snapshot:snapshot(dep)])
+            } catch(Exception ignored) { record.observationIncomplete=true }
+        } as Action)
+        token
+    }
     void remove(Map handle) {
         def r=records.find { it.token.is(handle) }
         if(!r) throw new GradleException('Unknown OSV declaration registration')
+        if(r.registrationKind=='provider') throw new GradleException('Provider removal through OSV helper is not supported')
         if(r.retained!=null) project.configurations.getByName(r.configuration).dependencies.remove(r.retained)
         r.state='removed'
     }
@@ -141,22 +166,60 @@ class OsvMcpDeclarations {
             // allDependencies is an equality-deduplicated union. Keep each declaring
             // configuration's identity set so equal declarations in different scopes
             // neither disappear nor hide an unregistered dependency.
-            def liveByConfiguration=[:], registeredByConfiguration=[:]
+            def liveByConfiguration=[:], registeredByConfiguration=[:], providerCandidates=[:]
             topology.each { name,node ->
                 def live=Collections.newSetFromMap(new IdentityHashMap())
                 node.dependencies.each { registry.tick(); live.add(it) }
                 liveByConfiguration[name]=live
                 registeredByConfiguration[name]=Collections.newSetFromMap(new IdentityHashMap())
             }
+            boolean providerContext=attempts.any { it.registrationKind=='provider' }
+            if(providerContext) {
+                d.adapterVersion=3
+                liveByConfiguration.each { name,live ->
+                    def index=[:]
+                    live.each { dep ->
+                        registry.tick()
+                        def key=JsonOutput.toJson(snapshot(dep))
+                        if(!index.containsKey(key)) index[key]=[]
+                        index[key].add(dep)
+                    }
+                    providerCandidates[name]=index
+                }
+            }
             attempts.each { r ->
                 registry.tick()
-                if(r.state=='materialized' && r.retained!=null) registeredByConfiguration[r.configuration].add(r.retained)
-                def after=r.retained!=null ? snapshot(r.retained) : null
-                def reasons=[]
-                if(r.state!='materialized' || !liveByConfiguration[r.configuration].contains(r.retained)) reasons << (r.reason ?: 'declaration_inventory_incomplete')
-                if(r.atAdd!=after) reasons << 'declaration_mutation_detected'
-                if(r.atAdd?.key?.status!='supported' || r.atAdd?.shape?.status!='supported') reasons << 'unsupported_declaration_shape'
-                d.records << [id:r.id,state:r.state,ownerProjectId:c.projectId,configuration:r.configuration,declarationAtAdd:r.atAdd,declarationAtResolve:after,source:r.source,catalogUses:[],reasons:reasons.unique()]
+                def retained=r.retained, before=r.atAdd, state=r.state, reasons=[]
+                if(r.registrationKind=='provider') {
+                    if(scope?.providerPolicy!='stable-during-export') reasons << 'provider_stability_assertion_missing'
+                    if(r.observationIncomplete) reasons << 'provider_observation_incomplete'
+                    if(r.observations.empty) reasons << 'provider_unobserved'
+                    else {
+                        before=r.observations.first().snapshot
+                        if(r.observations.any { registry.tick(); it.snapshot!=before }) reasons << 'provider_unstable'
+                        def candidates=(providerCandidates[r.configuration][JsonOutput.toJson(before)] ?: []).findAll { dep ->
+                            registry.tick()
+                            r.observations.any { observation -> registry.tick();
+                                (dep.is(observation.dependency) || dep==observation.dependency) && snapshot(dep)==observation.snapshot
+                            }
+                        }
+                        retained=candidates.size()==1 ? candidates.first() : null
+                        state=retained!=null && r.source!=null ? 'materialized' : 'unsupported'
+                    }
+                }
+                if(state=='materialized' && retained!=null) registeredByConfiguration[r.configuration].add(retained)
+                def after=retained!=null ? snapshot(retained) : null
+                if(state!='materialized' || !liveByConfiguration[r.configuration].contains(retained)) reasons << (r.reason ?: 'declaration_inventory_incomplete')
+                if(before!=after) reasons << 'declaration_mutation_detected'
+                if(before?.key?.status!='supported' || before?.shape?.status!='supported') reasons << 'unsupported_declaration_shape'
+                def exported=[id:r.id,state:state,ownerProjectId:c.projectId,configuration:r.configuration,
+                    declarationAtAdd:r.registrationKind=='provider' ? null : before,declarationAtResolve:after,source:r.source,catalogUses:[],reasons:reasons.unique()]
+                if(providerContext) {
+                    exported.registrationKind=r.registrationKind ?: 'synchronous'
+                    exported.callbackCount=r.callbackCount ?: 0
+                    exported.materializations=r.observations?.collect { it.snapshot } ?: []
+                }
+                d.records << exported
                 d.reasons.addAll(reasons)
             }
             liveByConfiguration.each { name,live ->
@@ -164,7 +227,7 @@ class OsvMcpDeclarations {
             }
             topology.values().each { node -> if(!node.dependencies.empty && !scope?.declarationConfigurations?.contains(node.name)) d.reasons << 'declaration_inventory_incomplete' }
             def groups=[:]
-            d.records.each { r -> registry.tick(); def key=JsonOutput.toJson(r.declarationAtAdd?.key); if(!groups.containsKey(key)) groups[key]=[]; groups[key].add(r.id) }
+            d.records.each { r -> registry.tick(); def key=JsonOutput.toJson(r.registrationKind=='provider' ? (r.materializations ? r.materializations.first().key : null) : r.declarationAtAdd?.key); if(!groups.containsKey(key)) groups[key]=[]; groups[key].add(r.id) }
             c.edges.findAll { it.fromVariant==c.rootVariant && !it.constraint }.each { e ->
                 registry.tick(); def ids=groups[JsonOutput.toJson(e.resolutionKey)] ?: []
                 d.bindings << [edgeId:e.id,declarationIds:ids,complete:!ids.empty && e.resolutionKey.status=='supported',reasons:[]]

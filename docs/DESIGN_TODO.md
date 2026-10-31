@@ -1663,3 +1663,18 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 - [x] 権限の最小化: MCPサーバープロセスに必要以上のファイルシステム権限を与えない(上記「セキュリティ考慮事項」節) → 実装済み(上記「B3 詳細設計メモ」、v0.10.0)。Nodeの権限モデルでの動作、`permission_denied`、起動時の警告、READMEの「権限を絞って起動する」。E2Eテスト(`src/test/server/permission.test.ts`)で、許可内のスキャンの成功・許可外のパスとOSV_SCANNER_PATHの拒否の表示・欠けた許可の警告を確認。実装中に、OSV_SCANNER_PATHの読み取りの拒否が`binary_not_found`になる箇所も見つけて修正
   - (レビュー指摘)`scan_java_artifact`・`scan_sbom`の入力パスの解決とSBOMの読み込みで、権限モデルの拒否を`project_not_found`・`sbom_not_found`に変換していた。各所で拒否を保持して`permission_denied`にし、E2Eの回帰テストを追加。あわせて、ディレクトリ探索で権限モデルに拒否されたディレクトリを黙って飛ばしていた箇所もエラーにした
   - (レビュー指摘)推測の座標だけのアーカイブでも、脆弱性が見つかると`identified_with_vulnerabilities`になり`jars_identified`に数えていた。同定の確度と検出件数を分け、脆弱性の有無に関係なく`inferred_only`にする(件数は`identified_vulnerability_count`に示す)
+
+
+### 2026-10-31: Gradle C1b Provider公開API実証
+
+- `GRADLE_DEPENDENCY_RELATIONS.md` §11に、元Providerを追加評価せずaddProviderのconfigure Actionで登録する設計、試行ID／materialization世代、安定性の作者表明、未観測時の不完全性を具体化。
+- Groovy／Kotlin × Gradle 8.11.1／9.2.1のtest-only公開API回帰と機械可読結果を追加。通常追加・棚卸しのみ・登録付きのイベント列、評価回数、解決結果、例外を比較する。
+- Providerを外部から再照会した変動はcallbackで捕捉できない対照を含め、安定性を自動検証済みとは扱わない。
+- 次は本番C1b adapter／静的取込とtrust metadata。catalog／bundle、configuration cache等のgateは残る。本番C1aのProvider対応範囲は今回変更しない。
+
+
+### 2026-10-31: Gradle C1b 本番adapter・静的取込
+
+- 明示`addProvider`とscopeの`providerPolicy: stable-during-export`を追加。Provider入りcontextをadapter v3で出力し、readerが全観測と信頼契約を再検証する。同期C1aのv2互換性を維持。
+- 空値・表明不足・非既定shape・mutation・観測不完全ではscopeのdeclared_inを省略し、relation／introduced_by／coverageを保持。未使用configurationを追加実現しない。元Actionによる版変更・例外を含む本番回帰を追加。
+- 次の実接続課題はC1b入り検証projectでscan_project／scan_java_project／suggest_fixの宣言元・信頼metadata・候補再照会を確認すること。catalog／bundle、ProviderConvertible、configuration cache、task output、convention-pluginのgateは残る。

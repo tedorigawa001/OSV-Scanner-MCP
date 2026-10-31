@@ -165,11 +165,19 @@ export class GradleGraphCache {
             provenance.contract_paths = [sanitizeExternalText(path.relative(this.boundary, contractPath))];
             const declarations = analyzeDeclarations(c, candidate.graph, contract, this.declarationBudget);
             metadata.reasons.push(...declarations.reasons);
-            if (declarations.reasons.includes("declaration_assertion_missing")) {
+            if (declarations.reasons.includes("declaration_assertion_missing") || declarations.reasons.includes("provider_stability_assertion_missing")) {
               provenance.trust_status = "missing_assertion"; provenance.assurance = null;
             }
             const adopted = provenance.trust_status === "accepted" && !declarations.reasons.length;
-            if (adopted) declarationContexts.add(c.configuration);
+            if (adopted) {
+              declarationContexts.add(c.configuration);
+              if (d.adapterVersion === 3 && d.records.some(r => "registrationKind" in r && r.registrationKind === "provider")) {
+                const limitations = metadata.declaration_provenance!.limitations;
+                for (const limitation of ["provider_evaluations_outside_materialization_not_observable", "provider_stability_author_asserted"]) {
+                  if (!limitations.includes(limitation)) limitations.push(limitation);
+                }
+              }
+            }
             const base = analysis.lookup;
             lookups.set(c.configuration, (name, version) => {
               const info = base(name, version);

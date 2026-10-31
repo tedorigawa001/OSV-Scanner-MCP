@@ -1,0 +1,124 @@
+// Test-only C1b experiment. Not shipped and never used by MCP.
+import groovy.json.JsonOutput
+import org.gradle.api.Action
+import org.gradle.api.Project
+import org.gradle.api.provider.Provider
+import org.gradle.api.artifacts.ExternalModuleDependency
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+
+class OsvProviderRegistrationProbe {
+    Project project
+    String mode
+    String phase='configuration'
+    List<String> trace=[]
+    Map producerCalls=[:].withDefault {0}
+    Map configureCalls=[:].withDefault {0}
+    List<Map> attempts=[]
+    Provider changingCallerProbe
+    void mark(String name) { phase=name; trace.add('phase:'+name) }
+    Object produce(String id,String kind) {
+        producerCalls[id]=producerCalls[id]+1
+        def value=kind=='changing' && producerCalls[id]>1 ? 'review:sample:2' : 'review:sample:1'
+        trace.add('produce:'+id+':'+producerCalls[id]+':'+phase+':'+value)
+        if(kind=='throws') throw new IllegalStateException('supplier-sentinel')
+        if(kind=='absent') return null
+        if(kind=='object') return project.dependencies.create(value)
+        value
+    }
+    void configure(String id, dep) {
+        configureCalls[id]=configureCalls[id]+1
+        trace.add('configure:'+id+':'+configureCalls[id]+':'+phase)
+        if(id=='actionThrows') throw new IllegalStateException('action-sentinel')
+    }
+    static Map snapshot(dep) {
+        if(!(dep instanceof ExternalModuleDependency)) return [supported:false]
+        def vc=dep.versionConstraint
+        [supported:dep.attributes.keySet().empty && dep.capabilitySelectors.empty && dep.artifacts.empty &&
+            dep.targetConfiguration==null && !dep.endorsingStrictVersions && dep.transitive && dep.excludeRules.empty,
+         group:dep.group,name:dep.name,required:vc.requiredVersion,preferred:vc.preferredVersion,strict:vc.strictVersion,
+         rejected:vc.rejectedVersions.toList().sort(),branch:vc.branch]
+    }
+    Map add(String name,Provider provider,String source,Action original=null) {
+        def record=[id:'d'+attempts.size(),configuration:name,source:source,evaluations:[],callbacks:0,overflow:false]
+        if(name=='changing') changingCallerProbe=provider // Test caller owns this reference; collector never queries it.
+        attempts.add(record) // ID belongs to the addition attempt, not a supplier invocation.
+        if(mode!='registered') {
+            if(original) project.dependencies.addProvider(name,provider,original)
+            else project.dependencies.addProvider(name,provider)
+        } else {
+            project.dependencies.addProvider(name,provider,{ dep ->
+                if(original) original.execute(dep) // Preserve the user's exception and timing.
+                record.callbacks++
+                try {
+                    if(record.evaluations.size()<128) record.evaluations.add([dependency:dep,snapshot:snapshot(dep),phase:phase])
+                    else record.overflow=true
+                } catch(Exception ignored) { record.overflow=true }
+            } as Action)
+        }
+        [id:record.id]
+    }
+    void inherited(Provider provider,String source) {
+        def parent=project.configurations.create('parent')
+        parent.canBeResolved=false; parent.canBeConsumed=false
+        ['childA','childB'].each { name ->
+            def child=project.configurations.create(name)
+            child.canBeResolved=true; child.canBeConsumed=false; child.extendsFrom(parent)
+        }
+        add('parent',provider,source)
+    }
+    Map run(String name) {
+        def cfg=project.configurations.getByName(name), graph=[], failed=false, failure=null
+        mark('resolve:'+name)
+        try {
+            def rr=cfg.incoming.resolutionResult
+            def root=rr.rootComponent.get()
+            def edges=root.getDependenciesForVariant(rr.rootVariant.get())
+            failed=edges.any { it instanceof UnresolvedDependencyResult }
+            graph=edges.findAll { it instanceof ResolvedDependencyResult && !it.constraint }.collect { e ->
+                [requested:e.requested.displayName,selected:e.selected.id.displayName]
+            }.sort { a,b -> a.requested <=> b.requested ?: a.selected <=> b.selected }
+        } catch(Exception error) {
+            failed=true
+            def causes=[]; def current=error
+            while(current!=null && causes.size()<20) { causes.add(current.message ?: ''); current=current.cause }
+            failure=causes.any { it.contains('supplier-sentinel') } ? 'supplier-sentinel' : causes.any { it.contains('action-sentinel') } ? 'action-sentinel' : 'resolution_failed'
+        }
+        mark('inspect:'+name)
+        def live=[:]
+        if(mode!='plain' && !failed) live=cfg.hierarchy.collectEntries { [(it.name):it.dependencies.toList()] }
+        def registrations=[]
+        if(mode=='registered') {
+            attempts.findAll { cfg.hierarchy.any { c -> c.name==it.configuration } }.each { r ->
+                def fingerprints=r.evaluations.collect { it.snapshot }.unique()
+                def candidates=(live[r.configuration] ?: []).findAll { d -> r.evaluations.any { e -> (d.is(e.dependency) || d==e.dependency) && snapshot(d)==e.snapshot } }
+                boolean matched=candidates.size()==1
+                def status=failed ? 'resolution_failed' : r.overflow ? 'observation_incomplete' : r.evaluations.empty ? 'unobserved' : fingerprints.size()!=1 ? 'unstable' :
+                    !fingerprints.first().supported ? 'unsupported' : matched ? 'materialized' : 'unmatched'
+                registrations.add([id:r.id,callbacks:r.callbacks,status:status,matched:matched])
+            }
+        }
+        mark('after:'+name)
+        [graph:graph,failed:failed,failure:failure,registrations:registrations]
+    }
+    Map report() {
+        def scenarios=[:]
+        ['stable','object','action','duplicate','changing','absent','throws','actionThrows','property','childA','childB'].each { scenarios[it]=run(it) }
+        mark('caller-query:changing')
+        def callerValue=changingCallerProbe.get() // Explicit application query, identically executed in all three paths.
+        scenarios.unused=[graph:[],failed:false,failure:null,registrations:attempts.findAll {it.configuration=='unused'}.collect {[id:it.id,callbacks:it.callbacks,status:'unobserved',matched:false]}]
+        [callerValue:callerValue,trace:trace,producerCalls:producerCalls,configureCalls:configureCalls,scenarios:scenarios]
+    }
+}
+gradle.beforeProject { p ->
+    if(p.parent!=null) p.extensions.add('osvProviderProbe',new OsvProviderRegistrationProbe(project:p,mode:p.name))
+}
+gradle.projectsEvaluated {
+    gradle.rootProject.tasks.register('osvProveProviderRegistration') {
+        doLast {
+            def projects=[:]
+            gradle.rootProject.subprojects.sort { it.name }.each { p -> projects[p.name]=p.extensions.getByName('osvProviderProbe').report() }
+            new File(gradle.rootProject.projectDir,'provider-registration.json').text=JsonOutput.prettyPrint(JsonOutput.toJson([gradleVersion:gradle.gradleVersion,projects:projects]))+'\n'
+        }
+    }
+}

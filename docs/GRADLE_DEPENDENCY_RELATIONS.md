@@ -631,3 +631,92 @@ recordsは10万/context、bindingsはroot非constraint edge数以下（最大20�
 ## 10. 今回の結論
 
 まずStage A/Bの**事前export＋静的取込**を実装するのがよい。これにより、通常のlockスキャンを保ちながらGradle固有の解決結果に基づく関係情報を追加できる。`declared_in`の全面自動取得は別問題として扱い、source-mapのある宣言から段階的に対応する。Groovy/Kotlinの全面静的評価や、MCPでのビルド実行を隠れた依存にしない。
+
+
+## 11. Stage C1b: Provider登録の公開API実証（2026-10-31）
+
+### 11.1 採用候補と実証の境界
+
+C1bの候補は、元のProviderをそのまま`DependencyHandler.addProvider(configuration, provider, Action)`へ渡し、Gradleが呼ぶActionで依存実体を記録する方式とする。helperによる`get`、`getOrNull`、`isPresent`、追加`map`、`whenObjectAdded`は使用しない。元のconfigure Actionを先に一度実行し、その正常終了後にsnapshotを採る。元Action／supplierの例外は握り潰さず元の処理へ伝播させる。記録側の例外・上限超過だけを不完全性として扱う。
+
+公開APIの根拠は[DependencyHandler.addProvider](https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/dsl/DependencyHandler.html)。[Providerの契約](https://docs.gradle.org/current/javadoc/org/gradle/api/provider/Provider.html)は空値・変動値を許すため、コールバックの存在だけからProviderの安定性を推定してはならない。対象版の実際の互換性は下記実行行列で確認する。
+
+今回追加するものはtest-onlyの試作と設計であり、本番adapter・静的readerの対応範囲は変更しない。本番C1aのProviderは引き続き`deferred_registration_not_supported`。catalog alias／bundle、ProviderConvertible、configuration cache、task output由来Provider、並行実行は別の実証gateとする。
+
+### 11.2 helperの入力・処理順序
+
+将来の公開helperは`addProvider(configurationName, originalProvider, sourceHandle, optionalAction)`とし、戻り値は試行IDのopaque handle（依存実体ではない）とする。C1aのsource事前登録、評価前入力捕捉、project／configuration所有、scope継承、immutable-after-add契約を再利用する。
+
+1. helper呼出し時にsource、所有configuration、試行IDを確定。Providerへ問い合わせず、通常の追加APIへ一度だけ委譲する。
+2. Gradleのconfigure callbackで元Actionを先に実行。成功した実体のidentity、declaration key、default shapeを採取する。snapshotは「追加呼出し時」ではなく「materialization時」の値である。
+3. 同じ試行の再callbackは同じIDのgenerationとして保持する。異なるkey／shapeが観測された場合は不完全。同値の独立した追加は別IDを保持する。
+4. 通常の解決後、寄与する各configurationの**自身のdependencies**を確認する。allDependenciesの同値畳込みを使わず、登録所有configurationの実体との対応を検証する。identityを優先し、同値fallbackは所有configuration内で一意かつkey／shape一致の場合だけ候補とする。曖昧な対応・未登録実体・mutationはscope不完全。
+5. scope完全性と元のrelation／introduced_by／coverageは別に判定する。非対応のProviderで既存graph情報を失わせない。
+
+### 11.3 信頼契約と完全性
+
+将来のadapter version更新では、C1a既存レコードをmaterializationの証拠へ読み替えない。Providerレコードに`registrationKind: provider`、stableなattempt ID、所有configuration、source ID、callbackCount、boundedなmaterialization世代のkey／shape／最終一致状態を持たせる。実体identityはプロセス内だけに保持し、JSONへは出さない。callbackCountをsupplier評価回数と呼ばない。未知adapter versionはdeclared_inを採用せずgraphを維持する。
+
+| 状態 | 扱い |
+| --- | --- |
+| materialized | 安定した観測、既定shape、実体対応を確認した候補。これだけではscope完全ではない |
+| unobserved | 空・未使用・未実現を区別不能。追加評価せずscopeのdeclared_inを省略 |
+| unstable / unmatched / unsupported | 観測差・対応不能・非既定shape。scope不完全 |
+| observation_incomplete | 観測予算超過／採取失敗。部分一覧を返さない |
+| resolution_failed | 元の失敗を維持し、完全な宣言元を主張しない |
+
+C1bの陽性化には既存作者表明に加え、登録Providerの値／由来と元Actionが対象export中に安定し、記録callbackによる遅延差に依存せず、外部から変更しないという明示契約が必要。全寄与試行の観測・実体照合・入力検証・scope棚卸しが揃った場合のみdeclared_inを採用する。metadataにはC1aの二つの既知限界に加え、`provider_evaluations_outside_materialization_not_observable`と`provider_stability_author_asserted`を必須とする。安定性表明なしでは不完全とする。
+
+具体的には、同一Providerをアプリ側が明示的に再照会すると値が1→2へ変わる一方、登録callbackは1回のままという対照を追加した。観測が1回でも安定性の証明にはならない。試作のmaterializedは観測ラベルであり、信頼契約受理や本番完全性判定の実装ではない。
+
+### 11.4 回帰条件と検証方法
+
+`src/test/gradle/providerRegistration.integration.test.ts`と`src/test/fixtures/gradle-provider-registration.init.gradle`で、Groovy／Kotlin × Gradle 8.11.1／9.2.1を実行する。ローカルMavenのPOMだけを用い、`--offline --no-configuration-cache`で公開APIを実行する。比較する3経路は通常addProvider、通常追加＋解決後棚卸し、登録Action付き追加。helper本体以外の解決・caller queryの操作列は共通とする。
+
+回帰条件は、文字列、ExternalModuleDependency、Property、元configure Action、同一Providerの同値二重追加、親configurationから二consumerへの継承、空値、supplier例外、Action例外、未使用configuration、変動値の外部再照会。評価フェーズとイベント順、supplier／Action回数、要求／selected、失敗とsentinel原因が3経路で等しいことを確認する。「時刻不変」は論理フェーズとイベント順の比較であり、壁時計時刻やゼロ実行コストを保証しない。
+
+継承は一つの登録IDを両consumerで維持し、独立の同値追加は二IDを保持する。空値はcallbackゼロ、未使用Providerはsupplierゼロ。例外ケースは解決の失敗を捕捉して比較するため、検証タスク全体の成功を依存解決成功と取り違えない。callback snapshot自体の上限・採取例外、異なる世代のmutation、configuration cache、catalog／bundleは本番実装時の追加必須回帰であり、今回の成功行列には含めない。
+
+再現コマンド（各Gradle実行ファイルとJDKを指定）:
+
+```bash
+bdo proxy env OSV_MCP_TEST_GRADLE=/path/to/gradle/bin/gradle JAVA_HOME=/path/to/jdk GRADLE_USER_HOME=/path/to/cache OSV_MCP_GRADLE_PROVIDER_OUTPUT=/tmp/provider-proof npm test -- src/test/gradle/providerRegistration.integration.test.ts
+```
+
+`OSV_MCP_GRADLE_PROVIDER_OUTPUT`を指定すると版・DSL別JSONを保存する。結果とソースhashは`docs/validation/gradle-provider-2026-10-31.json`に保存する。本番adapter＋静的取込、実接続テストはこの設計を実装した後の段階とする。
+
+
+### 11.5 実測結果
+
+| Gradle | Groovy | Kotlin | 比較結果 |
+| --- | --- | --- | --- |
+| 8.11.1 | 12回帰条件 | 12回帰条件 | 3経路のイベント列・supplier／Action回数・解決結果／失敗が一致 |
+| 9.2.1 | 12回帰条件 | 12回帰条件 | 同上 |
+
+各projectでstable／object／action／propertyのsupplierは各1回、同値二重追加は2回、親configuration由来は二consumerを解決しても1回。空値はsupplier1回／callback0回、未使用はともに0回。元Actionは正常系・失敗系とも各1回で、失敗原因のsentinelを保持した。変動Providerは通常解決で1、明示的caller queryで2を返し、supplier2回／callback1回だった。同値二重追加は二つのID、継承は同じIDを保持した。
+
+以上から、**検証した安定Providerのmaterializationを、元の論理評価時刻・回数・結果を変えずに登録する公開API経路は成立**する。任意Providerの安定性や不在の完全な自動証明は成立しないため、上記の限定された信頼契約と保守的な省略を前提とする。
+
+
+## 12. Stage C1b 本番adapter・静的取込
+
+§11は公開API実証段階の記録。本節の実装で、安定Providerの明示helperを本番へ追加する。catalog等の別gateは維持する。
+
+- 入力は`addProvider(configurationName, originalProvider, preparedSourceHandle, optionalAction)`。scopeへ任意フィールド`providerPolicy: "stable-during-export"`を追加する。既存contractVersion 1／trust modelを維持し、既存C1a契約にこのフィールドは不要。未知値は拒否する。旧`add(..., Provider, ...)`は互換性のため通常委譲＋未対応を維持する。
+- 元Providerを一度だけGradleのaddProviderへ渡す。元Actionの正常終了後にsnapshotし、supplier／Actionの例外を変更しない。収集例外は観測不完全として扱う。Providerの`get`／`isPresent`／`map`は使用しない。Provider用removeは未対応として明示的に拒否する。
+- Provider試行のあるcontextだけadapterVersion 3。同期のみは2を維持する。v3の全recordに`registrationKind`（synchronous／provider）、`callbackCount`、`materializations`（snapshot配列、最大128）を追加。Providerの`declarationAtAdd`はnullで、初回materializationを追加呼出し時の証拠へ読み替えない。同期recordはcallbackCount=0／materializations=[]。実体identityはJSONへ出さない。
+- 解決後、所有configurationごとにlive実体をsnapshotでindex化する。同値候補の検索で全グラフを試行ごとに走査せず、既存の共有200万work予算を維持。実体対応と状態はcontextごとのローカル値で求め、共有試行recordを書き換えない。
+- readerはv2／v3を認識。v3 Providerの表明、callback数と全snapshot数、世代間一致、解決後snapshot一致、既定shape、source／scope／bindingを再検証する。exporterのcompleteだけを信用しない。未観測・不安定・表明不足・観測上限超過は部分一覧を返さず、relation／introduced_by／coverageと分離する。未知adapterはgraphを維持し宣言元を採用しない。
+- 表明不足はtrust metadataでmissing_assertion。採用したProviderには二つのProvider固有の既知限界を追記する。consumer trustがdisabledならv3でも宣言元を返さない。
+
+本番回帰はGroovy／Kotlinで同値Provider二重追加、継承する四つのcontext、consumer有効／無効、元Actionによる版変更後のsnapshot、supplier／Action例外を確認する。exporterの既存仕様では解決例外を不完全context（graph_export_failed等）として記録する。厳格な解決をexport前に行った場合は元例外が伝播し、既存JSONが上書きされないことも確認する。Groovy境界回帰は表明不足、空値、外部mutation、非既定shape、対象外configurationの未評価。静的回帰は偽の完全性、callback数不一致、世代差、128件上限、追加時snapshotの偽装、同期recordの偽装、未知adapterを確認する。§11の公開API行列と合わせて実行する。
+
+検証記録は`docs/validation/gradle-c1b-adapter-2026-10-31.json`。OSV実接続・最終3ツールのC1b検証は別段階で、本変更の検証は実Gradle＋ローカルMavenのoffline実行と静的取込まで。
+
+
+### C1b本番検証結果（2026-10-31）
+
+- Gradle 8.11.1を指定した全体回帰: 74ファイル／1,573テスト成功（本番adapter回帰23件を含む）。
+- Gradle 9.2.1: 本番adapter回帰23件＋公開API実証24件、計47件成功。
+- 両版でGroovy／KotlinのProvider陽性、版変更Action、supplier／Actionの例外を確認。型チェック・ビルド・diff checkも成功。
+- 実行はJDK 21.0.13+9、offline／configuration cache無効。ソースhashと具体的な確認範囲は上記JSONに保存。今回OSVへの実接続は実行していない。

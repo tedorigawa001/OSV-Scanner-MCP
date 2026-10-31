@@ -1,0 +1,100 @@
+{
+  "date": "2026-10-31",
+  "stage": "Gradle C1b explicit Provider production adapter and static import",
+  "java": "21.0.13+9",
+  "graphSchemaVersion": 2,
+  "providerAdapterVersion": 3,
+  "synchronousOnlyAdapterVersion": 2,
+  "sourceSha256": {
+    "gradle/register-declarations.init.gradle": "7519d752b78515f1e4335c19f61b31fdb4a5aafc0e2029def6597544634b8223",
+    "src/utils/gradleDeclarations.ts": "e278826eca1093e297f667b7aef595fd603a3cd7308e393482440838356e5f3f",
+    "src/utils/gradleGraphCache.ts": "c7aad7ea1794b46a9d3c650a4b8139644d5c69e8b62477016714a51e45d65e5c",
+    "src/test/fixtures/gradleDeclarationsFixture.ts": "f35079642a28b4fc54233f71f053a322d230947cd8a4162b13d942455bfe3abf",
+    "src/test/gradle/registeredExporter.integration.test.ts": "8d0bd6004eb56a67b8a2b7fdc3034aaefea3cdac6660adbfa993b7d5ea522f31",
+    "src/test/utils/gradleDeclarations.test.ts": "8867db93edde52f83aaac135889cf08c31b9bcb022ab675e4b28b31d328ef3e4",
+    "src/test/fixtures/gradle-provider-registration.init.gradle": "b508a1e2ba92e7aa1bec649c08f4554ae1093df833a1997435165cfe6671175d",
+    "src/test/gradle/providerRegistration.integration.test.ts": "100975a6cb462a89a817bc439852ba95f216220547b2604f6d63318b23e3b637"
+  },
+  "verification": {
+    "gradle8": {
+      "version": "8.11.1",
+      "suite": "full regression, with real Gradle and origin benchmark baselines",
+      "filesPassed": 74,
+      "testsPassed": 1573,
+      "durationSeconds": 156.93,
+      "productionAdapterTests": 23
+    },
+    "gradle9": {
+      "version": "9.2.1",
+      "suite": "production adapter and public API Provider proof",
+      "filesPassed": 2,
+      "testsPassed": 47,
+      "durationSeconds": 171.78,
+      "productionAdapterTests": 23,
+      "publicApiProofTests": 24
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "diffCheck": "passed"
+  },
+  "productionMatrix": {
+    "positiveDsl": [
+      "Groovy",
+      "Kotlin"
+    ],
+    "failureDsl": [
+      "Groovy",
+      "Kotlin"
+    ],
+    "versionChangingActionDsl": [
+      "Groovy",
+      "Kotlin"
+    ],
+    "configurations": [
+      "compileClasspath",
+      "runtimeClasspath",
+      "testCompileClasspath",
+      "testRuntimeClasspath"
+    ],
+    "assertions": [
+      "Independent equal Provider additions retain both source paths and IDs",
+      "Contributing contexts adopt only with explicit consumer trust and scope providerPolicy",
+      "Registration performs zero supplier evaluations during configuration; export evaluates each stable supplier once",
+      "Original version-changing Action completes before materialization snapshot",
+      "Absent Provider makes declaration inventory incomplete without reducing graph relation coverage",
+      "Missing stability policy is reported as missing_assertion",
+      "Mutation and nondefault shape suppress the whole declaration list",
+      "Provider in unused configuration is not realized and does not invalidate unrelated scopes",
+      "Exporter records supplier and Action failures as incomplete graph contexts",
+      "Strict resolution propagates original supplier or Action sentinel and leaves old companion unchanged"
+    ]
+  },
+  "staticImportAssertions": [
+    "Adapter v2 backwards compatibility",
+    "Adapter v3 Provider callback count and bounded materialization validation",
+    "Repeated equal observations do not inflate declaration sources",
+    "Different observed values fail closed",
+    "Empty observations, count mismatch, observation overflow and forged at-add evidence fail closed",
+    "Synchronous records cannot carry Provider observation evidence",
+    "Unknown adapter retains graph relations and withholds declared_in",
+    "Provider trust limitations are reported when declarations are adopted"
+  ],
+  "limits": {
+    "materializationsPerAttempt": 128,
+    "sharedDeclarationWorkBudget": 2000000,
+    "configurationCache": false,
+    "repositories": "offline local Maven POM fixtures"
+  },
+  "notValidated": [
+    "OSV live connection and final C1b scan_project/scan_java_project/suggest_fix flows",
+    "ProviderConvertible, version catalog aliases and bundles",
+    "Configuration cache, task output Providers and parallel execution",
+    "Convention-plugin source provenance"
+  ],
+  "trustLimitations": [
+    "unregistered_equal_additions_not_detectable",
+    "reverted_external_mutations_not_detectable",
+    "provider_evaluations_outside_materialization_not_observable",
+    "provider_stability_author_asserted"
+  ]
+}

@@ -1,0 +1,2710 @@
+{
+  "date": "2026-10-31",
+  "purpose": "Stage C1b public API feasibility only; production adapter and reader unchanged",
+  "java": "21.0.13+9",
+  "configurationCache": false,
+  "offline": true,
+  "timingMeaning": "logical phase and event ordering; not wall clock equality",
+  "sourceSha256": {
+    "src/test/fixtures/gradle-provider-registration.init.gradle": "b508a1e2ba92e7aa1bec649c08f4554ae1093df833a1997435165cfe6671175d",
+    "src/test/gradle/providerRegistration.integration.test.ts": "100975a6cb462a89a817bc439852ba95f216220547b2604f6d63318b23e3b637"
+  },
+  "matrix": [
+    {
+      "gradle": "8.11.1",
+      "dsl": "groovy",
+      "eventTraceEqual": true,
+      "supplierCountsEqual": true,
+      "configureCountsEqual": true,
+      "resolutionAndFailureEqual": true,
+      "report": {
+        "gradleVersion": "8.11.1",
+        "projects": {
+          "control": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": []
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": []
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          },
+          "plain": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": []
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": []
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          },
+          "registered": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d0",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d1",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d2",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d3",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  },
+                  {
+                    "id": "d4",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d5",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d6",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": [
+                  {
+                    "id": "d7",
+                    "callbacks": 0,
+                    "status": "resolution_failed",
+                    "matched": false
+                  }
+                ]
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": [
+                  {
+                    "id": "d8",
+                    "callbacks": 0,
+                    "status": "resolution_failed",
+                    "matched": false
+                  }
+                ]
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d10",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d11",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d11",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gradle": "8.11.1",
+      "dsl": "kotlin",
+      "eventTraceEqual": true,
+      "supplierCountsEqual": true,
+      "configureCountsEqual": true,
+      "resolutionAndFailureEqual": true,
+      "report": {
+        "gradleVersion": "8.11.1",
+        "projects": {
+          "control": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": []
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": []
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          },
+          "plain": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": []
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": []
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          },
+          "registered": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d0",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d1",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d2",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d3",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  },
+                  {
+                    "id": "d4",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d5",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d6",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": [
+                  {
+                    "id": "d7",
+                    "callbacks": 0,
+                    "status": "resolution_failed",
+                    "matched": false
+                  }
+                ]
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": [
+                  {
+                    "id": "d8",
+                    "callbacks": 0,
+                    "status": "resolution_failed",
+                    "matched": false
+                  }
+                ]
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d10",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d11",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d11",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gradle": "9.2.1",
+      "dsl": "groovy",
+      "eventTraceEqual": true,
+      "supplierCountsEqual": true,
+      "configureCountsEqual": true,
+      "resolutionAndFailureEqual": true,
+      "report": {
+        "gradleVersion": "9.2.1",
+        "projects": {
+          "control": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": []
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": []
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          },
+          "plain": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": []
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": []
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          },
+          "registered": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d0",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d1",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d2",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d3",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  },
+                  {
+                    "id": "d4",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d5",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d6",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": [
+                  {
+                    "id": "d7",
+                    "callbacks": 0,
+                    "status": "resolution_failed",
+                    "matched": false
+                  }
+                ]
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": [
+                  {
+                    "id": "d8",
+                    "callbacks": 0,
+                    "status": "resolution_failed",
+                    "matched": false
+                  }
+                ]
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d10",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d11",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d11",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "gradle": "9.2.1",
+      "dsl": "kotlin",
+      "eventTraceEqual": true,
+      "supplierCountsEqual": true,
+      "configureCountsEqual": true,
+      "resolutionAndFailureEqual": true,
+      "report": {
+        "gradleVersion": "9.2.1",
+        "projects": {
+          "control": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": []
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": []
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          },
+          "plain": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": []
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": []
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": []
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          },
+          "registered": {
+            "callerValue": "review:sample:2",
+            "trace": [
+              "phase:configured",
+              "phase:resolve:stable",
+              "produce:stable:1:resolve:stable:review:sample:1",
+              "phase:inspect:stable",
+              "phase:after:stable",
+              "phase:resolve:object",
+              "produce:object:1:resolve:object:review:sample:1",
+              "phase:inspect:object",
+              "phase:after:object",
+              "phase:resolve:action",
+              "produce:action:1:resolve:action:review:sample:1",
+              "configure:action:1:resolve:action",
+              "phase:inspect:action",
+              "phase:after:action",
+              "phase:resolve:duplicate",
+              "produce:duplicate:1:resolve:duplicate:review:sample:1",
+              "produce:duplicate:2:resolve:duplicate:review:sample:1",
+              "phase:inspect:duplicate",
+              "phase:after:duplicate",
+              "phase:resolve:changing",
+              "produce:changing:1:resolve:changing:review:sample:1",
+              "phase:inspect:changing",
+              "phase:after:changing",
+              "phase:resolve:absent",
+              "produce:absent:1:resolve:absent:review:sample:1",
+              "phase:inspect:absent",
+              "phase:after:absent",
+              "phase:resolve:throws",
+              "produce:throws:1:resolve:throws:review:sample:1",
+              "phase:inspect:throws",
+              "phase:after:throws",
+              "phase:resolve:actionThrows",
+              "produce:actionThrows:1:resolve:actionThrows:review:sample:1",
+              "configure:actionThrows:1:resolve:actionThrows",
+              "phase:inspect:actionThrows",
+              "phase:after:actionThrows",
+              "phase:resolve:property",
+              "produce:property:1:resolve:property:review:sample:1",
+              "phase:inspect:property",
+              "phase:after:property",
+              "phase:resolve:childA",
+              "produce:inherited:1:resolve:childA:review:sample:1",
+              "phase:inspect:childA",
+              "phase:after:childA",
+              "phase:resolve:childB",
+              "phase:inspect:childB",
+              "phase:after:childB",
+              "phase:caller-query:changing",
+              "produce:changing:2:caller-query:changing:review:sample:2"
+            ],
+            "producerCalls": {
+              "stable": 1,
+              "object": 1,
+              "action": 1,
+              "duplicate": 2,
+              "changing": 2,
+              "absent": 1,
+              "throws": 1,
+              "actionThrows": 1,
+              "property": 1,
+              "inherited": 1
+            },
+            "configureCalls": {
+              "action": 1,
+              "actionThrows": 1
+            },
+            "scenarios": {
+              "stable": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d0",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "object": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d1",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "action": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d2",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "duplicate": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d3",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  },
+                  {
+                    "id": "d4",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "changing": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d5",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "absent": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d6",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              },
+              "throws": {
+                "graph": [],
+                "failed": true,
+                "failure": "supplier-sentinel",
+                "registrations": [
+                  {
+                    "id": "d7",
+                    "callbacks": 0,
+                    "status": "resolution_failed",
+                    "matched": false
+                  }
+                ]
+              },
+              "actionThrows": {
+                "graph": [],
+                "failed": true,
+                "failure": "action-sentinel",
+                "registrations": [
+                  {
+                    "id": "d8",
+                    "callbacks": 0,
+                    "status": "resolution_failed",
+                    "matched": false
+                  }
+                ]
+              },
+              "property": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d10",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "childA": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d11",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "childB": {
+                "graph": [
+                  {
+                    "requested": "review:sample:1",
+                    "selected": "review:sample:1"
+                  }
+                ],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d11",
+                    "callbacks": 1,
+                    "status": "materialized",
+                    "matched": true
+                  }
+                ]
+              },
+              "unused": {
+                "graph": [],
+                "failed": false,
+                "failure": null,
+                "registrations": [
+                  {
+                    "id": "d9",
+                    "callbacks": 0,
+                    "status": "unobserved",
+                    "matched": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Only materialization callbacks are observable, not all Provider evaluations",
+    "Provider stability requires an author assertion; a single callback does not prove stability",
+    "Absent and unrealized cannot be distinguished without querying; both remain unobserved",
+    "Catalog, ProviderConvertible, bundles, configuration cache, task output providers and concurrency not validated",
+    "Prototype observation labels do not implement production trust acceptance"
+  ],
+  "verification": {
+    "fullSuiteGradle8": {
+      "filesPassed": 74,
+      "testsPassed": 1550
+    },
+    "providerSuiteGradle9": {
+      "filesPassed": 1,
+      "testsPassed": 24
+    },
+    "providerMatrixTests": 48,
+    "typecheck": "passed",
+    "build": "passed"
+  }
+}

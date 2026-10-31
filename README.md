@@ -384,9 +384,9 @@ Relations follow selected component/variant edges, excluding constraints from de
 
 `coverage.dependency_metadata.gradle` reports the captured companion paths, configurations, relation/declaration completeness and diagnostic reasons. Missing, invalid, stale or over-budget metadata alone does not lower vulnerability coverage; metadata from a newer exporter schema version is reported as `unsupported_schema_version`, separately from invalid metadata. A context with verified identity and hashes can establish missing lock modules, unresolved requirements or unrepresented file dependencies, which do lower coverage. Known settings inputs are captured before settings evaluation, and all project build files before any project is evaluated. The exporter verifies these baselines before graph resolution and again before writing JSON; changes made during evaluation or by preceding tasks reject the export without overwriting an existing companion. Run a fresh Gradle invocation after updating declarations. A module that the root also reaches through a project dependency has no complete public-module origin list, so its `introduced_by` is omitted. Known input hashes are checked, including candidates that were absent at export time (creating one later marks the metadata stale), but cannot prove freshness across environment variables, external init scripts or remote plugin changes. JSON input is bounded to 16 MiB/file and 64 MiB/scan, with strict schema, duplicate-key, depth and reference checks; graph indexing and traversal each share a 2,000,000-operation scan budget.
 
-Stage B does **not** infer `declared_in` from the owning build file. Optional Stage C1a maps are available in this source checkout as described below. Gradle update hints use verified declaration paths when available and otherwise refer to applicable Gradle declarations or constraints. OSV candidate checks do not establish artifact availability, variant or Java compatibility.
+Stage B does **not** infer `declared_in` from the owning build file. Optional Stage C1a/C1b maps are available in this source checkout as described below. Gradle update hints use verified declaration paths when available and otherwise refer to applicable Gradle declarations or constraints. OSV candidate checks do not establish artifact availability, variant or Java compatibility.
 
-### Gradle declaration sources (C1a)
+### Gradle declaration sources (C1a/C1b)
 
 C1a supports explicitly registered synchronous module declarations in Groovy and Kotlin builds. The build author asserts that **every contributing addition uses the helper** and dependencies are not mutated after its configure action. The consumer must also set `OSV_MCP_GRADLE_DECLARATION_TRUST=registered-helper-v1`. Without this setting, graph relations remain available but direct declaration lists are omitted.
 
@@ -440,7 +440,57 @@ The adapter prepares source hashes before evaluation and rejects source/contract
 
 `coverage.dependency_metadata.gradle[].declaration_provenance` identifies this as **author-attested and structurally checked**. Unregistered equal additions can disappear from Gradle's collection, and mutations reverted before inspection can be invisible. These limitations are always reported when declarations are adopted; hashes and matching bindings do not independently prove the author's assertion. All sources for a package must be complete before `declared_in` is emitted. The provenance summary combines context states deterministically (`invalid` before `missing_assertion` before `accepted`; an unset consumer policy stays `disabled`). Its `contexts` entries show the status, assurance and contract paths for each locked configuration. An invalid unrelated context does not erase another package’s verified declarations; a package present in both accepted and incomplete contexts still has its entire list omitted.
 
-C1a handles module declarations only: a scope that also contains a project dependency (such as `implementation(project(":core"))`) cannot satisfy the helper assertion, so its direct declaration lists are omitted (`unsupported_resolution_key`) while graph relations remain. C1a requires the explicit `catalogPolicy: "none"` assertion. Provider/catalog/bundle, convention-plugin provenance, custom artifacts/classifiers, non-default attributes/capabilities, rich versions, exclusions and other unsupported shapes do not acquire a complete declaration map. They keep normal Gradle dependency behavior, while declaration metadata is incomplete. This is not the broader Stage C1b/buildscript/composite/Android implementation. Source/contract files are never sent to OSV or added to scanner inputs.
+C1a handles module declarations only: a scope that also contains a project dependency (such as `implementation(project(":core"))`) cannot satisfy the helper assertion, so its direct declaration lists are omitted (`unsupported_resolution_key`) while graph relations remain. C1a requires the explicit `catalogPolicy: "none"` assertion. Provider values passed to the C1a `add` helper remain unsupported declaration evidence. Catalog/bundle, convention-plugin provenance, custom artifacts/classifiers, non-default attributes/capabilities, rich versions, exclusions and other unsupported shapes do not acquire a complete declaration map. They keep normal Gradle dependency behavior, while declaration metadata is incomplete. The limited C1b Provider helper is described below; buildscript/composite/Android support remains outside this implementation. Source/contract files are never sent to OSV or added to scanner inputs.
+
+### Gradle Provider declaration sources (C1b)
+
+For stable `Provider` module declarations, explicitly use `addProvider` and add
+`"providerPolicy": "stable-during-export"` to every contributing contract scope.
+The author asserts that Provider values, their source attribution and the original
+configure Action remain stable during the export and are not changed externally.
+The existing consumer trust setting and `catalogPolicy: "none"` are still required.
+
+```groovy
+osv.addProvider('implementation', providers.provider { 'org.example:client:1.2.3' },
+    osv.source('build.gradle'))
+```
+
+```kotlin
+osv.withGroovyBuilder {
+    "addProvider"("implementation", providers.provider { "org.example:client:1.2.3" }, source)
+}
+```
+
+An optional final `Action<ExternalModuleDependency>` runs before the registration
+snapshot, with the same exception behavior as Gradle's normal `addProvider`.
+The helper never calls `get`, `isPresent`, or adds a `map` to the Provider. It only
+records materializations delivered by Gradle. Independent equal additions retain
+separate IDs, while inherited declarations retain the original ID and source.
+
+Contexts containing explicit Provider registrations use declaration adapter v3
+inside graph schema v2; synchronous-only contexts still use adapter v2. Older
+readers treat unknown adapter versions as unavailable declaration evidence while
+retaining graph relations. Use matching adapter/reader versions for C1b contracts.
+
+An absent or unmaterialized Provider is conservatively `provider_unobserved` and
+makes its contributing scope's declaration list incomplete. Missing stability
+assertions, inconsistent materializations, unsupported shapes, external mutation,
+or observation-budget exhaustion also suppress the entire scope's list without
+reducing vulnerability coverage by themselves. Each attempt retains at most 128
+materialization snapshots within the shared declaration work budget.
+
+When Provider evidence is adopted, provenance limitations additionally include
+`provider_evaluations_outside_materialization_not_observable` and
+`provider_stability_author_asserted`. A Provider can change on an application's
+later query without another materialization callback; stability is author-attested,
+not independently proven. Callback counts are not supplier evaluation counts.
+
+The legacy `add(configuration, provider, source)` remains unsupported declaration
+evidence and delegates normally to Gradle. ProviderConvertible, catalog aliases,
+bundles, configuration cache, task-output Providers and convention-plugin
+provenance remain outside this C1b implementation. `remove(handle)` does not support
+Provider registrations and throws explicitly; use normal Gradle operations for
+removal, which leave declaration evidence incomplete if correspondence is lost.
 
 ### `scan_java_project`
 

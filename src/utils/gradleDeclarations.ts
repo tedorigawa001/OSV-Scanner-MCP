@@ -32,23 +32,30 @@ const shape = z.union([unsupported, z.object({ version: z.literal(1), status: z.
   targetConfiguration: str.nullable(), endorseStrictVersions: z.boolean(), transitive: z.boolean(), excludes: z.array(z.unknown()).max(128) }).strict()]);
 const snapshot = z.object({ key: resolutionKeySchema, shape }).strict();
 const source = z.object({ kind: z.enum(["build-script", "applied-script", "convention-plugin"]), path: declarationPath, sha256: hash }).strict();
-export const declarationsSchema = z.object({ adapterVersion: z.literal(2), inventoryComplete: z.boolean(),
+const recordFields = { id, state: z.enum(["materialized", "pending", "removed", "unsupported", "unregistered"]), ownerProjectId: id, configuration: id,
+  declarationAtAdd: snapshot.nullable(), declarationAtResolve: snapshot.nullable(), source: source.nullable(),
+  catalogUses: z.array(z.object({ catalogInputId: id, alias: id }).strict()).max(32), reasons };
+const declarationFields = { inventoryComplete: z.boolean(),
   trust: z.object({ model: z.literal(DECLARATION_MODEL), contractPath: z.literal(DECLARATION_CONTRACT), contractSha256: hash, scopeId: id }).strict(),
   configurationClosure: z.array(id).max(2000),
   configurationTopology: z.array(z.object({ name: id, extendsFrom: z.array(id).max(2000), hasDependencies: z.boolean() }).strict()).max(2000),
-  records: z.array(z.object({ id, state: z.enum(["materialized", "pending", "removed", "unsupported", "unregistered"]), ownerProjectId: id, configuration: id,
-    declarationAtAdd: snapshot.nullable(), declarationAtResolve: snapshot.nullable(), source: source.nullable(),
-    catalogUses: z.array(z.object({ catalogInputId: id, alias: id }).strict()).max(32), reasons }).strict()).max(100_000),
-  bindings: z.array(z.object({ edgeId: id, declarationIds: z.array(id).max(100_000), complete: z.boolean(), reasons }).strict()).max(200_000), reasons,
-}).strict();
-export const declarationEnvelope = z.union([declarationsSchema, z.object({ adapterVersion: z.number().int().refine(v => v !== 2) }).passthrough()]);
+  bindings: z.array(z.object({ edgeId: id, declarationIds: z.array(id).max(100_000), complete: z.boolean(), reasons }).strict()).max(200_000), reasons };
+const declarationsV2 = z.object({ adapterVersion: z.literal(2), ...declarationFields,
+  records: z.array(z.object(recordFields).strict()).max(100_000) }).strict();
+const declarationsV3 = z.object({ adapterVersion: z.literal(3), ...declarationFields,
+  records: z.array(z.object({ ...recordFields, registrationKind: z.enum(["synchronous", "provider"]),
+    callbackCount: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+    materializations: z.array(snapshot).max(128) }).strict()).max(100_000) }).strict();
+export const declarationsSchema = z.union([declarationsV2, declarationsV3]);
+export const declarationEnvelope = z.union([declarationsSchema,
+  z.object({ adapterVersion: z.number().int().refine(v => v !== 2 && v !== 3) }).passthrough()]);
 export const catalogSchema = z.object({ inventoryComplete: z.boolean(), entries: z.array(z.object({ id,
   kind: z.enum(["local-toml", "programmatic", "remote"]), state: z.enum(["verifiable", "unverifiable"]),
   graphInputPaths: z.array(declarationPath).max(10_000), reason: reason.nullable() }).strict()).max(10_000) }).strict();
 export type Declarations = z.infer<typeof declarationsSchema>;
 const contractSchema = z.object({ catalogPolicy: z.literal("none"), contractVersion: z.literal(1), trustModel: z.literal(DECLARATION_MODEL), sources: z.array(declarationPath).max(10_000),
   scopes: z.array(z.object({ id, projectPath: id, resolvableConfiguration: id, declarationConfigurations: z.array(id).max(2000),
-    assertion: z.literal("all-contributing-additions-use-helper"), mutationPolicy: z.literal("immutable-after-add") }).strict()).max(2000) }).strict();
+    assertion: z.literal("all-contributing-additions-use-helper"), mutationPolicy: z.literal("immutable-after-add"), providerPolicy: z.literal("stable-during-export").optional() }).strict()).max(2000) }).strict();
 export type DeclarationContract = z.infer<typeof contractSchema>;
 export function parseDeclarationContract(text: string): DeclarationContract {
   const c = contractSchema.parse(parseGradleJson(text, 4 * 1024 * 1024));
@@ -58,7 +65,7 @@ export function parseDeclarationContract(text: string): DeclarationContract {
   return c;
 }
 export function knownDeclarations(c: GradleContext): Declarations | undefined {
-  if (!("declarations" in c) || c.declarations.adapterVersion !== 2) return undefined;
+  if (!("declarations" in c) || ![2, 3].includes(c.declarations.adapterVersion)) return undefined;
   return c.declarations as Declarations;
 }
 export function catalogVerified(c: GradleContext, graph: GradleGraph): boolean {
@@ -77,7 +84,8 @@ export function analyzeDeclarations(c: GradleContext, graph: GradleGraph, contra
   if (!d || !("catalogInputs" in c)) return { sources, reasons: ["unsupported_declaration_adapter"] };
   const fail = (r: string) => ({ sources: new Map<string, Set<string>>(), reasons: [r] });
   if (c.catalogInputs.entries.length) return fail("declaration_inventory_incomplete");
-  if (!d.inventoryComplete || d.reasons.length) return fail("declaration_inventory_incomplete");
+  if (!d.inventoryComplete || d.reasons.length) return { sources, reasons: ["declaration_inventory_incomplete",
+    ...d.reasons.filter(r => ["provider_stability_assertion_missing", "provider_unobserved", "provider_unstable", "provider_observation_incomplete"].includes(r))] };
   const project = graph.projects.find(p => p.id === c.projectId);
   const scope = contract.scopes.find(s => s.id === d.trust.scopeId);
   if (!scope || !project || project.buildId !== "main" || scope.projectPath !== project.projectPath || scope.resolvableConfiguration !== c.configuration) return fail("declaration_assertion_missing");
@@ -106,7 +114,16 @@ export function analyzeDeclarations(c: GradleContext, graph: GradleGraph, contra
     tick(budget, "index");
     if (recordIds.has(r.id)) return fail("declaration_inventory_incomplete"); recordIds.add(r.id);
     if (r.state !== "materialized" || r.ownerProjectId !== c.projectId || !scoped.has(r.configuration) || !topology.get(r.configuration)?.hasDependencies || r.reasons.length) return fail("declaration_inventory_incomplete");
-    const a = r.declarationAtAdd, after = r.declarationAtResolve;
+    let a = r.declarationAtAdd;
+    if ("registrationKind" in r) {
+      if (r.registrationKind === "provider") {
+        if (scope.providerPolicy !== "stable-during-export") return fail("provider_stability_assertion_missing");
+        if (r.declarationAtAdd !== null || r.callbackCount < 1 || r.callbackCount !== r.materializations.length) return fail("provider_observation_incomplete");
+        a = r.materializations[0]!;
+        for (const observation of r.materializations) { tick(budget); if (!equal(a, observation)) return fail("provider_unstable"); }
+      } else if (r.callbackCount !== 0 || r.materializations.length) return fail("provider_observation_incomplete");
+    }
+    const after = r.declarationAtResolve;
     if (!a || !after || !equal(a, after)) return fail("declaration_mutation_detected");
     if (!supported(a.key) || a.shape.status !== "supported" || a.shape.artifacts.length || a.shape.targetConfiguration !== null || a.shape.endorseStrictVersions || !a.shape.transitive || a.shape.excludes.length) return fail("unsupported_declaration_shape");
     if (r.source?.kind === "convention-plugin") return fail("declaration_source_unverifiable");
