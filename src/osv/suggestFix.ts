@@ -119,7 +119,8 @@ function updateHint(pkg: ScanReportPackage): string | undefined {
     }
     case "npm":
       if (relation === "direct") {
-        return `Direct dependency. Update the version in ${pkg.declared_in?.join(", ") ?? "package.json"}` +
+        // Without a complete declared_in, name no specific file: a bare "package.json" reads as the root manifest.
+        return `Direct dependency. Update the version in ${pkg.declared_in?.join(", ") ?? "the package.json files that declare it"}` +
           (by ? `. It is also required transitively by ${by}, which may need to be updated as well` : "");
       }
       if (relation === "transitive") {

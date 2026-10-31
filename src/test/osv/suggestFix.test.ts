@@ -464,6 +464,16 @@ describe("PyPIの推奨(v0.6.0、実データの形)", () => {
   });
 });
 
+describe("npmのupdate_hint(直接依存の宣言元)", () => {
+  it("確定したdeclared_inはそのまま示し、一覧がない場合は特定のpackage.jsonを名指ししない", () => {
+    const base = { ...pkg("leaf", "1.0.0", [vuln("GHSA-x", "CVE-2024-0001", ["1.0.1"])]), ecosystem: "npm", dependency_relation: "direct" as const };
+    expect(suggestUpgradeForPackage({ ...base, declared_in: ["a/package.json"] }).update_hint).toContain("Update the version in a/package.json");
+    const hint = suggestUpgradeForPackage(base).update_hint!;
+    expect(hint).toContain("Update the version in the package.json files that declare it");
+    expect(hint).not.toMatch(/in package\.json/);
+  });
+});
+
 describe("Mavenのupdate_hint(pom.xmlの直接/推移的依存)", () => {
   it("直接依存はpom.xml(親POM・BOM)の版、推移的依存は<dependencyManagement>での上書きを案内し、unknownでは付けない", () => {
     const base = pkg("org.apache.logging.log4j:log4j-core", "2.14.1", [vuln("GHSA-x", "CVE-2021-44228", ["2.15.0"])]);
