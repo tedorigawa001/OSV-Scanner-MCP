@@ -1709,3 +1709,13 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 - レビュー修正後のlocal TOML alias／bundle・生成ProviderConvertibleをGroovy／Gradle 8.11.1、Kotlin／Gradle 9.2.1で検証。両信頼有効・helper信頼なし・catalog信頼なし・安定性表明なし×3ツールの24呼出しを確認。
 - declared_inと信頼metadataの採用／抑制、GAV・検出ID・relation・introduced_by・coverage・提案版の条件間一致を確認。独立OSV候補再照会32件はHTTP 200・0件。入力hash不変、MCP中のビルド非起動も確認。
 - 検証記録・データ・再現ハーネスを追加。次の候補はconvention pluginのsource-artifact対応の設計。configuration cache、task出力Provider、並行実行、remote／programmatic catalog、構築のmodule／bundle上書き、buildscript／composite／Android等も引き続き独立課題。
+
+
+### 2026-10-31: Gradle convention plugin宣言元の拡張設計
+
+- [設計書](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md)を追加。buildSrcのprecompiled／binary、included build-logic、境界内の独立checkoutと、外部配布済みpluginを区別。consumerのplugins blockを物理declared_inへ代用しない。
+- 作者manifest・plugin／source handle・build receipt・application／bindingの入出力、契約v3／graph v3／adapter v5の提案、追加plugin信頼、固定manifestによる検証要否判定を整理。既存helper／catalog信頼の意味を変更しない。
+- 全producerの評価・compile前捕捉、同一export invocationでの構築と実行artifact対応、source／artifactの安全な静的取込と予算、完全性AND・部分一覧抑制・graph／coverageとの分離を定義。公開APIでloaded originを確認できない形は作者表明だけで陽性化しない。
+- CP01〜CP36を追加。次はGroovy／Kotlin×Gradle 8.11.1／9.2.1の公開API実証。今回は設計のみで、本番実装・API実証・pluginのOSV実接続は未実施。configuration cache、task-output Provider、並行実行、settings plugin、remote pluginのsource取得は別gate。
+
+- convention plugin設計レビューの2件を反映: trusted-toolchainをconsumer起動時承認profile＋準備側の有界streaming検証へ分離し、plugin固有source／artifactの境界・4 MiB/件・64 MiB/scanを維持。script／plugin／unverifiedのorigin union、参照の必須／禁止、source役割とapplication台帳の双方向検証を定義。CP31〜CP36に大容量標準toolchain・分類偽装・予算・通常script混在・origin変更による信頼迂回の条件を追加。設計のみで、本番実装・公開API実証は未実施。

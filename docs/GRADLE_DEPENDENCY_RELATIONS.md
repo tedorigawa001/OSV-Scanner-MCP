@@ -469,6 +469,8 @@ env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
 - リモート配布catalogはartifactの同一性と評価前入力をローカルpath/hash契約だけでは確認できないため、C1では`catalog_graph_inputs_unverifiable`とする。未捕捉入力を持つprogrammatic catalogも同じ扱い。該当catalogの使用が確認されたcontextはgraph採用不可としてrelation=unknown、introduced_by／declared_inを省略し、relations_complete／declarations_complete=falseとする。catalog影響contextを列挙できない場合は文書の全contextへ適用する。独立に検証できた別contextの証拠は保持する。これはスキャン範囲の欠けの証拠ではなくmetadataの検証制限なので、lockスキャン由来のcoverageは維持する。編集先が不明なだけの対応済みローカルcatalogと混同しない。
 - adapter source-mapの鮮度もビルド全体の再現性は保証しない。binary pluginの実行バイナリとローカルsourceの対応を証明できない場合、同名ソースがあるだけでは採用しない。C1のconvention-plugin対応は同じexport実行で準備済みローカルソースから構築されたことをadapterが確認できる形に限る。
 
+convention pluginの具体化した拡張案は[GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md](GRADLE_CONVENTION_PLUGIN_DECLARATIONS.md)を参照。buildSrc／included build／独立配布pluginを分け、起動前入力捕捉、source-artifact対応、独立trust、完全性、CP01〜CP36の回帰条件を定義する。設計段階であり、本番のconvention-plugin拒否は維持する。
+
 #### 6.6.6 宣言方法ごとの扱い
 
 | 宣言方法 | `declared_in` | 補助情報／省略条件 |
