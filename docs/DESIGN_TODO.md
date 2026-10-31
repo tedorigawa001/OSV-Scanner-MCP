@@ -1693,3 +1693,19 @@ requirements.txtの取り込み・親POMと同じ種類の問題(osv-scannerが�
 - GRADLE_CATALOG_DECLARATIONS.mdへ使用script／bundle group-memberの対応、catalog入力inventoryと鮮度、設定上書き時の編集案内、追加信頼契約・次版schema案を具体化。
 - 通常APIと登録Actionの比較、元bundleの型保持、生成／明示ProviderConvertible、同値member・独立追加、例外・strict版、設定上書き、評価／先行task中の入力変更の公開API回帰を追加。
 - 今回は設計・test-only実証。本番catalog adapter／静的取込、厳格なinput manifest、信頼metadataと3ツール・OSV実接続は次段階。公開APIだけでcatalog構築入力やbundleの内部supplier回数を自動証明したとは扱わない。
+
+
+### 2026-10-31: Gradle catalog本番adapter・静的取込
+
+- 契約v2／宣言adapter v4でalias・bundle・ProviderConvertibleを登録し、bundle group/memberを分離。使用scriptへのdeclared_inと完全性・追加catalog信頼metadataに対応。
+- manifestのbundleMembersと安全に読んだ実TOMLを照合。設定評価前の入力捕捉・custom TOML・version上書き・不在入力の鮮度、scopeとmemberの完全性を確認。入力・解析のcache／byte・work予算を維持。
+- 次は既知脆弱版でcatalogのscan_project／scan_java_project／suggest_fix実接続。programmatic／remote、module・bundle構築の上書き、configuration cache、task output、並行実行、convention plugin等の独立gateは残る。
+
+- レビュー修正: catalog検証と追加信頼の要否を作者契約から判定し、空entries・入力参照欠落・旧adapterへの変更による迂回を拒否。72組合せと不正契約等の回帰を追加し、通常全体1,594件、実Gradle両版の対象各7件が成功。
+
+
+### 2026-10-31: Gradle catalog 3ツール・OSV実接続検証
+
+- レビュー修正後のlocal TOML alias／bundle・生成ProviderConvertibleをGroovy／Gradle 8.11.1、Kotlin／Gradle 9.2.1で検証。両信頼有効・helper信頼なし・catalog信頼なし・安定性表明なし×3ツールの24呼出しを確認。
+- declared_inと信頼metadataの採用／抑制、GAV・検出ID・relation・introduced_by・coverage・提案版の条件間一致を確認。独立OSV候補再照会32件はHTTP 200・0件。入力hash不変、MCP中のビルド非起動も確認。
+- 検証記録・データ・再現ハーネスを追加。次の候補はconvention pluginのsource-artifact対応の設計。configuration cache、task出力Provider、並行実行、remote／programmatic catalog、構築のmodule／bundle上書き、buildscript／composite／Android等も引き続き独立課題。

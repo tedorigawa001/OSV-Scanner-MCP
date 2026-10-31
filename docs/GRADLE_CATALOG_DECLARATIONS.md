@@ -1,6 +1,6 @@
 # Gradle catalog alias／bundle・ProviderConvertible: 設計と公開API実証
 
-設計日: 2026-10-31。対象はGroovy／Kotlin × Gradle 8.11.1／9.2.1。これは次段階のcatalog拡張の設計とtest-only実証であり、本番adapter、reader、契約、trust設定は変更しない。本番は引き続きcatalogPolicy=noneで、alias／bundleの採用を有効化しない。
+設計日: 2026-10-31。対象はGroovy／Kotlin × Gradle 8.11.1／9.2.1。§1–8はcatalog拡張の設計・test-only実証段階の記録。本番実装の現在の範囲は§9を参照する。公開API実証だけで本番採用を有効化したとは扱わない。
 
 ## 1. 公開APIと実証の問い
 
@@ -171,3 +171,44 @@ env OSV_MCP_TEST_GRADLE=/trusted/gradle/bin/gradle \
 Gradle 8を含む全体実行では1,609件成功、公開文書のコマンドprefixチェック1件が失敗した。実行例を通常のenvコマンドへ修正後、同チェック1件を再実行して成功。さらに現在の文書を含む通常npm testは1,486件成功・124件skip（実Gradle／性能比較のopt-in条件）だった。失敗した文書チェックを含む全体実行を、全件成功の記録へ読み替えていない。Gradle 9のfocused実行は36件成功。型チェック・ビルド・diff checkも成功。本番コードの変更・MCP／OSV実接続・catalog採用の有効化は行っていない。
 
 記録後、回帰を補強した。上記のsupplier／変換回数・strict=1・上書き後のalpha:2をnativeとの一致だけでなく固定値でも確認し（両経路とも評価ゼロの場合に通らないように）、鮮度対照の変更対象へ実際にimportするcatalog/company.versions.tomlを加えた（変更検出4件）。Gradle 8.11.1／9.2.1のfocused実行で各36件成功。保存済み報告は変更なし構成のもので、補強の影響を受けない。
+
+
+## 9. 本番実装（2026-10-31）
+
+上記は設計・公開API実証段階の記録。本番adapter・静的取込を追加した。契約v2にbundleMembers（全bundleのalias配列）を必須化し、producerが型付きProviderを照会せず期待member数を検証し、readerが安全に捕捉済みTOMLをsmol-tomlで解析して内容を再検証する。記述例・利用方法はREADMEのcatalog節。
+
+- addCatalogLibrary／addCatalogBundleはcatalogSourceのopaque handleから公開VersionCatalogのOptionalを取り、元Providerをそのまま通常APIへ渡す。addProviderConvertibleも元Convertibleへ一回の通常委譲。元Action例外を記録して同じ例外を伝播させる。bundleの途中失敗・空・観測上限超過で部分一覧を返さない。
+- catalog契約または明示Convertibleを含むcontextはadapterVersion=4。catalogAdditionsがgroupを表し、bundleはdN.mIのmember recordへ分離する。member aliasをcallback位置で推測しない。既存v2／v3を維持し、standalone Convertibleはcatalog不使用のC1b契約でも利用できる。
+- inputPaths／tomlPaths／scope.catalogIds／bundleMembersを厳格検証。kind=local-tomlのみ陽性。importした単一TOML＋捕捉済みローカルversion上書きまでを対象とし、module／bundle定義のprogrammatic上書きは含めない。public catalog名・bundle名の棚卸し、実TOMLのmodule・bundle参照、group/member/recordの被覆を別々に検証する。
+- catalog契約下ではgeneric Provider／Convertibleの登録だけの場合も追加catalog信頼を必須化。既存helper信頼の有効化だけでcatalogを採用しない。未知環境値は起動時警告＋catalog採用無効。catalogなしのC1bは追加設定不要。
+- 新規入力・source・契約はinitでsettings評価前に捕捉。登録時の関連入力hash確認に64 MiBの読取予算を設け、超過は観測不完全として通常追加を継続。export前・解決後の全baseline照合を維持。不在候補の生成もstale。schema v1出力でも登録由来の入力hashを省略しない。
+- MCPは既存safeRead／境界・byte予算を使い、catalog manifestと入力参照を照合してからgraphを採用する。TOML modelはscan内cacheを共用し、失敗もcacheして複数lockで解析を繰り返さない。catalog入力用の共有200万work予算を用い、manifest path集合の照合を線形に行う。宣言元の観測・group検証の失敗だけならrelation／introduced_by／coverageを保持する。
+- metadataにcatalogの追加trust状態と入力完全性の作者表明・復元変更・bundle境界の観測限界を表示する。scope全体のsource完全性と複数contextのANDを維持し、context順逆転で状態や宣言元を変えない。
+
+本番回帰はalias＋同値bundleの両script、追加trust有無、context逆順、生成／明示Convertible、custom TOML＋settings上書き、欠けた表明・scope、非既定shape、途中Action失敗、mutation／copy、空bundle、未知catalog、評価／先行task中の変更、不在から生成、重複JSON、境界外path、symlink、member上限を実Gradleで確認する。静的回帰ではgroup／member／source／alias／module／count／scopeの偽装、manifest不整合、入力不足、remote、TOML不正、起動設定の固定・未知値無効を確認する。
+
+実装時の公開API実証を本番catalogの3ツール・OSV実接続の代わりにはしない。実接続検証、configuration cache、task出力Provider、並行実行、convention pluginのsource-artifact、buildscript／composite／Android等は別課題。
+
+
+### 本番検証結果
+
+- Gradle 8.11.1を含む全体回帰: 76ファイル／1,659件成功。
+- Gradle 9.2.1の本番adapter回帰: 44件成功。Groovy／Kotlinのcatalog／Convertible陽性と既存C1a/C1bを含む。
+- 最後に追加したschema v1の入力検証・未知catalog拒否は、両版でcustom／unknown対照を各2件再実行して成功。これに対応する静的2件と未知設定の1件を含め、最新の通常npm testは1,517件成功／145件skip（計1,662件）。main全体回帰と最終追加分の実行範囲を区別した記録を残す。
+- 型チェック・ビルド・diff check成功。機械可読記録と現在のソースhashはvalidation/gradle-catalog-adapter-2026-10-31.json。本番catalogのMCP／OSV実接続は今回実行していない。
+
+
+### レビュー修正: catalog検証・追加信頼設定の迂回防止
+
+catalog検証の要否はproducerのentriesやadapter版ではなく、固定名の作者契約から判定する。契約v2ではentriesが空、TOML参照欠落、契約自体の入力参照欠落でも検証を省略せず、入力を証明できなければgraphの関係情報を採用しない。catalogを含む不正な契約も空entriesで検証を回避できない。lockfile由来の脆弱性coverageはこの失敗だけでは下げない。
+
+追加catalog信頼も契約v2に基づき必須とし、adapter v2／v3への変更で解除できない。入力検証が成功しても契約v2と旧adapterの組合せではdeclared_inを採用せず、検証済みの関係情報は保持する。既存の契約v1のC1a／C1b互換性は維持する。
+
+- 回帰: adapter 3種×entries空／非空×入力欠落3種×helper信頼2種×catalog信頼2種の72条件。最初の再現1件と不正契約4件も追加し、関連unit計148件成功。
+- 修正後の通常全体回帰: 1,594件成功／145件skip（計1,739件）。型チェック・ビルド成功。
+- 修正後の実Gradle再確認: 8.11.1／9.2.1でC1a、catalog library／bundle、ProviderConvertibleの対象を各7件成功（対象外37件skip）。上記の全native回帰は修正前、今回の再確認はこの対象範囲である。
+
+
+### 本番catalogの実接続検証
+
+レビュー修正後の作業ツリーで、Groovy／Gradle 8.11.1とKotlin／Gradle 9.2.1のlocal TOML alias・bundle・生成ProviderConvertibleを実接続検証。3ツール×両信頼有効／helper信頼なし／catalog信頼なし／安定性表明なしの計24呼出しで、宣言元の採用・省略と信頼metadataを確認した。GAV・検出ID・relation・introduced_by・coverage・提案版は信頼条件間で維持し、独立OSV再照会32件はHTTP 200・脆弱性0件。詳細と再現手順は[GRADLE_LIVE_VALIDATION.md](GRADLE_LIVE_VALIDATION.md)のcatalog節、データはvalidation/gradle-catalog-live-2026-10-31.json。既存の公開API実証やoffline回帰と今回の実接続を区別する。残る独立gateは上記のconfiguration cache・task出力・並行実行・convention plugin等。

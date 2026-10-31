@@ -74,3 +74,36 @@ export function providerDeclarationFixture() {
   graph.inputs.files.find(f => f.path === "osv-mcp-gradle-declarations.json")!.sha256 = hash(contract);
   return { ...base, graph, contract };
 }
+
+
+export function catalogDeclarationFixture() {
+  const base = providerDeclarationFixture();
+  const toml = '[libraries]\nparent = "g:a:1"\nsame = "g:a:1"\n[bundles]\npair = ["parent", "same"]\n';
+  const author = JSON.parse(base.contract);
+  author.contractVersion = 2; author.catalogPolicy = "explicit-local-v1";
+  author.catalogs = [{ id: "libs", name: "libs", kind: "local-toml", tomlPaths: ["gradle/libs.versions.toml"],
+    inputPaths: ["settings.gradle", "gradle/libs.versions.toml", "catalog/optional.versions.toml"],
+    constructionPolicy: "registered-inputs-only", mutationPolicy: "immutable-during-export", overridePolicy: "none",
+    inputCompletenessAssertion: "all-catalog-construction-inputs-listed", bundleMembers: { pair: ["parent", "same"] } }];
+  author.scopes[0].catalogIds = ["libs"];
+  const contract = JSON.stringify(author);
+  const graph = { ...base.graph, inputs: { ...base.graph.inputs, files: [...base.graph.inputs.files, { path: "catalog/optional.versions.toml", absent: true, sha256: undefined }] }, contexts: base.graph.contexts.map(c => {
+    const template = c.declarations.records[0]!;
+    const source = template.source;
+    return { ...c, catalogInputs: { inventoryComplete: true, entries: [{ id: "libs", kind: "local-toml", state: "verifiable",
+      graphInputPaths: author.catalogs[0].inputPaths as string[], reason: null }] }, declarations: { ...c.declarations, adapterVersion: 4,
+      trust: { ...c.declarations.trust, contractSha256: hash(contract) },
+      catalogAdditions: [{ id: "group", ownerProjectId: c.projectId, configuration: "implementation", source,
+        catalogInputId: "libs", kind: "bundle", alias: "pair", normalizedAlias: "pair", registrationForm: "provider",
+        callbackCount: 2, observationComplete: true, memberIds: ["d0", "d1"], reasons: [] as string[] }],
+      records: ["d0", "d1"].map(id => ({ ...structuredClone(template), id, registrationKind: "bundle-member", registrationForm: "provider", catalogGroupId: "group",
+        catalogUses: [{ catalogInputId: "libs", alias: "pair" }] })),
+      bindings: [{ edgeId: "e0", declarationIds: ["d0", "d1"], complete: true, reasons: [] as string[] }],
+    } };
+  }) };
+  const settings = "rootProject.name='catalog-test'\n";
+  graph.inputs.files = [ ...graph.inputs.files.filter(f => f.path !== "osv-mcp-gradle-declarations.json"),
+    { path: "osv-mcp-gradle-declarations.json", sha256: hash(contract) },
+    { path: "settings.gradle", sha256: hash(settings) }, { path: "gradle/libs.versions.toml", sha256: hash(toml) } ];
+  return { graph, contract, source: base.source, toml, settings };
+}

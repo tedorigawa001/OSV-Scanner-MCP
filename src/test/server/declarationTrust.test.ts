@@ -27,12 +27,14 @@ afterEach(async () => {
 });
 
 it.each([
-  ["an unknown value", "registered-helper-V1", true],
-  ["the supported value", "registered-helper-v1", false],
-])("keeps serving tools with %s of the trust setting", async (_label, value, warns) => {
+  ["OSV_MCP_GRADLE_DECLARATION_TRUST", "registered-helper-V1", true],
+  ["OSV_MCP_GRADLE_DECLARATION_TRUST", "registered-helper-v1", false],
+  ["OSV_MCP_GRADLE_CATALOG_TRUST", "local-catalog-inputs-V1", true],
+  ["OSV_MCP_GRADLE_CATALOG_TRUST", "local-catalog-inputs-v1", false],
+])("keeps serving tools with %s of the trust setting", async (environment, value, warns) => {
   root = await realpath(await mkdtemp(path.join(os.tmpdir(), "declaration-trust-test-")));
   const child = spawn(process.execPath, [path.join(distDir, "index.js")], {
-    env: { ...process.env, OSV_MCP_ALLOWED_ROOT: root, OSV_MCP_AUTO_DOWNLOAD: "0", OSV_MCP_GRADLE_DECLARATION_TRUST: value },
+    env: { ...process.env, OSV_MCP_ALLOWED_ROOT: root, OSV_MCP_AUTO_DOWNLOAD: "0", [environment]: value },
     stdio: ["pipe", "pipe", "pipe"],
   });
   server = child;
@@ -49,5 +51,5 @@ it.each([
   while (!stdout.includes('"id":2') && child.exitCode === null && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 50));
   expect(child.exitCode).toBeNull();
   expect(stdout).toContain('"scan_project"');
-  expect(stderr.includes("OSV_MCP_GRADLE_DECLARATION_TRUST")).toBe(warns);
+  expect(stderr.includes(environment)).toBe(warns);
 }, 30_000);

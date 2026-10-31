@@ -1,6 +1,6 @@
 # Gradleの依存関係・導入元・宣言元の設計
 
-設計日: 2026-10-31。Stage A/Bのexporter・静的取込・応答拡張を実装。Stage C1aの同期登録adapterとC1bの明示Provider登録・v2/v3静的取込を実装（未リリース）。C1bの3ツール・OSV実接続も検証済み。catalog等の拡張は未対応。宣言元登録adapterの入出力・完全性・回帰条件は6.6節とStage C1テスト計画へ具体化済み。
+設計日: 2026-10-31。Stage A/Bのexporter・静的取込・応答拡張を実装。Stage C1aの同期登録adapterとC1bの明示Provider登録・v2/v3静的取込を実装（未リリース）。C1bの3ツール・OSV実接続も検証済み。catalog alias／bundle・ProviderConvertibleの本番adapter／静的取込も実装済み（§15）。catalogの3ツール実接続は別課題。宣言元登録adapterの入出力・完全性・回帰条件は6.6節とStage C1テスト計画へ具体化済み。
 
 実装メモ: exporterは`gradle/export-dependency-graph.init.gradle`としてnpm配布にも同梱する。`-PosvMcpConfigurations=*`は全resolvable configuration、既定は存在する4つのclasspathを選択する。metadata状態は`coverage.dependency_metadata.gradle`へ出し、relationの完全性と物理宣言元の完全性を区別する。Stage Bの`declarationEvidence`は空配列のみ対応し、未知のsource-map形式を検証済みとは扱わない。Gradle 8.11.1／9.2.1とGroovy／Kotlin DSLで実export、既知の脆弱版で3ツールからのOSV実接続を確認。詳細は[実接続検証記録](GRADLE_LIVE_VALIDATION.md)を参照。
 
@@ -732,3 +732,13 @@ env OSV_MCP_TEST_GRADLE=/path/to/gradle/bin/gradle JAVA_HOME=/path/to/jdk GRADLE
 ## 14. version catalog alias／bundle・ProviderConvertibleの設計・公開API実証
 
 詳細は[GRADLE_CATALOG_DECLARATIONS.md](GRADLE_CATALOG_DECLARATIONS.md)。元の型付きProvider／ProviderConvertibleを通常APIへ渡し、member Actionで使用scriptを登録する方式を検討した。libraryの再実現世代とbundle memberを別モデルにし、catalog入力の完全性には公開model一覧以外の明示inventory・作者表明・追加信頼契約が必要とする。設定上書きでversion.refの編集先が一意でなくなる対照と、mapによるbundle型喪失の陰性を含む。本番catalog採用を今回有効化したものではない。
+
+
+## 15. catalog本番adapter・静的取込
+
+GRADLE_CATALOG_DECLARATIONS.md §9のとおり、契約v2・宣言adapter v4・追加catalog信頼を実装した。bundleMembersのmanifestと実TOMLの照合、settings評価前の入力捕捉、group/memberの完全性検証、使用scriptへのdeclared_in、catalog信頼metadataへ対応。alias／bundle／ProviderConvertibleの公開API実証に続く実装段階であり、今回のcatalog 3ツール・OSV実接続は未実施。
+
+
+### Catalog本番実接続の確認（2026-10-31）
+
+Groovy／Gradle 8.11.1とKotlin／Gradle 9.2.1の脆弱版projectで、local TOML alias／bundleと生成ProviderConvertibleを登録。3ツール×4信頼条件の24呼出しで、declared_in・追加catalog信頼metadata・候補案内の採用／抑制を確認。候補32照会が独立OSV再照会でもHTTP 200・脆弱性0件。GAV／検出ID／relation／introduced_by／coverage／提案版の条件間一致、入力hash不変、MCP中のビルド非起動を確認した。詳細はGRADLE_LIVE_VALIDATION.mdのcatalog節、検証データはvalidation/gradle-catalog-live-2026-10-31.json、再現はsrc/test/manual/gradleCatalogLive.mjs。更新後のビルド互換性や残る独立gateの完了は含めない。

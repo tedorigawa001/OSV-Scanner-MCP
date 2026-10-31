@@ -1,0 +1,120 @@
+{
+  "date": "2026-10-31",
+  "purpose": "Production catalog alias/bundle and ProviderConvertible adapter, static import, declaration completeness and trust metadata",
+  "sourceSha256": {
+    "gradle/register-declarations.init.gradle": "754044ae6787bed13725c85981b5cf2e526d4ac3babf7243f77bafd8ea01f3d3",
+    "gradle/export-dependency-graph.init.gradle": "0f942bb055929847bb34b8b21a589c6f6e762f81995186b94ea029c13e7e6e2d",
+    "src/utils/gradleDeclarations.ts": "5753f048266ebf540630a52a041a91c9928174c43ff0e94490b99d364f05c098",
+    "src/utils/gradleCatalogs.ts": "7201d9a20a8cc0ac351c3a76eaeadd1c05c2374899932c5e45800ce85930b674",
+    "src/utils/gradleGraphCache.ts": "8ee61c5879f65759a92f1dc72a6f1a2f8a88925376c0e19bf6753d0945a0bc0f",
+    "src/index.ts": "ee8f19c19d4305b12af4baa7a4683cb3a391ceb4ca9583bf7e75f3da1a1c1b47",
+    "src/test/fixtures/gradleDeclarationsFixture.ts": "dc205dba3f8ee13d630cab2805ef3160f57d8a79ddef7d59f3171d5bfc164ce8",
+    "src/test/gradle/registeredExporter.integration.test.ts": "4dc24094ca3448aa2287602d693c0b85bc68865e4e3d2cd896fe34db4856ca41",
+    "src/test/utils/gradleDeclarations.test.ts": "c48e713213a557e1e9f51d2ff3b2505c4c66e69e1c0545396a2551fc7b07984f",
+    "src/test/server/declarationTrust.test.ts": "2daed43a3f94899b0c1b12e3d8a0a816a7f9aa595f087f197d8259bb5a83f8a2"
+  },
+  "java": "21.0.13+9",
+  "graphSchemaVersion": 2,
+  "declarationAdapterVersion": 4,
+  "catalogContractVersion": 2,
+  "verification": {
+    "mainFullGradle8": {
+      "version": "8.11.1",
+      "filesPassed": 76,
+      "testsPassed": 1659,
+      "durationSeconds": 523.84
+    },
+    "productionGradle9": {
+      "version": "9.2.1",
+      "filesPassed": 1,
+      "testsPassed": 44,
+      "durationSeconds": 529.21
+    },
+    "finalV1Followup": {
+      "description": "Final schema-v1 manifest validation and unknown-catalog publication guard added after the main regression run; both versions reran the custom-catalog and unknown-catalog cases, each including schema v1 export. The final default run includes two new v1 static tests and the invalid-policy regression.",
+      "gradle8TestsPassed": 2,
+      "gradle9TestsPassed": 2
+    },
+    "finalDefaultSuite": {
+      "filesPassed": 69,
+      "filesSkipped": 7,
+      "testsPassed": 1517,
+      "testsSkipped": 145,
+      "total": 1662
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "diffCheck": "passed",
+    "reviewBypassFix": {
+      "description": "Contract-driven catalog validation and trust gating; legacy adapters cannot downgrade a catalog contract. Earlier full native runs predate this fix.",
+      "redGreen": "Empty entries with omitted TOML input reproduced before fix; passed after fix.",
+      "matrixCases": 72,
+      "additionalRegressionCases": 5,
+      "targetedUnitTestsPassed": 148,
+      "defaultSuite": {
+        "filesPassed": 69,
+        "filesSkipped": 7,
+        "testsPassed": 1594,
+        "testsSkipped": 145,
+        "total": 1739
+      },
+      "nativeFollowup": {
+        "versions": [
+          "8.11.1",
+          "9.2.1"
+        ],
+        "testsPassedPerVersion": 7,
+        "testsSkippedPerVersion": 37,
+        "scope": "C1a compatibility, catalog library/bundle and ProviderConvertible"
+      },
+      "typecheck": "passed",
+      "build": "passed"
+    }
+  },
+  "realGradleAssertions": [
+    "Groovy and Kotlin library/bundle helpers return both physical source paths",
+    "Equal bundle members retain separate declaration IDs and exact group membership",
+    "Consumer catalog policy disabled withholds declarations and retains relations",
+    "Reversing contexts preserves provenance and declared_in",
+    "Generated and explicit public ProviderConvertible delegates normally",
+    "Noncatalog Convertible works with a stable C1b contract without catalog trust",
+    "Custom TOML version.ref overridden in settings preserves effective version and correct sources",
+    "Missing Provider stability policy or catalog scope suppresses declaration evidence",
+    "Unsupported shape, mutation, copy and partial Action failure suppress partial lists",
+    "Empty bundle remains unobserved/incomplete",
+    "Unregistered catalog withholds graph metadata; schema v1 export refuses it without overwriting companion",
+    "Evaluation/task input changes, absent input generation, unsafe paths, duplicate JSON keys, symlinks and excessive members reject export",
+    "Schema v1 retains custom input hashes; static reader validates its catalog manifest and TOML"
+  ],
+  "staticAssertions": [
+    "Group owner, source, alias, member IDs, module multiset, kind, form and callback counts are independently recomputed",
+    "Malformed, stale or missing catalog input evidence withholds graph adoption but does not by itself lower lock vulnerability coverage",
+    "Remote/programmatic catalogs are not adopted",
+    "Unknown catalog trust settings stay disabled with a startup warning and fixed process policy",
+    "Existing C1a/C1b and unknown-adapter behavior remain covered"
+  ],
+  "limits": {
+    "inputBytesPerFile": 4194304,
+    "captureBytes": 67108864,
+    "registrationVerificationBytes": 67108864,
+    "catalogInputIndexWork": 2000000,
+    "observationsPerAttempt": 128,
+    "recordsPerContext": 100000
+  },
+  "scope": {
+    "offlineGradle": true,
+    "configurationCache": false,
+    "repositories": "Local Maven POM test fixtures",
+    "mcpOsvLiveTest": false,
+    "liveTestNext": true
+  },
+  "knownTrustLimitations": [
+    "unregistered_equal_additions_not_detectable",
+    "reverted_external_mutations_not_detectable",
+    "provider_evaluations_outside_materialization_not_observable",
+    "provider_stability_author_asserted",
+    "catalog_inputs_author_attested",
+    "catalog_input_transient_changes_not_detectable",
+    "bundle_materialization_boundaries_not_observable"
+  ]
+}

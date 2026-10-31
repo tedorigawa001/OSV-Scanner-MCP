@@ -286,3 +286,63 @@ env \
 ```
 
 ハーネスはscanner／Gradleを自動取得せず、通常のnpm testからも起動しない。全入力・生MCP応答・OSV照会・server stderrは表示した新規一時ディレクトリのevidenceへ保存する。リポジトリのJSONは出力summaryへexport宣言記録とOSV生照会を併合し、Gradle版表示を版番号へ正規化したもの。sourceの完全性・信頼契約の限界はC1b本体と同じで、入力hashからProviderの安定性を自動証明したとは扱わない。
+
+
+## Catalog alias／bundle・ProviderConvertible 実接続検証（2026-10-31）
+
+レビュー修正後の作業ツリーを対象に、Groovy／Gradle 8.11.1とKotlin／Gradle 9.2.1で検証した。JDK 21.0.13+9、scanner 2.7.0を使用。コミット済みrevisionだけでは対象コードを識別できないため、[検証データ](validation/gradle-catalog-live-2026-10-31.json)に作業ツリー変更の有無、本番6ソース・配布server・[再現ハーネス](../src/test/manual/gradleCatalogLive.mjs)のSHA-256を記録する。全4通りのDSL／Gradle版のAPI実証・回帰は別記録であり、今回の実接続は上記2組に限定する。
+
+### Fixtureと実行範囲
+
+- `gradle/libs.versions.toml`にlog4j-core 2.14.1とjackson-databind 2.9.10.7をversion.refで定義し、両aliasを含むbundle `vulnerable`を定義。
+- main scriptで`addCatalogLibrary`をimplementationへ、生成された`libs.log4j`のProviderConvertibleをruntimeOnlyへ登録。同名prefixの追加alias `log4j-extra`で、`libs.log4j`が単なるProviderではなく生成アクセサのProviderConvertibleとなる構成を使用する。
+- applied scriptでbundleをimplementationへ登録。runtimeClasspathは4宣言recordと2つのcatalog groupを保持し、各recordのcallbackCount／materializationsは1。catalog groupはlibraryとbundleを表し、Convertibleをcatalog由来と推測して追加groupへ変換しない。
+- 作者契約v2、宣言adapter v4、graph schema v2。全catalog入力manifest・scopeを明示し、Gradleのsettings評価前に入力を捕捉する。
+- 3ツール×4信頼条件×2 project、計24回をMCP stdioから実行。Gradleは既存Maven cacheを使うofflineでlock／exportを生成し、scannerと候補確認は実OSVへ接続する。
+- 安定性表明なしの対照は、全scopeからproviderPolicyだけを削除して再exportする。古い入力hashを残したstaleデータとは区別する。
+
+### 宣言元と信頼状態
+
+| 条件 | helper trust_status | catalog_trust_status | declarations_complete |
+| --- | --- | --- | --- |
+| 両信頼設定有効＋安定性表明あり | accepted | accepted | true |
+| helper信頼設定なし | disabled | 未評価（フィールドなし） | false |
+| catalog追加信頼設定なし | accepted | disabled | false |
+| 両信頼設定有効＋providerPolicyなし | missing_assertion | accepted | false |
+
+有効時のlog4j-coreのdeclared_inはmain＋applied script、databindはapplied scriptのみ。TOMLは依存使用箇所のdeclared_inには含めない。無効／表明不足の3条件では、全direct packageの宣言元一覧を省略する。catalog信頼だけが無効の場合、helper自体のtrust_status／assuranceはacceptedのままで、独立したcatalog_trust_statusとcatalog_trust_disabled、declarations_complete=falseにより採用を拒否する。
+
+全条件・全ツールでcoverage.complete=true、relations_complete=trueを維持。log4j-api／jackson-coreはtransitiveで、introduced_byはそれぞれlog4j-core／databind。GAV・検出ID・依存関係・導入元・提案版はproject内の4条件間で一致する。安定性表明なしのmissing_assertionは依存を持つClasspath contextに現れ、空のannotationProcessor contextだけを根拠に宣言一覧を完全としない。
+
+有効時には既存helper／Providerの限界に加え、catalog_inputs_author_attested、catalog_input_transient_changes_not_detectable、bundle_materialization_boundaries_not_observableを記録する。suggest_fixは確定した使用scriptを案内し、採用不能時は特定のscriptを挙げないGradle向け案内へ戻る。TOMLの変更位置の自動決定・編集は検証していない。
+
+### 検出と候補再照会
+
+以下は検証時点の応答であり、将来の候補版や件数を固定する期待値ではない。
+
+| パッケージ | 使用版 | 関係 | 検出ID数 | 提案版 |
+| --- | --- | --- | --- | --- |
+| log4j-core | 2.14.1 | direct | 8 | 2.25.4 |
+| jackson-databind | 2.9.10.7 | direct | 24 | 2.18.11 |
+| log4j-api | 2.14.1 | transitive | 1 | 2.25.5 |
+| jackson-core | 2.9.10 | transitive | 4 | 2.18.11 |
+
+全候補のcandidate_check=cleanを確認し、4候補×4条件×2 projectの計32件を独立したPOST /v1/queryで再照会。すべてHTTP 200・脆弱性0件で、request・生応答・時刻をJSONへ保存する。これは候補のOSV照会結果であり、更新後のGradleビルド成功やJava／BOM互換性の証明ではない。
+
+各MCP実行前後で、script・TOML・settings・lock・契約・graph・Wrapperのhash不変を確認。java／gradle／gradlewの実行検知用fixtureにより、MCP中にビルドが起動されないことも確認する。生MCP応答とserver stderrは一時ディレクトリのevidenceへ保存し、公開JSONはハーネス最終summaryをそのまま収録する。
+
+### 再実行
+
+信頼できるローカル実行ファイルと、既知脆弱版のMavenキャッシュを用意して実行する。キャッシュ不足ならoffline生成が失敗するため、必要な依存取得は信頼した検証環境で別途行う。
+
+```bash
+npm run build
+JAVA_HOME=/path/to/jdk-21 \
+GRADLE_USER_HOME=/path/to/prepared-gradle-cache \
+OSV_MCP_LIVE_SCANNER=/path/to/osv-scanner \
+OSV_MCP_LIVE_GRADLE_8=/path/to/gradle-8.11.1/bin/gradle \
+OSV_MCP_LIVE_GRADLE_9=/path/to/gradle-9.2.1/bin/gradle \
+node src/test/manual/gradleCatalogLive.mjs
+```
+
+設定変更は検証用の子MCPプロセスに限定する。今回の実接続はlocal TOMLのalias／bundleと生成ProviderConvertibleが対象。remote／programmatic catalog、構築のmodule／bundle上書き、configuration cache、task出力Provider、並行実行、convention pluginのsource-artifact、buildscript／composite／Android等の独立gateは残る。

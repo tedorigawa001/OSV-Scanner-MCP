@@ -81,9 +81,9 @@ gradle.projectsEvaluated {
             def inputRecords = inputStates.collect { file, initialHash ->
                 initialHash != null ? [path: relative(file), sha256: initialHash] : [path: relative(file), absent: true]
             }
-            if(v2) {
+            if(registration != null) {
                 registration.registry.hashes.each { file, hash ->
-                    if(!inputRecords.any { it.path==file }) inputRecords << [path:file,sha256:hash]
+                    if(!inputRecords.any { it.path==file }) inputRecords << (hash=='absent' ? [path:file,absent:true] : [path:file,sha256:hash])
                 }
             }
             def requestedSelector = { selector ->
@@ -166,10 +166,14 @@ gradle.projectsEvaluated {
                             fallback('graph_export_failed')
                         }
                     }
+                    if(!v2 && registration?.registry?.contract?.contractVersion==2) {
+                        def catalog=p.extensions.getByName('osvMcpDeclarations').catalogInputs()
+                        if(!catalog.inventoryComplete || catalog.entries.any { it.state!='verifiable' }) throw new GradleException('Catalog inputs cannot be verified in schema v1 export')
+                    }
                     if(v2) {
                         def adapter=p.extensions.findByName('osvMcpDeclarations')
                         c.declarations=adapter.exportContext(cfg,c)
-                        c.catalogInputs=[inventoryComplete:true,entries:[]] // explicit catalogPolicy=none in the author contract
+                        c.catalogInputs=adapter.catalogInputs()
                     }
                     contexts << c
                 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { DECLARATION_TRUST_ENV, startupDeclarationTrust } from "./utils/gradleDeclarations.js";
+import { DECLARATION_TRUST_ENV, startupDeclarationTrust, CATALOG_TRUST_ENV, startupCatalogTrust } from "./utils/gradleDeclarations.js";
 /**
  * OSV-Scanner-MCP: Google OSV-ScannerをラップするMCPサーバー(stdioトランスポート)。
  *
@@ -49,6 +49,9 @@ export { ALLOWED_ROOT_ENV };
 // Read once here. An unknown value keeps every scanning tool available and only disables Gradle declaration sources.
 if (startupDeclarationTrust().invalid) {
   console.error(`osv-scanner-mcp: [warning] ${DECLARATION_TRUST_ENV} must be registered-helper-v1 or unset; Gradle declaration sources are disabled`);
+}
+if (startupCatalogTrust().invalid) {
+  console.error(`osv-scanner-mcp: [warning] ${CATALOG_TRUST_ENV} must be local-catalog-inputs-v1 or unset; catalog declaration sources are disabled`);
 }
 // fail-closed: 運用モードで許可ルートが未設定なら、ツールを一切公開せず終了する
 const startupError = allowedRootStartupError();

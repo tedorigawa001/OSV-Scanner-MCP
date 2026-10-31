@@ -1,9 +1,10 @@
-import { mkdtemp, realpath, writeFile, rm, symlink } from "node:fs/promises";
+import { parseCatalogTrust, startupCatalogTrust, resetDeclarationTrustForTests } from "../../utils/gradleDeclarations.js";
+import { mkdtemp, realpath, writeFile, rm, symlink, mkdir } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { afterEach, expect, it, vi } from "vitest";
 import { GradleGraphCache, sha256 } from "../../utils/gradleGraphCache.js";
-import { declarationFixture, mixedTrustFixture, providerDeclarationFixture } from "../fixtures/gradleDeclarationsFixture.js";
+import { declarationFixture, mixedTrustFixture, providerDeclarationFixture, catalogDeclarationFixture } from "../fixtures/gradleDeclarationsFixture.js";
 const dirs: string[] = [];
 afterEach(async () => { for (const dir of dirs.splice(0)) await rm(dir, { recursive: true, force: true }); vi.unstubAllEnvs(); });
 const lock = "g:a:1=runtimeClasspath\ng:b:2=runtimeClasspath\n";
@@ -177,4 +178,190 @@ it.each(["accepted", "reobserved", "missing-policy", "unobserved", "unstable", "
     expect(result.metadata.declarations_complete).toBe(false);
     expect(result.lookup!("g:a", "1").declaredIn).toBeUndefined();
   }
+});
+
+
+async function catalogFixture() {
+  const { dir } = await fixture();
+  const data = catalogDeclarationFixture();
+  data.graph.lockfiles[0]!.sha256 = sha256(lock);
+  await mkdir(path.join(dir, "gradle")); await mkdir(path.join(dir, "catalog"));
+  await writeFile(path.join(dir, "settings.gradle"), data.settings);
+  await writeFile(path.join(dir, "gradle/libs.versions.toml"), data.toml);
+  return { dir, ...data };
+}
+async function saveCatalog(data: Awaited<ReturnType<typeof catalogFixture>>) {
+  await writeFile(path.join(data.dir, "osv-mcp-gradle-declarations.json"), data.contract);
+  await writeFile(path.join(data.dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify(data.graph));
+}
+it.each(["accepted", "disabled", "invalid-policy", "declarations-disabled", "bad-count", "missing-member", "wrong-owner", "different-source", "wrong-alias", "duplicate-group", "wrong-module", "missing-scope", "false-complete", "member-kind", "group-form", "ungrouped-member"])("checks catalog group evidence and trust (%s)", async kind => {
+  const data = await catalogFixture(), d = data.graph.contexts[0]!.declarations, group = d.catalogAdditions[0]!;
+  if (kind === "bad-count") group.callbackCount++;
+  if (kind === "missing-member") group.memberIds.pop();
+  if (kind === "wrong-owner") group.ownerProjectId = "other";
+  if (kind === "different-source") group.source = { ...group.source, path: "other.gradle" };
+  if (kind === "wrong-alias") group.alias = "other";
+  if (kind === "duplicate-group") d.catalogAdditions.push(structuredClone(group));
+  if (kind === "wrong-module") {
+    const file = data.toml.replaceAll("g:a:1", "other:a:1");
+    await writeFile(path.join(data.dir, "gradle/libs.versions.toml"), file);
+    data.graph.inputs.files.find(f => f.path === "gradle/libs.versions.toml")!.sha256 = sha256(file);
+  }
+  if (kind === "missing-scope") {
+    const author = JSON.parse(data.contract); author.scopes[0].catalogIds = [];
+    data.contract = JSON.stringify(author);
+    data.graph.inputs.files.find(f => f.path === "osv-mcp-gradle-declarations.json")!.sha256 = sha256(data.contract);
+    d.trust.contractSha256 = sha256(data.contract);
+  }
+  if (kind === "false-complete") group.observationComplete = false;
+  if (kind === "member-kind") d.records[0]!.registrationKind = "provider";
+  if (kind === "group-form") group.registrationForm = "provider-convertible";
+  if (kind === "ungrouped-member") { d.catalogAdditions = []; d.records[0]!.catalogGroupId = "missing"; }
+  await saveCatalog(data);
+  const result = await new GradleGraphCache(data.dir, undefined, kind === "declarations-disabled" ? undefined : "registered-helper-v1", undefined,
+    kind === "invalid-policy" ? parseCatalogTrust("local-catalog-inputs-V1") : kind === "disabled" ? undefined : "local-catalog-inputs-v1").capture(path.join(data.dir, "gradle.lockfile"), Buffer.from(lock));
+  expect(result.metadata.relations_complete, JSON.stringify(result.metadata)).toBe(true);
+  expect(result.coverageReasons).toEqual([]);
+  if (kind === "accepted") {
+    expect(result.metadata.declarations_complete, JSON.stringify(result.metadata)).toBe(true);
+    expect(result.lookup!("g:a", "1").declaredIn).toEqual(new Set(["build.gradle"]));
+    expect(result.metadata.declaration_provenance).toMatchObject({ catalog_trust_status: "accepted", catalog_trust_model: "local-catalog-inputs-v1" });
+    expect(result.metadata.declaration_provenance!.limitations).toContain("catalog_inputs_author_attested");
+    expect(result.metadata.declaration_provenance!.limitations).toContain("bundle_materialization_boundaries_not_observable");
+  } else {
+    expect(result.metadata.declarations_complete).toBe(false);
+    expect(result.lookup!("g:a", "1").declaredIn).toBeUndefined();
+    if (kind === "invalid-policy") expect(result.metadata.reasons).toContain("catalog_trust_config_invalid");
+  }
+});
+
+it.each(["toml-stale", "generated-input", "manifest-path", "duplicate-id", "unknown-reference", "missing-input", "bundle-manifest", "remote", "malformed-toml", "duplicate-key"])("rejects catalog input evidence before graph adoption (%s)", async kind => {
+  const data = await catalogFixture(), d = data.graph.contexts[0]!.declarations;
+  const author = JSON.parse(data.contract);
+  if (kind === "toml-stale") await writeFile(path.join(data.dir, "gradle/libs.versions.toml"), data.toml + "\n# changed");
+  if (kind === "generated-input") await writeFile(path.join(data.dir, "catalog/optional.versions.toml"), "# generated");
+  if (kind === "manifest-path") author.catalogs[0].inputPaths.push("../outside.versions.toml");
+  if (kind === "duplicate-id") author.catalogs.push(structuredClone(author.catalogs[0]));
+  if (kind === "unknown-reference") author.scopes[0].catalogIds = ["unknown"];
+  if (kind === "missing-input") data.graph.inputs.files = data.graph.inputs.files.filter(f => f.path !== "gradle/libs.versions.toml");
+  if (kind === "bundle-manifest") author.catalogs[0].bundleMembers.pair = ["parent"];
+  if (kind === "remote") author.catalogs[0].kind = "remote";
+  if (kind === "malformed-toml") {
+    const file = "[broken"; await writeFile(path.join(data.dir, "gradle/libs.versions.toml"), file);
+    data.graph.inputs.files.find(f => f.path === "gradle/libs.versions.toml")!.sha256 = sha256(file);
+  }
+  data.contract = JSON.stringify(author);
+  if (kind === "duplicate-key") data.contract = data.contract.replace('"contractVersion":2', '"contractVersion":2,"contractVersion":2');
+  data.graph.inputs.files.find(f => f.path === "osv-mcp-gradle-declarations.json")!.sha256 = sha256(data.contract);
+  d.trust.contractSha256 = sha256(data.contract);
+  await saveCatalog(data);
+  const result = await new GradleGraphCache(data.dir, undefined, undefined).capture(path.join(data.dir, "gradle.lockfile"), Buffer.from(lock));
+  expect(result.lookup!("g:a", "1").relation).toBe("unknown");
+  expect(result.metadata.relations_complete).toBe(false); expect(result.coverageReasons).toEqual([]);
+});
+
+
+it("snapshots the catalog trust policy once and disables unknown settings", () => {
+  expect(parseCatalogTrust(undefined)).toEqual({ trust: undefined, invalid: false });
+  expect(parseCatalogTrust("local-catalog-inputs-v1")).toEqual({ trust: "local-catalog-inputs-v1", invalid: false });
+  resetDeclarationTrustForTests();
+  vi.stubEnv("OSV_MCP_GRADLE_CATALOG_TRUST", "local-catalog-inputs-V1");
+  expect(startupCatalogTrust()).toEqual({ trust: undefined, invalid: true });
+  vi.stubEnv("OSV_MCP_GRADLE_CATALOG_TRUST", "local-catalog-inputs-v1");
+  expect(startupCatalogTrust()).toEqual({ trust: undefined, invalid: true });
+  resetDeclarationTrustForTests();
+});
+
+
+it.each([false, true])("verifies captured catalog inputs even in graph schema v1 (bad manifest=%s)", async bad => {
+  const data = await catalogFixture();
+  const raw = JSON.parse(JSON.stringify(data.graph)); raw.schemaVersion = 1;
+  for (const context of raw.contexts) {
+    delete context.declarations; delete context.catalogInputs;
+    for (const edge of context.edges) { delete edge.id; delete edge.resolutionKey; }
+  }
+  if (bad) {
+    const author = JSON.parse(data.contract); author.catalogs[0].bundleMembers.pair = ["same"];
+    data.contract = JSON.stringify(author);
+    raw.inputs.files.find((f: { path: string }) => f.path === "osv-mcp-gradle-declarations.json").sha256 = sha256(data.contract);
+  }
+  await writeFile(path.join(data.dir, "osv-mcp-gradle-declarations.json"), data.contract);
+  await writeFile(path.join(data.dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify(raw));
+  const captured = await new GradleGraphCache(data.dir).capture(path.join(data.dir, "gradle.lockfile"), Buffer.from(lock));
+  expect(captured.metadata.relations_complete).toBe(!bad);
+  expect(captured.lookup!("g:a", "1").declaredIn).toBeUndefined();
+  expect(captured.coverageReasons).toEqual([]);
+});
+
+
+it("rejects contract-v2 catalog input omission even when entries is empty", async () => {
+  const data = await catalogFixture();
+  data.graph.contexts[0]!.catalogInputs.entries = [];
+  data.graph.inputs.files = data.graph.inputs.files.filter(f => f.path !== "gradle/libs.versions.toml");
+  await saveCatalog(data);
+  const captured = await new GradleGraphCache(data.dir, undefined, { trust: undefined, invalid: false }, undefined,
+    { trust: undefined, invalid: false }).capture(path.join(data.dir, "gradle.lockfile"), Buffer.from(lock));
+  expect(captured.metadata.relations_complete).toBe(false);
+  expect(captured.lookup!("g:a", "1").relation).toBe("unknown");
+  expect(captured.lookup!("g:a", "1").declaredIn).toBeUndefined();
+  expect(captured.metadata.reasons).toContain("catalog_graph_inputs_unverifiable");
+  expect(captured.coverageReasons).toEqual([]);
+});
+
+
+const catalogBypassCases = [2, 3, 4].flatMap(adapter => [false, true].flatMap(emptyEntries =>
+  (["none", "toml", "manifest"] as const).flatMap(missingInput => [false, true].flatMap(declarationTrust => [false, true].map(catalogTrust =>
+    ({ adapter, emptyEntries, missingInput, declarationTrust, catalogTrust }))))));
+it.each(catalogBypassCases)("requires catalog policy from the contract (adapter=$adapter empty=$emptyEntries missing=$missingInput declarations=$declarationTrust catalog=$catalogTrust)", async ({ adapter, emptyEntries, missingInput, declarationTrust, catalogTrust }) => {
+  const data = await catalogFixture();
+  const graph = JSON.parse(JSON.stringify(data.graph));
+  const context = graph.contexts[0], d = context.declarations;
+  if (emptyEntries) context.catalogInputs.entries = [];
+  if (missingInput !== "none") graph.inputs.files = graph.inputs.files.filter((f: { path: string }) =>
+    f.path !== (missingInput === "toml" ? "gradle/libs.versions.toml" : "osv-mcp-gradle-declarations.json"));
+  if (adapter !== 4) {
+    d.adapterVersion = adapter; delete d.catalogAdditions;
+    for (const r of d.records) {
+      delete r.registrationForm; delete r.catalogGroupId; r.catalogUses = [];
+      if (adapter === 2) {
+        r.declarationAtAdd = r.materializations[0];
+        delete r.registrationKind; delete r.callbackCount; delete r.materializations;
+      } else r.registrationKind = "provider";
+    }
+  }
+  data.graph = graph; await saveCatalog(data);
+  const captured = await new GradleGraphCache(data.dir, undefined,
+    { trust: declarationTrust ? "registered-helper-v1" : undefined, invalid: false }, undefined,
+    { trust: catalogTrust ? "local-catalog-inputs-v1" : undefined, invalid: false }).capture(path.join(data.dir, "gradle.lockfile"), Buffer.from(lock));
+  const verifiedInputs = !emptyEntries && missingInput === "none";
+  const adopted = verifiedInputs && adapter === 4 && declarationTrust && catalogTrust;
+  expect(captured.metadata.relations_complete).toBe(verifiedInputs);
+  expect(captured.metadata.declarations_complete).toBe(adopted);
+  expect(captured.lookup!("g:a", "1").declaredIn).toEqual(adopted ? new Set(["build.gradle"]) : undefined);
+  expect(captured.lookup!("g:a", "1").relation).toBe(verifiedInputs ? "direct" : "unknown");
+  expect(captured.coverageReasons).toEqual([]);
+  if (!verifiedInputs) expect(captured.metadata.reasons).toContain("catalog_graph_inputs_unverifiable");
+  else if (declarationTrust) {
+    expect(captured.metadata.declaration_provenance!.catalog_trust_status).toBe(catalogTrust ? "accepted" : "disabled");
+    if (!catalogTrust) expect(captured.metadata.reasons).toContain("catalog_trust_disabled");
+    else if (adapter !== 4) expect(captured.metadata.reasons).toContain("unsupported_catalog_adapter");
+  }
+});
+
+
+it.each(["duplicate-key", "unknown-field", "invalid-json", "wrong-version"])("does not infer catalog absence from a malformed manifest with empty entries (%s)", async kind => {
+  const data = await catalogFixture();
+  data.graph.contexts[0]!.catalogInputs.entries = [];
+  if (kind === "duplicate-key") data.contract = data.contract.replace('"contractVersion":2', '"contractVersion":2,"contractVersion":2');
+  if (kind === "unknown-field") data.contract = data.contract.replace('{', '{"unknown":true,');
+  if (kind === "invalid-json") data.contract = data.contract.slice(0, -1);
+  if (kind === "wrong-version") data.contract = data.contract.replace('"contractVersion":2', '"contractVersion":1');
+  data.graph.inputs.files.find(f => f.path === "osv-mcp-gradle-declarations.json")!.sha256 = sha256(data.contract);
+  data.graph.contexts[0]!.declarations.trust.contractSha256 = sha256(data.contract);
+  await saveCatalog(data);
+  const captured = await new GradleGraphCache(data.dir, undefined, { trust: undefined, invalid: false }, undefined,
+    { trust: undefined, invalid: false }).capture(path.join(data.dir, "gradle.lockfile"), Buffer.from(lock));
+  expect(captured.metadata.relations_complete).toBe(false);
+  expect(captured.metadata.reasons).toContain("catalog_graph_inputs_unverifiable");
+  expect(captured.coverageReasons).toEqual([]);
 });

@@ -1,3 +1,4 @@
+import { validateCatalogGroups } from "./gradleCatalogs.js";
 import { z } from "zod";
 import { parseGradleJson } from "./gradleJson.js";
 import type { GradleContext, GradleGraph, GradleBudget } from "./gradleGraph.js";
@@ -11,13 +12,23 @@ export function parseDeclarationTrust(value: string | undefined): DeclarationTru
   if (value === undefined || value === "") return { trust: undefined, invalid: false };
   return value === DECLARATION_MODEL ? { trust: value, invalid: false } : { trust: undefined, invalid: true };
 }
+export const CATALOG_TRUST_ENV = "OSV_MCP_GRADLE_CATALOG_TRUST";
+export const CATALOG_MODEL = "local-catalog-inputs-v1";
+export type CatalogTrust = typeof CATALOG_MODEL | undefined;
+export interface CatalogTrustConfig { trust: CatalogTrust; invalid: boolean }
+export function parseCatalogTrust(value: string | undefined): CatalogTrustConfig {
+  if (value === undefined || value === "") return { trust: undefined, invalid: false };
+  return value === CATALOG_MODEL ? { trust: value, invalid: false } : { trust: undefined, invalid: true };
+}
+let catalogStartupTrust: CatalogTrustConfig | undefined;
+export function startupCatalogTrust(): CatalogTrustConfig { return catalogStartupTrust ??= parseCatalogTrust(process.env[CATALOG_TRUST_ENV]); }
 let startupTrust: DeclarationTrustConfig | undefined;
 /** Read once (at server startup) and fixed for the process; later environment changes are ignored. */
 export function startupDeclarationTrust(): DeclarationTrustConfig {
   return startupTrust ??= parseDeclarationTrust(process.env[DECLARATION_TRUST_ENV]);
 }
 /** Tests only: forget the snapshot so that the next read sees a stubbed environment. */
-export function resetDeclarationTrustForTests(): void { startupTrust = undefined; }
+export function resetDeclarationTrustForTests(): void { startupTrust = undefined; catalogStartupTrust = undefined; }
 const id = z.string().min(1).max(1024), str = z.string().max(4096), hash = z.string().regex(/^[a-f0-9]{64}$/);
 export const declarationPath = z.string().min(1).max(4096).refine(s => !/[\\:\x00-\x1f\x7f]/.test(s) && s.split("/").every(p => p !== "" && p !== "." && p !== ".."));
 const reason = z.string().min(1).max(128), reasons = z.array(reason).max(128);
@@ -46,31 +57,66 @@ const declarationsV3 = z.object({ adapterVersion: z.literal(3), ...declarationFi
   records: z.array(z.object({ ...recordFields, registrationKind: z.enum(["synchronous", "provider"]),
     callbackCount: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
     materializations: z.array(snapshot).max(128) }).strict()).max(100_000) }).strict();
-export const declarationsSchema = z.union([declarationsV2, declarationsV3]);
+const catalogAddition = z.object({ id, ownerProjectId: id, configuration: id, source: source.nullable(),
+  catalogInputId: id, kind: z.enum(["library", "bundle"]), alias: id, normalizedAlias: id,
+  registrationForm: z.enum(["provider", "provider-convertible"]), callbackCount: z.number().int().min(0).safe(),
+  observationComplete: z.boolean(), memberIds: z.array(id).max(128), reasons }).strict();
+const declarationsV4 = z.object({ adapterVersion: z.literal(4), ...declarationFields,
+  catalogAdditions: z.array(catalogAddition).max(100_000),
+  records: z.array(z.object({ ...recordFields, registrationKind: z.enum(["synchronous", "provider", "bundle-member"]),
+    registrationForm: z.enum(["synchronous", "provider", "provider-convertible"]), catalogGroupId: id.nullable(),
+    callbackCount: z.number().int().min(0).safe(), materializations: z.array(snapshot).max(128) }).strict()).max(100_000) }).strict();
+export const declarationsSchema = z.union([declarationsV2, declarationsV3, declarationsV4]);
 export const declarationEnvelope = z.union([declarationsSchema,
-  z.object({ adapterVersion: z.number().int().refine(v => v !== 2 && v !== 3) }).passthrough()]);
+  z.object({ adapterVersion: z.number().int().refine(v => v !== 2 && v !== 3 && v !== 4) }).passthrough()]);
 export const catalogSchema = z.object({ inventoryComplete: z.boolean(), entries: z.array(z.object({ id,
   kind: z.enum(["local-toml", "programmatic", "remote"]), state: z.enum(["verifiable", "unverifiable"]),
   graphInputPaths: z.array(declarationPath).max(10_000), reason: reason.nullable() }).strict()).max(10_000) }).strict();
 export type Declarations = z.infer<typeof declarationsSchema>;
-const contractSchema = z.object({ catalogPolicy: z.literal("none"), contractVersion: z.literal(1), trustModel: z.literal(DECLARATION_MODEL), sources: z.array(declarationPath).max(10_000),
-  scopes: z.array(z.object({ id, projectPath: id, resolvableConfiguration: id, declarationConfigurations: z.array(id).max(2000),
-    assertion: z.literal("all-contributing-additions-use-helper"), mutationPolicy: z.literal("immutable-after-add"), providerPolicy: z.literal("stable-during-export").optional() }).strict()).max(2000) }).strict();
+const scopeFields = { id, projectPath: id, resolvableConfiguration: id, declarationConfigurations: z.array(id).max(2000),
+  assertion: z.literal("all-contributing-additions-use-helper"), mutationPolicy: z.literal("immutable-after-add"), providerPolicy: z.literal("stable-during-export").optional() };
+const catalogManifest = z.object({ id, name: id, kind: z.enum(["local-toml", "programmatic", "remote"]),
+  tomlPaths: z.array(declarationPath).max(1), inputPaths: z.array(declarationPath).min(1).max(10_000),
+  constructionPolicy: z.literal("registered-inputs-only"), mutationPolicy: z.literal("immutable-during-export"),
+  overridePolicy: z.enum(["none", "registered-local"]), inputCompletenessAssertion: z.literal("all-catalog-construction-inputs-listed"),
+  bundleMembers: z.record(id, z.array(id).max(128)) }).strict();
+const contractFields = { trustModel: z.literal(DECLARATION_MODEL), sources: z.array(declarationPath).max(10_000) };
+const contractSchema = z.union([
+  z.object({ ...contractFields, catalogPolicy: z.literal("none"), contractVersion: z.literal(1),
+    scopes: z.array(z.object(scopeFields).strict()).max(2000) }).strict(),
+  z.object({ ...contractFields, catalogPolicy: z.literal("explicit-local-v1"), contractVersion: z.literal(2),
+    catalogs: z.array(catalogManifest).min(1).max(100), scopes: z.array(z.object({ ...scopeFields, catalogIds: z.array(id).max(100) }).strict()).max(2000) }).strict(),
+]);
 export type DeclarationContract = z.infer<typeof contractSchema>;
 export function parseDeclarationContract(text: string): DeclarationContract {
   const c = contractSchema.parse(parseGradleJson(text, 4 * 1024 * 1024));
   if (new Set(c.sources).size !== c.sources.length || new Set(c.scopes.map(s => s.id)).size !== c.scopes.length ||
     new Set(c.scopes.map(s => JSON.stringify([s.projectPath, s.resolvableConfiguration]))).size !== c.scopes.length ||
     c.scopes.some(s => new Set(s.declarationConfigurations).size !== s.declarationConfigurations.length)) throw new Error("invalid_declaration_contract");
+  if (c.contractVersion === 2) {
+    const ids = new Set(c.catalogs.map(x => x.id));
+    if (ids.size !== c.catalogs.length || new Set(c.catalogs.map(x => x.name)).size !== c.catalogs.length ||
+      c.scopes.some(s => new Set(s.catalogIds).size !== s.catalogIds.length || s.catalogIds.some(x => !ids.has(x)))) throw new Error("invalid_catalog_manifest");
+    let references = 0;
+    for (const cat of c.catalogs) {
+      if (new Set(cat.inputPaths).size !== cat.inputPaths.length || new Set(cat.tomlPaths).size !== cat.tomlPaths.length ||
+        cat.tomlPaths.some(p => !p.endsWith(".versions.toml") || !cat.inputPaths.includes(p)) ||
+        cat.inputPaths.some(p => !/\.(?:gradle(?:\.kts)?|versions\.toml|properties|kt|java|groovy)$/.test(p)) ||
+        !cat.inputPaths.some(p => p === "settings.gradle" || p === "settings.gradle.kts") ||
+        (cat.kind === "local-toml" && cat.tomlPaths.length !== 1) || Object.keys(cat.bundleMembers).length > 10_000) throw new Error("invalid_catalog_manifest");
+      references += cat.inputPaths.length + Object.values(cat.bundleMembers).reduce((n, v) => n + v.length, 0);
+      if (references > 100_000) throw new Error("catalog_manifest_budget_exceeded");
+    }
+  }
   return c;
 }
 export function knownDeclarations(c: GradleContext): Declarations | undefined {
-  if (!("declarations" in c) || ![2, 3].includes(c.declarations.adapterVersion)) return undefined;
+  if (!("declarations" in c) || ![2, 3, 4].includes(c.declarations.adapterVersion)) return undefined;
   return c.declarations as Declarations;
 }
 export function catalogVerified(c: GradleContext, graph: GradleGraph): boolean {
   if (!("catalogInputs" in c)) return true;
-  const inputs = new Set(graph.inputs.files.filter(i => "sha256" in i).map(i => i.path));
+  const inputs = new Set(graph.inputs.files.map(i => i.path));
   return c.catalogInputs.inventoryComplete && c.catalogInputs.entries.every(e => e.state === "verifiable" && e.kind !== "remote" && e.reason === null && e.graphInputPaths.length > 0 && e.graphInputPaths.every(p => inputs.has(p)));
 }
 function tick(budget: GradleBudget, field: "index" | "traversal" = "traversal") { if (--budget[field] < 0) throw new Error("declaration_budget_exceeded"); }
@@ -79,13 +125,14 @@ function supported(k: z.infer<typeof resolutionKeySchema>) {
   return k.status === "supported" && !k.attributes.length && !k.capabilitySelectors.length && !k.versionConstraint.preferred && !k.versionConstraint.strict && !k.versionConstraint.rejected.length && k.versionConstraint.branch === null;
 }
 /** Recompute bindings from all records; never trust producer complete=true alone. */
-export function analyzeDeclarations(c: GradleContext, graph: GradleGraph, contract: DeclarationContract, budget: GradleBudget): { sources: Map<string, Set<string>>; reasons: string[] } {
+export function analyzeDeclarations(c: GradleContext, graph: GradleGraph, contract: DeclarationContract, budget: GradleBudget, catalogs?: import("./gradleCatalogs.js").CatalogModels): { sources: Map<string, Set<string>>; reasons: string[] } {
   const d = knownDeclarations(c), sources = new Map<string, Set<string>>();
   if (!d || !("catalogInputs" in c)) return { sources, reasons: ["unsupported_declaration_adapter"] };
   const fail = (r: string) => ({ sources: new Map<string, Set<string>>(), reasons: [r] });
-  if (c.catalogInputs.entries.length) return fail("declaration_inventory_incomplete");
+  if (contract.contractVersion === 2 && d.adapterVersion !== 4) return fail("unsupported_catalog_adapter");
+  if (c.catalogInputs.entries.length && (d.adapterVersion !== 4 || !catalogs)) return fail("declaration_inventory_incomplete");
   if (!d.inventoryComplete || d.reasons.length) return { sources, reasons: ["declaration_inventory_incomplete",
-    ...d.reasons.filter(r => ["provider_stability_assertion_missing", "provider_unobserved", "provider_unstable", "provider_observation_incomplete"].includes(r))] };
+    ...d.reasons.filter(r => ["provider_stability_assertion_missing", "provider_unobserved", "provider_unstable", "provider_observation_incomplete", "catalog_scope_assertion_missing", "catalog_observation_incomplete"].includes(r))] };
   const project = graph.projects.find(p => p.id === c.projectId);
   const scope = contract.scopes.find(s => s.id === d.trust.scopeId);
   if (!scope || !project || project.buildId !== "main" || scope.projectPath !== project.projectPath || scope.resolvableConfiguration !== c.configuration) return fail("declaration_assertion_missing");
@@ -116,11 +163,12 @@ export function analyzeDeclarations(c: GradleContext, graph: GradleGraph, contra
     if (r.state !== "materialized" || r.ownerProjectId !== c.projectId || !scoped.has(r.configuration) || !topology.get(r.configuration)?.hasDependencies || r.reasons.length) return fail("declaration_inventory_incomplete");
     let a = r.declarationAtAdd;
     if ("registrationKind" in r) {
-      if (r.registrationKind === "provider") {
+      if (r.registrationKind === "provider" || r.registrationKind === "bundle-member") {
         if (scope.providerPolicy !== "stable-during-export") return fail("provider_stability_assertion_missing");
         if (r.declarationAtAdd !== null || r.callbackCount < 1 || r.callbackCount !== r.materializations.length) return fail("provider_observation_incomplete");
         a = r.materializations[0]!;
         for (const observation of r.materializations) { tick(budget); if (!equal(a, observation)) return fail("provider_unstable"); }
+        if (r.registrationKind === "bundle-member" && r.callbackCount !== 1) return fail("catalog_observation_incomplete");
       } else if (r.callbackCount !== 0 || r.materializations.length) return fail("provider_observation_incomplete");
     }
     const after = r.declarationAtResolve;
@@ -133,6 +181,10 @@ export function analyzeDeclarations(c: GradleContext, graph: GradleGraph, contra
     const key = JSON.stringify(a.key); const list = groups.get(key) ?? []; list.push(r.id); groups.set(key, list);
   }
   for (const n of topology.values()) { tick(budget); if (n.hasDependencies && !configsWithRecords.has(n.name)) return fail("declaration_inventory_incomplete"); }
+  if (d.adapterVersion === 4) {
+    const catalogReasons = validateCatalogGroups(d, contract, scope.id, catalogs, budget);
+    if (catalogReasons) return fail(catalogReasons);
+  }
   const components = new Map(c.components.map(p => [p.id, p])), variants = new Map(c.variants.map(v => [v.id, v.componentId]));
   const bindings = new Map(d.bindings.map(b => { tick(budget, "index"); return [b.edgeId,b] as const; }));
   if (bindings.size !== d.bindings.length) return fail("ambiguous_declaration_binding");

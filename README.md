@@ -440,7 +440,7 @@ The adapter prepares source hashes before evaluation and rejects source/contract
 
 `coverage.dependency_metadata.gradle[].declaration_provenance` identifies this as **author-attested and structurally checked**. Unregistered equal additions can disappear from Gradle's collection, and mutations reverted before inspection can be invisible. These limitations are always reported when declarations are adopted; hashes and matching bindings do not independently prove the author's assertion. All sources for a package must be complete before `declared_in` is emitted. The provenance summary combines context states deterministically (`invalid` before `missing_assertion` before `accepted`; an unset consumer policy stays `disabled`). Its `contexts` entries show the status, assurance and contract paths for each locked configuration. An invalid unrelated context does not erase another package’s verified declarations; a package present in both accepted and incomplete contexts still has its entire list omitted.
 
-C1a handles module declarations only: a scope that also contains a project dependency (such as `implementation(project(":core"))`) cannot satisfy the helper assertion, so its direct declaration lists are omitted (`unsupported_resolution_key`) while graph relations remain. C1a requires the explicit `catalogPolicy: "none"` assertion. Provider values passed to the C1a `add` helper remain unsupported declaration evidence. Catalog/bundle, convention-plugin provenance, custom artifacts/classifiers, non-default attributes/capabilities, rich versions, exclusions and other unsupported shapes do not acquire a complete declaration map. They keep normal Gradle dependency behavior, while declaration metadata is incomplete. The limited C1b Provider helper is described below; buildscript/composite/Android support remains outside this implementation. Source/contract files are never sent to OSV or added to scanner inputs.
+C1a handles module declarations only: a scope that also contains a project dependency (such as `implementation(project(":core"))`) cannot satisfy the helper assertion, so its direct declaration lists are omitted (`unsupported_resolution_key`) while graph relations remain. C1a requires the explicit `catalogPolicy: "none"` assertion. Provider values passed to the C1a `add` helper remain unsupported declaration evidence. Catalog values passed through that legacy helper, convention-plugin provenance, custom artifacts/classifiers, non-default attributes/capabilities, rich versions, exclusions and other unsupported shapes do not acquire a complete declaration map. They keep normal Gradle dependency behavior, while declaration metadata is incomplete. The limited C1b Provider helper is described below; buildscript/composite/Android support remains outside this implementation. Source/contract files are never sent to OSV or added to scanner inputs.
 
 ### Gradle Provider declaration sources (C1b)
 
@@ -468,7 +468,8 @@ records materializations delivered by Gradle. Independent equal additions retain
 separate IDs, while inherited declarations retain the original ID and source.
 
 Contexts containing explicit Provider registrations use declaration adapter v3
-inside graph schema v2; synchronous-only contexts still use adapter v2. Older
+inside graph schema v2; synchronous-only contexts still use adapter v2. The catalog
+and ProviderConvertible extensions below use declaration adapter v4. Older
 readers treat unknown adapter versions as unavailable declaration evidence while
 retaining graph relations. Use matching adapter/reader versions for C1b contracts.
 
@@ -486,11 +487,119 @@ later query without another materialization callback; stability is author-attest
 not independently proven. Callback counts are not supplier evaluation counts.
 
 The legacy `add(configuration, provider, source)` remains unsupported declaration
-evidence and delegates normally to Gradle. ProviderConvertible, catalog aliases,
-bundles, configuration cache, task-output Providers and convention-plugin
-provenance remain outside this C1b implementation. `remove(handle)` does not support
+evidence and delegates normally to Gradle. Catalog aliases, bundles and
+ProviderConvertible are supported by the explicit extension below. Configuration
+cache, task-output Providers and convention-plugin provenance remain outside this implementation. `remove(handle)` does not support
 Provider registrations and throws explicitly; use normal Gradle operations for
 removal, which leave declaration evidence incomplete if correspondence is lost.
+
+### Gradle version catalogs and ProviderConvertible
+
+Use the explicit catalog helpers with contract v2 and **both** consumer settings:
+
+```sh
+export OSV_MCP_GRADLE_DECLARATION_TRUST=registered-helper-v1
+export OSV_MCP_GRADLE_CATALOG_TRUST=local-catalog-inputs-v1
+```
+
+The catalog policy is fixed at startup. An unknown catalog setting warns and disables
+catalog declaration adoption without stopping the server. Existing C1a/C1b contracts
+and their settings retain their meaning. Contract-v2 contexts require the additional
+catalog trust even when their additions use generic Provider/ProviderConvertible
+helpers; this avoids bypassing the catalog policy through those helpers.
+
+Example author contract for a lock containing `runtimeClasspath`:
+
+```json
+{
+  "contractVersion": 2,
+  "trustModel": "registered-helper-v1",
+  "catalogPolicy": "explicit-local-v1",
+  "sources": ["build.gradle"],
+  "catalogs": [{
+    "id": "libs", "name": "libs", "kind": "local-toml",
+    "tomlPaths": ["gradle/libs.versions.toml"],
+    "inputPaths": ["settings.gradle", "gradle/libs.versions.toml"],
+    "constructionPolicy": "registered-inputs-only",
+    "mutationPolicy": "immutable-during-export",
+    "overridePolicy": "none",
+    "inputCompletenessAssertion": "all-catalog-construction-inputs-listed",
+    "bundleMembers": { "clients": ["client", "transport"] }
+  }],
+  "scopes": [{
+    "id": "runtime", "projectPath": ":", "resolvableConfiguration": "runtimeClasspath",
+    "declarationConfigurations": ["implementation"],
+    "assertion": "all-contributing-additions-use-helper",
+    "mutationPolicy": "immutable-after-add",
+    "providerPolicy": "stable-during-export",
+    "catalogIds": ["libs"]
+  }]
+}
+```
+
+`bundleMembers` must enumerate **every** bundle in that catalog, using the exact
+ordered member references from the imported TOML (including repeated members).
+The adapter checks its public bundle-name inventory and observed member count;
+the static reader independently parses the captured TOML and verifies this map,
+module identities, all member records and bindings. Empty, partial, unsupported,
+mutated or unobserved groups suppress the entire contributing scope's declaration
+list. Equal members and independent additions are retained separately.
+
+Groovy, in each actual declaration source:
+
+```groovy
+def osv = extensions.getByName('osvMcpDeclarations')
+def catalog = osv.catalogSource('libs')
+osv.addCatalogLibrary('implementation', catalog, 'client', osv.source('build.gradle'))
+osv.addCatalogBundle('implementation', catalog, 'clients', osv.source('build.gradle'))
+```
+
+Kotlin (list the `.gradle.kts` paths in the contract):
+
+```kotlin
+import org.gradle.kotlin.dsl.withGroovyBuilder
+val osv = extensions.getByName("osvMcpDeclarations")
+val catalog = osv.withGroovyBuilder { "catalogSource"("libs") }
+val source = osv.withGroovyBuilder { "source"("build.gradle.kts") }
+osv.withGroovyBuilder { "addCatalogLibrary"("implementation", catalog, "client", source) }
+osv.withGroovyBuilder { "addCatalogBundle"("implementation", catalog, "clients", source) }
+```
+
+An optional final `Action<ExternalModuleDependency>` runs before each member's
+snapshot. The original typed Provider is passed unchanged to Gradle; the helper
+does not add a `map` or query it. Bundle Actions may run during project evaluation,
+as they do with the native API. Declared sources identify the usage script, never
+the TOML as a substitute. Catalog editing keys are not inferred or auto-edited.
+
+For an existing `ProviderConvertible`, use
+`addProviderConvertible(configuration, originalConvertible, source, optionalAction)`.
+It delegates directly to Gradle's public conversion API and does not attach guessed
+catalog/alias labels. Without a catalog it also works under the C1b contract, with
+the existing Provider stability assertion. Kotlin applied scripts generally lack
+generated `libs` accessors; use catalog helpers or the public VersionCatalogsExtension.
+
+All catalog inputs must be explicitly listed and captured **before settings evaluation**.
+The adapter rejects unsafe paths, symlinks, duplicate JSON keys and unsupported manifests;
+it verifies input hashes at registration and before/after export, keeping absent optional
+inputs too. Include custom `.versions.toml`, the actual settings script and every local
+construction/override input. Use `overridePolicy: "registered-local"` only for captured
+local version overrides; module and bundle-membership overrides are outside this initial
+implementation. Remote and programmatic catalogs are reported as unverifiable. Unknown
+catalog inventories, malformed/mismatched TOML, missing graph-input references and stale
+inputs withhold graph metadata; vulnerability scanning of the lock still proceeds.
+
+Inputs retain the existing 4 MiB/file and 64 MiB/scan limits. Registration hash verification
+has a 64 MiB read budget; exhaustion leaves declaration metadata incomplete while normal
+additions continue. Catalog input indexing and traversal use bounded scan-wide work.
+Source bodies, TOML and manifests are not sent to OSV or added to scanner inputs.
+
+Provenance includes `catalog_trust_model` / `catalog_trust_status` and limitations
+`catalog_inputs_author_attested`, `catalog_input_transient_changes_not_detectable` and,
+when a bundle is adopted, `bundle_materialization_boundaries_not_observable`.
+Hashes and public catalog names cannot independently prove that every construction
+input was declared, detect a temporary change restored before inspection, or count
+internal bundle Provider evaluations. Use matching adapter/reader versions for v4.
+The schema-v1 export mode retains captured catalog input hashes but omits declarations.
 
 ### `scan_java_project`
 
