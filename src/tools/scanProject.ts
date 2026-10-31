@@ -16,6 +16,7 @@ import {
   combineRelations,
   cargoLockRelations,
   goModRelations,
+  hasCompleteDeclarations,
   npmLockRelations,
   pomRelations,
   requirementsRelations,
@@ -280,26 +281,26 @@ export function annotateRelations(packages: readonly ScanReportPackage[], lookup
     // 同じファイルが複数の結果に分かれる(pom.xml・requirements.txtの宣言と推移的依存)ため、ファイルごとに1つにまとめる。
     // 同じファイルで直接依存と判定された結果があれば直接依存とする
     const byFile = new Map<string, RelationInfo>();
-    const declaredIn = new Set<string>();
     const declaringCrates = new Set<string>();
     const dependencyGroups = new Set(pkg.dependency_groups ?? []);
     const rank = { direct: 2, transitive: 1, unknown: 0 } as const;
     for (const source of packageSources(pkg)) {
       const entry = lookups.get(source.path);
       if (entry?.dependencyGroup !== undefined) dependencyGroups.add(entry.dependencyGroup);
-      const info = entry?.lookup ? entry.lookup(pkg.name, pkg.version, source.type) : { relation: "unknown" as const };
+      const raw = entry?.lookup ? entry.lookup(pkg.name, pkg.version, source.type) : { relation: "unknown" as const };
+      // Normalize declaration paths before merging sources; completeness is independent of relation rank.
+      const info: RelationInfo = { ...raw, declaredInComplete: hasCompleteDeclarations(raw),
+        ...(raw.declaredIn ? { declaredIn: new Set([...raw.declaredIn].map(file => path.join(entry!.lockDir, file))) } : {}) };
       const previous = byFile.get(source.path);
       const preferred = previous === undefined || rank[info.relation] > rank[previous.relation] ? info : previous;
       byFile.set(source.path, { ...preferred,
+        declaredIn: new Set([...(previous?.declaredIn ?? []), ...(info.declaredIn ?? [])]),
         ...(info.introducedByComplete === false || previous?.introducedByComplete === false ? { introducedByComplete: false } : {}),
         ...(info.declaredInComplete === false || previous?.declaredInComplete === false ? { declaredInComplete: false } : {}) });
-      for (const manifest of info.declaredIn ?? []) declaredIn.add(path.join(entry!.lockDir, manifest));
       for (const name of info.declaringCrates ?? []) declaringCrates.add(name);
     }
     const infos = [...byFile.values()];
-    const { relation, introducedBy, declaredIn: mergedDeclaredIn, replaced } = combineRelations(infos);
-    const explicitCompleteness = infos.some(info => info.declaredInComplete !== undefined);
-    if (explicitCompleteness && mergedDeclaredIn.length === 0) declaredIn.clear();
+    const { relation, introducedBy, declaredIn, replaced } = combineRelations(infos);
     const { vulnerabilities, ...rest } = pkg;
     const annotated: ScanReportPackage = {
       ...rest,
@@ -307,7 +308,7 @@ export function annotateRelations(packages: readonly ScanReportPackage[], lookup
       dependency_relation: relation,
       ...(introducedBy.length > 0 ? { introduced_by: introducedBy.slice(0, MAX_INTRODUCED_BY).map(sanitizeExternalText) } : {}),
       ...(introducedBy.length > MAX_INTRODUCED_BY ? { introduced_by_omitted: introducedBy.length - MAX_INTRODUCED_BY } : {}),
-      ...(declaredIn.size > 0 ? { declared_in: [...declaredIn].sort().map(sanitizeExternalText) } : {}),
+      ...(declaredIn.length > 0 ? { declared_in: declaredIn.map(sanitizeExternalText) } : {}),
       ...(declaringCrates.size > 0 ? { declaring_crates: [...declaringCrates].sort().slice(0, MAX_INTRODUCED_BY).map(sanitizeExternalText) } : {}),
       ...(declaringCrates.size > MAX_INTRODUCED_BY ? { declaring_crates_omitted: declaringCrates.size - MAX_INTRODUCED_BY } : {}),
       ...(replaced ? { replaced_in_go_mod: true as const } : {}),

@@ -17,12 +17,13 @@ export type DependencyRelation = "direct" | "transitive" | "mixed" | "unknown";
 /** 1つのファイルでの、ある名前・版の依存の関係 */
 export interface RelationInfo {
   relation: "direct" | "transitive" | "unknown";
-  /** Gradle: explicit completeness, preserved through cross-file aggregation. */
+  /** Explicit origin completeness (Gradle); preserved through cross-file aggregation. */
   introducedByComplete?: boolean;
+  /** 宣言元一覧の完全性。falseは既知pathがあっても抑制。未設定はhasCompleteDeclarationsで判定する。 */
   declaredInComplete?: boolean;
   /** npm: 推移的に要求している直接依存の名前 */
   introducedBy?: ReadonlySet<string>;
-  /** npm: 直接依存として宣言しているpackage.json(projectからの相対パスではなく、lockfileの位置からの相対パス) */
+  /** 直接宣言元のファイル集合。lockfile／sourceの位置からの相対パス。部分集合にはdeclaredInComplete=falseを付ける。 */
   declaredIn?: ReadonlySet<string>;
   /** Rust: Cargo.tomlと一意に対応付けられない宣言元のcrate名 */
   declaringCrates?: ReadonlySet<string>;
@@ -400,8 +401,21 @@ export function requirementsRelations(entries: readonly string[]): RelationLooku
 }
 
 /**
+ * Legacy formats need not populate a flag: a nonempty direct declaration list is complete,
+ * unless a producer marks it partial or Cargo still has unmapped declaring crates.
+ * A proven transitive dependency has no direct declaration here; unknown is not proven empty.
+ * Default update filenames are guidance, not declaration evidence (e.g. flattened requirements).
+ */
+export function hasCompleteDeclarations(info: RelationInfo): boolean {
+  if (info.declaredInComplete === false || info.relation === "unknown") return false;
+  if (info.relation === "transitive") return true;
+  return !!info.declaredIn?.size && !info.declaringCrates?.size;
+}
+
+/**
  * 複数のファイルでの判定をまとめる。ファイルごとの関係がすべて同じならその値、異なればmixed。
- * 直接依存以外で由来を示せないファイルが1つでもあれば、和集合は由来の一部だけになるため導入元を出さない
+ * 直接依存以外で由来を示せないファイルが1つでもあれば、和集合は由来の一部だけになるため導入元を出さない。
+ * 宣言元は独立して完全性を判定し、不明な直接宣言／unknown／明示的な欠けがあれば一覧全体を省略する。
  */
 export function combineRelations(infos: readonly RelationInfo[]): {
   relation: DependencyRelation;
@@ -417,10 +431,8 @@ export function combineRelations(infos: readonly RelationInfo[]): {
     for (const name of info.introducedBy ?? []) introducedBy.add(name);
     for (const manifest of info.declaredIn ?? []) declaredIn.add(manifest);
   }
-  const explicit = infos.some(info => info.introducedByComplete !== undefined || info.declaredInComplete !== undefined);
   const partial = infos.some((info) => info.introducedByComplete === false ||
     (info.introducedByComplete === undefined && info.relation !== "direct" && !info.introducedBy?.size));
-  const declarationsPartial = explicit && infos.some(info => info.declaredInComplete === false ||
-    (info.declaredInComplete === undefined && (info.relation === "unknown" || (info.relation === "direct" && !info.declaredIn?.size))));
+  const declarationsPartial = infos.some(info => !hasCompleteDeclarations(info));
   return { relation, introducedBy: partial ? [] : [...introducedBy].sort(), declaredIn: declarationsPartial ? [] : [...declaredIn].sort(), replaced: infos.some((info) => info.replaced) };
 }

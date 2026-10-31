@@ -74,7 +74,7 @@ export interface ScanReportPackage {
   introduced_by?: string[];
   /** introduced_byから省いた件数 */
   introduced_by_omitted?: number;
-  /** npm: 直接依存として宣言しているpackage.json(プロジェクトからの相対パス) */
+  /** 直接依存の宣言元ファイル(プロジェクトからの相対パス)。全sourceで完全な場合だけ出す。 */
   declared_in?: string[];
   /** Rust: 宣言元Cargo.tomlを一意に対応付けられないときのcrate名(最大10件) */
   declaring_crates?: string[];

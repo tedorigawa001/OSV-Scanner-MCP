@@ -207,6 +207,32 @@ describe("requirementsRelations", () => {
 });
 
 describe("combineRelations", () => {
+  it("全形式で、宣言元が不明な直接依存との併合では部分的な一覧を出さない", () => {
+    const known = { relation: "direct" as const, declaredIn: new Set(["app/Cargo.toml"]) };
+    for (const other of [{ relation: "direct" as const }, { relation: "unknown" as const }, { relation: "direct" as const, declaredIn: new Set<string>() }]) {
+      expect(combineRelations([known, other]).declaredIn).toEqual([]);
+      expect(combineRelations([other, known]).declaredIn).toEqual([]);
+    }
+  });
+
+
+  it("完全な宣言元は和集合で保持し、推移的依存の宣言元なしは欠けにしない", () => {
+    const a = { relation: "direct" as const, declaredIn: new Set(["a/package.json"]) };
+    const b = { relation: "direct" as const, declaredIn: new Set(["b/package.json", "a/package.json"]) };
+    expect(combineRelations([a, b]).declaredIn).toEqual(["a/package.json", "b/package.json"]);
+    expect(combineRelations([b, a]).declaredIn).toEqual(["a/package.json", "b/package.json"]);
+    expect(combineRelations([a, { relation: "transitive" }]).declaredIn).toEqual(["a/package.json"]);
+  });
+  it("明示的な不完全性・未対応crateは、既知pathがあっても一覧を抑制する(導入元とは独立)", () => {
+    const known = { relation: "direct" as const, declaredIn: new Set(["a/Cargo.toml"]), introducedBy: new Set(["parent"]) };
+    for (const other of [
+      { relation: "direct" as const, declaredIn: new Set(["partial/Cargo.toml"]), declaringCrates: new Set(["unmapped"]) },
+      { relation: "transitive" as const, introducedBy: new Set(["parent"]), declaredInComplete: false },
+    ]) {
+      expect(combineRelations([known, other])).toMatchObject({ declaredIn: [], introducedBy: ["parent"] });
+      expect(combineRelations([other, known])).toMatchObject({ declaredIn: [], introducedBy: ["parent"] });
+    }
+  });
   it("ファイルごとの関係が同じならその値、異なればmixed。経由と宣言は合わせる", () => {
     expect(combineRelations([{ relation: "direct" }, { relation: "direct" }]).relation).toBe("direct");
     expect(combineRelations([{ relation: "direct" }, { relation: "unknown" }]).relation).toBe("mixed");

@@ -175,7 +175,7 @@ const SAFE_CRATE_NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
  */
 function cargoUpdateHint(pkg: ScanReportPackage, recommended: string | null, tier: UpgradeTier | null): string {
   const manifest = pkg.declared_in?.join(", ") ?? (pkg.declaring_crates?.length
-    ? `the Cargo.toml of ${pkg.declaring_crates.join(", ")}` : "the declaring Cargo.toml");
+    ? `the declaring Cargo.toml files (unmapped declaring crates include ${pkg.declaring_crates.join(", ")})` : "the declaring Cargo.toml");
   const parent = pkg.introduced_by?.join(", ") ?? "the direct dependency that requires this crate";
   if (recommended === null) {
     const direct = `No verified upgrade is recommended (see upgrade_note and per_cve_detail). Any fix requires a version allowed by the requirement in ${manifest}.`;

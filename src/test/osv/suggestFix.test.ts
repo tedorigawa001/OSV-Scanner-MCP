@@ -58,7 +58,8 @@ describe("suggestUpgradeForPackage", () => {
   it("names unmapped declaring crates in update guidance", () => {
     const s = suggestUpgradeForPackage({ ...pkg("crate", "1.0.0", [vuln("A", null, ["1.0.1"])]),
       ecosystem: "crates.io", dependency_relation: "direct", declaring_crates: ["local"] });
-    expect(s.update_hint).toContain("Cargo.toml of local");
+    expect(s.update_hint).toContain("declaring Cargo.toml files");
+    expect(s.update_hint).toContain("unmapped declaring crates include local");
     expect(s.declaring_crates).toEqual(["local"]);
   });
   it.each([

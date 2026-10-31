@@ -1431,7 +1431,27 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 
 - 同じ名前・版のパッケージを複数のlockfileで検出した場合、`combineRelations`が各ファイルのintroducedByの和集合をとり、由来を示せないファイル(推移的で由来未確定・解析不能のunknown)の欠けが失われていた。例: root Pipfile.lockはrequests由来、svc/Pipfile.lockは2根で由来未確定でも`introduced_by: ["requests"]`。片方が読めない(unknown)場合も`mixed`で同じ一覧。
 - 直接依存以外で由来を示せないファイルが1つでもあればintroduced_by(・omitted)を出さない。直接依存の由来なしは欠けとしない。dependency_relation(mixed含む)は従来どおり。npm系・Python lockfile全般に適用され、由来を出さないpom.xml・go.mod単独の出力は変わらない。両ツールに入力順を入れ替えた回帰テストを追加。
-- 未対応(要検討): declared_inも和集合のため、宣言元を示せない直接依存のファイルとの併合で一部だけになり得る。更新案内の宣言ファイル表示に影響するため別途、形式ごとに「直接依存で宣言元なし」の意味(既定ファイル・不明)を整理して対応する。Gradle設計の完全性フラグ(§6.5)と合わせて検討。
+- declared_inの併合も修正(2026-10-31): Gradleフラグの有無に依存せず全形式へ適用する。directで宣言元が未提供／空、unknown、明示的なdeclaredInComplete=false、Cargoの未対応declaringCratesのいずれかがあれば一覧全体を省略する。確定したtransitiveの宣言元なしは「直接宣言なし」なので欠けにしない。由来の完全性とは独立に判定する。
+- sourceごとにpathをproject相対へ直してから併合し、同一ファイルの複数結果でも完全性はANDで保持する。relationのdirect優先でunknownの欠けを消さない。完全なpathは重複除去・ソートして保持する。脆弱性coverageとdependency_relationは従来どおり。
+
+### 既存形式の宣言元一覧の扱い
+
+完全性は、既存の各形式の解析が返す宣言元情報に基づく。新たなDSL解析や宣言元の取得機能を追加する変更ではない。既定の更新先ファイル名と、全宣言元を確認した一覧を区別する。
+
+| 形式 | 宣言元の根拠・未提供の意味 |
+|---|---|
+| npm v2+／pnpm／Yarn／Bun | lockのroot/importer/workspaceと対応するpackage.json。既存解析が返すdirectの非空集合は保持し、v1／非対応／解析不能はunknownとして一覧を抑制 |
+| uv／Poetry／PDM／Pipenv | 対応可能な宣言・メンバーとの照合で得たpyproject.toml／Pipfile。declared_inを返さないdirect／unknownを、他ファイルの既知pathで埋めない |
+| Composer | companion composer.jsonのrequire／require-dev。対応できないsourceの既定ファイル名を補完しない |
+| Cargo | 全declaring crateをCargo.tomlへ一意に対応付けられる場合のみ完全。未対応crateがあれば全pathを抑制し、declaring_cratesは未対応crateの診断として保持。修正案内は「全宣言元ファイル（未対応crateを含む）」とし、未対応crateだけを全更新対象に見せない |
+| NuGet | sourceの所有projectとの一意な対応とPackageReferenceの確認に基づく。未対応lock／deps／曖昧な所有元は、単にprojectファイルがありそうという理由で補完しない |
+| Maven POM | directでも親POM・profile等の物理宣言元を確定していないため一覧未提供。root pom.xmlを宣言元と推測しない |
+| requirements.txt | includeを展開したコピーに物理的な行の出所を保持していないため、directでも一覧未提供。取り込み元requirements.txtを全宣言の場所と推測しない |
+| go.mod | 既定の更新先は既知だが、現行APIではdeclared_inを提供しない。directの一覧未提供を「宣言なしの完全な空集合」とは扱わず、Goの既存更新案内を維持 |
+| Gradle Stage B | directの物理宣言元は未提供として不完全。確定したtransitiveは直接宣言なし。既存の明示的な不完全性フラグも保持 |
+
+- 回帰テスト: Rustの一部未対応／NuGetの所有元未確認／uvと取り込みrequirementsの併合／npmの完全・推移的・unknown混在をscan_projectとsuggest_fixで確認。入力順逆転、同一ファイルのdirect優先、完全な和集合・重複除去、明示的な不完全性、introduced_byとの独立性、coverage維持も確認する。
+- 検証結果: Gradle 8.11.1の実export回帰9件を含め、全67ファイル・1,430テストが通過。typecheck・buildも成功。
 
 ## Gradle依存関係対応の実装方式設計(2026-10-31)
 
