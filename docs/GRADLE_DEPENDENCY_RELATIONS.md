@@ -136,7 +136,7 @@ variantごとの依存集合は異なり得るため、`getDependencies()`の単
 
 追加の契約:
 
-- `inputs.files`にはroot相対pathとSHA-256を記録する。settings、build files、catalog、properties、宣言元登録に使ったファイル等を列挙するが、環境変数、外部init script、remote pluginの全影響を網羅したとはしない。
+- `inputs.files`にはroot相対pathとSHA-256を記録する。export時に存在しなかった既知の候補(例: 片方のDSLのbuild file)は`absent: true`として記録し、後から作成された場合もstaleとする。settings、build files、catalog、properties、宣言元登録に使ったファイル等を列挙するが、環境変数、外部init script、remote pluginの全影響を網羅したとはしない。
 - lockのGAV集合と照合するための**全selected module集合**と、由来をたどる**非constraintの辺**を区別する。
 - 解決失敗はcontext単位の`complete=false`と理由codeで記録する。非対応のID種別やvariantは成功へ丸めない。
 - source依存、ローカルJAR等のグラフ／lock外の依存は`unrepresentedDependencies`に種類と件数を記録する。MCPに任意のローカル参照先を読ませない。
@@ -165,7 +165,7 @@ variantごとの依存集合は異なり得るため、`getDependencies()`の単
 ### 6.3 introduced_by
 
 - 各contextの直接外部moduleを起点に、実際の非constraint辺をvariant単位でたどる。出力名はselectedの`group:name`。
-- projectを通過する辺でも、公開module起点が存在する場合だけその起点を保持する。公開起点のないproject-only経路に架空のMaven起点を作らない。
+- projectを通過する辺でも、公開module起点が存在する場合だけその起点を保持する。公開起点のないproject-only経路に架空のMaven起点を作らない。rootからproject依存を経由して到達するmoduleは、公開module起点の一覧が由来の一部だけになるため、由来を不完全として`introduced_by`を出さない(実装済み、2026-10-31)。
 - 複数起点、cycle、直接＋推移的の重なりを扱う。起点自身を自分の由来にしない。
 - 同じGAVについて必要なcontextの一部が不足・不完全・予算超過なら、既知部分だけを完全な由来一覧のように返さず、一覧全体を省略する。空の一覧は「由来なし」と「不明」を混同しない。
 - 確定した複数起点の10件上限・`introduced_by_omitted`は既存仕様を使う。未確定起点をomitted件数へ入れない。

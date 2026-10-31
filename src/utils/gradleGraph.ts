@@ -34,7 +34,8 @@ const schema = z.object({
   producer: z.object({ exporterVersion: id, gradleVersion: id }).strict(),
   lockfiles: z.array(z.object({ id, path: relative, sha256: hash }).strict()).max(2000),
   projects: z.array(z.object({ id, buildId: id, projectPath: id, directory: relative, ownerBuildFile: relative }).strict()).max(2000),
-  inputs: z.object({ complete: z.boolean(), files: z.array(z.object({ path: relative, sha256: hash }).strict()).max(10_000) }).strict(),
+  // absent: a candidate the exporter saw missing; creating it later makes the export stale.
+  inputs: z.object({ complete: z.boolean(), files: z.array(z.union([z.object({ path: relative, sha256: hash }).strict(), z.object({ path: relative, absent: z.literal(true) }).strict()])).max(10_000) }).strict(),
   contexts: z.array(context).max(2000),
 }).strict();
 export type GradleGraph = z.infer<typeof schema>;
@@ -138,11 +139,18 @@ export function analyzeGradleContext(c: GradleContext, lock: GradleLock, budget 
         for (const child of adjacency.get(v) ?? []) pending.push(child);
       }
     }
+    // Paths through a project dependency have no public module origin; modules on them never get a complete origin list.
+    const viaProject = new Set<string>(), projectPending = (adjacency.get(c.rootVariant) ?? []).filter(v => variants.get(v)!.kind === "project"), projectSeen = new Set<string>();
+    for (let i = 0; i < projectPending.length; i++) {
+      spend(budget, "traversal"); const v = projectPending[i]!; if (projectSeen.has(v)) continue; projectSeen.add(v);
+      const k = keyOf(v); if (k) viaProject.add(k);
+      for (const child of adjacency.get(v) ?? []) projectPending.push(child);
+    }
     return { coverageReasons, reasons: complete ? (reached.size === selected.size ? [] : ["unreachable_modules"]) : ["incomplete_context"], lookup: (name, version): RelationInfo => {
       const k = gradleKey(name, version);
       return { relation: direct.has(k) ? "direct" : complete && reached.has(k) ? "transitive" : "unknown",
         ...(complete && origins.has(k) ? { introducedBy: origins.get(k) } : {}),
-        introducedByComplete: complete && reached.has(k), declaredInComplete: complete && reached.has(k) && !direct.has(k) };
+        introducedByComplete: complete && reached.has(k) && !viaProject.has(k), declaredInComplete: complete && reached.has(k) && !direct.has(k) };
     } };
   } catch { return { lookup: null, coverageReasons, reasons: ["relationship_budget_exceeded"] }; }
 }

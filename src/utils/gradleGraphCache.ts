@@ -18,6 +18,7 @@ const unknown = (): RelationInfo => ({ relation: "unknown", introducedByComplete
 /** One cache per scan; all metadata/input bytes and work limits are shared. */
 export class GradleGraphCache {
   private readonly documents = new Map<string, Promise<{ graph?: GradleGraph; reason?: string }>>();
+  /** SHA-256 of a readable input, "absent" when it does not exist, null when it cannot be verified. */
   private readonly inputs = new Map<string, Promise<string | null>>();
   private remaining = 64 * 1024 * 1024;
   private lockRemaining = 64 * 1024 * 1024;
@@ -46,7 +47,7 @@ export class GradleGraphCache {
         const name = path.basename(file);
         if (!(/\.gradle(?:\.kts)?$/.test(name) || name === "gradle.properties" || name.endsWith(".versions.toml"))) return null;
         const read = await readRegularFile(file, { boundary: this.boundary, maxBytes: Math.min(4 * 1024 * 1024, this.inputRemaining) });
-        if (!read.ok) return null;
+        if (!read.ok) return read.failure === "not_found" ? "absent" : null;
         this.inputRemaining -= read.bytes.length;
         return sha256(read.bytes);
       })();
@@ -86,7 +87,8 @@ export class GradleGraphCache {
     if (candidate.hash !== sha256(lockBytes)) { metadata.reasons.push("stale_lock_hash"); return result; }
     for (const input of candidate.graph.inputs.files) {
       const actual = await this.input(path.resolve(candidate.root, input.path));
-      if (actual !== input.sha256) { metadata.reasons.push(actual === null ? "input_hash_unverifiable" : "stale_input_hash"); return result; }
+      const expected = "absent" in input ? "absent" : input.sha256;
+      if (actual !== expected) { metadata.reasons.push(actual === null ? "input_hash_unverifiable" : "stale_input_hash"); return result; }
     }
     let lock;
     try { lock = parseGradleLock(lockBytes.toString("utf8")); }

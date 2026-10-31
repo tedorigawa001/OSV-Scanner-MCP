@@ -20,6 +20,7 @@ dependencies { implementation 'review:parent:1' }
 `;
 const directLeaf = "\ndependencies { implementation 'review:leaf:1' }\n";
 const digest = (text: string) => createHash("sha256").update(text).digest("hex");
+const hashOf = (file: { path: string } | undefined) => file && "sha256" in file ? file.sha256 : undefined;
 async function fixture(build = base, settings = "rootProject.name = 'exporter-regression'\n", buildName = "build.gradle") {
   const dir = await realpath(await mkdtemp(path.join(os.tmpdir(), "osv-gradle-exporter-test-"))); dirs.push(dir);
   await writeFile(path.join(dir, buildName), build);
@@ -55,7 +56,7 @@ describe.skipIf(!binary)("real Gradle exporter input snapshots", () => {
     // A fresh invocation evaluates the changed declaration and may safely export it.
     const retry = await run(dir); expect(retry.code, retry.output).toBe(0);
     const graph = parseGradleGraph(await readFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), "utf8"));
-    expect(graph.inputs.files.find(f => f.path === "build.gradle")?.sha256).toBe(digest(await readFile(path.join(dir, "build.gradle"), "utf8")));
+    expect(hashOf(graph.inputs.files.find(f => f.path === "build.gradle"))).toBe(digest(await readFile(path.join(dir, "build.gradle"), "utf8")));
     const context = graph.contexts.find(c => c.configuration === "runtimeClasspath")!;
     expect(analyzeGradleContext(context, parseGradleLock(lock)).lookup!("review:leaf", "1").relation).toBe("direct");
   }, 90_000);
@@ -98,8 +99,10 @@ describe.skipIf(!binary)("real Gradle exporter input snapshots", () => {
     const dir = await fixture(); const result = await run(dir);
     expect(result.code, result.output).toBe(0);
     const graph = parseGradleGraph(await readFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), "utf8"));
-    expect(graph.inputs.files.find(f => f.path === "build.gradle")?.sha256).toBe(digest(base));
-    expect(graph.inputs.files.every(f => f.sha256.length === 64)).toBe(true);
+    expect(hashOf(graph.inputs.files.find(f => f.path === "build.gradle"))).toBe(digest(base));
+    expect(graph.inputs.files.every(f => "absent" in f || f.sha256.length === 64)).toBe(true);
+    // Missing candidates are recorded so that creating one later marks the export stale.
+    expect(graph.inputs.files).toContainEqual({ path: "build.gradle.kts", absent: true });
     expect(graph.contexts.every(c => c.complete)).toBe(true);
     const context = graph.contexts.find(c => c.configuration === "runtimeClasspath")!;
     const analysis = analyzeGradleContext(context, parseGradleLock(lock));
@@ -121,7 +124,7 @@ dependencies { implementation("review:parent:1") }
     } else {
       expect(result.code, result.output).toBe(0);
       const graph = parseGradleGraph(await readFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), "utf8"));
-      expect(graph.inputs.files.find(f => f.path === "build.gradle.kts")?.sha256).toBe(digest(kotlin));
+      expect(hashOf(graph.inputs.files.find(f => f.path === "build.gradle.kts"))).toBe(digest(kotlin));
       expect(graph.contexts.every(c => c.complete)).toBe(true);
     }
   }, 90_000);

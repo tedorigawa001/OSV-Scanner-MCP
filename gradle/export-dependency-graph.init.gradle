@@ -74,8 +74,9 @@ gradle.projectsEvaluated {
                 }
             }
             if (lockRecords.isEmpty()) throw new GradleException('Generate gradle.lockfile before exporting; the exporter does not write locks')
-            def inputRecords = inputStates.findAll { file, initialHash -> initialHash != null }.collect { file, initialHash ->
-                [path: relative(file), sha256: initialHash]
+            // Absent candidates are recorded too, so a file created after the export marks it stale.
+            def inputRecords = inputStates.collect { file, initialHash ->
+                initialHash != null ? [path: relative(file), sha256: initialHash] : [path: relative(file), absent: true]
             }
             def requestedSelector = { selector ->
                 if (selector instanceof ModuleComponentSelector) return [kind: 'module', group: selector.group, name: selector.module, selector: selector.version]

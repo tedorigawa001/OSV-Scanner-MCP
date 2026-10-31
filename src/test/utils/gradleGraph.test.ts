@@ -84,3 +84,27 @@ it("keeps verified scope gaps when relationship traversal exhausts its budget", 
   expect(result.coverageReasons).toContain("unresolved_dependencies");
   expect(result.reasons).toContain("relationship_budget_exceeded"); expect(result.lookup).toBeNull();
 });
+it("never treats origins as complete for modules reached through a project dependency", () => {
+  const withLib = (libEdges: [string, string][], keepModuleEdge = true) => {
+    const doc = graphFixture(), c = doc.contexts[0]!;
+    if (!keepModuleEdge) c.edges.pop();
+    doc.projects.push({ id: "main::lib", buildId: "main", projectPath: ":lib", directory: "lib", ownerBuildFile: "lib/build.gradle" });
+    c.components.push({ id: "lib", kind: "project", projectId: "main::lib" });
+    c.variants.push({ id: "lib-v", componentId: "lib" });
+    c.edges.push({ fromVariant: "root-v", selectedVariant: "lib-v", constraint: false, requested: { kind: "project", projectPath: ":lib" } as never });
+    for (const [from, to] of libEdges) c.edges.push({ fromVariant: from, selectedVariant: to, constraint: false, requested: { kind: "module", group: "g", name: "b", selector: "2" } });
+    return analyzeGradleContext(parseGradleGraph(JSON.stringify(doc)).contexts[0]!, parseGradleLock("g:a:1=runtimeClasspath\ng:b:2=runtimeClasspath\n"));
+  };
+  // a -> b and :lib -> b: g:a alone would be a partial origin list.
+  const shared = withLib([["lib-v", "b-v"]]);
+  expect(shared.lookup!("g:b", "2")).toMatchObject({ relation: "transitive", introducedByComplete: false });
+  expect(combineRelations([shared.lookup!("g:b", "2")]).introducedBy).toEqual([]);
+  // Only :lib -> b: transitive without any module origin, so the empty list is not complete either.
+  const only = withLib([["lib-v", "b-v"]], false);
+  expect(only.lookup!("g:b", "2")).toMatchObject({ relation: "transitive", introducedByComplete: false });
+  expect(only.lookup!("g:b", "2").introducedBy).toBeUndefined();
+  expect(only.lookup!("g:a", "1")).toMatchObject({ relation: "direct", introducedByComplete: true });
+  // A module not on any project path keeps its complete origin list.
+  const unaffected = withLib([]);
+  expect(unaffected.lookup!("g:b", "2")).toMatchObject({ relation: "transitive", introducedBy: new Set(["g:a"]), introducedByComplete: true });
+});

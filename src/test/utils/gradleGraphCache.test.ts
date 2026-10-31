@@ -47,3 +47,14 @@ it("retains a valid context's scope gap when another context has an invalid proj
   expect(result.metadata.reasons).toContain("invalid_context_mapping");
   expect(result.coverageReasons).toContain("graph_modules_missing_from_lock");
 });
+it("treats creation of an input recorded as absent as stale metadata", async () => {
+  const dir = await fixture(); const graph: any = await metadata(dir);
+  graph.inputs.files.push({ path: "build.gradle.kts", absent: true });
+  await writeFile(path.join(dir, GRADLE_COMPANION), JSON.stringify(graph));
+  const fresh = await new GradleGraphCache(dir).capture(path.join(dir, "gradle.lockfile"), bytes);
+  expect(fresh.metadata.status).toBe("complete");
+  await writeFile(path.join(dir, "build.gradle.kts"), "dependencies {}\n");
+  const stale = await new GradleGraphCache(dir).capture(path.join(dir, "gradle.lockfile"), bytes);
+  expect(stale.metadata.reasons).toContain("stale_input_hash");
+  expect(stale.lookup!("g:b", "2").relation).toBe("unknown");
+});

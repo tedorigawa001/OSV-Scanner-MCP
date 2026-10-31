@@ -1439,6 +1439,12 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - direct/transitive・introduced_byは実依存辺から取得し、BOM/lockのconstraint辺を由来にしない。物理宣言元は標準APIだけでは確定できないため、ownerBuildFileをdeclared_inに代用せず、明示的source-mapのある宣言から対応する。
 - Stage A/Bを実装: 明示実行のexporter、捕捉lock/inputのhash照合、variant別の関係解析、由来の完全性伝播、coverage診断、3ツールへの共通取込、Gradle向け修正案内。古い／不正なJSONだけではcoverageを下げない。物理宣言元source-map等のStage Cは未実装。実exportとOSV接続の結果は[検証記録](GRADLE_LIVE_VALIDATION.md)を参照。
 
+## Gradle Stage Bのレビュー修正(2026-10-31)
+
+- project依存経由の由来: 公開module起点だけから由来を集めるため、root→:lib→bの経路が欠けたまま`introducedByComplete: true`となっていた(a→bと:lib→bでintroduced_by=["g:a"]、:lib→bだけでも完全な空集合)。rootのproject依存から到達するmoduleは由来を不完全とする。単体・3ツールの回帰テストを追加。
+- 未存在の入力: exporterは評価前に存在しなかった候補を内部で保持していたが、JSONへは存在するファイルだけを出力していたため、後から作成されたbuild fileでstaleにならなかった。`inputs.files`に`{ path, absent: true }`を追加し、取込時に存在すればstale_input_hashとする。実Gradle 8.11.1・9.2.1の回帰(各9件)でabsent記録を確認。
+- バックログ: 由来の探索は直接起点ごとのBFSで、作業量が起点数×グラフ規模になる。予算はscan全体で200万を共有するため、合成グラフの計測では1 contextあたり 40起点/150 module: 9,664、100起点/600 module: 225,777、200起点/1,200 module: 781,807操作を使い、大きめのcontextが3つでrelationship_budget_exceededとなる(安全側でunknown)。文書ごとにグラフ規模比例の予算とするか、SCC縮約後の起点集合の伝播で探索を共有する。
+
 ## バックログ(2026-10-07)
 
 着手順: B1(v0.3.3) → B2の設計メモ作成 → B2の段階実装。

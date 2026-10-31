@@ -111,3 +111,20 @@ it("uses the captured lock and metadata even if originals change during the scan
   expect(p.packages.find((v: any) => v.name === "g:b")).toMatchObject({ dependency_relation: "transitive", introduced_by: ["g:a"] });
   expect(p.coverage.complete).toBe(true);
 });
+
+it("omits a partial origin when a project dependency also reaches the module in all three tools", async () => {
+  const graph = await fixture(), c = graph.contexts[0]!;
+  graph.projects.push({ id: "main::lib", buildId: "main", projectPath: ":lib", directory: "lib", ownerBuildFile: "lib/build.gradle" });
+  c.components.push({ id: "lib", kind: "project", projectId: "main::lib" });
+  c.variants.push({ id: "lib-v", componentId: "lib" });
+  c.edges.push({ fromVariant: "root-v", selectedVariant: "lib-v", constraint: false, requested: { kind: "project", projectPath: ":lib" } as never },
+    { fromVariant: "lib-v", selectedVariant: "b-v", constraint: false, requested: { kind: "module", group: "g", name: "b", selector: "2" } });
+  await writeFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify(graph));
+  for (const handler of [handleScanProject, handleScanJavaProject, handleSuggestFix]) {
+    const payload = JSON.parse((await handler({ project_path: dir }, { candidateCheck: "disabled" })).content[0]!.text);
+    const b = (payload.packages ?? payload.suggestions).find((p: any) => (p.name ?? p.package) === "g:b");
+    expect(b.dependency_relation).toBe("transitive");
+    expect(b.introduced_by).toBeUndefined();
+    if (payload.suggestions) expect(b.update_hint).not.toContain("g:a");
+  }
+});
