@@ -174,3 +174,35 @@ it("caches captured Pipenv input and respects the read budget", async () => {
   expect(await cache.get(file, dir, [`${member}/pyproject.toml`])).toBe(captured);
   expect(await cache.get(path.join(dir, "other/pipenv.lock"), dir, [])).toHaveProperty("reason");
 });
+it.each([
+  ["several possible origins", { "pipfile-spec": 6 }, "transitive"],
+  ["an unreadable lock", { "pipfile-spec": 99 }, "mixed"],
+] as const)("omits a partial introduced_by across lockfiles when another has %s in both tools", async (_label, meta, relation) => {
+  dir = await realpath(await mkdtemp(path.join(os.tmpdir(), "osv-pipenv-")));
+  const v = (version: string) => ({ version: `==${version}` });
+  const write = async (order: readonly string[]) => {
+    const locks: Record<string, unknown> = {
+      ".": { _meta: { "pipfile-spec": 6 }, default: { requests: v("2.25.0"), leaf: v("1.0.0") }, develop: {} },
+      svc: { _meta: meta, default: { botocore: v("1.30.0"), httpx: v("0.27.0"), leaf: v("1.0.0") }, develop: {} },
+    };
+    await mkdir(path.join(dir, "svc"), { recursive: true });
+    await writeFile(path.join(dir, "Pipfile"), '[packages]\nrequests="*"\n');
+    await writeFile(path.join(dir, "svc", "Pipfile"), '[packages]\nbotocore="*"\nhttpx="*"\n');
+    for (const key of order) await writeFile(path.join(dir, key, "Pipfile.lock"), JSON.stringify(locks[key]));
+  };
+  vi.mocked(runOsvScan).mockImplementation(async targets => parseOsvScanOutput({ results: targets.map(target => ({ source: { path: target.path, type: "lockfile" }, packages: [{
+    package: { name: "leaf", version: "1.0.0", ecosystem: "PyPI" }, groups: [{ ids: ["GHSA-leaf"], aliases: [] }],
+    vulnerabilities: [{ id: "GHSA-leaf", affected: [{ package: { name: "leaf", ecosystem: "PyPI" }, ranges: [{ type: "ECOSYSTEM", events: [{ introduced: "0" }, { fixed: "1.0.1" }] }] }] }],
+  }] })) }));
+  for (const order of [[".", "svc"], ["svc", "."]]) {
+    await write(order);
+    for (const result of [await handleScanProject({ project_path: dir }), await handleSuggestFix({ project_path: dir }, { candidateCheck: "disabled" })]) {
+      const payload = JSON.parse(result.content[0]!.text);
+      const leaf = (payload.packages ?? payload.suggestions)[0];
+      expect(leaf.dependency_relation).toBe(relation);
+      expect(leaf.introduced_by).toBeUndefined();
+      expect(leaf.introduced_by_omitted).toBeUndefined();
+      if (payload.suggestions) expect(leaf.update_hint ?? "").not.toContain("requests");
+    }
+  }
+});

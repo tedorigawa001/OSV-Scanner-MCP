@@ -217,6 +217,17 @@ describe("combineRelations", () => {
     ]);
     expect(merged).toEqual({ relation: "transitive", introducedBy: ["a", "b", "c"], declaredIn: [], replaced: true });
   });
+  it("由来を示せないファイルがあれば経由の一部だけを返さない(入力順によらない)", () => {
+    const known = { relation: "transitive" as const, introducedBy: new Set(["requests"]) };
+    for (const other of [{ relation: "transitive" as const }, { relation: "unknown" as const }, { relation: "transitive" as const, introducedBy: new Set<string>() }]) {
+      expect(combineRelations([known, other]).introducedBy).toEqual([]);
+      expect(combineRelations([other, known]).introducedBy).toEqual([]);
+    }
+    expect(combineRelations([known, { relation: "unknown" }]).relation).toBe("mixed");
+    // 直接依存の由来なしは「推移的でない」ことで、欠けではない
+    const direct = combineRelations([{ relation: "direct", declaredIn: new Set(["Pipfile"]) }, known]);
+    expect(direct).toMatchObject({ relation: "mixed", introducedBy: ["requests"], declaredIn: ["Pipfile"] });
+  });
 });
 
 describe("pomRelations", () => {

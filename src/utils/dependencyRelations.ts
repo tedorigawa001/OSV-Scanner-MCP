@@ -396,7 +396,10 @@ export function requirementsRelations(entries: readonly string[]): RelationLooku
   return (name) => ({ relation: direct.has(normalizePypi(name)) ? "direct" : "transitive" });
 }
 
-/** 複数のファイルでの判定をまとめる。ファイルごとの関係がすべて同じならその値、異なればmixed */
+/**
+ * 複数のファイルでの判定をまとめる。ファイルごとの関係がすべて同じならその値、異なればmixed。
+ * 直接依存以外で由来を示せないファイルが1つでもあれば、和集合は由来の一部だけになるため導入元を出さない
+ */
 export function combineRelations(infos: readonly RelationInfo[]): {
   relation: DependencyRelation;
   introducedBy: string[];
@@ -411,5 +414,6 @@ export function combineRelations(infos: readonly RelationInfo[]): {
     for (const name of info.introducedBy ?? []) introducedBy.add(name);
     for (const manifest of info.declaredIn ?? []) declaredIn.add(manifest);
   }
-  return { relation, introducedBy: [...introducedBy].sort(), declaredIn: [...declaredIn].sort(), replaced: infos.some((info) => info.replaced) };
+  const partial = infos.some((info) => info.relation !== "direct" && !info.introducedBy?.size);
+  return { relation, introducedBy: partial ? [] : [...introducedBy].sort(), declaredIn: [...declaredIn].sort(), replaced: infos.some((info) => info.replaced) };
 }

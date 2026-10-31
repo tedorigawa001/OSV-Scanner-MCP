@@ -1427,6 +1427,12 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 
 - Pipenv introduced_byのレビュー修正(2026-10-31): 同じ名前・版の結果をカテゴリ間で併合する際、根が一意のカテゴリの由来だけが残り、別カテゴリ(根が複数・宣言が不完全)の未確定の由来が欠けたまま一意に見えた(default: requests由来、develop: pytest/botocoreの2根でintroduced_by=[requests]、suggest_fixのhintもrequestsの更新を案内)。宣言せずに収録するカテゴリのいずれかで由来を一意に決められなければintroduced_byを出さない。全カテゴリで同じ一意の根なら保持、直接依存との重なり(直接+一意の由来)は従来どおり。両ツールに回帰テストを追加。
 
+## ファイル間のintroduced_byの併合(2026-10-31)
+
+- 同じ名前・版のパッケージを複数のlockfileで検出した場合、`combineRelations`が各ファイルのintroducedByの和集合をとり、由来を示せないファイル(推移的で由来未確定・解析不能のunknown)の欠けが失われていた。例: root Pipfile.lockはrequests由来、svc/Pipfile.lockは2根で由来未確定でも`introduced_by: ["requests"]`。片方が読めない(unknown)場合も`mixed`で同じ一覧。
+- 直接依存以外で由来を示せないファイルが1つでもあればintroduced_by(・omitted)を出さない。直接依存の由来なしは欠けとしない。dependency_relation(mixed含む)は従来どおり。npm系・Python lockfile全般に適用され、由来を出さないpom.xml・go.mod単独の出力は変わらない。両ツールに入力順を入れ替えた回帰テストを追加。
+- 未対応(要検討): declared_inも和集合のため、宣言元を示せない直接依存のファイルとの併合で一部だけになり得る。更新案内の宣言ファイル表示に影響するため別途、形式ごとに「直接依存で宣言元なし」の意味(既定ファイル・不明)を整理して対応する。Gradle設計の完全性フラグ(§6.5)と合わせて検討。
+
 ## Gradle依存関係対応の実装方式設計(2026-10-31)
 
 - [詳細設計](GRADLE_DEPENDENCY_RELATIONS.md): 信頼済み環境でResolutionResultをcontext/variant別JSONへ事前exportし、MCPは捕捉lockとhash・収録内容を照合して静的取込する。MCPからGradle/Wrapperを実行しない。
