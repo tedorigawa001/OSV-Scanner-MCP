@@ -1,0 +1,51 @@
+// Test-only feasibility probe. Never used by MCP or shipped as an exporter.
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+import org.gradle.api.artifacts.ModuleDependency
+import org.gradle.api.artifacts.component.ModuleComponentSelector
+
+gradle.beforeProject { project ->
+    def additions = [:].withDefault { 0 }
+    project.configurations.configureEach { configuration ->
+        if (project.findProperty('probeObserve') != 'false') configuration.dependencies.whenObjectAdded { dependency ->
+            additions[configuration.name] = additions[configuration.name] + 1
+        }
+    }
+    project.tasks.register('osvMcpProbeDeclarations') {
+        doLast {
+            def configuration = project.configurations.getByName('sample')
+            def resolution = configuration.incoming.resolutionResult
+            def root = resolution.rootComponent.get()
+            def edges = root.getDependenciesForVariant(resolution.rootVariant.get())
+                .findAll { it instanceof ResolvedDependencyResult && !it.constraint }
+            def realizedBefore = project.probeProviderRealized
+            def resolveObserved = { String name ->
+                def cfg = project.configurations.getByName(name)
+                def callbacksBefore = additions[name]
+                def rr = cfg.incoming.resolutionResult
+                def resolved = rr.rootComponent.get().getDependenciesForVariant(rr.rootVariant.get())
+                    .findAll { it instanceof ResolvedDependencyResult && !it.constraint }
+                [callbacksBefore: callbacksBefore, callbacksAfter: additions[name], edges: resolved.size()]
+            }
+            def lazy = resolveObserved('lazySample')
+            def defaults = resolveObserved('defaultSample')
+            def result = [
+                providerRealizedBefore: realizedBefore,
+                providerRealizedAfter: project.probeProviderRealized,
+                lazy: lazy, defaults: defaults,
+                copyCoordinatesEqual: [project.probeFirst.group, project.probeFirst.name, project.probeFirst.version] == [project.probeCopy.group, project.probeCopy.name, project.probeCopy.version],
+                copySameInstance: project.probeFirst.is(project.probeCopy),
+                mutation: [callbacks: additions['mutableSample'], version: project.configurations.mutableSample.dependencies.first().version],
+                selectorMethods: ModuleComponentSelector.methods.collect { it.name }.unique().sort(),
+                dependencyMethods: ModuleDependency.methods.collect { it.name }.unique().sort(),
+                gradleVersion: gradle.gradleVersion,
+                equalDeclarations: project.probeFirst == project.probeSecond,
+                sameInstance: project.probeFirst.is(project.probeSecond),
+                dependencies: configuration.dependencies.size(),
+                additionCallbacks: additions['sample'],
+                rootEdges: edges.size()
+            ]
+            new File(project.projectDir, 'declaration-probe.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(result)) + '\n'
+        }
+    }
+}
