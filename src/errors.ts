@@ -4,7 +4,6 @@
  */
 
 export type ScanToolErrorKind =
-  | "invalid_configuration"
   /** OSV-Scannerバイナリが見つからない(方式C: インストール案内を返す) */
   | "binary_not_found"
   /** 指定パスが存在しない・ディレクトリ/pom.xmlでない */

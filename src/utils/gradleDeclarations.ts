@@ -1,16 +1,23 @@
 import { z } from "zod";
-import { ScanToolError } from "../errors.js";
 import { parseGradleJson } from "./gradleJson.js";
 import type { GradleContext, GradleGraph, GradleBudget } from "./gradleGraph.js";
 export const DECLARATION_CONTRACT = "osv-mcp-gradle-declarations.json";
 export const DECLARATION_MODEL = "registered-helper-v1";
 export type DeclarationTrust = typeof DECLARATION_MODEL | undefined;
-export function declarationTrustFromEnv(): DeclarationTrust {
-  const value = process.env.OSV_MCP_GRADLE_DECLARATION_TRUST;
-  if (value === undefined || value === "") return undefined;
-  if (value !== DECLARATION_MODEL) throw new ScanToolError("invalid_configuration", "OSV_MCP_GRADLE_DECLARATION_TRUST must be registered-helper-v1 or unset");
-  return value;
+export const DECLARATION_TRUST_ENV = "OSV_MCP_GRADLE_DECLARATION_TRUST";
+/** invalid: an unknown value, treated as disabled (fail closed) instead of stopping the server. */
+export interface DeclarationTrustConfig { trust: DeclarationTrust; invalid: boolean }
+export function parseDeclarationTrust(value: string | undefined): DeclarationTrustConfig {
+  if (value === undefined || value === "") return { trust: undefined, invalid: false };
+  return value === DECLARATION_MODEL ? { trust: value, invalid: false } : { trust: undefined, invalid: true };
 }
+let startupTrust: DeclarationTrustConfig | undefined;
+/** Read once (at server startup) and fixed for the process; later environment changes are ignored. */
+export function startupDeclarationTrust(): DeclarationTrustConfig {
+  return startupTrust ??= parseDeclarationTrust(process.env[DECLARATION_TRUST_ENV]);
+}
+/** Tests only: forget the snapshot so that the next read sees a stubbed environment. */
+export function resetDeclarationTrustForTests(): void { startupTrust = undefined; }
 const id = z.string().min(1).max(1024), str = z.string().max(4096), hash = z.string().regex(/^[a-f0-9]{64}$/);
 export const declarationPath = z.string().min(1).max(4096).refine(s => !/[\\:\x00-\x1f\x7f]/.test(s) && s.split("/").every(p => p !== "" && p !== "." && p !== ".."));
 const reason = z.string().min(1).max(128), reasons = z.array(reason).max(128);

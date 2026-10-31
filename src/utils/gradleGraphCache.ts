@@ -4,7 +4,7 @@ import path from "node:path";
 import { readRegularFile } from "./safeRead.js";
 import { isInsideDir } from "./projectWalk.js";
 import { analyzeGradleContext, createGradleBudget, gradleKey, parseGradleGraph, parseGradleLock, UnsupportedGradleSchemaVersion, type GradleGraph, type GradleBudget } from "./gradleGraph.js";
-import { analyzeDeclarations, catalogVerified, DECLARATION_CONTRACT, DECLARATION_MODEL, declarationTrustFromEnv, knownDeclarations, parseDeclarationContract, type DeclarationTrust } from "./gradleDeclarations.js";
+import { analyzeDeclarations, catalogVerified, DECLARATION_CONTRACT, DECLARATION_MODEL, startupDeclarationTrust, knownDeclarations, parseDeclarationContract, type DeclarationTrust, type DeclarationTrustConfig } from "./gradleDeclarations.js";
 import type { RelationInfo, RelationLookup } from "./dependencyRelations.js";
 
 export const GRADLE_COMPANION = "osv-mcp-gradle-dependencies.json";
@@ -32,7 +32,12 @@ export class GradleGraphCache {
   private remaining = 64 * 1024 * 1024;
   private lockRemaining = 64 * 1024 * 1024;
   private inputRemaining = 64 * 1024 * 1024;
-  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), private readonly trust: DeclarationTrust = declarationTrustFromEnv(), private readonly declarationBudget: GradleBudget = createGradleBudget()) {}
+  private readonly trust: DeclarationTrust;
+  private readonly trustInvalid: boolean;
+  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), trustSetting: DeclarationTrust | DeclarationTrustConfig = startupDeclarationTrust(), private readonly declarationBudget: GradleBudget = createGradleBudget()) {
+    const setting = typeof trustSetting === "object" ? trustSetting : { trust: trustSetting, invalid: false };
+    this.trust = setting.trust; this.trustInvalid = setting.invalid;
+  }
 
   private document(file: string) {
     let pending = this.documents.get(file);
@@ -70,13 +75,15 @@ export class GradleGraphCache {
     if (read.ok) return this.capture(lockPath, read.bytes);
     return { lookup: unknown, coverageReasons: [], metadata: {
       path: sanitizeExternalText(path.relative(this.boundary, lockPath)), metadata_paths: [], status: "unavailable",
-      relations_complete: false, declarations_complete: false, contexts: [], reasons: [`captured_lock_${read.failure}`],
+      relations_complete: false, declarations_complete: false, contexts: [], reasons: [`captured_lock_${read.failure}`, ...(this.trustInvalid ? ["declaration_trust_config_invalid"] : [])],
     } };
   }
   async capture(lockPath: string, lockBytes: Buffer): Promise<GradleCaptureResult> {
     const metadata: GradleMetadata = { path: sanitizeExternalText(path.relative(this.boundary, lockPath)), metadata_paths: [], status: "unavailable",
       relations_complete: false, declarations_complete: false, contexts: [], reasons: [] };
     const result: GradleCaptureResult = { lookup: unknown, metadata, coverageReasons: [] };
+    // A mistyped trust setting is reported on every Gradle lock, even when no declaration map is present.
+    if (this.trustInvalid) metadata.reasons.push("declaration_trust_config_invalid");
     if (lockBytes.length > Math.min(16 * 1024 * 1024, this.lockRemaining)) { metadata.reasons.push("captured_lock_size_limit"); return result; }
     this.lockRemaining -= lockBytes.length;
     if (path.basename(lockPath) !== "gradle.lockfile") { metadata.reasons.push("buildscript_not_supported"); return result; }
@@ -141,7 +148,7 @@ export class GradleGraphCache {
         result.coverageReasons.push(...analysis.coverageReasons);
         const d = knownDeclarations(c);
         if (!d) metadata.reasons.push("declarations" in c ? "unsupported_declaration_adapter" : "declaration_source_map_unavailable");
-        else if (!this.trust) metadata.reasons.push("declaration_trust_disabled");
+        else if (!this.trust) metadata.reasons.push(this.trustInvalid ? "declaration_trust_config_invalid" : "declaration_trust_disabled");
         else if (analysis.lookup && !analysis.reasons.length) {
           try {
             const contractPath = path.resolve(candidate.root, DECLARATION_CONTRACT);

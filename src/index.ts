@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { declarationTrustFromEnv } from "./utils/gradleDeclarations.js";
+import { DECLARATION_TRUST_ENV, startupDeclarationTrust } from "./utils/gradleDeclarations.js";
 /**
  * OSV-Scanner-MCP: Google OSV-ScannerをラップするMCPサーバー(stdioトランスポート)。
  *
@@ -46,7 +46,10 @@ import {
 export { ALLOWED_ROOT_ENV };
 
 // Declaration provenance is an explicit consumer policy, never a graph-file instruction.
-try { declarationTrustFromEnv(); } catch (error) { console.error(`osv-scanner-mcp: ${(error as Error).message}`); process.exit(1); }
+// Read once here. An unknown value keeps every scanning tool available and only disables Gradle declaration sources.
+if (startupDeclarationTrust().invalid) {
+  console.error(`osv-scanner-mcp: [warning] ${DECLARATION_TRUST_ENV} must be registered-helper-v1 or unset; Gradle declaration sources are disabled`);
+}
 // fail-closed: 運用モードで許可ルートが未設定なら、ツールを一切公開せず終了する
 const startupError = allowedRootStartupError();
 if (startupError !== null) {

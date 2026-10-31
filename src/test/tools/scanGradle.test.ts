@@ -11,9 +11,10 @@ import { sha256 } from "../../utils/gradleGraphCache.js";
 import { syntheticGradleGraph, syntheticGradleTrees } from "../fixtures/gradleSyntheticGraph.js";
 import { declarationFixture, mixedTrustFixture } from "../fixtures/gradleDeclarationsFixture.js";
 import { graphFixture } from "../fixtures/gradleGraphFixture.js";
+import { resetDeclarationTrustForTests } from "../../utils/gradleDeclarations.js";
 vi.mock("../../osv/runner.js", async original => ({ ...await original<object>(), runOsvScan: vi.fn() }));
 let dir: string;
-afterEach(async () => { if (dir) await rm(dir, { recursive: true, force: true }); vi.resetAllMocks(); vi.unstubAllEnvs(); });
+afterEach(async () => { if (dir) await rm(dir, { recursive: true, force: true }); vi.resetAllMocks(); vi.unstubAllEnvs(); resetDeclarationTrustForTests(); });
 const lock = "g:a:1=runtimeClasspath\ng:b:2=runtimeClasspath\n";
 async function fixture() {
   dir = await mkdtemp(path.join(os.tmpdir(), "osv-gradle-test-"));
@@ -274,5 +275,33 @@ it.each([false,true])("all tools keep context trust and adopted paths stable acr
       results.push({declaredIn:pkg.declared_in,provenance:metadata.declaration_provenance});
     }
     expect(results[0]).toEqual(results[1]);
+  }
+});
+
+it("an unknown trust setting disables only declaration sources and is reported in all three tools", async () => {
+  await registeredFixture(); vi.stubEnv("OSV_MCP_GRADLE_DECLARATION_TRUST", "registered-helper-V1");
+  for (const handler of [handleScanProject, handleScanJavaProject, handleSuggestFix]) {
+    const result = await handler({ project_path: dir }, { candidateCheck: "disabled" });
+    expect(result.isError).toBeUndefined();
+    const payload = JSON.parse(result.content[0]!.text);
+    expect(payload.coverage.complete).toBe(true);
+    const packages = payload.packages ?? payload.suggestions;
+    const a = packages.find((p: any) => (p.name ?? p.package) === "g:a"), b = packages.find((p: any) => (p.name ?? p.package) === "g:b");
+    expect(a).toMatchObject({ dependency_relation: "direct" }); expect(a.declared_in).toBeUndefined();
+    expect(b).toMatchObject({ dependency_relation: "transitive", introduced_by: ["g:a"] });
+    const metadata = payload.coverage.dependency_metadata.gradle[0];
+    expect(metadata.reasons).toContain("declaration_trust_config_invalid");
+    expect(metadata.declaration_provenance.trust_status).toBe("disabled");
+    expect(metadata.declarations_complete).toBe(false);
+  }
+});
+it("reads the trust setting once; later environment changes are ignored", async () => {
+  await registeredFixture(); vi.stubEnv("OSV_MCP_GRADLE_DECLARATION_TRUST", "registered-helper-v1");
+  const first = JSON.parse((await handleScanProject({ project_path: dir })).content[0]!.text);
+  expect(first.packages.find((p: any) => p.name === "g:a").declared_in).toEqual(["build.gradle"]);
+  for (const value of ["", "invalid"]) {
+    vi.stubEnv("OSV_MCP_GRADLE_DECLARATION_TRUST", value);
+    const later = JSON.parse((await handleScanProject({ project_path: dir })).content[0]!.text);
+    expect(later.packages.find((p: any) => p.name === "g:a").declared_in).toEqual(["build.gradle"]);
   }
 });
