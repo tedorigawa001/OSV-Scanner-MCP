@@ -1,0 +1,138 @@
+// Test-only producer-applied helper. No init script provisions or finalizes inputs.
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import org.gradle.api.tasks.PathSensitivity
+
+def sha={ File f -> MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex().toString() }
+def root=rootProject.projectDir.parentFile
+boolean observe=System.getProperty('osv.owned.observe')=='true'
+boolean preGateRead=System.getProperty('osv.owned.preGateRead')=='true'
+def sessions=[]
+def modes=['ready','not-evaluated','evaluating','failed','kgp-unsupported']
+// Invoked explicitly from the producer build source, equally in both runs.
+ext.installOwnedProof={ ->
+ def workTasks=[]
+ modes.eachWithIndex { mode,index ->
+  def s=[mode:mode,sealed:false,phase:'registration',events:[],handles:[],attachments:0,getterCalls:0,kgpGetterCalls:0,readFiles:[],decision:null,attempts:[]]
+  def audit={ String event -> s.events.add([event:event,phase:s.phase]) }
+  def work=tasks.register('ownedWork'+index)
+  def unused=tasks.register('ownedUnused'+index)
+  // All adapter-owned reads (normal Action, capture and fault) use this path.
+  def readOwned={ h ->
+   if(s.phase=='observer'){s.getterCalls++;audit('getter:'+h.id)}
+   else audit('natural-getter:'+h.id)
+   h.files.files
+  }
+  def readKgp={ String id,Closure getter -> s.kgpGetterCalls++;audit('kgp-getter:'+id);getter.call() }
+  def capture
+  def kgpReaders=[]
+  capture={ ->
+   def old=s.phase;s.phase='observer'
+   try {
+    if(s.decision!=null)return
+    if(preGateRead&&mode=='not-evaluated')readOwned(s.handles.find{it.id=='main'})
+    audit('capture:gate')
+    def snapshot=s.handles.collect{[id:it.id,state:it.state]}
+    String reason=null
+    if(!s.sealed)reason='owned_input_registration_incomplete'
+    else if(mode=='kgp-unsupported')reason='recipe_unsupported'
+    else {
+     def bad=s.handles.find{it.state!='ready'}
+     if(bad)reason=bad.state=='evaluating'?'owned_input_evaluation_in_progress':bad.state=='failed'?'owned_input_evaluation_failed':'owned_input_not_evaluated'
+    }
+    s.attempts.add([states:snapshot,reason:reason])
+    if(reason!=null){s.decision=[accepted:false,reason:reason];return}
+    // Global readiness has already been checked; no earlier slot is probed.
+    s.handles.each { h ->
+     readOwned(h).each { File f -> s.readFiles.add([handle:h.id,name:f.name,size:f.length(),sha256:sha(f)]) }
+    }
+    if(mode=='kgp-unsupported')kgpReaders.each{it.call()}
+    s.decision=[accepted:true,reason:null]
+   }finally{s.phase=old}
+  }
+  // createOwnedFiles owns the provider and collection from their creation.
+  def createOwnedFiles={ String id,Closure supplier ->
+   if(s.sealed||s.handles.any{it.id==id})throw new IllegalStateException('owned_input_registration_invalid')
+   audit('registration:begin:'+id)
+   def h=[id:id,state:'not-evaluated',calls:0]
+   def values=providers.provider {
+    audit('supplier:'+id);h.calls++
+    if(!s.sealed||h.state!='not-evaluated')throw new IllegalStateException('owned_input_lifecycle_invalid')
+    h.state='evaluating';audit('start:'+id)
+    try {
+     def supplied=supplier.call()
+     if(!(supplied instanceof ArrayList)||supplied.size()>16)throw new IllegalArgumentException('source_kind_mismatch')
+     def copy=new ArrayList<File>()
+     supplied.each { f ->
+      if(!(f instanceof File)||!f.absolute||!f.isFile()||java.nio.file.Files.isSymbolicLink(f.toPath())||!f.canonicalFile.toPath().startsWith(projectDir.canonicalFile.toPath()))throw new IllegalArgumentException('source_kind_mismatch')
+      copy.add(new File(f.absolutePath))
+     }
+     h.state='ready';audit('ready:'+id)
+     Collections.unmodifiableList(copy)
+    }catch(Throwable failure){h.state='failed';audit('failed:'+id);throw failure}
+   }
+   h.files=objects.fileCollection().from(values)
+   h.files.finalizeValueOnRead()
+   s.handles.add(h);audit('registration:end:'+id)
+   h
+  }
+  def concrete={ -> new ArrayList<File>([file('owned/a.txt').absoluteFile,file('owned/b.txt').absoluteFile]) }
+  def main=createOwnedFiles('main',concrete)
+  def auxiliary=createOwnedFiles('auxiliary',{
+   if(mode=='evaluating'&&observe)capture.call()
+   if(mode=='failed')throw new IllegalStateException('intentional-owned-supplier-failure')
+   concrete.call()
+  })
+  // attach uses actual TaskProviders; no get()/realization is needed here.
+  def attached=[]
+  def attach={ h,owner,String slot ->
+   if(s.sealed||!s.handles.any{it.is(h)}||attached.any{it.slot==slot})throw new IllegalStateException('owned_input_attachment_invalid')
+   owner.configure { t -> t.inputs.files(h.files).withPropertyName(slot).withPathSensitivity(PathSensitivity.NONE) }
+   attached.add([handle:h.id,task:owner.name,slot:slot]);s.attachments++
+  }
+  attach(main,work,'ownedMain')
+  def owner=mode in ['ready','kgp-unsupported']?work:unused
+  attach(auxiliary,owner,'ownedAuxiliary')
+  // Unsupported KGP recipe is represented by actual public getter closures.
+  // The gate must reject before invoking any one of them.
+  kgpReaders=[
+   {readKgp('libraries',{tasks.named('compileKotlin').get().libraries.files})},
+   {readKgp('snapshots',{tasks.named('compileKotlin').get().classpathSnapshotProperties.classpathSnapshot.files})},
+   {readKgp('compilerClasspath',{configurations.getByName('kotlinCompilerClasspath').files})},
+   {readKgp('taskInputs',{tasks.named('compileKotlin').get().inputs.files.files})}
+  ]
+  if(mode=='kgp-unsupported')s.kgpReaderCount=kgpReaders.size()
+  def sealInputs={ ->
+   if(s.sealed||s.handles*.id!=['main','auxiliary']||attached*.handle!=['main','auxiliary']||s.handles.any{it.state!='not-evaluated'})throw new IllegalStateException('owned_input_registration_incomplete')
+   s.sealed=true;audit('seal');s.phase='natural'
+  }
+  sealInputs.call()
+  work.configure { t ->
+   t.doLast {
+    audit('action:begin')
+    if(mode in ['evaluating','failed']){
+     try{readOwned(auxiliary)}catch(Exception expected){if(mode!='failed')throw expected}
+    }
+    audit('action:end')
+    if(observe)capture.call()
+   }
+  }
+  workTasks.add(work);sessions.add(s)
+ }
+ tasks.register('ownedProof') { t ->
+  t.dependsOn(workTasks)
+  t.doLast {
+   def baseline=new JsonSlurper().parse(new File(root,'owned-baseline.json'))
+   def hashes=baseline.inputs.collectEntries { name,value -> [(name):sha(new File(root,name))] }
+   def records=sessions.collect { s ->
+    [mode:s.mode,sealed:s.sealed,attachments:s.attachments,events:s.events,
+     handles:s.handles.collect{[id:it.id,state:it.state,calls:it.calls]},getterCalls:s.getterCalls,kgpGetterCalls:s.kgpGetterCalls,
+     kgpReaderCount:s.kgpReaderCount?:0,readFiles:s.readFiles,decision:s.decision,attempts:s.attempts]
+   }
+   new File(root,'owned-report.json').text=JsonOutput.toJson([schema:'osv-mcp.owned-input-run-v2',gradleVersion:gradle.gradleVersion,
+    runId:System.getProperty('osv.owned.runId'),observe:observe,preGateRead:preGateRead,fixtureInputsSha256:hashes,maxWorkers:gradle.startParameter.maxWorkerCount,
+    parallel:gradle.startParameter.parallelProjectExecutionEnabled,productionAdopted:false,kgpRecipeSupported:false,cases:records])
+  }
+ }
+}

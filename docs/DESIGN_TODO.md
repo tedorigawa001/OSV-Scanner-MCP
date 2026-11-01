@@ -1859,3 +1859,23 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - §9.18レビュー修正: handle単位のnot-evaluated／evaluating／ready／failedと、seal後の通常buildによる自然評価正常完了をcapture前提へ追加。全read planの準備をledgerだけで確認し、一つでも未準備なら全対象getterを呼ばずunavailable。失敗の回復・別handle／invocation成功による迂回を禁止。toolchainには独立した準備recipeを要求し、OI02／OI05／OI10へ対応条件を追加。設計のみでnative未実施・採用0件は維持。
 
 - 061ed46レビュー修正（§9.18.7）: 早期評価は記録のみでbuildを失敗させずcapture unavailableに統一。helper所有collectionはsealで`disallowChanges()`を適用し、seal後変更を`owned_input_late_mutation`として変更箇所で失敗させる。toolchain／aggregateへのseal後変更は作者表明に依存。実行必須でないstageへの接続は`owned_input_stage_not_executed`で登録gateが拒否。OI04／OI05／OI06／OI10を更新。設計のみ。
+
+
+### 2026-11-01: producer所有helper・capture準備条件の公開API実証
+
+- [設計書§9.19](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#919-producer所有helpercapture準備条件の公開api実証2026-11-01)へtest-only helperと再現手順を追加。producer build sourceから適用scriptを呼び、両source hashを入力へ結ぶ。作成時固定化と実TaskProviderへの接続・sealを行い、非空2 fileを自然評価内で検査・copyする。
+- 未評価／評価中の再入／評価失敗後のcaptureは、全owned getterを呼ばず拒否。KGP未対応は全owned handleがreadyでもread前に拒否する。実KGP公開getterのclosureは評価せずcounter 0を確認する。
+- Groovy／Kotlinの同DSL consumer・producer組合せとGradle 8.11.1／9.2.1を対象とし、全交差・buildSrc／precompiledは未検証。OI02／OI05／OI10の準備条件部分に限定し、全observer・本番完全登録・追加信頼・静的取込は未達。本番採用0件を維持する。
+
+- 最終検証: native両版各10件成功、8 build・20条件対照（正常helper4、no-read拒否16）をvalidation/gradle-owned-inputs-2026-11-01.jsonへ保存。静的15件、通常全体1,944件成功／1,093件skip、typecheck・build成功。全pipeline候補0件・本番採用0件を維持。
+
+
+### 2026-11-01: producer所有helper実証レビュー2件の修正
+
+- [設計書§9.20](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#920-producer所有helperの読取計測必須event検証の修正2026-11-01)へ追記。owned／KGP readerを共通化し、getter eventとcounter・phase・gateとの順序を照合。実際にreadyなmainをgate前に読むnative負例を追加した。
+- 登録4境界・seal・Action開始／終了を全条件・全runで必須化。欠落対象を共有定義へ集約し、native／集約で同じ拒否対照を実行する。v2へ更新し、旧v1要約はpreReviewへ保持する。
+- 所有helper限定の実証とKGP unsupportedのno-read拒否を維持。全pipeline候補・本番採用0件の判断は変えない。
+
+- 再検証: native両版各14件成功、12 buildを保存。通常20条件対照に加え、gate前の実読取4負例と必須event欠落280対照をすべて拒否し集約で再検証。静的64件成功。本番採用0件を維持。
+
+最終確認: 通常全体1,993件成功・native opt-in等1,097件skip。型チェック・build・差分チェックも成功。今回の変更はtest-onlyの実証・検証器・記録で、本番採用0件を維持する。
