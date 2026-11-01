@@ -30239,5 +30239,77 @@
     "nativeBuilds": 24,
     "regularCases": 12,
     "note": "Initial v1 observations before compiler registration lifecycle and complete receipt validation fixes; not reused as v2 native evidence."
+  },
+  "postReviewRevision": {
+    "reviewedRevision": "2f232c9d091279a90bf0cf4e101b7a5485f942f7",
+    "sourcesChanged": false,
+    "changes": [
+      "The owned policy is injected by the test init script into build-logic for both control and observer; it is not declared in producer build source, so declaration-origin/source-hash binding is not modeled.",
+      "finalizeValueOnRead() on KGP KotlinCompile.libraries and classpathSnapshot is post-hoc finalization of existing collections, outside the proposed creation-time registration contract; the four owned conditional candidates carry this limitation.",
+      "Jar receipt archive.sha256 is compared only with observer-reported public output hashes, not with archive bytes read by the harness.",
+      "The 23 evidence-rejection targets are duplicated in the native test and consolidator; moving them to the shared verifier, together with harness archive hashing, is deferred to the next native re-capture because it changes observer source hashes.",
+      "Design document Jar source counts corrected per Gradle version."
+    ],
+    "rawControlObserverCounts": [
+      {
+        "gradleVersion": "8.11.1",
+        "consumerDSL": "Groovy",
+        "control": {
+          "libraries": 3,
+          "compilerClasspath": 2,
+          "jarSource": 4
+        },
+        "observer": {
+          "libraries": 4,
+          "compilerClasspath": 3,
+          "jarSource": 5
+        }
+      },
+      {
+        "gradleVersion": "8.11.1",
+        "consumerDSL": "Kotlin",
+        "control": {
+          "libraries": 3,
+          "compilerClasspath": 2,
+          "jarSource": 4
+        },
+        "observer": {
+          "libraries": 4,
+          "compilerClasspath": 3,
+          "jarSource": 5
+        }
+      },
+      {
+        "gradleVersion": "9.2.1",
+        "consumerDSL": "Groovy",
+        "control": {
+          "libraries": 3,
+          "compilerClasspath": 2,
+          "jarSource": 3
+        },
+        "observer": {
+          "libraries": 4,
+          "compilerClasspath": 3,
+          "jarSource": 4
+        }
+      },
+      {
+        "gradleVersion": "9.2.1",
+        "consumerDSL": "Kotlin",
+        "control": {
+          "libraries": 3,
+          "compilerClasspath": 2,
+          "jarSource": 3
+        },
+        "observer": {
+          "libraries": 4,
+          "compilerClasspath": 3,
+          "jarSource": 4
+        }
+      }
+    ],
+    "rerun": {
+      "native": "not rerun; main observations and source hashes unchanged"
+    }
   }
 }

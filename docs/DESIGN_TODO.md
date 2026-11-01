@@ -1839,3 +1839,11 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - ownedの条件付き候補4組と、本番採用0件・既存buildへの透過対応未成立の判断を維持。詳細は[設計書§9.16](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#916-producer固定化実証レビュー2件の修正再検証2026-11-01)。
 
 - 最終確認: 静的76件、通常全体1,929件成功・native opt-in等1,083件skip。型チェック・build成功。
+
+
+### 2026-11-01: 2f232c9レビュー修正
+
+- producer固定化の方針は試験用init scriptが注入しており、producer sourceにない。KGPのlibraries／snapshot collectionへの`finalizeValueOnRead()`は既存collectionへの事後固定化で、§9.15の作成時登録契約の範囲外。ownedの条件付き候補4組をこの制限付きとし、次は方針をproducer sourceへ置いてhashを結ぶ。
+- §9.15のJar source回数を版別に訂正した（8.11.1は4回→5回、9.2.1は3回→4回）。
+- archive hashはobserver報告値どうしの照合にとどまることを明記。ハーネス側のarchive hash記録と、欠落対照一覧の共有verifierへの移動は、次のnative再取得で行う。
+- Gradleは再実行せず、検証JSONに`postReviewRevision`を追記した。詳細は[設計書§9.17](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#917-2f232c9レビュー修正2026-11-01)。
