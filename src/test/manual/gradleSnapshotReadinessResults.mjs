@@ -7,6 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {snapshotSources,verifySnapshotReadinessCase,verifySnapshotReadinessFault,snapshotStateRegressions} from '../fixtures/gradleSnapshotReadinessProof.mjs';
 import {resolveGradleApiArtifact} from '../fixtures/gradleKgpAvailabilityProof.mjs';
 import {tokenizeRecordedPaths,assertNoAbsolutePaths} from './kgpRecordPaths.mjs';
+import {verifySnapshotFaultBinding,snapshotRunIds,snapshotRecordCounts} from './snapshotReadinessRecord.mjs';
 const repo=fileURLToPath(new URL('../../../',import.meta.url));
 const [prefix,output]=process.argv.slice(2),runtime=process.env.OSV_MCP_GRADLE_RUNTIME_ROOT,jdk=process.env.JAVA_HOME,cache=process.env.GRADLE_USER_HOME;
 if(!prefix||!output||!runtime||!jdk||!cache)throw Error('usage: JAVA_HOME=... GRADLE_USER_HOME=... OSV_MCP_GRADLE_RUNTIME_ROOT=... node gradleSnapshotReadinessResults.mjs <prefix> <output>');
@@ -27,6 +28,7 @@ for(const gradleVersion of ['8.11.1','9.2.1']){
   const replay=snapshotStateRegressions(c,approval);
   if(JSON.stringify(replay)!==JSON.stringify(c.stateRejections))throw Error('snapshot-state-rejection-replay-mismatch');
   if(!c.fault||c.fault.accepted!==false||c.fault.reason!=='snapshot_readiness_preflight_read'||c.fault.proof?.preflightReadFault!==true)throw Error('snapshot-preflight-fault-missing');
+  verifySnapshotFaultBinding(c);
   const observation=verifySnapshotReadinessFault(c.fault.proof,approval);
   if(JSON.stringify(observation)!==JSON.stringify(c.fault.observation))throw Error('snapshot-preflight-fault-replay-mismatch');
   for(const r of [...c.runs,c.fault.proof.runs[1]])for(const entry of Object.values(r.api)){
@@ -47,15 +49,18 @@ for(const gradleVersion of ['8.11.1','9.2.1']){
   interpretation:'Task input lifecycle supports the candidate model, but mutation rejection alone cannot distinguish disallowChanges from value finalization; no public isFinalized query or full deep-immutability proof.'});
  matrices.push(matrix);
 }
-const verificationPaths=['src/test/gradle/snapshotReadiness.test.ts','src/test/manual/gradleSnapshotReadinessResults.mjs','src/test/manual/kgpRecordPaths.mjs','src/test/manual/kgpRecordPaths.d.mts','src/test/fixtures/gradleKgpAvailabilityProof.mjs','src/test/fixtures/gradleKgpAvailabilityProof.d.mts'];
+const verificationPaths=['src/test/gradle/snapshotReadiness.test.ts','src/test/manual/gradleSnapshotReadinessResults.mjs','src/test/manual/kgpRecordPaths.mjs','src/test/manual/kgpRecordPaths.d.mts','src/test/manual/snapshotReadinessRecord.mjs','src/test/manual/snapshotReadinessRecord.d.mts','src/test/fixtures/gradleKgpAvailabilityProof.mjs','src/test/fixtures/gradleKgpAvailabilityProof.d.mts','src/test/fixtures/gradlePluginJarProof.ts','src/test/fixtures/gradlePluginLoadProof.ts'];
 const verificationSourcesSha256=Object.fromEntries(await Promise.all(verificationPaths.map(async p=>[p,await digest(path.join(repo,p))])));
-const all=matrices.flatMap(m=>m.cases),scope={nativeBuilds:all.reduce((n,c)=>n+c.runs.length+1,0),conditionalWitnesses:all.filter(c=>c.decision.conditionalRereadWitness).length,preflightCachedReadRejections:all.length,stateFlagRejections:all.reduce((n,c)=>n+c.stateRejections.length,0),
- noReadClassifierRefusals:all.reduce((n,c)=>n+c.runs.reduce((n,r)=>n+r.checks.filter(x=>!x.accepted).length,0),0),productionAdoptions:0,approvedRecipes:0,fullPipelineCandidates:0,naturalContentBindings:0,
+const scope={...snapshotRecordCounts(matrices),
  fixture:'same-DSL Groovy/Groovy and Kotlin/Kotlin; included root standard kotlin-dsl binary Kotlin; producer settings registers the helper before KGP task configuration',
  sensor:'an empty concrete list on the original snapshot collection; actual snapshot files are nonempty; unknown-source case adds a live FileTree',
  limitations:['no automatic untouched-build registration','closed producer/toolchain source assumptions are author attested','no full observer or all private supplier proof','no consumed-bytes receipt/freshness proof','post-task mutation rejection is not an isFinalized query','early/wrong binding checks are stateless preflight-classifier tests, not production capture sessions','no buildSrc/precompiled or cross-DSL matrix','no production schema/adapter/reader/trust changes']};
 const roots=[{token:'$GRADLE_USER_HOME',paths:[cache,await realpath(cache)]},{token:'$GRADLE_RUNTIME',paths:[runtime,await realpath(runtime)]}];
-let preReviews=[];
-try{const bytes=await readFile(output),old=JSON.parse(bytes);preReviews=old.preReviews??[];if(old.schema!=='osv-mcp.snapshot-readiness-experiment-v2')preReviews.push({schema:old.schema,recordedAt:old.recordedAt,sourcesSha256:old.sourcesSha256,scope:old.scope,recordSha256:createHash('sha256').update(bytes).digest('hex'),note:'Uncommitted v1 summary before cached preflight read and TaskState validation fixes; not current v2 evidence.'});}catch(error){if(error.code!=='ENOENT')throw error;}
-const result=tokenizeRecordedPaths({schema:'osv-mcp.snapshot-readiness-experiment-v2',recordedAt:new Date().toISOString(),baselineRevision:execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),pathTokens:{'$GRADLE_USER_HOME':'GRADLE_USER_HOME','$GRADLE_RUNTIME':'OSV_MCP_GRADLE_RUNTIME_ROOT'},sourcesSha256,verificationSourcesSha256,apiReferenceRecord:{path:'docs/validation/gradle-kgp-availability-2026-11-01.json',sha256:await digest(priorPath)},scope,contractEvidence,matrices,preReviews},roots);
+let preReviews=[],observed=null;
+try{const bytes=await readFile(output),old=JSON.parse(bytes);preReviews=old.preReviews??[];
+ // Re-consolidating the same native runs keeps their observation revision and time.
+ if(old.schema==='osv-mcp.snapshot-readiness-experiment-v2'&&JSON.stringify(snapshotRunIds(old.matrices??[]))===JSON.stringify(snapshotRunIds(matrices)))observed={recordedAt:old.recordedAt,baselineRevision:old.baselineRevision};
+ if(old.schema!=='osv-mcp.snapshot-readiness-experiment-v2')preReviews.push({schema:old.schema,recordedAt:old.recordedAt,sourcesSha256:old.sourcesSha256,scope:old.scope,recordSha256:createHash('sha256').update(bytes).digest('hex'),note:'Uncommitted v1 summary before cached preflight read and TaskState validation fixes; not current v2 evidence.'});}catch(error){if(error.code!=='ENOENT')throw error;}
+const head=execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),now=new Date().toISOString();
+const result=tokenizeRecordedPaths({schema:'osv-mcp.snapshot-readiness-experiment-v2',recordedAt:observed?.recordedAt??now,baselineRevision:observed?.baselineRevision??head,...(observed?{reconsolidatedAt:now,reconsolidatedRevision:head}:{}),pathTokens:{'$GRADLE_USER_HOME':'GRADLE_USER_HOME','$GRADLE_RUNTIME':'OSV_MCP_GRADLE_RUNTIME_ROOT'},sourcesSha256,verificationSourcesSha256,apiReferenceRecord:{path:'docs/validation/gradle-kgp-availability-2026-11-01.json',sha256:await digest(priorPath)},scope,contractEvidence,matrices,preReviews},roots);
 assertNoAbsolutePaths(result);await writeFile(output,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(scope));

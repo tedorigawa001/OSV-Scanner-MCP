@@ -136,3 +136,47 @@ for(const field of ['observed','executed','didWork','skipped','noSource','failed
  const {proof,approval}=fixture();delete (proof.runs[1]!.stage as any)[field];
  expect(()=>verifySnapshotReadinessCase(proof,approval)).toThrow('snapshot_readiness_stage_flags_invalid');
 });
+
+// The published record is replayed against the current verifier and bound sources.
+async function verifyPublishedRecord(record:any){
+ const {readFile}=await import('node:fs/promises');const {createHash}=await import('node:crypto');
+ const {assertNoAbsolutePaths}=await import('../manual/kgpRecordPaths.mjs');
+ const {verifySnapshotFaultBinding,snapshotRecordCounts}=await import('../manual/snapshotReadinessRecord.mjs');
+ const digest=async(p:string)=>createHash('sha256').update(await readFile(new URL('../../../'+p,import.meta.url))).digest('hex');
+ assertNoAbsolutePaths(record);
+ if(record.schema!=='osv-mcp.snapshot-readiness-experiment-v2')throw Error('snapshot-record-schema');
+ for(const group of ['sourcesSha256','verificationSourcesSha256'])for(const [p,h] of Object.entries(record[group]))if(await digest(p)!==h)throw Error('snapshot-record-source-drift:'+p);
+ if(Object.keys(record.sourcesSha256).join()!==snapshotSources.join())throw Error('snapshot-record-source-drift');
+ if(await digest(record.apiReferenceRecord.path)!==record.apiReferenceRecord.sha256)throw Error('snapshot-record-api-reference-drift');
+ const prior=JSON.parse(await readFile(new URL('../../../'+record.apiReferenceRecord.path,import.meta.url),'utf8'));
+ if(record.matrices.map((m:any)=>m.gradleVersion).join()!=='8.11.1,9.2.1')throw Error('snapshot-record-matrix');
+ for(const m of record.matrices){
+  const old=prior.matrices.find((x:any)=>x.gradleVersion===m.gradleVersion).cases[0].runs[0];
+  const approvedApi={gradle:old.apiArtifacts.gradle.sha256,kgp:old.apiArtifacts.kgp.sha256,implementation:old.implementation.sha256};
+  if(m.cases.map((c:any)=>c.dsl).sort().join()!=='Groovy,Kotlin')throw Error('snapshot-record-matrix');
+  for(const c of m.cases){
+   const approval={gradleVersion:m.gradleVersion,dsl:c.dsl,approvedApi,sourcesSha256:record.sourcesSha256};
+   if(JSON.stringify(verifySnapshotReadinessCase(c,approval))!==JSON.stringify(c.decision))throw Error('snapshot-record-decision-replay');
+   if(JSON.stringify(snapshotStateRegressions(c,approval))!==JSON.stringify(c.stateRejections))throw Error('snapshot-record-state-replay');
+   verifySnapshotFaultBinding(c);
+   if(c.fault.accepted!==false||c.fault.reason!=='snapshot_readiness_preflight_read'||JSON.stringify(verifySnapshotReadinessFault(c.fault.proof,approval))!==JSON.stringify(c.fault.observation))throw Error('snapshot-record-fault-replay');
+  }
+ }
+ const counts=snapshotRecordCounts(record.matrices);
+ if(Object.entries(counts).some(([k,v])=>record.scope[k]!==v))throw Error('snapshot-record-scope');
+ return counts;
+}
+const loadPublished=async()=>{const {readFile}=await import('node:fs/promises');return JSON.parse(await readFile(new URL('../../../docs/validation/gradle-snapshot-readiness-2026-11-01.json',import.meta.url),'utf8'));};
+it('replays the published snapshot readiness record against current sources',async()=>{
+ expect(await verifyPublishedRecord(await loadPublished())).toMatchObject({nativeBuilds:24,conditionalWitnesses:4,preflightCachedReadRejections:4,stateFlagRejections:320,noReadClassifierRefusals:20,productionAdoptions:0});
+});
+for(const [label,change,reason] of [
+ ['a stale decision',(r:any)=>{r.matrices[0].cases[0].decision.conditionalRereadWitness=false;},'snapshot-record-decision-replay'],
+ ['a fault proof paired with another control run',(r:any)=>{const c=r.matrices[0].cases[0];c.fault.proof.runs[0]={...c.fault.proof.runs[0],runId:'other-control'};},'snapshot-preflight-fault-unbound'],
+ ['a fault run reusing the normal observe run id',(r:any)=>{const c=r.matrices[1].cases[1];c.fault.proof.runs[1].runId=c.runs[1].runId;},'snapshot-preflight-fault-unbound'],
+ ['an inflated scope',(r:any)=>{r.scope.noReadClassifierRefusals++;},'snapshot-record-scope'],
+ ['a drifted source hash',(r:any)=>{r.verificationSourcesSha256['src/test/fixtures/gradlePluginJarProof.ts']='0'.repeat(64);},'snapshot-record-source-drift'],
+ ['an absolute path',(r:any)=>{r.matrices[0].cases[0].runs[0].api.gradle.artifact='/Users/someone/gradle.jar';},'kgp_availability_record_path_not_portable'],
+] as const)it(`rejects a published record with ${label}`,async()=>{
+ const record=await loadPublished();change(record);await expect(verifyPublishedRecord(record)).rejects.toThrow(reason);
+});

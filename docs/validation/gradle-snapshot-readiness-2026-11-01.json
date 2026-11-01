@@ -2,6 +2,8 @@
   "schema": "osv-mcp.snapshot-readiness-experiment-v2",
   "recordedAt": "2026-11-01T11:09:25.964Z",
   "baselineRevision": "096161b4daca908b87fc0bed253e0a199076d7ee",
+  "reconsolidatedAt": "2026-11-01T11:15:17.231Z",
+  "reconsolidatedRevision": "48055fddc3e921ad9477e9bbdbde3a7a250ca27f",
   "pathTokens": {
     "$GRADLE_USER_HOME": "GRADLE_USER_HOME",
     "$GRADLE_RUNTIME": "OSV_MCP_GRADLE_RUNTIME_ROOT"
@@ -13,12 +15,16 @@
     "src/test/gradle/snapshotReadiness.integration.test.ts": "e5765ff16d91c20d99461a0fc92cef9a022e9dfc9fec9420724f068d03d3b791"
   },
   "verificationSourcesSha256": {
-    "src/test/gradle/snapshotReadiness.test.ts": "6bd164079df5dd1c922227664d6a06dd39342367df93ba9c08e13cefab997a4e",
-    "src/test/manual/gradleSnapshotReadinessResults.mjs": "04b685b197e87167a52834db7618e32e7f264cb20bd0eab08d5378375ea5dd31",
+    "src/test/gradle/snapshotReadiness.test.ts": "5990e280d944014513a8c50327729286939817b6df8754ed8bf9091457b5cc81",
+    "src/test/manual/gradleSnapshotReadinessResults.mjs": "c15b7b035160b633760426769aabbf3a930ede265bbb07f7ffaf946a194f06a4",
     "src/test/manual/kgpRecordPaths.mjs": "6bfe64448d60dc384e5d0a2d5134576141542dc17ee35a6f26ad383a891e13b2",
     "src/test/manual/kgpRecordPaths.d.mts": "9e8c10f66aab177c1a2b196e6e9e2b8bffcfd11436400b741ae413485370a03b",
+    "src/test/manual/snapshotReadinessRecord.mjs": "ef908251b2ee115c7d11622185bdbfd307af203770a3fe16ef373cf1473d7cff",
+    "src/test/manual/snapshotReadinessRecord.d.mts": "6e5ba1a1e7eaf198f202fb34b8130e4f55561ef2e77d9ad768ad0ebc0620c0a6",
     "src/test/fixtures/gradleKgpAvailabilityProof.mjs": "4fc97a5ac690dd2ececfd16eec4cd224735707a5cb8051c2c1885820a2eb39e0",
-    "src/test/fixtures/gradleKgpAvailabilityProof.d.mts": "238a7599a02af2b35e30c3c9c9dbed2ece4b278a7e52acd9db9b40c9d478f391"
+    "src/test/fixtures/gradleKgpAvailabilityProof.d.mts": "238a7599a02af2b35e30c3c9c9dbed2ece4b278a7e52acd9db9b40c9d478f391",
+    "src/test/fixtures/gradlePluginJarProof.ts": "bc59c61133c2064b6e89f8ecd1daf8435d9358d08274077c5eba77be478ed80b",
+    "src/test/fixtures/gradlePluginLoadProof.ts": "80e3cc2f1ed45e2ea81d65be3ee0c45f7b00dbb02e7dee8848c4837cfa196fa5"
   },
   "apiReferenceRecord": {
     "path": "docs/validation/gradle-kgp-availability-2026-11-01.json",

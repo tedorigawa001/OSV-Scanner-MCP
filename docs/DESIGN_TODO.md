@@ -1942,3 +1942,10 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 条件付きwitness4組と承認済みrecipe・本番採用0件の区別、自然時bytes束縛等の未成立範囲は維持する。
 
 - snapshot witnessレビュー修正の最終再検証（§9.27）: 両DSL・両Gradle版、各版20テスト／計24 native build成功。cached preflight読取の拒否4件・TaskState改変の拒否320件を集約で再検証。静的132件・全体2,188件成功（1,137件skip）、typecheck／build成功。承認済みrecipe・本番採用0は維持。
+
+
+### 2026-11-01: 48055fdレビュー修正（snapshot公開記録の再検証）
+
+- snapshot readinessの検証JSONを通常の静的テストで再検証するようにした。source／検証source／API参照記録のhash、判定・TaskState拒否・故障観測・scopeを現在の検証器で照合し、絶対pathを拒否する。負例6件を追加し、修正前の記録で失敗することを確認した。
+- 故障proofと通常caseの対応（故障以外のrun・case identityの一致、故障run IDの区別）を集約と静的テストで共通に必須化。再集約時は観測時の`recordedAt`／`baselineRevision`を保持し、JAR内容の算出sourceもhashへ結んだ。
+- Gradleは再実行せず保存済みv2 native出力を再集約。内容・採否・本番採用0件は不変。詳細は[設計書§9.28](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#928-48055fdレビュー修正公開記録の静的再検証2026-11-01)。

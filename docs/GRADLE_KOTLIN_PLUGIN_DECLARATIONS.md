@@ -1506,3 +1506,15 @@ case／run／matrix／experimentをv2へ更新し、実preflightReadFault値、p
 
 
 最終再検証: Groovy／Kotlin × Gradle 8.11.1／9.2.1の4組を実行し、両DSL合わせて各Gradle版20テストが成功した。通常20＋故障4＝24 native buildから、条件付きwitness 4組、cached preflight読取の拒否4件、TaskState改変の拒否80条件×4組＝320件、正常なno-read分類拒否20件を保存・集約側で再検証した。静的回帰132件、通常全体2,188件成功・opt-in等1,137件skip、typecheck・build・差分検査も成功。承認済みrecipe・本番採用は0件のままである。
+
+
+### 9.28 48055fdレビュー修正・公開記録の静的再検証（2026-11-01）
+
+§9.26／§9.27の検証JSONは集約時だけ検証され、通常のテストでは読まれていなかった。検証器・source・参照記録が後から変わっても、公開記録との不一致を検出できなかった。
+
+- `snapshotReadiness.test.ts`へ公開記録の再検証を追加した。source／検証source／API参照記録のhash、両版・両DSLの判定、TaskState拒否80条件、故障観測、scope件数を現在の検証器で再計算して照合し、絶対pathの残存も拒否する。古い判定、別control runとの組合せ、run IDの再利用、scopeの水増し、source hashの不一致、絶対pathの6負例を追加した。修正前の記録では検証sourceの不一致で失敗することを確認した。
+- 故障proofは、自身のobserve run以外のrunとcase identityが通常caseと完全に一致し、故障runのrun IDが通常runと異なることを必須にした（`snapshotReadinessRecord.mjs`、集約と静的テストで共用）。
+- 同じnative run集合の再集約では、観測時の`recordedAt`／`baselineRevision`を保持し、再集約時点を`reconsolidatedAt`／`reconsolidatedRevision`へ別記する（§9.25と同じ方針）。
+- `jarEntries`を算出する`gradlePluginJarProof.ts`とその依存`gradlePluginLoadProof.ts`を`verificationSourcesSha256`へ加えた。
+
+Gradleは再実行せず、§9.27で保存したv2のnative出力を再集約した。run集合・判定・scopeは変わらず、変化は検証source hashと再集約時点だけである。条件付きwitness 4組、承認済みrecipe・全pipeline候補・本番採用0件の判断は変わらない。
