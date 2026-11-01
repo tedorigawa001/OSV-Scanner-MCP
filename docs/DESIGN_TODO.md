@@ -1897,3 +1897,5 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 
 
 - KGP準備契約レビュー修正（§9.22.8）: completeSlotへcontentBindingsを追加。自然消費時点のsize／SHA-256と、保存bytesまたは自然時に再検証したbaseline参照をreadyの必須条件にした。全体gate中に内容証拠を生成せず、最初のcaptureから元証拠との照合を要求する。KI07／KI18を拡充し、証拠欠落・baseline流用・receipt後capture前の実派生file改変・保存中変更のKI23〜KI26を追加（全26条件、未実施）。設計のみで既存v3実証・本番未採用の判断は維持。
+
+- 6e1ac6cレビュー修正（§9.22.9）: §9.22.8の結果を理由表へ反映（内容証拠の合法な未取得はunavailable、矛盾はgraph拒否、staleはslot型ごとに`kotlin_pipeline_inputs_stale`／`kotlin_derived_snapshot_stale`、保存blob不一致はgraph拒否）。javapで確認したgradle-core-api JARのhash・interface別digestを記録。owner-materializedの読取範囲の表現を統一し、KI25／KI26を隔離cacheで行う条件にした。設計のみ。
