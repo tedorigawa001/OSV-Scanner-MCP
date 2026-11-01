@@ -1518,3 +1518,101 @@ case／run／matrix／experimentをv2へ更新し、実preflightReadFault値、p
 - `jarEntries`を算出する`gradlePluginJarProof.ts`とその依存`gradlePluginLoadProof.ts`を`verificationSourcesSha256`へ加えた。
 
 Gradleは再実行せず、§9.27で保存したv2のnative出力を再集約した。run集合・判定・scopeは変わらず、変化は検証source hashと再集約時点だけである。条件付きwitness 4組、承認済みrecipe・全pipeline候補・本番採用0件の判断は変わらない。
+
+
+### 9.29 snapshot内容束縛・capture鮮度の公開API境界実証（2026-11-01）
+
+以下のv1結果はレビュー前の履歴である。現在のv2結果と計測・拒否条件は§9.30を参照する。
+
+#### 取得方式と採用条件
+
+§9.22.8の自然消費時receiptと、公開Task lifecycle境界での内容観測を区別する。採用可能なowner receiptは、同一invocation／実Task／snapshot property／slotの具体列を所有者が自然消費する経路から渡し、全fileのsize／SHA-256と保存bytesまたは自然時に検証したbaselineへ結ぶ必要がある。元getterを追加で呼んで自然消費と称することは禁止する。消費中不変と観測区間の対応はrecipe契約として別途必要である。
+
+今回の公開API候補は、producer settingsでKGP構成前に実参照を登録し、Task.doFirstでsnapshotの具体列を一度取得する方式とした。doFirstはTask actionの前へ処理を追加する公開境界であり、KGP内部のcompiler消費callbackではない。Gradleの入力処理後にcached列を読めても、compilerが実際に読んだbytesと同一だった証拠にはならない。したがって以下はboundary content observationであり、owner-materialized receiptの成立やpublic-stable-reread-v1の承認へ昇格させない。
+
+1. 実Taskとnested propertyを参照identity、実行時Gradle／KGP API artifact digestへ束縛する。単一worker・parallel無効・必須compileの再実行を固定する。
+2. doFirstのgetter区間で列を取得し、非空snapshot全件の相対path、size、SHA-256、保存bytesを記録する。登録・Task・Action・boundary・getter・supplier eventを記録し、getterをcached読取でも計数する。
+3. 正常Task完了後、保持済み具体pathから内容を再検査する。boundaryとpost-actionの集合・内容が一致しなければ候補を採用しない。両端一致は途中の変更・復元やcompilerの実読取の証明ではない。
+4. 最初のcaptureは元KGP getterを呼ばず、保存bytesのsize／digestを先に検証し、保持済みpathの現在内容と元の証拠を照合する。capture時のhashでbaselineを作り直さない。保存bytes不一致はkotlin_pipeline_snapshot_storage_mismatch、現在file不一致はkotlin_derived_snapshot_staleとする。
+5. 内容証拠がない場合はkgp_capture_content_evidence_unavailableとしてgetter 0で拒否する。snapshot境界候補が成功しても、自然消費時の内容証拠が不足する本番gateはunsupportedのままとする。
+
+#### 隔離・故障対照・回帰条件
+
+実派生fileの変更は、通常cacheから独立にcopy-on-write複製した検証専用GRADLE_USER_HOME内だけで行う。専用markerのないcacheはhelperが起動時に拒否する。対象はそのhome配下の実fileに限定し、afterTaskで変更、最初のcapture後にfinallyで復元し、復元digestも照合する。コピーや復元を共有cacheの保護・全競合の保証と混同しない。
+
+| mode | 確認内容 |
+| --- | --- |
+| control | 同じ登録・空concrete sensor・通常compile、snapshot値読取なし |
+| boundary | doFirst全file内容とpost-actionが一致し、最初のcaptureも一致 |
+| mutate-same-size | compile完了後、非空の実派生fileを同sizeで1byte変更。最初のcaptureでstale |
+| mutate-size | 同じ区間で実fileを1byte増加。最初のcaptureでstale |
+| delete | 同じ区間で実file削除。最初のcaptureでstale |
+| blob-corrupt | 元fileを変えず保存bytesだけ変更。storage mismatch |
+| no-receipt | compile成功でも内容receiptを作らず、captureは元getter 0でunavailable |
+
+共有verifierで全必須event・phase・getter数、TaskStateの必須boolean、binding／API、fixture source、集合と保存bytesのdigest、変更対象・復元を照合する。自然supplier／Action traceとJAR全entryをcontrolに比較する。境界／captureでの追加supplier評価、必須境界欠落、証拠欠落、再baseline化、偽の採用状態を拒否する。native・集約は同じ改変対照一覧を再実行する。
+
+#### 範囲と残課題
+
+この実証はincluded rootの標準kotlin-dsl binary Kotlin producerを、Groovy/Groovy・Kotlin/Kotlinのconsumer／producerで検証する。全observer、残り3入力、未知supplierの独立発見、既存build無変更baseline、buildSrc／precompiled／DSL全交差、本番schema／adapter／信頼設定は対象外である。KI23相当の証拠欠落、KI24相当の実派生file変更、KI26相当の保存bytes破損に関する境界候補の診断であり、自然消費receiptを前提にしたKI01〜KI26の全面達成ではない。
+
+次に必要なのは、KGP所有者が自然消費した具体列と内容を渡す公開hook、または消費中を含めて同じbytesを拘束する承認可能なproducer／toolchain契約である。doFirst／afterTaskの両端hashだけではこの不足を埋めない。承認済みrecipe・自然消費内容束縛・本番採用は0を維持する。
+
+
+#### 再現と保存形式
+
+共有依存cacheを直接使わず、専用homeへ独立copy-on-write複製（macOSでは`cp -cR`）または通常copyを作り、`osv-content-isolated-cache`という検証専用markerを置く。hardlink copyや共有cacheへのmarker追加で代用しない。JDK 21、両Gradle実行環境、標準kotlin-dsl依存のoffline cacheを使う。
+
+```sh
+JAVA_HOME=/path/to/jdk GRADLE_USER_HOME=/path/to/isolated-cache OSV_MCP_TEST_GRADLE=/path/to/gradle-8.11.1/bin/gradle OSV_MCP_SNAPSHOT_CONTENT_OUTPUT=/tmp/snapshot-content-8.11.1.json npx vitest run src/test/gradle/snapshotContent.integration.test.ts --maxWorkers=1 --hookTimeout=120000
+# 9.2.1も同様に実行し、binaryと出力suffixを変更する。cacheへの改変実行を並列化しない。
+JAVA_HOME=/path/to/jdk GRADLE_USER_HOME=/path/to/isolated-cache OSV_MCP_GRADLE_RUNTIME_ROOT=/path/to/runtime node src/test/manual/gradleSnapshotContentResults.mjs /tmp/snapshot-content docs/validation/gradle-snapshot-content-2026-11-01.json
+npx vitest run src/test/gradle/snapshotContent.test.ts src/test/gradle/snapshotContentRecord.test.ts --maxWorkers=1
+```
+
+保存時は全bytesを内容アドレス付きgzip blobへ重複排除し、receiptのblobRefと分離してJSON内へ収録する。解凍後size・SHA-256をblobRefと照合し、元のrunを復元して共有verifierを再実行する。保存bytes破損負例ではblobの実digestとreceiptの期待digestが異なる状態を保持し、圧縮・再保存で正常化しない。source hash、fixture hash、実行API artifact／公開Task method、run ID、区間event、TaskState、JAR全entry、native拒否対照を保存する。API承認digestは既存KGP取得診断recordのhashへ結び、集約時には実artifactも再照合する。端末固有pathはtoken化し、残存絶対pathを拒否する。
+
+今回も`kotlin.incremental=false`、in-process compiler、offline・rerun-tasks・cache再利用無効の限定条件である。Gradleによるsnapshot入力評価とKGP compiler内部での実消費は同義ではなく、incremental有効時・cache hit時・並列時の保証へ拡張しない。保存bytes全件の追加I/Oは発生しており、「追加評価0」は登録した空concrete sensorの計測値に限定する。
+
+
+#### 実行結果
+
+Groovy／Kotlin × Gradle 8.11.1／9.2.1で各版16テスト、7 mode×4組＝28 buildが成功した。boundaryの全23 file（8.11.1、28,184,778 bytes）／20 file（9.2.1、29,312,677 bytes）を保存した。controlを含め全modeの空concrete sensorは各2評価で、getter／boundary／capture区間への追加評価は0。boundaryのgetterは1回、captureでは0回、no-receiptは全区間で0回であった。自然supplier・Action traceとJAR全entryもcontrolと一致した。
+
+実派生fileの同size変更・サイズ変更・削除12件を最初のcaptureでkotlin_derived_snapshot_stale、保存bytes破損4件をkotlin_pipeline_snapshot_storage_mismatch、receipt未取得4件をkgp_capture_content_evidence_unavailableとして拒否した。27種類×4組＝108件の記録改変対照をnativeと集約で再検証した。静的・保存記録再生63テストが成功し、検証JSON内の全blobを復元して判断・拒否対照を再計算した。
+
+初回8.11.1はhelperのbyte配列操作／finally内の二次例外で失敗した。配列操作をArrays.copyOfへ変更し、復元時の診断record未作成を安全に扱った後、両版を最後まで取り直した。失敗buildを上記成功件数へ含めず、検証JSONは最終source hashと一致する成功matrixだけを保存する。承認済みrecipe・自然消費時内容束縛・全pipeline候補・本番採用は引き続き0である。
+
+最終確認: 通常全体2,258テスト成功・native opt-in等1,153件skip。typecheck・build・差分検査も成功。検証JSONの実証source 4 fileと検証source 7 fileのhashは現在のファイルに一致した。
+
+
+### 9.30 snapshot内容実証のレビュー修正・cached読取とsupplier区間（2026-11-01）
+
+§9.29の2指摘を修正した。修正前の一時コピーでは、captureとno-receiptに実cached getterを追加してもGroovy／9.2.1の8テストが成功した。またsupplier対をgetter内へ移しphaseをnaturalにしてcontrol側traceも対応させると、case全体を追加評価0として受理した。新しい区間対照7件が修正前に失敗することを確認した（うち2件は拒否したが理由が区間評価違反と異なった）。
+
+#### 共通readerと実cached読取の故障対照
+
+KGP propertyの値読取をreadSnapshot brokerへ集約し、全呼出しにgetter:begin/endとcounterを記録する。通常boundaryと故障読取は同じbrokerを使い、endはfinallyで閉じる。通常のcontent処理は保持した具体file列から取得し、KGP propertyを再列挙しない。この固定helperの計測であり、任意sourceの公開getterを自動捕捉する一般sandboxではない。
+
+`osv.content.readFault=capture`はboundary modeのcapture区間で、`no-receipt`はreceiptを作らないmodeの拒否前に、同じ登録済みpropertyを実際に読む。通常7 modeとは別に2 build／fixtureを実行する。cached読取でsupplier評価が増えなくても、getter eventとcounterで検出し、snapshot_content_no_read_violatedとする。
+
+故障の期待拒否は、schema／run ID／API／source／binding／TaskState／event／artifact／内容・改変判断をすべて検査した後に認定する。flagだけで実読取がない場合はfault_not_reproduced、counter／event不一致、artifact欠落、未承認flagは別に拒否する。故障run IDは通常run・他故障と異なる必要がある。通常対応modeとの内容・trace・binding・fixture・JAR entryの一致を検査する（run ID、fault flag、捕捉した追加getter、JAR全体hashを除く。JAR全体hashは各buildの実bytesから別々に算出する）。
+
+#### supplierのphaseと位置を独立に照合
+
+宣言されたphaseがconfiguration／natural／actionでも、それだけで許可しない。registration:end、task:begin/end、action:begin/endの位置から合法な自然評価区間を判定する。configurationは登録後・Task開始前、naturalはTask内・Action外、actionはAction内を要求する。そのうえでboundary、post-action、capture、mutation、restoreのobserver区間との重複をphaseに関係なく拒否する。getterはboundary内に位置するため同じ規則で拒否される。
+
+supplier対の開始／終了、同phase、counterも照合する。observer区間の評価はsnapshot_content_extra_evaluation、observer外でもphaseと位置が一致しないものはsnapshot_content_supplier_phase_invalidとする。Task終了後のcapture評価を単にTask区間外として扱わず、observer違反として分類する。
+
+共有改変対照へ、3種のphase×5位置（boundary開始直後、getter内、getter終了後のboundary内、post-action内、capture内）の15件を追加した。既存27件と合わせ42件／fixtureをnative・集約で再実行する。さらに全modeのsupplier対を同時移動しcontrolのtraceも合わせる3種のcase対照を共用し、全体比較だけでは通ってしまう不正な記録を拒否する。
+
+#### v2記録と範囲
+
+run／case／matrix／experimentをv2へ更新し、readFault、実故障run、故障判定、case単位の対照を保存する。blob保存／復元は故障runも対象とし、公開記録テストは通常結果と故障・全拒否対照を再計算する。旧未コミットv1はpreReviewsにhash付き要約として残すが、コミット済み原本への参照や現在の証拠とは扱わない。JAR entry parserと依存、API照合helperも検証source hashへ含める。
+
+通常の境界観測4組と実file改変拒否12件、保存bytes破損4件、receipt未取得no-read拒否4件は維持する。故障buildの実読取8件を正常なno-read件数に加えない。Task境界観測と自然消費bytesの区別、限定sensor・incremental無効・単一workerという範囲は不変であり、自然消費時内容束縛・承認済みrecipe・全pipeline候補・本番採用は0のままである。
+
+
+最終native再検証: Groovy／Kotlin × Gradle 8.11.1／9.2.1の各版20テストが成功した。通常28＋故障8＝36 buildを保存し、実cached読取8件は計測supplier追加0でもno-read違反として拒否した。42対照×4組＝168件と、controlを含む同時trace移動3対照×4組＝12件をnative・集約で再計算した。静的・公開記録再生106テストも成功し、source 4 file・検証source 11 fileのhash一致、故障を含む保存blob復元、旧v1履歴要約1件を確認した。
+
+通常全体の最終確認: 2,301テスト成功・native opt-in等1,157件skip。typecheck・build・差分検査も成功。

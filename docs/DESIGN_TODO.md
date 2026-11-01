@@ -1949,3 +1949,23 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - snapshot readinessの検証JSONを通常の静的テストで再検証するようにした。source／検証source／API参照記録のhash、判定・TaskState拒否・故障観測・scopeを現在の検証器で照合し、絶対pathを拒否する。負例6件を追加し、修正前の記録で失敗することを確認した。
 - 故障proofと通常caseの対応（故障以外のrun・case identityの一致、故障run IDの区別）を集約と静的テストで共通に必須化。再集約時は観測時の`recordedAt`／`baselineRevision`を保持し、JAR内容の算出sourceもhashへ結んだ。
 - Gradleは再実行せず保存済みv2 native出力を再集約。内容・採否・本番採用0件は不変。詳細は[設計書§9.28](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#928-48055fdレビュー修正公開記録の静的再検証2026-11-01)。
+
+
+### 2026-11-01: snapshot境界内容束縛・最初のcapture鮮度の設計と公開API実証
+
+- [設計書§9.29](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#929-snapshot内容束縛capture鮮度の公開api境界実証2026-11-01)へ、自然消費receiptの採用要件とTask.doFirst境界候補の差、保存bytes／内容アドレスblob、具体pathだけを使う最初のcapture照合を追加。
+- 隔離cacheの実派生fileをcompile完了後に同size書換え・増加・削除してstaleを確認し、保存bytes破損・receipt未取得も別に拒否する。全必須event／stage／bindingとsupplier trace、JAR全entryを共有verifierで照合する。
+- doFirstはKGP消費hookではなく、両端一致でも消費時bytesや途中変更／復元は証明しない。自然消費時内容束縛・承認済みrecipe・本番採用0は維持。次は所有者の自然消費hookまたは消費中不変を拘束できるproducer／toolchain契約の具体化。
+
+- 最終再検証（§9.29）: 両DSL・両Gradle版で各版16テスト、28 build成功。境界候補4組、実file改変拒否12件・保存bytes破損拒否4件・receipt未取得no-read拒否4件・記録改変拒否108件を保存・再生。静的／保存記録63テスト・通常全体2,258件成功（1,153件skip）、typecheck／build／差分検査成功。自然消費時内容束縛・承認済みrecipe・本番採用0は維持。
+
+
+### 2026-11-01: snapshot内容実証レビュー・cached読取とsupplier区間の修正
+
+- [設計書§9.30](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#930-snapshot内容実証のレビュー修正cached読取とsupplier区間2026-11-01)へ、共通reader、capture／no-receiptの実cached読取故障、全証拠確認後の期待拒否、phaseと位置の独立検証を追加。
+- 3 phase×5 observer位置の15対照と、controlも同時に移動するcase対照3件を共用。故障runの通常modeへの対応・別run ID・保存blob復元も検証する。v2へ更新し旧v1は未コミット履歴の要約として保持。
+- Task境界候補とKGP自然消費bytesの対応を未成立とする判定は維持し、自然消費内容束縛・承認済みrecipe・本番採用0は変えない。
+
+- 再検証（§9.30）: 両DSL・両Gradle版で各版20テスト、通常28＋故障8＝36 build成功。実cached読取拒否8件・記録改変拒否168件・同時trace移動拒否12件をnative／集約で確認。静的・公開記録再生106テスト成功。自然消費内容束縛・承認済みrecipe・本番採用0は維持。
+
+- 通常全体2,301件成功（1,157件skip）、typecheck／build／差分検査も成功。

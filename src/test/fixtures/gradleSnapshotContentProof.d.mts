@@ -1,0 +1,9 @@
+export const contentModes:string[];
+export const contentSources:string[];
+export function verifySnapshotContentRun(r:any,a:any):any;
+export function verifySnapshotContentCase(c:any,a:any):any;
+export const contentTargets:any[];
+export function mutateSnapshotContent(r:any,target:any):any;
+export function contentRegressions(c:any,a:any):any[];
+export function verifySnapshotContentFaults(c:any,a:any):any[];
+export function contentCaseRegressions(c:any,a:any):any[];

@@ -1,0 +1,98 @@
+// Test-only boundary observer. Task.doFirst is NOT a KGP consumed-bytes receipt.
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import java.nio.file.Files
+import org.gradle.api.file.ConfigurableFileCollection
+
+def root=rootProject.projectDir.parentFile
+String mode=System.getProperty('osv.content.mode')
+String readFault=System.getProperty('osv.content.readFault','none')
+def baseline=new JsonSlurper().parse(new File(root,'snapshot-baseline.json'))
+def home=gradle.gradleUserHomeDir.canonicalFile
+if(!new File(home,'osv-content-isolated-cache').isFile())throw new IllegalStateException('isolated-cache-required')
+def shaBytes={byte[] b->MessageDigest.getInstance('SHA-256').digest(b).encodeHex().toString()}
+def sha={File f->shaBytes(f.bytes)}
+def s=[events:[],calls:0,getterCalls:0,phase:'configuration',receipt:[],postAction:[],current:[],stage:[:],binding:[:],capture:null,mutation:null]
+def refs=[:]
+def audit={String event->s.events.add([event:event,phase:s.phase])}
+def origin={Class type->def f=new File(type.protectionDomain.codeSource.location.toURI()).canonicalFile;[type:type.name,artifact:f.path,sha256:sha(f)]}
+def api=[gradle:origin(org.gradle.api.tasks.TaskInputs.class)]
+def inventory={List files,boolean bytes->files.collect{File file->
+ def f=file.canonicalFile
+ if(!f.toPath().startsWith(home.toPath()))throw new IllegalStateException('snapshot-outside-isolated-cache')
+ def id=home.toPath().relativize(f.toPath()).toString()
+ if(!f.isFile())return [id:id,missing:true]
+ byte[] b=f.bytes;def item=[id:id,size:b.length,sha256:shaBytes(b)]
+ if(bytes)item.bytes=b.encodeBase64().toString()
+ item
+}}
+// Only this broker receives the KGP property; downstream content logic retains concrete files.
+def readSnapshot={ ->
+ audit('getter:begin');s.getterCalls++
+ try{return refs.property.files.toList()}finally{audit('getter:end')}
+}
+ext.installSnapshotContentProof={ ->
+ tasks.configureEach{t->
+  if(t.name!='compileKotlin')return
+  audit('registration:begin')
+  def publicTask=t.class.classLoader.loadClass('org.jetbrains.kotlin.gradle.tasks.KotlinCompile')
+  api.implementation=origin(publicTask);api.kgp=origin(t.class.classLoader.loadClass('org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool'))
+  refs.task=t;refs.property=t.classpathSnapshotProperties.classpathSnapshot
+  s.binding=[publicTaskType:publicTask.isInstance(t),propertyType:refs.property instanceof ConfigurableFileCollection,role:'classpathSnapshotProperties.classpathSnapshot']
+  refs.property.from(providers.provider{audit('supplier:begin');s.calls++;audit('supplier:end');[]})
+  t.doFirst{
+   s.phase='action';audit('action:begin')
+   if(!(mode in ['control','no-receipt'])){
+    s.phase='boundary';audit('boundary:begin');refs.files=readSnapshot()
+    s.receipt=inventory(refs.files,true);audit('boundary:end');s.phase='action'
+   }
+  }
+  t.doLast{s.phase='action';audit('action:end')}
+  audit('registration:end')
+ }
+ gradle.taskGraph.beforeTask{t->if(refs.task!=null&&t.is(refs.task)){s.phase='natural';audit('task:begin')}}
+ gradle.taskGraph.afterTask{t,state->
+  if(refs.task==null||!t.is(refs.task))return
+  s.phase='natural';audit('task:end')
+  s.stage=[executed:state.executed,didWork:state.didWork,skipped:state.skipped,noSource:state.noSource,failed:state.failure!=null]
+  s.binding.taskIdentity=t.is(refs.task)
+  s.binding.propertyIdentity=t.classpathSnapshotProperties.classpathSnapshot.is(refs.property)
+  if(mode=='control'){s.capture=[accepted:false,reason:'control'];return}
+  if(mode=='no-receipt'){s.phase='capture';audit('capture:begin');if(readFault=='no-receipt')readSnapshot();s.capture=[accepted:false,reason:'kgp_capture_content_evidence_unavailable'];audit('capture:end');return}
+  s.phase='post-action';audit('post-action:begin');s.postAction=inventory(refs.files,false);audit('post-action:end')
+  File changed=null;byte[] original=null
+  try{
+   if(mode in ['mutate-same-size','mutate-size','delete']){
+    changed=refs.files.find{it.length()>0};original=changed.bytes
+    s.phase='mutation';audit('mutation:begin')
+    if(mode=='delete')Files.delete(changed.toPath())
+    else if(mode=='mutate-size')Files.write(changed.toPath(),Arrays.copyOf(original,original.length+1))
+    else{byte[] b=Arrays.copyOf(original,original.length);b[0]=(byte)(b[0]^1);Files.write(changed.toPath(),b)}
+    s.mutation=[id:home.toPath().relativize(changed.canonicalFile.toPath()).toString(),before:shaBytes(original),after:changed.isFile()?sha(changed):null]
+    audit('mutation:end')
+   }else if(mode=='blob-corrupt'){
+    s.phase='mutation';audit('mutation:begin');def item=s.receipt.find{it.size>0};byte[] b=item.bytes.decodeBase64();b[0]=(byte)(b[0]^1);item.bytes=b.encodeBase64().toString();s.mutation=[id:item.id,before:item.sha256,after:shaBytes(b)];audit('mutation:end')
+   }
+   s.phase='capture';audit('capture:begin')
+   // Deliberate fault uses the same broker as the boundary read.
+   if(readFault=='capture')readSnapshot()
+   s.current=inventory(refs.files,false)
+   boolean blobOk=s.receipt.every{it.bytes!=null&&it.bytes.decodeBase64().length==it.size&&shaBytes(it.bytes.decodeBase64())==it.sha256}
+   def strip={items->items.collect{it.findAll{k,v->k!='bytes'}}}
+   def reason=!blobOk?'kotlin_pipeline_snapshot_storage_mismatch':strip(s.receipt)!=s.current?'kotlin_derived_snapshot_stale':null
+   s.capture=[accepted:reason==null,reason:reason]
+   audit('capture:end')
+  }finally{
+   if(changed!=null){s.phase='restore';audit('restore:begin');Files.write(changed.toPath(),original);if(s.mutation!=null)s.mutation.restored=sha(changed)==shaBytes(original);audit('restore:end')}
+  }
+ }
+ tasks.register('snapshotProof'){t->t.dependsOn(tasks.named('jar'));t.doLast{
+  def hashes=baseline.inputs.collectEntries{name,value->[(name):sha(new File(root,name))]}
+  new File(root,'snapshot-report.json').text=JsonOutput.toJson([schema:'osv-mcp.snapshot-content-run-v2',mode:mode,readFault:readFault,runId:System.getProperty('osv.content.runId'),gradleVersion:gradle.gradleVersion,
+   api:api,fixtureInputsSha256:hashes,maxWorkers:gradle.startParameter.maxWorkerCount,parallel:gradle.startParameter.parallelProjectExecutionEnabled,
+   isolatedCache:true,profileApproved:baseline.approvedApi.every{k,v->api[k]?.sha256==v},events:s.events,calls:s.calls,getterCalls:s.getterCalls,
+   binding:s.binding,stage:s.stage,receipt:s.receipt,postAction:s.postAction,current:s.current,capture:s.capture,mutation:s.mutation,
+   observationBoundary:'Task.doFirst-before-KGP-action',naturalContentBinding:false,productionAdopted:false])
+ }}
+}
