@@ -1887,3 +1887,13 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - sealでhelper所有collectionへ`disallowChanges()`を適用し、`changesDisallowed`を必須化。late mutationのnative負例（OI06）と診断は未実装。
 - 集約値を検証済みmatrixから計算するよう変更し、置き換えた記録を`preReviews`配列へ要約として残す（v1は照合不能、v2は38d0b2aのコミット記録と照合可能）。
 - 再検証: native両版各16件成功、16 build（通常8・故障8）、静的68件。全pipeline候補・本番採用0件を維持。詳細は[設計書§9.21](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#921-38d0b2aレビュー修正v3再検証2026-11-01)。
+
+
+### 2026-11-01: KGP所有入力のcapture準備契約（設計のみ）
+
+- [設計書§9.22](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#922-kgp所有入力のcapture準備契約設計2026-11-01)へlibraries／classpath snapshot／compilerClasspath／Task.inputsのslot別binding・準備根拠・不足条件を追加。
+- 優先方式は自然消費時に所有者が渡す具体列receipt。限定候補の安定再読取には公開保証と非評価のruntime witnessを要求する。既存KGPにhookが存在するとは仮定せず、task成功／RESOLVED／既存fileをreadyへ昇格させない。全slot preflight未完了はreadyな他slotも含めてgetter 0で拒否する。
+- token lifecycle、独立した承認recipe/profile、export証拠・metadata・拒否／省略判定、未実施のKI01〜KI22を定義。両Gradle版の公開interfaceシグネチャは確認したが、native実証・既存v3検証JSON・本番コードは変更せず、全slot既定unsupportedと全pipeline候補／本番採用0件を維持する。
+
+
+- KGP準備契約レビュー修正（§9.22.8）: completeSlotへcontentBindingsを追加。自然消費時点のsize／SHA-256と、保存bytesまたは自然時に再検証したbaseline参照をreadyの必須条件にした。全体gate中に内容証拠を生成せず、最初のcaptureから元証拠との照合を要求する。KI07／KI18を拡充し、証拠欠落・baseline流用・receipt後capture前の実派生file改変・保存中変更のKI23〜KI26を追加（全26条件、未実施）。設計のみで既存v3実証・本番未採用の判断は維持。
