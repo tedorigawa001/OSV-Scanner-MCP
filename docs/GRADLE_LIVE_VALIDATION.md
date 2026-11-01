@@ -350,7 +350,7 @@ node src/test/manual/gradleCatalogLive.mjs
 
 ## Convention plugin本番adapterの実接続検証（2026-11-01）
 
-対象revisionは `4e01d11`。本番adapter／静的取込のコード変更は行わず、[手動ハーネス](../src/test/manual/gradlePluginLive.mjs)と[検証データ](validation/gradle-plugin-live-2026-11-01.json)を追加した。JDK 21.0.13+9-LTS、scanner 2.7.0、MCP stdio経由で検証する。配布server・本番ソース・ハーネスのhashと実行時刻はJSONに記録する。
+対象revisionは、4e01d11レビューのprofile未承認修正を含む `b5edea7`。profile未承認でも依存関係を維持する結果はこの修正に依存し、`4e01d11` には当てはまらない。実行時の作業ツリーは文書だけが未コミットで、JSONに記録した本番ソース・ハーネスのhashはコミット内容と一致する。本番adapter／静的取込のコード変更は行わず、[手動ハーネス](../src/test/manual/gradlePluginLive.mjs)と[検証データ](validation/gradle-plugin-live-2026-11-01.json)を追加した。JDK 21.0.13+9-LTS、scanner 2.7.0、MCP stdio経由で検証する。配布server・本番ソース・ハーネスのhashと実行時刻はJSONに記録する。
 
 | consumer／Gradle | producer | 登録 | runtime artifact |
 | --- | --- | --- | --- |
@@ -361,7 +361,7 @@ node src/test/manual/gradleCatalogLive.mjs
 
 ### 宣言元・信頼・鮮度の確認
 
-各projectで次の8条件×3ツール、合計48呼出しがすべて期待どおりに成功した。
+各projectで次の8条件×3ツール（24呼出し）、2 project合計48呼出しがすべて期待どおりに成功した。
 
 | 条件 | 宣言元一覧 | 依存関係・導入元 |
 | --- | --- | --- |
@@ -378,7 +378,7 @@ log4j-core 2.14.1はconsumer scriptとpluginの両方から登録し、declared_
 
 採用時のassuranceはauthor-attested-loader-and-structurally-checked、source_artifact_statusはbuild-lineage-and-runtime-attested、transform_statusはtrusted-runtime-not-independently-observed。JARのcomparisonはentry-content-exact、directoryはsame-path-origin。directoryではplugin_directory_snapshot_post_buildとplugin_directory_origin_same_path_not_comparedを確認する。同じpathの鮮度検証を、別実体との独立比較として数えない。
 
-登録不完全の対照は、pluginソースからendPluginを省き、同じprojectで実際に再構築・exportしたもの。新しい入力hashとartifact証拠を持つ未終了applicationを検証し、古いhashを残したstale入力とは区別する。再exportは同一projectのpluginソースにclass／定数を追加し、構築artifactとapplication証拠の両方が変化したことを確認する。snapshot負例はJAR bytesまたはdirectory manifestへ追記し、検証後に復元する。JARはplugin_snapshot_mismatch、破損したdirectory manifestはplugin_evidence_unverifiableを理由にplugin_trust_status=unverifiableとなる。
+登録不完全の対照は、pluginソースからendPluginを省き、同じprojectで実際に再構築・exportしたもの。新しい入力hashとartifact証拠を持つ未終了applicationを検証し、古いhashを残したstale入力とは区別する。再exportは同一projectのpluginソースにclass／定数を追加し、構築artifactとapplication証拠の両方が変化したことを確認する。snapshot負例はJAR bytesまたはdirectory manifestへ追記し、検証後に復元する。JARはplugin_snapshot_mismatch、破損したdirectory manifestはplugin_evidence_unverifiableを理由にplugin_trust_status=unverifiableとなる。directoryの負例はmanifest破損であり、構造が正しいままblob hashだけが異なる内容改変（snapshot_blob_mismatch）は実接続では確認しておらず、offline回帰で確認する。
 
 coverageはツールの対象範囲で異なる。scan_project／suggest_fixは独立producerのbuild／settingsにlockfileがないことをlockfile_missingで警告し、complete=falseとなる。scan_java_projectはconsumerのlockfileを対象にcomplete=true。これをplugin metadata不足によるcoverage低下と混同しない。snapshot改変でもlockfileの脆弱性スキャンは継続し、graph情報だけを失効させる。
 
@@ -410,3 +410,5 @@ node src/test/manual/gradlePluginLive.mjs
 通常のnpm testからは起動せず、scanner／Gradleを自動取得しない。cacheが不足していればoffline構築は失敗する。実接続matrixは上記2組に限定し、全DSL／版／producer／artifact組合せの検証は既存のoffline回帰と区別する。precompiled Kotlin、標準kotlin-dsl、発行済みplugin、並行export／configuration cache等の独立gateは変更しない。
 
 補助検証: build・typecheck・ハーネスの構文確認が成功。通常テストは77 files／1,772件成功、10 files／883件skip。今回native全matrixを再実行した記録ではなく、上記2 projectの実接続と既存の通常回帰を確認した。
+
+レビュー後の修正: ハーネスの事前条件に `GRADLE_USER_HOME` を追加した。前提確認だけの変更で実接続は再実行しておらず、JSONの `postReviewRevision` に変更後のハーネスhashを記録する。

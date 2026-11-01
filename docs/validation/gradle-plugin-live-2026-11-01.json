@@ -48708,5 +48708,14 @@
     "independent_candidate_queries": 64,
     "independent_queries_http_200_and_no_vulnerabilities": true,
     "inputs_unchanged_during_mcp": true
+  },
+  "postReviewRevision": {
+    "baselineRevision": "7ef3922",
+    "measuredRevision": "b5edea7afe72cdc304ce489dbc0eab5ac86d0f6a",
+    "workingTreeModification": "documentation only; recorded sources_sha256 and manual_harness_sha256 match committed content",
+    "manualHarnessSha256": "6149204b75a5cebec1d9c2160dfb88bb7042535573d55dae52357f1c35925c66",
+    "harnessChange": "precondition now also requires GRADLE_USER_HOME; validation logic unchanged",
+    "rerun": false,
+    "directorySnapshotNegative": "live control corrupts the manifest (plugin_evidence_unverifiable); blob content mismatch (snapshot_blob_mismatch) is covered by offline regressions only"
   }
 }

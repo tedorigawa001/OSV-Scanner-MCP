@@ -19,7 +19,7 @@ const profiles = [
   { name: "groovy-8", dsl: "groovy", gradle: process.env.OSV_MCP_LIVE_GRADLE_8 },
   { name: "kotlin-9", dsl: "kotlin", gradle: process.env.OSV_MCP_LIVE_GRADLE_9 },
 ];
-assert(scanner && profiles.every(p => p.gradle) && process.env.JAVA_HOME, "Set OSV_MCP_LIVE_SCANNER, OSV_MCP_LIVE_GRADLE_8, OSV_MCP_LIVE_GRADLE_9 and JAVA_HOME");
+assert(scanner && profiles.every(p => p.gradle) && process.env.JAVA_HOME && process.env.GRADLE_USER_HOME, "Set OSV_MCP_LIVE_SCANNER, OSV_MCP_LIVE_GRADLE_8, OSV_MCP_LIVE_GRADLE_9, JAVA_HOME and GRADLE_USER_HOME");
 const base = await realpath(await mkdtemp(path.join(os.tmpdir(), "osv-plugin-live-")));
 const evidence = path.join(base, "evidence"); await mkdir(evidence);
 const digest = bytes => createHash("sha256").update(bytes).digest("hex");
