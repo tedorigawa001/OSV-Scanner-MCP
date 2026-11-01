@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {ownedInputSourcePaths,ownedInputEvidenceTargets,verifyOwnedInputsCase} from '../fixtures/gradleOwnedInputsProof.mjs';
+import {ownedInputModes,ownedInputSourcePaths,ownedInputEvidenceTargets,ownedInputFaults,verifyOwnedInputsCase} from '../fixtures/gradleOwnedInputsProof.mjs';
 const repo=fileURLToPath(new URL('../../../',import.meta.url));
 const [prefix,output]=process.argv.slice(2);
 if(!prefix||!output)throw Error('usage: node gradleOwnedInputsResults.mjs <matrix-prefix> <output>');
@@ -13,7 +13,7 @@ const sourcesSha256=Object.fromEntries(await Promise.all(ownedInputSourcePaths.m
 const matrices=[];
 for(const gradleVersion of ['8.11.1','9.2.1']){
  const m=JSON.parse(await readFile(prefix+'-'+gradleVersion+'.json','utf8'));
- if(m.schema!=='osv-mcp.owned-input-matrix-v2'||m.gradleVersion!==gradleVersion||m.cases.length!==2||new Set(m.cases.map(c=>c.consumerDSL)).size!==2)throw Error('incomplete-native-matrix');
+ if(m.schema!=='osv-mcp.owned-input-matrix-v3'||m.gradleVersion!==gradleVersion||m.cases.length!==2||new Set(m.cases.map(c=>c.consumerDSL)).size!==2)throw Error('incomplete-native-matrix');
  for(const consumerDSL of ['Groovy','Kotlin']){
   const c=m.cases.find(c=>c.consumerDSL===consumerDSL);
   if(!c)throw Error('missing-native-case');
@@ -30,23 +30,32 @@ for(const gradleVersion of ['8.11.1','9.2.1']){
    if(outcome!==undefined||reason!==saved.reason)throw Error('event-rejection-replay-mismatch');
   }
  }
- if(!Array.isArray(m.rejections)||m.rejections.length!==2||new Set(m.rejections.map(r=>r.proof.consumerDSL)).size!==2)throw Error('missing-pre-gate-fault');
- for(const consumerDSL of ['Groovy','Kotlin']){
-  const saved=m.rejections.find(r=>r.proof.consumerDSL===consumerDSL);
-  if(!saved||saved.accepted!==false||saved.reason!=='owned_proof_getter_before_gate'||saved.proof.preGateRead!==true)throw Error('invalid-pre-gate-fault');
+ if(!Array.isArray(m.rejections)||m.rejections.length!==2*ownedInputFaults.length||new Set(m.rejections.map(r=>r.proof.consumerDSL+'/'+r.kind)).size!==m.rejections.length)throw Error('missing-pre-gate-fault');
+ for(const consumerDSL of ['Groovy','Kotlin'])for(const {kind,flag} of ownedInputFaults){
+  const saved=m.rejections.find(r=>r.proof.consumerDSL===consumerDSL&&r.kind===kind);
+  if(!saved||saved.accepted!==false||saved.reason!=='owned_proof_getter_before_gate'||saved.proof[flag]!==true)throw Error('invalid-pre-gate-fault');
   let outcome,reason;
-  try{outcome=verifyOwnedInputsCase(saved.proof,{gradleVersion,consumerDSL,producerDSL:consumerDSL,sourcesSha256,preGateRead:true});}catch(error){reason=error.message;}
+  try{outcome=verifyOwnedInputsCase(saved.proof,{gradleVersion,consumerDSL,producerDSL:consumerDSL,sourcesSha256,[flag]:true});}catch(error){reason=error.message;}
   if(outcome!==undefined||reason!==saved.reason)throw Error('pre-gate-fault-not-reproduced');
  }
  matrices.push(m);
 }
 const verificationSourcesSha256=Object.fromEntries(await Promise.all(['src/test/gradle/ownedInputs.test.ts','src/test/manual/gradleOwnedInputsResults.mjs'].map(async p=>[p,await digest(p)])));
-let preReview;
-try{const old=JSON.parse(await readFile(output,'utf8'));preReview=old.preReview??{schema:old.schema,recordedAt:old.recordedAt,sourcesSha256:old.sourcesSha256,scope:old.scope,recordSha256:createHash('sha256').update(await readFile(output)).digest('hex'),note:'Initial v1 evidence before getter/event inventory review fixes; not current v2 evidence.'};}catch(error){if(error.code!=='ENOENT')throw error;}
-const result={schema:'osv-mcp.owned-input-experiment-v2',recordedAt:new Date().toISOString(),baselineRevision:execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),sourcesSha256,verificationSourcesSha256,
- scope:{productionChanged:false,productionAdoptions:0,fullPipelineCandidates:0,helperCandidates:4,nativeBuilds:12,scenarioComparisons:20,observerRejections:16,preGateReadRejections:4,eventOmissionRejections:280,
+// Earlier records are kept as summaries only; each superseded schema is appended once.
+let preReviews=[];
+try{
+ const bytes=await readFile(output),old=JSON.parse(bytes.toString());
+ preReviews=old.preReviews??(old.preReview?[old.preReview]:[]);
+ if(old.schema!=='osv-mcp.owned-input-experiment-v3'&&!preReviews.some(p=>p.schema===old.schema))preReviews.push({schema:old.schema,recordedAt:old.recordedAt,baselineRevision:old.baselineRevision,sourcesSha256:old.sourcesSha256,scope:old.scope,recordSha256:createHash('sha256').update(bytes).digest('hex'),note:'Superseded evidence summary; not current evidence.'});
+}catch(error){if(error.code!=='ENOENT')throw error;}
+const allCases=matrices.flatMap(m=>m.cases),allFaults=matrices.flatMap(m=>m.rejections);
+const countFaults=kind=>allFaults.filter(r=>r.kind===kind).length;
+const result={schema:'osv-mcp.owned-input-experiment-v3',recordedAt:new Date().toISOString(),baselineRevision:execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),sourcesSha256,verificationSourcesSha256,
+ scope:{productionChanged:false,productionAdoptions:allCases.filter(c=>c.decision.productionAdopted).length,fullPipelineCandidates:allCases.filter(c=>c.decision.fullPipelineCandidate).length,helperCandidates:allCases.filter(c=>c.decision.ownedHelperCandidate).length,
+ nativeBuilds:allCases.reduce((n,c)=>n+c.runs.length,0)+allFaults.length,scenarioComparisons:allCases.length*ownedInputModes.length,observerRejections:allCases.reduce((n,c)=>n+c.decision.rejectedModes.length,0),
+ ownedPreGateReadRejections:countFaults('owned-pre-gate'),kgpPreGateReadRejections:countFaults('kgp-pre-gate'),eventOmissionRejections:allCases.reduce((n,c)=>n+c.evidenceRejections.length,0),
  consumerDSL:['Groovy','Kotlin'],producerDSL:['Groovy','Kotlin'],dslPairing:'same-DSL pairs; not all four cross-products',producer:'included build root, binary Kotlin with standard kotlin-dsl; applied Groovy helper source hashed as producer input',maxWorkers:1,parallel:false,
  observer:'owned file collection getter only; KGP public getter closures are forbidden by an unsupported recipe gate',
- limitations:['not a full pipeline observer noninterference proof','not all internal suppliers observed','not a general complete registration adapter','no buildSrc or precompiled proof','no toolchain capture recipe established','no production schema or static importer','no snapshot blob storage or OSV integration']},matrices,...(preReview?{preReview}:{})};
+ limitations:['not a full pipeline observer noninterference proof','not all internal suppliers observed','not a general complete registration adapter','no buildSrc or precompiled proof','no toolchain capture recipe established','no production schema or static importer','no snapshot blob storage or OSV integration']},matrices,...(preReviews.length?{preReviews}:{})};
 await writeFile(output,JSON.stringify(result,null,2)+'\n');
 console.log(JSON.stringify(result.scope));

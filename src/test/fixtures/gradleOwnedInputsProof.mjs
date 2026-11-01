@@ -2,6 +2,7 @@ export const ownedInputModes=['ready','not-evaluated','evaluating','failed','kgp
 export const ownedInputSourcePaths=['src/test/fixtures/gradle-owned-inputs-helper.gradle','src/test/fixtures/gradleOwnedInputsProof.mjs','src/test/fixtures/gradleOwnedInputsProof.d.mts','src/test/gradle/ownedInputs.integration.test.ts'];
 const fail=m=>{throw new Error(m)};
 export const ownedInputBoundaryEvents=['registration:begin:main','registration:end:main','registration:begin:auxiliary','registration:end:auxiliary','seal','action:begin','action:end'];
+export const ownedInputFaults=[{kind:'owned-pre-gate',flag:'preGateRead'},{kind:'kgp-pre-gate',flag:'preGateKgpRead'}];
 export const ownedInputEvidenceTargets=[0,1].flatMap(runIndex=>ownedInputModes.flatMap(mode=>ownedInputBoundaryEvents.map(event=>({runIndex,mode,event}))));
 function verifyEvents(s,observe){
  const events=s.events;
@@ -26,22 +27,22 @@ function verifyEvents(s,observe){
  if(natural.length!==(['evaluating','failed'].includes(s.mode)?1:0)||natural.some(i=>i<=bounds[5]||i>=bounds[6])||indices('natural-getter:main').length)fail('owned_proof_event_inventory_invalid');
 }
 export function verifyOwnedInputsCase(c,a){
- if(c?.schema!=='osv-mcp.owned-input-case-v2'||!Array.isArray(c.runs)||c.runs.length!==2)fail('owned_proof_schema_invalid');
+ if(c?.schema!=='osv-mcp.owned-input-case-v3'||!Array.isArray(c.runs)||c.runs.length!==2)fail('owned_proof_schema_invalid');
  if(c.gradleVersion!==a.gradleVersion||c.consumerDSL!==a.consumerDSL||c.producerDSL!==a.producerDSL||JSON.stringify(c.sourcesSha256)!==JSON.stringify(a.sourcesSha256))fail('owned_proof_identity_mismatch');
  if(!Object.keys(c.fixtureInputsSha256??{}).some(p=>p.endsWith('owned-inputs.gradle'))||!Object.keys(c.fixtureInputsSha256??{}).some(p=>p.startsWith('build-logic/build.gradle')))fail('owned_proof_source_missing');
  if(Object.keys(c.sourcesSha256??{}).length!==ownedInputSourcePaths.length||ownedInputSourcePaths.some(p=>!(/^[a-f0-9]{64}$/.test(c.sourcesSha256[p]??'')))||c.fixtureInputsSha256['build-logic/owned-inputs.gradle']!==c.sourcesSha256[ownedInputSourcePaths[0]])fail('owned_proof_source_missing');
- if((c.preGateRead??false)!==(a.preGateRead??false))fail('owned_proof_identity_mismatch');
+ if((c.preGateRead??false)!==(a.preGateRead??false)||(c.preGateKgpRead??false)!==(a.preGateKgpRead??false))fail('owned_proof_identity_mismatch');
  const ids=new Set();
  for(let i=0;i<2;i++){
   const r=c.runs[i];
-  if(r.schema!=='osv-mcp.owned-input-run-v2'||r.gradleVersion!==c.gradleVersion||r.observe!==(i===1)||!r.runId||ids.has(r.runId)||JSON.stringify(r.fixtureInputsSha256)!==JSON.stringify(c.fixtureInputsSha256))fail('owned_proof_run_invalid');
+  if(r.schema!=='osv-mcp.owned-input-run-v3'||r.gradleVersion!==c.gradleVersion||r.observe!==(i===1)||!r.runId||ids.has(r.runId)||JSON.stringify(r.fixtureInputsSha256)!==JSON.stringify(c.fixtureInputsSha256))fail('owned_proof_run_invalid');
   ids.add(r.runId);
-  if(r.preGateRead!==(i===1&&(c.preGateRead??false)))fail('owned_proof_run_invalid');
+  if(r.preGateRead!==(i===1&&(c.preGateRead??false))||r.preGateKgpRead!==(i===1&&(c.preGateKgpRead??false)))fail('owned_proof_run_invalid');
   if(r.maxWorkers!==1||r.parallel!==false||r.productionAdopted!==false||r.kgpRecipeSupported!==false)fail('owned_proof_scope_invalid');
   if(!Array.isArray(r.cases)||r.cases.length!==ownedInputModes.length||new Set(r.cases.map(x=>x.mode)).size!==ownedInputModes.length)fail('owned_proof_inventory_incomplete');
   for(const mode of ownedInputModes){
    const s=r.cases.find(x=>x.mode===mode);
-   if(!s||s.sealed!==true||s.attachments!==2||!Array.isArray(s.events)||!Array.isArray(s.handles)||s.handles.length!==2)fail('owned_proof_inventory_incomplete');
+   if(!s||s.sealed!==true||s.changesDisallowed!==true||s.attachments!==2||!Array.isArray(s.events)||!Array.isArray(s.handles)||s.handles.length!==2)fail('owned_proof_inventory_incomplete');
    verifyEvents(s,i===1);
    if(s.events.some(e=>e.phase==='registration'&&e.event.startsWith('supplier:')))fail('owned_proof_early_evaluation');
    if(!s.events.some(e=>e.event==='seal'))fail('owned_proof_registration_invalid');
@@ -85,6 +86,6 @@ export function verifyOwnedInputsCase(c,a){
   const natural=s=>s.events.filter(e=>['registration','natural'].includes(e.phase));
   if(JSON.stringify(natural(x))!==JSON.stringify(natural(y))||JSON.stringify(x.handles)!==JSON.stringify(y.handles))fail('owned_proof_noninterference_failed');
  }
- if(c.preGateRead)fail('owned_proof_fault_not_reproduced');
+ if(c.preGateRead||c.preGateKgpRead)fail('owned_proof_fault_not_reproduced');
  return {ownedHelperCandidate:true,productionAdopted:false,fullPipelineCandidate:false,rejectedModes:ownedInputModes.slice(1)};
 }

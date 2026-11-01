@@ -4,7 +4,7 @@ const hash='a'.repeat(64);
 function fixture(){
  const sourcesSha256=Object.fromEntries(ownedInputSourcePaths.map(p=>[p,hash]));
  const fixtureInputsSha256={'build-logic/owned-inputs.gradle':hash,'build-logic/build.gradle.kts':hash,'build-logic/owned/a.txt':hash,'build-logic/owned/b.txt':hash};
- const proof:any={schema:'osv-mcp.owned-input-case-v2',gradleVersion:'8.11.1',consumerDSL:'Kotlin',producerDSL:'Kotlin',sourcesSha256,fixtureInputsSha256,runs:[]};
+ const proof:any={schema:'osv-mcp.owned-input-case-v3',gradleVersion:'8.11.1',consumerDSL:'Kotlin',producerDSL:'Kotlin',sourcesSha256,fixtureInputsSha256,runs:[]};
  for(const observe of [false,true]){
   const cases=ownedInputModes.map(mode=>{
    const events:any[]=['registration:begin:main','registration:end:main','registration:begin:auxiliary','registration:end:auxiliary','seal'].map(event=>({event,phase:'registration'}));
@@ -19,10 +19,10 @@ function fixture(){
    if(observe)add('capture:gate','observer');
    if(observe&&mode==='ready'){add('getter:main','observer');add('getter:auxiliary','observer');}
    if(mode==='evaluating'){add('ready:auxiliary');add('action:end');}
-   return {mode,sealed:true,attachments:2,events,handles:[{id:'main',state:'ready',calls:1},{id:'auxiliary',state:mode==='not-evaluated'?'not-evaluated':mode==='failed'?'failed':'ready',calls:mode==='not-evaluated'?0:1}],getterCalls:observe&&mode==='ready'?2:0,kgpGetterCalls:0,kgpReaderCount:mode==='kgp-unsupported'?4:0,
+   return {mode,sealed:true,changesDisallowed:true,attachments:2,events,handles:[{id:'main',state:'ready',calls:1},{id:'auxiliary',state:mode==='not-evaluated'?'not-evaluated':mode==='failed'?'failed':'ready',calls:mode==='not-evaluated'?0:1}],getterCalls:observe&&mode==='ready'?2:0,kgpGetterCalls:0,kgpReaderCount:mode==='kgp-unsupported'?4:0,
     readFiles:observe&&mode==='ready'?['main','auxiliary'].flatMap(handle=>['a.txt','b.txt'].map(name=>({handle,name,size:2,sha256:hash}))):[],decision:observe?{accepted:mode==='ready',reason}:null,attempts:observe?[{states,reason}]:[]};
   });
-  proof.runs.push({schema:'osv-mcp.owned-input-run-v2',gradleVersion:'8.11.1',preGateRead:false,runId:observe?'observer':'control',observe,fixtureInputsSha256,maxWorkers:1,parallel:false,productionAdopted:false,kgpRecipeSupported:false,cases});
+  proof.runs.push({schema:'osv-mcp.owned-input-run-v3',gradleVersion:'8.11.1',preGateRead:false,preGateKgpRead:false,runId:observe?'observer':'control',observe,fixtureInputsSha256,maxWorkers:1,parallel:false,productionAdopted:false,kgpRecipeSupported:false,cases});
  }
  return {proof,approval:{gradleVersion:'8.11.1',consumerDSL:'Kotlin',producerDSL:'Kotlin',sourcesSha256}};
 }
@@ -111,4 +111,22 @@ it('rejects the wrong getter phase and duplicate reads',()=>{
 it('rejects a claimed fault which did not actually execute a pre-gate read',()=>{
  const {proof,approval}=fixture();proof.preGateRead=true;proof.runs[1].preGateRead=true;
  expect(()=>verifyOwnedInputsCase(proof,{...approval,preGateRead:true})).toThrow('owned_proof_fault_not_reproduced');
+});
+it('rejects an actual unsupported KGP reader call before the gate',()=>{
+ const {proof,approval}=fixture();const s=proof.runs[1].cases.find((c:any)=>c.mode==='kgp-unsupported');
+ s.events.splice(s.events.findIndex((e:any)=>e.event==='capture:gate'),0,{event:'kgp-getter:libraries',phase:'observer'});s.kgpGetterCalls=1;
+ proof.preGateKgpRead=true;proof.runs[1].preGateKgpRead=true;
+ expect(()=>verifyOwnedInputsCase(proof,{...approval,preGateKgpRead:true})).toThrow('owned_proof_getter_before_gate');
+});
+it('rejects a claimed KGP fault which did not actually call a reader',()=>{
+ const {proof,approval}=fixture();proof.preGateKgpRead=true;proof.runs[1].preGateKgpRead=true;
+ expect(()=>verifyOwnedInputsCase(proof,{...approval,preGateKgpRead:true})).toThrow('owned_proof_fault_not_reproduced');
+});
+it('rejects a KGP fault proof checked without the matching approval',()=>{
+ const {proof,approval}=fixture();proof.preGateKgpRead=true;proof.runs[1].preGateKgpRead=true;
+ expect(()=>verifyOwnedInputsCase(proof,approval)).toThrow('owned_proof_identity_mismatch');
+});
+it('requires helper-owned collections to disallow changes at seal',()=>{
+ const {proof,approval}=fixture();proof.runs[0].cases[0].changesDisallowed=false;
+ expect(()=>verifyOwnedInputsCase(proof,approval)).toThrow('owned_proof_inventory_incomplete');
 });

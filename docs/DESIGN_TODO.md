@@ -1879,3 +1879,11 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 再検証: native両版各14件成功、12 buildを保存。通常20条件対照に加え、gate前の実読取4負例と必須event欠落280対照をすべて拒否し集約で再検証。静的64件成功。本番採用0件を維持。
 
 最終確認: 通常全体1,993件成功・native opt-in等1,097件skip。型チェック・build・差分チェックも成功。今回の変更はtest-onlyの実証・検証器・記録で、本番採用0件を維持する。
+
+
+### 2026-11-01: 38d0b2aレビュー修正・v3再検証
+
+- KGP readerを呼ぶ到達しない行を削除し、gate前にKGPの公開librariesを実際に呼ぶnative故障`preGateKgpRead`を追加。両DSL・両版の4 buildでkgp-getter 1件・counter 1を記録し、getter-before-gateで拒否した。偽の故障・承認不一致も静的回帰で拒否する。
+- sealでhelper所有collectionへ`disallowChanges()`を適用し、`changesDisallowed`を必須化。late mutationのnative負例（OI06）と診断は未実装。
+- 集約値を検証済みmatrixから計算するよう変更し、置き換えた記録を`preReviews`配列へ要約として残す（v1は照合不能、v2は38d0b2aのコミット記録と照合可能）。
+- 再検証: native両版各16件成功、16 build（通常8・故障8）、静的68件。全pipeline候補・本番採用0件を維持。詳細は[設計書§9.21](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#921-38d0b2aレビュー修正v3再検証2026-11-01)。
