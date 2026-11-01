@@ -1,0 +1,9 @@
+export const btaModes:string[];
+export const btaSources:string[];
+export function hash(b:any):string;
+export function verifyBtaDriverRun(r:any,a:any):any;
+export function verifyBtaDriverCase(c:any,a:any):any;
+export const btaDriverTargets:any[];
+export function mutateBtaDriver(c:any,target:any):any;
+export function btaDriverRegressions(c:any,a:any):any[];
+export function configurationFaultReason(mode:string):string|null;

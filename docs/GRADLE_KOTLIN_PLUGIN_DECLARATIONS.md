@@ -1852,3 +1852,28 @@ BTA driverのJDK対応は、Gradle daemon側java／javacと、実JavaExec child�
 最初のstandalone試行ではIC outputDirsにworking directoryが不足し、初回Gradle試行ではJavaCompileのsource／targetCompatibilityが未設定で失敗した。設定を明示してから取り直し、失敗・試行段階のbuildを上記最終matrixへ加算していない。JVM identityの補強後も両版を再実行し、現在sourceに一致する最終結果だけを検証JSONへ収録した。
 
 最終確認: 通常全体2,391テスト成功・native opt-in等1,173件skip。typecheck・build・差分検査も成功。
+
+
+### 9.36 BTA configuration／snapshot parameterの実参照束縛（2026-11-02）
+
+§9.35の初期v1記録では、snapshot ID列の検証と、最終compileJvmへ渡すconfigurationの対応が不足していた。現在の実証はv2へ更新し、旧v1は検証JSONのpreReviewsへhash付きの参考要約として残す。§9.35末尾の件数は初期検証の履歴であり、現在の結果は本節を用いる。
+
+専用driver内のIdentityHashMapと非公開Bindingで、実service・project・configuration・snapshot parameterの参照を対応付ける。公開useIncrementalCompilationの実receiverと実parameterを呼出し完了後に登録し、parameterの実snapshot列からdescriptorを得る。独立した報告用入力列だけでcompile成功を検証しない。libraryの非IC configurationも明示登録する。
+
+compile直前に、登録済みconfigurationの実参照、期待Binding、service／project、stage、source／出力path、引数、source hash、実parameter参照とsnapshot descriptorを照合する。Bindingは一度だけ使用可能で、検証に成功してから実BTAを呼ぶ。BTA内部fieldのreflectionは用いない。この保証は固定sourceの専用broker経路に限定し、任意の呼出し元を隔離する機構とは扱わない。
+
+| native負例 | 最終consumerへ実際に渡す値 | 結果 |
+| --- | --- | --- |
+| default-config | 新しい既定configuration。IC parameterなし・未登録 | configuration_unregisteredとしてBTA呼出し前に拒否 |
+| unregistered-config | 実useIncrementalCompilation済みだが未登録のconfiguration | configuration_unregisteredとして拒否 |
+| foreign-config | 同じstage・source・引数・snapshot値で別途登録したconfiguration／parameter | configuration_binding_mismatchとして実参照不一致を拒否 |
+
+3負例×両DSL×両Gradle版の12件すべてで、最終consumerのcompileJvm呼出しは0回、最終出力一覧は空である。残るwarm出力v1はwarmとして実行・記録し、最終consumerの成功へ流用しない。別configurationが値として同じsnapshot列を持っていても、期待するconfiguration／parameter実体を代用できない。
+
+再現方法は§9.35と同じで、9 modeを各DSL・各Gradle版で実行する。program・case・run・matrix／experiment記録はv2とし、configurationの生成・useIncrementalCompilation・登録・直前検証を必須証拠に追加した。証拠欠落、receiver／parameter／消費configurationの交換、snapshot変更、拒否記録欠落も共有改変対照で拒否する。
+
+再検証結果はGradle 8.11.1／9.2.1で各28テスト成功。全36 buildで実compileJvm 88回（library 36、warm 36、consumer 16）、正規snapshot 72個を生成した。提供入力候補8件、stale拒否8件、保存破損拒否4件、実追加評価拒否4件、configuration拒否12件。共有記録改変29対照×4組＝116件を再検証し、静的／公開記録44テストも成功した。control／observeのowned supplierは各3回、Java具体列selectionは1回で一致する。
+
+自然消費receipt、全writer排除、compiler内部全supplierの非干渉、既存KGPへの透過対応は引き続き未成立である。承認recipe・自然消費内容束縛・本番採用はすべて0件を維持する。
+
+最終確認（§9.36）: 通常全体2,405テスト成功・native opt-in等1,185件skip。両Gradle版のnative各28テスト、typecheck・buildも成功。

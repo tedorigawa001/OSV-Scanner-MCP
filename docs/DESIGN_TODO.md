@@ -2016,3 +2016,10 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 最終native（§9.35）: 両DSL・両Gradle版で各版16テスト、24 build・実compileJvm 64回・正規snapshot 48個。提供入力候補8件、stale拒否8件・保存破損拒否4件・実追加評価拒否4件、記録改変拒否84件を保存・再生。control／observeのsupplierは3回で一致（故障は4回）、具体列selectionは1回。静的／公開記録30テスト成功。Gradle側・BTA child側JVMを固定JDKへ結び、source hashも一致。自然消費receipt・承認recipe・本番採用0は維持。
 
 - 通常全体2,391件成功（1,173件skip）、typecheck／build／差分検査も成功。
+
+
+### 2026-11-02: BTA configuration／snapshot parameterの束縛補強
+
+- [設計書§9.36](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#936-bta-configurationsnapshot-parameterの実参照束縛2026-11-02)へ、実configuration・公開IC parameter・期待Bindingの参照照合と一回限りの使用を追加。独立した報告用snapshot列から実consumerへの対応を推定しない。
+- 既定・未登録IC・同値の別登録configurationを最終consumerへ渡すnative負例を追加。両DSL・Gradle 8.11.1／9.2.1の12件すべてで最終BTA呼出し前に拒否し、warm出力を最終成功と扱わない。
+- 両版各28テスト、36 build・実compileJvm 88回・snapshot 72個を再実行。記録改変116件と静的回帰44件が成功。v2記録へ更新し、旧v1は参考履歴に限定。自然消費receipt・承認recipe・本番採用0は維持。

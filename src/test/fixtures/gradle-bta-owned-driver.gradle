@@ -1,0 +1,43 @@
+// Test-only explicit producer integration. No existing KGP property is observed or replaced.
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
+import java.security.MessageDigest
+
+def profile=new JsonSlurper().parse(file('runtime-profile.json'))
+String mode=System.getProperty('osv.bta.mode')
+def state=[events:[],calls:0,getterCalls:0,phase:'configuration']
+def audit={String e->state.events.add([event:e,phase:state.phase])}
+def sha={File f->MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex().toString()}
+audit('registration:begin')
+def source=providers.provider{audit('supplier:begin');state.calls++;def result=profile.runtime.collect{file(it.artifact)};audit('supplier:end');result}
+def compileDriver=tasks.register('compileOwnedDriver',JavaCompile){t->
+ t.source(file('BtaOwnedDriver.java'));t.classpath=files(profile.runtime.collect{file(it.artifact)})
+ t.sourceCompatibility='21';t.targetCompatibility='21';t.destinationDirectory.set(layout.buildDirectory.dir('driver-classes'));t.options.release.set(21);t.options.compilerArgs.add('-proc:none')
+}
+def driver=tasks.register('btaDriver',JavaExec){t->
+ t.dependsOn(compileDriver);t.mainClass.set('BtaOwnedDriver');t.maxHeapSize='768m'
+ t.classpath=files(layout.buildDirectory.dir('driver-classes'),source)
+ t.args(projectDir.canonicalPath,mode,System.getProperty('osv.bta.runId'),profile.kotlinVersion,profile.stdlib)
+ t.doFirst{
+  state.phase='action';audit('action:begin')
+  if(mode=='source-fault'){
+   state.phase='observer';audit('observer:begin');audit('getter:begin');state.getterCalls++
+   try{source.get()}finally{audit('getter:end')}
+   audit('observer:end');state.phase='action'
+  }
+ }
+ t.doLast{state.phase='action';audit('action:end')}
+}
+audit('registration:end')
+gradle.taskGraph.beforeTask{t->if(t.name=='btaDriver'){state.phase='natural';audit('task:begin')}}
+gradle.taskGraph.afterTask{t,result->if(t.name=='btaDriver'){
+ state.phase='natural';audit('task:end')
+ def api=new File(org.gradle.api.tasks.TaskInputs.protectionDomain.codeSource.location.toURI()).canonicalFile
+ def hashes=profile.fixtureFiles.collectEntries{name->[(name):sha(file(name))]}
+ file('gradle-report.json').text=JsonOutput.toJson([schema:'osv-mcp.bta-driver-gradle-v1',mode:mode,runId:System.getProperty('osv.bta.runId'),gradleVersion:gradle.gradleVersion,
+  events:state.events,calls:state.calls,getterCalls:state.getterCalls,
+  stage:[executed:result.executed,didWork:result.didWork,skipped:result.skipped,noSource:result.noSource,failed:result.failure!=null],
+  gradleApi:[artifact:api.path,sha256:sha(api)],fixtureInputsSha256:hashes,
+  maxWorkers:gradle.startParameter.maxWorkerCount,parallel:gradle.startParameter.parallelProjectExecutionEnabled,
+  javacExecutableSha256:sha(new File(System.getProperty('java.home'),'bin/javac')),javaVersion:System.getProperty('java.version'),javaExecutableSha256:sha(new File(System.getProperty('java.home'),'bin/java'))])
+}}
