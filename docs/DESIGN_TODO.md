@@ -1792,3 +1792,23 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 
 - Kotlin pipeline設計レビュー2件を反映: 一時MANIFESTのpackage-literal-file型を定義し、固定literal・保存file・JAR entryの三者照合と、自己stageの生成edgeにしない規則を追加。v4 Kotlin分岐のmappingは省略／not-assertedを有効な未表明とし、入力検証後に宣言元だけを省略する。旧schemaの必須条件や参照・hash検証は維持する。専用拒否理由とKP37〜KP44を追加（合計44条件）。設計のみで実証・本番コード・観測JSONは変更しない。
 - 9fbd9edレビュー3件を反映: 9.2.1 precompiledのcompilePluginsBlocksにある派生入力20件へplugins-block-classpath cohortを定義（recipe未成立なら当該4構成を初期対象外、KP01は正常12構成）。全観測のNO-SOURCE compileJavaをnon-contributing-java-compileとして閉じた条件で許可。export時の取得不能とMCP読取時の保存blob不整合を分け、kotlin_pipeline_snapshot_storage_mismatchを全file型共通に追加。KP45〜KP47を追加（合計47条件）。設計のみ。
+
+
+### 2026-11-01: 具体化したKotlin pipeline契約の公開API実証
+
+- [設計書§9.12](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#912-具体化した契約の公開api実証2026-11-01)に取得可能性と採用条件を分けて記録。公開KotlinCompileのlibraries／snapshot collection、選択PluginのCodeSource、実設定、streaming保存・再検証、一時MANIFESTのpublic slotと固定literal、全JAR entryの対応、mapping assertion specimenを追加した。
+- **現recipeは不採用。** 両Gradle版でpublic getter読み取りによりlibraries supplierがcompile後に追加評価された（3回→4回）。依存Providerの旧対照が一致しても、この非干渉不足は解消しない。9.2.1 precompiledにはplugins-block用の役割付き公開collection recipe不足も残る。
+- 本番adapter／reader／schema／信頼設定は未変更。新契約の採用を0件として保存し、旧helper／loaderの候補を流用しない。KP01〜KP47の全達成を主張せず、実測・部分対照・未実装を設計書とvalidation/gradle-kotlin-pipeline-2026-11-01.jsonで区別する。
+- 次は追加評価を起こさない取得契約の再設計・公開API実証とplugins-block recipeの検討。そのレビュー後、成立した範囲だけ本番v4／v6を実装し、最後に3ツール／OSV実接続へ進む。
+
+- 最終確認: 両版native各284件＋supplier各1件、静的specimen29件、通常全体1,823件が成功（native opt-in等1,072件skip）。型チェック・build成功。正常16＋実class差し替え4観測を保存した。
+
+
+### 2026-11-01: Kotlin pipeline公開API実証レビュー2件の修正
+
+- baselineのresource・生成descriptor・compile出力・必須MANIFESTから期待entryを組み立て、コピー出力／Jar入力／entryが同時に欠けても拒否する。両Gradle版・両consumer DSLの正常16観測に計96件の欠落対照を保存した。
+- supplier観測をv2へ更新。実Gradle版・run UUID・observe設定・観測時collector hash・fixture hash、run前後のharness／verifier source hashを保存・照合する。nativeと集約で共有verifierを使い、別版・古いsource・不正phase・任意の異なるtrace・旧形式を拒否する。集約時のコードhashで過去の結果を再ラベルしない。
+- 両Gradle版のmatrix各332件、supplierのGroovy／Kotlin consumer各版2件が成功。8.11.1の最初の実行は終了処理10秒timeout（機能検査332件は通過）のため成功へ計上せず、制限を延ばした単独再実行の成功を採用した。初回実証の要約は検証JSONのpreReviewに保持する。
+- 4組のsupplier対照はいずれも3回→4回。新pipeline契約は引き続き不成立・採用0件。mappingは限定したassertion specimenで、本番v4 parser・context併合等の未実装範囲は変わらない。詳細は[設計書§9.13](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#913-公開api実証レビュー2件の修正再検証2026-11-01)。
+
+- 最終確認: 静的回帰56件、通常全体1,850件成功・native opt-in等1,073件skip。型チェック・build成功。

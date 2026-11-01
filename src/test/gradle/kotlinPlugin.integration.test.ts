@@ -9,11 +9,14 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { assessConventionProof, captureConventionDirectory, proofDigest } from "../fixtures/gradleConventionProof.js";
 import { compareJars, jarContents } from "../fixtures/gradlePluginJarProof.js";
+import { assessPipelinePackage,verifyPipelineContent,manifestLiteral,checkLiteralBinding,mappingDecision } from "../fixtures/gradleKotlinPipelineProof.js";
 import { assessKotlinStages } from "../fixtures/gradleKotlinProof.js";
 import { assessPluginLoad } from "../fixtures/gradlePluginLoadPolicy.js";
 import { readProofFile,sha,verifyDirectorySnapshot,compareDirectoryOrigin,loadBudget } from "../fixtures/gradlePluginLoadProof.js";
 const binary=process.env.OSV_MCP_TEST_GRADLE;
 const init=fileURLToPath(new URL("../fixtures/gradle-kotlin-plugin.init.gradle",import.meta.url));
+const pipelineMode=process.env.OSV_MCP_KOTLIN_PIPELINE_PROOF==="1";
+const pipelineInit=fileURLToPath(new URL("../fixtures/gradle-kotlin-pipeline.init.gradle",import.meta.url));
 const dirs:string[]=[];
 afterAll(async()=>{for(const dir of dirs.splice(0)) await rm(dir,{recursive:true,force:true});});
 async function digest(file:string){const h=createHash("sha256");for await(const bytes of createReadStream(file,{highWaterMark:1024*1024})) h.update(bytes);return h.digest("hex");}
@@ -46,7 +49,7 @@ async function toolchain(){
  })();
 }
 async function fixture(kotlin=false, included=false, kind="binary-java",artifactMode:"jar"|"directory"="jar",replaceClass=false):Promise<any>{
- const proofFiles=[fileURLToPath(import.meta.url),init,...["gradleConventionProof.ts","gradlePluginLoadProof.ts","gradlePluginLoadPolicy.ts","gradlePluginJarProof.ts","gradleKotlinProof.ts"].map(n=>fileURLToPath(new URL("../fixtures/"+n,import.meta.url)))];
+ const proofFiles=[fileURLToPath(import.meta.url),init,...(pipelineMode?[pipelineInit,fileURLToPath(new URL("../fixtures/gradleKotlinPipelineProof.ts",import.meta.url))]:[]),...["gradleConventionProof.ts","gradlePluginLoadProof.ts","gradlePluginLoadPolicy.ts","gradlePluginJarProof.ts","gradleKotlinProof.ts"].map(n=>fileURLToPath(new URL("../fixtures/"+n,import.meta.url)))];
  const proofSources=Object.fromEntries(await Promise.all(proofFiles.map(async f=>[path.basename(f),await digest(f)])));
  const invocationId=randomUUID();
  const prepared=await toolchain();
@@ -152,13 +155,18 @@ probe.add('probe','review:parent:1',probe.scriptSource('${name}/build${suffix}')
  }
  const dest=path.join(root,"repo/review/parent/1");await mkdir(dest,{recursive:true});
  await writeFile(path.join(dest,"parent-1.pom"),"<project><modelVersion>4.0.0</modelVersion><groupId>review</groupId><artifactId>parent</artifactId><version>1</version></project>");
- const inputs=["settings.gradle",`${producer}/settings.gradle`,`${producer}/build.gradle.kts`,source,...["plain","control","registered","script","late","unfinished","failed","duplicate","duplicateClosed"].map(n=>`${n}/build${suffix}`)];
+ if(pipelineMode){
+  for(const [name,body]of [["settings.txt","proof-resource\n"],["META-INF/services/proof.Service","proof.Implementation\n"]]){
+   const f=path.join(root,producer,"src/main/resources",name!);await mkdir(path.dirname(f),{recursive:true});await writeFile(f,body!);
+  }
+ }
+ const inputs=[...(pipelineMode?[`${producer}/src/main/resources/settings.txt`,`${producer}/src/main/resources/META-INF/services/proof.Service`]:[]),"settings.gradle",`${producer}/settings.gradle`,`${producer}/build.gradle.kts`,source,...["plain","control","registered","script","late","unfinished","failed","duplicate","duplicateClosed"].map(n=>`${n}/build${suffix}`)];
  let inputBytes=0;
  for(const p of inputs){const size=(await stat(path.join(root,p))).size;inputBytes+=size;if(size>4*1024**2 || inputBytes>64*1024**2)throw new Error("plugin-input-budget");}
  const baseline=Object.fromEntries(await Promise.all(inputs.map(async p=>[p,await digest(path.join(root,p))])));
  await writeFile(path.join(root,".proof/baseline.json"),JSON.stringify({inputs:baseline,source,producer,invocationId}));
  const runtimeRoot=await realpath(process.env.GRADLE_USER_HOME??path.join(os.homedir(),".gradle"));
- const result=await new Promise<{code:number;output:string}>(resolve=>execFile(binary!,["-p",root,"-I",init,`-Dosv.convention.root=${root}`,`-Dosv.plugin.runtimeRoot=${runtimeRoot}`,"osvProveConventions",...(replaceClass?["-PosvProofReplaceClass=true"]:[]),"--offline","--max-workers=2","-Pkotlin.compiler.execution.strategy=in-process","--no-daemon","--no-configuration-cache","--no-parallel","--no-build-cache","--rerun-tasks","--console=plain","--stacktrace"],{env:process.env,timeout:240000,maxBuffer:4*1024*1024},(e,out,err)=>resolve({code:e?typeof e.code==="number"?e.code:-1:0,output:out+err})));
+ const result=await new Promise<{code:number;output:string}>(resolve=>execFile(binary!,["-p",root,"-I",init,...(pipelineMode?["-I",pipelineInit,"-Pkotlin.incremental=false","-Pkotlin.daemon.useFallbackStrategy=false"]:[]),`-Dosv.convention.root=${root}`,`-Dosv.plugin.runtimeRoot=${runtimeRoot}`,"osvProveConventions",...(replaceClass?["-PosvProofReplaceClass=true"]:[]),"--offline","--max-workers=2","-Pkotlin.compiler.execution.strategy=in-process","--no-daemon","--no-configuration-cache","--no-parallel","--no-build-cache","--rerun-tasks","--console=plain","--stacktrace"],{env:process.env,timeout:240000,maxBuffer:4*1024*1024},(e,out,err)=>resolve({code:e?typeof e.code==="number"?e.code:-1:0,output:out+err})));
  expect(result.code,result.output).toBe(0);
  const json=await readFile(path.join(root,"convention-proof.json"),"utf8");const report=JSON.parse(json);
  report.nativePackageMutation=replaceClass;report.pathAliases={cache:process.env.GRADLE_USER_HOME!==runtimeRoot,jdk:process.env.JAVA_HOME!==await realpath(process.env.JAVA_HOME!)};report.pluginSource=source;report.requiresPlugin=true;report.pluginInputBytes=inputBytes;report.invocationId=invocationId;report.proofSourcesSha256=proofSources;
@@ -199,6 +207,31 @@ probe.add('probe','review:parent:1',probe.scriptSource('${name}/build${suffix}')
  const packageReceipt=report.builds.find((b:any)=>b.build===producer)?.receipts.find((r:any)=>r.task===':jar'&&r.didWork&&!r.skipped&&!r.failure);
  const packageBytes=await readProofFile(root,packageReceipt.archivePath,loadBudget());
  report.kotlinPackage={producer,invocationId,archivePath:packageReceipt.archivePath,sha256:sha(packageBytes),entries:jarContents(packageBytes,loadBudget())};
+ if(pipelineMode){
+  report.pipeline=JSON.parse(await readFile(path.join(root,`.proof/pipeline-${producer}.json`),"utf8"));
+  report.pipeline.package=assessPipelinePackage(report,producer);
+  const budget={bytes:256*1024**2,refs:4096};
+  for(const t of report.pipeline.receipts){
+   for(const e of t.snapshots??[])await verifyPipelineContent(root,e.content,true,budget);
+   if(t.manifest)await verifyPipelineContent(root,t.manifest,false,budget);
+   for(const e of [...t.libraries??[],...t.compilerClasspath??[]]){
+    e.toolchainId=prepared.paths.get(e.path)??null;
+    const approved=prepared.profile.entries.find((x:any)=>x.id===e.toolchainId);
+    e.approved=!!approved&&approved.sha256===e.sha256&&approved.size===e.size;
+   }
+   for(const e of t.selectedPlugins??[]){
+    const f=e.origin?.startsWith("file:")?await realpath(fileURLToPath(e.origin)):null;
+    e.toolchainId=f?prepared.paths.get(f)??null:null;
+    e.origin=e.origin?.replaceAll(runtimeRoot,"$GRADLE_CACHE").replaceAll(prepared.home,"$GRADLE_HOME");
+   }
+   // Paths remain diagnostic only; static validation reads the bounded content store.
+   for(const e of [...t.libraries??[],...t.snapshots??[],...t.compilerClasspath??[]])e.path=e.path.replaceAll(runtimeRoot,"$GRADLE_CACHE").replaceAll(prepared.home,"$GRADLE_HOME");
+   if(t.publicInputPaths)t.publicInputPaths=t.publicInputPaths.map((p:string)=>p.replaceAll(root,"$FIXTURE").replaceAll(runtimeRoot,"$GRADLE_CACHE").replaceAll(prepared.home,"$GRADLE_HOME"));
+  }
+  report.pipeline.storageVerified=true;
+  report.pipeline.limitations=["test_only_no_production_adoption","aggregate_not_per_jar_mapping","snapshot_supplier_trace_not_independently_observed","full_v4_schema_and_trust_parser_not_implemented"];
+  report.pipeline.recipeStatus=kind==='precompiled-kotlin'&&report.gradleVersion==='9.2.1'?'kotlin_pipeline_recipe_unsupported':'candidate-public-collection-observed';
+ }
  report.kotlinStages=assessKotlinStages(report,producer,source,kind==='precompiled-kotlin');
  report.assessment=assessConventionProof(report,{approvedProfiles:new Set([approvedDigest]),pluginTrust:true});
  const observedAgents=await Promise.all(report.runtime.vmArguments.map(async(arg:string)=>{const id=arg.startsWith("-javaagent:")?prepared.paths.get(await realpath(arg.slice(11))):null;const e=prepared.profile.entries.find((e:any)=>e.id===id);return {kind:"javaagent",entryId:id??"unapproved",sha256:e?.sha256??null};}));
@@ -252,6 +285,73 @@ const cases=[false,true].flatMap(included=>["binary-kotlin","precompiled-kotlin"
 for(const kotlin of [false,true])for(const item of cases)describe.skipIf(!binary)(`Standard Kotlin plugin (${kotlin?"Kotlin":"Groovy"}, ${item.included?"included":"buildSrc"}, ${item.kind}, ${item.artifactMode})`,()=>{
  let r:any;
  beforeAll(async()=>{r=await fixture(kotlin,item.included,item.kind,item.artifactMode);},270000);
+ if(pipelineMode){
+ it("captures the public ordered snapshot collection without inferring per-JAR mapping",()=>{
+  const c=r.pipeline.receipts.find((t:any)=>t.task===":compileKotlin");
+  expect(c.incremental).toBe(false);expect(c.executionStrategy).toBe("IN_PROCESS");expect(c.fallback).toBe(false);
+  expect(c.before.classFiles).toEqual([]);expect(c.before.javaSources).toEqual([]);
+  expect(c.libraries.length).toBeGreaterThan(0);expect(c.libraries.every((e:any)=>e.approved)).toBe(true);
+  expect(c.compilerClasspath.every((e:any)=>e.approved)).toBe(true);
+  expect(c.snapshots.length).toBeGreaterThan(0);
+  expect(c.snapshots.every((e:any)=>c.publicInputPaths.includes(e.path))).toBe(true);
+  expect(c.selectedPlugins.filter((e:any)=>/KotlinPluginWrapper|KotlinDslPlugin_Decorated/.test(e.type)).every((e:any)=>e.toolchainId)).toBe(true);
+  expect(r.pipeline.storageVerified).toBe(true);expect(r.pipeline.maxBuffer).toBe(1024**2);
+  expect(Math.max(...c.snapshots.map((e:any)=>e.content.size))).toBeGreaterThan(18*1000**2);
+ });
+ it("binds the post-task temporary MANIFEST to the fixed literal and package input slot",()=>{
+  const j=r.pipeline.receipts.find((t:any)=>t.task===":jar");
+  expect(j.manifest.sha256).toBe(sha(manifestLiteral));
+  expect(r.kotlinPackage.entries.find((e:any)=>e.path==='META-INF/MANIFEST.MF').sha256).toBe(sha(manifestLiteral));
+  expect(checkLiteralBinding({recipe:j.recipe,stage:j.task,slot:'manifest',temporaryRoot:j.temporaryRoot,path:j.manifestPath,publicInputs:j.publicInputs,input:manifestLiteral,entry:manifestLiteral})).toEqual([]);
+  expect(Object.keys(r.inputs.baseline)).not.toContain(j.manifestPath);
+  expect(r.builds.flatMap((b:any)=>b.receipts).filter((t:any)=>t.task!==':jar').some((t:any)=>t.outputs[j.manifestPath])).toBe(false);
+ });
+ it("covers Kotlin module metadata, descriptors, resources, services and all package entries",()=>{
+  expect(r.pipeline.package.complete,JSON.stringify(r.pipeline.package)).toBe(true);
+  expect(r.pipeline.package.inventory.length).toBe(r.kotlinPackage.entries.length);
+  expect(r.pipeline.package.inventory.map((e:any)=>e.path)).toEqual(expect.arrayContaining(['settings.txt','META-INF/services/proof.Service','META-INF/gradle-plugins/proof.convention.properties']));
+  const d=r.pipeline.receipts.find((t:any)=>t.task===":pluginDescriptors");
+  const a=r.projects.registered.applications[0];
+  expect(d.descriptors).toEqual([{id:'proof.convention',implementationClass:a.implementationClass}]);
+  const generated=r.builds.find((b:any)=>b.build===r.pipeline.producer).receipts.find((t:any)=>t.task===':pluginDescriptors');
+  expect(generated.outputs[r.pipeline.producer+'/build/pluginDescriptors/proof.convention.properties']).toBe(sha(Buffer.from(`implementation-class=${a.implementationClass}\n`)));
+ });
+ it.each(['metadata','descriptor','resource','service','manifest','extra'])('rejects nonclass package mutations: %s',kind=>{
+  const changed=structuredClone(r);
+  const suffix=({metadata:'.kotlin_module',descriptor:'proof.convention.properties',resource:'settings.txt',service:'proof.Service',manifest:'MANIFEST.MF'} as Record<string,string>)[kind];
+  if(kind==='extra')changed.kotlinPackage.entries.push({path:'unowned.txt',sha256:'0'.repeat(64)});
+  else changed.kotlinPackage.entries.find((e:any)=>e.path.endsWith(suffix)).sha256='0'.repeat(64);
+  const result=assessPipelinePackage(changed,r.pipeline.producer);
+  expect(result.complete).toBe(false);expect(result.reasons).toContain(kind==='extra'?'kotlin_package_origin_incomplete':'kotlin_package_entry_mismatch');
+ });
+ it.each(['META-INF/MANIFEST.MF','settings.txt','META-INF/services/proof.Service','META-INF/gradle-plugins/proof.convention.properties','.kotlin_module','.class'])('rejects an expected entry omitted from the package: %s',async suffix=>{
+  const changed=structuredClone(r),producer=r.pipeline.producer;
+  const entry=changed.kotlinPackage.entries.find((e:any)=>e.path.endsWith(suffix));
+  expect(entry).toBeDefined();
+  changed.kotlinPackage.entries=changed.kotlinPackage.entries.filter((e:any)=>e.path!==entry.path);
+  if(!['META-INF/MANIFEST.MF','.kotlin_module','.class'].includes(suffix)){
+   const output=producer+'/build/resources/main/'+entry.path;
+   for(const t of changed.builds.find((b:any)=>b.build===producer).receipts){delete t.outputs[output];delete t.declaredInputs[output];}
+  }
+  const result=assessPipelinePackage(changed,producer);
+  expect(result.complete).toBe(false);expect(result.reasons).toContain('kotlin_package_origin_incomplete');
+  (r.pipeline.expectedEntryRejections??=[]).push({suffix,reason:'kotlin_package_origin_incomplete'});
+  await r.saveProof?.();
+ });
+ it("records Java NO-SOURCE independently and refuses an unproved plugins-block collection",()=>{
+  const j=r.pipeline.receipts.find((t:any)=>t.task===":compileJava");
+  expect(j.noSource).toBe(true);expect(j.before.javaSources).toEqual([]);expect(j.javaOutputs).toEqual([]);
+  expect(r.pipeline.recipeStatus).toBe(item.kind==='precompiled-kotlin'&&r.gradleVersion==='9.2.1'?'kotlin_pipeline_recipe_unsupported':'candidate-public-collection-observed');
+ });
+ it.each(['changed','deleted'])('revalidates persisted snapshot bytes after export: %s',async mutation=>{
+  const ref=r.pipeline.receipts.find((t:any)=>t.task===":compileKotlin").snapshots[0].content;
+  const f=path.join(r.fixtureRoot,'.proof/pipeline-blobs',ref.chunks[0].sha256),bytes=await readFile(f);
+  try{if(mutation==='changed')await writeFile(f,Buffer.alloc(bytes.length));else await unlink(f);
+   await expect(verifyPipelineContent(r.fixtureRoot,ref,true)).rejects.toThrow('kotlin_pipeline_snapshot_storage_mismatch');
+  }finally{await writeFile(f,bytes);}
+  await verifyPipelineContent(r.fixtureRoot,ref,true);
+ });
+ }
  it("observes the real standard Kotlin compile and precompiled generation tasks",()=>{
   const tasks=r.builds.filter((b:any)=>b.build===(item.included?'build-logic':'buildSrc')).flatMap((b:any)=>b.receipts);
   expect(tasks.some((t:any)=>t.task===':compileKotlin'&&t.type==='compile'&&t.didWork&&!t.failure)).toBe(true);

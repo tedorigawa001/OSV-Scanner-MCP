@@ -1,0 +1,72 @@
+// Test-only observer. No internal Gradle classes, ArtifactView, provider wrapping or task actions.
+import groovy.json.JsonOutput
+import java.security.MessageDigest
+import org.gradle.api.tasks.bundling.Jar
+
+def root=new File(System.getProperty('osv.convention.root')).canonicalFile
+def producer, receipts=[], before=[:], total=0L, chunksTotal=0
+final int CHUNK=1024*1024
+def hash={ byte[] b -> MessageDigest.getInstance('SHA-256').digest(b).encodeHex().toString() }
+def hashFile={ File f -> def d=MessageDigest.getInstance('SHA-256');f.withInputStream{stream -> byte[] b=new byte[1024*1024];int n;while((n=stream.read(b))>0)d.update(b,0,n)};d.digest().encodeHex().toString() }
+def relative={ File f -> root.toPath().relativize(f.canonicalFile.toPath()).toString().replace('\\','/') }
+def snapshot={ File f, boolean derived ->
+ if(!f.isFile() || java.nio.file.Files.isSymbolicLink(f.toPath()))throw new IllegalStateException('kotlin_pipeline_unsafe_path')
+ long limit=derived?64L*1024*1024:4L*1024*1024
+ if(f.length()>limit || (total+=f.length())>256L*1024*1024)throw new IllegalStateException('kotlin_pipeline_budget_exceeded')
+ def digest=MessageDigest.getInstance('SHA-256'), chunks=[], size=f.length(), initial=f.lastModified()
+ f.withInputStream { stream ->
+  byte[] buffer=new byte[CHUNK]; int n
+  while((n=stream.readNBytes(buffer,0,CHUNK))>0) {
+   if(++chunksTotal>4096)throw new IllegalStateException('kotlin_pipeline_budget_exceeded')
+   byte[] bytes=Arrays.copyOf(buffer,n); digest.update(bytes);def id=hash(bytes)
+   def blob=new File(root,'.proof/pipeline-blobs/'+id);blob.parentFile.mkdirs()
+   if(blob.exists()){if(!Arrays.equals(blob.bytes,bytes))throw new IllegalStateException('kotlin_pipeline_snapshot_storage_mismatch')}
+   else java.nio.file.Files.write(blob.toPath(),bytes,java.nio.file.StandardOpenOption.CREATE_NEW)
+   chunks.add([sha256:id,size:n])
+  }
+ }
+ if(f.length()!=size || f.lastModified()!=initial)throw new IllegalStateException('kotlin_derived_snapshot_stale')
+ [size:size,sha256:digest.digest().encodeHex().toString(),chunks:chunks]
+}
+def flush={ ->
+ if(producer!=null)new File(root,'.proof/pipeline-'+producer.replace('/','_')+'.json').text=JsonOutput.toJson([producer:producer,phase:'post-task',receipts:receipts,bytesRead:total,chunkRefs:chunksTotal,maxBuffer:CHUNK])
+}
+gradle.beforeSettings { s -> producer=relative(s.settingsDir);if(!producer)producer='main' }
+gradle.taskGraph.beforeTask { t ->
+ if(t.name in ['compileKotlin','compileJava']) {
+  def roots=[new File(t.project.buildDir,'classes/kotlin/main'),new File(t.project.buildDir,'classes/java/main')]
+  // FileTree uses the public Project API and does not mutate output directories.
+  before[t.path]=[classFiles:roots.collectMany{t.project.fileTree(it).files.collect{relative(it)}},javaSources:t.project.fileTree(new File(t.project.projectDir,'src/main/java')).files.collect{relative(it)}]
+ }
+}
+gradle.taskGraph.afterTask { t,s ->
+ if(!(t.name in ['compileKotlin','compileJava','compilePluginsBlocks','pluginDescriptors','jar']))return
+ def receipt=[task:t.path,phase:'post-task',before:before[t.path],didWork:s.didWork,noSource:s.noSource,failure:s.failure?.class?.name]
+ if(t.name=='compileKotlin' && s.didWork) {
+  receipt.incremental=t.incremental
+  receipt.executionStrategy=t.compilerExecutionStrategy.get().toString()
+  receipt.fallback=t.useDaemonFallbackStrategy.get()
+  receipt.recipe='kgp-snapshot-collection-v1'
+  receipt.sourceRole='compile-classpath'
+  receipt.libraries=t.libraries.files.collect { [path:it.canonicalPath,size:it.length(),sha256:hashFile(it)] }
+  receipt.snapshots=t.classpathSnapshotProperties.classpathSnapshot.files.collect { [path:it.canonicalPath,content:snapshot(it,true)] }
+  receipt.compilerClasspath=t.project.configurations.getByName('kotlinCompilerClasspath').files.collect{[path:it.canonicalPath,size:it.length(),sha256:hashFile(it)]}
+  receipt.selectedPlugins=t.project.plugins.collect{[type:it.class.name,origin:it.class.protectionDomain?.codeSource?.location?.toString()]}
+  receipt.publicInputPaths=t.inputs.files.files.collect{it.canonicalPath}
+ }
+ if(t.name=='pluginDescriptors')receipt.descriptors=t.project.extensions.getByName('gradlePlugin').plugins.collect{[id:it.id,implementationClass:it.implementationClass]}
+ if(t.name=='compileJava')receipt.javaOutputs=t.project.fileTree(new File(t.project.buildDir,'classes/java/main')).files.collect{relative(it)}
+ if(t.name=='compilePluginsBlocks') {
+  // Its type is in an internal Gradle package. Task.inputs is diagnostic, not an isolated cohort recipe.
+  receipt.recipeStatus='unsupported-public-role-collection'
+ }
+ if(t instanceof Jar && s.didWork) {
+  def f=new File(t.temporaryDir,'MANIFEST.MF')
+  receipt.temporaryRoot=relative(t.temporaryDir)
+  receipt.manifestPath=relative(f)
+  receipt.publicInputs=t.inputs.files.files.collect{relative(it)}
+  receipt.manifest=snapshot(f,false)
+  receipt.recipe='gradle-jar-manifest-input-v1'
+ }
+ receipts.add(receipt);flush()
+}

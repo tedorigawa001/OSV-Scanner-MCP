@@ -1,0 +1,30 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+def hash={ File f -> MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex().toString() }
+gradle.beforeProject { p ->
+ p.afterEvaluate {
+  def t=p.tasks.findByName('compileKotlin')
+  if(t!=null){
+   def audit=new File(p.projectDir,'supplier-trace.txt');audit.text=''
+   t.libraries.from(p.providers.provider { audit.append('libraries\n');[] })
+  }
+ }
+}
+gradle.taskGraph.beforeTask { t -> if(t.name=='compileKotlin')new File(t.project.projectDir,'supplier-trace.txt').append('before-compile\n') }
+gradle.taskGraph.afterTask { t,s ->
+ if(t.name=='compileKotlin'){
+  def f=new File(t.project.projectDir,'supplier-trace.txt');f.append('after-compile\n')
+  if(System.getProperty('osv.observe')=='true'){t.libraries.files.toList();t.classpathSnapshotProperties.classpathSnapshot.files.toList()}
+  f.append('after-observer\n')
+  def root=new File(System.getProperty('osv.supplier.root')).canonicalFile
+  def baseline=new JsonSlurper().parse(new File(root,'supplier-baseline.json'))
+  def inputs=baseline.inputs.collectEntries { name,value -> [(name):hash(new File(root,name))] }
+  def report=[runId:System.getProperty('osv.supplier.runId'),gradleVersion:gradle.gradleVersion,
+   consumerDSL:new File(root,'build.gradle.kts').isFile()?'Kotlin':'Groovy',observe:System.getProperty('osv.observe')=='true',
+   collectorSha256:hash(new File(System.getProperty('osv.supplier.collector'))),fixtureInputsSha256:inputs,
+   trace:f.readLines()]
+  new File(t.project.projectDir,'supplier-report.json').text=JsonOutput.toJson(report)
+
+ }
+}
