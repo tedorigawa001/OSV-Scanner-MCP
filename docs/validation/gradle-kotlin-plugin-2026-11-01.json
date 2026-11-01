@@ -63381,5 +63381,57 @@
     },
     "caseCount": 16,
     "note": "Original source-to-adapter proof before compile/package binding and canonical-path corrections; observations replaced by the fresh 20-case matrix."
+  },
+  "postReviewRevision": {
+    "baselineRevision": "6e1d969",
+    "sourcesSha256": {
+      "src/test/gradle/kotlinPlugin.integration.test.ts": "491ab7fb2356d9910b24330aefa2cdcb14ac80bd44a3b32027a8eb2dcdc861d3",
+      "src/test/gradle/kotlinPluginStages.test.ts": "8414b78ad6225271e86bd1e45bc3b6eb0f311d2d95da13f116d20ee1f2be70b4",
+      "src/test/fixtures/gradle-kotlin-plugin.init.gradle": "badf1c9bb051a9f3075ce71744158557c523fcd7df3634bf5be1e733f70fb936",
+      "src/test/fixtures/gradleKotlinProof.ts": "c4bad1a31f6fb1d2d4fcffcc7860bfb89d5f0cfe5dd86915a6c5be8b0b37052b",
+      "src/test/fixtures/gradleConventionProof.ts": "85b9de6797ab090ce00b34a20a668dc3a7c01bf8edc2436d80220aad7152aa2a",
+      "src/test/fixtures/gradlePluginLoadPolicy.ts": "86d1f0d44c799d1d49def473f887b3e54cbfda5c9e36f26ef126990a56defcfa",
+      "src/test/fixtures/gradlePluginLoadProof.ts": "80e3cc2f1ed45e2ea81d65be3ee0c45f7b00dbb02e7dee8848c4837cfa196fa5",
+      "src/test/fixtures/gradlePluginJarProof.ts": "bc59c61133c2064b6e89f8ecd1daf8435d9358d08274077c5eba77be478ed80b"
+    },
+    "changedSources": [
+      "src/test/gradle/kotlinPlugin.integration.test.ts",
+      "src/test/gradle/kotlinPluginStages.test.ts"
+    ],
+    "changes": [
+      "stage unit and native compile-to-package mutations assert their expected rejection reason",
+      "generator-after-compile moves only the generator so compile-to-package order remains valid",
+      "added duplicate compile, package artifact producer/invocation/archivePath/hash mismatch and extra class unit controls",
+      "assessKotlinStages and the init script are unchanged"
+    ],
+    "redControl": "removing the generator-before-compile check fails generator-after-compile",
+    "verification": {
+      "native": {
+        "8.11.1": {
+          "passed": 188,
+          "durationSeconds": 140,
+          "pathAliases": "GRADLE_USER_HOME via /tmp, JAVA_HOME via symlink"
+        },
+        "9.2.1": {
+          "passed": 188,
+          "durationSeconds": 167,
+          "pathAliases": "canonical paths"
+        }
+      },
+      "stageUnitPassed": 22,
+      "isolatedNormalRun": {
+        "command": "npx vitest run --maxWorkers=2",
+        "passed": 1794,
+        "skipped": 1071,
+        "filesPassed": 78,
+        "filesSkipped": 11,
+        "durationSeconds": 45
+      },
+      "typecheck": "passed"
+    },
+    "cases": "case observations were not regenerated; they remain the pre-fix records with the earlier sourcesSha256",
+    "limitations": [
+      "non-class JAR entries (descriptor, resources, MANIFEST, kotlin_module) are not bound to stage outputs"
+    ]
   }
 }

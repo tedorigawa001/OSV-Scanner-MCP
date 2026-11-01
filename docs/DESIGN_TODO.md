@@ -1780,3 +1780,4 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 
 - Kotlin実証レビュー2件を修正: compile出力全file→package入力→JAR entryとclass集合を照合し、descriptor実装classをロード元hashへ結んだ。cache／JDK／agentのpathをrealpathへ統一。両Gradle版各188件が成功し、正常16＋実class差し替え4の20観測へ更新。8.11.1ではcache・JDK alias指定も確認した。旧144件／版の集計は検証JSONのpreReviewへ保持する。本番未対応と追加pipeline信頼・派生入力の未完了は維持する。
 - 同修正後の通常回帰は1,788件成功／1,071件skip、stage単体16件、build・typecheck成功。設計・実証・2件のレビュー修正を一括して記録する。
+- 6e1d969レビュー修正: stage単体とnative観測改変で期待する拒否理由を確認し、adapter生成順の対照をgeneratorだけの移動に独立化。compile重複・package artifact不一致・余分なclassの単体対照を追加（22件）。native両版188件・通常回帰1,794件成功を再確認。基準revisionをcc40e4cへ訂正し、JARの非class entryが未束縛である限界と本番要件、path alias確認の指定方法を設計書へ追記。

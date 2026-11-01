@@ -262,7 +262,7 @@ for(const kotlin of [false,true])for(const item of cases)describe.skipIf(!binary
    expect(r.projects.registered.declaredIn).not.toEqual(expect.arrayContaining(r.kotlinStages.adapterPaths));
   }
  });
- it.each(['compile-hash','package-input','jar-entry','loaded-class','extra-class'])('rejects broken compile-to-package correspondence: %s',mutation=>{
+ it.each([['compile-hash','kotlin_compile_package_mismatch'],['package-input','kotlin_compile_package_mismatch'],['jar-entry','kotlin_compile_package_mismatch'],['loaded-class','kotlin_loaded_class_mismatch'],['extra-class','kotlin_package_class_set_mismatch']])('rejects broken compile-to-package correspondence: %s',(mutation,reason)=>{
   const changed=structuredClone(r),producer=item.included?'build-logic':'buildSrc',tasks=changed.builds.find((b:any)=>b.build===producer).receipts;
   const compile=tasks.find((t:any)=>t.task===':compileKotlin'),jar=tasks.find((t:any)=>t.task===':jar');
   const entry=changed.kotlinPackage.entries.find((e:any)=>e.path.endsWith('.class')),file=producer+'/build/classes/kotlin/main/'+entry.path;
@@ -273,6 +273,7 @@ for(const kotlin of [false,true])for(const item of cases)describe.skipIf(!binary
   if(mutation==='extra-class')changed.kotlinPackage.entries.push({path:'Extra.class',sha256:'0'.repeat(64),size:1});
   const result=assessKotlinStages(changed,producer,r.pluginSource,item.kind==='precompiled-kotlin');
   expect(result.complete).toBe(false);
+  expect(result.reasons).toContain(reason);
  });
  it("binds the pending/binary source handle to the actual public Plugin and descriptor",()=>{
   const a=r.projects.registered.applications[0];
