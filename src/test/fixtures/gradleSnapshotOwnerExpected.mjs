@@ -162,3 +162,18 @@ export const ownerArtifactEvidence={
     }
   }
 };
+// JDK whose javap output the pins above correspond to; another toolchain needs its own reviewed profile.
+export const ownerJdkProfile={
+  "java": {
+    "sha256": "0f642542ea1f0be6957557c0db96653ec128113bb5a4aaa7c2534d1d72ddb51f",
+    "version": "openjdk 21.0.13 2026-10-20 LTS\nOpenJDK Runtime Environment Temurin-21.0.13+9 (build 21.0.13+9-LTS)\nOpenJDK 64-Bit Server VM Temurin-21.0.13+9 (build 21.0.13+9-LTS, mixed mode, sharing)"
+  },
+  "javac": {
+    "sha256": "40425235eaac99cccf8ed57522d946313d8b5200161d1faf846b3e60d554c2ed",
+    "version": "javac 21.0.13"
+  },
+  "javap": {
+    "sha256": "1bc4474ca5b28394346fe2ad79b10eac15ef8d7017d1c22f46139e7438a86e32",
+    "version": "21.0.13"
+  }
+};

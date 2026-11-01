@@ -1676,7 +1676,7 @@ helperとverifierが変わるため、両DSL・両Gradle版でnativeを取り直
 両版の公開ClasspathSnapshotBasedIncrementalCompilationApproachParametersへ、非空のsynthetic regular fileを含むList<File>を渡すstandalone Java probeを実行した。実行版BTA JAR／stdlibのCodeSourceとhashを指定artifactへ照合した。
 
 - 可変Listを渡した後に元Listへ追加すると、parameterの取得列も増えた。取得列への追加も可能だった。constructorの存在だけでは列の防御的copy・sealを保証しない。
-- callerがListを防御的copyし、Collections.unmodifiableListで包んでから渡すと、元Listの変更は反映されず、取得列への変更も拒否した。
+- callerがListを防御的copyし、Collections.unmodifiableListで包んでから渡すと、元Listの変更は反映されず、取得列への変更も拒否した。これはcallerが作ったcopyとwrapperの性質であり、BTAがcopyやsealを行ったことを示さない。BTA自体について観測したのは、渡されたListを参照のまま保持すること（alias）と、取得列が変更可能なことだけである（§9.34で訂正）。
 - これは同一の具体File列をAPI引数として保持する仕組みの実証に限る。Fileはpath参照であり、Listの固定はfile bytesを固定しない。probe fileは正規KGP snapshotではなく、compileJvm・snapshot生成・compiler呼出しは0回。既存KGPの採用証拠やGroovy／Kotlin native matrixへ加算しない。
 
 #### 9.32.4 producer所有の二つの契約案
@@ -1766,3 +1766,89 @@ BTAで確認したのはmutable Listのaliasと防御的copyによる列固定�
 最終再実行: Gradle 8.11.1／KGP 2.0.20、Gradle 9.2.1／KGP 2.2.20の14型ずつと、BTA公開constructor probe 2件を現sourceで取り直した。28型の固定期待値・tuple別artifact・guard分岐との一致を確認し、公開記録をv2へ更新した。旧v1履歴要約は1件、source hashは期待表を含む8 fileに一致する。回帰41テストが成功した。ここで追加実行0とするcompilerはKotlin compiler（compileJvm等）であり、probe用のjavac／javaの実行とは区別する。
 
 通常全体の最終確認: 2,353テスト成功・native opt-in等1,157件skip。typecheck・build・差分検査も成功。自然消費内容束縛・承認recipe・本番採用0件の判断は不変。
+
+
+### 9.34 96f7da8レビュー修正・JDK profileの束縛とsource抜粋化（2026-11-01）
+
+- 固定期待表は「JDK 21.0.13+9のjavap出力」に対応するが、記録の`jdkTools`は検証されていなかった。javapの版・hashの改変や`jdkTools`の欠落も受理していた。期待表へjava／javac／javapの版文字列とhashを`ownerJdkProfile`として固定し、verifierで一致を必須にした。
+- 調査JSONはKotlinCompile.ktのtag source全文（2.0.20で22KB、2.2.20で26KB）をbase64で収録していたが、ヘッダが参照する`license/LICENSE.txt`本体は含まず、`license`欄も検証していなかった。公開記録は全文を再配布せず、全文のSHA-256・取得元URL・Apache-2.0・LICENSEへのURL・原著作権表示（notice）と、判定に使う3か所（`isIncrementalCompilationEnabled`の分岐ブロック、`private fun getClasspathChanges(`の宣言行、`classpathSnapshot.files.toList()`の読取行）の行番号付き抜粋だけを保持する。collectorは全文のdigestを固定値と照合してから抜粋を作る。抜粋はsource内で一意であることを要求し、tuple別に抜粋のdigestを固定する。verifierは抜粋から判定を再計算し、license・notice・URLとkey集合も照合する。
+- §9.32.3の防御的copyの記述を訂正した。BTAについて観測したのはaliasと取得列の可変性だけで、copy後の固定はcaller側のcollectionの性質である。
+- 内容が同じsurveyを再収集した場合は観測時の`recordedAt`／`baselineRevision`を残し、再収集時点を`reconsolidatedAt`／`reconsolidatedRevision`へ別記する。survey本体（JDK profileと両tuple）のtoken化後digestで同一性を判定する。
+- 改ざん負例7件を追加した（抜粋の改変・行番号の移動、全文bytesの再収録、license改変、notice欠落、JDK profileの改変・欠落）。抜粋抽出の一意性・notice必須の単体検査と、全文を再収録しないことの確認も加えた。v2記録で失敗することを確認した。
+
+Gradle build・Kotlin compiler（compileJvm等）の実行は0のまま、javapとprobe用のjavac／javaで両対象版の調査を取り直した。tag sourceは前回取得したfileをdigest照合して再利用し、新たな取得はしていない。記録はv3（105KB）で、v2はコミット済み原本（96f7da8）のhash付き要約、旧v1要約とともにpreReviewsへ残す。既存KGPのhook未成立によるunsupported・打切り、BTAには別owner driverが必要という結論、承認recipe・自然消費内容束縛・本番採用0件は変わらない。96f7da8の履歴にはtag source全文が残る。
+
+
+### 9.35 producer所有BTA driverの限定実証（2026-11-02）
+
+§9.32のB（owner-sealed-offered-inputs）の最小driverをtest-onlyで追加した。既存KGP task・Provider・compiler runnerを変更せず、producerがJavaCompileで専用Java driverを構築し、JavaExecで実BTAを呼ぶ。**提供した入力の束縛・前後の鮮度と実コンパイルを確認する実証であり、自然消費receipt・既存KGPの透過対応・承認recipe・本番採用へ昇格させない。**
+
+#### 構成と入力・artifactの対応
+
+Gradle 8.11.1／BTA・Kotlin compiler 2.0.20と、Gradle 9.2.1／2.2.20を別profileにする。Groovy build.gradleとKotlin build.gradle.ktsは共通のGroovy adapterをapplyし、同じJava driverを呼ぶ。両DSLのproject wrapperの実証であり、Kotlinで別実装したadapter、buildSrc／precompiled plugin／既存build無変更の実証ではない。
+
+runtimeは`gradleBtaDriverRuntime.mjs`の座標・相対path・SHA-256で固定した閉じた集合とする。compiler／BTA／scripting／stdlib／reflect等は同じKotlin版を指定し、reflectはcompiler POM既定の1.6.10から同版へ明示的に揃えた独自profileである。必要なcoroutines・annotations、2.0.20ではbuild-common・trove4jも含める。cache全JARの走査やMavenの既定解決結果と同一とは主張しない。既存KGPが選んだcompiler classpathの証拠にも流用しない。
+
+nativeハーネスはprofileの全file hashを実行前後に照合する。driverは実classpath全件と、public CompilationService API、ロードしたservice implementation／proxy、K2JVMCompiler classのCodeSource／digest、service.getCompilerVersionを記録する。専用driver classの全inventoryは実JavaCompile出力と照合する。固定classpathに別版compilerを追加することや、座標名だけで実装一致とすることは許可しない。class originは閉じたruntimeの実装対応の証拠であり、全内部classloaderやcompiler全readの独立証明ではない。
+
+| stage | public API・成果物と対応 |
+| --- | --- |
+| library | 自作Library.ktを実compileJvmでcompileし、dep/Library.classとmodule metadataを生成。driverが固定entry時刻のlibrary.jarへ格納。ハーネスがJAR全entryとclass出力を照合 |
+| snapshot | library.jarと同版stdlib.jarをcalculateClasspathSnapshot(CLASS_MEMBER_LEVEL)へ渡す。返却された正規snapshotをsaveSnapshotで保存し、非空file・class数・元JAR digest・生成snapshot digestを記録。library側は1 classを要求 |
+| seal／offer | snapshotをproducer専用のprivate rootのstagingに置き、evidenceへ同じbytesを保存。具体File列を一度選択し、防御的copy＋unmodifiable Listにする。IC stateも同じprivate rootへ置く |
+| warm | 同じ具体snapshot列でpublic IC parameterを作り、SourcesChanges.Unknownを使ってconsumer v1をcompile。先行出力を独立したstageとして記録 |
+| consumer | sourceをv2へ変更し、SourcesChanges.Knownでmodified sourceを明示。元のsnapshot列を再評価せず同じ具体列をpublic parameterへ渡してcompile。実行結果、引数、source hash、snapshot ID列、全出力を記録 |
+| execution | ハーネスが生成consumer classとlibrary.jar・stdlibで実プログラムを実行。consumer完了時はlibrary-value:v2、gate拒否でwarm出力しかない場合はv1と明示。先行出力を最終compileの成功証拠へ流用しない |
+
+consumer compileはwarm時とは別のclass digestになる必要がある。library source／JAR entry、snapshotの元入力digest、consumerのclasspath引数とsnapshot ID、compiler実装、各stageのsource／出力と実行結果を照合する。private IC cacheのinventoryも診断として保存するが、これをcompilerの全入力manifestや自然消費bytesの完全性とは扱わない。
+
+#### private staging・改変拒否
+
+private root、staging、evidenceはowner-onlyのrwx------で作成する。safeBytesは親directoryの実path、NOFOLLOW_LINKSでのregular file、fileKey、size／mtimeの前後一致を確認して、1 MiB buffer・1 file最大32 MiBで取得する。既存shared cacheのsnapshotを変更せず、自作project内の派生fileだけを故障注入する。runtime JARはread-onlyの入力としてhashを照合する。
+
+consumer前のgateは保存evidenceのsize／digestを先に検証し、次にstaging内の具体pathを元のseal digestへ照合する。保存bytes不一致はkotlin_pipeline_snapshot_storage_mismatch、source不一致はkotlin_derived_snapshot_staleでconsumer呼出しを止める。consumer後にも同じ検査を行い、改変があればcompile成功・出力が存在していても候補を採用しない。captureで新しいbaselineを作り直さない。
+
+owner-only permissionと前後hashは他writerの不存在や消費中不変を保証しない。特に同じuser／processによる変更と復元、mmap、consumer内部の読取範囲は未検証である。private stagingを自然消費receiptの代用にしない。
+
+| mode | 実処理・期待結果 |
+| --- | --- |
+| control | 同じdriver・生成・gate・warm／consumer・post検査を行い、observerを無効にする |
+| observe | concrete ledgerのobserverとconsumer後のcaptureを追加。提供入力と最終出力が整合 |
+| mutate-before | warm後・最終consumer gate前にlibrary.snapshotを同sizeで1byte変更。consumerは呼ばずstale。残るv1出力は最終成功に数えない |
+| mutate-after | consumer成功後・post検査前に同snapshotを変更。v2出力を実行できてもstaleとして候補を拒否 |
+| blob-corrupt | evidence側だけを同sizeで変更。staging sourceを読む前にstorage mismatch。最終consumerは呼ばない |
+| source-fault | Gradle側のobserver区間でowned Providerを実際に追加get。BTA・出力検証も行ったうえで追加評価違反として拒否 |
+
+#### 追加評価の計測
+
+Gradleのowned Providerは非空の固定runtime file列を返す。各supplierのbegin/end・phase・回数、target Task／Actionの境界、故障readerのbegin/end・counterを記録する。phaseとイベント位置を照合し、controlと各modeの自然traceを比較する。source-faultの実読取だけはobserver区間へ結び、自然trace比較から分離する。flagだけで読取がなければfault_not_reproducedとして拒否する。
+
+Java側は具体snapshot列の選択をowner-offerで一度だけ行う。observer／captureにはGradle ProviderやKGP collectionを渡さず、保持済みdescriptor／具体pathを使う。selection begin/endとcounter、compile・snapshot生成・gate・post・captureの区間を厳密に照合する。control／observeでlibrary／snapshot／warm・最終consumer出力が一致することも要求する。
+
+追加評価0は、このowned Gradle Providerと具体列selectionの計測範囲に限定する。captureのfile hash／保存evidence読取は追加I/Oであり、0 I/Oという意味ではない。BTA／compiler内部の全supplier・全observerの非干渉、既存KGPとの透過的な非干渉は未成立である。
+
+#### 保存記録・再現・採用範囲
+
+[検証JSON](validation/gradle-bta-owned-driver-2026-11-02.json)には全stage・event・digest・JAR entry・program実行結果・拒否対照と、source／検証source hashを保存する。staging／evidenceの全bytesはnative実行中の使い捨てproject内で照合し、公開JSONにはsnapshotのsize／digest／class数だけを保持する。第三者stdlib由来snapshot bytesは公開しない。公開記録から再生できるのは保存metadataの整合性・判定であり、元snapshot bytesの再照合やcompiler再実行ではない。
+
+nativeと集約・通常テストは同じverifierと改変対照一覧を使う。runtime交換、元library source／JAR entry／snapshot対応の破壊、選択の追加評価、mutable List、必須event／compile欠落、snapshot引数の省略、先行出力流用、最終出力・実行結果の偽装、TaskState欠落、supplier phase偽装、偽の故障を拒否する。端末固有pathは既存のtoken方式へ変換し、残存を拒否する。
+
+```sh
+JAVA_HOME=/path/to/jdk21 GRADLE_USER_HOME=/path/to/cache OSV_MCP_TEST_GRADLE=/path/to/gradle-8.11.1/bin/gradle OSV_MCP_BTA_DRIVER_OUTPUT=/tmp/bta-owned-8.11.1.json npx vitest run src/test/gradle/btaDriver.integration.test.ts --maxWorkers=1 --hookTimeout=120000
+# 9.2.1もbinary・出力suffixを変更して実行する。
+JAVA_HOME=/path/to/jdk21 GRADLE_USER_HOME=/path/to/cache OSV_MCP_GRADLE_RUNTIME_ROOT=/path/to/runtime node src/test/manual/gradleBtaDriverResults.mjs /tmp/bta-owned docs/validation/gradle-bta-owned-driver-2026-11-02.json
+npx vitest run src/test/gradle/btaDriver.test.ts --maxWorkers=1
+```
+
+これは§9.32のBの限定実証であり、SO05のowner binding、SO07のstagingと前後検査、SO08の改変拒否、SO09の限定control／observerの部分確認である。Aの実消費hook、SO06の自然消費receipt、全writer排除、全read-plan・残り3 slot、本番helper／schema／静的取込・追加信頼は未成立。既存KGPのunsupported・打切りは維持する。BTA native実行が成功しても、offered-inputs-onlyをreceipt-completeやdeclared_in完全性へ昇格させない。
+
+BTA driverのJDK対応は、Gradle daemon側java／javacと、実JavaExec child側javaの版・実行file hashを固定JDK 21.0.13+9 profileへ独立に照合する。record側のapproval hashを同時に書き換えても未知JVMを受理しない。
+
+
+最終native結果: Groovy／Kotlin × Gradle 8.11.1／9.2.1の各版16テスト成功。最終matrixの24 buildでcompileJvm 64回（library 24、warm 24、consumer 16）、正規snapshot生成48回を確認した。source／保存証拠の改変によりconsumer前で止めた8 buildでもwarmのv1出力を実行し、最終consumerのv2成功へ流用していない。提供入力候補はcontrol／observeの8件、stale拒否8件・storage mismatch拒否4件・実追加評価の拒否4件。共有改変21対照×4組＝84件をnative・集約で再検証した。
+
+全4組でGradle owned supplierはcontrol／observeとも3評価、Java具体列の選択は1回だった。source-faultではsupplierが4評価となり、observer区間の実get 1回を検出した。captureの追加I/Oは別に発生する。30件の静的／公開記録回帰テストも成功し、実証source 6 fileと検証source 8 fileのhash一致を確認した。
+
+最初のstandalone試行ではIC outputDirsにworking directoryが不足し、初回Gradle試行ではJavaCompileのsource／targetCompatibilityが未設定で失敗した。設定を明示してから取り直し、失敗・試行段階のbuildを上記最終matrixへ加算していない。JVM identityの補強後も両版を再実行し、現在sourceに一致する最終結果だけを検証JSONへ収録した。
+
+最終確認: 通常全体2,391テスト成功・native opt-in等1,173件skip。typecheck・build・差分検査も成功。

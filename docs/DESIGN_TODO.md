@@ -1997,3 +1997,22 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 両対象版の14型×2組・BTA公開constructor probe 2件を再実行してv2記録へ更新。固定期待値28型とsource 8 fileのhash一致、旧v1履歴要約1件、回帰41テスト成功を確認。新Gradle build／Kotlin compiler実行は0（probe用javac／javaは別）。
 
 - 通常全体2,353件成功（1,157件skip）、typecheck／build／差分検査も成功。unsupported／打切りと本番採用0の判断は不変。
+
+
+### 2026-11-01: 96f7da8レビュー修正（owner調査のJDK profile束縛とsource抜粋化）
+
+- 固定期待表へjava／javac／javapの版とhash（JDK 21.0.13+9）を固定し、調査記録の`jdkTools`との一致を必須にした。
+- KotlinCompile.ktのtag source全文の収録をやめ、全文digest・取得元・Apache-2.0とLICENSEへのURL・原著作権表示と、判定に使う3か所の行番号付き抜粋だけを保持する。抜粋digestをtuple別に固定し、verifierは抜粋から判定を再計算する。
+- §9.32.3の防御的copyの記述を訂正（BTAで観測したのはaliasと可変性のみ）。再収集時の観測時点保持と改ざん負例7件を追加。
+- Gradle build・Kotlin compiler実行0のまま再収集し記録をv3（105KB）へ更新、v2は96f7da8の原本hash付き要約として保持。unsupported／打切り・本番採用0は不変。詳細は[設計書§9.34](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#934-96f7da8レビュー修正jdk-profileの束縛とsource抜粋化2026-11-01)。
+
+
+### 2026-11-02: producer所有BTA driverの限定実証
+
+- [設計書§9.35](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#935-producer所有bta-driverの限定実証2026-11-02)へtest-onlyのJava driver・Gradle adapterを追加。正規snapshotを自作library.jarと同版stdlibから生成し、private staging／evidenceへ保存。実BTAでlibrary・warm・更新consumerをcompileし、出力programを実行する。
+- 固定runtime manifestと実CodeSource、source／JAR entry／snapshot／引数／全出力を照合。consumer前後の改変、保存evidence破損、owned Providerの実追加評価を別に拒否し、controlとobserverを比較する。
+- Groovy／Kotlinのproject wrapperから共通Groovy adapter・Java driverを呼ぶ実証。既存KGPの透過対応・自然消費receipt・全writer排除・本番採用は未成立。提供入力の証拠と自然消費bytesの区別を維持する。
+
+- 最終native（§9.35）: 両DSL・両Gradle版で各版16テスト、24 build・実compileJvm 64回・正規snapshot 48個。提供入力候補8件、stale拒否8件・保存破損拒否4件・実追加評価拒否4件、記録改変拒否84件を保存・再生。control／observeのsupplierは3回で一致（故障は4回）、具体列selectionは1回。静的／公開記録30テスト成功。Gradle側・BTA child側JVMを固定JDKへ結び、source hashも一致。自然消費receipt・承認recipe・本番採用0は維持。
+
+- 通常全体2,391件成功（1,173件skip）、typecheck／build／差分検査も成功。

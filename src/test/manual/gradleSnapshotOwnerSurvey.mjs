@@ -1,7 +1,7 @@
 /** Scoped API/source investigation, plus standalone BTA constructor probes. No Gradle builds or compiler calls. */
 import {readFile,writeFile,mkdtemp,mkdir,rm,readdir,realpath} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';import path from 'node:path';import os from 'node:os';import {fileURLToPath} from 'node:url';
-import {ownerTuples,ownerTypes,ownerSources,digest,ownerMethod,snapshotOwnerFacts,verifySnapshotOwnerSurvey} from '../fixtures/gradleSnapshotOwnerProof.mjs';
+import {ownerTuples,ownerTypes,ownerSources,digest,ownerMethod,ownerSourceExcerpts,ownerSourceNotice,snapshotOwnerFacts,verifySnapshotOwnerSurvey} from '../fixtures/gradleSnapshotOwnerProof.mjs';
 import {resolveRecordedPath,tokenizeRecordedPaths,assertNoAbsolutePaths} from './kgpRecordPaths.mjs';
 const repo=fileURLToPath(new URL('../../../',import.meta.url));
 const [sourceRoot,output]=process.argv.slice(2),cache=process.env.GRADLE_USER_HOME,runtime=process.env.OSV_MCP_GRADLE_RUNTIME_ROOT,jdk=process.env.JAVA_HOME;
@@ -32,8 +32,11 @@ for(const tuple of ownerTuples){
  const bytecode=execFileSync(path.join(jdk,'bin/javap'),['-p','-c','-classpath',artifacts.implementation.path,'org.jetbrains.kotlin.gradle.tasks.KotlinCompile'],{encoding:'utf8',maxBuffer:4*1024**2});
  const compileBytecode=ownerMethod(bytecode,/callCompilerAsync\$.*K2JVMCompilerArguments/)+'\n'+ownerMethod(bytecode,/private .* getClasspathChanges\(/);
  const source=await readFile(path.join(sourceRoot,`KotlinCompile-${kgpVersion}.kt`));
- const tagSource={url:`https://raw.githubusercontent.com/JetBrains/kotlin/v${kgpVersion}/libraries/tools/kotlin-gradle-plugin/src/common/kotlin/org/jetbrains/kotlin/gradle/tasks/KotlinCompile.kt`,license:'Apache-2.0; original source header retained in bytesBase64',sha256:digest(source),bytesBase64:source.toString('base64'),binding:'tag source corroborates bytecode; no reproducible-build equality claim'};
- const facts=snapshotOwnerFacts(source.toString('utf8'),compileBytecode);
+ // The full tag source is digest-checked here and not republished; excerpts are extracted from these exact bytes.
+ if(digest(source)!==tuple.sourceSha256)throw Error('owner-survey-tag-source-mismatch');
+ const excerpts=ownerSourceExcerpts(source.toString('utf8'));
+ const tagSource={url:`https://raw.githubusercontent.com/JetBrains/kotlin/v${kgpVersion}/libraries/tools/kotlin-gradle-plugin/src/common/kotlin/org/jetbrains/kotlin/gradle/tasks/KotlinCompile.kt`,license:'Apache-2.0',licenseUrl:`https://github.com/JetBrains/kotlin/blob/v${kgpVersion}/license/LICENSE.txt`,notice:ownerSourceNotice,sha256:digest(source),excerpts,binding:'excerpts of the digest-checked tag source corroborate bytecode; no reproducible-build equality claim'};
+ const facts=snapshotOwnerFacts(excerpts,compileBytecode);
  const temp=await mkdtemp(path.join(os.tmpdir(),'osv-owner-parameters-'));let parameterProbe;
  try{
   await mkdir(path.join(temp,'classes'));const cp=[artifacts.bta.path,artifacts.stdlib.path].join(path.delimiter);
@@ -43,10 +46,17 @@ for(const tuple of ownerTuples){
  }finally{await rm(temp,{recursive:true,force:true});}
  surveys.push({gradleVersion,kgpVersion,btaArtifactRole:'available-api-not-proven-selected-by-kgp',artifacts,api,tagSource,compileBytecode,compileBytecodeSha256:digest(compileBytecode),facts,parameterProbe});
 }
-const result={schema:'osv-mcp.snapshot-owner-survey-v2',recordedAt:new Date().toISOString(),baselineRevision:execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),sourcesSha256,referenceRecord:{path:refPath,sha256:digest(refBytes)},jdkTools,surveys,scope:{publicTypesPerTuple:ownerTypes.length,tagSources:2,standaloneParameterProbes:2,newGradleBuilds:0,newCompilerInvocations:0,groovyKotlinMatrixAdded:false,syntheticFilesAreKgpSnapshots:false,sourceSurveyIsExhaustive:false},decision:{existingKgp:'unsupported-owner-hook-not-established',bta:'new-owner-driver-required',producerContract:'designed-not-proven',approvedRecipes:0,naturalContentBindings:0,productionAdoptions:0}};
+const schema='osv-mcp.snapshot-owner-survey-v3',head=execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),now=new Date().toISOString();
+const result={schema,recordedAt:now,baselineRevision:head,sourcesSha256,referenceRecord:{path:refPath,sha256:digest(refBytes)},jdkTools,surveys,scope:{publicTypesPerTuple:ownerTypes.length,tagSources:2,standaloneParameterProbes:2,newGradleBuilds:0,newCompilerInvocations:0,groovyKotlinMatrixAdded:false,syntheticFilesAreKgpSnapshots:false,sourceSurveyIsExhaustive:false},decision:{existingKgp:'unsupported-owner-hook-not-established',bta:'new-owner-driver-required',producerContract:'designed-not-proven',approvedRecipes:0,naturalContentBindings:0,productionAdoptions:0}};
+const roots=[{token:'$GRADLE_USER_HOME',paths:[cache,await realpath(cache)]},{token:'$GRADLE_RUNTIME',paths:[runtime,await realpath(runtime)]}];
+// The observation is the tokenized survey content; re-collecting identical content keeps its observation time.
+const observation=r=>digest(JSON.stringify(tokenizeRecordedPaths({jdkTools:r.jdkTools,surveys:r.surveys},roots)));
 let preReviews=[];
-try{const bytes=await readFile(output),old=JSON.parse(bytes);preReviews=old.preReviews??[];if(old.schema!=='osv-mcp.snapshot-owner-survey-v2')preReviews.push({schema:old.schema,recordedAt:old.recordedAt,decision:old.decision,recordSha256:digest(bytes),note:'Uncommitted v1 before guard-range and artifact evidence binding fixes; reference only, not current evidence.'});}catch(error){if(error.code!=='ENOENT')throw error;}
+try{const bytes=await readFile(output),old=JSON.parse(bytes);preReviews=old.preReviews??[];
+ if(old.schema===schema){if(observation(old)===observation(result))Object.assign(result,{recordedAt:old.recordedAt,baselineRevision:old.baselineRevision,reconsolidatedAt:now,reconsolidatedRevision:head});}
+ else if(old.schema==='osv-mcp.snapshot-owner-survey-v2')preReviews.push({schema:old.schema,recordedAt:old.recordedAt,baselineRevision:old.baselineRevision,decision:old.decision,recordSha256:digest(bytes),committedIn:'96f7da8',note:'Committed v2 embedding full KotlinCompile.kt tag sources without JDK profile binding; superseded by v3 excerpts and pinned JDK profile.'});
+ else preReviews.push({schema:old.schema,recordedAt:old.recordedAt,decision:old.decision,recordSha256:digest(bytes),note:'Earlier survey record; reference only, not current evidence.'});
+}catch(error){if(error.code!=='ENOENT')throw error;}
 result.preReviews=preReviews;
 verifySnapshotOwnerSurvey(result,reference,sourcesSha256);
-const roots=[{token:'$GRADLE_USER_HOME',paths:[cache,await realpath(cache)]},{token:'$GRADLE_RUNTIME',paths:[runtime,await realpath(runtime)]}];
 const portable=tokenizeRecordedPaths(result,roots);assertNoAbsolutePaths(portable);await writeFile(output,JSON.stringify(portable,null,2)+'\n');console.log(JSON.stringify({scope:result.scope,decision:result.decision}));

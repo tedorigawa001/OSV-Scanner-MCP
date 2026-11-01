@@ -3,5 +3,7 @@ export const ownerSources:string[];
 export const ownerTypes:string[][];
 export function digest(b:any):string;
 export function ownerMethod(bytecode:string,pattern:RegExp):string;
-export function snapshotOwnerFacts(source:string,bytecode:string):any;
+export const ownerSourceNotice:string;
+export function ownerSourceExcerpts(source:string):any;
+export function snapshotOwnerFacts(excerpts:any,bytecode:string):any;
 export function verifySnapshotOwnerSurvey(d:any,reference:any,sources:any):any;

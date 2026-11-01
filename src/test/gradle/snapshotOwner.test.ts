@@ -1,11 +1,11 @@
 import {readFileSync} from 'node:fs';
 import {it,expect} from 'vitest';
-import {snapshotOwnerFacts,verifySnapshotOwnerSurvey,digest,ownerSources} from '../fixtures/gradleSnapshotOwnerProof.mjs';
+import {snapshotOwnerFacts,verifySnapshotOwnerSurvey,digest,ownerSources,ownerSourceExcerpts,ownerSourceNotice} from '../fixtures/gradleSnapshotOwnerProof.mjs';
 import {assertNoAbsolutePaths} from '../manual/kgpRecordPaths.mjs';
 const record=()=>JSON.parse(readFileSync(new URL('../../../docs/validation/gradle-snapshot-owner-survey-2026-11-01.json',import.meta.url),'utf8'));
 const reference=()=>JSON.parse(readFileSync(new URL('../../../docs/validation/gradle-kgp-availability-2026-11-01.json',import.meta.url),'utf8'));
 it('does not promote a Task callback into a natural-consumption hook',()=>{
- expect(()=>snapshotOwnerFacts('fun doFirst() {}','public void doFirst();')).toThrow('snapshot_owner_consumption_evidence_missing');
+ expect(()=>snapshotOwnerFacts({gate:{line:1,text:'fun doFirst() {}'}},'public void doFirst();')).toThrow('snapshot_owner_consumption_evidence_missing');
 });
 it('revalidates published signatures, source/bytecode branches and actual public constructor probes',()=>{
  const d=record();assertNoAbsolutePaths(d);
@@ -16,9 +16,9 @@ it('revalidates published signatures, source/bytecode branches and actual public
 });
 for(const version of ['8.11.1','9.2.1']){
  const survey=()=>record().surveys.find((s:any)=>s.gradleVersion===version);
- it(version+' requires the private consuming method in the source',()=>{const s=survey();const source=Buffer.from(s.tagSource.bytesBase64,'base64').toString().replace('private fun getClasspathChanges','fun getClasspathChanges');expect(()=>snapshotOwnerFacts(source,s.compileBytecode)).toThrow('snapshot_owner_consumption_evidence_missing');});
- it(version+' requires the actual guarded bytecode branch',()=>{const s=survey();expect(()=>snapshotOwnerFacts(Buffer.from(s.tagSource.bytesBase64,'base64').toString(),s.compileBytecode.replace('ifeq','ifne'))).toThrow('snapshot_owner_consumption_evidence_missing');});
- it(version+' rejects an unguarded source attribution',()=>{const s=survey();const source=Buffer.from(s.tagSource.bytesBase64,'base64').toString().replace('val icEnv = if (isIncrementalCompilationEnabled())','val icEnv = if (true)');expect(()=>snapshotOwnerFacts(source,s.compileBytecode)).toThrow('snapshot_owner_consumption_evidence_missing');});
+ it(version+' requires the private consuming method in the source',()=>{const s=survey(),e=s.tagSource.excerpts;e.privateDeclaration.text=e.privateDeclaration.text.replace('private fun getClasspathChanges','fun getClasspathChanges');expect(()=>snapshotOwnerFacts(e,s.compileBytecode)).toThrow('snapshot_owner_consumption_evidence_missing');});
+ it(version+' requires the actual guarded bytecode branch',()=>{const s=survey();expect(()=>snapshotOwnerFacts(s.tagSource.excerpts,s.compileBytecode.replace('ifeq','ifne'))).toThrow('snapshot_owner_consumption_evidence_missing');});
+ it(version+' rejects an unguarded source attribution',()=>{const s=survey(),e=s.tagSource.excerpts;e.gate.text=e.gate.text.replace('val icEnv = if (isIncrementalCompilationEnabled())','val icEnv = if (true)');expect(()=>snapshotOwnerFacts(e,s.compileBytecode)).toThrow('snapshot_owner_consumption_evidence_missing');});
 }
 const mutations:Array<[string,(d:any)=>void,string]>=[
  ['different Gradle runtime API',d=>d.surveys[0].artifacts.gradle.sha256=d.surveys[1].artifacts.gradle.sha256,'artifact'],
@@ -28,7 +28,13 @@ const mutations:Array<[string,(d:any)=>void,string]>=[
  ['missing class identity',d=>delete d.surveys[0].api[0].classSha256,'api'],
  ['invented owner hook witness',d=>d.surveys[0].facts.receiptHookEstablished=true,'consumption_evidence_missing'],
  ['changed public signature',d=>d.surveys[0].api[0].signature+='changed','api'],
- ['changed source bytes',d=>d.surveys[0].tagSource.bytesBase64=Buffer.from('fake').toString('base64'),'tag_source'],
+ ['changed source excerpt',d=>d.surveys[0].tagSource.excerpts.snapshotRead.text+=' ','tag_source'],
+ ['excerpt moved within the source',d=>d.surveys[0].tagSource.excerpts.snapshotRead.line++,'tag_source'],
+ ['republished full source bytes',d=>d.surveys[0].tagSource.bytesBase64=Buffer.from('fake').toString('base64'),'tag_source'],
+ ['changed license',d=>d.surveys[0].tagSource.license='MIT','tag_source'],
+ ['dropped license notice',d=>delete d.surveys[0].tagSource.notice,'tag_source'],
+ ['changed JDK profile',d=>{d.jdkTools.javap.version='17.0.1';d.jdkTools.javap.sha256='0'.repeat(64);},'jdk'],
+ ['missing JDK profile',d=>delete d.jdkTools,'jdk'],
  ['changed bytecode',d=>d.surveys[0].compileBytecode+='changed','consumption_evidence_missing'],
  ['probe bound to another artifact',d=>d.surveys[0].parameterProbe.btaArtifact='other.jar','parameter_probe'],
  ['false defensive copy result',d=>d.surveys[0].parameterProbe.defensiveCopyStable=false,'parameter_probe'],
@@ -47,7 +53,7 @@ for(const version of ['8.11.1','9.2.1']){
  it(version+' rejects a read moved before the guard',()=>{
   const s=record().surveys.find((s:any)=>s.gradleVersion===version);
   const changed=s.compileBytecode.replace(/^(\s*)\d+(: invokespecial[^\n]*Method getClasspathChanges:)/m,'$11$2');
-  expect(()=>snapshotOwnerFacts(Buffer.from(s.tagSource.bytesBase64,'base64').toString(),changed)).toThrow('snapshot_owner_consumption_evidence_missing');
+  expect(()=>snapshotOwnerFacts(s.tagSource.excerpts,changed)).toThrow('snapshot_owner_consumption_evidence_missing');
  });
  it(version+' rejects removal of a public accessor even with its self hash updated',()=>{
   const d=record(),s=d.surveys.find((s:any)=>s.gradleVersion===version),api=s.api[1];
@@ -85,12 +91,12 @@ for(const version of ['8.11.1','9.2.1']){
        3: invokeinterface #4 // Method getFiles:()LX;
        8: areturn
 `;
-  expect(()=>snapshotOwnerFacts(Buffer.from(s.tagSource.bytesBase64,'base64').toString(),bytecode)).toThrow('snapshot_owner_consumption_evidence_missing');
+  expect(()=>snapshotOwnerFacts(s.tagSource.excerpts,bytecode)).toThrow('snapshot_owner_consumption_evidence_missing');
  });
  it(version+' rejects duplicate instruction offsets',()=>{
   const s=record().surveys.find((s:any)=>s.gradleVersion===version);
   const changed=s.compileBytecode.replace(/(\n\s*0: [^\n]+\n)/,'$1       0: nop\n');
-  expect(()=>snapshotOwnerFacts(Buffer.from(s.tagSource.bytesBase64,'base64').toString(),changed)).toThrow('snapshot_owner_consumption_evidence_missing');
+  expect(()=>snapshotOwnerFacts(s.tagSource.excerpts,changed)).toThrow('snapshot_owner_consumption_evidence_missing');
  });
  it(version+' rejects an altered accessor with all recorded identity hashes replaced',()=>{
   const d=record(),s=d.surveys.find((s:any)=>s.gradleVersion===version),api=s.api[1];
@@ -98,3 +104,13 @@ for(const version of ['8.11.1','9.2.1']){
   expect(()=>verifySnapshotOwnerSurvey(d,reference(),d.sourcesSha256)).toThrow('snapshot_owner_api_invalid');
  });
 }
+
+it('extracts only unique excerpts from a source with the retained notice',()=>{
+ const body=ownerSourceNotice+'\nclass K {\n val icEnv = if (isIncrementalCompilationEnabled()) {\n  x(getClasspathChanges(inputChanges))\n } else null\n private fun getClasspathChanges(i: I) =\n  classpathSnapshotProperties.classpathSnapshot.files.toList()\n}\n';
+ expect(ownerSourceExcerpts(body)).toMatchObject({gate:{line:6},privateDeclaration:{line:9,text:' private fun getClasspathChanges(i: I) ='},snapshotRead:{line:10}});
+ expect(()=>ownerSourceExcerpts(body.replace(ownerSourceNotice,'// no notice'))).toThrow('snapshot_owner_consumption_evidence_missing');
+ expect(()=>ownerSourceExcerpts(body+' private fun getClasspathChanges(x)\n')).toThrow('snapshot_owner_consumption_evidence_missing');
+});
+it('does not republish the full tag sources',()=>{
+ for(const s of record().surveys){expect(s.tagSource.bytesBase64).toBeUndefined();expect(JSON.stringify(s.tagSource.excerpts).length).toBeLessThan(4096);}
+});
