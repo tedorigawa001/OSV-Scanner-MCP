@@ -1847,3 +1847,13 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - §9.15のJar source回数を版別に訂正した（8.11.1は4回→5回、9.2.1は3回→4回）。
 - archive hashはobserver報告値どうしの照合にとどまることを明記。ハーネス側のarchive hash記録と、欠落対照一覧の共有verifierへの移動は、次のnative再取得で行う。
 - Gradleは再実行せず、検証JSONに`postReviewRevision`を追記した。詳細は[設計書§9.17](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#917-2f232c9レビュー修正2026-11-01)。
+
+
+### 2026-11-01: producer所有入力の登録契約・完全性判定（設計のみ）
+
+- [設計書§9.18](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#918-producer所有入力の登録契約完全性判定設計2026-11-01)へ、producer sourceに結ぶ作成時helper、opaque handleとattachment、seal lifecycle、concrete-files-v1の許可範囲を追加。
+- KGP所有collectionへの事後固定化は不許可。追加collectionの登録だけでaggregateを完全とせず、未成立のtoolchain recipeが残ればgetterを読まずunavailableにする。読取前の完全性は作者表明と承認profileに依存し、未知supplierの独立発見とは区別する。
+- 独立した追加信頼、read plan／全slot被覆、export証拠・MCP判定・必須limitations、OI01〜OI16の未実施回帰条件を定義。次は設計レビュー、producer source＋非空入力のhelper実証とKGP未対応時のno-read拒否。archive hashのハーネス独立照合と欠落対象一覧の共有化も次回nativeへ含める。
+- 設計書のみ変更。実装・native再実行・検証JSON更新は行わず、本番採用0件を維持する。
+
+- §9.18レビュー修正: handle単位のnot-evaluated／evaluating／ready／failedと、seal後の通常buildによる自然評価正常完了をcapture前提へ追加。全read planの準備をledgerだけで確認し、一つでも未準備なら全対象getterを呼ばずunavailable。失敗の回復・別handle／invocation成功による迂回を禁止。toolchainには独立した準備recipeを要求し、OI02／OI05／OI10へ対応条件を追加。設計のみでnative未実施・採用0件は維持。
