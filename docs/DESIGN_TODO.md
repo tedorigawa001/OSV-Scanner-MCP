@@ -1857,3 +1857,5 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 設計書のみ変更。実装・native再実行・検証JSON更新は行わず、本番採用0件を維持する。
 
 - §9.18レビュー修正: handle単位のnot-evaluated／evaluating／ready／failedと、seal後の通常buildによる自然評価正常完了をcapture前提へ追加。全read planの準備をledgerだけで確認し、一つでも未準備なら全対象getterを呼ばずunavailable。失敗の回復・別handle／invocation成功による迂回を禁止。toolchainには独立した準備recipeを要求し、OI02／OI05／OI10へ対応条件を追加。設計のみでnative未実施・採用0件は維持。
+
+- 061ed46レビュー修正（§9.18.7）: 早期評価は記録のみでbuildを失敗させずcapture unavailableに統一。helper所有collectionはsealで`disallowChanges()`を適用し、seal後変更を`owned_input_late_mutation`として変更箇所で失敗させる。toolchain／aggregateへのseal後変更は作者表明に依存。実行必須でないstageへの接続は`owned_input_stage_not_executed`で登録gateが拒否。OI04／OI05／OI06／OI10を更新。設計のみ。
