@@ -2043,3 +2043,11 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - §9.37のenvelopeをcompleted／failed／unavailableの状態別unionへ具体化。phase別の必須証拠・未到達証拠の省略・禁止項目とreaderのimportStatusを分離し、OO02／OO13を拡充。
 - completedをBTA呼出しと前後検査の完了に限定。内部no-opの判別は未成立のためbta-call-only／compilerWorkStatus=unknownを必須とし、実コンパイル確認へ昇格しない。変更なしの実BTA再呼出しをOO09のnative条件に追加。
 - 設計変更のみ。新規native実行・実装・profile承認は行わず、自然消費receipt・本番採用0を維持。
+
+
+### 2026-11-02: 16c101dレビュー修正（BTA採用契約の拒否分類と状態）
+
+- §9.37.5の理由をproducer記録（unavailableReason／failureReason）とreader判定（importStatus）へ分離。producerが自ら検出した拒否はproducer_failedとして受理しgraphを拒否せず、graph拒否は表明と再照合の矛盾に限定。信頼無効・profile未承認・envelope欠落はreader側のunavailableへ移動。
+- completedを予定capture全件の完了後の終端状態とし、postcheck後は中間状態postchecked。completed→failedの遷移を廃止。
+- test記録の`observationKind`と本envelopeの`consumptionStatus`／`observationKind`の対応を明記。parameterのpath列不一致をfailed記録のbinding拒否とし、OO06でnative負例を必須化。OO13を拡充。
+- 設計変更のみ。実装・native実行・profile承認0、自然消費receipt・本番採用0を維持。
