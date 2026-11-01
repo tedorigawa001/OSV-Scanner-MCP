@@ -346,3 +346,67 @@ node src/test/manual/gradleCatalogLive.mjs
 ```
 
 設定変更は検証用の子MCPプロセスに限定する。今回の実接続はlocal TOMLのalias／bundleと生成ProviderConvertibleが対象。remote／programmatic catalog、構築のmodule／bundle上書き、configuration cache、task出力Provider、並行実行、convention pluginのsource-artifact、buildscript／composite／Android等の独立gateは残る。
+
+
+## Convention plugin本番adapterの実接続検証（2026-11-01）
+
+対象revisionは `4e01d11`。本番adapter／静的取込のコード変更は行わず、[手動ハーネス](../src/test/manual/gradlePluginLive.mjs)と[検証データ](validation/gradle-plugin-live-2026-11-01.json)を追加した。JDK 21.0.13+9-LTS、scanner 2.7.0、MCP stdio経由で検証する。配布server・本番ソース・ハーネスのhashと実行時刻はJSONに記録する。
+
+| consumer／Gradle | producer | 登録 | runtime artifact |
+| --- | --- | --- | --- |
+| Groovy／8.11.1 | buildSrc、binary Java | beginPlugin | JAR |
+| Kotlin／9.2.1 | included build、precompiled Groovy | beginPrecompiled→実Pluginへの二段階登録 | directory |
+
+本番のplugin-provenance、register-declarations、export-dependency-graphの3 init scriptを順に適用し、contract v3／graph v3／adapter v5を使用する。lock・exportは用意済みMaven cacheを使いofflineで生成する。検証用に選んだGradle／JDK／agentのtoolchainとloader profileを明示的に承認し、approved-gradle-loader-v1の追加信頼を使う。profileの自動的な本番承認や、実行bytecodeの独立観測を検証したものではない。
+
+### 宣言元・信頼・鮮度の確認
+
+各projectで次の8条件×3ツール、合計48呼出しがすべて期待どおりに成功した。
+
+| 条件 | 宣言元一覧 | 依存関係・導入元 |
+| --- | --- | --- |
+| helper／plugin信頼＋両profile承認 | 採用 | 採用 |
+| helper信頼無効 | 全体を省略 | 維持 |
+| plugin信頼無効 | 全体を省略 | 維持 |
+| toolchain profile未承認 | 全体を省略 | 維持 |
+| loader profile未承認 | 全体を省略 | 維持 |
+| application登録未終了 | 全体を省略 | 維持 |
+| 同じprojectのsource変更後に再export | 新しい証拠を採用 | 維持 |
+| runtime snapshot改変 | graphを拒否、宣言元を省略 | unknownへ戻る |
+
+log4j-core 2.14.1はconsumer scriptとpluginの両方から登録し、declared_inには両sourceが現れる。jackson-databind 2.9.10.7はplugin sourceのみ。推移的なlog4j-api／jackson-coreのintroduced_byはそれぞれlog4j-core／databindで、declared_inは付けない。非採用時はscriptだけの不完全な宣言元一覧も返さない。
+
+採用時のassuranceはauthor-attested-loader-and-structurally-checked、source_artifact_statusはbuild-lineage-and-runtime-attested、transform_statusはtrusted-runtime-not-independently-observed。JARのcomparisonはentry-content-exact、directoryはsame-path-origin。directoryではplugin_directory_snapshot_post_buildとplugin_directory_origin_same_path_not_comparedを確認する。同じpathの鮮度検証を、別実体との独立比較として数えない。
+
+登録不完全の対照は、pluginソースからendPluginを省き、同じprojectで実際に再構築・exportしたもの。新しい入力hashとartifact証拠を持つ未終了applicationを検証し、古いhashを残したstale入力とは区別する。再exportは同一projectのpluginソースにclass／定数を追加し、構築artifactとapplication証拠の両方が変化したことを確認する。snapshot負例はJAR bytesまたはdirectory manifestへ追記し、検証後に復元する。JARはplugin_snapshot_mismatch、破損したdirectory manifestはplugin_evidence_unverifiableを理由にplugin_trust_status=unverifiableとなる。
+
+coverageはツールの対象範囲で異なる。scan_project／suggest_fixは独立producerのbuild／settingsにlockfileがないことをlockfile_missingで警告し、complete=falseとなる。scan_java_projectはconsumerのlockfileを対象にcomplete=true。これをplugin metadata不足によるcoverage低下と混同しない。snapshot改変でもlockfileの脆弱性スキャンは継続し、graph情報だけを失効させる。
+
+### 脆弱性と候補再照会
+
+| package | 使用版 | 検出ID数 | 提案版 |
+| --- | --- | --- | --- |
+| log4j-core | 2.14.1 | 8 | 2.25.4 |
+| log4j-api | 2.14.1 | 1 | 2.25.5 |
+| jackson-databind | 2.9.10.7 | 24 | 2.18.11 |
+| jackson-core | 2.9.10 | 4 | 2.18.11 |
+
+全16回のsuggest_fixで4候補のcandidate_check=cleanを確認し、ハーネスから別途POST /v1/queryへ64件再照会し、すべてHTTP 200・脆弱性0件だった。HTTP status・生応答・照会時刻をJSONに保存する。条件間でGAV・脆弱性ID・候補版が変わらないことも比較する。候補版や件数は照会時点の結果であり、将来の固定値や更新後ビルド・Java／BOM互換性の保証ではない。
+
+各条件のMCP実行前後でconsumer／plugin source、consumer／producerのsettings・build、lock、契約、companion、Wrapperのhash不変を確認する。java／gradle／Wrapperの実行検知markerがないことを確認する。これは列挙fileと通常launcherの確認であり、全OSプロセスの監査ではない。生MCP応答・server stderr・exportログは新規一時ディレクトリのevidenceへ保存し、公開JSONにはsummary・graph・fixture・OSV再照会を収録する。snapshot archive自体は公開JSONへ含めず、再現時は信頼した環境で再構築する。
+
+### 再実行
+
+```sh
+npm run build
+JAVA_HOME=/path/to/jdk-21 \
+GRADLE_USER_HOME=/path/to/prepared-gradle-cache \
+OSV_MCP_LIVE_SCANNER=/path/to/osv-scanner \
+OSV_MCP_LIVE_GRADLE_8=/path/to/gradle-8.11.1/bin/gradle \
+OSV_MCP_LIVE_GRADLE_9=/path/to/gradle-9.2.1/bin/gradle \
+node src/test/manual/gradlePluginLive.mjs
+```
+
+通常のnpm testからは起動せず、scanner／Gradleを自動取得しない。cacheが不足していればoffline構築は失敗する。実接続matrixは上記2組に限定し、全DSL／版／producer／artifact組合せの検証は既存のoffline回帰と区別する。precompiled Kotlin、標準kotlin-dsl、発行済みplugin、並行export／configuration cache等の独立gateは変更しない。
+
+補助検証: build・typecheck・ハーネスの構文確認が成功。通常テストは77 files／1,772件成功、10 files／883件skip。今回native全matrixを再実行した記録ではなく、上記2 projectの実接続と既存の通常回帰を確認した。

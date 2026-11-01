@@ -1760,3 +1760,11 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 
 - 4e01d11レビュー修正: toolchain／loader profileの未承認は宣言元だけを省略し（plugin_toolchain_not_approved／plugin_loader_not_approved）、検証済みrelation／introduced_byを保持する。既定の未設定状態でもrelationを失わない。profile構造・receipt・hashの不一致とloader profileの指定不一致（plugin_loader_profile_mismatch）は従来どおりgraphを不採用にする。
 - 同レビューで、Gradle buildを伴う再export等の本番native回帰4件が既定30秒のtimeoutで負荷時に間欠失敗したため、fixture exportと同じ210秒を明示した。
+
+
+### 2026-11-01: convention plugin本番adapterの3ツール／OSV実接続
+
+- Groovy／Gradle 8.11.1のbuildSrc binary Java JAR、Kotlin／9.2.1のincluded precompiled Groovy directoryで、8条件×3ツールの48呼出しを確認。declared_inの完全な混在一覧、信頼metadata、introduced_by、候補版を検証した。
+- helper／plugin信頼無効、toolchain／loader profile未承認、nativeでendPluginを省いた未終了登録では宣言元を全体省略。同一projectのsource変更・再export後の採用と、JAR／directory snapshot改変時のgraph拒否も確認。
+- 4候補×16回の独立OSV再照会64件がHTTP 200・脆弱性0件。MCP中の列挙入力hash不変と通常build launcherの非実行を確認した。scan_project／suggest_fixは独立producerのlock不足をcoverage警告として維持する。
+- [検証記録](GRADLE_LIVE_VALIDATION.md#convention-plugin本番adapterの実接続検証2026-11-01)・validation/gradle-plugin-live-2026-11-01.json・src/test/manual/gradlePluginLive.mjsを追加。本番コードの変更なし。実接続matrix外の組合せ、precompiled Kotlin／標準kotlin-dsl、発行済みplugin、plugin ID alias、producer子project、plugin内部catalog／bundle、configuration cache／並行export等のgateは残る。

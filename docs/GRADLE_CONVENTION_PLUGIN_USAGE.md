@@ -136,4 +136,4 @@ JARは元bytesを `.osv-mcp/plugin-runtime/<invocation>/jars/<sha256>.jar` へ�
 
 classpath inventoryはtask完了後の観測とexport後の再検証であり、compile中だけの変更や復元された変更は独立に検出できない。承認JDKの上記実体を照合しても、実行中の全native libraryや未知loader／変換を独立検証した保証にはならない。作者のinput完全性・source対応・承認runtimeの表明と、これらの限界をlimitationsに残す。
 
-3ツール／OSVの実接続検証は本番実装レビュー後の別作業。この変更で新たな実接続を確認したとは扱わない。
+本番実装レビュー後の[3ツール／OSV実接続検証](GRADLE_LIVE_VALIDATION.md#convention-plugin本番adapterの実接続検証2026-11-01)では、Groovy／8.11.1のbuildSrc JARとKotlin／9.2.1のincluded precompiled Groovy directoryを検証した。8条件×3ツール×2 projectの48呼出し、候補版の独立OSV再照会64件が成功。信頼無効・profile未承認・実際の未終了登録では宣言元を省略し、再export後の採用とsnapshot改変の拒否も確認した。独立producerのlock不足によるcoverage警告と、追加信頼契約の限界は維持する。
