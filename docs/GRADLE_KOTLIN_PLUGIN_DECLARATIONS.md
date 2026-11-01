@@ -1640,3 +1640,129 @@ run／case／matrix／experimentをv2へ更新し、readFault、実故障run、�
 helperとverifierが変わるため、両DSL・両Gradle版でnativeを取り直した（各版20テスト成功、通常28＋故障8＝36 build）。experimentをv3へ更新し、v2はコミット済み原本（503f25c）のhash付き要約としてpreReviewsへ残した。検証JSONは789KBで、保持blobは1件（破損させた446 bytesのgradle-installation-beacon snapshot。4組で同一bytesのため重複排除）である。
 
 境界候補4組、実file改変拒否12件、保存bytes破損拒否4件、receipt未取得no-read拒否4件、実cached読取拒否8件、記録改変拒否172件（43対照×4組）、同時trace移動拒否12件を保存し、公開記録から再計算した。503f25cの履歴には11.3MBの記録が残る。Task境界観測と自然消費bytesの区別、および自然消費内容束縛・承認済みrecipe・全pipeline候補・本番採用0件の判断は変わらない。
+
+
+### 9.32 snapshot自然消費hookの調査・producer所有契約と打切り条件（2026-11-01）
+
+以下のv1結果はレビュー前の履歴。現在のguard検証・artifact証拠の束縛とv2再実行は§9.33を参照する。
+
+§9.29〜9.31のTask境界観測を自然消費receiptへ昇格させる条件を調査した。対象は既存tuple（Gradle 8.11.1／KGP 2.0.20、Gradle 9.2.1／KGP 2.2.20）。**現対象の既存KGPへ採用できる自然消費hookを確立できなかったため、透過取得recipeはunsupportedのまま打切る。BTAの公開入力型は別driverの候補であり、今回の承認recipe・自然消費内容束縛・本番採用は0件。** 全KGP公開APIについて不存在を証明したという結論ではない。
+
+#### 9.32.1 調査の根拠と範囲
+
+[調査JSON](validation/gradle-snapshot-owner-survey-2026-11-01.json)へ、14公開型×2 tupleのsignature・選択JAR／class digest、公式tag sourceとdigest、KotlinCompileの対象methodのbytecode、公開BTA constructorの実行結果を保存する。実Gradle／KGP artifactは既存取得診断recordのhashへ照合し、javap -sysinfoで各型の実解決元も照合する。公開methodでも`$kotlin_gradle_plugin_common`等のmangled内部実装をsupported extension pointと扱わない。
+
+公式sourceは[2.0.20](https://github.com/JetBrains/kotlin/blob/v2.0.20/libraries/tools/kotlin-gradle-plugin/src/common/kotlin/org/jetbrains/kotlin/gradle/tasks/KotlinCompile.kt)／[2.2.20](https://github.com/JetBrains/kotlin/blob/v2.2.20/libraries/tools/kotlin-gradle-plugin/src/common/kotlin/org/jetbrains/kotlin/gradle/tasks/KotlinCompile.kt)のKotlinCompile.ktを取得した。原headerを含むbytesとApache-2.0の由来を記録する。tag sourceと実artifactの対象bytecodeは相互の補強証拠であり、reproducible buildによる全source一致の証明ではない。bytecodeのprivate methodは静的診断だけに使い、reflection／private呼出し／task差替えは行わない。
+
+| 候補・確認した公開面 | 得られるもの／不足 | 現判定 |
+| --- | --- | --- |
+| KotlinCompile／ClasspathSnapshotProperties | 公開collection参照。getClasspathChangesはprivateで、呼出し元はKotlin内部のcompiler環境構築。自然消費済みの具体列・bytesを渡すcallbackをこの範囲で確立できず | existing KGP unsupported |
+| Task.doFirst／doLast、TaskInputs、InputChanges | action順序、入力collection、変更情報。消費readerの具体値・bytes receiptではない | Task境界候補の範囲を維持 |
+| BuildEventsListenerRegistry、TaskFinishEvent、TaskSuccessResult | Task完了通知・結果。完了状態は消費値を渡さない | ready発行根拠にしない |
+| TransformAction | transform所有者の生成処理。既存KGP transformの消費後callbackへ観測器を追加するAPIではない。別transformでの再生成は別入力になる | consumer receiptとして不採用 |
+| KotlinCompilerPluginSupportPlugin、KotlinCompilerArgumentsProducer | compiler plugin設定／引数生成。既に自然消費された派生snapshot列・bytesを渡す契約ではない。引数生成の手動呼出しも消費済みwitnessにはならない | 不採用 |
+| BTA CompilationService、JvmCompilationConfiguration、ClasspathSnapshotBasedIncrementalCompilationApproachParameters | callerがcompiler・IC入力を渡す公開API。既存KGPに登録してその入力を横から受け取るhookとは異なる | 新しいowner driverの設計候補のみ |
+
+[現行Kotlin文書のBTA説明](https://kotlinlang.org/docs/build-tools-api.html)や[compiler plugin説明](https://kotlinlang.org/docs/custom-compiler-plugins.html)を、旧tupleの成立証拠へ流用しない。今回のBTA JARは対象版cacheから一意に選択しdigestを固定した**利用可能なAPI artifact**である。既存KGPの実compileで選択されたBTA実装・compiler artifactと証明したものではない。Java probeが実際にロードしたBTA／stdlibのCodeSourceとdigestは別に照合した。
+
+#### 9.32.2 compiler分岐と既存実証の位置付け
+
+両tag sourceと対応する実KotlinCompile bytecodeで、callCompilerAsyncからgetClasspathChangesへの呼出しはisIncrementalCompilationEnabledの条件下にあり、無効側ではincremental environmentがnullになる。getClasspathChanges内でsnapshotのfiles列を取得する。検証器は対象methodを分離し、guardのifeq先が当該呼出しを飛び越えてaconst_nullへ到達することを確認する。単なるmethod名の存在や別method内の同じoffsetを根拠にしない。
+
+したがって、これまでのincremental無効・in-processという条件で、非空snapshotがGradle入力として評価されたことを、compiler環境がその派生bytesを消費した証拠にできない。今回も実compilerの全readを計測したのではなく、限定したsource／bytecode制御経路の診断である。incremental有効へ変えるだけでも消費中不変・hook・追加評価の不足は解消しないため、設定だけを切り替えてrecipeを承認しない。
+
+#### 9.32.3 BTA公開constructorの実証
+
+両版の公開ClasspathSnapshotBasedIncrementalCompilationApproachParametersへ、非空のsynthetic regular fileを含むList<File>を渡すstandalone Java probeを実行した。実行版BTA JAR／stdlibのCodeSourceとhashを指定artifactへ照合した。
+
+- 可変Listを渡した後に元Listへ追加すると、parameterの取得列も増えた。取得列への追加も可能だった。constructorの存在だけでは列の防御的copy・sealを保証しない。
+- callerがListを防御的copyし、Collections.unmodifiableListで包んでから渡すと、元Listの変更は反映されず、取得列への変更も拒否した。
+- これは同一の具体File列をAPI引数として保持する仕組みの実証に限る。Fileはpath参照であり、Listの固定はfile bytesを固定しない。probe fileは正規KGP snapshotではなく、compileJvm・snapshot生成・compiler呼出しは0回。既存KGPの採用証拠やGroovy／Kotlin native matrixへ加算しない。
+
+#### 9.32.4 producer所有の二つの契約案
+
+新しいdriverを作る場合も、以下を別mode・別profileとして扱い、暗黙に既存KGP recipeを置換しない。本節は設計であり、本番helper／schema／環境設定の実装ではない。
+
+**A. owner-consumer-receipt（自然消費receipt候補）**
+
+登録は§9.22のbindingにdriverKind、driver source／実行artifact digest、compiler／BTA実装とclasspath、execution strategy、snapshot format／generator digest、libraries sequence digest、storage policyを加える。実driver instanceとinvocation／stage／slotを自然な構成経路で結び、seal前に登録を閉じる。KGP task pathだけで新driverのidentityを代用しない。
+
+beginSlot／completeSlotはproducerが所有する実消費経路から発行する。具体列は防御的copy＋変更不能にし、slot内の順序・重複・logical IDを固定する。bytesはconsumerの実readと同じ経路で有界streaming保存し、同じopen実体・size／digest・保存bytesをcompleteへ渡す。readerの共有が公開APIで成立しない場合は、このmodeを登録しない。Task開始、BTA parameter構築、compiler呼出し直前／直後、成功戻り値で自然時のreadを推定しない。
+
+実行が非同期ならworker／daemonの消費完了までtokenをreadyにしない。失敗・再入・異なる列の追加消費・保存失敗・予算超過は不可逆にfailed／invalidatedとし、別tokenや再試行で回復しない。captureは完成receiptだけを使い、元KGP getterを呼ばず、最初のcaptureから元内容証拠へ再照合する。
+
+**B. owner-sealed-offered-inputs（提供入力の固定候補）**
+
+BTAのFile引数を受け渡すだけの初期候補はこのmodeとする。producerが生成したsnapshotをprivate stagingへ保存し、実regular fileの安全なopen、完全なinventory、generator／libraries対応、size／digest／保存bytesを固定する。その同じpath列を防御的copyしてBTA parameterへ渡し、consumerが終わるまでstagingを変更・削除・再利用しない。前後のhashも記録する。
+
+ただしFile引数にはimmutable bytesの公開保証がなく、read-only permissionやadvisory file lockだけでは他writerを排除したことにならない。writer集合、process境界、symlink／path置換、mmapやworkerの読取終了、再利用cacheとの分離をsource監査とproducer／toolchain profileへ明示する必要がある。BTA API自体がこの保証を与えたとは扱わない。
+
+このmodeで得られるのは提供した入力の証拠であり、compilerがその全snapshotを消費したreceiptではない。skip／incremental no-op／非incremental経路も区別し、compileJvmの成功だけでconsumedへ遷移しない。実消費との対応を公開契約・承認済みrecipeで別途確立できるまでは、offered-inputs-onlyとして保存し、自然消費slotのready・declared_in完全性の根拠には使わない。AとBのmode交換で不足証拠を回避しない。
+
+将来のreceipt metadata案はconsumptionStatus（unsupported／offered-inputs-only／receipt-complete）、observationKind（owner-read／before-call／after-call／task-boundary）、driver／consumer binding、read interval、contentBindings、producer／toolchain追加信頼とlimitationsを保持する。状態と証拠が矛盾するreceipt-completeはgraph拒否、合法な未対応はno-readのunavailableとして宣言元全体を省略する。relation／introduced_by・lock由来coverageや既存のintegrity検査をこの省略で迂回しない。
+
+#### 9.32.5 採用と打切りの条件
+
+1. exact tupleに、同じ自然消費値・bytesを渡すsupported public hook、またはその対応を保証する公開契約が見つからない → **既存KGPの透過recipe調査を現対象で打切り、unsupportedを維持**。Task callbackを増やす反復で代用しない。上流API・対象version・明示owner integrationが変わる場合だけ再開する。
+2. 候補がprivate／internal／mangled public method、reflection、既存collectionの事後固定化、別ArtifactView・再transform・再評価を必要とする → 不採用。追加信頼だけで禁止APIを許可しない。
+3. BTAのcaller側でのみ成立する → 既存KGPへの透過対応を止め、**新owner driverの別工程**へ分ける。既存KGP実行artifactの証拠とBTA利用可能artifactの証拠を混ぜない。
+4. 列のsealだけでbytes不変、消費中不変、消費完了の根拠がない → offered-inputs-only止まり。自然receiptをreadyへしない。
+5. 将来native実証を行う場合は、正規非空snapshotを生成する実owner driver、実BTA／compiler実装・引数対応、消費中変更とreceipt後変更の拒否、全observerの追加評価、既存buildとの差を両DSL・両Gradle版で検証する。synthetic parameter probeを陽性matrixへ数えない。
+6. snapshotが将来成立しても残り3 slot・全stage・package／loaderの条件が未成立なら、全pipeline候補・本番採用は0。
+
+#### 9.32.6 回帰条件と今回の実施範囲
+
+| 条件 | 検証対象／次の実証条件 |
+| --- | --- |
+| SO01 | exact source・artifact／API classのbinding、source guardとbytecode branch。別Gradle API・KGP／BTA artifact、改変source・signature・bytecodeを拒否（今回静的対照） |
+| SO02 | Task callback、Task成功、非空fileを自然hookへ昇格しない。内部methodをpublic hookとしない（今回source／bytecode診断。全API不存在の証明ではない） |
+| SO03 | BTA mutable parameterのaliasとcaller defensive copyを実測。file bytesや実compilerの消費を成立としない（今回2 standalone probe） |
+| SO04 | BTAのcache候補をruntime選択済みと偽装、synthetic pathを正規snapshotと偽装、未実行compiler／DSL matrix・recipeの水増しを拒否（今回静的対照） |
+| SO05 | 新driver登録とsealが自然消費前、同じowner／invocation／library cohort・実compiler tupleを拘束。既存KGPと別ownerのreceipt交換を拒否（未実施） |
+| SO06 | Aの実消費readerから同一bytesを取得し、Provider／FileCollectionをobserverが呼ばない。hook不在はsource getter 0で打切る（新driver未実施） |
+| SO07 | Bのprivate stagingの完全性、path置換・writer追加・worker継続・一時変更、実消費との対応を検証。両端hashだけでAへ移行しない（未実施） |
+| SO08 | receipt／保存blob／baseline参照の欠落・不整合、消費中変更・最初のcapture前変更・保存失敗・容量超過を拒否。再baseline化・別tokenへの回復禁止（新driver未実施。既存Task境界負例の陽性流用禁止） |
+| SO09 | 新driverのcontrol／全observerと未変更buildを比較し、評価・解決・transform・artifact差を記録。両DSL・両版、incremental／cache／parallelを別matrixにする（未実施） |
+| SO10 | offered-inputs-only、別slot未準備、信頼未承認ではdeclared_in部分一覧を返さない。schema不正・integrity違反は省略へ格下げしない（本番未実施） |
+
+今回追加したGradle build／compiler実行は0。14型×2 tupleの静的API／bytecode調査、公式source 2件、standalone公開constructor probe 2件であり、既存の36 buildを再実行・追加計上していない。次に実装へ進める候補はBの新owner driverの限定実証であるが、それだけで自然消費対応は完了しない。Aに必要なconsumer側hookまたは同等の公開保証が成立しなければ、自然消費receiptの取得は打切りを維持する。
+
+再現には対象Gradle配布物、既存cache、JDK 21と、上記raw tag URLから取得したKotlinCompile-2.0.20.kt／KotlinCompile-2.2.20.ktを用意する。ハーネス自体はネットワーク取得を行わず、source digestを固定照合する。
+
+```sh
+JAVA_HOME=/path/to/jdk GRADLE_USER_HOME=/path/to/cache OSV_MCP_GRADLE_RUNTIME_ROOT=/path/to/runtime node src/test/manual/gradleSnapshotOwnerSurvey.mjs /path/to/tag-sources docs/validation/gradle-snapshot-owner-survey-2026-11-01.json
+npx vitest run src/test/gradle/snapshotOwner.test.ts --maxWorkers=1
+```
+
+最終確認: 14型×2 tupleの実artifact解決元・source／bytecode分岐と、BTA公開constructor probe 2件を現sourceで再取得した。公開記録のsource 7 fileのhashを照合し、scope・artifact・source・signature・bytecode・probe・判定の改変負例を含む通常全体2,339テストが成功（native opt-in等1,157件skip）。typecheck・build・差分検査も成功。新しいGradle build／compiler実行・自然消費内容束縛・承認recipe・本番採用は0件である。
+
+
+### 9.33 owner調査レビュー修正・guard範囲とartifact別の固定期待値（2026-11-01）
+
+§9.32の2指摘を修正した。修正前はgetClasspathChangesの読取offsetをguardより前へ変更しても同じfactsを返し、signature／bytecodeとその自己hashを一緒に変えた記録も受理した。両対象版の8負例が修正前に失敗することを確認した（その時点の公開記録再生1件は、テストsource更新による既存hash不一致でも失敗した）。
+
+#### guardと命令列
+
+対象method内のisIncrementalCompilationEnabled呼出し、直後のifeq、getClasspathChanges読取、無効側の飛び先を別々のoffsetとして取得し、`guard call < ifeq < read < false target`を要求する。false targetが同じmethodのaconst_nullであることも照合する。caller／private readerはそれぞれ命令offsetがsafe integerで厳密に増加する必要があり、重複・逆順・別methodのoffsetを混ぜた証拠を拒否する。
+
+実際の呼出し行を前へ移す対照に加え、offset自体は単調増加しているがreadがguardより前にあるsynthetic命令列も拒否する。これにより順序エラーだけでなくguardの下限検証を試す。任意JVM bytecodeの完全なcontrol-flow／verifier解析を実装したのではなく、対象tupleの固定bytecodeとの一致を次の独立照合で要求する。
+
+#### artifactから独立に固定した期待表
+
+修正前のcollectorを用い、両対象版の実JARを既存reference digestへ照合し、各型のjavap -sysinfo解決元を実JARへ確認した結果を新たに取得した。この実artifact由来の値を、レビュー対象の承認データ`gradleSnapshotOwnerExpected.mjs`へ固定した。旧公開記録の自己申告値をそのまま承認したのではない。
+
+期待表はtuple別の7 artifact digestと、artifact digestをkeyにした14型×2 tupleのclass digest／public signature digest、KotlinCompileの対象method列のbytecode digestを保持する。既存referenceのGradle／KGP digest照合も維持する。記録側は、固定期待値との一致と、保存文字列を再hashした自己整合の両方を満たす必要がある。class digestがhex64であるだけ、artifact digestの文字列を併記しただけでは受理しない。
+
+自己hashを更新したpublic accessor削除・改名、bytecodeのreceiver改変、整形式の別class digest、signatureとclass digestの同時置換を両対象版で拒否する。collectorはこの期待表を読み取るだけで更新しない。未知のartifact／class／signature／bytecodeは失敗とし、追加tupleや変更を許可するには実artifactの再調査と期待表の明示レビューが必要である。
+
+期待表はJDK 21.0.13+9で実取得したjavap出力に対応する。artifactが同じでも表示形式が変わる別toolchainを自動的に同等とせず、必要なら期待profileを別にレビューする。これはrepository内の承認データによる証拠照合であり、電子署名や任意に改変された実行環境への独立証明ではない。期待表自体のhashも他の検証sourceと同じく公開記録へ束縛する。
+
+#### 再実行と範囲
+
+experimentをv2へ更新し、旧未コミットv1はpreReviewsにhash付き要約として残す。現在の調査・公開API実証を両対象版で取り直し、14型×2 tupleのsignature／実artifact解決元、公式sourceとbytecode分岐、BTA公開constructor probeを同じ検証器で再照合する。再現コマンドは§9.32と同じ。期待表の自動生成・更新コマンドを通常collectorへ組み込まない。
+
+BTAで確認したのはmutable Listのaliasと防御的copyによる列固定であり、file bytesや実compiler消費の保証へ拡張しない。追加Gradle build／compiler実行は0、standalone constructor probeは各対象版1件ずつである。既存KGPのhook未成立によるunsupported・打切り、BTAには別owner driverが必要という結論、SO05以降の未実施範囲、自然消費内容束縛・承認recipe・本番採用0件は不変。
+
+最終再実行: Gradle 8.11.1／KGP 2.0.20、Gradle 9.2.1／KGP 2.2.20の14型ずつと、BTA公開constructor probe 2件を現sourceで取り直した。28型の固定期待値・tuple別artifact・guard分岐との一致を確認し、公開記録をv2へ更新した。旧v1履歴要約は1件、source hashは期待表を含む8 fileに一致する。回帰41テストが成功した。ここで追加実行0とするcompilerはKotlin compiler（compileJvm等）であり、probe用のjavac／javaの実行とは区別する。
+
+通常全体の最終確認: 2,353テスト成功・native opt-in等1,157件skip。typecheck・build・差分検査も成功。自然消費内容束縛・承認recipe・本番採用0件の判断は不変。

@@ -1976,3 +1976,24 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - snapshot内容実証の検証JSONが全boundary bytes（gzip blob 42件、11.3MB）を収録していたため、公開記録で保持するbytesを保存bytes破損の証拠だけに絞った。verifierへnative／published storage modeを追加し、全bytesの照合はnativeと集約時に行う。改変対象は最小の非空fileへ変更し、verifierで照合する。
 - 再集約時の観測時点保持、判定理由からのscope集計、公開記録の改ざん負例6件を追加した。
 - nativeを取り直し（各版20テスト、36 build）、記録をv3へ更新（789KB、保持blob 1件）。v2は503f25cの原本hash付き要約として保持。自然消費内容束縛・承認済みrecipe・本番採用0は不変。詳細は[設計書§9.31](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#931-503f25cレビュー修正公開記録の保存bytes縮小2026-11-01)。
+
+
+### 2026-11-01: snapshot自然消費hook調査とproducer所有契約
+
+- [設計書§9.32](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#932-snapshot自然消費hookの調査producer所有契約と打切り条件2026-11-01)へ、既存KGPのhook・Task完了・transform・compiler plugin・BTAを比較し、Aの実consumer receiptとBのsealed offered inputsを分離した登録・内容・完了・信頼契約、SO01〜SO10、採用／打切り条件を追加。
+- 両tupleで公式tag sourceと実bytecodeを照合。getClasspathChangesはprivateでcompiler環境構築のincremental分岐内。既存の非incremental Task境界実証をcompiler消費証拠へ昇格させない。
+- BTA公開parameterはmutable Listをaliasし、callerの防御的copy＋unmodifiable Listで列を固定できることをstandaloneで実測。File列の固定とbytes不変・自然消費は別条件。利用可能なBTA artifactを既存KGPの選択済み実装と扱わない。
+- 14型×2 tuple、公式source 2件、公開constructor probe 2件を新規記録。新Gradle build／compiler実行／DSL matrixは0。現対象の既存KGP透過recipeはunsupportedとして打切り、上流API／対象tuple／明示owner integrationが変わる場合に再開。新BTA owner driverは別工程で、自然消費内容束縛・承認recipe・本番採用0は維持。
+
+- 最終確認（§9.32）: 14型×2 tuple・公開constructor probe 2件を保存・静的再検証。通常全体2,339件成功（1,157件skip）、typecheck／build／差分検査成功。新Gradle build／compiler実行は0。次は新BTA owner driverの限定実証を別工程で扱い、自然消費hook／保証が成立しなければoffered-inputs-onlyを維持する。
+
+
+### 2026-11-01: snapshot owner調査レビュー・guardとartifact証拠の束縛
+
+- [設計書§9.33](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#933-owner調査レビュー修正guard範囲とartifact別の固定期待値2026-11-01)へ追記。guard call／ifeq／read／false targetの順序、method別の命令offsetの単調増加を要求し、guard前への移動を拒否。
+- 実JARから取り直したclass／signature／bytecode digestをartifact別の期待表へ固定。collectorは期待表を更新せず、自己hashを一緒に更新した改変や別class digestも拒否する。期待表をsource hashへ含め、experiment v2へ更新。
+- 旧v1は未コミット履歴の要約として保持。両対象版の調査・standalone公開API実証を再実行し、自然消費hook未成立・既存KGP unsupported／打切り・承認recipe／本番採用0の判断を維持する。
+
+- 両対象版の14型×2組・BTA公開constructor probe 2件を再実行してv2記録へ更新。固定期待値28型とsource 8 fileのhash一致、旧v1履歴要約1件、回帰41テスト成功を確認。新Gradle build／Kotlin compiler実行は0（probe用javac／javaは別）。
+
+- 通常全体2,353件成功（1,157件skip）、typecheck／build／差分検査も成功。unsupported／打切りと本番採用0の判断は不変。
