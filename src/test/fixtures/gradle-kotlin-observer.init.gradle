@@ -1,0 +1,135 @@
+// Test-only full observer and separately labelled producer provisioning experiment.
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import org.gradle.api.tasks.bundling.Jar
+import org.gradle.api.tasks.PathSensitivity
+
+def root=new File(System.getProperty('osv.observer.root')).canonicalFile
+String mode=System.getProperty('osv.observer.mode')
+boolean eagerCompiler=System.getProperty('osv.observer.eagerCompiler')=='true'
+boolean observe=System.getProperty('osv.observer.enabled')=='true'
+def auditFile=new File(root,'observer-trace.jsonl'), receipts=[], hashCache=[:]
+def phaseStack=ThreadLocal.withInitial {new ArrayDeque<String>()}
+def currentPhase={ -> phaseStack.get().peek()?:'configuration-or-unbound' }
+def setPhase={ String value -> def stack=phaseStack.get();if(!stack.isEmpty())stack.pop();stack.push(value) }
+def audit={ String event -> auditFile.append(JsonOutput.toJson([event:event,phase:currentPhase()])+'\n') }
+def hashFile={ File f ->
+ def key=f.canonicalPath+':'+f.length()+':'+f.lastModified()
+ if(!hashCache.containsKey(key)){
+  if(f.length()>512L*1024*1024)throw new IllegalStateException('observer_file_budget')
+  def d=MessageDigest.getInstance('SHA-256')
+  f.withInputStream { stream -> byte[] b=new byte[1024*1024];int n;while((n=stream.read(b))>0)d.update(b,0,n) }
+  hashCache[key]=d.digest().encodeHex().toString()
+ }
+ hashCache[key]
+}
+def files={ Collection values -> values.collect { File f ->
+ def local=f.canonicalFile.toPath().startsWith(root.toPath())
+ [id:local?root.toPath().relativize(f.canonicalFile.toPath()).toString():MessageDigest.getInstance('SHA-256').digest(f.canonicalPath.bytes).encodeHex().toString(),name:f.name,size:f.isFile()?f.length():null,sha256:f.isFile()?hashFile(f):null]
+} }
+def inventory={ File base ->
+ def found=[:]
+ if(base.isDirectory())base.eachFileRecurse(groovy.io.FileType.FILES){ f ->
+  if(found.size()>=10000)throw new IllegalStateException('observer_entry_budget')
+  found[base.toPath().relativize(f.toPath()).toString()]=hashFile(f)
+ }
+ found.sort()
+}
+// This is the actual proposed reader, used in its entirety in every observer run.
+// It never finalizes, wraps, replaces or queries a supplier during provisioning.
+def readTask={ t,s ->
+ def r=[task:t.name,readSlots:[:]]
+ if(t.name=='compileKotlin'){
+  r.settings=[incremental:t.incremental,strategy:t.compilerExecutionStrategy.get().toString(),fallback:t.useDaemonFallbackStrategy.get()]
+  r.readSlots.libraries=files(t.libraries.files.toList())
+  r.readSlots.snapshots=files(t.classpathSnapshotProperties.classpathSnapshot.files.toList())
+  r.readSlots.compilerClasspath=files(t.project.configurations.getByName('kotlinCompilerClasspath').files.toList())
+  r.readSlots.plugins=t.project.plugins.collect { p -> [type:p.class.name,origin:p.class.protectionDomain?.codeSource?.location?.toString()] }
+ }
+ if(t instanceof Jar){
+  r.temporaryRoot=t.temporaryDir.name
+  def manifest=new File(t.temporaryDir,'MANIFEST.MF')
+  r.manifest=[size:manifest.length(),sha256:hashFile(manifest)]
+  r.archive=[name:t.archiveFile.get().asFile.name,sha256:hashFile(t.archiveFile.get().asFile)]
+ }
+ if(t.name=='pluginDescriptors')r.readSlots.declarations=t.project.extensions.getByName('gradlePlugin').plugins.collect { [id:it.id,implementationClass:it.implementationClass] }
+ if(t.name=='compileJava')r.javaOutputs=inventory(new File(t.project.buildDir,'classes/java/main'))
+ r.didWork=s.didWork;r.noSource=s.noSource
+ r.readSlots.taskInputs=s.didWork?files(t.inputs.files.files.toList()):[]
+ r.readSlots.taskOutputs=files(t.outputs.files.files.toList())
+ r
+}
+gradle.beforeProject { p ->
+ p.plugins.all { item -> audit('plugin-class-applied:'+item.class.name) }
+ p.pluginManager.withPlugin('java-gradle-plugin') { p.extensions.getByName('gradlePlugin').plugins.configureEach {audit('declaration-realized:'+it.name)} }
+ p.pluginManager.withPlugin('proof') {audit('plugin-application:proof')}
+ if(p.projectDir.canonicalFile!=new File(root,'build-logic').canonicalFile)return
+ // Producer-owned policy is present equally in control and observer. It is NOT
+ // a transparent observer operation and changes the baseline supplier contract.
+ def owned={ String label ->
+  audit('registration:begin:'+label)
+  def value=p.files(p.providers.provider {audit('supplier:'+label);[]})
+  if(mode!='raw'){if(label=='compilerClasspath' && eagerCompiler)value.finalizeValue();else value.finalizeValueOnRead()}
+  audit('registration:end:'+label)
+  value
+ }
+ p.extensions.extraProperties.set('unusedObserverProvider',p.providers.provider {audit('supplier:unused');[]})
+ audit('policy:begin:compilerClasspath')
+ def compilerFiles=owned('compilerClasspath')
+ p.configurations.configureEach { c ->
+  if(c.name=='kotlinCompilerClasspath'){
+   c.withDependencies { deps -> deps.add(p.dependencies.create(compilerFiles)) }
+   c.incoming.beforeResolve {audit('compiler-resolution:before')}
+   c.incoming.afterResolve {audit('compiler-resolution:after')}
+  }
+ }
+ audit('policy:end:compilerClasspath')
+ p.tasks.configureEach { t ->
+  if(t.name=='compileKotlin'){
+   audit('policy:begin:compileKotlin')
+   t.libraries.from(owned('libraries'))
+   t.inputs.files(owned('compileInput')).withPropertyName('observerCompileInput').withPathSensitivity(PathSensitivity.NONE)
+   t.outputs.files(owned('compileOutput')).withPropertyName('observerCompileOutput')
+   if(mode!='raw'){
+    t.libraries.finalizeValueOnRead()
+    t.classpathSnapshotProperties.classpathSnapshot.finalizeValueOnRead()
+   }
+   if(mode=='tainted')t.inputs.files(p.providers.provider {audit('supplier:unownedCompileInput');[]}).withPropertyName('unownedCompileInput').withPathSensitivity(PathSensitivity.NONE)
+   t.doFirst {audit('action:compileKotlin:first')};t.doLast {audit('action:compileKotlin:last')}
+   audit('policy:end:compileKotlin')
+  }
+  if(t instanceof Jar){
+   audit('policy:begin:jar')
+   t.from(owned('jarSource'))
+   t.inputs.files(owned('jarInput')).withPropertyName('observerJarInput').withPathSensitivity(PathSensitivity.NONE)
+   t.outputs.files(owned('jarOutput')).withPropertyName('observerJarOutput')
+   if(mode=='tainted'){
+    t.inputs.files(p.providers.provider {audit('supplier:unownedJarInput');[]}).withPropertyName('unownedJarInput').withPathSensitivity(PathSensitivity.NONE)
+    t.from(p.providers.provider {audit('supplier:unownedJarSource');[]})
+   }
+   t.doFirst {audit('action:jar:first')};t.doLast {audit('action:jar:last')}
+   audit('policy:end:jar')
+  }
+ }
+}
+def stages=['compileKotlin','compileJava','pluginDescriptors','processResources','jar','generateExternalPluginSpecBuilders','extractPrecompiledScriptPluginPlugins','compilePluginsBlocks','generatePrecompiledScriptPluginAccessors','generateScriptPluginAdapters']
+gradle.taskGraph.beforeTask { t ->
+ if(t.project.projectDir.canonicalFile!=new File(root,'build-logic').canonicalFile || !(t.name in stages))return
+ phaseStack.get().push('before:'+t.name);audit('task:before:'+t.name)
+ // The full observer also includes the original pre-task physical checks.
+ if(observe && t.name=='compileKotlin')receipts.add([task:'pre-compileKotlin',classes:inventory(new File(t.project.buildDir,'classes/kotlin/main')),javaSources:inventory(new File(t.project.projectDir,'src/main/java'))])
+}
+gradle.taskGraph.afterTask { t,s ->
+ if(t.project.projectDir.canonicalFile!=new File(root,'build-logic').canonicalFile || !(t.name in stages))return
+ setPhase('after:'+t.name);audit('task:after:'+t.name)
+ setPhase('observer:'+t.name);audit('observer:begin:'+t.name)
+ if(observe)receipts.add(readTask(t,s))
+ audit('observer:end:'+t.name);phaseStack.get().pop()
+ def baseline=new JsonSlurper().parse(new File(root,'observer-baseline.json'))
+ def inputHashes=baseline.inputs.collectEntries { name,value -> [(name):hashFile(new File(root,name))] }
+ def report=[schema:'osv-mcp.kotlin-full-observer-run-v2',runId:System.getProperty('osv.observer.runId'),gradleVersion:gradle.gradleVersion,mode:mode,eagerCompiler:eagerCompiler,observe:observe,
+  consumerDSL:new File(root,'build.gradle.kts').isFile()?'Kotlin':'Groovy',consumerDSLOrigin:'fixture-file',collectorSha256:hashFile(new File(System.getProperty('osv.observer.collector'))),
+  fixtureInputsSha256:inputHashes,maxWorkers:gradle.startParameter.maxWorkerCount,parallel:gradle.startParameter.parallelProjectExecutionEnabled,receipts:receipts,lastTask:t.name,lastTaskSucceeded:s.executed && s.didWork && !s.failure]
+ new File(root,'observer-report.json').text=JsonOutput.toJson(report)
+}

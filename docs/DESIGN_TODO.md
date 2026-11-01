@@ -1820,3 +1820,22 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 期待entry欠落のnative回帰は、固定理由ではなく実際の`complete`／`reasons`を保存する。集約ハーネスは実際の拒否結果を要求し、リポジトリrootを自身の位置から解決する。
 - consumer DSLがfixtureの構成fileから判定されること、`preReview.recordSha256`が未コミットの記録を指すことを設計書に記した。
 - Gradleは再実行せず、保存済み正常16観測から96対照を静的に再計算し、検証JSONの`postReviewRevision`へ追記した。詳細は[設計書§9.14](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#914-340facdレビュー修正2026-11-01)。
+
+
+### 2026-11-01: Kotlin構築pipelineの全observer非干渉方式の再設計・公開API実証
+
+- [設計書§9.15](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#915-全observerを対象とする入力取得方式の再設計2026-11-01)を追加。observerからの事後固定化を禁止し、producerが最初の自然な読取で値を固定する追加契約を提案。固定化なし／producer固定化／未固定入力混在を比較し、元buildへの透過対応とは区別する。
+- Task.inputs.files／outputs、libraries／snapshot、compilerClasspath、plugins、Jarのmanifest／archive／入力、descriptor／resources等を読む同じreaderで対照。thread-local context stackとworker数1でphaseを計測し、実版・source hash・run UUID・fixture hashを照合する。実行時の内部API利用はない。
+- 両Gradle×両consumer DSL×3条件、計12対照・24 native buildを実行。各版native8件、静的28件、通常全体1,881件が成功（native opt-in等1,081件skip）。型チェック・build成功。結果はvalidation/gradle-kotlin-observer-2026-11-01.json。
+- ownedの4組は計測用supplier／callback traceとJAR entry内容が一致。rawとtaintedの8組は追加評価を検出。raw controlのlibraries3回に対してowned controlは1回なので、既存build無変更の透過的保証ではない。登録完全性・全内部supplierの独立観測も未成立で、本番採用0件を維持する。
+- producerはincluded rootのbinary Kotlin／標準kotlin-dslに限定。追加producer契約のレビュー、nonempty・入れ子／treeの制限、buildSrc／precompiledとplugins-block recipe、完全登録adapter・追加信頼profile、本番v4／v6、snapshot保存・静的取込と3ツール／OSVのgateは残る。既存の§9.14の修正・旧主観測は保持し、新しい実証を別のJSONへ保存した。
+
+
+### 2026-11-01: producer固定化実証レビュー2件の修正
+
+- compilerClasspathを含む全7 factoryを登録区間で囲み、登録中の評価を共有verifierで拒否する。実GradleでfinalizeValue()を意図的に使う負例を両DSL・両版へ追加し、同じtraceでも早期評価を受理しない。
+- pre-check・compileJava・descriptor・resources・実行条件・Jar metadataまで全receiptを必須化。通常12対照で23種類ずつ、計276件の欠落拒否を記録し、集約でも再計算する。
+- v2観測へ更新。両版native各10件、通常12対照＋早期評価4負例の計32 buildが成功。負例は実際の登録時評価による拒否であり、schema不正による失敗を計上しない。初回v1の要約はpreReviewへ保存。
+- ownedの条件付き候補4組と、本番採用0件・既存buildへの透過対応未成立の判断を維持。詳細は[設計書§9.16](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#916-producer固定化実証レビュー2件の修正再検証2026-11-01)。
+
+- 最終確認: 静的76件、通常全体1,929件成功・native opt-in等1,083件skip。型チェック・build成功。
