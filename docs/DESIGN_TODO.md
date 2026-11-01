@@ -1781,3 +1781,13 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - Kotlin実証レビュー2件を修正: compile出力全file→package入力→JAR entryとclass集合を照合し、descriptor実装classをロード元hashへ結んだ。cache／JDK／agentのpathをrealpathへ統一。両Gradle版各188件が成功し、正常16＋実class差し替え4の20観測へ更新。8.11.1ではcache・JDK alias指定も確認した。旧144件／版の集計は検証JSONのpreReviewへ保持する。本番未対応と追加pipeline信頼・派生入力の未完了は維持する。
 - 同修正後の通常回帰は1,788件成功／1,071件skip、stage単体16件、build・typecheck成功。設計・実証・2件のレビュー修正を一括して記録する。
 - 6e1d969レビュー修正: stage単体とnative観測改変で期待する拒否理由を確認し、adapter生成順の対照をgeneratorだけの移動に独立化。compile重複・package artifact不一致・余分なclassの単体対照を追加（22件）。native両版188件・通常回帰1,794件成功を再確認。基準revisionをcc40e4cへ訂正し、JARの非class entryが未束縛である限界と本番要件、path alias確認の指定方法を設計書へ追記。
+
+
+### 2026-11-01: Kotlin構築pipelineの信頼契約・入力manifest具体化（設計のみ）
+
+- [設計書§9](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#9-kotlin構築pipelineの信頼契約入力manifest具体案)へ追補。contract v4／graph v4／adapter v6、独立pipeline trust／profile、作者manifest・stage／cohort／package inventory、判定順と拒否理由を定義した。
+- 派生snapshotは公開collectionとlibrariesの明示aggregate対応とし、個別JAR由来と混同しない。集合取得不能やTask.inputsの未知の残りは不採用。観測済み約18 MiBのsnapshotに対し、toolchain-onlyに限定した64 MiB/file・共有256 MiBのchunk streaming経路を提案し、mixed／plugin入力の予算迂回を禁止した。
+- class以外のdescriptor／resource／kotlin_moduleを生成stage→copy→packageへ結び、MANIFESTは事前固定profile literalだけを初期許可。自己参照の生成元証拠、未束縛entry、任意merge／filtering／署名等を拒否する。
+- KP01〜KP36の回帰条件を追加。新recipe、派生collection、全非class被覆と非干渉の公開API実証は次工程。本番コード・既存実証コード・検証JSONを変更せず、過去の成功件数を新設計の成立証拠へ流用しない。
+
+- Kotlin pipeline設計レビュー2件を反映: 一時MANIFESTのpackage-literal-file型を定義し、固定literal・保存file・JAR entryの三者照合と、自己stageの生成edgeにしない規則を追加。v4 Kotlin分岐のmappingは省略／not-assertedを有効な未表明とし、入力検証後に宣言元だけを省略する。旧schemaの必須条件や参照・hash検証は維持する。専用拒否理由とKP37〜KP44を追加（合計44条件）。設計のみで実証・本番コード・観測JSONは変更しない。
