@@ -1969,3 +1969,10 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 再検証（§9.30）: 両DSL・両Gradle版で各版20テスト、通常28＋故障8＝36 build成功。実cached読取拒否8件・記録改変拒否168件・同時trace移動拒否12件をnative／集約で確認。静的・公開記録再生106テスト成功。自然消費内容束縛・承認済みrecipe・本番採用0は維持。
 
 - 通常全体2,301件成功（1,157件skip）、typecheck／build／差分検査も成功。
+
+
+### 2026-11-01: 503f25cレビュー修正（snapshot内容記録の保存bytes縮小）
+
+- snapshot内容実証の検証JSONが全boundary bytes（gzip blob 42件、11.3MB）を収録していたため、公開記録で保持するbytesを保存bytes破損の証拠だけに絞った。verifierへnative／published storage modeを追加し、全bytesの照合はnativeと集約時に行う。改変対象は最小の非空fileへ変更し、verifierで照合する。
+- 再集約時の観測時点保持、判定理由からのscope集計、公開記録の改ざん負例6件を追加した。
+- nativeを取り直し（各版20テスト、36 build）、記録をv3へ更新（789KB、保持blob 1件）。v2は503f25cの原本hash付き要約として保持。自然消費内容束縛・承認済みrecipe・本番採用0は不変。詳細は[設計書§9.31](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#931-503f25cレビュー修正公開記録の保存bytes縮小2026-11-01)。

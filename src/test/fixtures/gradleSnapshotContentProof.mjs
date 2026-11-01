@@ -5,8 +5,14 @@ const fail=m=>{throw Error(m)};
 const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const sha=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
-const strip=items=>items.map(({bytes,...item})=>item);
+const strip=items=>items.map(({bytes,bytesOmitted,...item})=>item);
+// Native records retain every boundary byte; the published record keeps only the corrupted evidence bytes.
+const storageModes=['native','published'];
+const nonempty=items=>items.filter(f=>f.size>0).sort((x,y)=>x.size-y.size||(x.id<y.id?-1:x.id>y.id?1:0));
 export function verifySnapshotContentRun(r,a){
+ const storage=a?.storage??'native';if(!storageModes.includes(storage))fail('snapshot_content_storage_mode_invalid');
+ const retained=f=>typeof f.bytes==='string'&&f.bytesOmitted===undefined&&Buffer.from(f.bytes,'base64').toString('base64')===f.bytes;
+ const omitted=f=>storage==='published'&&f.bytes===undefined&&f.bytesOmitted===true;
  if(r?.schema!=='osv-mcp.snapshot-content-run-v2'||!contentModes.includes(r.mode))fail('snapshot_content_schema_invalid');
  if(r.readFault!==(a.readFault??'none')||!['none','capture','no-receipt'].includes(r.readFault)||r.readFault==='capture'&&r.mode!=='boundary'||r.readFault==='no-receipt'&&r.mode!=='no-receipt')fail('snapshot_content_fault_identity_invalid');
  if(r.gradleVersion!==a.gradleVersion||!r.runId||!eq(r.fixtureInputsSha256,a.fixtureInputsSha256))fail('snapshot_content_identity_invalid');
@@ -59,18 +65,20 @@ export function verifySnapshotContentRun(r,a){
   for(const f of items){if(typeof f.id!=='string'||!f.id||f.id.startsWith('/')||f.id.split('/').some(p=>!p||p==='.'||p==='..'))fail('snapshot_content_inventory_invalid');if(f.missing===true){if(Object.keys(f).sort().join(',')!=='id,missing')fail('snapshot_content_inventory_invalid');}else if(!Number.isSafeInteger(f.size)||f.size<0||!sha(f.sha256))fail('snapshot_content_inventory_invalid');}
  }
  if(observed){
-  if(!r.receipt.length||!r.receipt.some(f=>f.size>0)||r.receipt.some(f=>f.missing||typeof f.bytes!=='string'||Buffer.from(f.bytes,'base64').toString('base64')!==f.bytes)||!eq(strip(r.receipt),r.postAction))fail('snapshot_content_receipt_invalid');
+  if(!r.receipt.length||!r.receipt.some(f=>f.size>0)||r.receipt.some(f=>f.missing||!(retained(f)||omitted(f)))||!eq(strip(r.receipt),r.postAction))fail('snapshot_content_receipt_invalid');
   if(!eq(r.receipt.map(f=>f.id),r.current.map(f=>f.id)))fail('snapshot_content_inventory_invalid');
  }else if(r.receipt.length||r.postAction.length||r.current.length)fail('snapshot_content_no_read_violated');
+ // Storage mismatch evidence must keep the corrupted bytes in every storage mode.
+ if(r.mode==='blob-corrupt'&&!retained(r.receipt.find(f=>f.id===r.mutation?.id)??{}))fail('snapshot_content_mutation_invalid');
  let storageMismatch=false;
- if(observed)storageMismatch=r.receipt.some(f=>{const b=Buffer.from(f.bytes,'base64');return b.length!==f.size||hash(b)!==f.sha256;});
+ if(observed)storageMismatch=r.receipt.filter(retained).some(f=>{const b=Buffer.from(f.bytes,'base64');return b.length!==f.size||hash(b)!==f.sha256;});
  const stale=observed&&!eq(strip(r.receipt),r.current);
  const reason=r.mode==='control'?'control':r.mode==='no-receipt'?'kgp_capture_content_evidence_unavailable':storageMismatch?'kotlin_pipeline_snapshot_storage_mismatch':stale?'kotlin_derived_snapshot_stale':null;
  const expectedReason=({'control':'control','boundary':null,'mutate-same-size':'kotlin_derived_snapshot_stale','mutate-size':'kotlin_derived_snapshot_stale','delete':'kotlin_derived_snapshot_stale','blob-corrupt':'kotlin_pipeline_snapshot_storage_mismatch','no-receipt':'kgp_capture_content_evidence_unavailable'})[r.mode];
  if(reason!==expectedReason||r.capture?.reason!==reason||r.capture?.accepted!==(reason===null))fail('snapshot_content_capture_invalid');
  if(mutation){
   const m=r.mutation,prior=r.postAction.find(f=>f.id===m?.id),current=r.current.find(f=>f.id===m?.id);
-  if(!prior||m.before!==prior.sha256||m.before===m.after||fileMutation&&m.restored!==true)fail('snapshot_content_mutation_invalid');
+  if(!prior||m.before!==prior.sha256||m.before===m.after||fileMutation&&m.restored!==true||m.id!==nonempty(r.postAction)[0]?.id)fail('snapshot_content_mutation_invalid');
   if(r.mode==='delete'?m.after!==null||current?.missing!==true:r.mode==='blob-corrupt'?m.after!==hash(Buffer.from(r.receipt.find(f=>f.id===m.id).bytes,'base64')):m.after!==current?.sha256)fail('snapshot_content_mutation_invalid');
   const changed=r.postAction.filter((f,i)=>!eq(f,r.current[i]));
   if(fileMutation&&(changed.length!==1||changed[0].id!==m.id))fail('snapshot_content_mutation_invalid');
@@ -103,6 +111,7 @@ export const contentTargets=[
  {kind:'binding',reason:'snapshot_content_binding_invalid'},
  {kind:'adoption',reason:'snapshot_content_scope_invalid'},
  {kind:'api',reason:'snapshot_content_api_invalid'},
+ {kind:'omitted-bytes',storage:'native',reason:'snapshot_content_receipt_invalid'},
 ];
 export function mutateSnapshotContent(r,target){
  const c=structuredClone(r);
@@ -111,7 +120,8 @@ export function mutateSnapshotContent(r,target){
   case 'stage':delete c.stage[target.field];break;
   case 'event':c.events=c.events.filter(e=>e.event!==target.event);break;
   case 'extra-evaluation':{const index=c.events.findIndex(e=>e.event==='getter:end');c.events.splice(index,0,{event:'supplier:begin',phase:'boundary'},{event:'supplier:end',phase:'boundary'});c.calls++;break;}
-  case 'missing-bytes':delete c.receipt[0].bytes;break;
+  case 'missing-bytes':delete c.receipt[0].bytes;delete c.receipt[0].bytesOmitted;break;
+  case 'omitted-bytes':delete c.receipt[0].bytes;c.receipt[0].bytesOmitted=true;break;
   case 'inventory':c.current.pop();break;
   case 'rebaseline':c.receipt[0].sha256='0'.repeat(64);break;
   case 'fake-success':c.capture={accepted:false,reason:'made-up'};break;
@@ -123,7 +133,7 @@ export function mutateSnapshotContent(r,target){
 }
 export function contentRegressions(c,a){
  const r=c.runs[1];return contentTargets.map(target=>{
-  let reason;try{verifySnapshotContentRun(mutateSnapshotContent(r,target),{...a,fixtureInputsSha256:c.fixtureInputsSha256});}catch(e){reason=e.message;}
+  let reason;try{verifySnapshotContentRun(mutateSnapshotContent(r,target),{...a,fixtureInputsSha256:c.fixtureInputsSha256,...(target.storage?{storage:target.storage}:{})});}catch(e){reason=e.message;}
   if(reason!==target.reason)fail('snapshot_content_regression_failed:'+JSON.stringify(target)+':'+reason);
   return {...target,accepted:false};
  });

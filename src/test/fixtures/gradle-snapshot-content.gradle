@@ -28,6 +28,8 @@ def inventory={List files,boolean bytes->files.collect{File file->
  item
 }}
 // Only this broker receives the KGP property; downstream content logic retains concrete files.
+// Mutations target the smallest nonempty file so the published corruption evidence stays small.
+def smallest={List items,Closure size,Closure id->items.findAll{size(it)>0}.sort{x,y->size(x)<=>size(y)?:id(x)<=>id(y)}[0]}
 def readSnapshot={ ->
  audit('getter:begin');s.getterCalls++
  try{return refs.property.files.toList()}finally{audit('getter:end')}
@@ -64,7 +66,7 @@ ext.installSnapshotContentProof={ ->
   File changed=null;byte[] original=null
   try{
    if(mode in ['mutate-same-size','mutate-size','delete']){
-    changed=refs.files.find{it.length()>0};original=changed.bytes
+    changed=smallest(refs.files,{it.length()},{home.toPath().relativize(it.canonicalFile.toPath()).toString()});original=changed.bytes
     s.phase='mutation';audit('mutation:begin')
     if(mode=='delete')Files.delete(changed.toPath())
     else if(mode=='mutate-size')Files.write(changed.toPath(),Arrays.copyOf(original,original.length+1))
@@ -72,7 +74,7 @@ ext.installSnapshotContentProof={ ->
     s.mutation=[id:home.toPath().relativize(changed.canonicalFile.toPath()).toString(),before:shaBytes(original),after:changed.isFile()?sha(changed):null]
     audit('mutation:end')
    }else if(mode=='blob-corrupt'){
-    s.phase='mutation';audit('mutation:begin');def item=s.receipt.find{it.size>0};byte[] b=item.bytes.decodeBase64();b[0]=(byte)(b[0]^1);item.bytes=b.encodeBase64().toString();s.mutation=[id:item.id,before:item.sha256,after:shaBytes(b)];audit('mutation:end')
+    s.phase='mutation';audit('mutation:begin');def item=smallest(s.receipt,{it.size},{it.id});byte[] b=item.bytes.decodeBase64();b[0]=(byte)(b[0]^1);item.bytes=b.encodeBase64().toString();s.mutation=[id:item.id,before:item.sha256,after:shaBytes(b)];audit('mutation:end')
    }
    s.phase='capture';audit('capture:begin')
    // Deliberate fault uses the same broker as the boundary read.

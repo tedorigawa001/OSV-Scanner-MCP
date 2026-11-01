@@ -1616,3 +1616,27 @@ run／case／matrix／experimentをv2へ更新し、readFault、実故障run、�
 最終native再検証: Groovy／Kotlin × Gradle 8.11.1／9.2.1の各版20テストが成功した。通常28＋故障8＝36 buildを保存し、実cached読取8件は計測supplier追加0でもno-read違反として拒否した。42対照×4組＝168件と、controlを含む同時trace移動3対照×4組＝12件をnative・集約で再計算した。静的・公開記録再生106テストも成功し、source 4 file・検証source 11 fileのhash一致、故障を含む保存blob復元、旧v1履歴要約1件を確認した。
 
 通常全体の最終確認: 2,301テスト成功・native opt-in等1,157件skip。typecheck・build・差分検査も成功。
+
+
+### 9.31 503f25cレビュー修正・公開記録の保存bytes縮小（2026-11-01）
+
+503f25cの検証JSON（v2）は、全run・全fileのboundary bytesを内容アドレス付きgzip blobとして収録し、11.3MB（blob 42件、展開94.8MB）だった。中身はgradle-api、kotlin-stdlib／reflect、groovy、javaparser等の第三者JARから生成されたKGP classpath snapshotである。公開記録から再生する判定のうち実bytesを要するのは保存bytes破損（blob-corrupt）だけで、stale／receipt未取得の判定はsize／SHA-256だけで足りる。
+
+#### 保存方式の分離
+
+- 共有verifierへstorage modeを追加した。`native`（既定）は全receipt entryのbytesを必須とし、nativeと集約時の照合で使う。`published`は`bytesOmitted: true`でbytesを省いたentryを許すが、blob-corruptで破損させたfileのbytesはどちらのmodeでも必須とする。bytesを省いたentryについては、公開記録から保存bytesを再照合できない。
+- 集約はnative modeで全bytesを検証した後、blob-corruptの破損file以外のbytesを除き、published modeで判定・記録改変対照・同時trace対照を再計算する。結果がnativeと一致しなければ書き出さない。公開記録テストは、保持しているbytesがこの方針どおりであることと、未使用blobがないことを確認する。
+- helperの改変対象（同size変更・サイズ増加・削除・保存bytes破損）を、最初の非空fileから「最小の非空file」（size、同sizeなら相対path順）へ変更した。verifierはこの選択を照合する。破損証拠のbytesを小さく保つための変更で、判定条件は変えていない。
+- 記録改変対照に、native modeでbytesを省いた記録の拒否を加えた（43対照／fixture）。
+
+#### その他の修正
+
+- 同じnative run集合を集約し直す場合は、観測時の`recordedAt`／`baselineRevision`を残し、再集約時点を`reconsolidatedAt`／`reconsolidatedRevision`へ別記する（§9.25、§9.28と同じ方針）。
+- scopeの件数を、mode数からの固定計算ではなく各runの判定理由から数えるようにした（`contentRecordCounts`）。
+- 公開記録テストに改ざん負例6件を追加した（古い判定、未使用blob、方針外のbytes保持、件数の水増し、source hashの不一致、絶対path）。v2記録に対して失敗することを確認した。
+
+#### 再実行と記録
+
+helperとverifierが変わるため、両DSL・両Gradle版でnativeを取り直した（各版20テスト成功、通常28＋故障8＝36 build）。experimentをv3へ更新し、v2はコミット済み原本（503f25c）のhash付き要約としてpreReviewsへ残した。検証JSONは789KBで、保持blobは1件（破損させた446 bytesのgradle-installation-beacon snapshot。4組で同一bytesのため重複排除）である。
+
+境界候補4組、実file改変拒否12件、保存bytes破損拒否4件、receipt未取得no-read拒否4件、実cached読取拒否8件、記録改変拒否172件（43対照×4組）、同時trace移動拒否12件を保存し、公開記録から再計算した。503f25cの履歴には11.3MBの記録が残る。Task境界観測と自然消費bytesの区別、および自然消費内容束縛・承認済みrecipe・全pipeline候補・本番採用0件の判断は変わらない。

@@ -73,3 +73,26 @@ for(const phase of ['configuration','action'])it('rejects a phase label inconsis
  const r=specimen();r.events.filter(e=>e.event?.startsWith('supplier:')).forEach(e=>e.phase=phase);
  expect(()=>verifySnapshotContentRun(r,approval)).toThrow('snapshot_content_supplier_phase_invalid');
 });
+
+it('permits omitted bytes only in the published storage mode',()=>{
+ const r:any=specimen();delete r.receipt[0].bytes;r.receipt[0].bytesOmitted=true;
+ expect(()=>verifySnapshotContentRun(r,approval)).toThrow('snapshot_content_receipt_invalid');
+ expect(verifySnapshotContentRun(r,{...approval,storage:'published'})).toMatchObject({boundaryFreshness:true});
+ expect(()=>verifySnapshotContentRun(r,{...approval,storage:'other'})).toThrow('snapshot_content_storage_mode_invalid');
+});
+it('requires the corrupted file bytes even in the published record',()=>{
+ const r:any=specimen(),b=Buffer.from(r.receipt[0].bytes,'base64');b[0]=b[0]!^1;
+ r.mode='blob-corrupt';r.receipt[0].bytes=b.toString('base64');r.mutation={id:r.receipt[0].id,before:r.receipt[0].sha256,after:hash(b)};r.capture={accepted:false,reason:'kotlin_pipeline_snapshot_storage_mismatch'};
+ r.events.splice(r.events.findIndex((e:any)=>e.event==='capture:begin'),0,{event:'mutation:begin',phase:'mutation'},{event:'mutation:end',phase:'mutation'});
+ expect(verifySnapshotContentRun(r,{...approval,storage:'published'})).toMatchObject({reason:'kotlin_pipeline_snapshot_storage_mismatch'});
+ delete r.receipt[0].bytes;r.receipt[0].bytesOmitted=true;
+ expect(()=>verifySnapshotContentRun(r,{...approval,storage:'published'})).toThrow('snapshot_content_mutation_invalid');
+});
+it('requires mutations to target the smallest nonempty file',()=>{
+ const r:any=specimen(),small={id:'caches/a.bin',size:1,sha256:'c'.repeat(64)};
+ r.receipt.push({...small,bytes:Buffer.from('x').toString('base64')});r.receipt[1].sha256=hash(Buffer.from('x'));small.sha256=r.receipt[1].sha256;r.postAction.push({...small});r.current.push({...small});
+ r.mode='blob-corrupt';const b=Buffer.from(r.receipt[0].bytes,'base64');b[0]=b[0]!^1;r.receipt[0].bytes=b.toString('base64');
+ r.mutation={id:r.receipt[0].id,before:r.postAction[0].sha256,after:hash(b)};r.capture={accepted:false,reason:'kotlin_pipeline_snapshot_storage_mismatch'};
+ r.events.splice(r.events.findIndex((e:any)=>e.event==='capture:begin'),0,{event:'mutation:begin',phase:'mutation'},{event:'mutation:end',phase:'mutation'});
+ expect(()=>verifySnapshotContentRun(r,approval)).toThrow('snapshot_content_mutation_invalid');
+});
