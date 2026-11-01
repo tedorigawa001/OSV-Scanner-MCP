@@ -1,0 +1,9 @@
+export const kgpSlots:string[];
+export const kgpAvailabilitySources:string[];
+export function verifyKgpAvailabilityCase(c:any,a:any):any;
+export function verifyKgpSnapshotFault(c:any,a:any):any;
+export function verifyApiArtifact(expected:any,actual:any):any;
+export function resolveGradleApiArtifact(lib:string,expected:any):Promise<any>;
+export const kgpAvailabilityRegressionTargets:Array<{name:string;reason:string}>;
+export function mutateKgpAvailabilityFault(proof:any,name:string):any;
+export function kgpAvailabilityRegressions(proof:any,approval:any):any[];

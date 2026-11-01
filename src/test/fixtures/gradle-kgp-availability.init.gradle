@@ -1,0 +1,101 @@
+// Test-only acquisition diagnostic; never produces an approved capture receipt.
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import org.gradle.api.tasks.PathSensitivity
+
+def root=new File(System.getProperty('osv.kgp.root')).canonicalFile
+String mode=System.getProperty('osv.kgp.mode')
+boolean faultSnapshotRead=System.getProperty('osv.kgp.faultSnapshotRead')=='true'
+def slots=['libraries','snapshots','compilerClasspath','taskInputs']
+def stack=ThreadLocal.withInitial{new ArrayDeque<String>()}
+def phase={ -> stack.get().peek()?:'configuration' }
+def events=[],reads=[],decisions=[],implementation=[:],compileState=[:],getterCalls=slots.collectEntries{[(it):0]}
+def audit={String event -> events.add([event:event,phase:phase()])}
+def hash={File f ->
+ def d=MessageDigest.getInstance('SHA-256')
+ f.withInputStream{stream -> byte[] b=new byte[1024*1024];int n;while((n=stream.read(b))>0)d.update(b,0,n)}
+ d.digest().encodeHex().toString()
+}
+def origin={Class type ->
+ def uri=type.protectionDomain?.codeSource?.location
+ if(uri==null)throw new IllegalStateException('api-origin-unavailable')
+ def artifact=new File(uri.toURI()).canonicalFile
+ [type:type.name,artifact:artifact.path,sha256:hash(artifact)]
+}
+def apiArtifacts=[gradle:origin(org.gradle.api.tasks.TaskInputs.class)]
+def counts={ -> slots.collectEntries{slot->[(slot):events.count{it.event=='supplier:'+slot}]}}
+gradle.beforeProject{p ->
+ if(p.projectDir.canonicalFile!=new File(root,'build-logic').canonicalFile)return
+ p.pluginManager.withPlugin('org.jetbrains.kotlin.jvm'){
+  def plugin=p.plugins.findPlugin('org.jetbrains.kotlin.jvm')
+  def uri=plugin.class.protectionDomain?.codeSource?.location
+  if(uri==null)throw new IllegalStateException('kgp-origin-unavailable')
+  def jar=new File(uri.toURI())
+  implementation=[type:plugin.class.name,artifact:jar.canonicalPath,sha256:hash(jar)]
+  // Class metadata only; no input method is reflected or invoked.
+  apiArtifacts.kgp=origin(plugin.class.classLoader.loadClass('org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool'))
+ }
+ def sensor={String slot,Closure value -> p.providers.provider{audit('supplier:'+slot);value.call()}}
+ p.configurations.configureEach{c ->
+  if(c.name=='kotlinCompilerClasspath'){
+   c.withDependencies{deps -> deps.add(p.dependencies.create(p.files(sensor('compilerClasspath',{[]}))))}
+   c.incoming.beforeResolve{audit('resolution:before')}
+   c.incoming.afterResolve{audit('resolution:after')}
+  }
+ }
+ p.tasks.configureEach{t ->
+  if(t.name!='compileKotlin')return
+  audit('registration:begin')
+  // Identical, unfrozen sensors in all runs. No existing collection is finalized.
+  t.libraries.from(sensor('libraries',{[]}))
+  t.classpathSnapshotProperties.classpathSnapshot.from(sensor('snapshots',{[]}))
+  t.inputs.files(sensor('taskInputs',{[new File(p.projectDir,'probe/input.txt')]})).withPropertyName('availabilityProbe').withPathSensitivity(PathSensitivity.NONE)
+  t.doFirst{audit('action:begin')};t.doLast{audit('action:end')}
+  audit('registration:end')
+ }
+}
+gradle.taskGraph.beforeTask{t ->
+ if(t.project.projectDir.canonicalFile!=new File(root,'build-logic').canonicalFile)return
+ stack.get().push('natural:'+t.name);audit('task:begin:'+t.name)
+}
+gradle.taskGraph.afterTask{t,state ->
+ if(t.project.projectDir.canonicalFile!=new File(root,'build-logic').canonicalFile)return
+ audit('task:end:'+t.name)
+ if(t.name=='compileKotlin'){
+  compileState=[executed:state.executed,didWork:state.didWork,noSource:state.noSource,failed:state.failure!=null]
+  def readers=[
+   libraries:{t.libraries.files.toList()},
+   snapshots:{t.classpathSnapshotProperties.classpathSnapshot.files.toList()},
+   compilerClasspath:{t.project.configurations.getByName('kotlinCompilerClasspath').files.toList()},
+   taskInputs:{t.inputs.files.files.toList()}
+  ]
+  def readSlot={String slot -> getterCalls[slot]++;audit('getter:'+slot);try{return readers[slot].call()}finally{audit('getter:end:'+slot)}}
+  slots.each{slot ->
+   stack.get().push((mode=='diagnostic'?'diagnostic:':mode=='control'?'control:':'gate:')+slot)
+   audit('slot:begin:'+slot)
+   try{
+    if(mode=='diagnostic'){
+     def before=counts()
+     def concrete=readSlot(slot)
+     def after=counts()
+     def inventory=concrete.collect{File f->[name:f.name,size:f.isFile()?f.length():null,sha256:f.isFile()?hash(f):null]}
+     reads.add([slot:slot,before:before,after:after,files:inventory])
+    }else if(mode=='unsupported'){
+     if(faultSnapshotRead&&slot=='snapshots')readSlot(slot)
+     audit('gate:'+slot)
+     // No value probe: the approved recipe registry is empty for every slot.
+     decisions.add([slot:slot,status:'unsupported',reason:'kgp_capture_recipe_unsupported',getterCalls:0])
+    }
+   }finally{audit('slot:end:'+slot);stack.get().pop()}
+  }
+ }
+ stack.get().pop()
+ if(t.name=='jar'){
+  def baseline=new JsonSlurper().parse(new File(root,'availability-baseline.json'))
+  def inputHashes=baseline.inputs.collectEntries{name,value->[(name):hash(new File(root,name))]}
+  new File(root,'availability-report.json').text=JsonOutput.toJson([schema:'osv-mcp.kgp-availability-run-v2',runId:System.getProperty('osv.kgp.runId'),gradleVersion:gradle.gradleVersion,mode:mode,faultSnapshotRead:faultSnapshotRead,
+   maxWorkers:gradle.startParameter.maxWorkerCount,parallel:gradle.startParameter.parallelProjectExecutionEnabled,implementation:implementation,apiArtifacts:apiArtifacts,
+   fixtureInputsSha256:inputHashes,events:events,reads:reads,decisions:decisions,getterCalls:getterCalls,compileState:compileState,approvedRecipes:[],adopted:false])
+ }
+}

@@ -1899,3 +1899,21 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - KGP準備契約レビュー修正（§9.22.8）: completeSlotへcontentBindingsを追加。自然消費時点のsize／SHA-256と、保存bytesまたは自然時に再検証したbaseline参照をreadyの必須条件にした。全体gate中に内容証拠を生成せず、最初のcaptureから元証拠との照合を要求する。KI07／KI18を拡充し、証拠欠落・baseline流用・receipt後capture前の実派生file改変・保存中変更のKI23〜KI26を追加（全26条件、未実施）。設計のみで既存v3実証・本番未採用の判断は維持。
 
 - 6e1ac6cレビュー修正（§9.22.9）: §9.22.8の結果を理由表へ反映（内容証拠の合法な未取得はunavailable、矛盾はgraph拒否、staleはslot型ごとに`kotlin_pipeline_inputs_stale`／`kotlin_derived_snapshot_stale`、保存blob不一致はgraph拒否）。javapで確認したgradle-core-api JARのhash・interface別digestを記録。owner-materializedの読取範囲の表現を統一し、KI25／KI26を隔離cacheで行う条件にした。設計のみ。
+
+
+### 2026-11-01: KGP所有4入力の取得可能性調査・公開API診断
+
+- [設計書§9.23](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#923-kgp所有4入力の取得可能性調査公開api診断2026-11-01)に、対象KGP実artifactのCodeSource／hash、14 public型のsignature・snapshot注釈調査と、両Gradle／両DSLの通常12＋故障4 native buildを記録。
+- libraries／compilerClasspath／Task.inputsは通常compile後の診断getterで各sensorが+1評価。snapshotは順序付き診断でdelta 0だったが、準備witness・自然時内容束縛は未成立。全4 slotをunsupportedのまま16診断・16 no-read拒否を保存した。control／unsupportedの自然traceと全modeのJAR entry内容を照合した。
+- 元collectionの事後固定化を行わず、取得可能性と採用可否を分離。限定surveyで公開hookを確立できなかった結果であり、API不存在の網羅的証明とは扱わない。次は実証レビュー、snapshot限定の公開安定性・binding／witness調査、または自然消費値を渡す具体hookの特定。本番採用0件を維持する。
+
+- 最終確認: native両版各14件成功、16 build・16診断・16 no-read拒否・実snapshot読取負例4件を保存。静的31件、通常全体2,028件成功／1,113件skip、typecheck・build成功。検証JSONはvalidation/gradle-kgp-availability-2026-11-01.json。
+
+
+### 2026-11-01: KGP取得診断レビュー2件の修正
+
+- [設計書§9.24](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#924-kgp取得診断レビュー修正api-bindingと故障trace2026-11-01)に追記。nativeのTaskInputs／KotlinCompileTool実CodeSourceとdigestをAPI調査へ束縛し、Gradle runtime候補の別実体を拒否。KGP APIのcache候補選択も廃止した。
+- slot／getter開始・終了とphaseを検証し、getter区間の全supplierからdeltaを再計算。故障traceも全証拠を検査してから期待したno-read違反を認定する。14種類の改変対照をnative／集約で共有し、不正phase・区間外移動・artifact欠落等を拒否する。
+- v2へ更新し、旧未コミットv1は要約としてのみ保持。初回の厳密化で通常task graph準備を過剰拒否した点は、登録後・最初のtask前に限定して許可する回帰で修正した。本番採用・全pipeline候補0件を維持する。
+
+- 最終確認: native両版各18件成功、最終16 buildを保存。故障trace改変56件・別API対照4件・実Gradle版違いdirectory対照2件を拒否して集約で再計算。静的56件、通常全体2,053件成功／1,117件skip、typecheck・build成功。v2のsourceとAPI artifact hash一致を確認した。
