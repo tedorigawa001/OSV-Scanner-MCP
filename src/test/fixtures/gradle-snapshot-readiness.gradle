@@ -1,0 +1,128 @@
+// Test-only cooperative producer registration; never finalizes an existing KGP property.
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import org.gradle.api.file.ConfigurableFileCollection
+
+// A preflight classifier receives primitive facts, never Task/FileCollection handles.
+class SnapshotPreflightClassifier {
+ static String reason(Map f){
+  def booleans=['profileApproved','taskIdentity','propertyIdentity','sourceKnown','stageObserved','stageComplete']
+  if(f.keySet()!=((booleans+['naturalCalls']) as Set)||booleans.any{!(f[it] instanceof Boolean)}||!(f.naturalCalls instanceof Integer)||f.naturalCalls<0)throw new IllegalArgumentException('invalid-preflight-facts')
+  if(!f.profileApproved)return 'profile_mismatch'
+  if(!f.taskIdentity)return 'task_binding_mismatch'
+  if(!f.propertyIdentity)return 'property_binding_mismatch'
+  if(!f.sourceKnown)return 'source_kind_unsupported'
+  if(!f.stageComplete)return f.stageObserved?'stage_not_executed':'task_not_complete'
+  if(f.naturalCalls==0)return 'natural_materialization_missing'
+  null
+ }
+}
+
+def root=rootProject.projectDir.parentFile
+String mode=System.getProperty('osv.snapshot.mode')
+boolean preflightReadFault=System.getProperty('osv.snapshot.preflightReadFault')=='true'
+def baseline=new JsonSlurper().parse(new File(root,'snapshot-baseline.json'))
+def s=[events:[],checks:[],calls:0,getterCalls:0,metadataReadsAfterGate:0,phase:'configuration',binding:[:],stage:[:],files:[],freeze:null]
+def refs=[:]
+def sha={File f->
+ def d=MessageDigest.getInstance('SHA-256');f.withInputStream{stream->byte[] b=new byte[1024*1024];int n;while((n=stream.read(b))>0)d.update(b,0,n)}
+ d.digest().encodeHex().toString()
+}
+def audit={String event->s.events.add([event:event,phase:s.phase])}
+def origin={Class type->def f=new File(type.protectionDomain.codeSource.location.toURI()).canonicalFile;[type:type.name,artifact:f.path,sha256:sha(f)]}
+def api=[gradle:origin(org.gradle.api.tasks.TaskInputs.class)]
+ext.installSnapshotProof={ ->
+ boolean profileApproved=false
+ def decoy=tasks.register('snapshotDecoy'){ t->refs.decoy=t }
+ // Sole adapter value-reader. Both the normal reader and the fault use it.
+ def readSnapshot={ property ->
+  audit('getter:begin');s.getterCalls++
+  try{return property.files.toList()}finally{audit('getter:end')}
+ }
+ def check={String name,currentTask,taskRef,propertyRef->
+  def facts=Collections.unmodifiableMap(new LinkedHashMap([profileApproved:profileApproved,
+   taskIdentity:currentTask.is(refs.task)&&taskRef.is(refs.task),propertyIdentity:propertyRef.is(refs.property),
+   sourceKnown:mode!='unknown-source',stageObserved:s.stage.observed==true,stageComplete:s.stage.completed==true,naturalCalls:s.calls]))
+  def before=s.getterCalls;audit('preflight:begin:'+name)
+  // Deliberately violate the broker boundary with a cached value read.
+  if(preflightReadFault&&mode=='observe'&&name=='wrong-task')readSnapshot(refs.property)
+  def reason=SnapshotPreflightClassifier.reason(facts)
+  audit('gate:'+name);audit('preflight:end:'+name)
+  def record=[name:name,accepted:reason==null,reason:reason,getterCalls:s.getterCalls-before,facts:facts,
+   taskIdentity:facts.taskIdentity,propertyIdentity:facts.propertyIdentity,
+   stageComplete:facts.stageComplete,naturalCalls:facts.naturalCalls]
+  s.checks.add(record);record
+ }
+ tasks.configureEach{ t->
+  if(t.name!='compileKotlin')return
+  def publicTask=t.class.classLoader.loadClass('org.jetbrains.kotlin.gradle.tasks.KotlinCompile')
+  api.implementation=origin(publicTask)
+  api.kgp=origin(t.class.classLoader.loadClass('org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool'))
+  profileApproved=baseline.approvedApi.every{k,v->api[k]?.sha256==v}
+  audit('registration:begin')
+  refs.task=t
+  refs.container=t.classpathSnapshotProperties
+  refs.property=refs.container.classpathSnapshot
+  refs.otherProperty=t.libraries
+  s.binding=[taskId:'task-1',containerId:'nested-1',propertyId:'snapshot-1',role:'classpathSnapshotProperties.classpathSnapshot',
+   publicTaskType:publicTask.isInstance(t),propertyType:refs.property instanceof ConfigurableFileCollection,
+   sourceKind:mode=='unknown-source'?'live-tree':'reviewed-default-plus-empty-concrete-sensor']
+  refs.property.from(providers.provider{
+   audit('supplier:begin');s.calls++
+   def value=mode=='unknown-source'?fileTree('probe/tree'):[]
+   audit('supplier:end');value
+  })
+  if(mode=='skipped')t.enabled=false
+  t.doFirst{
+   s.phase='action';audit('action:begin')
+   // Read-only classifier test, not an aborted production capture session.
+   if(mode=='observe'){s.phase='preflight:early';check('early',t,refs.task,refs.property);s.phase='action'}
+  }
+  t.doLast{s.phase='action';audit('action:end')}
+  audit('registration:end')
+ }
+ gradle.taskGraph.beforeTask{ t->
+  if(refs.task!=null&&t.is(refs.task)){s.phase='natural';audit('task:begin')}
+ }
+ gradle.taskGraph.afterTask{t,state->
+  if(refs.task==null||!t.is(refs.task))return
+  s.phase='natural';audit('task:end')
+  boolean actions=s.events.any{it.event=='action:begin'}&&s.events.any{it.event=='action:end'}
+  s.stage=[observed:true,executed:state.executed,didWork:state.didWork,skipped:state.skipped,noSource:state.noSource,failed:state.failure!=null,
+   completed:state.executed&&state.didWork&&!state.skipped&&!state.noSource&&!state.failure&&actions]
+  s.binding.taskIdentityAfterExecution=t.is(refs.task)
+  if(mode=='observe'){
+   s.phase='preflight:wrong-task';check('wrong-task',t,refs.decoy,refs.property)
+   s.phase='preflight:wrong-property';check('wrong-property',t,refs.task,refs.otherProperty)
+   s.phase='preflight:capture';def decision=check('capture',t,refs.task,refs.property)
+   if(decision.accepted){
+    s.phase='capture';audit('binding:recheck');s.metadataReadsAfterGate++
+    def current=t.classpathSnapshotProperties.classpathSnapshot
+    s.binding.propertyIdentityAfterGate=current.is(refs.property)
+    if(!s.binding.propertyIdentityAfterGate)throw new IllegalStateException('snapshot-property-identity-changed')
+    def files=readSnapshot(current)
+    s.files=files.collect{File f->[name:f.name,size:f.length(),sha256:sha(f)]}
+   }
+  }else if(mode in ['skipped','unknown-source']){
+   s.phase='preflight:refusal';check('refusal',t,refs.task,refs.property)
+  }else if(mode=='freeze-diagnostic'){
+   s.phase='mutation-diagnostic';audit('mutation:begin')
+   def result=[attempts:1,rejected:false,errorType:null]
+   try{refs.property.from(file('probe/not-a-real-snapshot.bin'))}catch(Exception e){result.rejected=true;result.errorType=e.class.name}
+   audit('mutation:end');s.freeze=result
+  }
+  s.phase='post-task'
+ }
+ tasks.register('snapshotProof'){t->
+  t.dependsOn(tasks.named('jar'),decoy)
+  t.doLast{
+   def hashes=baseline.inputs.collectEntries{name,value->[(name):sha(new File(root,name))]}
+   new File(root,'snapshot-report.json').text=JsonOutput.toJson([schema:'osv-mcp.snapshot-readiness-run-v2',mode:mode,preflightReadFault:preflightReadFault,runId:System.getProperty('osv.snapshot.runId'),
+    gradleVersion:gradle.gradleVersion,profileApproved:profileApproved,api:api,fixtureInputsSha256:hashes,
+    maxWorkers:gradle.startParameter.maxWorkerCount,parallel:gradle.startParameter.parallelProjectExecutionEnabled,
+    events:s.events,checks:s.checks,calls:s.calls,getterCalls:s.getterCalls,metadataReadsAfterGate:s.metadataReadsAfterGate,
+    binding:s.binding,stage:s.stage,files:s.files,freeze:s.freeze,productionAdopted:false])
+  }
+ }
+}

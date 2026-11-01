@@ -1924,3 +1924,21 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - KGP取得診断の検証JSONに残っていた端末固有の絶対path（82か所）を、`$GRADLE_USER_HOME`／`$GRADLE_RUNTIME`のtokenへ置換。集約は絶対pathで再検証した後に置換し、残存pathがあれば書き出さない。tokenの解決は環境変数の絶対pathに限定し、`..`等を拒否する。
 - Gradleは再実行せず、保存済みv2 native出力を再集約。置換以外の内容は一致し、観測時の`recordedAt`／`baselineRevision`を保持して再集約時点を別記した。静的回帰3件を追加（修正前の記録で失敗を確認）。
 - §9.24の「native別API対照」を、記録済みbindingを交換した静的対照と訂正。採否と本番採用0件は不変。詳細は[設計書§9.25](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#925-5149117レビュー修正記録pathの可搬化2026-11-01)。
+
+
+### 2026-11-01: snapshot限定のbinding・実行完了witness実証
+
+- [設計書§9.26](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#926-snapshot限定の実参照binding実行完了witness2026-11-01)へtest-only実証を追加。producer settings sourceからKGP構成前にhelperを登録し、実Task／nested property参照・API digest・実行完了ledgerを非評価で確認する。plugins適用後のsensor追加は既に変更禁止だったため解除せず、事前登録へ切り替えた。
+- 両DSL・両Gradle版の4組でsnapshot再読取の追加sensor評価0を確認。実行途中・実decoy Task／libraries property・skip・live sourceは値を読まず分類拒否。変更禁止の診断は別buildで実施し、isFinalized照会やdeep immutabilityの証明とは扱わない。
+- 条件付きwitness 4組に限定し、承認済みrecipe・全pipeline候補・本番採用は0。自然時内容receipt・全observer・未変更build baseline・残り3入力等は未成立。検証データはvalidation/gradle-snapshot-readiness-2026-11-01.json。
+
+- 最終確認: native両版各16件、20 buildが成功。条件付きwitness4組、no-read分類拒否20件、変更試行の拒否4件を保存。静的29件、通常全体2,085件成功／1,133件skip、typecheck・build成功。記録はpath tokenを使い、API／source hashを再検証した。
+
+
+### 2026-11-01: snapshot witnessレビュー2件の修正
+
+- [設計書§9.27](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#927-snapshot-witnessレビュー修正cached-preflight読取とtaskstate2026-11-01)へ追記。分類器へ実Task／FileCollectionを渡さず、型を検証したimmutableなprimitive factsだけを渡す。値読取をbrokerへ集約し、拒否前の実cached読取を区間event・counterで検出する故障buildを追加した。
+- TaskState全7fieldを必須booleanとし、正常完了をflags＋Action境界から再計算。noSource／skippedの欠落・不正型・boolean不整合80条件をnative／集約で共有する。v2へ更新し、旧v1は未コミットの要約として保持。
+- 条件付きwitness4組と承認済みrecipe・本番採用0件の区別、自然時bytes束縛等の未成立範囲は維持する。
+
+- snapshot witnessレビュー修正の最終再検証（§9.27）: 両DSL・両Gradle版、各版20テスト／計24 native build成功。cached preflight読取の拒否4件・TaskState改変の拒否320件を集約で再検証。静的132件・全体2,188件成功（1,137件skip）、typecheck／build成功。承認済みrecipe・本番採用0は維持。
