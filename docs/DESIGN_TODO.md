@@ -1791,3 +1791,4 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - KP01〜KP36の回帰条件を追加。新recipe、派生collection、全非class被覆と非干渉の公開API実証は次工程。本番コード・既存実証コード・検証JSONを変更せず、過去の成功件数を新設計の成立証拠へ流用しない。
 
 - Kotlin pipeline設計レビュー2件を反映: 一時MANIFESTのpackage-literal-file型を定義し、固定literal・保存file・JAR entryの三者照合と、自己stageの生成edgeにしない規則を追加。v4 Kotlin分岐のmappingは省略／not-assertedを有効な未表明とし、入力検証後に宣言元だけを省略する。旧schemaの必須条件や参照・hash検証は維持する。専用拒否理由とKP37〜KP44を追加（合計44条件）。設計のみで実証・本番コード・観測JSONは変更しない。
+- 9fbd9edレビュー3件を反映: 9.2.1 precompiledのcompilePluginsBlocksにある派生入力20件へplugins-block-classpath cohortを定義（recipe未成立なら当該4構成を初期対象外、KP01は正常12構成）。全観測のNO-SOURCE compileJavaをnon-contributing-java-compileとして閉じた条件で許可。export時の取得不能とMCP読取時の保存blob不整合を分け、kotlin_pipeline_snapshot_storage_mismatchを全file型共通に追加。KP45〜KP47を追加（合計47条件）。設計のみ。
