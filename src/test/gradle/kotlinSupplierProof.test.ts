@@ -75,8 +75,20 @@ describe('result consolidator uses observed supplier provenance',()=>{
    if(mutation==='legacy-report')matrix.schema='test-only-kotlin-supplier-proof';
    const prefix=path.join(root,'supplier'),out=path.join(root,'published.json');
    await writeFile(prefix+'-8.11.1.json',JSON.stringify(matrix));
-   const result=spawnSync(process.execPath,[path.join(repo,'src/test/manual/gradleKotlinPipelineResults.mjs'),path.join(root,'observation'),prefix,out],{cwd:repo,encoding:'utf8',timeout:30000});
+   const result=spawnSync(process.execPath,[path.join(repo,'src/test/manual/gradleKotlinPipelineResults.mjs'),path.join(root,'observation'),prefix,out],{cwd:root,encoding:'utf8',timeout:30000});
    expect(result.error).toBeUndefined();expect(result.status).not.toBe(0);expect(result.stderr).toContain(reason);
+   await expect(access(out)).rejects.toBeDefined();
+  }finally{await rm(root,{recursive:true,force:true});}
+ });
+ it.each([['constant-reason',{reason:'kotlin_package_origin_incomplete'}],['accepted',{complete:true,reasons:['kotlin_package_origin_incomplete']}],['other-reason',{complete:false,reasons:['kotlin_package_entry_mismatch']}]])('rejects expected-entry evidence without an observed rejection: %s',async(_name,decision)=>{
+  const root=await mkdtemp(path.join(os.tmpdir(),'osv-supplier-aggregate-'));
+  try{
+   const repo=fileURLToPath(new URL('../../../',import.meta.url));
+   const suffixes=['META-INF/MANIFEST.MF','settings.txt','META-INF/services/proof.Service','META-INF/gradle-plugins/proof.convention.properties','.kotlin_module','.class'];
+   await writeFile(path.join(root,'observation-8.11.1.json'),JSON.stringify({nativePackageMutation:false,pipeline:{expectedEntryRejections:suffixes.map(suffix=>({suffix,...decision}))}}));
+   const out=path.join(root,'published.json');
+   const result=spawnSync(process.execPath,[path.join(repo,'src/test/manual/gradleKotlinPipelineResults.mjs'),path.join(root,'observation'),path.join(root,'supplier'),out],{cwd:root,encoding:'utf8',timeout:30000});
+   expect(result.status).not.toBe(0);expect(result.stderr).toContain('missing-entry-regression-evidence');
    await expect(access(out)).rejects.toBeDefined();
   }finally{await rm(root,{recursive:true,force:true});}
  });

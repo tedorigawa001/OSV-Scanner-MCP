@@ -1812,3 +1812,11 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 4組のsupplier対照はいずれも3回→4回。新pipeline契約は引き続き不成立・採用0件。mappingは限定したassertion specimenで、本番v4 parser・context併合等の未実装範囲は変わらない。詳細は[設計書§9.13](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#913-公開api実証レビュー2件の修正再検証2026-11-01)。
 
 - 最終確認: 静的回帰56件、通常全体1,850件成功・native opt-in等1,073件skip。型チェック・build成功。
+
+
+### 2026-11-01: 340facdレビュー修正
+
+- supplier対照が実observerの読み取りの一部（libraries／snapshot collection）だけを再現していることを明記した。「3回→4回」は下限で、次の再設計では実observerと同じ読み取りで非干渉を確認する。
+- 期待entry欠落のnative回帰は、固定理由ではなく実際の`complete`／`reasons`を保存する。集約ハーネスは実際の拒否結果を要求し、リポジトリrootを自身の位置から解決する。
+- consumer DSLがfixtureの構成fileから判定されること、`preReview.recordSha256`が未コミットの記録を指すことを設計書に記した。
+- Gradleは再実行せず、保存済み正常16観測から96対照を静的に再計算し、検証JSONの`postReviewRevision`へ追記した。詳細は[設計書§9.14](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#914-340facdレビュー修正2026-11-01)。

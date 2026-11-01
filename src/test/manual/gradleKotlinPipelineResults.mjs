@@ -3,8 +3,12 @@ import { readFile,writeFile,readdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {supplierSourcePaths,verifySupplierMatrix} from "../fixtures/gradleKotlinSupplierProof.mjs";
 const [prefix,supplierPrefix,output]=process.argv.slice(2);
+// Source paths are repository-relative regardless of the caller's working directory.
+const repo=fileURLToPath(new URL("../../../",import.meta.url));
+const repoFile=f=>path.join(repo,f);
 if(!prefix||!supplierPrefix||!output)throw new Error("usage: node gradleKotlinPipelineResults.mjs <observation-prefix> <supplier-prefix> <output>");
 const files=(await readdir(path.dirname(prefix))).filter(n=>n.startsWith(path.basename(prefix)+'-')&&n.endsWith('.json')).sort();
 const observations=[],sourcesSha256={},toolchainProfiles={};
@@ -14,7 +18,7 @@ for(const f of files){
  if(!r.nativePackageMutation){
   const expected=['META-INF/MANIFEST.MF','settings.txt','META-INF/services/proof.Service','META-INF/gradle-plugins/proof.convention.properties','.kotlin_module','.class'];
   const checks=r.pipeline.expectedEntryRejections;
-  if(!Array.isArray(checks)||checks.length!==expected.length||new Set(checks.map(c=>c.suffix)).size!==expected.length||checks.some(c=>!expected.includes(c.suffix)||c.reason!=='kotlin_package_origin_incomplete'))throw new Error('missing-entry-regression-evidence');
+  if(!Array.isArray(checks)||checks.length!==expected.length||new Set(checks.map(c=>c.suffix)).size!==expected.length||checks.some(c=>!expected.includes(c.suffix)||c.complete!==false||!Array.isArray(c.reasons)||!c.reasons.includes('kotlin_package_origin_incomplete')))throw new Error('missing-entry-regression-evidence');
  }
 
  const c=r.pipeline.receipts.find(t=>t.task===':compileKotlin');
@@ -33,7 +37,7 @@ for(const f of files){
   finalContractAdoption:false});
 }
 const suppliers=[];
-const supplierApprovalSources=Object.fromEntries(await Promise.all(supplierSourcePaths.map(async f=>[f,createHash('sha256').update(await readFile(f)).digest('hex')])));
+const supplierApprovalSources=Object.fromEntries(await Promise.all(supplierSourcePaths.map(async f=>[f,createHash('sha256').update(await readFile(repoFile(f))).digest('hex')])));
 for(const v of ['8.11.1','9.2.1']){
  const observed=JSON.parse(await readFile(supplierPrefix+'-'+v+'.json','utf8'));
  const decisions=verifySupplierMatrix(observed,{gradleVersion:v,sourcesSha256:supplierApprovalSources});
@@ -44,12 +48,12 @@ for(const v of ['8.11.1','9.2.1']){
  }
 }
 const extraSources=['src/test/gradle/kotlinPipeline.test.ts','src/test/gradle/kotlinSupplierProof.test.ts','src/test/manual/gradleKotlinPipelineResults.mjs'];
-for(const f of extraSources)sourcesSha256[f]=createHash('sha256').update(await readFile(f)).digest('hex');
+for(const f of extraSources)sourcesSha256[f]=createHash('sha256').update(await readFile(repoFile(f))).digest('hex');
 const normal=observations.filter(r=>!r.nativePackageMutation);
 for(const v of ['8.11.1','9.2.1'])if(normal.filter(r=>r.gradleVersion===v).length!==8)throw new Error('incomplete-native-matrix');
 for(const [name,expected]of Object.entries(sourcesSha256)){
  const f=name.includes('/')?name:(name.endsWith('.test.ts')?'src/test/gradle/':'src/test/fixtures/')+name;
- const actual=createHash('sha256').update(await readFile(f)).digest('hex');
+ const actual=createHash('sha256').update(await readFile(repoFile(f))).digest('hex');
  if(actual!==expected)throw new Error('observation-source-changed: '+f);
 }
 for(const observation of observations){
@@ -67,7 +71,7 @@ try{
   normalNativeMatrix:previous.scope?.normalNativeMatrix,totalObservations:previous.observations?.length,
   note:'Initial observations before expected-entry completeness and supplier observation-time provenance fixes. Supplier source hashes/versions were not bound at observation time.'};
 }catch(error){if(error.code!=='ENOENT')throw error;}
-const result={schema:'osv-mcp.gradle-kotlin-pipeline-public-api-proof',recordedAt:new Date().toISOString(),baselineRevision:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),nodeVersion:process.version,
+const result={schema:'osv-mcp.gradle-kotlin-pipeline-public-api-proof',recordedAt:new Date().toISOString(),baselineRevision:execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),nodeVersion:process.version,
  scope:{productionChanged:false,productionAdoptionEnabled:false,normalNativeMatrix:normal.length,compiler:'in-process',incremental:false,offline:true,configurationCache:false,parallel:false,
   notProven:['independent executed/loaded bytecode','unchanged evaluation of arbitrary internal/built-in suppliers','complete v4 schema/trust/static import','all KP01-KP47 conditions','three-tool OSV integration']},
  sourcesSha256,toolchainProfiles,suppliers,observations,...(preReview?{preReview}:{})};

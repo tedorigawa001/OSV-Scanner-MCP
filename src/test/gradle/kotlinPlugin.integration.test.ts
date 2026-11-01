@@ -335,7 +335,8 @@ for(const kotlin of [false,true])for(const item of cases)describe.skipIf(!binary
   }
   const result=assessPipelinePackage(changed,producer);
   expect(result.complete).toBe(false);expect(result.reasons).toContain('kotlin_package_origin_incomplete');
-  (r.pipeline.expectedEntryRejections??=[]).push({suffix,reason:'kotlin_package_origin_incomplete'});
+  // Persist the observed decision, not the expected constant, so the consolidator can recheck it.
+  (r.pipeline.expectedEntryRejections??=[]).push({suffix,complete:result.complete,reasons:result.reasons});
   await r.saveProof?.();
  });
  it("records Java NO-SOURCE independently and refuses an unproved plugins-block collection",()=>{

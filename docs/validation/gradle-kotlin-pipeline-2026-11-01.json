@@ -65618,5 +65618,794 @@
     "normalNativeMatrix": 16,
     "totalObservations": 20,
     "note": "Initial observations before expected-entry completeness and supplier observation-time provenance fixes. Supplier source hashes/versions were not bound at observation time."
+  },
+  "postReviewRevision": {
+    "reviewedRevision": "340facd769f7b86365c8f4409fc5035d0f337403",
+    "sourcesSha256": {
+      "src/test/gradle/kotlinPlugin.integration.test.ts": "95610f43cdefe3ccff6d58d38c583435f19e82fc160b73300ef1d620c1ccfb5a",
+      "src/test/manual/gradleKotlinPipelineResults.mjs": "51e4ba6058ad21e56dcf3b6b781870c449cfad7f4e9713f162beab4fe3503474",
+      "src/test/gradle/kotlinSupplierProof.test.ts": "b5f146d0c0f514c20afd688299e347b8436901b613aff0974d735fd4be266beb"
+    },
+    "changes": [
+      "Native expected-entry checks now persist the observed complete flag and reasons instead of a constant reason; the consolidator requires complete=false and kotlin_package_origin_incomplete in the observed reasons.",
+      "The consolidator resolves repository sources and git from its own location, independent of the caller's working directory.",
+      "Documentation states that the supplier probe reproduces only the libraries/snapshot reads of the pipeline observer, that consumerDSL is derived from the fixture build file, and that preReview.recordSha256 refers to an uncommitted record."
+    ],
+    "expectedEntryRejectionsRecomputed": {
+      "method": "static assessPipelinePackage over the stored normal observations with the same omission mutations as the native test; no Gradle rerun",
+      "observations": 16,
+      "checks": 96,
+      "results": [
+        {
+          "file": "kotlin-pipeline-review-8.11.1-groovy-build-logic-binary-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-8.11.1-groovy-build-logic-precompiled-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-8.11.1-groovy-buildSrc-binary-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-8.11.1-groovy-buildSrc-precompiled-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-8.11.1-kotlin-build-logic-binary-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-8.11.1-kotlin-build-logic-precompiled-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-8.11.1-kotlin-buildSrc-binary-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-8.11.1-kotlin-buildSrc-precompiled-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-9.2.1-groovy-build-logic-binary-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-9.2.1-groovy-build-logic-precompiled-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-9.2.1-groovy-buildSrc-binary-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-9.2.1-groovy-buildSrc-precompiled-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-9.2.1-kotlin-build-logic-binary-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-9.2.1-kotlin-build-logic-precompiled-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-9.2.1-kotlin-buildSrc-binary-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        },
+        {
+          "file": "kotlin-pipeline-review-9.2.1-kotlin-buildSrc-precompiled-kotlin.json",
+          "decisions": [
+            {
+              "suffix": "META-INF/MANIFEST.MF",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "settings.txt",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/services/proof.Service",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": "META-INF/gradle-plugins/proof.convention.properties",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".kotlin_module",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            },
+            {
+              "suffix": ".class",
+              "complete": false,
+              "reasons": [
+                "kotlin_package_origin_incomplete"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "supplierProbeScope": {
+      "observedReads": [
+        "KotlinCompile.libraries.files",
+        "classpathSnapshotProperties.classpathSnapshot.files"
+      ],
+      "pipelineObserverReadsNotProbed": [
+        "Task.inputs.files",
+        "configurations.kotlinCompilerClasspath",
+        "project.plugins",
+        "Jar Task.inputs.files"
+      ],
+      "note": "The 3->4 result is a lower bound for the full observer; a redesigned recipe must be probed with the same reads as its observer."
+    },
+    "rerun": {
+      "nativeMatrix": "not rerun; main observations keep the old constant-reason format and the pre-fix integration/consolidator source hashes, so a new consolidation requires fresh native observations",
+      "supplier": "not rerun; supplier sources unchanged"
+    }
   }
 }
