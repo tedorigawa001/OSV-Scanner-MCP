@@ -77129,5 +77129,52 @@
     "nativeDirectoryDistinctOrigin": false,
     "distinctDirectoryContentComparison": "static tests cover match and mismatch",
     "legacyNative": "44 per version recorded before these two scoped fixes; not rerun in this revision"
+  },
+  "profileApprovalRevision": {
+    "baselineRevision": "4e01d11",
+    "sourcesSha256": {
+      "gradle/plugin-provenance.init.gradle": "8a2e356fd397c35a6ac1b63840a309a4532f70bfcdf62560c2e6e45a8bf7f891",
+      "gradle/register-declarations.init.gradle": "c65d9fe5a8f22695b65f57ac6da5a5b63446a9ea071192a45e2ede189a21567e",
+      "gradle/export-dependency-graph.init.gradle": "1a28ee5aaacd526d68f1989fa384ee75e7b4b2760d0cdc4539048c193859e952",
+      "src/utils/gradlePlugins.ts": "582f72462c13927e7284e1c7ca70681f4e455e469596020cd4e8bc5e9ec637af",
+      "src/utils/gradlePluginSnapshots.ts": "2c0ce15f1c90e6c11916d2a8107c2d1c761719543932a0aeef722cfeb4acf2c1",
+      "src/utils/gradlePluginJar.ts": "b180ee353104a11e1ddd1a091930bda1aaf8138fcf5a1df7d66370ef8c848ab9",
+      "src/utils/gradleGraph.ts": "73a36886ed6c8be17b63e5581392cca6c5ba5efb0463e475f7ee3913ac888e81",
+      "src/utils/gradleGraphCache.ts": "c21278c3b6de9c32a199ddd4503f022850222d59e4e1e4541f8144dcf230c0b0",
+      "src/utils/gradleDeclarations.ts": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be",
+      "src/utils/gradleCatalogs.ts": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b",
+      "src/test/gradle/pluginExporter.integration.test.ts": "d959d32ece52dfd73ac6ec4d496aa228182cf1b2bf18d92408df3d8c299da981",
+      "src/test/utils/gradlePlugins.test.ts": "0f6774e72c972f3f54b2c649cff541cdd8816a51b975b538659493fc4ab29661"
+    },
+    "changes": [
+      "Unapproved toolchain or loader profiles withhold declaration sources only (plugin_toolchain_not_approved, plugin_loader_not_approved; plugin_trust_status disabled_for_required_policy, or disabled when trust is off); verified relations and introduced_by are kept, including with all plugin settings unset.",
+      "Profile structure, receipts, runtime identity and input/output/snapshot hashes are still verified without approval; a mismatch still rejects the graph. An application/spec loader profile mismatch is reported as plugin_loader_profile_mismatch.",
+      "Native tests that run a full Gradle re-export or fixture inside one test now use the 210 s fixture limit; three such re-export tests had timed out at the 30 s default under full-suite load on Gradle 8.11.1."
+    ],
+    "verification": {
+      "gradle8": {
+        "pluginExporterNativePassed": 328
+      },
+      "gradle9": {
+        "pluginExporterNativePassed": 328
+      },
+      "fullGradleDirectoryBeforeTimeoutFix": {
+        "8.11.1": {
+          "passed": 971,
+          "failed": 3,
+          "failure": "30 s default test timeout on same-project re-export"
+        },
+        "9.2.1": {
+          "passed": 974,
+          "failed": 0
+        }
+      },
+      "pluginStaticUnitPassed": 81,
+      "defaultSuite": {
+        "passed": 1772,
+        "skipped": 883
+      },
+      "typecheck": "passed"
+    }
   }
 }

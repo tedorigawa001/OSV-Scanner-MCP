@@ -105,7 +105,7 @@ export class GradlePluginReader {
    const required=new Set(scopePluginIds);if(required.size!==scopePluginIds.length)throw new Error('plugin_scope_invalid');
    const declared=new Map(specs.map(s=>[s.id,s]));if(scopePluginIds.some(id=>!declared.has(id)))throw new Error('plugin_scope_invalid');
    if([...required].some(id=>!apps.some(a=>a.pluginSpecId===id)))throw new Error('plugin_load_evidence_missing');
-   const seen=new Map<string,string[]>();
+   const seen=new Map<string,string[]>(),notApproved=new Set<string>();
    const attestations=apps.some(a=>a.loadPolicy==='approved-gradle-loader-v1');
    if(attestations)result.limitations.push('plugin_runtime_transform_author_attested','plugin_loaded_bytes_not_independently_observed');
    if(apps.some(a=>a.registrationForm==='precompiled-pending'))result.limitations.push('precompiled_registration_origin_author_attested');
@@ -114,7 +114,9 @@ export class GradlePluginReader {
    for(const a of apps){
     this.tick();const s=declared.get(a.pluginSpecId);if(!s||!required.has(s.id)||a.ownerProjectId!==projectId||a.invocationId!==e.invocationId||a.loadPolicy!==s.loadPolicy||a.registrationForm!==s.registrationForm||a.implementationClass!==s.implementationClass)throw new Error('plugin_application_mismatch');
     const profile=e.toolchainProfiles.find(p=>pluginProfileDigest(p)===s.toolchainProfileDigest),receipt=e.toolchainReceipts.find(r=>r.profileDigest===s.toolchainProfileDigest);
-    if(!profile||!receipt?.runtimeIdentityVerified||!['jdk/java','jdk/modules','jdk/release'].every(id=>profile.entries.some(e=>e.id===id&&e.role==='jdk-runtime'))||!this.settings.toolchains.has(s.toolchainProfileDigest)||!receipt?.beforeVerified||!receipt.afterVerified||profile.gradleVersion!==e.runtime.gradleVersion||profile.jdkIdentity!==e.runtime.jdkIdentity||Buffer.byteLength(JSON.stringify(profile))>1024**2)throw new Error('plugin_toolchain_unverifiable');
+    if(!profile||!receipt?.runtimeIdentityVerified||!['jdk/java','jdk/modules','jdk/release'].every(id=>profile.entries.some(e=>e.id===id&&e.role==='jdk-runtime'))||!receipt?.beforeVerified||!receipt.afterVerified||profile.gradleVersion!==e.runtime.gradleVersion||profile.jdkIdentity!==e.runtime.jdkIdentity||Buffer.byteLength(JSON.stringify(profile))>1024**2)throw new Error('plugin_toolchain_unverifiable');
+    // Approval is a consumer setting: it withholds declaration sources but never rejects verified graph inputs.
+    if(!this.settings.toolchains.has(s.toolchainProfileDigest))notApproved.add('plugin_toolchain_not_approved');
     unique(profile.entries,x=>x.id);if(receipt.bytesRead<2*profile.entries.reduce((n,x)=>n+x.size,0))throw new Error('plugin_toolchain_receipt_incomplete');
     const build=e.builds.find(b=>b.id===a.producerBuildId);if(!build||build.invocationId!==e.invocationId||JSON.stringify(build.producer)!==JSON.stringify(s.producer))throw new Error('plugin_build_identity_mismatch');
     unique(build.inputs,x=>x.path);unique(build.receipts,x=>x.id);
@@ -145,7 +147,8 @@ export class GradlePluginReader {
     let comparison='direct-origin';
     if(a.loadPolicy==='prepared-output-only-v1'){if(!a.directLoadObserved||a.unverifiedTransform)throw new Error('plugin_direct_load_unverifiable');}
     else {
-     if(s.loadPolicy!=='approved-gradle-loader-v1'||a.loaderProfileDigest!==s.loaderProfileDigest||!this.settings.loaders.has(a.loaderProfileDigest))throw new Error('plugin_loader_not_approved');
+     if(s.loadPolicy!=='approved-gradle-loader-v1'||a.loaderProfileDigest!==s.loaderProfileDigest)throw new Error('plugin_loader_profile_mismatch');
+     if(!this.settings.loaders.has(a.loaderProfileDigest))notApproved.add('plugin_loader_not_approved');
      const loader=e.loaderProfiles.find(l=>pluginProfileDigest(l)===a.loaderProfileDigest);
      if(!loader||Buffer.byteLength(JSON.stringify(loader))>1024**2||loader.toolchainProfileDigest!==s.toolchainProfileDigest||loader.gradleVersion!==e.runtime.gradleVersion||loader.jdkIdentity!==e.runtime.jdkIdentity||canonical(loader.agents)!==canonical(e.runtime.agents))throw new Error('plugin_runtime_mismatch');
      unique(loader.agents,x=>x.kind+':'+x.entryId);if(loader.agents.some(a=>!profile.entries.some(e=>e.id===a.entryId&&e.sha256===a.sha256)))throw new Error('plugin_agent_profile_mismatch');
@@ -155,10 +158,12 @@ export class GradlePluginReader {
      else {const key=root+'\0'+JSON.stringify(ref);let snapshot=this.snapshots.get(key);if(!snapshot){snapshot=verifyDirectorySnapshot(root,ref,this.budget).then(m=>m.treeDigest);this.snapshots.set(key,snapshot);}if(Buffer.isBuffer(built)||await snapshot!==treeDigest(built))throw new Error('plugin_snapshot_mismatch');comparison=a.originRelation==='same-path-origin'?'same-path-origin':'directory-content-exact';}
     }
     const ids=seen.get(s.id)??[];ids.push(a.id);seen.set(s.id,ids);
-    let status:PluginStatus=!helper||!this.settings.trust?'disabled':(a.loadPolicy==='approved-gradle-loader-v1'||a.registrationForm==='precompiled-pending')&&this.settings.trust!=='local-plugin-loader-attested-v2'?'disabled_for_required_policy':'accepted';
+    const approved=this.settings.toolchains.has(s.toolchainProfileDigest)&&(a.loadPolicy!=='approved-gradle-loader-v1'||this.settings.loaders.has(a.loaderProfileDigest));
+    let status:PluginStatus=!helper||!this.settings.trust?'disabled':!approved||(a.loadPolicy==='approved-gradle-loader-v1'||a.registrationForm==='precompiled-pending')&&this.settings.trust!=='local-plugin-loader-attested-v2'?'disabled_for_required_policy':'accepted';
     if(status==='accepted'&&(!a.registrationUnique||!a.beginBeforeApplied||!a.ended||a.endOutcome!=='complete'||!a.observerFired))status='missing_assertion';
     result.applications.push({id:sanitizeExternalText(a.id),comparison,load_policy:a.loadPolicy,input_status:'verified',trust_status:status,source_artifact_status:a.loadPolicy==='approved-gradle-loader-v1'?'build-lineage-and-runtime-attested':'prepared-output-observed',transform_status:a.loadPolicy==='approved-gradle-loader-v1'?'trusted-runtime-not-independently-observed':'prepared-output-observed'});
    }
+   result.reasons.push(...notApproved);
    if([...required].some(id=>!seen.has(id)))result.reasons.push('plugin_application_missing');
    if([...seen.values()].some(xs=>xs.length!==1))result.reasons.push('plugin_duplicate_registration');
    const recordIds=new Set<string>(),byApp=new Map<string,string[]>();

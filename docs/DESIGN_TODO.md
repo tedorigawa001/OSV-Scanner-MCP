@@ -1757,3 +1757,6 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 本番レビュー修正: receiptをtask自身の出力へ限定し、前回artifactが残る同一projectの再exportを誤失効させない。ProcessResourcesの独立記録でresource鮮度を維持。directoryのsame-path-origin／distinct-path-originを本番schemaへ持ち、comparisonと必須limitationsをmetadataへ引き継ぐ。再export・同一／別path・不正なkind組合せの回帰と検証データを更新する。
 
 - 再検証: 両Gradle版各328件、通常全体1,770件、plugin static単体79件が成功。40件の同一project再exportでsource・artifactの変更と採用を確認し、initial／reexport計86観測を保存。directory 32観測でsame-path-originと必須limitationsを確認した。先行native各44件は今回未再実行、3ツール／OSV実接続も未実施。
+
+- 4e01d11レビュー修正: toolchain／loader profileの未承認は宣言元だけを省略し（plugin_toolchain_not_approved／plugin_loader_not_approved）、検証済みrelation／introduced_byを保持する。既定の未設定状態でもrelationを失わない。profile構造・receipt・hashの不一致とloader profileの指定不一致（plugin_loader_profile_mismatch）は従来どおりgraphを不採用にする。
+- 同レビューで、Gradle buildを伴う再export等の本番native回帰4件が既定30秒のtimeoutで負荷時に間欠失敗したため、fixture exportと同じ210秒を明示した。

@@ -39,7 +39,8 @@ it('adopts the complete mixed declaration list and explicit attested metadata',a
  const f=await fixture(),r=await f.capture();expect(r.metadata.declarations_complete,JSON.stringify(r.metadata)).toBe(true);expect([...r.lookup!('g:a','1').declaredIn!].sort()).toEqual(['build.gradle',f.source].sort());expect(r.metadata.declaration_provenance?.plugin_trust_status).toBe('accepted');expect(r.metadata.declaration_provenance?.limitations).toContain('plugin_loaded_bytes_not_independently_observed');
 });
 it.each(['disabled','old','loader','toolchain'])('enforces independent consumer settings: %s',async kind=>{
- const f=await fixture(),s={...f.settings};if(kind==='disabled')s.trust=undefined;if(kind==='old')s.trust='local-plugin-build-v1';if(kind==='loader')s.loaders=new Set();if(kind==='toolchain')s.toolchains=new Set();const r=await f.capture(s);expect(r.metadata.declarations_complete).toBe(false);expect(r.lookup!('g:a','1').relation).toBe(kind==='loader'||kind==='toolchain'?'unknown':'direct');
+ const f=await fixture(),s={...f.settings};if(kind==='disabled')s.trust=undefined;if(kind==='old')s.trust='local-plugin-build-v1';if(kind==='loader')s.loaders=new Set();if(kind==='toolchain')s.toolchains=new Set();const r=await f.capture(s);expect(r.metadata.declarations_complete).toBe(false);expect(r.lookup!('g:a','1').relation).toBe('direct');expect(r.lookup!('g:a','1').declaredIn).toBeUndefined();
+ if(kind==='loader'||kind==='toolchain'){expect(r.metadata.reasons).toContain(`plugin_${kind}_not_approved`);expect(r.metadata.declaration_provenance?.plugin_trust_status).toBe('disabled_for_required_policy');}
 });
 it.each(['late','unclosed','failed','origin','mapping','reverse-reference','duplicate'])('preserves graph relations but withholds the whole declaration list: %s',async kind=>{
  const f=await fixture(),d=f.graph.contexts[0].declarations,a=d.pluginApplications[0];if(kind==='late')a.beginBeforeApplied=false;if(kind==='unclosed')a.ended=false;if(kind==='failed')a.endOutcome='failed';if(kind==='origin')d.records[1].origin={kind:'script'};if(kind==='mapping')d.records[1].origin.sourceMappingId='wrong';if(kind==='reverse-reference')a.expectedRecordIds=[];if(kind==='duplicate')d.pluginApplications.push({...structuredClone(a),id:'again',expectedRecordIds:[]});await f.save();const r=await f.capture();expect(r.lookup!('g:a','1').relation).toBe('direct');expect(r.lookup!('g:a','1').declaredIn).toBeUndefined();expect(r.metadata.declarations_complete).toBe(false);
@@ -92,4 +93,13 @@ it.each(['missing','null','unknown'])('rejects incomplete directory origin ident
 
 it('forbids directory-origin evidence on a JAR snapshot',async()=>{
  const f=await fixture(),a=f.graph.contexts[0].declarations.pluginApplications[0];a.runtimeSnapshotRef={kind:'jar',snapshotVersion:1,invocationId:'invocation',capturePhase:'export-task',size:0,sha256:'0'.repeat(64),snapshotPath:'.osv-mcp/plugin-runtime/invocation/jars/'+('0'.repeat(64))+'.jar'};expect(pluginApplicationSchema.safeParse(a).success).toBe(false);
+});
+it('keeps verified relations with the default unset plugin settings',async()=>{
+ const f=await fixture(),r=await f.capture({trust:undefined,invalid:false,toolchains:new Set(),loaders:new Set()});
+ expect(r.lookup!('g:a','1').relation).toBe('direct');expect(r.lookup!('g:a','1').declaredIn).toBeUndefined();expect(r.metadata.declarations_complete).toBe(false);
+ expect(r.metadata.reasons).toEqual(expect.arrayContaining(['plugin_toolchain_not_approved','plugin_loader_not_approved']));expect(r.metadata.declaration_provenance?.plugin_trust_status).toBe('disabled');
+});
+it('still rejects a loader profile that does not match the plugin specification',async()=>{
+ const f=await fixture(),a=f.graph.contexts[0].declarations.pluginApplications[0];a.loaderProfileDigest='0'.repeat(64);await f.save();
+ const r=await f.capture();expect(r.lookup!('g:a','1').relation).toBe('unknown');expect(r.metadata.reasons).toContain('plugin_loader_profile_mismatch');
 });

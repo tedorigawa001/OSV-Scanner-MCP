@@ -149,7 +149,8 @@ for(const kotlin of [false,true])for(const included of [false,true])for(const pr
  it.each(['old-trust','no-loader','no-toolchain','helper-disabled'])('applies independent trust and profile requirements: %s',async kind=>{
   const settings={...f.settings,trust:kind==='old-trust'?'local-plugin-build-v1' as const:f.settings.trust,loaders:kind==='no-loader'?new Set<string>():f.settings.loaders,toolchains:kind==='no-toolchain'?new Set<string>():f.settings.toolchains};
   const r=await new GradleGraphCache(f.root,undefined,kind==='helper-disabled'?undefined:'registered-helper-v1',undefined,undefined,settings).capture(path.join(f.root,'gradle.lockfile'),Buffer.from(f.lock));
-  expect(r.metadata.declarations_complete).toBe(false);expect(r.lookup!('g:a','1').relation).toBe(kind==='no-loader'||kind==='no-toolchain'?'unknown':'direct');
+  expect(r.metadata.declarations_complete).toBe(false);expect(r.lookup!('g:a','1').relation).toBe('direct');
+  if(kind==='no-loader'||kind==='no-toolchain')expect(r.metadata.reasons).toContain(kind==='no-loader'?'plugin_loader_not_approved':'plugin_toolchain_not_approved');
  });
  it.each(['late','unclosed','failed','origin','coverage','empty-apps','downgrade','classpath','descriptor'])('fails closed for changed plugin evidence: %s',async kind=>{
   const file=path.join(f.root,'osv-mcp-gradle-dependencies.json'),before=await readFile(file,'utf8'),g=JSON.parse(before),d=g.contexts[0].declarations,a=d.pluginApplications[0];
@@ -171,6 +172,7 @@ for(const kotlin of [false,true])for(const included of [false,true])for(const pr
   try{await writeFile(file,Buffer.concat([before,Buffer.from('modified')]));const r=await new GradleGraphCache(f.root,undefined,'registered-helper-v1',undefined,undefined,{...f.settings,trust:undefined}).capture(path.join(f.root,'gradle.lockfile'),Buffer.from(f.lock));expect(r.lookup!('g:a','1').relation).toBe('unknown');expect(r.metadata.declarations_complete).toBe(false);}
   finally{await writeFile(file,before);}
  });
+ // The re-export runs a full Gradle build, so it needs the same limit as the fixture export.
  it('adopts a fresh re-export after a source update in the same project',async()=>{
   const file=path.join(f.root,f.source),before=await readFile(file,'utf8');
   const changed=precompiled?before+"\nclass ReviewReexportMarker {}\n":before.replace('public class Convention implements Plugin<Project> {','public class Convention implements Plugin<Project> { public static final int REVIEW_REEXPORT_MARKER=1;');
@@ -181,7 +183,7 @@ for(const kotlin of [false,true])for(const included of [false,true])for(const pr
   expect(r.lookup!('g:a','1').declaredIn).toContain(f.source);
   await f.saveEvidence('reexport',r.metadata);
   for(const receipt of g.pluginEvidence.builds[0].receipts)if(receipt.type==='compile')expect(receipt.outputs.every((o:any)=>o.path!==g.contexts[0].declarations.pluginApplications[0].builtArtifact.path)).toBe(true);
- });
+ },210000);
 });
 describe.skipIf(!binary)('Production duplicate registration',()=>{it('keeps relation but withholds every declaration after a closed session is begun again',async()=>{
  const f=await fixture(false,false,false,false,true);const r=await new GradleGraphCache(f.root,undefined,'registered-helper-v1',undefined,undefined,f.settings).capture(path.join(f.root,'gradle.lockfile'),Buffer.from(f.lock));
@@ -202,11 +204,11 @@ for(const kotlin of [false,true])for(const included of [false,true])describe.ski
 describe.skipIf(!binary)('Production plugin registration boundaries',()=>{
  it('retains deferred declaration provenance without early materialization',async()=>{
   const f=await fixture(false,false,false,false,false,false,{provider:true});const r=await new GradleGraphCache(f.root,undefined,'registered-helper-v1',undefined,undefined,f.settings).capture(path.join(f.root,'gradle.lockfile'),Buffer.from(f.lock));expect(r.metadata.declarations_complete,JSON.stringify(r.metadata)).toBe(true);
- });
+ },210000);
  it('does not allow a caught configure Action failure to be cleared by end complete',async()=>{
   const f=await fixture(false,false,false,false,false,false,{actionFailure:true});const r=await new GradleGraphCache(f.root,undefined,'registered-helper-v1',undefined,undefined,f.settings).capture(path.join(f.root,'gradle.lockfile'),Buffer.from(f.lock));expect(r.lookup!('g:a','1').relation).toBe('direct');expect(r.metadata.declarations_complete).toBe(false);expect(r.metadata.reasons).toContain('plugin_declarations_incomplete');
- });
+ },210000);
  it('rejects an approved profile pointing to another file instead of the selected JDK',async()=>{
   await expect(fixture(false,false,false,false,false,false,{badJdk:true})).rejects.toThrow('OSV selected JDK not bound to approved profile');
- });
+ },210000);
 });

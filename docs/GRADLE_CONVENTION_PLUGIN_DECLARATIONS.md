@@ -625,3 +625,9 @@ env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
 再検証結果: Gradle 8.11.1／9.2.1とも各328件成功。各版20 projectでsourceと構築artifactの両方を変更して同じbuild directoryから再exportし、relation／declared_inの採用を確認した（計40再export）。initial 46件＋reexport 40件の計86観測を保存し、source hash、異なるinvocation、変更されたartifact、静的取込metadataを照合した。directoryの32観測はsame-path-originで、両必須limitationsを確認。distinct directoryの一致／不一致はstatic回帰で確認したもので、nativeの別path実証とは扱わない。
 
 通常全体は1,770件成功・883件skip、plugin static単体79件（文書回帰を含め80件）、typecheck・build・diff checkも成功。先行検証の既存adapter native各44件は今回再実行していない。旧観測のsource hash・集計は検証JSONのpreReviewへ残し、最新観測・結果をrootとpostReviewRevisionへ更新した。本番3ツール／OSV実接続は引き続き未実施。
+
+### 13.4 4e01d11レビュー後: profile未承認の扱い（2026-11-01）
+
+toolchain／loader profileの未承認は、入力の鮮度ではなくconsumer側の信頼設定である。catalog信頼・未対応modelと同じく宣言元だけを省略し、検証済みのrelation／introduced_byは保持するよう改めた。理由はplugin_toolchain_not_approved／plugin_loader_not_approved、plugin_trust_statusはdisabled_for_required_policy（trust無効ならdisabled）。profileの構造、receipt、runtime identity、構築入力・出力・snapshotのhashは未承認でも従来どおり検証し、不一致はgraphを不採用にする。applicationとspecのloader profile不一致はplugin_loader_profile_mismatchとして入力不一致に残す。全設定未指定の既定状態でもrelationを保持する回帰を追加した。
+
+同じレビューで、src/test/gradle全体をGradle 8.11.1で実行した際に同一project再exportの回帰が既定30秒のtest timeoutで間欠的に失敗した（単独実行では成功）。再exportとfixtureを伴う個別回帰は完全なGradle buildを実行するため、fixture exportと同じ210秒の上限を明示した。採用判定・期待値は変更していない。
