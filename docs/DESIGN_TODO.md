@@ -2023,3 +2023,17 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - [設計書§9.36](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#936-bta-configurationsnapshot-parameterの実参照束縛2026-11-02)へ、実configuration・公開IC parameter・期待Bindingの参照照合と一回限りの使用を追加。独立した報告用snapshot列から実consumerへの対応を推定しない。
 - 既定・未登録IC・同値の別登録configurationを最終consumerへ渡すnative負例を追加。両DSL・Gradle 8.11.1／9.2.1の12件すべてで最終BTA呼出し前に拒否し、warm出力を最終成功と扱わない。
 - 両版各28テスト、36 build・実compileJvm 88回・snapshot 72個を再実行。記録改変116件と静的回帰44件が成功。v2記録へ更新し、旧v1は参考履歴に限定。自然消費receipt・承認recipe・本番採用0は維持。
+
+
+### 2026-11-02: producer所有BTA driverの採用範囲・信頼契約（設計）
+
+- [設計書§9.37](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#937-producer所有driverの提供入力証拠採用範囲と信頼契約設計2026-11-02)へ、helperの登録／実参照binding／一回限りの使用／完了契約、envelope必須証拠と保存bytes・鮮度確認を具体化。
+- 診断専用のoffered-inputs-onlyとし、自然消費ready・declared_in補完・coverage改善への利用を禁止。追加信頼（既定無効）と独立承認profile、固定limitations、読取前gate・未対応と構造／integrity拒否の区別を設計。
+- OO01〜OO14の回帰条件を追加。本番helper／schema／設定は未実装、現test profileは未承認。新規native実行・自然消費receipt・承認recipe・本番採用0。次は状態機械／envelopeの限定実証と未実施staging条件の検証。
+
+
+### 2026-11-02: BTA採用契約のレビュー修正
+
+- §9.37のenvelopeをcompleted／failed／unavailableの状態別unionへ具体化。phase別の必須証拠・未到達証拠の省略・禁止項目とreaderのimportStatusを分離し、OO02／OO13を拡充。
+- completedをBTA呼出しと前後検査の完了に限定。内部no-opの判別は未成立のためbta-call-only／compilerWorkStatus=unknownを必須とし、実コンパイル確認へ昇格しない。変更なしの実BTA再呼出しをOO09のnative条件に追加。
+- 設計変更のみ。新規native実行・実装・profile承認は行わず、自然消費receipt・本番採用0を維持。

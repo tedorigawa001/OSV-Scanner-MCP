@@ -1877,3 +1877,98 @@ compile直前に、登録済みconfigurationの実参照、期待Binding、servi
 自然消費receipt、全writer排除、compiler内部全supplierの非干渉、既存KGPへの透過対応は引き続き未成立である。承認recipe・自然消費内容束縛・本番採用はすべて0件を維持する。
 
 最終確認（§9.36）: 通常全体2,405テスト成功・native opt-in等1,185件skip。両Gradle版のnative各28テスト、typecheck・buildも成功。
+
+
+### 9.37 producer所有driverの提供入力証拠・採用範囲と信頼契約（設計、2026-11-02）
+
+本節は§9.35〜9.36の実証を将来の本番取込へ接続する契約案である。本番helper・schema・設定・承認profileは未実装であり、以下の名称も設計上の識別子とする。今回、新規native実行・承認recipe・本番採用は0件。現在のtest-only profileを本番の承認一覧へ自動転記しない。
+
+#### 9.37.1 採用する情報と禁止する昇格
+
+対象は明示的に導入したproducer所有BTA driverが、snapshot slotへ提供した入力の証拠である。既存KGPへ透過的に追加するobserverではない。取込成功時もconsumptionStatusはoffered-inputs-only、observationKindはbefore-call-and-after-call、naturalContentBindingはfalseとする。全snapshotの実消費、自然消費時点のbytes、消費中不変、全writer排除を表明しない。
+
+利用先は独立した診断metadataに限る。自然消費slotのready、Kotlin構築pipelineの完全性、実行artifactと宣言sourceの完全な対応、declared_inの採用／補完、coverage.completeの改善には使わない。既存経路で独立に成立したdeclared_inはその経路の根拠で判定し、この証拠を混ぜて不足部分を埋めない。relation／introduced_by・lock由来coverage・脆弱性照会は既存の判定を維持する。
+
+#### 9.37.2 helperの境界と登録・完了契約
+
+将来のhelperはowned driverのcompile broker内だけに置く。beginOfferはcaller指定のdriver instance、invocation、stage、slot、project、承認profile IDと、所有済みの具体値・manifest参照を受け取り、外部から作成できないhandleを返す。Provider／FileCollection／任意callbackを受け取らず、登録のためにKGP getterを呼ばない。source／runtime／入力manifestのseal後、対象compileの前に登録を閉じる。
+
+bindConfigurationは実service・project・configuration・IC parameterを§9.36の実参照で拘束する。公開useIncrementalCompilationの実receiver／parameterと呼出し完了をbrokerが記録し、getterの具体snapshot列をseal時の順序・重複を含む列へ照合する。登録後のconfiguration変更は禁止する。公開APIだけで内部mutationを検出できない場合は、configurationを外へ公開せずbrokerだけが生成・設定・使用することをprofileの信頼前提とする。任意callerへ渡したconfigurationは対象外。
+
+compile直前gateはhandleの状態、登録締切、実参照、stage／source／引数／出力先、snapshot列、保存証拠とstagingの一致を確認する。gate成功と同時にhandleを使用済みにし、失敗したBTA呼出しも再利用しない。再compileは別invocation・別登録とする。既定・未登録・別configuration、別parameter、別service／project、別stage、再入・重複使用はBTA呼出し前に拒否する。
+
+completeOfferは同期BTA呼出しの正常終了と前後の検査が揃った場合だけ、提供入力の診断候補を完了する。completedは「束縛したBTA呼出しと前後検査の完了」を意味し、compiler内部の実作業や自然消費の完了を意味しない。BTA失敗・例外・保存失敗・検査失敗はfailedへ不可逆遷移させ、再seal・baseline更新で回復しない。現在の候補範囲はin-processの同期呼出しで、worker／daemon・parallel・外部cache復元は未対応とする。
+
+BTAの成功戻り値・出力の存在・Task実行だけでは、内部incremental no-opを判別しない。現契約はexecutionEvidence=bta-call-only、compilerWorkStatus=unknownを必須とし、内部no-opの可能性を含む。BTAを呼ばないTask skip／cache復元はcompletedにできないが、正常終了した実BTA呼出しは内部no-opが不明でも提供入力証拠としてcompletedにできる。これを「実コンパイル確認済み」と表示・集計しない。将来compilerWorkStatus=performedを採用するには、公開APIに基づくwitnessの取得点・実invocationへの束縛・判定条件と、変更なし再呼出しのnative対照を別profileで実証する必要がある。source変更や出力digest差は診断の補助情報であり、全snapshotの実消費receiptや普遍的なno-op判別器とは扱わない。
+
+#### 9.37.3 保存する証拠とmanifest
+
+本番用のenvelope案をosv-mcp.gradle-owned-offer-v1とする。既存のtest用program／run-v2を本番schemaとみなさない。producerStateはcompleted／failed／unavailableの判別unionとする。下表はcompletedの必須証拠であり、他状態へ一律に要求しない。必須の非空列を空配列で代用しない。自然な空出力inventoryは許可するが、それを実コンパイルの証拠にはしない。
+
+全状態にschema、graph／export ID、producer project、invocation／stage／slot、要求profile ID、producerState、limitations、naturalContentBinding=falseを要求する。未取得の実体ID・digestは成功値として埋めず、phaseに従って省略する。reader側の信頼判定は別のimportStatusで保持し、producerStateを上書きしない。envelope欠落はreaderがunavailableを返す場合であり、存在する不正envelopeを欠落扱いしない。
+
+| producerState | 必須・許可する証拠 | 禁止・省略条件 |
+| --- | --- | --- |
+| completed | 下表の全証拠、正常なBTA終了、pre／post検査成功、executionEvidence=bta-call-only、compilerWorkStatus=unknown | failure／unavailable reasonは禁止。未実行・未検査項目をsuccessで補完しない |
+| failed | failureReason、failurePhase、最後に完了したphase、そこまでの必須証拠と失敗event。呼出し開始済みなら開始記録、呼出しが戻ったなら終了結果を要求 | failurePhase以降の未到達証拠は省略し、後続success・completed結果を禁止。失敗phaseで未生成の値は明示的なnot-producedとする |
+| unavailable | unavailableReason、blockedBeforePhase、実施済みphase一覧（空も可）、no-read範囲。合法な未対応理由に限定 | 未実施のconfiguration／compile／検査証拠は省略。既知の失敗・改変を未対応に置換しない |
+
+phase順はregistration→generation→seal→binding→precheck→call→postcheck→captureとする。各phaseにbegin／success／failureを区別し、failedでは成功したprefixと最初のfailureを必須にする。call失敗では終了error／例外記録を要求するが、未生成の最終出力一覧・post検査を要求しない。binding／precheck拒否ではcall開始を禁止する。storage失敗は実際の発生phaseへ結び付ける。captureは0回以上の追加検査であり、completedはpostcheck成功までを必須とする。captureが行われ失敗した場合はfailedとし、過去completedを現候補へ流用しない。phase前後の証拠不足・順序矛盾は構造不正である。
+
+| 区分 | 必須内容と照合 |
+| --- | --- |
+| identity | graph／export ID、driver instance、invocation、stage、slot=snapshot、producer project、configuration／parameterのrun-local ID。実参照の保証はbrokerが担い、静的readerはIDだけで再証明しない |
+| producer | driver source・構築入力manifest・実行class inventoryのdigest、broker実装版、適用profile digest。sourceと実行classの対応を承認profileの構築条件へ結ぶ |
+| runtime | Gradle／JDK／BTA／compiler版と実artifact digest、閉じたclasspathの順序・全inventory、実CodeSource、executionStrategy=in-process。選択候補と実ロードartifactを区別 |
+| generation | library cohortの順序・logical ID・JAR digest、snapshot generatorの実artifact／設定、正規生成の結果、元libraryからsnapshotへの全対応 |
+| content | 非空snapshot列のlogical ID・具体path・size／digest、seal時の保存bytesまたは内容参照、staging inventory・storage policy。順序・重複を維持 |
+| invocation | source manifest digest、引数の順序・classpath、出力先、実configuration／parameter登録・直前gate・compile開始／終了・post検査の順序、結果と出力inventory、executionEvidence／compilerWorkStatus |
+| observation | control／observerの承認済み計測範囲・結果、追加評価の有無、capture履歴、制約の固定集合。未計測を0としない |
+
+run-local IDやrecordの自己hashは真正性を保証しない。静的取込にはproducerを明示的に信頼する必要があり、未知のproducerが期待digestを自己申告しても採用しない。export内容全体とmanifestのdigestを結び、別graph・別export・別stageの証拠交換を拒否する。
+
+保存bytes／baseline参照はseal時に固定し、以後のcaptureで再基準化しない。baseline参照は許可された証拠root配下のregular fileと期待size／digestを必須にし、絶対path・root逸脱・symlink・未記録fileを拒否する。readerは有界に検証し、上限超過を部分成功にしない。公開検証JSONのdigest-only縮約は参考記録として許容するが、本番の完全な内容検証用envelopeとして採用しない。
+
+取込時には保存証拠と、現exportが参照するstaging／source／library／runtime manifestを再照合する。過去runの時点記録はhistoryとして区別できるが、現runの診断候補へ流用しない。前後hashが一致しても区間内変更の不存在を証明したとは扱わない。
+
+#### 9.37.4 追加信頼とprofileの責任
+
+将来設定案はtrustOwnedBtaOfferedInputs（既定false）とapprovedOwnedBtaProfilesの併用とし、既存の宣言元・Provider・catalog・plugin・Kotlin pipeline向け信頼で代用しない。設定をrecord側から有効化できない。追加信頼が許可するのは、所有producerの登録・実参照検査・保存処理についての表明を診断用途で受け入れることだけである。
+
+承認profileは独立に管理する固定manifestとし、対象tuple、JDK、閉じたruntimeとdriver構築artifact、実行方式、snapshot generator／format、storage条件、計測範囲、必須limitations、対応schema／broker版を拘束する。現在の実証対象はGradle 8.11.1／Kotlin 2.0.20とGradle 9.2.1／Kotlin 2.2.20、固定JDK 21.0.13+9、共通Groovy helperとJava driverである。版番号一致だけで別digestを許可せず、未知版・未知driver・Kotlin製の別helper・buildSrc等へ承認を一般化しない。
+
+固定limitationsは、offered-inputs-only、no-natural-consumption-receipt、no-all-writer-exclusion、no-compiler-internal-supplier-proof、no-transparent-kgp-integration、snapshot-slot-only、no-compiler-work-witnessとする。削除・緩和やreceipt-completeへの変更を追加信頼で許可しない。現profileのnative成功は候補の実証であり、未実施のstaging・実行条件の検証を埋めない。本番承認前には§9.32のSO07〜SO10と本節の条件を満たす必要がある。
+
+#### 9.37.5 gate順序と拒否理由
+
+静的readerは最初に有界parse・schema／必須証拠の構造検証を行う。producerState別の必須・禁止項目とphase順を検証し、構造不正を「信頼無効」へ格下げしない。その後の読取前gateで設定と独立したprofileを確認し、承認されない場合はproducerのsource getter・staging・baseline・runtimeへアクセスしない。既に読んだenvelope内で判明する矛盾も拒否し、gateが閉じているため未実行のfile検査を成功と記録しない。gate通過後だけpath安全性・内容・鮮度・bindingを検証する。
+
+| 分類 | 理由案 | 扱い |
+| --- | --- | --- |
+| 合法な未対応 | owned_offer_trust_disabled／profile_unapproved／execution_unsupported／evidence_unavailable | 診断はunavailable。自然消費readyはfalse。未対応の詳細と未実施検査を保持 |
+| 構造不正 | owned_offer_schema_invalid／required_evidence_missing | graphを拒否。必須非空列の空配列・未知status・必須limitations欠落も含む |
+| integrity違反 | owned_offer_profile_mismatch／binding_mismatch／configuration_unregistered／configuration_reused／content_mismatch／stale／path_invalid | graphを拒否。部分metadataやdeclared_inへ縮退させない |
+| 実行・観測失敗 | owned_offer_compile_failed／storage_failed／budget_exceeded／extra_evaluation | producer候補をfailedとして記録。成功envelopeとして提示した場合は矛盾によりgraph拒否 |
+
+未知profile IDはunapprovedだが、既知承認profile IDを名乗って実artifactが異なる場合はmismatchとする。未定義の「省略可能な証拠mode」は設けない。合法なfailed／unavailableは上記unionで判定し、未到達証拠の省略だけでgraphを拒否しない。completedを表明して必須証拠が欠ける場合や、failed／unavailableの状態・phaseに矛盾する証拠がある場合は構造不正である。正しく記録された実行失敗はfailedとして保持するが、envelope内で判明したintegrity違反はfailed表明でもgraph拒否を維持する。本理由は設計案であり、§9.36のtest fixtureの既存reason文字列を今回変更しない。
+
+#### 9.37.6 回帰テスト条件（未実装）
+
+| ID | 条件 |
+| --- | --- |
+| OO01 | 明示信頼＋独立承認profile＋全証拠の正常系のみ診断候補。statusはoffered-inputs-only、自然readyはfalse |
+| OO02 | 信頼無効・profile未承認・未対応strategyでfile／getter読取0。completed／failed／unavailable各unionの正常構造をgate前に受理し、状態別の必須欠落・禁止項目・不正phaseは信頼無効でも拒否。importStatusとproducerStateを混同しない |
+| OO03 | 既定・未登録・同値の別configuration、別parameter／service／project／stageを実nativeで拒否。自己申告IDの一致で回避不可 |
+| OO04 | 重複begin・締切後登録・再入・使用済みhandle・失敗後再利用・登録後mutationを拒否。broker外公開configurationは未対応 |
+| OO05 | 別export／graph／invocationの交換、source／構築class／runtimeの変更を拒否。未知profileと既知profile不一致を区別 |
+| OO06 | snapshotの空列・順序／重複変更、別library cohort・generator・format・parameter列への交換を拒否 |
+| OO07 | staging／baselineのroot逸脱・symlink・path置換・未記録file・保存bytes改変・容量超過を拒否。digest-only公開recordは本番候補に不可 |
+| OO08 | seal後・最初のcapture前・post検査前の改変を拒否。capture複数回でも元baselineへ照合し再sealで回復しない |
+| OO09 | 変更なしでBTAを実再呼出しするnative対照を両DSL・両版に追加。正常終了してもbta-call-only／unknownでありperformedや自然消費へ昇格不可。BTA未呼出しのskip／外部cache復元、compile失敗・worker継続はcompleted不可。warm出力を最終成功へ流用しない。将来の実作業witnessは別profileで検証 |
+| OO10 | control／全対象observerの追加評価・区間偽装・必須event欠落を拒否。未計測内部supplierを0と表明不可 |
+| OO11 | limitations削除・status昇格、offered証拠から自然ready・declared_in補完・coverage改善を行う変換を拒否 |
+| OO12 | 未対応で宣言元の部分一覧を生成しない。独立した既存宣言元の判定、relation／introduced_by・lock coverageは維持 |
+| OO13 | precheck拒否・seal中storage失敗・call例外・postcheck失敗・未対応unavailableの正常unionを受理し、未到達証拠を要求しない。到達済み必須証拠欠落、失敗後success、precheck拒否後call、偽failurePhase、failed→completed／unavailable、integrity違反の格下げを拒否 |
+| OO14 | 両DSL・両対象版を個別profileで検証し、未実施strategy・残り3 slot・全pipelineへ実証範囲を拡張しない |
+
+次工程はこの契約に対するproducerの状態機械・envelopeの限定実証と、未実施staging条件の検証である。本番取込・承認profileの有効化はそれらの結果をレビューしてから別工程で行う。
