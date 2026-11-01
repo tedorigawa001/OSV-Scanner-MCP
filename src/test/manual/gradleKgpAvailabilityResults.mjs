@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {tokenizeRecordedPaths,assertNoAbsolutePaths} from './kgpRecordPaths.mjs';
 import {kgpAvailabilitySources,verifyKgpAvailabilityCase,verifyApiArtifact,resolveGradleApiArtifact,verifyKgpSnapshotFault,kgpAvailabilityRegressions} from '../fixtures/gradleKgpAvailabilityProof.mjs';
 const repo=fileURLToPath(new URL('../../../',import.meta.url));
 const [prefix,output]=process.argv.slice(2);
@@ -64,18 +65,29 @@ for(const matrix of matrices){
  if(outcome!==undefined||reason!=='kgp_availability_api_artifact_mismatch')throw Error('wrong-runtime-directory-not-rejected');
  differentGradleApiRejections.push({expectedVersion:matrix.gradleVersion,actualVersion:other.gradleVersion,expected,candidate,accepted:outcome!==undefined,reason});
 }
-const verificationSourcesSha256=Object.fromEntries(await Promise.all(['src/test/gradle/kgpAvailability.test.ts','src/test/manual/gradleKgpAvailabilityResults.mjs'].map(async p=>[p,await digest(path.join(repo,p))])));
-let preReviews=[];
+const verificationSourcesSha256=Object.fromEntries(await Promise.all(['src/test/gradle/kgpAvailability.test.ts','src/test/manual/gradleKgpAvailabilityResults.mjs','src/test/manual/kgpRecordPaths.mjs','src/test/manual/kgpRecordPaths.d.mts'].map(async p=>[p,await digest(path.join(repo,p))])));
+let preReviews=[],observed=null;
+// Run IDs identify the native observation set independently of record formatting.
+const runIdsOf=ms=>ms.flatMap(m=>m.cases.flatMap(c=>[...c.runs,c.fault.proof.runs[2]].map(r=>r.runId))).sort();
 try{
  const bytes=await readFile(output);const old=JSON.parse(bytes);
  preReviews=old.preReviews??[];
+ // Re-consolidating the same native runs keeps their observation revision and time.
+ if(old.schema==='osv-mcp.kgp-availability-experiment-v2'&&JSON.stringify(runIdsOf(old.matrices??[]))===JSON.stringify(runIdsOf(matrices)))observed={recordedAt:old.recordedAt,baselineRevision:old.baselineRevision};
  if(old.schema!=='osv-mcp.kgp-availability-experiment-v2')preReviews.push({schema:old.schema,recordedAt:old.recordedAt,sourcesSha256:old.sourcesSha256,scope:old.scope,recordSha256:createHash('sha256').update(bytes).digest('hex'),note:'Uncommitted v1 record summary; not current v2 API binding or fault-trace evidence.'});
 }catch(error){if(error.code!=='ENOENT')throw error;}
-const result={schema:'osv-mcp.kgp-availability-experiment-v2',recordedAt:new Date().toISOString(),baselineRevision:execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),sourcesSha256,verificationSourcesSha256,
+// Verification above used the native absolute paths; the published record carries portable tokens only.
+const userHome=process.env.GRADLE_USER_HOME;
+if(!userHome)throw Error('GRADLE_USER_HOME is required to tokenize recorded cache paths');
+const roots=[{token:'$GRADLE_USER_HOME',paths:[userHome,await realpath(userHome)]},{token:'$GRADLE_RUNTIME',paths:[runtime,await realpath(runtime)]}];
+const portable=v=>tokenizeRecordedPaths(v,roots);
+const head=execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim(),now=new Date().toISOString();
+const result={schema:'osv-mcp.kgp-availability-experiment-v2',pathTokens:{'$GRADLE_USER_HOME':'GRADLE_USER_HOME','$GRADLE_RUNTIME':'OSV_MCP_GRADLE_RUNTIME_ROOT'},recordedAt:observed?.recordedAt??now,baselineRevision:observed?.baselineRevision??head,...(observed?{reconsolidatedAt:now,reconsolidatedRevision:head}:{}),sourcesSha256,verificationSourcesSha256,
  scope:{nativeBuilds:matrices.reduce((n,m)=>n+m.cases.reduce((n,c)=>n+c.runs.length+1,0),0),slotDiagnostics:matrices.reduce((n,m)=>n+m.cases.reduce((n,c)=>n+c.runs[1].reads.length,0),0),noReadRejections:matrices.reduce((n,m)=>n+m.cases.reduce((n,c)=>n+c.runs[2].decisions.length,0),0),snapshotGetterFaultRejections:matrices.reduce((n,m)=>n+m.cases.length,0),faultTraceRegressions:matrices.flatMap(m=>m.cases).reduce((n,c)=>n+c.regressions.length,0),apiMismatchRejections:matrices.flatMap(m=>m.cases).length,differentGradleApiRejections:differentGradleApiRejections.length,productionAdoptions:0,fullPipelineCandidates:0,
  fixture:'included root binary Kotlin, standard kotlin-dsl, same-DSL Groovy/Groovy and Kotlin/Kotlin pairs',
  diagnostic:'ordered post-compile reads: libraries, snapshots, compilerClasspath, Task.inputs; not isolated per-slot builds',
  sensors:'libraries/snapshot/compiler classpath sensors return empty lists; Task.inputs sensor is a real nonempty file; actual acquired collections are nonempty',
- limitations:['no owner-materialized bridge or content-bound receipt implemented','not a full observer noninterference proof','not all private suppliers observed','API survey is scoped, not an absence proof','no buildSrc/precompiled/plugins-block or cross-DSL matrix','no production adapter/reader/profile changes','snapshot zero sensor delta does not establish readiness or freshness']},apiInventories,matrices,differentGradleApiRejections,preReviews};
+ limitations:['no owner-materialized bridge or content-bound receipt implemented','not a full observer noninterference proof','not all private suppliers observed','API survey is scoped, not an absence proof','no buildSrc/precompiled/plugins-block or cross-DSL matrix','no production adapter/reader/profile changes','snapshot zero sensor delta does not establish readiness or freshness']},apiInventories:portable(apiInventories),matrices:portable(matrices),differentGradleApiRejections:portable(differentGradleApiRejections),preReviews:portable(preReviews)};
+assertNoAbsolutePaths(result);
 await writeFile(output,JSON.stringify(result,null,2)+'\n');
 console.log(JSON.stringify(result.scope));

@@ -179,3 +179,28 @@ it('rejects changed bytes at the same runtime API path',async()=>{
   await writeFile(jar,'new API');await expect(resolveGradleApiArtifact(lib,expected)).rejects.toThrow('kgp_availability_api_artifact_mismatch');
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+import {tokenizeRecordedPaths,assertNoAbsolutePaths,resolveRecordedPath} from '../manual/kgpRecordPaths.mjs';
+it('publishes only portable cache and runtime path tokens',()=>{
+ const roots=[{token:'$GRADLE_USER_HOME',paths:['/tmp/cache','/private/tmp/cache']},{token:'$GRADLE_RUNTIME',paths:['/private/tmp/runtime']}];
+ const record={implementation:{artifact:'/private/tmp/cache/caches/kgp.jar'},api:'/private/tmp/runtime/gradle-9.2.1/lib/core.jar',url:'jar:file:/private/tmp/cache/caches/kgp.jar!/x'};
+ const portable=tokenizeRecordedPaths(record,roots);
+ expect(portable).toEqual({implementation:{artifact:'$GRADLE_USER_HOME/caches/kgp.jar'},api:'$GRADLE_RUNTIME/gradle-9.2.1/lib/core.jar',url:'jar:file:$GRADLE_USER_HOME/caches/kgp.jar!/x'});
+ expect(()=>assertNoAbsolutePaths(portable)).not.toThrow();
+ expect(()=>assertNoAbsolutePaths({...portable,leaked:'/Users/someone/.gradle/caches/x.jar'})).toThrow('kgp_availability_record_path_not_portable');
+ expect(()=>assertNoAbsolutePaths(tokenizeRecordedPaths({other:'/private/var/folders/x/y.jar'},roots))).toThrow('kgp_availability_record_path_not_portable');
+});
+it('resolves recorded tokens only through the configured roots',()=>{
+ const env={GRADLE_USER_HOME:'/srv/gradle-home',OSV_MCP_GRADLE_RUNTIME_ROOT:'/srv/runtime'};
+ expect(resolveRecordedPath('$GRADLE_USER_HOME/caches/kgp.jar',env)).toBe(path.join('/srv/gradle-home','caches/kgp.jar'));
+ expect(resolveRecordedPath('$GRADLE_RUNTIME/gradle-8.11.1/lib/core.jar',env)).toBe(path.join('/srv/runtime','gradle-8.11.1/lib/core.jar'));
+ expect(()=>resolveRecordedPath('$GRADLE_USER_HOME/../escape.jar',env)).toThrow('kgp_availability_record_path_not_portable');
+ expect(()=>resolveRecordedPath('/abs/kgp.jar',env)).toThrow('kgp_availability_record_path_not_portable');
+ expect(()=>resolveRecordedPath('$GRADLE_RUNTIME/x.jar',{GRADLE_USER_HOME:'/srv/gradle-home'})).toThrow('kgp_availability_record_root_missing');
+});
+it('keeps the published availability record free of machine-specific paths',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const record=JSON.parse(await readFile(new URL('../../../docs/validation/gradle-kgp-availability-2026-11-01.json',import.meta.url),'utf8'));
+ expect(()=>assertNoAbsolutePaths(record)).not.toThrow();
+ expect(record.pathTokens).toEqual({'$GRADLE_USER_HOME':'GRADLE_USER_HOME','$GRADLE_RUNTIME':'OSV_MCP_GRADLE_RUNTIME_ROOT'});
+});

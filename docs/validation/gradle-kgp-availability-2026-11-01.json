@@ -1,7 +1,13 @@
 {
   "schema": "osv-mcp.kgp-availability-experiment-v2",
+  "pathTokens": {
+    "$GRADLE_USER_HOME": "GRADLE_USER_HOME",
+    "$GRADLE_RUNTIME": "OSV_MCP_GRADLE_RUNTIME_ROOT"
+  },
   "recordedAt": "2026-11-01T09:25:56.837Z",
   "baselineRevision": "fdddf815def410a723c702733beacc39ce76d776",
+  "reconsolidatedAt": "2026-11-01T09:34:04.448Z",
+  "reconsolidatedRevision": "5149117d7ab3aae981c4584c11860284862684ba",
   "sourcesSha256": {
     "src/test/fixtures/gradle-kgp-availability.init.gradle": "ac6b3b750ba30c51536e28043d2bd7727199b8f4e6035c49ec888b6c364e2670",
     "src/test/fixtures/gradleKgpAvailabilityProof.mjs": "4fc97a5ac690dd2ececfd16eec4cd224735707a5cb8051c2c1885820a2eb39e0",
@@ -9,8 +15,10 @@
     "src/test/gradle/kgpAvailability.integration.test.ts": "f66b196303d7882a115d0deae09949ec35cc25f13d5a679870b99340d8b18aac"
   },
   "verificationSourcesSha256": {
-    "src/test/gradle/kgpAvailability.test.ts": "026c6525801e6bc8172c3288d1d8e8a58c37989018e60b03eb6d7acfcfb0435c",
-    "src/test/manual/gradleKgpAvailabilityResults.mjs": "9a0eb0a75d8d617cd6f326a4c583a15013e603752f6ba03049f3c771ea063a4c"
+    "src/test/gradle/kgpAvailability.test.ts": "760026b4d355a99962137bc34da679eda280347b7dd00db24355fc5bb9296c15",
+    "src/test/manual/gradleKgpAvailabilityResults.mjs": "077b0b200cd2e77db347ea3be3cc2959009c3a3631ea9524ccd700597266ed09",
+    "src/test/manual/kgpRecordPaths.mjs": "6bfe64448d60dc384e5d0a2d5134576141542dc17ee35a6f26ad383a891e13b2",
+    "src/test/manual/kgpRecordPaths.d.mts": "9e8c10f66aab177c1a2b196e6e9e2b8bffcfd11436400b741ae413485370a03b"
   },
   "scope": {
     "nativeBuilds": 16,
@@ -42,15 +50,15 @@
       "selectionEvidence": "native KotlinPluginWrapper, KotlinCompileTool and TaskInputs CodeSources; independently checked artifact identities and digests",
       "artifacts": [
         {
-          "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+          "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
           "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
         },
         {
-          "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+          "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
           "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
         },
         {
-          "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+          "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
           "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
         }
       ],
@@ -123,15 +131,15 @@
       "selectionEvidence": "native KotlinPluginWrapper, KotlinCompileTool and TaskInputs CodeSources; independently checked artifact identities and digests",
       "artifacts": [
         {
-          "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+          "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
           "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
         },
         {
-          "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+          "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
           "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
         },
         {
-          "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+          "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
           "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
         }
       ],
@@ -234,18 +242,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                 "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                   "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                   "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                 }
               },
@@ -471,18 +479,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                 "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                   "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                   "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                 }
               },
@@ -1296,18 +1304,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                 "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                   "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                   "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                 }
               },
@@ -1643,18 +1651,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                     "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                       "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                       "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                     }
                   },
@@ -1880,18 +1888,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                     "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                       "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                       "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                     }
                   },
@@ -2705,18 +2713,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                     "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                       "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                       "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                     }
                   },
@@ -3099,18 +3107,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                 "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                   "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                   "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                 }
               },
@@ -3336,18 +3344,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                 "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                   "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                   "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                 }
               },
@@ -4161,18 +4169,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                 "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                   "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                   "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                 }
               },
@@ -4508,18 +4516,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                     "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                       "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                       "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                     }
                   },
@@ -4745,18 +4753,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                     "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                       "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                       "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                     }
                   },
@@ -5570,18 +5578,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.0.20/5ca90c0173fffe0f4e9b73aca425fd99213cc43a/kotlin-gradle-plugin-2.0.20-gradle85.jar",
                     "sha256": "8129f62cb7c627b5ce82187e42a6d87c42952bc7ba64b805a3547f6852319662"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
                       "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.0.20/d2bb3020f72504d0455fcb9cef3af4bdf6564de5/kotlin-gradle-plugin-api-2.0.20.jar",
                       "sha256": "0f7357bc5ccc8e3681ec3b4643c70cad2883b246c8b7af7d6d971c41e3934f2d"
                     }
                   },
@@ -5970,18 +5978,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                 "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                   "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                   "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                 }
               },
@@ -6203,18 +6211,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                 "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                   "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                   "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                 }
               },
@@ -6969,18 +6977,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                 "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                   "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                   "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                 }
               },
@@ -7312,18 +7320,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                     "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                       "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                       "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                     }
                   },
@@ -7545,18 +7553,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                     "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                       "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                       "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                     }
                   },
@@ -8311,18 +8319,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                     "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                       "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                       "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                     }
                   },
@@ -8701,18 +8709,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                 "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                   "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                   "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                 }
               },
@@ -8934,18 +8942,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                 "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                   "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                   "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                 }
               },
@@ -9700,18 +9708,18 @@
               "parallel": false,
               "implementation": {
                 "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                 "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
               },
               "apiArtifacts": {
                 "gradle": {
                   "type": "org.gradle.api.tasks.TaskInputs",
-                  "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                  "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                   "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                 },
                 "kgp": {
                   "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                  "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                  "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                   "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                 }
               },
@@ -10043,18 +10051,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                     "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                       "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                       "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                     }
                   },
@@ -10276,18 +10284,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                     "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                       "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                       "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                     }
                   },
@@ -11042,18 +11050,18 @@
                   "parallel": false,
                   "implementation": {
                     "type": "org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper",
-                    "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
+                    "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin/2.2.20/9c5953786765b9373d172097da74efe77ac90481/kotlin-gradle-plugin-2.2.20-gradle813.jar",
                     "sha256": "5d325b5c2c5d4bc8bf44145d24eb4d4beb060d13d11ebe48898936ed5cd1564e"
                   },
                   "apiArtifacts": {
                     "gradle": {
                       "type": "org.gradle.api.tasks.TaskInputs",
-                      "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+                      "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
                       "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
                     },
                     "kgp": {
                       "type": "org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool",
-                      "artifact": "/private/tmp/osv-gradle-cache/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
+                      "artifact": "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-gradle-plugin-api/2.2.20/60de320ba63943d1997d7f39f32cde9c2621806d/kotlin-gradle-plugin-api-2.2.20.jar",
                       "sha256": "7607ee5c7a0ca53fa592ee7c540ee808962a7bad8fee9ed78fe674841463d95d"
                     }
                   },
@@ -11411,12 +11419,12 @@
       "actualVersion": "9.2.1",
       "expected": {
         "type": "org.gradle.api.tasks.TaskInputs",
-        "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+        "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
         "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
       },
       "candidate": {
         "type": "org.gradle.api.tasks.TaskInputs",
-        "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+        "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
         "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
       },
       "accepted": false,
@@ -11427,12 +11435,12 @@
       "actualVersion": "8.11.1",
       "expected": {
         "type": "org.gradle.api.tasks.TaskInputs",
-        "artifact": "/private/tmp/osv-gradle-runtime/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
+        "artifact": "$GRADLE_RUNTIME/gradle-9.2.1/lib/gradle-core-api-9.2.1.jar",
         "sha256": "37054573063abb60c5401d761491c17c404f2eb875485274c9087185f6fb9445"
       },
       "candidate": {
         "type": "org.gradle.api.tasks.TaskInputs",
-        "artifact": "/private/tmp/osv-gradle-runtime/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
+        "artifact": "$GRADLE_RUNTIME/gradle-8.11.1/lib/gradle-core-api-8.11.1.jar",
         "sha256": "8abc5c441eec849e658981f573356ef0c1bd32e2293cc0b5335967ccb0abf682"
       },
       "accepted": false,

@@ -1916,4 +1916,11 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - slot／getter開始・終了とphaseを検証し、getter区間の全supplierからdeltaを再計算。故障traceも全証拠を検査してから期待したno-read違反を認定する。14種類の改変対照をnative／集約で共有し、不正phase・区間外移動・artifact欠落等を拒否する。
 - v2へ更新し、旧未コミットv1は要約としてのみ保持。初回の厳密化で通常task graph準備を過剰拒否した点は、登録後・最初のtask前に限定して許可する回帰で修正した。本番採用・全pipeline候補0件を維持する。
 
-- 最終確認: native両版各18件成功、最終16 buildを保存。故障trace改変56件・別API対照4件・実Gradle版違いdirectory対照2件を拒否して集約で再計算。静的56件、通常全体2,053件成功／1,117件skip、typecheck・build成功。v2のsourceとAPI artifact hash一致を確認した。
+- 最終確認: native両版各18件成功、最終16 buildを保存。故障trace改変56件・記録済みbindingを交換した静的API対照4件・実Gradle版違いdirectory対照2件を拒否して集約で再計算。静的56件、通常全体2,053件成功／1,117件skip、typecheck・build成功。v2のsourceとAPI artifact hash一致を確認した。
+
+
+### 2026-11-01: 5149117レビュー修正・記録pathの可搬化
+
+- KGP取得診断の検証JSONに残っていた端末固有の絶対path（82か所）を、`$GRADLE_USER_HOME`／`$GRADLE_RUNTIME`のtokenへ置換。集約は絶対pathで再検証した後に置換し、残存pathがあれば書き出さない。tokenの解決は環境変数の絶対pathに限定し、`..`等を拒否する。
+- Gradleは再実行せず、保存済みv2 native出力を再集約。置換以外の内容は一致し、観測時の`recordedAt`／`baselineRevision`を保持して再集約時点を別記した。静的回帰3件を追加（修正前の記録で失敗を確認）。
+- §9.24の「native別API対照」を、記録済みbindingを交換した静的対照と訂正。採否と本番採用0件は不変。詳細は[設計書§9.25](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#925-5149117レビュー修正記録pathの可搬化2026-11-01)。
