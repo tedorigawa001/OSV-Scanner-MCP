@@ -1858,9 +1858,9 @@ BTA driverのJDK対応は、Gradle daemon側java／javacと、実JavaExec child�
 
 §9.35の初期v1記録では、snapshot ID列の検証と、最終compileJvmへ渡すconfigurationの対応が不足していた。現在の実証はv2へ更新し、旧v1は検証JSONのpreReviewsへhash付きの参考要約として残す。§9.35末尾の件数は初期検証の履歴であり、現在の結果は本節を用いる。
 
-専用driver内のIdentityHashMapと非公開Bindingで、実service・project・configuration・snapshot parameterの参照を対応付ける。公開useIncrementalCompilationの実receiverと実parameterを呼出し完了後に登録し、parameterの実snapshot列からdescriptorを得る。独立した報告用入力列だけでcompile成功を検証しない。libraryの非IC configurationも明示登録する。
+専用driver内のIdentityHashMapと非公開Bindingで、実service・project・configuration・snapshot parameterの参照を対応付ける。公開useIncrementalCompilationの実receiverと実parameterを呼出し完了後に登録する。descriptorはparameterの実snapshot File列をstaged列とpath単位で照合し、対応するsealed entryのsize／digestを写したものである（sealed-by-path）。照合時にsnapshot bytesを読み直さないため、snapshot内容の保証はpreflight／postflightの検査が担う。独立した報告用入力列だけでcompile成功を検証しない。libraryの非IC configurationも明示登録する。
 
-compile直前に、登録済みconfigurationの実参照、期待Binding、service／project、stage、source／出力path、引数、source hash、実parameter参照とsnapshot descriptorを照合する。Bindingは一度だけ使用可能で、検証に成功してから実BTAを呼ぶ。BTA内部fieldのreflectionは用いない。この保証は固定sourceの専用broker経路に限定し、任意の呼出し元を隔離する機構とは扱わない。
+compile直前に、登録済みconfigurationの実参照、期待Binding、service／project、stage、source／出力path、引数、source hash、実parameter参照とsnapshot descriptorを照合する。Bindingは一度だけ使用可能で、検証に成功してから実BTAを呼ぶ。ただしnative負例はconfiguration実体の差替え3種だけであり、Bindingの再使用、context不一致、parameterのpath不一致の拒否は記録改変対照でのみ確認している。path不一致は拒否記録を残さずdriverの例外終了になる。BTA内部fieldのreflectionは用いない。この保証は固定sourceの専用broker経路に限定し、任意の呼出し元を隔離する機構とは扱わない。
 
 | native負例 | 最終consumerへ実際に渡す値 | 結果 |
 | --- | --- | --- |
@@ -1877,6 +1877,17 @@ compile直前に、登録済みconfigurationの実参照、期待Binding、servi
 自然消費receipt、全writer排除、compiler内部全supplierの非干渉、既存KGPへの透過対応は引き続き未成立である。承認recipe・自然消費内容束縛・本番採用はすべて0件を維持する。
 
 最終確認（§9.36）: 通常全体2,405テスト成功・native opt-in等1,185件skip。両Gradle版のnative各28テスト、typecheck・buildも成功。
+
+#### 9.36.1 fd66e03レビュー修正・公開記録v3（2026-11-02）
+
+native実行・driver・verifierは変更せず、同じnative集計を公開記録v3へ再集約した。`btaSources`はnative実行時のhashへ束縛されているため、公開形式の検証は別moduleの`btaDriverRecord.mjs`へ置く。
+
+- 記録の`bindingSemantics`に、descriptorの出所（sealed-by-path）、内容保証（preflight／postflight）、native未実証の拒否3種を固定値で記録し、欠落・改変・旧schemaを拒否する。
+- private IC cacheの全inventory（各run 66件）は公開せず、entry数・総size・inventory digest・shrunk snapshot entryだけを残す。再生時はshrunk entryだけを持つnative viewへ戻し、元のverifierと記録改変対照を再実行する。全inventoryの再収録や要約の改変は拒否する。記録は1.74MBから1.21MBになった。
+- native観測のdigest（`observationSha256`）が同じ場合は`recordedAt`／`baselineRevision`を保持し、再集約時点を`reconsolidatedAt`／`reconsolidatedRevision`へ分けて記録する。v2はfd66e03のcommit済み原本としてhash付き要約を`preReviews`へ残す。
+- 失敗log（native harnessが一時領域へ書くfile）の位置は`btaSources`内のため今回は変更せず、次回のnative再実行時に扱う。
+
+再集約は2回行い、2回目は再集約時刻以外が一致した。旧v2記録では静的テスト55件中52件が失敗することを先に確認した。結論・件数（36 build、実compileJvm 88回、configuration拒否12件、記録改変拒否116件）と、自然消費receipt・承認recipe・本番採用0は変わらない。
 
 
 ### 9.37 producer所有driverの提供入力証拠・採用範囲と信頼契約（設計、2026-11-02）

@@ -2025,6 +2025,12 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 両版各28テスト、36 build・実compileJvm 88回・snapshot 72個を再実行。記録改変116件と静的回帰44件が成功。v2記録へ更新し、旧v1は参考履歴に限定。自然消費receipt・承認recipe・本番採用0は維持。
 
 
+### 2026-11-02: fd66e03レビュー修正（BTA公開記録v3）
+
+- [設計書§9.36.1](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#9361-fd66e03レビュー修正公開記録v32026-11-02)へ、snapshot descriptorがsealed-by-pathであること、再使用・context・path不一致の拒否がnative未実証であることを明記し、記録の`bindingSemantics`で固定。
+- private IC cacheを要約して公開し（1.74MB→1.21MB）、native viewで元verifierと記録改変対照を再生。観測digestが同じ再集約では観測時点を保持。native再実行0、静的テスト55件。
+
+
 ### 2026-11-02: producer所有BTA driverの採用範囲・信頼契約（設計）
 
 - [設計書§9.37](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#937-producer所有driverの提供入力証拠採用範囲と信頼契約設計2026-11-02)へ、helperの登録／実参照binding／一回限りの使用／完了契約、envelope必須証拠と保存bytes・鮮度確認を具体化。

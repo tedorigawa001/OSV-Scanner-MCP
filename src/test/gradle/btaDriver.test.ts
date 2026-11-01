@@ -2,10 +2,13 @@ import {it,expect} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {verifyBtaDriverRun,verifyBtaDriverCase,btaDriverRegressions,mutateBtaDriver,btaDriverTargets,hash,btaSources} from '../fixtures/gradleBtaDriverProof.mjs';
 import {assertNoAbsolutePaths} from '../manual/kgpRecordPaths.mjs';
-const record=()=>JSON.parse(readFileSync(new URL('../../../docs/validation/gradle-bta-owned-driver-2026-11-02.json',import.meta.url),'utf8'));
+import {btaRecordSchema,btaBindingSemantics,nativeBtaCase,verifyBtaRecordSemantics} from '../manual/btaDriverRecord.mjs';
+const published=()=>JSON.parse(readFileSync(new URL('../../../docs/validation/gradle-bta-owned-driver-2026-11-02.json',import.meta.url),'utf8'));
+const nativeView=(d:any)=>{verifyBtaRecordSemantics(d);return {...d,matrices:d.matrices.map((m:any)=>({...m,cases:m.cases.map(nativeBtaCase)}))};};
+const record=()=>nativeView(published());
 it('rejects an empty report rather than claiming a natural receipt',()=>expect(()=>verifyBtaDriverRun({},{})).toThrow('bta_driver_schema_invalid'));
 it('replays all native BTA stages, program outputs and rejection evidence',()=>{
- const d=record();expect(d.schema).toBe('osv-mcp.bta-owned-driver-experiment-v2');assertNoAbsolutePaths(d);
+ const d=record();expect(d.schema).toBe(btaRecordSchema);expect(d.bindingSemantics).toEqual(btaBindingSemantics);assertNoAbsolutePaths(d);
  for(const group of ['sourcesSha256','verificationSourcesSha256'])for(const [p,h]of Object.entries(d[group]))expect(hash(readFileSync(new URL('../../../'+p,import.meta.url))),p).toBe(h);
  expect(Object.keys(d.sourcesSha256)).toEqual(btaSources);
  expect(d.matrices.map((m:any)=>m.gradleVersion)).toEqual(['8.11.1','9.2.1']);let builds=0,calls=0,snapshots=0,offered=0,stale=0,storage=0,extra=0,rejections=0,configurationRejections=0;
@@ -50,4 +53,23 @@ for(const mode of ['default-config','unregistered-config','foreign-config'])it('
 it('requires a foreign configuration to be rejected even when its snapshot values are equal',()=>{
  const d=record(),c=d.matrices[0].cases[0],r=structuredClone(c.runs[8]);r.program.configurationChecks[2].parameterIdentity=true;
  expect(()=>verifyBtaDriverRun(r,{gradleVersion:c.gradleVersion,dsl:c.dsl,javaSha256:d.javaSha256,fixtureInputsSha256:c.fixtureInputsSha256})).toThrow('bta_driver_configuration_invalid');
+});
+
+it('publishes only a private IC cache summary with the retained shrunk snapshot',()=>{
+ const d=published();for(const m of d.matrices)for(const c of m.cases)for(const r of c.runs){const s=r.program.privateCache;expect(Array.isArray(s)).toBe(false);expect(s.shrunkSnapshot.path).toBe('shrunk-classpath-snapshot.bin');expect(s.entries).toBeGreaterThan(1);}
+ expect(d.preReviews.map((p:any)=>p.schema)).toEqual(['osv-mcp.bta-owned-driver-experiment-v1','osv-mcp.bta-owned-driver-experiment-v2']);expect(d.preReviews[1].committedIn).toBe('fd66e03');
+});
+const cacheFaults:Record<string,(s:any)=>void>={
+ 'republished inventory':s=>{s.inventory=[s.shrunkSnapshot];},
+ 'missing shrunk snapshot':s=>{delete s.shrunkSnapshot;},
+ 'renamed shrunk snapshot':s=>{s.shrunkSnapshot.path='other.bin';},
+ 'total smaller than retained entry':s=>{s.totalSize=s.shrunkSnapshot.size-1;},
+ 'invalid inventory digest':s=>{s.inventorySha256='x';},
+};
+for(const [name,fault]of Object.entries(cacheFaults))it('rejects a published cache summary: '+name,()=>{
+ const d=published();fault(d.matrices[0].cases[0].runs[1].program.privateCache);expect(()=>nativeView(d)).toThrow('bta_driver_published_cache_invalid');
+});
+it('rejects a republished full cache inventory array',()=>{const d=published(),r=d.matrices[0].cases[0].runs[1];r.program.privateCache=[r.program.privateCache.shrunkSnapshot];expect(()=>nativeView(d)).toThrow('bta_driver_published_cache_invalid');});
+for(const [name,fault]of Object.entries({'missing semantics':(d:any)=>{delete d.bindingSemantics;},'content-bound claim':(d:any)=>{d.bindingSemantics.snapshotDescriptorSource='parameter-bytes';},'dropped unproven check':(d:any)=>{d.bindingSemantics.nativeUnprovenChecks.pop();},'old schema':(d:any)=>{d.schema='osv-mcp.bta-owned-driver-experiment-v2';}}))it('rejects binding semantics: '+name,()=>{
+ const d=published();fault(d);expect(()=>nativeView(d)).toThrow('bta_driver_binding_semantics_invalid');
 });
