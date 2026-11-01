@@ -1,0 +1,264 @@
+// Test-only public API feasibility prototype. Never shipped or loaded by MCP.
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import org.gradle.api.Action
+import org.gradle.api.tasks.compile.AbstractCompile
+import org.gradle.api.tasks.bundling.Jar
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+
+class ConventionProofFiles {
+    static Map immutableExternalCache=[:]
+    static long bytesRead=0
+
+    static String hash(File file) {
+        def boundary=new File(System.getProperty('osv.convention.root')).canonicalFile.toPath()
+        boolean external=!file.canonicalFile.toPath().startsWith(boundary)
+        def key=file.canonicalPath+'\u0000'+file.length()+'\u0000'+file.lastModified()
+        if(external && immutableExternalCache.containsKey(key))return immutableExternalCache[key]
+        if(file.length()>512L*1024*1024 || (bytesRead+=file.length())>1024L*1024*1024)throw new IllegalStateException('native-hash-budget')
+        def md=MessageDigest.getInstance('SHA-256'); byte[] buffer=new byte[1024*1024]
+        file.withInputStream { stream -> int n; while((n=stream.read(buffer))!=-1) md.update(buffer,0,n) }
+        def result=md.digest().encodeHex().toString();if(external)immutableExternalCache[key]=result;result
+    }
+    static String classHash(File jar,String entryName) {
+        if(!jar?.isFile() || jar.length()>4*1024*1024) return null
+        def zip=new java.util.zip.ZipFile(jar)
+        try {
+            def names=new HashSet();int count=0
+            def entries=zip.entries()
+            while(entries.hasMoreElements()) {
+                def entry=entries.nextElement()
+                if(++count>10000 || !names.add(entry.name) || entry.size>4*1024*1024) return null
+            }
+            def entry=zip.getEntry(entryName);if(entry==null || entry.directory) return null
+            def md=MessageDigest.getInstance('SHA-256');byte[] buffer=new byte[16384];long total=0
+            zip.getInputStream(entry).withCloseable { stream -> int n;while((n=stream.read(buffer))!=-1) {if((total+=n)>4*1024*1024) throw new IllegalStateException('class-entry-budget');md.update(buffer,0,n)} }
+            md.digest().encodeHex().toString()
+        } finally {zip.close()}
+    }
+    static String relative(File root,File file) { root.toPath().relativize(file.canonicalFile.toPath()).toString().replace('\\','/') }
+    static Map files(File root,Collection<File> roots) {
+        def result=[:];long bytes=0
+        roots.each { f ->
+            def visit={ File x ->
+                if(!x.isFile()) return
+                def p=relative(root,x)
+                if(p.startsWith('../') || java.nio.file.Files.isSymbolicLink(x.toPath())) throw new IllegalStateException('unsafe-output')
+                if(x.length()>4*1024*1024 || (bytes+=x.length())>64*1024*1024 || result.size()>=10000) throw new IllegalStateException('output-budget')
+                result[p]=hash(x)
+            }
+            if(f.isDirectory()) f.eachFileRecurse(groovy.io.FileType.FILES,visit)
+            else visit(f)
+        }
+        result
+    }
+}
+class ConventionProofProbe {
+    def project
+    File root
+    String mode
+    Map baseline
+    List records=[],applications=[],trace=[],providerRecords=[],applicationEvents=[]
+    boolean appliedObserved=false,observerPrepared=false
+    Object resolvedInstance
+    void prepare() { observerPrepared=true;project.pluginManager.withPlugin('proof.convention') { applied ->
+        applicationEvents.add('after-apply');appliedObserved=true;resolvedInstance=project.plugins.findPlugin('proof.convention')
+        applications.each { a -> a.appliedObserved=true }
+    } }
+    Map producerCalls=[:].withDefault {0}
+    String phase='configuration'
+    IdentityHashMap handles=new IdentityHashMap()
+    def scriptSource(String source) { handle([kind:'script'],source) }
+    def pluginSource(Object instance,String id,String source) { begin(instance,id,source,'binary-instance') }
+    def beginPrecompiled(String id,String source) { begin(null,id,source,'precompiled-pending') }
+    def begin(Object instance,String id,String source,String form) {
+        if(source!=baseline.source || id!='proof.convention') throw new IllegalStateException('wrong-plugin-source')
+        applicationEvents.add('begin:'+form)
+        def application=[id:project.path+':a'+applications.size(),instance:instance,pluginId:id,source:source,expectedRecordIds:[],registrationForm:form,beginBeforeApplied:!appliedObserved && observerPrepared,ended:false,endOutcome:null]
+        def previous=applications.findAll {it.pluginId==id && it.source==source}
+        if(!previous.isEmpty()) { application.registrationUnique=false;previous.each {it.registrationUnique=false} }
+        else application.registrationUnique=true
+        applications.add(application)
+        handle([kind:'plugin',pluginApplicationId:application.id,sourceMappingId:source],source)
+    }
+    void endPlugin(Object token,String outcome) {
+        def source=handles[token];if(source==null || source.origin.kind!='plugin') throw new IllegalStateException('unknown-plugin-handle')
+        def a=applications.find {it.id==source.origin.pluginApplicationId}
+        if(a.ended)throw new IllegalStateException('duplicate-end')
+        a.ended=true;a.endOutcome=outcome;applicationEvents.add('end:'+outcome)
+    }
+    def handle(Map origin,String source) {
+        if(!baseline.inputs.containsKey(source)) throw new IllegalStateException('unprepared-source')
+        if(origin.kind=='script' && source==baseline.source) throw new IllegalStateException('plugin-source-as-script')
+        def token=Collections.unmodifiableMap([id:'h'+handles.size()]);handles[token]=[origin:origin,source:source]; token
+    }
+    def add(String cfg,Object notation,Object token) {
+        def source=handles[token];if(source==null) throw new IllegalStateException('unknown-source-handle')
+        def r=[id:'r'+records.size(),origin:source.origin,source:source.source,dependency:null,snapshot:null]
+        if(mode=='registered') {
+            records.add(r)
+            if(source.origin.kind=='plugin') applications.find {it.id==source.origin.pluginApplicationId}.expectedRecordIds.add(r.id)
+        }
+        Action configure={ dep -> trace.add('configure:'+cfg+':'+dep.group+':'+dep.name) } as Action
+        Action capture={ dep -> configure.execute(dep);r.dependency=dep;r.snapshot=dep.group+':'+dep.name+':'+dep.version } as Action
+        def dep=project.dependencies.create(notation)
+        if(mode=='registered') capture.execute(dep); else configure.execute(dep)
+        project.dependencies.add(cfg,dep)
+    }
+    void produced(String cfg) { producerCalls[cfg]++;trace.add('produce:'+cfg+':'+phase) }
+    void addProvider(String cfg,org.gradle.api.provider.Provider value,Object token) {
+        def source=handles[token];if(source==null) throw new IllegalStateException('unknown-source-handle')
+        def r=[id:'p'+providerRecords.size(),configuration:cfg,origin:source.origin,source:source.source,callbacks:0]
+        if(mode=='registered') {
+            providerRecords.add(r)
+            if(source.origin.kind=='plugin') applications.find {it.id==source.origin.pluginApplicationId}.expectedRecordIds.add(r.id)
+        }
+        Action original={dep -> trace.add('configure:'+cfg+':'+phase)} as Action
+        Action capture={dep -> original.execute(dep);r.callbacks++} as Action
+        project.dependencies.addProvider(cfg,value,mode=='registered'?capture:original)
+    }
+    Map report(List receipts) {
+        def cfg=project.configurations.getByName('probe')
+        phase='resolve:probe';trace.add('resolve')
+        def rr=cfg.incoming.resolutionResult
+        def component=rr.rootComponent.get()
+        def graph=component.getDependenciesForVariant(rr.rootVariant.get()).findAll {it instanceof ResolvedDependencyResult && !it.constraint}.collect {it.selected.id.displayName}.sort()
+        phase='resolve:lazy'
+        def lazy=project.configurations.getByName('lazy').incoming.resolutionResult
+        def lazyGraph=lazy.rootComponent.get().getDependenciesForVariant(lazy.rootVariant.get()).findAll {it instanceof ResolvedDependencyResult && !it.constraint}.collect {it.selected.id.displayName}.sort()
+        def live=mode=='plain' ? [] : cfg.allDependencies.toList()
+        def apps=applications.collect { a ->
+            def actual=resolvedInstance?:project.plugins.findPlugin(a.pluginId)
+            def klass=actual?.getClass(), url=klass?.protectionDomain?.codeSource?.location
+            def rawLocation=url?.protocol=='file'?new File(url.toURI()).absoluteFile:null
+            boolean linked=false
+            if(rawLocation!=null) {
+                def cursor=rawLocation.toPath().root
+                for(def originPart:rawLocation.toPath()) {cursor=cursor.resolve(originPart);if(java.nio.file.Files.isSymbolicLink(cursor))linked=true}
+            }
+            def location=rawLocation?.canonicalFile
+            def origin=location?ConventionProofFiles.relative(root,location):null
+            def classPath=klass?.name?.replace('.','/')+'.class'
+            def resource=klass?.getResource('/'+classPath)?.toString()
+            def loadedDigest=location?.isFile() && location.length()<=4*1024*1024?ConventionProofFiles.hash(location):null
+            def digestMatches=loadedDigest && receipts.any {it.outputs.values().contains(loadedDigest)}
+            def loadedClassDigest=ConventionProofFiles.classHash(location,classPath)
+            def classMatches=loadedClassDigest && receipts.any {it.outputs.any {p,h -> p.endsWith('/'+classPath) && h==loadedClassDigest}}
+            def output=location?.isDirectory()?new File(location,classPath):null
+            def outputPath=output?.isFile()?ConventionProofFiles.relative(root,output):null
+            def observed=outputPath && receipts.any { it.outputs[outputPath] && it.outputs[outputPath]==ConventionProofFiles.hash(output) }
+            def jarReceipt=receipts.find {it.archivePath && !it.skipped && it.didWork}
+            def builtJar=jarReceipt?new File(root,jarReceipt.archivePath):null
+            def imageReceipt=receipts.find {it.imagePath && it.didWork && !it.failure}
+            def image=imageReceipt?new File(root,imageReceipt.imagePath):null
+            def descriptorClass=null
+            if(builtJar?.isFile()) {
+                def zip=new java.util.zip.ZipFile(builtJar)
+                try {
+                    def descriptor=zip.getEntry('META-INF/gradle-plugins/'+a.pluginId+'.properties')
+                    if(descriptor && descriptor.size<=4096) {
+                        def lines=zip.getInputStream(descriptor).withCloseable {it.getText('UTF-8').readLines()}.findAll {it.startsWith('implementation-class=')}
+                        if(lines.size()==1)descriptorClass=lines[0].substring('implementation-class='.length())
+                    }
+                }finally {zip.close()}
+            }
+            if(image!=null) {
+                def descriptor=new File(image,'META-INF/gradle-plugins/'+a.pluginId+'.properties')
+                if(descriptor.isFile()) {
+                    def lines=descriptor.readLines('UTF-8').findAll {it.startsWith('implementation-class=')}
+                    if(lines.size()==1)descriptorClass=lines[0].substring('implementation-class='.length())
+                }
+            }
+            def snapshotPath=null,snapshotSha=null,approved=false
+            if(location!=null) {
+                def allowed=new File(System.getProperty('osv.plugin.runtimeRoot')).canonicalFile
+                approved=!linked && (location.toPath().startsWith(allowed.toPath()) || location.toPath().startsWith(root.toPath()))
+                if(approved && location.isFile() && !java.nio.file.Files.isSymbolicLink(location.toPath()) && location.length()<=4*1024*1024) {
+                    def bytes=location.bytes;snapshotSha=ConventionProofFiles.hash(location)
+                    snapshotPath='.osv-mcp/plugin-runtime/'+baseline.invocationId+'/jars/'+snapshotSha+'.jar'
+                    def copy=new File(root,snapshotPath)
+                    def parent=root.toPath()
+                    for(def snapshotPart:root.toPath().relativize(copy.parentFile.toPath())) {
+                        parent=parent.resolve(snapshotPart)
+                        if(!java.nio.file.Files.exists(parent,java.nio.file.LinkOption.NOFOLLOW_LINKS))java.nio.file.Files.createDirectory(parent)
+                        if(java.nio.file.Files.isSymbolicLink(parent)||!java.nio.file.Files.isDirectory(parent,java.nio.file.LinkOption.NOFOLLOW_LINKS))throw new IllegalStateException('unsafe-snapshot-parent')
+                    }
+                    if(java.nio.file.Files.isSymbolicLink(copy.toPath()))throw new IllegalStateException('unsafe-snapshot-file')
+                    if(!copy.exists()) {
+                        def pending=java.nio.file.Files.createTempFile(copy.parentFile.toPath(),'pending-','.jar')
+                        try {java.nio.file.Files.write(pending,bytes);java.nio.file.Files.move(pending,copy.toPath(),java.nio.file.StandardCopyOption.ATOMIC_MOVE)}
+                        finally {java.nio.file.Files.deleteIfExists(pending)}
+                    }
+                    if(ConventionProofFiles.hash(copy)!=snapshotSha)throw new IllegalStateException('snapshot-copy-mismatch')
+                }
+            }
+            [id:a.id,expectedRecordIds:a.expectedRecordIds,pluginId:a.pluginId,implementationClass:klass?.name,instanceMatches:actual!=null && (a.instance==null || actual.is(a.instance)),
+             registrationUnique:a.registrationUnique,loadObservationPhase:'verification-task',snapshotCapturePhase:snapshotPath?'verification-task':null,registrationForm:a.registrationForm,beginBeforeApplied:a.beginBeforeApplied,ended:a.ended,endOutcome:a.endOutcome,observerFired:appliedObserved,
+             descriptorImplementation:descriptorClass,descriptorMatches:klass?.name==descriptorClass,
+             loadedOriginKind:location?.isDirectory()?'directory':location?.isFile()?'jar':'unavailable',originApproved:approved,
+             runtimeSnapshotPath:snapshotPath,runtimeSnapshotSha256:snapshotSha,builtJarPath:jarReceipt?.archivePath,builtDirectoryPath:imageReceipt?.imagePath,
+             directoryOriginPath:location?.isDirectory()?location.canonicalPath:null,
+             loadedOrigin:origin,loadedResource:resource,loadedSha256:loadedDigest,loadedArtifactDigestMatches:digestMatches?:false,loadedClassSha256:loadedClassDigest,loadedClassDigestMatches:classMatches?:false,loadedClassOutput:outputPath,artifactMatched:observed?:false,source:a.source,reason:observed?null:'loaded_origin_outside_prepared_outputs']
+        }
+        def resultRecords=records.collect { r -> [id:r.id,origin:r.origin,source:r.source,snapshot:r.snapshot,
+            retained:live.any {it.is(r.dependency) || (it==r.dependency && it.group+':'+it.name+':'+it.version==r.snapshot)}] }
+        def complete=mode=='registered' && apps.every {it.instanceMatches && it.artifactMatched} && resultRecords.every {it.retained}
+        [graph:graph,recordingEnabled:mode=='registered',applicationEvents:applicationEvents,lazyGraph:lazyGraph,producerCalls:producerCalls,providerRecords:providerRecords,trace:trace,records:resultRecords,applications:apps,sourceArtifactVerified:complete,
+         candidateSources:resultRecords.collect {it.source}.unique().sort(),declaredIn:complete?resultRecords.collect {it.source}.unique().sort():[]]
+    }
+}
+def root=new File(System.getProperty('osv.convention.root')).canonicalFile
+// Cross-build state is persisted per build; no shared daemon/static registry is assumed.
+def settingsRoot, events=[], receipts=[]
+def flush={ ->
+    if(settingsRoot!=null) {
+        def id=ConventionProofFiles.relative(root,settingsRoot);if(id=='') id='main'
+        def dest=new File(root,'.proof/build-'+id.replace('/','_')+'.json')
+        dest.text=JsonOutput.toJson([build:id,invocationId:new JsonSlurper().parse(new File(root,'.proof/baseline.json')).invocationId,events:events,receipts:receipts,observedFileBytesRead:ConventionProofFiles.bytesRead])
+    }
+}
+gradle.beforeSettings { settings -> settingsRoot=settings.settingsDir.canonicalFile;events.add('beforeSettings');flush() }
+def kotlinStages=['generateExternalPluginSpecBuilders','extractPrecompiledScriptPluginPlugins','compilePluginsBlocks','generatePrecompiledScriptPluginAccessors','generateScriptPluginAdapters','compileKotlin','pluginDescriptors','processResources']
+gradle.taskGraph.beforeTask { task ->
+    if(task instanceof AbstractCompile || task instanceof Jar || task.name in kotlinStages) {events.add('before:'+task.path);flush()}
+}
+gradle.taskGraph.afterTask { task,state ->
+    if(task instanceof AbstractCompile || task instanceof Jar || task.name in kotlinStages) {
+        def compiled=task instanceof AbstractCompile || task.name=='compileKotlin'
+        def fileEvidence={ f -> [path:f.canonicalPath,size:f.length(),sha256:f.isFile()?ConventionProofFiles.hash(f):null] }
+        def cp=[]
+        if(state.didWork && compiled)cp=(task.name=='compileKotlin'?task.libraries.files:task.classpath.files).collect(fileEvidence)
+        def compiler=[]
+        if(state.didWork && task.name=='compileKotlin')compiler=task.project.configurations.getByName('kotlinCompilerClasspath').files.collect(fileEvidence)
+        // Public Task API only; no imports/casts of Gradle's internal precompiled-task classes.
+        def publicInputs=state.didWork?task.inputs.files.files.toList():[]
+        def localInputs=publicInputs.findAll {it.canonicalFile.toPath().startsWith(root.toPath())}
+        def receipt=[task:task.path,type:compiled?'compile':task instanceof Jar?'jar':'generation',executed:state.executed,didWork:state.didWork,skipped:state.skipped,upToDate:state.upToDate,noSource:state.noSource,failure:state.failure?.class?.name,
+            archivePath:task instanceof Jar?ConventionProofFiles.relative(root,task.archiveFile.get().asFile):null,classpath:cp,dependencyClasspath:compiler,
+            declaredInputs:ConventionProofFiles.files(root,localInputs),externalInputObservations:publicInputs.findAll {!it.canonicalFile.toPath().startsWith(root.toPath())}.collect(fileEvidence),
+            outputs:ConventionProofFiles.files(root,task.outputs.files.files)]
+        receipts.add(receipt);events.add('after:'+task.path);flush()
+    }
+}
+gradle.beforeProject { p ->
+    if(p.rootProject.projectDir.canonicalFile==root && p.parent!=null) {
+        def baseline=new JsonSlurper().parse(new File(root,'.proof/baseline.json'))
+        ['probe','lazy','unused'].each { name -> p.configurations.create(name) {canBeResolved=true;canBeConsumed=false} }
+        p.repositories.maven {url=p.uri(new File(root,'repo'))}
+        def probe=new ConventionProofProbe(project:p,root:root,baseline:baseline,mode:p.name in ['registered','script','late','unfinished','failed','duplicate','duplicateClosed']?'registered':p.name)
+        p.extensions.add('osvConventionProbe',probe);if(p.name!='late')probe.prepare()
+    }
+}
+gradle.projectsEvaluated {
+    if(gradle.rootProject.projectDir.canonicalFile==root) gradle.rootProject.tasks.register('osvProveConventions') { doLast {
+        def builds=new File(root,'.proof').listFiles().findAll {it.name.startsWith('build-') && it.name.endsWith('.json')}.collect {new JsonSlurper().parse(it)}
+        def allReceipts=builds.collectMany {it.receipts}
+        def projects=[:]
+        gradle.rootProject.subprojects.sort {it.name}.each {p -> projects[p.name]=p.extensions.getByName('osvConventionProbe').report(allReceipts)}
+        def baseline=new JsonSlurper().parse(new File(root,'.proof/baseline.json'))
+        def changed=baseline.inputs.findAll {p,h -> !new File(root,p).isFile() || ConventionProofFiles.hash(new File(root,p))!=h}.keySet().sort()
+        def report=[gradleVersion:gradle.gradleVersion,runtime:[javaHome:System.getProperty('java.home'),javaRuntimeVersion:System.getProperty('java.runtime.version'),vmArguments:java.lang.management.ManagementFactory.runtimeMXBean.inputArguments.findAll {it.startsWith('-javaagent:') || it.startsWith('-agentlib:') || it.startsWith('-agentpath:')}],builds:builds,projects:projects,inputs:[baseline:baseline.inputs,changed:changed]]
+        new File(root,'convention-proof.json').text=JsonOutput.prettyPrint(JsonOutput.toJson(report))+'\n'
+    } }
+}

@@ -631,3 +631,8 @@ env OSV_MCP_TEST_GRADLE=/trusted/gradle-8.11.1/bin/gradle \
 toolchain／loader profileの未承認は、入力の鮮度ではなくconsumer側の信頼設定である。catalog信頼・未対応modelと同じく宣言元だけを省略し、検証済みのrelation／introduced_byは保持するよう改めた。理由はplugin_toolchain_not_approved／plugin_loader_not_approved、plugin_trust_statusはdisabled_for_required_policy（trust無効ならdisabled）。profileの構造、receipt、runtime identity、構築入力・出力・snapshotのhashは未承認でも従来どおり検証し、不一致はgraphを不採用にする。applicationとspecのloader profile不一致はplugin_loader_profile_mismatchとして入力不一致に残す。全設定未指定の既定状態でもrelationを保持する回帰を追加した。
 
 同じレビューで、src/test/gradle全体をGradle 8.11.1で実行した際に同一project再exportの回帰が既定30秒のtest timeoutで間欠的に失敗した（単独実行では成功）。再exportとfixtureを伴う個別回帰は完全なGradle buildを実行するため、fixture exportと同じ210秒の上限を明示した。採用判定・期待値は変更していない。
+
+
+## 14. 標準kotlin-dsl／precompiled Kotlinの追加設計・実証
+
+[専用設計書](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md)へ、標準KotlinCompileの公開API、元script→生成adapter→compile→descriptor→load元の対応、toolchainと派生classpath入力の責任分離、本番向けの追加pipeline信頼・完全性条件を整理した。実証はtest-onlyであり、§13の本番schema／対応範囲を拡張しない。既存の明示JavaExec binary Kotlin、precompiled Groovyの結果と区別する。

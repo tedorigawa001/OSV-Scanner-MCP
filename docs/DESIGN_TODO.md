@@ -1769,3 +1769,14 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 4候補×16回の独立OSV再照会64件がHTTP 200・脆弱性0件。MCP中の列挙入力hash不変と通常build launcherの非実行を確認した。scan_project／suggest_fixは独立producerのlock不足をcoverage警告として維持する。
 - [検証記録](GRADLE_LIVE_VALIDATION.md#convention-plugin本番adapterの実接続検証2026-11-01)・validation/gradle-plugin-live-2026-11-01.json・src/test/manual/gradlePluginLive.mjsを追加。本番コードの変更なし。実接続matrix外の組合せ、precompiled Kotlin／標準kotlin-dsl、発行済みplugin、plugin ID alias、producer子project、plugin内部catalog／bundle、configuration cache／並行export等のgateは残る。
 - 7ef3922レビュー修正: 対象revisionをb5edea7へ訂正し、directoryの実接続負例がmanifest破損でありblob内容改変はoffline回帰で確認することを明記。ハーネスの事前条件にGRADLE_USER_HOMEを追加（実接続は再実行せず、JSONのpostReviewRevisionに新hashを記録）。
+
+
+### 2026-11-01: precompiled Kotlin／標準kotlin-dslの設計・公開API実証
+
+- [設計書](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md)を追加。物理source→生成adapter→標準Kotlin compile→descriptor→公開Plugin／CodeSource元のJAR対応、構築pipelineとloader信頼の責任分離、本番schema／完全性・回帰条件を整理。
+- buildSrc／included root project、Groovy／Kotlin consumer、binary Kotlin／precompiled Kotlinの8構成を各Gradle版で実行。8.11.1／9.2.1とも144件成功。元source＋scriptの宣言元候補、未終了／failed／重複登録の省略、Action／Provider評価一致、JAR改変拒否を確認した。
+- 通常回帰はnativeと同時実行時の時間依存3件失敗を記録し、単独再実行で1,784件成功／1,027件skip。stage単体12件、typecheck・build成功。観測16件とhashはvalidation/gradle-kotlin-plugin-2026-11-01.json。
+- 今回はtest-only実証。生成manifestの限定した整合性とloader契約下の候補化であり、派生classpath snapshotの全対応、本番helper／exporter／静的取込、新pipeline信頼設定、3ツール／OSV実接続は未実装・未実施。directory、compiler daemon、cache／並行実行等も別課題。
+
+- Kotlin実証レビュー2件を修正: compile出力全file→package入力→JAR entryとclass集合を照合し、descriptor実装classをロード元hashへ結んだ。cache／JDK／agentのpathをrealpathへ統一。両Gradle版各188件が成功し、正常16＋実class差し替え4の20観測へ更新。8.11.1ではcache・JDK alias指定も確認した。旧144件／版の集計は検証JSONのpreReviewへ保持する。本番未対応と追加pipeline信頼・派生入力の未完了は維持する。
+- 同修正後の通常回帰は1,788件成功／1,071件skip、stage単体16件、build・typecheck成功。設計・実証・2件のレビュー修正を一括して記録する。
