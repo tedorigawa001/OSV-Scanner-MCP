@@ -13,8 +13,11 @@ const keys=(x,allowed,required=allowed)=>{if(!obj(x)||Object.keys(x).some(k=>!al
 const list=(x,p,nonempty=true)=>{if(!Array.isArray(x)||(nonempty&&!x.length)||x.length>4096||!x.every(p))fail();};
 const pathOK=p=>str(p)&&!p.includes(String.fromCharCode(0))&&!p.includes('\\')&&!p.startsWith('/')&&p.split('/').every(x=>x&&x!=='.'&&x!=='..')&&!p.includes(':');
 const files=x=>list(x,f=>{keys(f,['path','size','sha256']);return pathOK(f.path)&&Number.isSafeInteger(f.size)&&f.size>=0&&digest(f.sha256);},false);
-const reasons=['compile_failed','storage_failed','budget_exceeded','extra_evaluation','binding_mismatch','configuration_unregistered','configuration_reused','content_mismatch','stale','path_invalid'];
-const integrity=['binding_mismatch','configuration_unregistered','configuration_reused','content_mismatch','stale','path_invalid'];
+// Producer-recorded failure reasons and the phases where each can legitimately be recorded.
+const reasonPhases={compile_failed:['call'],storage_failed:['generation','seal','postcheck','capture'],budget_exceeded:offerPhases,extra_evaluation:offerPhases,binding_mismatch:['binding','precheck'],configuration_unregistered:['precheck'],configuration_reused:['precheck'],content_mismatch:['precheck','postcheck','capture'],stale:['precheck','postcheck','capture'],path_invalid:['seal','precheck','postcheck','capture']};
+// Content claims the reader re-confirms after the trust gate; identity claims rest on the broker.
+const reverified=['stale','content_mismatch'];
+export const maxPlannedCaptures=8;
 function checkEvidence(phase,v){
  if(phase==='registration'){keys(v,['producerSha256','runtimeSha256','profileSha256']);if(!Object.values(v).every(digest))fail();}
  if(phase==='generation'){
@@ -24,7 +27,7 @@ function checkEvidence(phase,v){
  if(phase==='seal'){
   keys(v,['files']);list(v.files,f=>{keys(f,['id','path','baselinePath','size','sha256']);return str(f.id)&&pathOK(f.path)&&pathOK(f.baselinePath)&&Number.isSafeInteger(f.size)&&f.size>0&&digest(f.sha256);});
  }
- if(phase==='binding'){keys(v,['configurationId','parameterId','serviceId','projectId','snapshotIds','sourceSha256','argumentsSha256','outputPath']);if(![v.configurationId,v.parameterId,v.serviceId,v.projectId].every(str))fail();list(v.snapshotIds,str);if(!digest(v.sourceSha256)||!digest(v.argumentsSha256)||!pathOK(v.outputPath))fail();}
+ if(phase==='binding'){keys(v,['configurationId','parameterId','serviceId','projectId','snapshotIds','sourcePath','sourceSha256','argumentsSha256','outputPath']);if(![v.configurationId,v.parameterId,v.serviceId,v.projectId].every(str))fail();list(v.snapshotIds,str);if(!pathOK(v.sourcePath)||!digest(v.sourceSha256)||!digest(v.argumentsSha256)||!pathOK(v.outputPath))fail();}
  if(['precheck','postcheck','capture'].includes(phase)){keys(v,['matched']);if(v.matched!==true)fail('content_mismatch');}
  if(phase==='call'){
   keys(v,['result','configurationId','parameterId','executionEvidence','compilerWorkStatus','outputs']);
@@ -32,27 +35,29 @@ function checkEvidence(phase,v){
  }
 }
 export function validateOwnedOffer(e){
- const common=['schema','graphId','exportId','project','invocation','stage','slot','profileId','producerState','limitations','naturalContentBinding','phases'];
+ const common=['schema','graphId','exportId','project','invocation','stage','slot','profileId','producerState','plannedCaptures','limitations','naturalContentBinding','phases'];
  const extra=e?.producerState==='failed'?['failureReason','failurePhase']:e?.producerState==='unavailable'?['unavailableReason','blockedBeforePhase','noRead']:[];
  if(JSON.stringify(e)?.length>1024**2)fail('budget_exceeded');keys(e,[...common,...extra]);
- if(e.schema!=='osv-mcp.gradle-owned-offer-v1'||!['completed','failed','unavailable'].includes(e.producerState)||!['graphId','exportId','project','invocation','stage','profileId'].every(k=>str(e[k]))||e.slot!=='snapshot'||e.naturalContentBinding!==false||!eq(e.limitations,offerLimitations))fail();
+ if(e.schema!=='osv-mcp.gradle-owned-offer-v1'||!['completed','failed','unavailable'].includes(e.producerState)||!['graphId','exportId','project','invocation','stage','profileId'].every(k=>str(e[k]))||e.slot!=='snapshot'||!Number.isSafeInteger(e.plannedCaptures)||e.plannedCaptures<0||e.plannedCaptures>maxPlannedCaptures||e.naturalContentBinding!==false||!eq(e.limitations,offerLimitations))fail();
  list(e.phases,x=>obj(x),false);if(e.phases.length>32)fail();
- const successful={};let index=0;
+ const successful={};let index=0,captures=0;
  for(let i=0;i<e.phases.length;i+=2){
   const begin=e.phases[i],end=e.phases[i+1],phase=offerPhases[index];
   keys(begin,['phase','outcome']);if(begin.phase!==phase||begin.outcome!=='begin'||!end)fail();
   keys(end,['phase','outcome','evidence']);if(end.phase!==phase)fail();
   if(end.outcome==='failure'){
-   keys(end.evidence,phase==='call'?['reason','produced','errorKind','detail']:['reason','produced']);if(phase==='call'&&(!['result','exception'].includes(end.evidence.errorKind)||!str(end.evidence.detail)||end.evidence.reason!=='compile_failed'||(end.evidence.errorKind==='result'&&!['COMPILATION_ERROR','COMPILATION_OOM_ERROR','COMPILER_INTERNAL_ERROR'].includes(end.evidence.detail))))fail();if(e.producerState!=='failed'||end.evidence.reason!==e.failureReason||end.evidence.produced!=='not-produced'||e.failurePhase!==phase||!reasons.includes(e.failureReason)||i+2!==e.phases.length)fail();
+   keys(end.evidence,phase==='call'?['reason','produced','errorKind','detail']:['reason','produced']);if(phase==='call'&&(!['result','exception'].includes(end.evidence.errorKind)||!str(end.evidence.detail)||end.evidence.reason!=='compile_failed'||(end.evidence.errorKind==='result'&&!['COMPILATION_ERROR','COMPILATION_OOM_ERROR','COMPILER_INTERNAL_ERROR'].includes(end.evidence.detail))))fail();if(e.producerState!=='failed'||end.evidence.reason!==e.failureReason||end.evidence.produced!=='not-produced'||e.failurePhase!==phase||!Object.hasOwn(reasonPhases,e.failureReason)||i+2!==e.phases.length)fail();
+   if(!reasonPhases[e.failureReason].includes(phase))fail('claim_mismatch');
   }else{
-   if(end.outcome!=='success')fail();checkEvidence(phase,end.evidence);successful[phase]=end.evidence;
+   if(end.outcome!=='success')fail();checkEvidence(phase,end.evidence);successful[phase]=end.evidence;if(phase==='capture')captures++;
   }
   if(phase!=='capture')index++;
  }
- if(e.producerState==='completed'&&(!successful.postcheck||e.phases.at(-1)?.outcome!=='success'))fail('required_evidence_missing');
- if(e.producerState==='failed'&&(e.phases.at(-1)?.outcome!=='failure'||!offerPhases.includes(e.failurePhase)))fail();
+ // completed is terminal: postcheck and every capture fixed at invocation start must have succeeded.
+ if(e.producerState==='completed'&&(!successful.postcheck||e.phases.at(-1)?.outcome!=='success'||captures!==e.plannedCaptures))fail('required_evidence_missing');
+ if(e.producerState==='failed'&&(e.phases.at(-1)?.outcome!=='failure'||!offerPhases.includes(e.failurePhase)||(e.failurePhase==='capture'?captures+1>e.plannedCaptures:captures!==0)))fail();
  if(e.producerState==='unavailable'){
-  if(!['execution_unsupported','evidence_unavailable'].includes(e.unavailableReason)||e.noRead!==true||index>5||e.phases.some(x=>x.outcome==='failure')||e.blockedBeforePhase!==offerPhases[index])fail();
+  if(!['execution_unsupported','evidence_unavailable'].includes(e.unavailableReason)||e.noRead!==true||index>3||captures!==0||e.phases.some(x=>x.outcome==='failure')||e.blockedBeforePhase!==offerPhases[index])fail();
  }
  if(successful.seal){
   const a=successful.generation.snapshots,b=successful.seal.files;
@@ -60,23 +65,26 @@ export function validateOwnedOffer(e){
  }
  if(successful.binding&&!eq(successful.binding.snapshotIds,successful.seal.files.map(x=>x.id)))fail('binding_mismatch');
  if(successful.call&&(successful.call.configurationId!==successful.binding.configurationId||successful.call.parameterId!==successful.binding.parameterId))fail('binding_mismatch');
- if(e.producerState==='failed'&&integrity.includes(e.failureReason))fail(e.failureReason);
  return successful;
 }
 export function readOwnedOffer(e,settings,read){
  const evidence=validateOwnedOffer(e);let fileReads=0;
- const result=(importStatus,reason)=>({producerState:e.producerState,importStatus,reason,fileReads,naturalReady:false,naturalContentBinding:false,consumptionStatus:'offered-inputs-only',executionEvidence:'bta-call-only',compilerWorkStatus:'unknown'});
- if(e.graphId!==settings.graphId||e.exportId!==settings.exportId)fail('binding_mismatch');
+ const result=(importStatus,reason)=>({producerState:e.producerState,importStatus,reason,producerReason:e.failureReason??e.unavailableReason??null,fileReads,naturalReady:false,naturalContentBinding:false,consumptionStatus:'offered-inputs-only',executionEvidence:'bta-call-only',compilerWorkStatus:'unknown'});
+ if(e.graphId!==settings.graphId||e.exportId!==settings.exportId)fail('claim_mismatch');
  if(!settings.trust)return result('unavailable','owned_offer_trust_disabled');
  const profile=settings.profiles[e.profileId];if(!profile)return result('unavailable','owned_offer_profile_unapproved');
  if(evidence.registration&&!eq(evidence.registration,profile.registration))fail('profile_mismatch');
- if(e.producerState==='unavailable')return result('unavailable','owned_offer_'+e.unavailableReason);
- // Failed prefix is schema checked but never accepted as successful content or read back.
- if(e.producerState==='failed')return result('failed','owned_offer_'+e.failureReason);
  if(profile.strategy!=='in-process')return result('unavailable','owned_offer_execution_unsupported');
+ if(e.producerState==='unavailable')return result('producer_unavailable',null);
+ if(e.producerState==='failed'&&!reverified.includes(e.failureReason))return result('producer_failed',null);
  if(evidence.seal.files.some(f=>f.size>32*1024**2)||evidence.seal.files.reduce((n,f)=>n+2*f.size,0)>128*1024**2)fail('budget_exceeded');
+ let matched=true;
  for(const f of evidence.seal.files)for(const p of [f.baselinePath,f.path]){
-  const bytes=read(p);fileReads++;if(bytes.length!==f.size||sha(bytes)!==f.sha256)fail('content_mismatch');
+  const bytes=read(p);fileReads++;if(bytes.length!==f.size||sha(bytes)!==f.sha256)matched=false;
  }
- return result('accepted',null);
+ if(e.producerState==='completed'){if(!matched)fail('content_mismatch');return result('accepted',null);}
+ // A recorded content failure is accepted only when the reader also observes the mismatch.
+ const source=read(evidence.binding.sourcePath);fileReads++;if(sha(source)!==evidence.binding.sourceSha256)matched=false;
+ if(matched)fail('claim_mismatch');
+ return result('producer_failed',null);
 }

@@ -15,7 +15,7 @@ public final class BtaOfferProbe {
   int next=0;boolean used=false,failed=false,active=false;String sourceHash;JvmCompilationConfiguration configuration;
   ClasspathSnapshotBasedIncrementalCompilationApproachParameters parameter;CompilationService service;ProjectId project;
   List<Path> snapshots;List<Map<String,Object>> descriptors;Path source,out,ic;List<String> args;
-  Handle(Broker owner,String name){this.owner=owner;this.name=name;envelope=m("schema","osv-mcp.gradle-owned-offer-v1","graphId","graph","exportId",owner.exportId,"project",":","invocation",name,"stage","consumer","slot","snapshot","profileId",owner.profileId,"producerState","completed","limitations",LIMITS,"naturalContentBinding",false,"phases",phases);}
+  Handle(Broker owner,String name){this.owner=owner;this.name=name;envelope=m("schema","osv-mcp.gradle-owned-offer-v1","graphId","graph","exportId",owner.exportId,"project",":","invocation",name,"stage","consumer","slot","snapshot","profileId",owner.profileId,"producerState","pending","plannedCaptures",name.equals("completed")||name.equals("capture-failed")?1:0,"limitations",LIMITS,"naturalContentBinding",false,"phases",phases);}
  }
  private static final class Broker {
   final Set<String> names=new HashSet<>();final Map<String,Handle> handles=new HashMap<>();final String exportId,profileId;boolean closed=false;int calls=0;final List<Object> audit=new ArrayList<>();
@@ -30,7 +30,7 @@ public final class BtaOfferProbe {
    var incremental=h.configuration.makeClasspathSnapshotBasedIncrementalCompilationConfiguration();incremental.setRootProjectDir(BtaOwnedDriver.root.toFile()).setBuildDir(BtaOwnedDriver.root.resolve("build").toFile()).useOutputDirs(List.of(out.toFile(),ic.toFile()));
    h.parameter=new ClasspathSnapshotBasedIncrementalCompilationApproachParameters(Collections.unmodifiableList(snapshots.stream().map(Path::toFile).toList()),ic.resolve("shrunk-classpath-snapshot.bin").toFile());
    h.configuration.useIncrementalCompilation(ic.toFile(),SourcesChanges.Unknown.INSTANCE,h.parameter,incremental);
-   success(h,"binding",m("configurationId",h.name+"-config","parameterId",h.name+"-parameter","serviceId","service","projectId",h.name+"-project","snapshotIds",h.descriptors.stream().map(x->x.get("id")).toList(),"sourceSha256",h.sourceHash,"argumentsSha256",BtaOwnedDriver.hash(BtaOwnedDriver.json(h.args).getBytes(java.nio.charset.StandardCharsets.UTF_8)),"outputPath",BtaOwnedDriver.root.relativize(h.out).toString()));
+   success(h,"binding",m("configurationId",h.name+"-config","parameterId",h.name+"-parameter","serviceId","service","projectId",h.name+"-project","snapshotIds",h.descriptors.stream().map(x->x.get("id")).toList(),"sourcePath",BtaOwnedDriver.root.relativize(h.source).toString(),"sourceSha256",h.sourceHash,"argumentsSha256",BtaOwnedDriver.hash(BtaOwnedDriver.json(h.args).getBytes(java.nio.charset.StandardCharsets.UTF_8)),"outputPath",BtaOwnedDriver.root.relativize(h.out).toString()));
   }
   void consume(Handle h,CompilationService service,ProjectId project,JvmCompilationConfiguration actual,ClasspathSnapshotBasedIncrementalCompilationApproachParameters parameter)throws Exception{
    if(!closed||h.owner!=this||h.used||h.failed)throw new Rejected("configuration_reused");
@@ -47,6 +47,12 @@ public final class BtaOfferProbe {
    success(h,"call",m("result",result.toString(),"configurationId",h.name+"-config","parameterId",h.name+"-parameter","executionEvidence","bta-call-only","compilerWorkStatus","unknown","outputs",BtaOwnedDriver.tree(h.out)));
    start(h,"postcheck");if(h.name.equals("post-failed"))BtaOwnedDriver.flip(h.snapshots.get(0));
    if(!check(h)){failure(h,"postcheck","stale");return;}success(h,"postcheck",m("matched",true));
+   // postchecked is interim; completed is written only after every planned capture.
+   for(int i=0;i<((Number)h.envelope.get("plannedCaptures")).intValue();i++){
+    start(h,"capture");if(h.name.equals("capture-failed"))BtaOwnedDriver.flip(h.snapshots.get(0));
+    if(!check(h)){failure(h,"capture","stale");return;}success(h,"capture",m("matched",true));
+   }
+   h.envelope.put("producerState","completed");
   }
   @SuppressWarnings("unchecked") void callError(Handle h,String kind,String detail){var event=(Map<String,Object>)h.phases.get(h.phases.size()-1);var data=(Map<String,Object>)event.get("evidence");data.put("errorKind",kind);data.put("detail",detail);}
   boolean check(Handle h)throws Exception{
@@ -64,7 +70,7 @@ public final class BtaOfferProbe {
   Path template=build.resolve("template");Files.createDirectories(template);List<Map<String,Object>> generated=new ArrayList<>();
   for(Path input:List.of(jar,stdlib)){String id=input.equals(jar)?"library.snapshot":"stdlib.snapshot";var snapshot=service.calculateClasspathSnapshot(input.toFile(),ClassSnapshotGranularity.CLASS_MEMBER_LEVEL);Path out=template.resolve(id);snapshot.saveSnapshot(out.toFile());generated.add(m("id",id,"size",Files.size(out),"sha256",BtaOwnedDriver.hashFile(out),"inputSha256",BtaOwnedDriver.hashFile(input)));}
   var broker=new Broker(exportId,profileId);var negative=broker.audit;var envelopes=new ArrayList<Object>();
-  List<String> modes=List.of("completed","storage-failed","call-failed","post-failed","foreign-config","foreign-project","foreign-parameter","stale-precheck","source-changed");
+  List<String> modes=List.of("completed","storage-failed","call-failed","post-failed","capture-failed","foreign-config","foreign-project","foreign-parameter","foreign-paths","stale-precheck","source-changed");
   for(String mode:modes)broker.begin(mode);
   expectReject(negative,"duplicate-begin",()->broker.begin("completed"),"duplicate_begin",broker);broker.closed=true;
   for(String mode:modes){
@@ -83,7 +89,8 @@ public final class BtaOfferProbe {
     if(mode.equals("stale-precheck"))BtaOwnedDriver.flip(snapshots.get(0));
     var supplied=mode.equals("foreign-config")?service.makeJvmCompilationConfiguration():h.configuration;
     var suppliedProject=mode.equals("foreign-project")?new ProjectId.ProjectUUID(UUID.randomUUID()):project;
-    var suppliedParameter=mode.equals("foreign-parameter")?new ClasspathSnapshotBasedIncrementalCompilationApproachParameters(h.parameter.getNewClasspathSnapshotFiles(),ic.resolve("other.bin").toFile()):h.parameter;
+    var reversed=new ArrayList<>(h.parameter.getNewClasspathSnapshotFiles());Collections.reverse(reversed);
+    var suppliedParameter=mode.equals("foreign-parameter")?new ClasspathSnapshotBasedIncrementalCompilationApproachParameters(h.parameter.getNewClasspathSnapshotFiles(),ic.resolve("other.bin").toFile()):mode.equals("foreign-paths")?new ClasspathSnapshotBasedIncrementalCompilationApproachParameters(reversed,h.parameter.getShrunkClasspathSnapshot()):h.parameter;
     broker.consume(h,service,suppliedProject,supplied,suppliedParameter);
     if(mode.equals("completed")){
      expectReject(negative,"reuse",()->{try{broker.consume(h,service,project,h.configuration,h.parameter);}catch(Rejected ex){throw ex;}catch(Exception ex){throw new RuntimeException(ex);}},"configuration_reused",broker);
@@ -93,7 +100,7 @@ public final class BtaOfferProbe {
    }finally{service.finishProjectCompilation(project);}envelopes.add(h.envelope);
   }
   broker.closed=true;expectReject(negative,"late-registration",()->broker.begin("late"),"registration_closed",broker);
-  envelopes.add(m("schema","osv-mcp.gradle-owned-offer-v1","graphId","graph","exportId",exportId,"project",":","invocation","unsupported","stage","consumer","slot","snapshot","profileId",profileId,"producerState","unavailable","limitations",LIMITS,"naturalContentBinding",false,"phases",List.of(),"unavailableReason","execution_unsupported","blockedBeforePhase","registration","noRead",true));
+  envelopes.add(m("schema","osv-mcp.gradle-owned-offer-v1","graphId","graph","exportId",exportId,"project",":","invocation","unsupported","stage","consumer","slot","snapshot","profileId",profileId,"producerState","unavailable","plannedCaptures",0,"limitations",LIMITS,"naturalContentBinding",false,"phases",List.of(),"unavailableReason","execution_unsupported","blockedBeforePhase","registration","noRead",true));
   Files.writeString(root.resolve("offer-report.json"),BtaOwnedDriver.json(m("schema","osv-mcp.bta-offer-probe-v2","envelopes",envelopes,"rejections",negative,"btaConsumerCalls",broker.calls,"libraryCalls",1,"libraryCompilation",m("result",result.toString(),"sourceSha256",BtaOwnedDriver.hashFile(lib),"jarSha256",BtaOwnedDriver.hashFile(jar),"outputs",BtaOwnedDriver.tree(libOut)),"snapshotGeneration",m("generatorSha256",BtaOwnedDriver.hashFile(Path.of(service.getClass().getProtectionDomain().getCodeSource().getLocation().toURI())),"snapshots",generated),"generatedSnapshots",generated.size(),"actualCompilerVersion",service.getCompilerVersion(),"javaSha256",BtaOwnedDriver.hashFile(Path.of(System.getProperty("java.home"),"bin/java")),"driverClasses",BtaOwnedDriver.tree(root.resolve("build/driver-classes")),"naturalContentBinding",false,"productionAdopted",false)));
  }
 }

@@ -2065,3 +2065,10 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - [設計書§9.39](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#939-状態別envelopeのレビュー修正call結果とcase別期待値2026-11-02)へ、成功・未知call failure resultの拒否と、case別期待状態／phase／理由の照合を追加。failed→unavailableへ記録・判定を同時変更する回帰対照を追加。
 - probe-v2のlibrary実行／snapshot生成証拠と、検証済み状態・call event・拒否auditから件数を算出し、報告counterとの不一致を拒否。実証記録をv2へ更新し旧v1は参考要約に限定。
 - 両DSL・両Gradle版を再実行して各版24テスト、静的／公開記録62テスト成功。最終4 build・BTA呼出し16回、snapshot 8個、completed 4／failed 32／unavailable 4。本番採用・自然消費receipt0と既存の未実施範囲を維持。
+
+
+### 2026-11-02: a6d5409レビュー修正（offer readerのproducer記録拒否とcapture計画）
+
+- [設計書§9.40](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#940-a6d5409レビュー修正producer記録拒否とcapture計画2026-11-02)へ、producer記録のfailedを`producer_failed`として受理しgraphを拒否しない判定へ修正。staleはgate後の再読取で不一致を確認した場合だけ受理し、一致すれば`claim_mismatch`。理由のphase固定、`producerReason`とreader理由の分離。
+- `plannedCaptures`と中間状態pendingを追加し、completedを終端化。unavailableはbinding以前に限定。nativeにcapture-failed／foreign-pathsを追加。
+- 両DSL・両版を再実行して各版30テスト。4 build・BTA呼出し20回、completed 4／failed 40／unavailable 4、producer記録拒否32件・reader graph拒否0件。記録v3、静的83テスト。本番採用・自然消費receipt0を維持。

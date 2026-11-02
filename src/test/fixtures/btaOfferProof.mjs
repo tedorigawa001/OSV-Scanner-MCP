@@ -6,20 +6,24 @@ export const offerSources=['src/test/fixtures/BtaOwnedDriver.java','src/test/fix
 export const offerVerificationSources=['src/test/fixtures/btaOfferContract.d.mts','src/test/fixtures/btaOfferProof.mjs','src/test/fixtures/btaOfferProof.d.mts','src/test/gradle/btaOffer.test.ts','src/test/manual/gradleBtaOfferResults.mjs'];
 const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const fail=()=>{throw Error('bta_offer_record_invalid');};
-const modes=['completed','storage-failed','call-failed','post-failed','foreign-config','foreign-project','foreign-parameter','stale-precheck','source-changed','unsupported'];
+const modes=['completed','storage-failed','call-failed','post-failed','capture-failed','foreign-config','foreign-project','foreign-parameter','foreign-paths','stale-precheck','source-changed','unsupported'];
 const expectedCases={
  completed:{state:'completed'},
  'storage-failed':{state:'failed',phase:'seal',reason:'storage_failed'},
  'call-failed':{state:'failed',phase:'call',reason:'compile_failed'},
  'post-failed':{state:'failed',phase:'postcheck',reason:'stale'},
+ 'capture-failed':{state:'failed',phase:'capture',reason:'stale'},
  'foreign-config':{state:'failed',phase:'precheck',reason:'binding_mismatch'},
  'foreign-project':{state:'failed',phase:'precheck',reason:'binding_mismatch'},
  'foreign-parameter':{state:'failed',phase:'precheck',reason:'binding_mismatch'},
+ 'foreign-paths':{state:'failed',phase:'precheck',reason:'binding_mismatch'},
  'stale-precheck':{state:'failed',phase:'precheck',reason:'stale'},
  'source-changed':{state:'failed',phase:'precheck',reason:'stale'},
  unsupported:{state:'unavailable',reason:'execution_unsupported',blockedBeforePhase:'registration'},
 };
-const faults={'post-failed':'stale','stale-precheck':'stale','source-changed':'stale','foreign-config':'binding_mismatch','foreign-project':'binding_mismatch','foreign-parameter':'binding_mismatch'};
+const planned={completed:1,'capture-failed':1};
+// Producer-recorded refusals are accepted as producer_failed; only content claims are re-read (4 snapshot files + source).
+const decision=(e,importStatus,fileReads)=>({producerState:e.producerState,importStatus,reason:null,producerReason:e.failureReason??null,fileReads,naturalReady:false,naturalContentBinding:false,consumptionStatus:'offered-inputs-only',executionEvidence:'bta-call-only',compilerWorkStatus:'unknown'});
 export function verifyOfferCase(c){
  const profile=btaDriverProfiles[c.gradleVersion];if(!profile||!['Groovy','Kotlin'].includes(c.dsl)||!eq(Object.keys(c.sourceHashes),offerSources))fail();
  const registration={producerSha256:hash(c.sourceHashes[offerSources[0]]+c.sourceHashes[offerSources[1]]),runtimeSha256:hash(JSON.stringify(profile.runtime)),profileSha256:hash(JSON.stringify({version:c.gradleVersion,java:offerJdkProfile.java.sha256,strategy:'in-process'}))};
@@ -36,31 +40,32 @@ export function verifyOfferCase(c){
  const impl=profile.runtime.find(x=>x.coordinate.startsWith('org.jetbrains.kotlin:kotlin-build-tools-impl:'));
  const stdlib=profile.runtime.find(x=>x.coordinate.startsWith('org.jetbrains.kotlin:kotlin-stdlib:'));
  if(generation?.generatorSha256!==impl.sha256||!eq(generation.snapshots?.map(x=>[x.id,x.inputSha256]),[['library.snapshot',lib.jarSha256],['stdlib.snapshot',stdlib.sha256]]))fail();
- const scope={gradleBuilds:1,btaCalls:1,successfulBtaCalls:Number(lib.result==='COMPILATION_SUCCESS'),generatedSnapshots:generation.snapshots.length,completedOffers:0,failedOffers:0,unavailableOffers:0,handleRejections:0,integrityRejections:0,naturalReceipts:0,productionAdoptions:0};
+ const scope={gradleBuilds:1,btaCalls:1,successfulBtaCalls:Number(lib.result==='COMPILATION_SUCCESS'),generatedSnapshots:generation.snapshots.length,completedOffers:0,failedOffers:0,unavailableOffers:0,handleRejections:0,producerRecordedRejections:0,reverifiedContentFailures:0,readerIntegrityRejections:0,naturalReceipts:0,productionAdoptions:0};
  let exportId;const cumulativeCalls={};
  for(let i=0;i<modes.length;i++){
   const e=r.envelopes[i],d=c.decisions[i],expectedCase=expectedCases[e.invocation];
-  if(e.producerState!==expectedCase.state)fail();
+  if(e.producerState!==expectedCase.state||e.plannedCaptures!==(planned[e.invocation]??0))fail();
   if(expectedCase.state==='failed'&&(e.failurePhase!==expectedCase.phase||e.failureReason!==expectedCase.reason))fail();
   if(expectedCase.state==='unavailable'&&(e.unavailableReason!==expectedCase.reason||e.blockedBeforePhase!==expectedCase.blockedBeforePhase))fail();
   if(e.invocation==='call-failed'&&(e.phases.at(-1)?.evidence?.errorKind!=='result'||e.phases.at(-1)?.evidence?.detail!=='COMPILATION_ERROR'))fail();
   exportId??=e.exportId;if(e.exportId!==exportId||e.profileId!=='test-owned-'+c.gradleVersion)fail();
   const settings={trust:true,profiles:{[e.profileId]:{registration,strategy:'in-process'}},graphId:'graph',exportId};
-  let evidence;try{evidence=validateOwnedOffer(e);if(faults[e.invocation])fail();}catch(error){if(error.message!=='owned_offer_'+faults[e.invocation])throw error;}
+  const evidence=validateOwnedOffer(e);
   if(evidence?.registration&&!eq(evidence.registration,registration))fail();
   const generated=e.phases.find(x=>x.phase==='generation'&&x.outcome==='success')?.evidence;
   if(generated&&(!eq(generated.snapshots,generation.snapshots)||generated.librarySha256!==lib.jarSha256||generated.generatorSha256!==generation.generatorSha256))fail();
   scope[e.producerState+'Offers']++;
   scope.btaCalls+=e.phases.filter(x=>x.phase==='call'&&x.outcome==='begin').length;
   scope.successfulBtaCalls+=e.phases.filter(x=>x.phase==='call'&&x.outcome==='success').length;
-  if(faults[e.invocation])scope.integrityRejections++;
+  if(expectedCase.state==='failed'&&!['storage_failed','compile_failed'].includes(expectedCase.reason))scope.producerRecordedRejections++;
+  if(expectedCase.reason==='stale')scope.reverifiedContentFailures++;
+  if(d.trusted?.rejected)scope.readerIntegrityRejections++;
   cumulativeCalls[e.invocation]=scope.btaCalls-1;
   const gates=[{...settings,trust:false},{...settings,profiles:{}}].map(s=>{try{return readOwnedOffer(e,s,()=>{throw Error('unexpected-read');});}catch(error){return {rejected:error.message};}});
   if(!eq(gates,d.gates))fail();
-  if(e.invocation==='completed'){
-   const expected={producerState:'completed',importStatus:'accepted',reason:null,fileReads:4,naturalReady:false,naturalContentBinding:false,consumptionStatus:'offered-inputs-only',executionEvidence:'bta-call-only',compilerWorkStatus:'unknown'};if(!eq(d.trusted,expected))fail();
-  }else if(faults[e.invocation]){if(!eq(d.trusted,{rejected:'owned_offer_'+faults[e.invocation]}))fail();}
-  else {if(!eq(d.trusted,readOwnedOffer(e,settings,()=>{throw Error('unexpected-read');})))fail();}
+  if(e.invocation==='completed'){if(!eq(d.trusted,decision(e,'accepted',4)))fail();}
+  else if(expectedCase.reason==='stale'){if(!eq(d.trusted,decision(e,'producer_failed',5)))fail();}
+  else {const replayed=readOwnedOffer(e,settings,()=>{throw Error('unexpected-read');});if(!eq(d.trusted,replayed)||replayed.importStatus!==(expectedCase.state==='failed'?'producer_failed':'producer_unavailable'))fail();}
  }
  const rejectionReasons=['duplicate_begin','configuration_reused','configuration_reused','phase_invalid','configuration_reused','registration_closed'];
  const rejectionCounts=[0,0,cumulativeCalls.completed,cumulativeCalls.completed,cumulativeCalls['call-failed'],scope.btaCalls-1];

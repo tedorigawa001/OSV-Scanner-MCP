@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {offerSources,offerVerificationSources,verifyOfferCase} from '../fixtures/btaOfferProof.mjs';
 import {assertNoAbsolutePaths} from '../manual/kgpRecordPaths.mjs';
 import {readOwnedOffer,offerLimitations} from '../fixtures/btaOfferContract.mjs';
-const unavailable=()=>({schema:'osv-mcp.gradle-owned-offer-v1',graphId:'graph',exportId:'export',project:':',invocation:'one',stage:'consumer',slot:'snapshot',profileId:'test',producerState:'unavailable',limitations:[...offerLimitations],naturalContentBinding:false,phases:[],unavailableReason:'execution_unsupported',blockedBeforePhase:'registration',noRead:true});
+const unavailable=()=>({schema:'osv-mcp.gradle-owned-offer-v1',graphId:'graph',exportId:'export',project:':',invocation:'one',stage:'consumer',slot:'snapshot',profileId:'test',producerState:'unavailable',plannedCaptures:0,limitations:[...offerLimitations],naturalContentBinding:false,phases:[],unavailableReason:'execution_unsupported',blockedBeforePhase:'registration',noRead:true});
 it('accepts a legal unavailable envelope with no source or file reads',()=>{
  const result=readOwnedOffer(unavailable(),{trust:false,profiles:{},graphId:'graph',exportId:'export'},()=>{throw Error('unexpected file read');});
  expect(result).toMatchObject({producerState:'unavailable',importStatus:'unavailable',reason:'owned_offer_trust_disabled',fileReads:0,naturalReady:false});
@@ -18,11 +18,12 @@ it('rejects unavailable with an invented successful call even when trust is disa
 // Synthetic schema fixtures exercise the static reader; they are not native compilation evidence.
 const bytes=Buffer.from('snapshot');
 const sha=createHash('sha256').update(bytes).digest('hex');
+const source=Buffer.from('fun main() {}\n'),sourceSha=createHash('sha256').update(source).digest('hex');
 const registration={producerSha256:'a'.repeat(64),runtimeSha256:'b'.repeat(64),profileSha256:'c'.repeat(64)};
 const settings=()=>({trust:true,profiles:{test:{registration,strategy:'in-process'}},graphId:'graph',exportId:'export'});
 function complete():any{
  const e:any=unavailable();delete e.unavailableReason;delete e.blockedBeforePhase;delete e.noRead;e.producerState='completed';
- const evidence:any={registration,generation:{librarySha256:'d'.repeat(64),generatorSha256:'e'.repeat(64),snapshots:[{id:'lib',size:bytes.length,sha256:sha,inputSha256:'d'.repeat(64)}]},seal:{files:[{id:'lib',path:'staging/lib',baselinePath:'evidence/lib',size:bytes.length,sha256:sha}]},binding:{configurationId:'c',parameterId:'p',serviceId:'s',projectId:'project',snapshotIds:['lib'],sourceSha256:'f'.repeat(64),argumentsSha256:'1'.repeat(64),outputPath:'classes'},precheck:{matched:true},call:{result:'COMPILATION_SUCCESS',configurationId:'c',parameterId:'p',executionEvidence:'bta-call-only',compilerWorkStatus:'unknown',outputs:[]},postcheck:{matched:true}};
+ const evidence:any={registration,generation:{librarySha256:'d'.repeat(64),generatorSha256:'e'.repeat(64),snapshots:[{id:'lib',size:bytes.length,sha256:sha,inputSha256:'d'.repeat(64)}]},seal:{files:[{id:'lib',path:'staging/lib',baselinePath:'evidence/lib',size:bytes.length,sha256:sha}]},binding:{configurationId:'c',parameterId:'p',serviceId:'s',projectId:'project',snapshotIds:['lib'],sourcePath:'src/Consumer.kt',sourceSha256:sourceSha,argumentsSha256:'1'.repeat(64),outputPath:'classes'},precheck:{matched:true},call:{result:'COMPILATION_SUCCESS',configurationId:'c',parameterId:'p',executionEvidence:'bta-call-only',compilerWorkStatus:'unknown',outputs:[]},postcheck:{matched:true}};
  e.phases=Object.entries(evidence).flatMap(([phase,evidence])=>[{phase,outcome:'begin'},{phase,outcome:'success',evidence}]);return e;
 }
 it('checks original bytes on every import without upgrading empty outputs to compiler work',()=>{
@@ -40,11 +41,11 @@ for(const phase of ['registration','generation','seal','binding','precheck','cal
  expect(()=>readOwnedOffer(e,{...settings(),trust:false},()=>{throw Error('read');})).toThrow(/^owned_offer_/);
 });
 for(const reason of ['storage_failed','budget_exceeded','extra_evaluation'])it('accepts a failed seal prefix without later compile evidence: '+reason,()=>{
- const e=failed('seal',reason);expect(readOwnedOffer(e,settings(),()=>{throw Error('read');})).toMatchObject({producerState:'failed',importStatus:'failed',fileReads:0});
+ const e=failed('seal',reason);expect(readOwnedOffer(e,settings(),()=>{throw Error('read');})).toMatchObject({producerState:'failed',importStatus:'producer_failed',reason:null,producerReason:reason,fileReads:0});
 });
 it('accepts a call result failure with its real error kind and result',()=>{
  const e=failed('call','compile_failed');Object.assign(e.phases.at(-1).evidence,{errorKind:'result',detail:'COMPILATION_ERROR'});
- expect(readOwnedOffer(e,settings(),()=>{throw Error('read');})).toMatchObject({importStatus:'failed',fileReads:0});
+ expect(readOwnedOffer(e,settings(),()=>{throw Error('read');})).toMatchObject({importStatus:'producer_failed',fileReads:0});
 });
 for(const state of ['completed','failed','unavailable'])it('does not confuse reader trust status with producer state: '+state,()=>{
  const e=state==='completed'?complete():state==='failed'?failed('seal','storage_failed'):unavailable();
@@ -76,17 +77,50 @@ it('rejects an existing approved profile with a different producer digest withou
  const e=complete();e.phases[1].evidence={...registration,producerSha256:'0'.repeat(64)};
  expect(()=>readOwnedOffer(e,settings(),()=>{throw Error('read');})).toThrow('owned_offer_profile_mismatch');
 });
-it('rejects a different export instead of importing past evidence',()=>expect(()=>readOwnedOffer(complete(),{...settings(),exportId:'other'},()=>bytes)).toThrow('owned_offer_binding_mismatch'));
+it('rejects a different export as a reader claim mismatch instead of importing past evidence',()=>expect(()=>readOwnedOffer(complete(),{...settings(),exportId:'other'},()=>bytes)).toThrow('owned_offer_claim_mismatch'));
 it('rejects changed saved bytes and the first capture after modification against the original digest',()=>{
  const e=complete();expect(()=>readOwnedOffer(e,settings(),()=>Buffer.from('changed!'))).toThrow('owned_offer_content_mismatch');
  expect(readOwnedOffer(e,settings(),()=>bytes).importStatus).toBe('accepted');
  expect(()=>readOwnedOffer(e,settings(),()=>Buffer.from('changed!'))).toThrow('owned_offer_content_mismatch');
 });
-it('rejects a known integrity failure even when the producer honestly marks it failed',()=>expect(()=>readOwnedOffer(failed('precheck','binding_mismatch'),{...settings(),trust:false},()=>bytes)).toThrow('owned_offer_binding_mismatch'));
+for(const reason of ['binding_mismatch','configuration_unregistered','configuration_reused'])it('accepts a producer-recorded identity refusal as producer_failed without a graph rejection: '+reason,()=>{
+ const e=failed('precheck',reason);
+ expect(readOwnedOffer(e,settings(),()=>{throw Error('read');})).toMatchObject({producerState:'failed',importStatus:'producer_failed',reason:null,producerReason:reason,fileReads:0});
+ expect(readOwnedOffer(e,{...settings(),trust:false},()=>{throw Error('read');})).toMatchObject({importStatus:'unavailable',reason:'owned_offer_trust_disabled',fileReads:0});
+});
+const stale=(phase:string)=>{const e=failed(phase,'stale');if(phase==='capture'){const f=complete();f.plannedCaptures=1;f.phases.push({phase:'capture',outcome:'begin'},{phase:'capture',outcome:'failure',evidence:{reason:'stale',produced:'not-produced'}});Object.assign(f,{producerState:'failed',failurePhase:'capture',failureReason:'stale'});return f;}return e;};
+const reader=(staging:Buffer,src=source)=>(p:string)=>p==='src/Consumer.kt'?src:p.startsWith('staging/')?staging:bytes;
+for(const phase of ['precheck','postcheck','capture'])it('accepts a recorded stale refusal only after the reader re-reads a mismatch: '+phase,()=>{
+ expect(readOwnedOffer(stale(phase),settings(),reader(Buffer.from('changed!')))).toMatchObject({importStatus:'producer_failed',producerReason:'stale',fileReads:3});
+ expect(readOwnedOffer(stale(phase),settings(),reader(bytes,Buffer.from('changed source')))).toMatchObject({importStatus:'producer_failed',fileReads:3});
+ expect(()=>readOwnedOffer(stale(phase),settings(),reader(bytes))).toThrow('owned_offer_claim_mismatch');
+});
+it('rejects an identity refusal relabelled as stale when the reader sees unchanged content',()=>{
+ const e=failed('precheck','binding_mismatch');e.failureReason='stale';e.phases.at(-1).evidence.reason='stale';
+ expect(()=>readOwnedOffer(e,settings(),reader(bytes))).toThrow('owned_offer_claim_mismatch');
+});
+for(const [phase,reason] of [['seal','stale'],['precheck','compile_failed'],['postcheck','binding_mismatch'],['generation','configuration_reused']])it('rejects a producer reason moved to an impossible phase: '+reason+'@'+phase,()=>{
+ expect(()=>readOwnedOffer(failed(phase!,reason!),{...settings(),trust:false},()=>{throw Error('read');})).toThrow('owned_offer_claim_mismatch');
+});
+const captureFaults:Record<string,(e:any)=>void>={
+ 'planned capture missing':e=>{e.plannedCaptures=1;},
+ 'capture beyond plan':e=>{e.phases.push({phase:'capture',outcome:'begin'},{phase:'capture',outcome:'success',evidence:{matched:true}});},
+ 'interim pending state':e=>{e.producerState='pending';},
+ 'plan over budget':e=>{e.plannedCaptures=99;},
+ 'plan missing':e=>{delete e.plannedCaptures;},
+};
+for(const [name,fault]of Object.entries(captureFaults))it('rejects a non-terminal or inconsistent completed capture plan: '+name,()=>{
+ const e=complete();fault(e);expect(()=>readOwnedOffer(e,{...settings(),trust:false},()=>{throw Error('read');})).toThrow(/^owned_offer_(schema_invalid|required_evidence_missing)$/);
+});
+it('rejects a capture failure without a planned capture',()=>{const e=stale('capture');e.plannedCaptures=0;expect(()=>readOwnedOffer(e,{...settings(),trust:false},()=>{throw Error('read');})).toThrow('owned_offer_schema_invalid');});
+it('rejects unavailable after binding because the reader-no-read claim no longer holds',()=>{
+ const e=complete();e.producerState='unavailable';e.phases=e.phases.slice(0,10);Object.assign(e,{unavailableReason:'evidence_unavailable',blockedBeforePhase:'call',noRead:true});
+ expect(()=>readOwnedOffer(e,{...settings(),trust:false},()=>{throw Error('read');})).toThrow('owned_offer_schema_invalid');
+});
 
 it('accepts an unavailable prefix stopped before binding, with no reader file accesses',()=>{
  const e=complete();e.producerState='unavailable';e.phases=e.phases.slice(0,6);Object.assign(e,{unavailableReason:'evidence_unavailable',blockedBeforePhase:'binding',noRead:true});
- expect(readOwnedOffer(e,settings(),()=>{throw Error('read');})).toMatchObject({importStatus:'unavailable',reason:'owned_offer_evidence_unavailable',fileReads:0});
+ expect(readOwnedOffer(e,settings(),()=>{throw Error('read');})).toMatchObject({importStatus:'producer_unavailable',reason:null,producerReason:'evidence_unavailable',fileReads:0});
 });
 it('rejects a claimed snapshot size over the per-file budget before calling a reader',()=>{
  const e=complete();e.phases[3].evidence.snapshots[0].size=40*1024**2;e.phases[5].evidence.files[0].size=40*1024**2;
@@ -95,7 +129,7 @@ it('rejects a claimed snapshot size over the per-file budget before calling a re
 
 const published=()=>JSON.parse(readFileSync(new URL('../../../docs/validation/gradle-bta-offer-contract-2026-11-02.json',import.meta.url),'utf8'));
 it('replays the native envelopes and gates with their original implementation fingerprints',()=>{
- const d=published();expect(d.schema).toBe('osv-mcp.bta-offer-contract-experiment-v2');assertNoAbsolutePaths(d);
+ const d=published();expect(d.schema).toBe('osv-mcp.bta-offer-contract-experiment-v3');expect(d.preReviews.map((p:any)=>p.schema)).toEqual(['osv-mcp.bta-offer-contract-experiment-v1','osv-mcp.bta-offer-contract-experiment-v2']);expect(d.scope.readerIntegrityRejections).toBe(0);assertNoAbsolutePaths(d);
  expect(Object.keys(d.sourcesSha256)).toEqual(offerSources);expect(Object.keys(d.verificationSourcesSha256)).toEqual(offerVerificationSources);
  for(const group of ['sourcesSha256','verificationSourcesSha256'])for(const [p,h]of Object.entries(d[group]))expect(createHash('sha256').update(readFileSync(new URL('../../../'+p,import.meta.url))).digest('hex'),p).toBe(h);
  const scope:Record<string,number>={};for(const c of d.cases){expect(c.sourceHashes).toEqual(d.sourcesSha256);for(const [k,v]of Object.entries(verifyOfferCase(c)))scope[k]=(scope[k]??0)+v;}
@@ -112,6 +146,10 @@ const recordFaults:Record<string,(c:any)=>void>={
  'forged compiler work':c=>c.decisions[0].trusted.compilerWorkStatus='performed',
  'different actual JVM':c=>c.report.javaSha256='0'.repeat(64),
  'missing executed class':c=>c.report.driverClasses.pop(),
+ 'producer refusal forged as graph rejection':c=>{c.decisions.find((d:any)=>d.invocation==='post-failed').trusted={rejected:'owned_offer_stale'};},
+ 'stale refusal without re-read':c=>{c.decisions.find((d:any)=>d.invocation==='stale-precheck').trusted.fileReads=0;},
+ 'binding refusal reported as accepted':c=>{c.decisions.find((d:any)=>d.invocation==='foreign-paths').trusted.importStatus='accepted';},
+ 'capture plan removed':c=>{c.report.envelopes.find((e:any)=>e.invocation==='capture-failed').plannedCaptures=0;},
 };
 for(const [name,fault]of Object.entries(recordFaults))it('rejects published native evidence mutation: '+name,()=>{
  const c=published().cases[0];fault(c);expect(()=>verifyOfferCase(c)).toThrow();
@@ -131,7 +169,7 @@ for(const name of ['storage-failed','call-failed'])it('rejects failed reclassifi
 
 for(const detail of ['COMPILATION_ERROR','COMPILATION_OOM_ERROR','COMPILER_INTERNAL_ERROR'])it('retains a known non-success BTA result: '+detail,()=>{
  const e=failed('call','compile_failed');Object.assign(e.phases.at(-1).evidence,{errorKind:'result',detail});
- expect(readOwnedOffer(e,settings(),()=>{throw Error('read');}).importStatus).toBe('failed');
+ expect(readOwnedOffer(e,settings(),()=>{throw Error('read');}).importStatus).toBe('producer_failed');
 });
 for(const field of ['failurePhase','failureReason'])it('rejects a different expected failure '+field,()=>{
  const c=published().cases[0],e=c.report.envelopes.find((e:any)=>e.invocation==='call-failed');e[field]=field==='failurePhase'?'seal':'storage_failed';expect(()=>verifyOfferCase(c)).toThrow();

@@ -43,12 +43,14 @@ for(const dsl of ['Groovy','Kotlin'])describe.skipIf(!binary)(`BTA owner envelop
    decisions.push({invocation:e.invocation,trusted,gates});
   }
   record={gradleVersion:version,dsl,sourceHashes,registration,report,gradle,decisions};verifyOfferCase(record);cases.push(record);
-  if(process.env.OSV_MCP_BTA_OFFER_OUTPUT)await writeFile(process.env.OSV_MCP_BTA_OFFER_OUTPUT,JSON.stringify({schema:'osv-mcp.bta-offer-matrix-v1',cases},null,2)+'\n');
+  if(process.env.OSV_MCP_BTA_OFFER_OUTPUT)await writeFile(process.env.OSV_MCP_BTA_OFFER_OUTPUT,JSON.stringify({schema:'osv-mcp.bta-offer-matrix-v2',cases},null,2)+'\n');
  },300000);
  it('completes a real bound BTA call as offered-only, not compiler-work or natural receipt',()=>expect(decisions.find(d=>d.invocation==='completed').trusted).toMatchObject({importStatus:'accepted',fileReads:4,compilerWorkStatus:'unknown',naturalReady:false}));
- for(const name of ['storage-failed','call-failed'])it('keeps a legitimate failed prefix without requiring later evidence: '+name,()=>expect(decisions.find(d=>d.invocation===name).trusted.importStatus).toBe('failed'));
- for(const name of ['post-failed','stale-precheck','foreign-config','foreign-project','foreign-parameter','source-changed'])it('rejects real integrity failure: '+name,()=>expect(decisions.find(d=>d.invocation===name).trusted.rejected).toMatch(/^owned_offer_(stale|binding_mismatch)$/));
+ for(const name of ['storage-failed','call-failed'])it('keeps a legitimate failed prefix without requiring later evidence: '+name,()=>expect(decisions.find(d=>d.invocation===name).trusted).toMatchObject({importStatus:'producer_failed',fileReads:0}));
+ for(const name of ['post-failed','capture-failed','stale-precheck','source-changed'])it('accepts a producer-recorded stale refusal only after the reader re-reads the mismatch: '+name,()=>expect(decisions.find(d=>d.invocation===name).trusted).toMatchObject({producerState:'failed',importStatus:'producer_failed',producerReason:'stale',fileReads:5}));
+ for(const name of ['foreign-config','foreign-project','foreign-parameter','foreign-paths'])it('accepts a producer-recorded binding refusal without a graph rejection: '+name,()=>{const e=record.report.envelopes.find((e:any)=>e.invocation===name);expect(e.failurePhase).toBe('precheck');expect(e.phases.some((x:any)=>x.phase==='call')).toBe(false);expect(decisions.find(d=>d.invocation===name).trusted).toMatchObject({importStatus:'producer_failed',producerReason:'binding_mismatch',fileReads:0});});
+ it('writes completed only after the planned capture',()=>{const e=record.report.envelopes.find((e:any)=>e.invocation==='completed');expect(e.plannedCaptures).toBe(1);expect(e.phases.at(-1)).toMatchObject({phase:'capture',outcome:'success'});});
  it('does no file reads with trust disabled or profile unapproved',()=>{for(const d of decisions)for(const g of d.gates)if(!g.rejected)expect(g).toMatchObject({importStatus:'unavailable',fileReads:0});});
  it('rejects duplicate, late, reused and failed handles before any extra BTA call',()=>{expect(record.report.rejections.map((x:any)=>x.mode)).toEqual(['duplicate-begin','reentry','reuse','phase-after-completion','failed-reuse','late-registration']);for(const r of record.report.rejections)expect(r.callsAfter).toBe(r.callsBefore);});
- it('reports only its bounded native scope',()=>expect(record.report).toMatchObject({btaConsumerCalls:3,libraryCalls:1,generatedSnapshots:2,naturalContentBinding:false,productionAdopted:false}));
+ it('reports only its bounded native scope',()=>expect(record.report).toMatchObject({btaConsumerCalls:4,libraryCalls:1,generatedSnapshots:2,naturalContentBinding:false,productionAdopted:false}));
 });

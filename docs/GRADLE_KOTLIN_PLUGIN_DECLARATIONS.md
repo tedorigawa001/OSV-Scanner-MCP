@@ -2002,14 +2002,14 @@ run-local IDやrecordの自己hashは真正性を保証しない。静的取込�
 
 brokerの非公開Handleはowner、実service／project／configuration／IC parameterを保持する。configurationとparameterはbroker内で作成・設定し、具体snapshot列は変更不能なcopyにする。source hash、引数copy、出力先、snapshot descriptorを対応付け、public useIncrementalCompilationが返ってからbinding成功を記録する。registrationを閉じた後だけconsumerを許可し、precheck成功時に使用済みへ遷移する。call中の再入・完了後再使用・失敗後再使用は追加BTA呼出し前に拒否する。
 
-状態eventはphaseごとのbeginとsuccess／failureを持つ。未到達の証拠を埋めず、実callの失敗にはBTAのerror resultまたは例外種別を保存する。静的readerは状態union・成功prefix・最初のfailure・phase順・必須／禁止項目・固定limitationsを、信頼gateより前に検証する。failedだからといってintegrity違反を省略へ格下げしない。
+状態eventはphaseごとのbeginとsuccess／failureを持つ。未到達の証拠を埋めず、実callの失敗にはBTAのerror resultまたは例外種別を保存する。静的readerは状態union・成功prefix・最初のfailure・phase順・必須／禁止項目・固定limitationsを、信頼gateより前に検証する。failedだからといってintegrity違反を省略へ格下げしない。ただしこの初期readerは、producerが自ら記録したstale／binding拒否もgraph拒否として扱っており、§9.37.5（b48427a）の分類と食い違っていた。現行の判定は§9.40による。
 
 | native case | 実処理・検証 |
 | --- | --- |
 | completed | 正規非空snapshot 2個をpublic IC parameterへ渡し、実BTAでconsumerを呼び、pre／post検査成功。completedはbta-call-only／compilerWorkStatus=unknown |
 | storage-failed | 保存済みbaselineへCREATE_NEWで再書込し、実FileAlreadyExistsExceptionを捕捉。sealでfailedとし、未到達のbinding／call／postを要求しない |
 | call-failed | 不正Kotlin sourceを実BTAへ渡す。error resultとcall failureを記録し、出力／post成功を補わない |
-| post-failed | BTA正常終了後にstagingのsnapshotを変更。postcheckのstaleをgraph拒否として再生 |
+| post-failed | BTA正常終了後にstagingのsnapshotを変更。postcheckのstaleをfailedとして記録（初期readerはgraph拒否。§9.40でproducer_failedへ修正） |
 | foreign-config／foreign-project／foreign-parameter | 実public configuration、別ProjectId、同じsnapshot値を持つ別parameterを渡し、実参照不一致をprecheckで拒否 |
 | stale-precheck／source-changed | snapshotまたはsourceをbinding後に実変更し、call前に拒否 |
 | unsupported | registration前に止まる合法なunavailable。実consumerの成功へ数えない |
@@ -2022,7 +2022,7 @@ readerはgraph／export identityを照合し、信頼無効・profile未承認�
 
 承認されたcompletedだけ、元sealのbaselineとstagingをsize／digestへ再照合する。nativeで実bytesを読み、改変対照では最初の読取から元digestへ照合する。readerのテスト用上限はenvelope 1 MiB、1 snapshot 32 MiB、baselineとstaging合計128 MiB。配列・文字列・phase数にも上限を設け、pathは相対pathとして検証する。symlink／path置換への完全なnative検証、全inventory、競合writer・消費中変更の保証は次工程に残す。
 
-profileは既存の固定BTA runtime manifestとJDK profileを使う独立したtest用値であり、本番承認ではない。nativeハーネスは実runtime全JAR、Gradle親java／javacとchild java、実JavaCompileのclass inventory、fixture sourceを照合する。registrationにはproducer source／runtime manifest／profileのdigestを結ぶ。本番で必要な完全なproducer構築・入力manifestのschema／静的再照合をすべて実装したものではなく、今回のreaderは状態・gate・参照証拠の限定prototypeである。§9.37のenvelope名も仮称のままで、本番取込用の完成schemaとは扱わない。
+profileは既存の固定BTA runtime manifestとJDK profileを使う独立したtest用値であり、本番承認ではない。nativeハーネスは実runtime全JAR、Gradle親java／javacとchild java、実JavaCompileのclass inventory、fixture sourceを照合する。registrationにはproducer source／runtime manifest／profileのdigestを結ぶ。producerSha256は`BtaOwnedDriver.java`と`BtaOfferProbe.java`の2 sourceのhashだけから作り、Gradle wrapper・runtime-profile・readerの実装を含まない。本番で必要な完全なproducer構築・入力manifestのschema／静的再照合をすべて実装したものではなく、今回のreaderは状態・gate・参照証拠の限定prototypeである。§9.37のenvelope名も仮称のままで、本番取込用の完成schemaとは扱わない。
 
 #### 結果・再現・残る範囲
 
@@ -2060,3 +2060,20 @@ OO01〜OO05・OO08・OO10〜OO14のうち状態／gate／handle／metadataに関
 本番取込・承認profile・自然消費receipt・内部no-op判別の実証は追加していない。bta-call-only／compilerWorkStatus=unknownと、§9.38の未実施範囲を維持する。
 
 最終確認（§9.39）: 通常全体2,478テスト成功・native opt-in等1,209件skip。typecheck・build・差分検査も成功。公開文書の再現例から個人用proxy接頭辞を除去し、文書検査も通過した。
+
+
+### 9.40 a6d5409レビュー修正・producer記録拒否とcapture計画（2026-11-02）
+
+§9.38〜9.39のreaderは、producerが自ら記録したstale／binding_mismatch等をgraph拒否としていた。§9.37.5（b48427a）の分類と食い違うため、readerを契約どおりに直し、両DSL・両Gradle版のnativeを再実行した。
+
+- producerが記録したfailedは、構造が正しければ`importStatus=producer_failed`として受理し、graphを拒否しない。producerの理由は`producerReason`に分け、readerの理由（`reason`）と混ぜない。unavailableは`producer_unavailable`とし、信頼無効・profile未承認・非対応strategyだけをreader側の`unavailable`とする。
+- stale／content_mismatchは信頼gate通過後にreaderが再読取し、snapshotのbaseline／stagingまたはsourceの不一致を自ら観測した場合だけ受理する。内容が一致すれば`owned_offer_claim_mismatch`でgraphを拒否する。identityの拒否（binding_mismatch等）はbroker内の実参照比較の表明であり、静的readerは再証明しない。この理由同士の付替え（staleからbinding_mismatchへ）は検出できない。
+- 理由ごとに記録可能なphaseを固定し、不可能なphaseへの付替えは`claim_mismatch`とする。graph／exportの不一致もproducer用のbinding_mismatchではなく`claim_mismatch`とする。
+- envelopeに`plannedCaptures`（invocation開始時に固定、上限8）を追加した。brokerは初期状態をpendingとし、postcheckと予定capture全件の成功後にだけcompletedを書く。completedのcapture数不一致、予定なしのcapture失敗、pendingの出力を拒否する。unavailableはbinding以前に限る。
+- nativeに`capture-failed`（予定1回のcapture前にsnapshotを変更）と`foreign-paths`（path列を逆順にした別parameter）を追加した。後者は例外終了ではなくprecheckのbinding拒否としてfailedに記録され、BTA呼出しは0回である。同じparameterのままpath列だけを変える経路は、不変Listのため到達できない。
+
+Gradle 8.11.1／9.2.1で各版30テスト成功。最終matrixは4 build、BTA呼出し20回（library 4、consumer 16）・正常終了16回、snapshot 8個、completed 4／failed 40／unavailable 4、handle拒否24件。producer記録拒否32件はすべて`producer_failed`で、うちstale 16件はreaderの再読取（各5 file）で不一致を確認した。readerによるgraph拒否は0件である。前回の件数との累積ではない。
+
+検証記録はexperiment-v3とし、v2はa6d5409のcommit済み原本としてhash付き要約を`preReviews`へ残した。静的／公開記録再生は83テスト成功。修正前のreaderとv2記録では、83件中32件が失敗することを先に確認した。公開記録ではstale再読取の結果を記録値として照合するだけで、snapshot bytesを持たないため再読取そのものは再実行できない。
+
+本番取込・承認profile・自然消費receipt・内部no-op判別の実証は追加していない。bta-call-only／compilerWorkStatus=unknownと、§9.38の未実施範囲を維持する。
