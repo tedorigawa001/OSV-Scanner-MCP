@@ -3397,3 +3397,11 @@ FileJournalCheckpoint.readは、まずgenesisからheadまでの全chainを認�
 実ファイルの故障はfsync直前の例外注入であり、実媒体のfsyncエラーや電源断を発生させた実証ではない。実SIGKILLの3地点と、macOS arm64限定・A1 transaction未接続・隔離未実証・本番採用無効の範囲は変更しない。
 
 A2レビュー修正後の検証結果: A2は42件から45件へ増加（memory 28／実ファイル17）、全件成功。型検査・build成功。全体98 files／3,608 tests成功、21 files／1,415 tests skipped。diff整形検査成功、distにA1／A2 fixtureが含まれないことを再確認。実SIGKILL 3ケースも再実行した。新規Gradle／BTA native・OSV実接続・本番backend採用は0。
+
+#### 102c7a0レビュー修正: 書込み前の拒否でjournalを止めない（2026-11-02）
+
+従来の`AuthorityJournal`は、処理中のどの例外でもinstanceを停止していた。そのため、古い`expectedHead`による`revision_conflict`、同じoperationIdの別payloadによる`operation_conflict`、書込み前の容量判定による`budget_exceeded`のように、何も書き込んでいない正常な拒否でも、以後の全操作が`recovery_required`となり再openが必要になっていた。1 clientのCAS競合でauthority全体が止まるため、書込みを始める前の論理的な拒否ではinstanceを止めず、理由だけを返すように直した。
+
+書込みを始めた後の失敗と、復旧処理（再syncやcheckpoint前進を伴う）の失敗では、従来どおりinstanceを停止し、明示的な再openを要求する。回帰を2件加えた。書込み前の競合2件の後もfile数が変わらず次のcommitが成功すること、after-recordsで失敗した後は`recovery_required`で止まることを確認する。修正前の実装では前者が失敗することを先に確認した。
+
+性能の限界として、commit・lookup・readLatestのたびに`#recover`がmanifest・全blob（最大256 MiB）・commit chain・checkpointを読み直して検証する。参照実装として正しさを優先した形であり、本番backendではincrementalな検証と、その安全性の実証が別に必要である。

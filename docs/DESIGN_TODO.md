@@ -2283,3 +2283,8 @@ A2保存層の検証結果: 新規42件成功。型検査・build成功。全体
 - 回帰3件追加（memory・実ファイルの再open／retry拒否、保存障害matrixの同期前境界）。修正前の誤成功を確認し、同期失敗継続中は拒否、成功後だけ同revisionのackを返すことを検証。実媒体エラー・電源断を模した実証ではなく、A2の残課題・本番採用範囲は変えない。
 
 A2レビュー修正後の検証結果: A2は42件から45件へ増加（memory 28／実ファイル17）、全件成功。型検査・build成功。全体98 files／3,608 tests成功、21 files／1,415 tests skipped。diff整形検査成功、distにA1／A2 fixtureが含まれないことを再確認。実SIGKILL 3ケースも再実行した。新規Gradle／BTA native・OSV実接続・本番backend採用は0。
+
+
+### 2026-11-02: 102c7a0レビュー修正（A2 journalの書込み前拒否）
+
+- §9.60へ修正の小節を追加。`revision_conflict`／`operation_conflict`／書込み前の`budget_exceeded`ではinstanceを止めず、書込み開始後と復旧処理の失敗だけを停止対象とした。回帰2件。操作ごとの全store再検証を性能上の限界として明記。nativeの再実行なし。

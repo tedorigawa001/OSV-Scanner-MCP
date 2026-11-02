@@ -53,7 +53,7 @@ export interface JournalConfig extends JournalIdentity {key:Buffer;io:JournalIO;
 export interface JournalReceipt {operationId:string;revision:number;headDigest:string;resultDigest:string;backendEligible:false;replayed?:true}
 export class AuthorityJournal {
  readonly #identity:JournalIdentity;readonly #key:Buffer;readonly #io:JournalIO;readonly #checkpoint:JournalCheckpoint;readonly #fault?:JournalConfig['fault'];
- #blocked=false;#busy=false;#head:JournalHead;#commits:{body:Commit;head:JournalHead}[]=[];#blobs=new Map<string,Buffer>();
+ #blocked=false;#busy=false;#rejectedBeforeWrite=false;#head:JournalHead;#commits:{body:Commit;head:JournalHead}[]=[];#blobs=new Map<string,Buffer>();
  private constructor(c:JournalConfig){this.#identity=identitySchema.parse({authorityId:c.authorityId,storeEpoch:c.storeEpoch,keyId:c.keyId});journalAssert(Buffer.isBuffer(c.key)&&c.key.length===32,'configuration_invalid');this.#key=Buffer.from(c.key);this.#io=c.io;this.#checkpoint=c.checkpoint;this.#fault=c.fault;this.#head=journalGenesis(this.#identity);}
  static async create(c:JournalConfig):Promise<AuthorityJournal>{const j=new AuthorityJournal(c);journalAssert((await c.io.list(JOURNAL_LIMITS.entries)).length===0,'store_not_empty');const anchor=await j.#anchor();journalAssert(sameHead(anchor,j.#head),'checkpoint_invalid');const manifest={schema:'osv-mcp.gradle-owned-journal-v1',...j.#identity,genesisDigest:j.#head.headDigest};await c.io.put('journal.meta',sealJournalValue(manifest,j.#identity.keyId,j.#key));await j.#recover();return j;}
  static async open(c:JournalConfig):Promise<AuthorityJournal>{const j=new AuthorityJournal(c);await j.#recover();return j;}
@@ -80,7 +80,10 @@ export class AuthorityJournal {
   this.#head=head;this.#commits=commits;this.#blobs=blobs;
  }
  #receipt(c:{body:Commit;head:JournalHead}):JournalReceipt{return {operationId:c.body.operationId,revision:c.head.revision,headDigest:c.head.headDigest,resultDigest:c.body.resultDigest,backendEligible:false};}
- async #exclusive<T>(work:()=>Promise<T>):Promise<T>{journalAssert(!this.#blocked,'recovery_required');journalAssert(!this.#busy,'busy');this.#busy=true;try{return await work();}catch(e){this.#blocked=true;throw e;}finally{this.#busy=false;}}
+ // A logical rejection before any write leaves the instance usable; any other failure (including
+ // recovery, which may re-sync or advance the checkpoint) stops it until an explicit re-open.
+ #reject(ok:unknown,reason:string):asserts ok {if(!ok){this.#rejectedBeforeWrite=true;throw new AuthorityJournalError(reason);}}
+ async #exclusive<T>(work:()=>Promise<T>):Promise<T>{journalAssert(!this.#blocked,'recovery_required');journalAssert(!this.#busy,'busy');this.#busy=true;this.#rejectedBeforeWrite=false;try{return await work();}catch(e){if(!this.#rejectedBeforeWrite)this.#blocked=true;throw e;}finally{this.#busy=false;this.#rejectedBeforeWrite=false;}}
  async commit(input:{operationId:string;requestDigest:string;records:JournalRecord[];expectedHead?:JournalHead}):Promise<JournalReceipt>{
   // Seal caller-owned values before the first asynchronous storage/checkpoint operation.
   const operationId=id.parse(input.operationId),requestDigest=hash.parse(input.requestDigest);
@@ -91,11 +94,11 @@ export class AuthorityJournal {
   checkDescriptors(records);const inputDigest=indexDigest(records);
   return this.#exclusive(async()=>{
    await this.#recover();const prior=this.#commits.find(c=>c.body.operationId===operationId);
-   if(prior){journalAssert(prior.body.requestDigest===requestDigest&&prior.body.inputDigest===inputDigest,'operation_conflict');return {...this.#receipt(prior),replayed:true};}
-   if(expectedHead)journalAssert(sameHead(expectedHead,this.#head),'revision_conflict');journalAssert(this.#head.revision<JOURNAL_LIMITS.commits,'budget_exceeded');
+   if(prior){this.#reject(prior.body.requestDigest===requestDigest&&prior.body.inputDigest===inputDigest,'operation_conflict');return {...this.#receipt(prior),replayed:true};}
+   if(expectedHead)this.#reject(sameHead(expectedHead,this.#head),'revision_conflict');this.#reject(this.#head.revision<JOURNAL_LIMITS.commits,'budget_exceeded');
    const body:Commit={schema:'osv-mcp.gradle-owned-journal-commit-v1',authorityId:this.#identity.authorityId,storeEpoch:this.#identity.storeEpoch,revision:this.#head.revision+1,previousHead:this.#head.headDigest,operationId,requestDigest,inputDigest,resultDigest:records.find(r=>r.role==='operation-result')!.sha256,records};
    const encoded=sealJournalValue(body,this.#identity.keyId,this.#key),next={authorityId:this.#identity.authorityId,storeEpoch:this.#identity.storeEpoch,revision:body.revision,headDigest:ownedSha256(encoded)};
-   const current=await this.#io.list(JOURNAL_LIMITS.entries);const newChunks=[...chunks].filter(([d])=>!this.#blobs.has(d));journalAssert(current.length+newChunks.length+1<=JOURNAL_LIMITS.entries&&current.reduce((n,f)=>n+f.size,0)+newChunks.reduce((n,[,b])=>n+b.length,0)+encoded.length<=JOURNAL_LIMITS.storeBytes,'budget_exceeded');
+   const current=await this.#io.list(JOURNAL_LIMITS.entries);const newChunks=[...chunks].filter(([d])=>!this.#blobs.has(d));this.#reject(current.length+newChunks.length+1<=JOURNAL_LIMITS.entries&&current.reduce((n,f)=>n+f.size,0)+newChunks.reduce((n,[,b])=>n+b.length,0)+encoded.length<=JOURNAL_LIMITS.storeBytes,'budget_exceeded');
    await this.#hit('before-records');for(const [digest,bytes]of newChunks)await this.#io.put(blobName(digest),bytes);await this.#hit('after-records');await this.#hit('before-commit');await this.#io.put(commitName(body.revision),encoded);await this.#hit('after-commit');await this.#hit('before-checkpoint');await this.#advance(this.#head,next);await this.#hit('after-checkpoint');
    this.#head=next;this.#commits.push({body,head:next});for(const [d,b]of chunks)this.#blobs.set(d,b);await this.#hit('before-ack');return this.#receipt({body,head:next});
   });

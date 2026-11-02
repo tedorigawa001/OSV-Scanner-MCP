@@ -75,3 +75,21 @@ it('withholds reopened and retried receipts until a published checkpoint is dura
  anchorIO.failing=false;const again=await AuthorityJournal.open({...config,checkpoint:checkpoint()});
  expect(await again.lookupOperation('once')).toMatchObject({revision:1});
 });
+
+import {MemoryJournalIO as ProbeIO,MemoryCheckpoint as ProbeCheckpoint} from '../fixtures/gradleOwnedAuthorityJournal.js';
+const probeIdentity={authorityId:'probe',storeEpoch:ownedSha256('probe-epoch'),keyId:'probe-key'};
+const probeRecords=(n:string):JournalRecord[]=>[{id:'m',role:'session-manifest',bytes:Buffer.from('m'+n)},{id:'i',role:'session-index',bytes:Buffer.from('i'+n)},{id:'r',role:'operation-result',bytes:Buffer.from('r'+n)},{id:'l',role:'event-ledger',bytes:Buffer.from('l'+n)}];
+async function probeJournal(){const io=new ProbeIO();const j=await AuthorityJournal.create({...probeIdentity,key:Buffer.alloc(32,7),io,checkpoint:new ProbeCheckpoint(journalGenesis(probeIdentity))});return {j,io};}
+it('keeps the journal usable after a stale-head or conflicting-operation rejection that wrote nothing',async()=>{
+ const {j,io}=await probeJournal();const genesis=j.head;await j.commit({operationId:'op1',requestDigest:ownedSha256('1'),records:probeRecords('1')});const files=io.files.size;
+ await expect(j.commit({operationId:'op2',requestDigest:ownedSha256('2'),records:probeRecords('2'),expectedHead:genesis})).rejects.toThrow('authority_journal_revision_conflict');
+ await expect(j.commit({operationId:'op1',requestDigest:ownedSha256('other'),records:probeRecords('1')})).rejects.toThrow('authority_journal_operation_conflict');
+ expect(io.files.size).toBe(files);
+ const next=await j.commit({operationId:'op3',requestDigest:ownedSha256('3'),records:probeRecords('3')});expect(next.revision).toBe(2);
+});
+it('still stops the instance after a failure once writing has started',async()=>{
+ const io=new ProbeIO();let fail=true;
+ const j=await AuthorityJournal.create({...probeIdentity,key:Buffer.alloc(32,7),io,checkpoint:new ProbeCheckpoint(journalGenesis(probeIdentity)),fault:p=>{if(p==='after-records'&&fail){fail=false;throw Error('disk');}}});
+ await expect(j.commit({operationId:'op1',requestDigest:ownedSha256('1'),records:probeRecords('1')})).rejects.toThrow('disk');
+ await expect(j.commit({operationId:'op2',requestDigest:ownedSha256('2'),records:probeRecords('2')})).rejects.toThrow('authority_journal_recovery_required');
+});
