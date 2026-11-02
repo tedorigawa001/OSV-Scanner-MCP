@@ -60,7 +60,7 @@ for(const dsl of ['Groovy','Kotlin'])describe.skipIf(!binary)(`BTA owner envelop
   await runBuild('cache');
   expect(executionEvidence.map(x=>x.witness.skipMessage)).toEqual([null,'SKIPPED','FROM-CACHE']);
   record={gradleVersion:version,dsl,sourceHashes,registration,report,gradle,decisions,executionEvidence};verifyOfferCase(record);cases.push(record);
-  if(process.env.OSV_MCP_BTA_OFFER_OUTPUT)await writeFile(process.env.OSV_MCP_BTA_OFFER_OUTPUT,JSON.stringify({schema:'osv-mcp.bta-offer-matrix-v4',cases},null,2)+'\n');
+  if(process.env.OSV_MCP_BTA_OFFER_OUTPUT)await writeFile(process.env.OSV_MCP_BTA_OFFER_OUTPUT,JSON.stringify({schema:'osv-mcp.bta-offer-matrix-v5',cases},null,2)+'\n');
  },300000);
  it('completes a real bound BTA call as offered-only, not compiler-work or natural receipt',()=>expect(decisions.find(d=>d.invocation==='completed').trusted).toMatchObject({importStatus:'accepted',fileReads:4,compilerWorkStatus:'unknown',naturalReady:false}));
  for(const name of ['storage-failed','call-failed'])it('keeps a legitimate failed prefix without requiring later evidence: '+name,()=>expect(decisions.find(d=>d.invocation===name).trusted).toMatchObject({importStatus:'producer_failed',fileReads:0}));
@@ -74,11 +74,11 @@ for(const dsl of ['Groovy','Kotlin'])describe.skipIf(!binary)(`BTA owner envelop
   expect(decisions.find(d=>d.invocation==='unchanged').trusted).toMatchObject({importStatus:'accepted',executionEvidence:'bta-call-only',compilerWorkStatus:'unknown',naturalReady:false});
  });
  for(const mode of ['skip','cache'])it('does not adopt retained success as a new call: '+mode,()=>{
-  const e=record.executionEvidence.find((x:any)=>x.mode===mode);expect(e.classification).toMatchObject({importStatus:'unavailable',executionEvidence:'not-called'});expect(e.actionExecutions).toEqual([record.executionEvidence[0].witness.executionId]);expect(e.adoption).toMatchObject({importStatus:'unavailable',fileReads:0,executionEvidence:'not-called'});expect(e.adoptionFileReads).toBe(0);
+  const e=record.executionEvidence.find((x:any)=>x.mode===mode);expect(e.classification).toMatchObject({importStatus:'unavailable',executionEvidence:'not-called'});expect(e.actionExecutions).toEqual([record.executionEvidence[0].witness.executionId]);expect(e.adoption).toMatchObject({producerState:'completed',importStatus:'unavailable',reason:'owned_offer_action_not_executed',producerReason:null,fileReads:0,executionEvidence:'not-called'});expect(e.adoptionFileReads).toBe(0);
  });
  for(const name of ['ic-delete','ic-modify','ic-reset'])it('rejects changed IC state before a BTA retry: '+name,()=>{
   const check=record.report.icChecks.find((x:any)=>x.invocation===name),e=record.report.envelopes.find((x:any)=>x.invocation===name);
-  expect(check.matched).toBe(false);expect(check.callsAfterCheck).toBe(check.callsBefore);expect(e.failurePhase).toBe('precheck');expect(e.failureReason).toBe('ic_state_mismatch');expect(e.phases.some((x:any)=>x.phase==='call')).toBe(false);
+  expect(check.matched).toBe(false);expect(check).not.toHaveProperty('baseline');expect(JSON.stringify(check.beforeCall)).not.toMatch(/dev=|ino=/);expect(check.callsAfterCheck).toBe(check.callsBefore);expect(e.failurePhase).toBe('precheck');expect(e.failureReason).toBe('ic_state_mismatch');expect(e.phases.some((x:any)=>x.phase==='call')).toBe(false);
   expect(decisions.find(d=>d.invocation===name).trusted).toMatchObject({importStatus:'producer_failed',fileReads:0,producerReason:'ic_state_mismatch'});
  });
  it('reports only its bounded native scope',()=>expect(record.report).toMatchObject({btaConsumerCalls:8,libraryCalls:1,generatedSnapshots:2,naturalContentBinding:false,productionAdopted:false}));

@@ -2086,3 +2086,10 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - [設計書§9.42](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#942-oo09レビュー修正ic内容束縛と取込入口の実行gate2026-11-02)へ、先行成功後のIC inventory・size／digest・実体の保存とpre-call照合を追加。独立したseedからの削除・改変・再初期化12件をBTA retry前に拒否。
 - readOwnedOfferにfresh witnessと期待executionIdを必須化。実SKIPPED／FROM-CACHEへ成功envelopeを渡す8件をfile reader 0で拒否し、実行済みwitnessでも古いenvelopeのIDを採用しない。
 - 両版各42テスト、静的121テスト。最終12 build・BTA呼出し36回・正常終了32回、completed 20／failed 52／unavailable 4。公開記録v5へ更新し旧未コミットv4は参考要約に保持。内部no-opはunknown、自然消費receipt・本番採用0を維持。
+
+
+### 2026-11-02: c555f4fレビュー修正（実行gateの理由と公開IC記録）
+
+- [設計書§9.43](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#943-c555f4fレビュー修正実行gateの理由と公開ic記録2026-11-02)へ、実行witnessの真正性が呼出側依存であることを明記。未実行を`owned_offer_action_not_executed`、実行済みでのID不一致を`claim_mismatch`とし、§9.37.5の表へ追加。未実行の戻り値も共通形にした。
+- IC記録のfileKeyをrun内tokenへ置換し、icChecksの基準複写を除去（1.49MB→1.13MB）。sameIcContentsの順序依存を解消。
+- 両DSL・両版を再実行して各版42テスト、件数は§9.42と同じ。記録v6、静的126テスト。本番採用・自然消費receipt0を維持。

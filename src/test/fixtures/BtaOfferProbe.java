@@ -39,7 +39,7 @@ public final class BtaOfferProbe {
    if(h.service!=service||h.project!=project||h.configuration!=actual||h.parameter!=parameter||!parameter.getNewClasspathSnapshotFiles().equals(h.snapshots.stream().map(Path::toFile).toList())){failure(h,"precheck","binding_mismatch");return;}
    if(REPEAT_SEEDS.containsKey(h.name)){
     var parent=handles.get(REPEAT_SEEDS.get(h.name));var current=icSnapshot(h.ic);boolean matched=parent.icBaseline.equals(current);
-    icChecks.add(m("invocation",h.name,"seedInvocation",parent.name,"baseline",parent.icBaseline,"beforeCall",current,"matched",matched,"callsBefore",calls,"callsAfterCheck",calls));
+    icChecks.add(m("invocation",h.name,"seedInvocation",parent.name,"beforeCall",current,"matched",matched,"callsBefore",calls,"callsAfterCheck",calls));
     if(!matched){failure(h,"precheck","ic_state_mismatch");return;}
    }
    if(!h.sourceHash.equals(BtaOwnedDriver.hashFile(h.source))||!check(h)){failure(h,"precheck","stale");return;}
@@ -67,6 +67,9 @@ public final class BtaOfferProbe {
    return true;
   }
  }
+ // File identities are compared natively but published only as run-local tokens.
+ static final Map<String,String> fileKeyTokens=new HashMap<>();
+ static String fileKeyToken(Object key){return fileKeyTokens.computeIfAbsent(key.toString(),k->"key-"+(fileKeyTokens.size()+1));}
  // Immutable snapshots include inode identities as well as complete directory/file contents.
  static Map<String,Object> icSnapshot(Path directory)throws Exception{
   if(!Files.exists(directory,LinkOption.NOFOLLOW_LINKS))return m("exists",false,"rootKey",null,"entries",List.of());
@@ -80,10 +83,10 @@ public final class BtaOfferProbe {
     if(attrs.fileKey()==null||(!attrs.isDirectory()&&!attrs.isRegularFile()))throw new IOException("unsafe-ic-entry");
     byte[] bytes=attrs.isRegularFile()?BtaOwnedDriver.safeBytes(f,f.getParent()):null;
     if(bytes!=null){total+=bytes.length;if(total>128L*1024*1024)throw new IOException("ic-byte-budget");}
-    entries.add(m("path",directory.relativize(f).toString(),"kind",attrs.isDirectory()?"directory":"file","fileKey",attrs.fileKey().toString(),"size",bytes==null?0:bytes.length,"sha256",bytes==null?null:BtaOwnedDriver.hash(bytes)));
+    entries.add(m("path",directory.relativize(f).toString(),"kind",attrs.isDirectory()?"directory":"file","fileKey",fileKeyToken(attrs.fileKey()),"size",bytes==null?0:bytes.length,"sha256",bytes==null?null:BtaOwnedDriver.hash(bytes)));
    }
   }
-  return Collections.unmodifiableMap(m("exists",true,"rootKey",rootAttrs.fileKey().toString(),"entries",List.copyOf(entries)));
+  return Collections.unmodifiableMap(m("exists",true,"rootKey",fileKeyToken(rootAttrs.fileKey()),"entries",List.copyOf(entries)));
  }
  static void injectIcFault(String mode,Path ic)throws Exception{
   if(mode.equals("ic-delete"))Files.delete(ic.resolve("shrunk-classpath-snapshot.bin"));
@@ -126,7 +129,7 @@ public final class BtaOfferProbe {
     broker.consume(h,service,suppliedProject,supplied,suppliedParameter);
     if(mode.equals("unchanged")){
      var first=broker.handles.get("completed");
-     unchangedEvidence=m("firstInvocation",first.name,"repeatInvocation",h.name,"sameService",first.service==h.service,"sameProject",first.project==h.project,"sameSourcePath",first.source.equals(h.source),"sameSourceBytes",first.sourceHash.equals(h.sourceHash),"sameSnapshots",first.snapshots.equals(h.snapshots)&&first.descriptors.equals(h.descriptors),"sameIcPath",first.ic.equals(h.ic),"sameIcContents",((Map<?,?>)broker.icChecks.get(0)).get("matched"),"sameArguments",first.args.equals(h.args),"distinctHandle",first!=h,"distinctConfiguration",first.configuration!=h.configuration,"distinctParameter",first.parameter!=h.parameter,"callsBefore",beforeCalls,"callsAfter",broker.calls,"outputsBefore",beforeOutputs,"outputsAfter",BtaOwnedDriver.tree(out));
+     unchangedEvidence=m("firstInvocation",first.name,"repeatInvocation",h.name,"sameService",first.service==h.service,"sameProject",first.project==h.project,"sameSourcePath",first.source.equals(h.source),"sameSourceBytes",first.sourceHash.equals(h.sourceHash),"sameSnapshots",first.snapshots.equals(h.snapshots)&&first.descriptors.equals(h.descriptors),"sameIcPath",first.ic.equals(h.ic),"sameIcContents",broker.icChecks.stream().map(x->(Map<?,?>)x).filter(x->h.name.equals(x.get("invocation"))).findFirst().orElseThrow().get("matched"),"sameArguments",first.args.equals(h.args),"distinctHandle",first!=h,"distinctConfiguration",first.configuration!=h.configuration,"distinctParameter",first.parameter!=h.parameter,"callsBefore",beforeCalls,"callsAfter",broker.calls,"outputsBefore",beforeOutputs,"outputsAfter",BtaOwnedDriver.tree(out));
     }
     if(mode.equals("completed")){
      expectReject(negative,"reuse",()->{try{broker.consume(h,service,project,h.configuration,h.parameter);}catch(Rejected ex){throw ex;}catch(Exception ex){throw new RuntimeException(ex);}},"configuration_reused",broker);
@@ -138,6 +141,6 @@ public final class BtaOfferProbe {
   for(String seed:REPEAT_SEEDS.values())service.finishProjectCompilation(projects.get(seed));
   broker.closed=true;expectReject(negative,"late-registration",()->broker.begin("late"),"registration_closed",broker);
   envelopes.add(m("schema","osv-mcp.gradle-owned-offer-v1","executionId",System.getenv("OSV_BTA_OFFER_EXECUTION_ID"),"graphId","graph","exportId",exportId,"project",":","invocation","unsupported","stage","consumer","slot","snapshot","profileId",profileId,"producerState","unavailable","plannedCaptures",0,"limitations",LIMITS,"naturalContentBinding",false,"phases",List.of(),"unavailableReason","execution_unsupported","blockedBeforePhase","registration","noRead",true));
-  Files.writeString(root.resolve("offer-report.json"),BtaOwnedDriver.json(m("schema","osv-mcp.bta-offer-probe-v4","executionId",System.getenv("OSV_BTA_OFFER_EXECUTION_ID"),"icChecks",broker.icChecks,"icBaselines",REPEAT_SEEDS.values().stream().sorted().map(name->m("invocation",name,"snapshot",broker.handles.get(name).icBaseline)).toList(),"unchangedEvidence",unchangedEvidence,"envelopes",envelopes,"rejections",negative,"btaConsumerCalls",broker.calls,"libraryCalls",1,"libraryCompilation",m("result",result.toString(),"sourceSha256",BtaOwnedDriver.hashFile(lib),"jarSha256",BtaOwnedDriver.hashFile(jar),"outputs",BtaOwnedDriver.tree(libOut)),"snapshotGeneration",m("generatorSha256",BtaOwnedDriver.hashFile(Path.of(service.getClass().getProtectionDomain().getCodeSource().getLocation().toURI())),"snapshots",generated),"generatedSnapshots",generated.size(),"actualCompilerVersion",service.getCompilerVersion(),"javaSha256",BtaOwnedDriver.hashFile(Path.of(System.getProperty("java.home"),"bin/java")),"driverClasses",BtaOwnedDriver.tree(root.resolve("build/driver-classes")),"naturalContentBinding",false,"productionAdopted",false)));
+  Files.writeString(root.resolve("offer-report.json"),BtaOwnedDriver.json(m("schema","osv-mcp.bta-offer-probe-v5","executionId",System.getenv("OSV_BTA_OFFER_EXECUTION_ID"),"icChecks",broker.icChecks,"icBaselines",REPEAT_SEEDS.values().stream().sorted().map(name->m("invocation",name,"snapshot",broker.handles.get(name).icBaseline)).toList(),"unchangedEvidence",unchangedEvidence,"envelopes",envelopes,"rejections",negative,"btaConsumerCalls",broker.calls,"libraryCalls",1,"libraryCompilation",m("result",result.toString(),"sourceSha256",BtaOwnedDriver.hashFile(lib),"jarSha256",BtaOwnedDriver.hashFile(jar),"outputs",BtaOwnedDriver.tree(libOut)),"snapshotGeneration",m("generatorSha256",BtaOwnedDriver.hashFile(Path.of(service.getClass().getProtectionDomain().getCodeSource().getLocation().toURI())),"snapshots",generated),"generatedSnapshots",generated.size(),"actualCompilerVersion",service.getCompilerVersion(),"javaSha256",BtaOwnedDriver.hashFile(Path.of(System.getProperty("java.home"),"bin/java")),"driverClasses",BtaOwnedDriver.tree(root.resolve("build/driver-classes")),"naturalContentBinding",false,"productionAdopted",false)));
  }
 }

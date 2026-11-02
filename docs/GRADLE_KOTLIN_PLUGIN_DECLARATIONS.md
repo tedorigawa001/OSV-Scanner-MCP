@@ -1967,8 +1967,10 @@ run-local IDやrecordの自己hashは真正性を保証しない。静的取込�
 | readerの判定 | 理由案（importStatus） | 扱い |
 | --- | --- | --- |
 | 信頼・承認なし | owned_offer_trust_disabled／owned_offer_profile_unapproved／owned_offer_envelope_missing | importStatus=unavailable。producerStateを書き換えず、gate後の読取は行わない |
+| task action未実行（§9.43） | owned_offer_action_not_executed | importStatus=unavailable、executionEvidence=not-called。envelopeの構造は検証するが内容は読まない。非対応strategyのexecution_unsupportedとは区別する |
+| 実行witness不正（§9.43） | owned_offer_execution_invalid | 呼出側が渡したwitnessの欠落・状態矛盾・期待ID不一致。graphを拒否する |
 | 構造不正 | owned_offer_schema_invalid／owned_offer_required_evidence_missing | graphを拒否。必須非空列の空配列・未知status・必須limitations欠落・状態とphaseの矛盾を含む |
-| integrity違反 | owned_offer_profile_mismatch／owned_offer_claim_mismatch／owned_offer_path_invalid | graphを拒否。completedなのに再照合で内容・binding・鮮度が合わない場合、failedのfailureReason・failurePhaseが証拠と食い違う場合、記録された拒否を別理由・別phaseへ付け替えた場合を含む。部分metadataやdeclared_inへ縮退させない |
+| integrity違反 | owned_offer_profile_mismatch／owned_offer_claim_mismatch／owned_offer_path_invalid | graphを拒否。completedなのに再照合で内容・binding・鮮度が合わない場合、failedのfailureReason・failurePhaseが証拠と食い違う場合、記録された拒否を別理由・別phaseへ付け替えた場合、実行済みwitnessの下でenvelopeが別のexecutionIdを持つ場合（§9.43）を含む。部分metadataやdeclared_inへ縮退させない |
 
 未知profile IDはunapprovedだが、既知承認profile IDを名乗って実artifactが異なる場合はmismatchとする。未定義の「省略可能な証拠mode」は設けない。合法なfailed／unavailableは上記unionで判定し、未到達証拠の省略だけでgraphを拒否しない。completedを表明して必須証拠が欠ける場合や、failed／unavailableの状態・phaseに矛盾する証拠がある場合は構造不正である。producerが記録したfailureReasonはreaderのintegrity理由へ昇格させず、readerのintegrity違反をproducer_failedへ格下げしない。本理由は設計案であり、§9.36のtest fixtureの既存reason文字列を今回変更しない。
 
@@ -2140,7 +2142,7 @@ Groovy／Kotlin × Gradle 8.11.1／9.2.1で各版36テスト成功。最終matri
 
 #### 実行witnessを必須とする取込入口
 
-公開するtest用取込入口readOwnedOfferは、設定側の期待executionIdとexecutionWitnessを必須とする。独立したclassifierを呼出側で使い忘れても採用できない。witnessの必須field・状態整合性・期待IDを検証した後、action未実行ならenvelopeの成功状態へ進まず、executionEvidence=not-called／importStatus=unavailable／fileReads=0を返す。ここでの0はsnapshot／sourceのfile reader呼出し数で、ハーネスが読むreportやTaskStateなどのmetadata I/Oを含まない。
+公開するtest用取込入口readOwnedOfferは、設定側の期待executionIdとexecutionWitnessを必須とする。独立したclassifierを呼出側で使い忘れても採用できない。ただしwitnessと期待IDはどちらも呼出側が渡す値であり、readerはその真正性を検証できない。偽のwitnessに古いenvelopeと同じIDを与えれば採用される。witnessの真正性は呼出側（ここではハーネスと、producerと同じbuild logicが書くGradle afterTask reporter）に依存する（§9.43）。witnessの必須field・状態整合性・期待IDを検証した後、action未実行ならenvelopeの成功状態へ進まず、executionEvidence=not-called／importStatus=unavailable／fileReads=0を返す。ここでの0はsnapshot／sourceのfile reader呼出し数で、ハーネスが読むreportやTaskStateなどのmetadata I/Oを含まない。
 
 action実行済みの場合も、envelopeのexecutionIdがfresh witnessのexecutionIdと一致することを、内容読取前に要求する。childへはdoFirst内で実行IDを環境変数として渡し、brokerが全envelopeとreportへ格納する。このIDは実行metadataとしてtask action時に設定し、local cache keyには加えない。FROM-CACHEのreportは元seed IDのままであり、新しいbuild IDへ付け替えない。
 
@@ -2155,3 +2157,17 @@ probe／native matrixはv4、[公開検証記録](validation/gradle-bta-offer-co
 静的／公開記録再生121テスト成功。IC baseline欠落・pre-call snapshot欠落・digest改変・拒否を一致へ変更・削除後の再baseline化・検査中の追加BTA call、skip／cacheの採用表明・file reader追加・復元IDの付替えを拒否する。再現コマンドは§9.38と同じ。bta-call-only／compilerWorkStatus=unknown、自然消費receipt・本番採用0、未実施staging／完全な入力manifest／全observer計測の範囲は維持する。
 
 最終確認（§9.42）: 通常全体2,537テスト成功・native opt-in等1,227件skip。typecheck・build・差分検査も成功。
+
+
+### 9.43 c555f4fレビュー修正・実行gateの理由と公開IC記録（2026-11-02）
+
+§9.42のreaderとIC記録について、実行witnessの信頼前提、reader理由の分類、公開記録の端末固有値と重複を直し、両DSL・両Gradle版のnativeを再実行した。
+
+- 実行witnessの真正性は呼出側に依存することを§9.42に明記し、偽のwitnessで古いenvelopeが採用されることを静的テストで固定した。readerが保証するのは、witnessの構造・状態整合性と、期待ID・envelopeのexecutionIdの一致だけである。
+- task action未実行は`owned_offer_action_not_executed`とし、非対応strategyの`execution_unsupported`と分けた。戻り値は他の結果と同じ形（producerState・producerReason・fileReads等）にし、未実行でも保持されたenvelopeの構造は検証する（file reader呼出しは0）。実行済みwitnessの下でenvelopeのexecutionIdが異なる場合は、readerが検出した表明の矛盾として`owned_offer_claim_mismatch`とする。§9.37.5の表へ両理由を追加した。
+- IC inventoryの`fileKey`／`rootKey`は、broker内で実体の同一性を比較したうえで、run内の`key-N`へ置き換えて記録する。device番号・inode番号は記録しない。`icChecks`から基準の複写を除き、基準は`icBaselines`だけに置く。記録は1.49MBから1.13MBになった。
+- `sameIcContents`は該当invocationのIC検査から取り、modesの並び順に依存しない。`preReviews`の`committedIn`は短縮hashへ揃えた。
+
+両DSL・Gradle 8.11.1／9.2.1で各版42テスト成功。件数は§9.42と同じ（12 build、BTA呼出し36回・正常終了32回、completed 20／failed 52／unavailable 4、IC状態拒否12、未実行buildでの採用拒否8、reader graph拒否0）。probe／native matrixはv5、検証記録はexperiment-v6とし、v5はc555f4fのcommit済み原本として要約を`preReviews`へ残した。静的／公開記録再生は126テスト成功。修正前のreaderとv5記録では126件中7件が失敗することを先に確認した。
+
+bta-call-only／compilerWorkStatus=unknown、自然消費receipt・本番採用0、§9.38〜9.42の未実施範囲は変わらない。

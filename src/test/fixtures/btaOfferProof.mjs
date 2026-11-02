@@ -6,6 +6,8 @@ export const offerSources=['src/test/fixtures/BtaOwnedDriver.java','src/test/fix
 export const offerVerificationSources=['src/test/fixtures/btaOfferContract.d.mts','src/test/fixtures/btaOfferProof.mjs','src/test/fixtures/btaOfferProof.d.mts','src/test/gradle/btaOffer.test.ts','src/test/manual/gradleBtaOfferResults.mjs'];
 const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const fail=()=>{throw Error('bta_offer_record_invalid');};
+// Published IC identities are run-local tokens, never device/inode values.
+const fileKeyToken=/^key-[1-9][0-9]*$/;
 const modes=['completed','unchanged','ic-delete-seed','ic-delete','ic-modify-seed','ic-modify','ic-reset-seed','ic-reset','storage-failed','call-failed','post-failed','capture-failed','foreign-config','foreign-project','foreign-parameter','foreign-paths','stale-precheck','source-changed','unsupported'];
 const expectedCases={
  completed:{state:'completed'},
@@ -33,7 +35,7 @@ export function verifyOfferCase(c){
  const registration={producerSha256:hash(c.sourceHashes[offerSources[0]]+c.sourceHashes[offerSources[1]]),runtimeSha256:hash(JSON.stringify(profile.runtime)),profileSha256:hash(JSON.stringify({version:c.gradleVersion,java:offerJdkProfile.java.sha256,strategy:'in-process'}))};
  if(!eq(c.registration,registration))fail();
  const r=c.report,g=c.gradle;
- if(r.schema!=='osv-mcp.bta-offer-probe-v4'||r.actualCompilerVersion!==profile.kotlinVersion||r.javaSha256!==offerJdkProfile.java.sha256||r.naturalContentBinding!==false||r.productionAdopted!==false||g.gradleVersion!==c.gradleVersion||g.javaSha256!==offerJdkProfile.java.sha256||g.javacSha256!==offerJdkProfile.javac.sha256||g.maxWorkers!==1||g.parallel!==false)fail();
+ if(r.schema!=='osv-mcp.bta-offer-probe-v5'||r.actualCompilerVersion!==profile.kotlinVersion||r.javaSha256!==offerJdkProfile.java.sha256||r.naturalContentBinding!==false||r.productionAdopted!==false||g.gradleVersion!==c.gradleVersion||g.javaSha256!==offerJdkProfile.java.sha256||g.javacSha256!==offerJdkProfile.javac.sha256||g.maxWorkers!==1||g.parallel!==false)fail();
  if(!eq(r.envelopes.map(e=>e.invocation),modes)||!eq(c.decisions.map(e=>e.invocation),modes))fail();
  if(!eq(r.rejections.map(e=>e.mode),['duplicate-begin','reentry','reuse','phase-after-completion','failed-reuse','late-registration'])||r.rejections.some(e=>!Number.isInteger(e.callsBefore)||e.callsBefore!==e.callsAfter))fail();
  const classes=['BtaOfferProbe$Broker.class','BtaOfferProbe$Handle.class','BtaOfferProbe$Rejected.class','BtaOfferProbe.class','BtaOwnedDriver$Binding.class','BtaOwnedDriver$ConfigurationRejected.class','BtaOwnedDriver.class'];
@@ -87,9 +89,9 @@ export function verifyOfferCase(c){
  scope.unchangedRepeatCalls=repeat.phases.filter(x=>x.phase==='call'&&x.outcome==='begin').length;
  // Compare the complete post-seed IC snapshot with the snapshot immediately before each retry.
  const snapshot=s=>{
-  if(s?.exists!==true||typeof s.rootKey!=='string'||!s.rootKey||!Array.isArray(s.entries)||s.entries.length>4096)fail();
+  if(s?.exists!==true||!fileKeyToken.test(s.rootKey)||!Array.isArray(s.entries)||s.entries.length>4096)fail();
   let total=0;const paths=[];for(const f of s.entries){
-   if(typeof f.path!=='string'||!f.path||f.path.startsWith('/')||f.path.split('/').some(x=>!x||x==='.'||x==='..')||!['file','directory'].includes(f.kind)||typeof f.fileKey!=='string'||!f.fileKey||!Number.isSafeInteger(f.size)||f.size<0)fail();
+   if(typeof f.path!=='string'||!f.path||f.path.startsWith('/')||f.path.split('/').some(x=>!x||x==='.'||x==='..')||!['file','directory'].includes(f.kind)||!fileKeyToken.test(f.fileKey)||!Number.isSafeInteger(f.size)||f.size<0)fail();
    if(f.kind==='file'){if(f.size>32*1024**2||!/^[a-f0-9]{64}$/.test(f.sha256))fail();total+=f.size;}else if(f.size!==0||f.sha256!==null)fail();paths.push(f.path);
   }
   if(total>128*1024**2||new Set(paths).size!==paths.length||!eq(paths,[...paths].sort()))fail();
@@ -98,7 +100,7 @@ export function verifyOfferCase(c){
  for(const check of r.icChecks){
   const seed=repeatSeeds[check.invocation],base=r.icBaselines.find(x=>x.invocation===seed)?.snapshot;
   snapshot(base);snapshot(check.beforeCall);
-  if(check.seedInvocation!==seed||!eq(check.baseline,base)||!base.entries.some(x=>x.path==='shrunk-classpath-snapshot.bin'&&x.kind==='file'))fail();
+  if(check.seedInvocation!==seed||Object.hasOwn(check,'baseline')||!base.entries.some(x=>x.path==='shrunk-classpath-snapshot.bin'&&x.kind==='file'))fail();
   const same=eq(base,check.beforeCall),positive=check.invocation==='unchanged',e=r.envelopes.find(e=>e.invocation===check.invocation),parent=r.envelopes.find(e=>e.invocation===seed);
   if(check.matched!==same||same!==positive||check.callsAfterCheck!==check.callsBefore||check.callsBefore!==cumulativeCalls[check.invocation]-(positive?1:0))fail();
   const from=phase(parent,'binding'),to=phase(e,'binding');
@@ -117,7 +119,7 @@ export function verifyOfferCase(c){
   const w=execution.witness,result=classifyOfferExecution(w);
   if(!eq(execution.classification,result)||!eq(execution.actionExecutions,[seedId])||execution.reportSha256!==reportSha256||execution.envelopeExecutionId!==seedId)fail();
   if(execution.mode==='seed'){if(!result.btaTaskActionExecuted||w.skipMessage!==null||!eq(execution.adoption,c.decisions[0].trusted)||execution.adoptionFileReads!==4)fail();}
-  else {if(!eq(execution.adoption,{...result,fileReads:0})||execution.adoptionFileReads!==0)fail();scope.blockedSuccessAdoptions++;if(result.btaTaskActionExecuted||result.importStatus!=='unavailable'||w.skipMessage!==(execution.mode==='cache'?'FROM-CACHE':'SKIPPED'))fail();if(execution.mode==='cache')scope.cacheRestorations++;else scope.skippedExecutions++;}
+  else {if(!eq(execution.adoption,{producerState:'completed',importStatus:'unavailable',reason:'owned_offer_action_not_executed',producerReason:null,fileReads:0,naturalReady:false,naturalContentBinding:false,consumptionStatus:'offered-inputs-only',executionEvidence:'not-called',compilerWorkStatus:'unknown'})||result.reason!=='owned_offer_action_not_executed'||execution.adoptionFileReads!==0)fail();scope.blockedSuccessAdoptions++;if(result.btaTaskActionExecuted||result.importStatus!=='unavailable'||w.skipMessage!==(execution.mode==='cache'?'FROM-CACHE':'SKIPPED'))fail();if(execution.mode==='cache')scope.cacheRestorations++;else scope.skippedExecutions++;}
   scope.gradleBuilds++;
  }
  return scope;

@@ -129,7 +129,7 @@ it('rejects a claimed snapshot size over the per-file budget before calling a re
 
 const published=()=>JSON.parse(readFileSync(new URL('../../../docs/validation/gradle-bta-offer-contract-2026-11-02.json',import.meta.url),'utf8'));
 it('replays the native envelopes and gates with their original implementation fingerprints',()=>{
- const d=published();expect(d.schema).toBe('osv-mcp.bta-offer-contract-experiment-v5');expect(d.preReviews.map((p:any)=>p.schema)).toEqual(['osv-mcp.bta-offer-contract-experiment-v1','osv-mcp.bta-offer-contract-experiment-v2','osv-mcp.bta-offer-contract-experiment-v3','osv-mcp.bta-offer-contract-experiment-v4']);expect(d.scope.readerIntegrityRejections).toBe(0);assertNoAbsolutePaths(d);
+ const d=published();expect(d.schema).toBe('osv-mcp.bta-offer-contract-experiment-v6');expect(d.preReviews.map((p:any)=>p.schema)).toEqual(['osv-mcp.bta-offer-contract-experiment-v1','osv-mcp.bta-offer-contract-experiment-v2','osv-mcp.bta-offer-contract-experiment-v3','osv-mcp.bta-offer-contract-experiment-v4','osv-mcp.bta-offer-contract-experiment-v5']);expect(d.preReviews.map((p:any)=>p.committedIn??null)).toEqual([null,'a6d5409','d1f8557',null,'c555f4f']);expect(d.scope.readerIntegrityRejections).toBe(0);assertNoAbsolutePaths(d);
  expect(Object.keys(d.sourcesSha256)).toEqual(offerSources);expect(Object.keys(d.verificationSourcesSha256)).toEqual(offerVerificationSources);
  for(const group of ['sourcesSha256','verificationSourcesSha256'])for(const [p,h]of Object.entries(d[group]))expect(createHash('sha256').update(readFileSync(new URL('../../../'+p,import.meta.url))).digest('hex'),p).toBe(h);
  const scope:Record<string,number>={};for(const c of d.cases){expect(c.sourceHashes).toEqual(d.sourcesSha256);for(const [k,v]of Object.entries(verifyOfferCase(c)))scope[k]=(scope[k]??0)+v;}
@@ -180,7 +180,7 @@ for(const field of ['libraryCalls','btaConsumerCalls','generatedSnapshots'])it('
 
 it('does not adopt a restored success report when the BTA task action did not execute',()=>{
  const witness={executionId:'cache',actionCalls:0,didWork:false,skipped:true,noSource:false,failed:false,skipMessage:'FROM-CACHE'};
- expect(classifyOfferExecution(witness)).toEqual({executionId:'cache',btaTaskActionExecuted:false,importStatus:'unavailable',reason:'owned_offer_execution_unsupported',executionEvidence:'not-called',compilerWorkStatus:'unknown',naturalReady:false});
+ expect(classifyOfferExecution(witness)).toEqual({executionId:'cache',btaTaskActionExecuted:false,importStatus:'unavailable',reason:'owned_offer_action_not_executed',executionEvidence:'not-called',compilerWorkStatus:'unknown',naturalReady:false});
 });
 
 for(const mode of ['skip','cache'])it('does not let '+mode+' reuse a cached success as a new BTA call',()=>{
@@ -207,24 +207,27 @@ it('marks a real task action only as eligible for envelope inspection, not as co
 for(const skipMessage of ['SKIPPED','FROM-CACHE'])it('refuses a success envelope at the actual reader entry point for '+skipMessage,()=>{
  const witness={executionId:'current',actionCalls:0,didWork:false,skipped:true,noSource:false,failed:false,skipMessage};let reads=0;
  const result=readOwnedOffer(complete(),{...settings(),executionId:'current',executionWitness:witness},()=>{reads++;throw Error('unexpected-read');});
- expect(result).toMatchObject({importStatus:'unavailable',executionEvidence:'not-called',fileReads:0});expect(reads).toBe(0);
+ expect(result).toEqual({producerState:'completed',importStatus:'unavailable',reason:'owned_offer_action_not_executed',producerReason:null,fileReads:0,naturalReady:false,naturalContentBinding:false,consumptionStatus:'offered-inputs-only',executionEvidence:'not-called',compilerWorkStatus:'unknown'});expect(reads).toBe(0);
 });
-it('refuses an old success envelope under a fresh executed witness',()=>{
+it('refuses an old success envelope under a fresh executed witness as a claim mismatch',()=>{
  const e=complete();e.executionId='old';const witness={executionId:'new',actionCalls:1,didWork:true,skipped:false,noSource:false,failed:false,skipMessage:null};
- expect(()=>readOwnedOffer(e,{...settings(),executionId:'new',executionWitness:witness},()=>bytes)).toThrow('owned_offer_execution_invalid');
+ expect(()=>readOwnedOffer(e,{...settings(),executionId:'new',executionWitness:witness},()=>bytes)).toThrow('owned_offer_claim_mismatch');
 });
 
 for(const name of ['ic-delete','ic-modify','ic-reset'])it('replays a real precheck IC refusal with no BTA retry: '+name,()=>{
  const c=published().cases[0],check=c.report.icChecks.find((x:any)=>x.invocation===name),e=c.report.envelopes.find((x:any)=>x.invocation===name);
- expect(check.matched).toBe(false);expect(check.baseline).not.toEqual(check.beforeCall);expect(check.callsAfterCheck).toBe(check.callsBefore);expect(e.phases.some((x:any)=>x.phase==='call')).toBe(false);expect(verifyOfferCase(c).icStateRejections).toBe(3);
+ expect(check.matched).toBe(false);expect(c.report.icBaselines.find((x:any)=>x.invocation===check.seedInvocation).snapshot).not.toEqual(check.beforeCall);expect(check.callsAfterCheck).toBe(check.callsBefore);expect(e.phases.some((x:any)=>x.phase==='call')).toBe(false);expect(verifyOfferCase(c).icStateRejections).toBe(3);
 });
 const icFaults:Record<string,(c:any)=>void>={
  'missing IC baseline':c=>c.report.icBaselines.pop(),
  'missing pre-call IC snapshot':c=>delete c.report.icChecks[0].beforeCall,
  'fault declared matched':c=>c.report.icChecks[1].matched=true,
- 'fault baseline replaced by current state':c=>{c.report.icChecks[1].baseline=c.report.icChecks[1].beforeCall;},
+ 'fault baseline replaced by current state':c=>{const check=c.report.icChecks[1];c.report.icBaselines.find((x:any)=>x.invocation===check.seedInvocation).snapshot=check.beforeCall;},
+ 'duplicated baseline republished in a check':c=>{const check=c.report.icChecks[0];check.baseline=c.report.icBaselines.find((x:any)=>x.invocation===check.seedInvocation).snapshot;},
+ 'raw device/inode file key':c=>{c.report.icChecks[0].beforeCall.entries[0].fileKey='(dev=1,ino=2)';},
+ 'raw device/inode root key':c=>{c.report.icBaselines[0].snapshot.rootKey='(dev=1,ino=2)';},
  'IC descriptor digest modified':c=>{c.report.icChecks[0].beforeCall.entries.find((x:any)=>x.kind==='file').sha256='0'.repeat(64);},
- 'IC snapshot recaptured after deletion':c=>{const check=c.report.icChecks[1];c.report.icBaselines.find((x:any)=>x.invocation===check.seedInvocation).snapshot=check.beforeCall;check.baseline=check.beforeCall;},
+ 'IC snapshot recaptured after deletion':c=>{const check=c.report.icChecks[1];c.report.icBaselines.find((x:any)=>x.invocation===check.seedInvocation).snapshot=check.beforeCall;check.matched=true;},
  'unexpected BTA call during IC check':c=>c.report.icChecks[1].callsAfterCheck++,
  'skipped adoption accepted':c=>c.executionEvidence[1].adoption.importStatus='accepted',
  'cached adoption reader invoked':c=>c.executionEvidence[2].adoptionFileReads=1,
@@ -233,3 +236,11 @@ const icFaults:Record<string,(c:any)=>void>={
 for(const [name,fault]of Object.entries(icFaults))it('rejects IC / execution-gate record mutation: '+name,()=>{const c=published().cases[0];fault(c);expect(()=>verifyOfferCase(c)).toThrow();});
 it('requires an execution witness at the sole adoption entry point',()=>{const s:any=settings();delete s.executionWitness;expect(()=>readOwnedOffer(complete(),s,()=>bytes)).toThrow('owned_offer_schema_invalid');});
 it('binds execution witness to an independently expected invocation id',()=>expect(()=>readOwnedOffer(complete(),{...settings(),executionId:'other'},()=>bytes)).toThrow('owned_offer_execution_invalid'));
+it('validates a retained envelope even when the action did not execute, still without file reads',()=>{
+ const e=complete();e.limitations.pop();const witness={executionId:'current',actionCalls:0,didWork:false,skipped:true,noSource:false,failed:false,skipMessage:'SKIPPED'};
+ expect(()=>readOwnedOffer(e,{...settings(),executionId:'current',executionWitness:witness},()=>{throw Error('read');})).toThrow('owned_offer_schema_invalid');
+});
+it('adopts whatever witness the caller supplies: authenticity rests on the caller',()=>{
+ const e=complete();e.executionId='old';const forged={executionId:'old',actionCalls:1,didWork:true,skipped:false,noSource:false,failed:false,skipMessage:null};
+ expect(readOwnedOffer(e,{...settings(),executionId:'old',executionWitness:forged},()=>bytes).importStatus).toBe('accepted');
+});

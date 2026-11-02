@@ -95,14 +95,18 @@ export function classifyOfferExecution(w){
  if(!str(w.executionId)||![w.didWork,w.skipped,w.noSource,w.failed].every(x=>typeof x==='boolean')||![0,1].includes(w.actionCalls))fail('execution_invalid');
  const executed=w.actionCalls===1;
  if(w.failed||(executed?(w.skipped||w.noSource||!w.didWork||w.skipMessage!==null):(!w.skipped||w.didWork||!['FROM-CACHE','SKIPPED','UP-TO-DATE','NO-SOURCE'].includes(w.skipMessage)||w.noSource!==(w.skipMessage==='NO-SOURCE'))))fail('execution_invalid');
- return {executionId:w.executionId,btaTaskActionExecuted:executed,importStatus:executed?'inspect-current-envelope':'unavailable',reason:executed?null:'owned_offer_execution_unsupported',executionEvidence:executed?'bta-task-action':'not-called',compilerWorkStatus:'unknown',naturalReady:false};
+ return {executionId:w.executionId,btaTaskActionExecuted:executed,importStatus:executed?'inspect-current-envelope':'unavailable',reason:executed?null:'owned_offer_action_not_executed',executionEvidence:executed?'bta-task-action':'not-called',compilerWorkStatus:'unknown',naturalReady:false};
 }
 
-// The only adoption entry point requires fresh, caller-bound execution evidence.
+// The only adoption entry point requires caller-supplied execution evidence; its authenticity rests on the caller.
 export function readOwnedOffer(e,settings,read){
  const classification=classifyOfferExecution(settings.executionWitness);
  if(!str(settings.executionId)||classification.executionId!==settings.executionId)fail('execution_invalid');
- if(!classification.btaTaskActionExecuted)return {...classification,fileReads:0};
- if(e?.executionId!==classification.executionId)fail('execution_invalid');
+ if(!classification.btaTaskActionExecuted){
+  validateOwnedOffer(e);
+  return {producerState:e.producerState,importStatus:'unavailable',reason:classification.reason,producerReason:null,fileReads:0,naturalReady:false,naturalContentBinding:false,consumptionStatus:'offered-inputs-only',executionEvidence:'not-called',compilerWorkStatus:'unknown'};
+ }
+ // An executed action must have rewritten the envelope; a retained earlier ID contradicts the claim.
+ if(e?.executionId!==classification.executionId)fail('claim_mismatch');
  return inspectOwnedOffer(e,settings,read);
 }
