@@ -4074,3 +4074,69 @@ PFは今後の最適化の条件であり、今回のbaseline testで実装済�
 
 - §9.68.2の再現commandは、出力先が公開済みのbaseline JSONそのものだったため、確認の実行だけで基準値・時刻・source hashが置き換わった。出力先を`<output-path>`とし、一時fileへ出力して、基準の更新時だけ意図して置き換えることを明記した。
 - baseline記録を読み直す静的テスト`src/test/utils/gradleOwnedStoreBaseline.test.ts`を加えた。schema、`baselineOnly:true`・`optimizedImplementation:false`、54 rows、各rowの測定samples数がrepetitions（5）と一致し、median／min／maxがsamplesから求めた値であること、§9.68.3の表の中央値・store境界read bytes・checkpoint再取得／同値put・native fsync回数が記録と一致することを確認する。測定値そのものは環境で変わるため、新しい計測とは比較しない。
+
+
+### 9.70 PO1・1回の検証内content memoとhead-only API（2026-11-02）
+
+#### 9.70.1 実装と境界
+
+`AuthorityJournal.#recover`の1回だけ有効なcontent proof memoを追加した。keyはrecordの全体size／SHA-256と順序付きchunk SHA-256／sizeで、成功したbytes検証だけを保存する。role・record ID・index・schema・MAC・chain・authority／epoch・operation重複の判定を再使用しない。hit前にも全chunkの存在・sizeを確認する。provider由来のblobをprivate Bufferへコピーしてからhashし、memoの根拠を外部aliasから分離する。
+
+既定上限は4,096 entries／8 MiBのASCII key bytes。いずれかの上限へ達するとmemoをclearして通常のconcat／hashへ戻り、上限より大きいkeyは保存しない。fixture専用設定で上限を下げるか0で無効化でき、負数・小数・既定上限を超える設定は保存前に拒否する。requestをまたぐprefix cache・原本read省略はない。
+
+`verifyHead(expectedHead?)`は全履歴・全blob・独立checkpointを検証し、headのcopyだけを返す。指定headの不一致は`revision_conflict`で、正常なjournalをfail-stopにはしない。A1の世代確認とlookupが捨てていた`readLatest()`出力をこのAPIへ置き換えた。restartはsnapshot bytesが必要なので`readLatest()`を維持する。owner生存確認・checkpoint同値put／再同期・期限／世代gateも維持する。
+
+`verificationMetrics`は最後に成功したrecoverの診断counterのcopyである。blob read／private copy、record concat／hash、memo hit／eviction／peak、返却用record bytesを記録する。失敗したrecoverでは未設定に戻す。後続write失敗時は最後の成功prefixの値が残り得るため、ack・receipt・採用判定に使用しない。commit入力のhashやA1の複数recoverを合算した総費用でもない。
+
+#### 9.70.2 回帰と実証範囲
+
+新規20件は同一recover内の再使用と次回の再hash、head-only出力、expected head不一致、memo無効・eviction・byte上限、同じ全体digestでも異なるchunk順序、role／size／blob欠落・改変／MAC／巻戻し／checkpoint障害のwarm拒否、provider aliasの分離、不正上限の書込前拒否を確認する。最初にhead-onlyテストがAPI未実装で失敗することを確認してから実装した。
+
+既存のdurable／restart／diskテストでも保存障害・期限・世代変更・owner終了・process停止後の復旧を再検証する。PFのうちPO1の内容再使用・head-only・容量fallbackと既存のfull検証維持を対象とし、PF01〜PF28全体の完了とはしない。PO2のdirty snapshot、PO3のv2 delta、PO4のimmutable provider、M0以降のcompaction／世代移行は未実装である。コードはtest fixture内で、build出力と本番backendには含めない。
+
+#### 9.70.3 比較の再現条件
+
+公開baselineは変更しない。`7e00ee4`を別の一時directoryへ展開し、その31 source hashが公開baselineと一致することを確認してTypeScriptをcompileする。比較harnessは`OSV_MCP_OWNED_PO1_BEFORE_ROOT`からそのJSを読み込み、現在版と同じprovider・入力・測定境界を用いて交互に実行する。出力は`OSV_MCP_OWNED_PO1_OUTPUT=<output-path>`で別fileへ保存する。公開済み比較記録も再現commandの出力先には指定しない。
+
+各rowはwarmup各1回・測定各5回。beforeのhead-only相当は`readLatest()`後のhead、afterは`verifyHead()`。object-coldは新journal instanceでありdisk-coldではない。nativeもOS cacheを排除していない。public outcomeとread／list／put／checkpoint／native file・directory syncのcounterを照合する。追加される`assertOpen`回数だけは同数を要求せず、実数を保存する。A1はopaque random IDを毎回発行するため、無関係なhead hashの一致ではなくpublic statusとI/O sizeを照合する。
+
+beforeのrecord hash bytesはfingerprintを照合したreferenceコードとdescriptorから算出し、afterは診断counterを使用する。last recoverの費用であって操作全体の費用ではない。wall-clockにはCIの合否閾値を設定しない。本測定を実Gradle／BTA／OSVや本番隔離backendの性能として扱わない。
+
+比較を実行するcommand（`<before-root>`は上記commitを展開・compile済みの一時directory）:
+
+```bash
+env OSV_MCP_OWNED_PO1_BEFORE_ROOT=<before-root> OSV_MCP_OWNED_PO1_OUTPUT=<output-path> npm test -- src/test/benchmarks/gradleOwnedStorePo1.test.ts --maxWorkers=1
+```
+
+原本private copy bytesとmemo key／entryの論理peakを記録するが、process全体のpeak RSS／heapは未測定である。特にchurnでは再使用できるpayloadが少なく、追加private copyの費用もあるため、速度改善を一般化しない。
+
+#### 9.70.4 比較結果
+
+[比較JSON](benchmarks/gradle-owned-store-po1-2026-11-02.json)は66 rows／660測定samples＋132 warmups。before／afterの順を反転して測定した。別のテストを並行実行せずに取り直した最後のrunを保存した。macOS arm64／Node v26.12.1／Apple M4上の値であり、同じhostの背景負荷・GCの変動は制御していない。
+
+以下はwarm lookup中央値。倍率はbefore／afterで、1未満は遅くなった条件を表す。file protocol on memoryの同期counterは実fsyncではない。
+
+| workload | storage | before ms | after ms | 倍率 |
+| --- | --- | ---: | ---: | ---: |
+| fixed-1MiB-h4 | file-checkpoint-protocol-on-memory | 2.48 | 1.43 | 1.74 |
+| fixed-1MiB-h8 | file-checkpoint-protocol-on-memory | 4.21 | 1.61 | 2.61 |
+| fixed-8MiB-h8 | file-checkpoint-protocol-on-memory | 30.03 | 7.21 | 4.16 |
+| fixed-1MiB-h32 | file-checkpoint-protocol-on-memory | 17.12 | 4.26 | 4.02 |
+| fixed-8MiB-h32 | file-checkpoint-protocol-on-memory | 108.39 | 10.76 | 10.08 |
+| fixed-8MiB-h64 | file-checkpoint-protocol-on-memory | 205.98 | 13.83 | 14.89 |
+| fixed-32MiB-h8 | file-checkpoint-protocol-on-memory | 150.92 | 38.49 | 3.92 |
+| churn-1MiB-h8 | file-checkpoint-protocol-on-memory | 10.40 | 12.01 | 0.87 |
+| churn-8MiB-h8 | file-checkpoint-protocol-on-memory | 70.46 | 70.35 | 1.00 |
+| memory-anchor-8MiB-h32 | memory-checkpoint | 155.71 | 15.27 | 10.19 |
+| 1MiB・履歴8 | native-rooted-files | 31.43 | 11.69 | 2.69 |
+| 8MiB・履歴8 | native-rooted-files | 42.47 | 19.10 | 2.22 |
+| 1 scopes・small | file-checkpoint-protocol-on-memory | 1.46 | 2.40 | 0.61 |
+| 1 scopes・large | file-checkpoint-protocol-on-memory | 9.13 | 6.39 | 1.43 |
+| 16 scopes・large | file-checkpoint-protocol-on-memory | 10.81 | 7.92 | 1.36 |
+| 64 scopes・large | file-checkpoint-protocol-on-memory | 14.46 | 13.50 | 1.07 |
+
+8 MiB・履歴64の最後のrecoverではrecord全体hash対象が536,874,732 bytesから8,389,510 bytesへ減った。全blob read、全commit認証、checkpointの再取得・再同期を省いていない。head-onlyの返却用record bytesは0である。
+
+重複が多い条件で改善した一方、churnやsmall kernelでは改善が成立しない条件もある。private copy・memo管理等を含む結果であり、速度差をhashだけに帰属させない。全66 rowsでpublic outcomeとI/O・同期の比較に成功したが、native故障matrix全体をbefore／after交互に計測したものではない。既存の故障回帰は現在版で別途再実行する。
+
+PO1の最終検証: 新規20回帰と比較記録の静的照合2件成功。opt-in比較1件成功（66 rows／660測定samples＋132 warmups）。型検査・build成功。通常全体104 files／3,709 tests成功、23 files／1,417 tests skipped。既存の保存障害・native writer排他／SIGKILL・restart・期限境界も含めて再実行した。公開baselineとその表は変更していない。比較JSONのnote中の「setup and validation excluded」はseedの準備と測定後の結果照合を指し、各API内のrecover／認証検証は測定時間に含む。

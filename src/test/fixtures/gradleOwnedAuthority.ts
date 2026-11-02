@@ -103,7 +103,7 @@ export class OwnedAuthorityContract {
  }
  #available():void {requireThat(!this.#durableStopped,'recovery_required');requireThat(!this.#durableBusy,'busy');this.#requireGeneration();}
  async #verifyGeneration():Promise<void> {
-  try{await this.#journal!.readLatest();this.#requireGeneration();}catch(e){this.#durableStopped=true;throw e;}
+  try{await this.#journal!.verifyHead();this.#requireGeneration();}catch(e){this.#durableStopped=true;throw e;}
  }
  /** Trusted harness provisioning; deliberately NOT a wire/OS authentication API. */
  principal(role:Role,sessionId?:string,scope?:AuthorityScope):object {
@@ -173,7 +173,7 @@ export class OwnedAuthorityContract {
    let reply:any;
    try{reply=this.#dispatch(actor,c);}catch(e){await this.#saveExpiration();throw e;}
    if(c.operation==='lookup'){
-    try{await this.#journal.readLatest();}catch(e){this.#durableStopped=true;throw e;}
+    try{await this.#journal.verifyHead();}catch(e){this.#durableStopped=true;throw e;}
    }else {
     const prior=this.#durableAcks.get(operationId);
     if(prior){

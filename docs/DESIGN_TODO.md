@@ -2373,3 +2373,13 @@ A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全�
 ### 2026-11-02: 943dc1cレビュー修正（baseline記録の保護と照合）
 
 - [設計書§9.69](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#969-943dc1cレビュー修正baseline記録の保護と照合2026-11-02)へ、再現commandの出力先を`<output-path>`にして公開baselineの上書きを避けることと、baseline記録の構造・§9.68.3の表の値を照合する静的テストの追加を記録。nativeの再実行なし。
+
+
+### 2026-11-02: PO1・検証内content memo／head-only API
+
+- §9.70へ実装・回帰・比較結果を追加。1 recover内で成功したcontent proofだけを、有界key（4,096 entries／8 MiB）で再使用する。全blobをprivate copyして検証し、schema／role／index／MAC／chain／checkpointは省略しない。request間のcacheは作らない。
+- `verifyHead(expectedHead?)`を追加し、A1の世代確認・lookupで捨てていたrecord出力を省略。restartのbytes取得、owner・期限・世代・checkpoint同期のgateを維持する。
+- 新規20回帰と比較記録の静的照合2件。実際の7e00ee4の31 source fingerprintを照合してcompileした版と、66 rows／660測定samples＋132 warmupsで交互比較。結果・I/O・同期の同等性を照合し、改善の乏しいchurn／small kernelも記録した。公開baselineを変更しない。
+- 次はPO2のdirty追跡・full形式record再使用の設計具体化と実装・比較。PO3／PO4、M0以降のcompaction・世代移行、隔離authority backend／認証IPC・Task／broker・G3／G4・本番採用は残る。PO1はtest fixture内の参照実装で、新規Gradle／BTA／OSV実接続は行っていない。
+
+PO1の検証結果: 新規22静的／回帰テストとopt-in比較1件成功。全体104 files／3,709 tests成功、23 files／1,417 tests skipped。型検査・build成功。固定8 MiB・履歴64件のwarm lookupは205.98→13.83 ms、native 8 MiB・履歴8件は42.47→19.10 ms。churn 1 MiBは10.40→12.01 msで遅くなった。macOS arm64／Node 26.12.1上の参照実証であり、本番backend・profile・診断採用は無効のまま。
