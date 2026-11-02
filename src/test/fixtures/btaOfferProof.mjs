@@ -135,5 +135,14 @@ export function verifyOfferCase(c){
   scope.gradleBuilds++;
  }
  Object.assign(scope,verifyStorageAudit(r,repeatSeeds));
+ // Import-time tampering of completed storage is refused by the bounded reader; the control is accepted unchanged.
+ const probes=c.readerProbes,expectedProbes=[['reader-file-symlink','owned_offer_path_invalid'],['reader-root-escape','owned_offer_path_invalid'],['reader-extra-file','owned_offer_inventory_mismatch'],['reader-control',null]];
+ if(!Array.isArray(probes)||!eq(probes.map(x=>x.mode),expectedProbes.map(x=>x[0])))fail();
+ scope.readerBoundaryRejections=0;
+ for(const [i,[mode,reason]] of expectedProbes.entries()){
+  const x=probes[i];if(!Number.isInteger(x.readerCalls)||x.readerCalls<1||x.readerCalls>4)fail();
+  if(reason){if(!eq(x.result,{rejected:reason}))fail();scope.readerBoundaryRejections++;}
+  else if(!eq(x.result,c.decisions[0].trusted)||x.readerCalls!==4)fail();
+ }
  return scope;
 }

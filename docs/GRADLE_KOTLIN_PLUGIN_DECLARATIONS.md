@@ -1961,7 +1961,7 @@ run-local IDやrecordの自己hashは真正性を保証しない。静的取込�
 | producerState | producerが記録する理由案 | readerの扱い |
 | --- | --- | --- |
 | unavailable | unavailableReason: execution_unsupported／evidence_unavailable（producer側で取得不能な実行方式・証拠） | 構造が正しければimportStatus=producer_unavailable。診断候補なし、自然消費readyはfalse |
-| failed | failureReason: binding_mismatch／configuration_unregistered／configuration_reused／parameter_mismatch／content_mismatch／stale／storage_failed／budget_exceeded／compile_failed／extra_evaluation | 構造が正しく、gate通過後の再照合で記録と矛盾しなければimportStatus=producer_failed。診断候補なし。graphは拒否しない |
+| failed | failureReason: binding_mismatch／configuration_unregistered／configuration_reused／ic_state_mismatch／storage_identity_mismatch／storage_inventory_mismatch／path_invalid／content_mismatch／stale／storage_failed／budget_exceeded／compile_failed／extra_evaluation（§9.46で実装へ合わせた） | 構造が正しく、gate通過後の再照合で記録と矛盾しなければimportStatus=producer_failed。診断候補なし。graphは拒否しない。readerが再読取で確認するのはstale／content_mismatchだけで、identity・IC・保存境界の拒否はproducerの表明として受理する |
 | completed | なし | 全検証成功時だけimportStatus=accepted（offered-inputs-only） |
 
 | readerの判定 | 理由案（importStatus） | 扱い |
@@ -1970,7 +1970,7 @@ run-local IDやrecordの自己hashは真正性を保証しない。静的取込�
 | task action未実行（§9.43） | owned_offer_action_not_executed | importStatus=unavailable、executionEvidence=not-called。envelopeの構造は検証するが内容は読まない。非対応strategyのexecution_unsupportedとは区別する |
 | 実行witness不正（§9.43） | owned_offer_execution_invalid | 呼出側が渡したwitnessの欠落・状態矛盾・期待ID不一致。graphを拒否する |
 | 構造不正 | owned_offer_schema_invalid／owned_offer_required_evidence_missing | graphを拒否。必須非空列の空配列・未知status・必須limitations欠落・状態とphaseの矛盾を含む |
-| integrity違反 | owned_offer_profile_mismatch／owned_offer_claim_mismatch／owned_offer_path_invalid | graphを拒否。completedなのに再照合で内容・binding・鮮度が合わない場合、failedのfailureReason・failurePhaseが証拠と食い違う場合、記録された拒否を別理由・別phaseへ付け替えた場合、実行済みwitnessの下でenvelopeが別のexecutionIdを持つ場合（§9.43）を含む。部分metadataやdeclared_inへ縮退させない |
+| integrity違反 | owned_offer_profile_mismatch／owned_offer_claim_mismatch／owned_offer_path_invalid／owned_offer_inventory_mismatch（§9.46） | graphを拒否。completedなのに再照合で内容・binding・鮮度が合わない場合、failedのfailureReason・failurePhaseが証拠と食い違う場合、記録された拒否を別理由・別phaseへ付け替えた場合、実行済みwitnessの下でenvelopeが別のexecutionIdを持つ場合（§9.43）を含む。部分metadataやdeclared_inへ縮退させない |
 
 未知profile IDはunapprovedだが、既知承認profile IDを名乗って実artifactが異なる場合はmismatchとする。未定義の「省略可能な証拠mode」は設けない。合法なfailed／unavailableは上記unionで判定し、未到達証拠の省略だけでgraphを拒否しない。completedを表明して必須証拠が欠ける場合や、failed／unavailableの状態・phaseに矛盾する証拠がある場合は構造不正である。producerが記録したfailureReasonはreaderのintegrity理由へ昇格させず、readerのintegrity違反をproducer_failedへ格下げしない。本理由は設計案であり、§9.36のtest fixtureの既存reason文字列を今回変更しない。
 
@@ -2256,6 +2256,21 @@ probe／native matrixはv7、[検証記録](validation/gradle-bta-offer-contract
 内部no-opはunknown、自然消費receipt・本番採用0を維持する。全writer排除、汎用の構築／入力manifestと静的path取込、全observerの追加評価計測は別工程である。
 
 最終確認（§9.45）: 通常全体2,593テスト成功・native opt-in等1,281件skip。typecheck・build・差分検査も成功。
+
+
+### 9.46 a5be821レビュー修正・取込み時のbounded readerと理由表（2026-11-02）
+
+§9.44〜9.45の保存境界の保護はproducerの保存・検査時点だけに働き、readerが取込み時に基準fileを読むcallbackはsymlinkを辿り、lexicalなpath検査しか行っていなかった。completed後にstagingのfileを同じbytesへのsymlinkへ差し替えても`accepted`となり、§9.37.3（OO07）のreader側要件を満たしていなかった。
+
+- contractに取込み用の`boundedOfferReader(root)`を追加した。rootをrealpathで固定し、各componentをlstatでsymlinkでないdirectory、最後をregular fileと確認する。O_NOFOLLOWで開いたfileの実体（dev／ino／size）がlstat時と同じことも確認する。違反は`owned_offer_path_invalid`、32 MiB超は`owned_offer_budget_exceeded`である。
+- readOwnedOfferは各基準fileを、そのdirectoryに登録された名前一覧と一緒にreaderへ渡す。bounded readerは上限16＋1件までの一覧が登録名と一致することを要求し、登録外entryを`owned_offer_inventory_mismatch`で拒否する。nativeハーネスの全読取（seed取込・全case判定・stale再確認）をこのreaderへ置き換えた。
+- nativeでは各DSL／版で、completed後に実storageを改変して取込みを試すprobeを追加した。stagingのfileを同bytesへのsymlinkへ差替え、evidence rootをproject外へ移してsymlinkで置換、登録外fileを追加の3種で、いずれも取込みで拒否する。復元後のcontrolは元の判定と一致する。reader側の拒否は12件である。
+- §9.37.5の理由表を実装へ合わせた。producer理由に`ic_state_mismatch`／`storage_identity_mismatch`／`storage_inventory_mismatch`／`path_invalid`を加え、未実装の`parameter_mismatch`を除いた。producerの`path_invalid`（failureReason）と、readerが検出する`owned_offer_path_invalid`（graph拒否）は別の判定である。readerが再読取で確かめるのはstale／content_mismatchだけで、保存境界・IC・identityの拒否はproducerの表明として受理する。failedは診断候補にならないため、偽の拒否は採用を増やさない。
+- §9.44の記録縮小（祖先列の共有化）は見送った。祖先列は記録2.92MBのうち約0.19MBで、残りは主にcase数に比例するenvelopeと保存検査記録である。
+
+Java producerは変更していない。両DSL・Gradle 8.11.1／9.2.1で各版104テスト成功。件数は§9.45と同じ（12 build、BTA呼出し60回、completed 20／failed 152／unavailable 4、保存領域拒否116、reader graph拒否0）に、取込み時のreader境界拒否12を加えた。native matrixはv8、検証記録はexperiment-v9とし、v8はa5be821のcommit済み原本として要約を`preReviews`へ残した。静的／公開記録再生は189テスト成功。修正前のreaderとv8記録では189件中13件が失敗することを先に確認した。
+
+検査とopenの間に任意writerがcomponentを入れ替える競合、全writer排除、汎用の静的path／manifest取込は引き続き未成立である。bta-call-only／compilerWorkStatus=unknown、自然消費receipt・本番採用0を維持する。
 
 
 ### 9.47 producer所有driverの構築・入力manifest契約（設計、2026-11-02）

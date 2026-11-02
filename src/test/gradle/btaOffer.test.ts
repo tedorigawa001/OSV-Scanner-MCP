@@ -1,9 +1,10 @@
-import {it,expect} from 'vitest';
+import {it,expect,afterAll} from 'vitest';
 import {createHash} from 'node:crypto';
-import {readFileSync} from 'node:fs';
+import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,symlinkSync,rmSync,truncateSync} from 'node:fs';
+import os from 'node:os';import path from 'node:path';
 import {offerSources,offerVerificationSources,verifyOfferCase,storageCases,storagePhase} from '../fixtures/btaOfferProof.mjs';
 import {assertNoAbsolutePaths} from '../manual/kgpRecordPaths.mjs';
-import {readOwnedOffer,offerLimitations,classifyOfferExecution} from '../fixtures/btaOfferContract.mjs';
+import {readOwnedOffer,offerLimitations,classifyOfferExecution,boundedOfferReader} from '../fixtures/btaOfferContract.mjs';
 const unavailable=()=>({schema:'osv-mcp.gradle-owned-offer-v1',executionId:'unit-execution',graphId:'graph',exportId:'export',project:':',invocation:'one',stage:'consumer',slot:'snapshot',profileId:'test',producerState:'unavailable',plannedCaptures:0,limitations:[...offerLimitations],naturalContentBinding:false,phases:[],unavailableReason:'execution_unsupported',blockedBeforePhase:'registration',noRead:true});
 it('accepts a legal unavailable envelope with no source or file reads',()=>{
  const result=readOwnedOffer(unavailable(),{...settings(),trust:false,profiles:{}},()=>{throw Error('unexpected file read');});
@@ -129,7 +130,7 @@ it('rejects a claimed snapshot size over the per-file budget before calling a re
 
 const published=()=>JSON.parse(readFileSync(new URL('../../../docs/validation/gradle-bta-offer-contract-2026-11-02.json',import.meta.url),'utf8'));
 it('replays the native envelopes and gates with their original implementation fingerprints',()=>{
- const d=published();expect(d.schema).toBe('osv-mcp.bta-offer-contract-experiment-v8');expect(d.preReviews.map((p:any)=>p.schema)).toEqual(['osv-mcp.bta-offer-contract-experiment-v1','osv-mcp.bta-offer-contract-experiment-v2','osv-mcp.bta-offer-contract-experiment-v3','osv-mcp.bta-offer-contract-experiment-v4','osv-mcp.bta-offer-contract-experiment-v5','osv-mcp.bta-offer-contract-experiment-v6','osv-mcp.bta-offer-contract-experiment-v7']);expect(d.preReviews.map((p:any)=>p.committedIn??null)).toEqual([null,'a6d5409','d1f8557',null,'c555f4f','63e8a62',null]);expect(d.scope.readerIntegrityRejections).toBe(0);assertNoAbsolutePaths(d);
+ const d=published();expect(d.schema).toBe('osv-mcp.bta-offer-contract-experiment-v9');expect(d.preReviews.map((p:any)=>p.schema)).toEqual(['osv-mcp.bta-offer-contract-experiment-v1','osv-mcp.bta-offer-contract-experiment-v2','osv-mcp.bta-offer-contract-experiment-v3','osv-mcp.bta-offer-contract-experiment-v4','osv-mcp.bta-offer-contract-experiment-v5','osv-mcp.bta-offer-contract-experiment-v6','osv-mcp.bta-offer-contract-experiment-v7','osv-mcp.bta-offer-contract-experiment-v8']);expect(d.preReviews.map((p:any)=>p.committedIn??null)).toEqual([null,'a6d5409','d1f8557',null,'c555f4f','63e8a62',null,'a5be821']);expect(d.scope.readerIntegrityRejections).toBe(0);assertNoAbsolutePaths(d);
  expect(Object.keys(d.sourcesSha256)).toEqual(offerSources);expect(Object.keys(d.verificationSourcesSha256)).toEqual(offerVerificationSources);
  for(const group of ['sourcesSha256','verificationSourcesSha256'])for(const [p,h]of Object.entries(d[group]))expect(createHash('sha256').update(readFileSync(new URL('../../../'+p,import.meta.url))).digest('hex'),p).toBe(h);
  const scope:Record<string,number>={};for(const c of d.cases){expect(c.sourceHashes).toEqual(d.sourcesSha256);for(const [k,v]of Object.entries(verifyOfferCase(c)))scope[k]=(scope[k]??0)+v;}
@@ -294,3 +295,33 @@ const guardFaults:Record<string,(c:any)=>void>={
  'small directory masquerades as large fixture':c=>c.report.storageEntryProbes[0].createdEntries=1,
 };
 for(const [name,fault]of Object.entries(guardFaults))it('rejects write guard / enumeration witness mutation: '+name,()=>{const c=published().cases[0];fault(c);expect(()=>verifyOfferCase(c)).toThrow();});
+
+// Import-time bounded reader over a real temporary tree.
+const outsideDirs:string[]=[];afterAll(()=>{for(const d of outsideDirs)rmSync(d,{recursive:true,force:true});});
+const storageTree=()=>{
+ const root=mkdtempSync(path.join(os.tmpdir(),'osv-offer-reader-'));
+ for(const dir of ['work/staging','work/evidence'])mkdirSync(path.join(root,dir),{recursive:true});
+ for(const dir of ['staging','evidence'])writeFileSync(path.join(root,'work',dir,'lib'),bytes);
+ writeFileSync(path.join(root,'src-consumer.kt'),source);return root;
+};
+const sealedAt=()=>{const e=complete();e.phases[5].evidence.files[0]={...e.phases[5].evidence.files[0],path:'work/staging/lib',baselinePath:'work/evidence/lib'};return e;};
+const tamper:Record<string,[(root:string)=>void,string]>={
+ 'final symlink to identical bytes':[r=>{writeFileSync(path.join(r,'work/copy'),bytes);rmSync(path.join(r,'work/staging/lib'));symlinkSync('../copy',path.join(r,'work/staging/lib'));},'owned_offer_path_invalid'],
+ 'root symlink escaping the project':[r=>{const out=mkdtempSync(path.join(os.tmpdir(),'osv-offer-out-'));outsideDirs.push(out);writeFileSync(path.join(out,'lib'),bytes);rmSync(path.join(r,'work/evidence'),{recursive:true});symlinkSync(out,path.join(r,'work/evidence'));},'owned_offer_path_invalid'],
+ 'ancestor symlink':[r=>{const alt=path.join(r,'alt');mkdirSync(path.join(alt,'staging'),{recursive:true});mkdirSync(path.join(alt,'evidence'));for(const d of ['staging','evidence'])writeFileSync(path.join(alt,d,'lib'),bytes);rmSync(path.join(r,'work'),{recursive:true});symlinkSync('alt',path.join(r,'work'));},'owned_offer_path_invalid'],
+ 'unregistered sibling':[r=>writeFileSync(path.join(r,'work/staging/extra'),'x'),'owned_offer_inventory_mismatch'],
+ 'directory in place of file':[r=>{rmSync(path.join(r,'work/staging/lib'));mkdirSync(path.join(r,'work/staging/lib'));},'owned_offer_path_invalid'],
+ 'file over budget':[r=>truncateSync(path.join(r,'work/staging/lib'),32*1024**2+1),'owned_offer_budget_exceeded'],
+};
+it('accepts an untouched sealed tree through the bounded reader',()=>{const r=storageTree();try{expect(readOwnedOffer(sealedAt(),settings(),boundedOfferReader(r))).toMatchObject({importStatus:'accepted',fileReads:2});}finally{rmSync(r,{recursive:true,force:true});}});
+for(const [name,[apply,reason]]of Object.entries(tamper))it('refuses completed storage at import: '+name,()=>{
+ const r=storageTree();try{apply(r);expect(()=>readOwnedOffer(sealedAt(),settings(),boundedOfferReader(r))).toThrow(reason);}finally{rmSync(r,{recursive:true,force:true});}
+});
+it('rejects lexical escapes before touching the filesystem',()=>{const r=storageTree();try{const read=boundedOfferReader(r);for(const p of ['../x','/etc/passwd','a//b','a/./b'])expect(()=>read(p)).toThrow('owned_offer_path_invalid');}finally{rmSync(r,{recursive:true,force:true});}});
+const probeFaults:Record<string,(c:any)=>void>={
+ 'reader probe missing':c=>c.readerProbes.pop(),
+ 'symlink accepted at import':c=>{c.readerProbes[0].result=c.decisions[0].trusted;},
+ 'extra file relabelled':c=>{c.readerProbes[2].result={rejected:'owned_offer_path_invalid'};},
+ 'control not restored':c=>{c.readerProbes[3].result={rejected:'owned_offer_path_invalid'};},
+};
+for(const [name,fault]of Object.entries(probeFaults))it('rejects import-reader probe mutation: '+name,()=>{const c=published().cases[0];fault(c);expect(()=>verifyOfferCase(c)).toThrow('bta_offer_record_invalid');});

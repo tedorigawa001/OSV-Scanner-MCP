@@ -2109,6 +2109,13 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 両版各96テスト、静的177テスト。最終12 build・BTA呼出し60回、保存領域拒否116。公開記録v8へ更新し旧未コミットv7は参考要約へ。内部no-opはunknown、自然消費receipt・本番採用0を維持。
 
 
+### 2026-11-02: a5be821レビュー修正（取込み時のbounded readerと理由表）
+
+- [設計書§9.46](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#946-a5be821レビュー修正取込み時のbounded readerと理由表2026-11-02)へ、取込み時の`boundedOfferReader`（各componentのsymlink拒否、O_NOFOLLOWと実体照合、登録名との一覧一致）を追加し、nativeハーネスの全読取を置換。completed後のsymlink化・root逸脱・登録外fileを両DSL・両版で取込み拒否（12件）。
+- §9.37.5の理由表を実装へ合わせ、producerの`path_invalid`とreaderの`owned_offer_path_invalid`を区別。保存境界の拒否はreaderが再確認しないことを明記。
+- Java producerは無変更。各版104テスト、記録v9、静的189テスト。祖先列の共有化は効果が小さいため見送り。本番採用・自然消費receipt0を維持。
+
+
 ### 2026-11-02: producer所有driverの構築・入力manifest契約（設計）
 
 - [設計書§9.47](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#947-producer所有driverの構築入力manifest契約設計2026-11-02)へ、owned-recipe-inputsの完全性domain、必須role、bundle／ref DAGと循環hash回避、canonical bytes、source→構築output→実行artifact→snapshot／offerの対応を具体化。

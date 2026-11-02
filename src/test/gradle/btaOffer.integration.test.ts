@@ -1,13 +1,12 @@
 /** Native owner helper proof; test-only, no production adoption or natural receipt. */
 import {execFile,execFileSync} from 'node:child_process';
-import {readFileSync} from 'node:fs';
-import {readFile,writeFile,mkdtemp,rm,realpath} from 'node:fs/promises';
+import {readFile,writeFile,mkdtemp,rm,realpath,rename,symlink,unlink} from 'node:fs/promises';
 import path from 'node:path';import os from 'node:os';import {fileURLToPath} from 'node:url';
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';
 import {btaDriverProfiles} from '../fixtures/gradleBtaDriverRuntime.mjs';
 import {offerJdkProfile as ownerJdkProfile} from '../fixtures/btaOfferContract.mjs';
 import {hash} from '../fixtures/gradleBtaDriverProof.mjs';
-import {readOwnedOffer,classifyOfferExecution} from '../fixtures/btaOfferContract.mjs';
+import {readOwnedOffer,classifyOfferExecution,boundedOfferReader} from '../fixtures/btaOfferContract.mjs';
 import {offerSources as sources,verifyOfferCase,storageCases,storagePhase} from '../fixtures/btaOfferProof.mjs';
 const repo=fileURLToPath(new URL('../../../',import.meta.url)),binary=process.env.OSV_MCP_TEST_GRADLE;
 const roots:string[]=[],cases:any[]=[];const digest=async(p:string)=>hash(await readFile(p));
@@ -27,7 +26,7 @@ for(const dsl of ['Groovy','Kotlin'])describe.skipIf(!binary)(`BTA owner envelop
   const fixtureFiles=[...Object.keys(files),'runtime-profile.json'];files['runtime-profile.json']=JSON.stringify({runtime,stdlib:runtime.find(e=>e.coordinate.startsWith('org.jetbrains.kotlin:kotlin-stdlib:'))!.artifact,exportId,profileId,registration,fixtureFiles});
   for(const [f,b]of Object.entries(files))await writeFile(path.join(root,f),b);
   const fixtureHashes=Object.fromEntries(await Promise.all(fixtureFiles.map(async f=>[f,await digest(path.join(root,f))])));
-  const executionEvidence:any[]=[];
+  const executionEvidence:any[]=[],reader=boundedOfferReader(root);
   const runBuild=async(mode:string)=>{
    const executionId=crypto.randomUUID(),extra=mode==='seed'?['--rerun-tasks']:mode==='skip'?['-Dosv.offer.skip=true']:[];
    const result=await new Promise<{code:number,output:string}>(resolve=>execFile(binary!,['-p',root,'offerProof',`-Dosv.offer.executionId=${executionId}`,'--offline','--no-daemon','--no-configuration-cache','--build-cache',...extra,'--no-parallel','--max-workers=1','--console=plain','--stacktrace'],{env:process.env,timeout:300000,maxBuffer:4*1024**2},(e,out,err)=>resolve({code:e?1:0,output:out+err})));
@@ -36,7 +35,7 @@ for(const dsl of ['Groovy','Kotlin'])describe.skipIf(!binary)(`BTA owner envelop
    const classification=classifyOfferExecution(witness),reportSha256=await digest(path.join(root,'offer-report.json'));
    const actions=(await readFile(path.join(root,'offer-actions.log'),'utf8')).trim().split('\n');
    const retained=JSON.parse(await readFile(path.join(root,'offer-report.json'),'utf8'));let adoptionFileReads=0;
-   const adoption=readOwnedOffer(retained.envelopes[0],{...settings,executionId,executionWitness:witness},p=>{adoptionFileReads++;if(mode!=='seed')throw Error('unexecuted adoption read');return readFileSync(path.join(root,p));});
+   const adoption=readOwnedOffer(retained.envelopes[0],{...settings,executionId,executionWitness:witness},(p,siblings)=>{adoptionFileReads++;if(mode!=='seed')throw Error('unexecuted adoption read');return reader(p,siblings);});
    expect(adoptionFileReads).toBe(mode==='seed'?4:0);
    executionEvidence.push({mode,witness,classification,reportSha256,actionExecutions:actions,adoption,adoptionFileReads,envelopeExecutionId:retained.envelopes[0].executionId});return result;
   };
@@ -51,16 +50,30 @@ for(const dsl of ['Groovy','Kotlin'])describe.skipIf(!binary)(`BTA owner envelop
   decisions=[];
   for(const e of report.envelopes){
    const noRead=()=>{throw Error('unexpected-read');};
-   let trusted:any;try{trusted=readOwnedOffer(e,settings,p=>{const real=path.join(root,p);return readFileSync(real);});}catch(error){trusted={rejected:(error as Error).message};}
+   let trusted:any;try{trusted=readOwnedOffer(e,settings,reader);}catch(error){trusted={rejected:(error as Error).message};}
    const gates=[];for(const gate of [{...settings,trust:false},{...settings,profiles:{}}]){try{gates.push(readOwnedOffer(e,gate,noRead));}catch(error){gates.push({rejected:(error as Error).message});}}
    decisions.push({invocation:e.invocation,trusted,gates});
   }
+  // Tamper with a completed offer's storage after completion; the import reader must refuse it.
+  const completed=report.envelopes.find((e:any)=>e.invocation==='completed'),sealed=completed.phases.find((x:any)=>x.phase==='seal'&&x.outcome==='success').evidence.files[0];
+  const stagingFile=path.join(root,sealed.path),stagingDir=path.dirname(stagingFile),evidenceDir=path.dirname(path.join(root,sealed.baselinePath)),readerProbes:any[]=[];
+  const probe=async(mode:string,apply:()=>Promise<void>,restore:()=>Promise<void>)=>{
+   await apply();let calls=0,result:any;
+   try{result=readOwnedOffer(completed,settings,(p,siblings)=>{calls++;return reader(p,siblings);});}catch(error){result={rejected:(error as Error).message};}finally{await restore();}
+   readerProbes.push({mode,result,readerCalls:calls});
+  };
+  const moved=path.join(path.dirname(stagingDir),'reader-target.snapshot');
+  await probe('reader-file-symlink',async()=>{await rename(stagingFile,moved);await symlink(path.relative(stagingDir,moved),stagingFile);},async()=>{await unlink(stagingFile);await rename(moved,stagingFile);});
+  const outside=await realpath(await mkdtemp(path.join(os.tmpdir(),'osv-offer-reader-outside-')));roots.push(outside);const escaped=path.join(outside,'evidence');
+  await probe('reader-root-escape',async()=>{await rename(evidenceDir,escaped);await symlink(escaped,evidenceDir);},async()=>{await unlink(evidenceDir);await rename(escaped,evidenceDir);});
+  await probe('reader-extra-file',async()=>{await writeFile(path.join(stagingDir,'unregistered.txt'),'fault',{flag:'wx'});},async()=>{await rm(path.join(stagingDir,'unregistered.txt'));});
+  await probe('reader-control',async()=>{},async()=>{});
   await runBuild('skip');
   await rm(path.join(root,'offer-report.json'));await rm(path.join(root,'build/proof'),{recursive:true});
   await runBuild('cache');
   expect(executionEvidence.map(x=>x.witness.skipMessage)).toEqual([null,'SKIPPED','FROM-CACHE']);
-  record={gradleVersion:version,dsl,sourceHashes,registration,report,gradle,decisions,executionEvidence};verifyOfferCase(record);cases.push(record);
-  if(process.env.OSV_MCP_BTA_OFFER_OUTPUT)await writeFile(process.env.OSV_MCP_BTA_OFFER_OUTPUT,JSON.stringify({schema:'osv-mcp.bta-offer-matrix-v7',cases},null,2)+'\n');
+  record={gradleVersion:version,dsl,sourceHashes,registration,report,gradle,decisions,executionEvidence,readerProbes};verifyOfferCase(record);cases.push(record);
+  if(process.env.OSV_MCP_BTA_OFFER_OUTPUT)await writeFile(process.env.OSV_MCP_BTA_OFFER_OUTPUT,JSON.stringify({schema:'osv-mcp.bta-offer-matrix-v8',cases},null,2)+'\n');
  },300000);
  it('completes a real bound BTA call as offered-only, not compiler-work or natural receipt',()=>expect(decisions.find(d=>d.invocation==='completed').trusted).toMatchObject({importStatus:'accepted',fileReads:4,compilerWorkStatus:'unknown',naturalReady:false}));
  for(const name of ['storage-failed','call-failed'])it('keeps a legitimate failed prefix without requiring later evidence: '+name,()=>expect(decisions.find(d=>d.invocation===name).trusted).toMatchObject({importStatus:'producer_failed',fileReads:0}));
@@ -95,4 +108,6 @@ for(const dsl of ['Groovy','Kotlin'])describe.skipIf(!binary)(`BTA owner envelop
   for(const row of record.report.storageChecks)for(const scan of row.enumerations)expect(scan.count).toBeLessThanOrEqual(scan.maxEntries+1);
  });
  it('reports only its bounded native scope',()=>expect(record.report).toMatchObject({btaConsumerCalls:14,libraryCalls:1,generatedSnapshots:2,naturalContentBinding:false,productionAdopted:false}));
+ for(const [mode,reason] of [['reader-file-symlink','owned_offer_path_invalid'],['reader-root-escape','owned_offer_path_invalid'],['reader-extra-file','owned_offer_inventory_mismatch']])it('refuses completed storage tampered after completion at import: '+mode,()=>expect(record.readerProbes.find((x:any)=>x.mode===mode).result).toEqual({rejected:reason}));
+ it('accepts the restored completed storage through the bounded reader',()=>expect(record.readerProbes.find((x:any)=>x.mode==='reader-control').result).toEqual(decisions.find(d=>d.invocation==='completed').trusted));
 });

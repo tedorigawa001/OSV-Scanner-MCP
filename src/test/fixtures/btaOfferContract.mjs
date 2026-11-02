@@ -1,5 +1,7 @@
 // Test-only contract proof. No production scanner imports this module.
 import {createHash} from 'node:crypto';
+import {lstatSync,openSync,fstatSync,readSync,closeSync,opendirSync,realpathSync,constants} from 'node:fs';
+import path from 'node:path';
 export {ownerJdkProfile as offerJdkProfile} from './gradleSnapshotOwnerExpected.mjs';
 export const offerLimitations=['offered-inputs-only','no-natural-consumption-receipt','no-all-writer-exclusion','no-compiler-internal-supplier-proof','no-transparent-kgp-integration','snapshot-slot-only','no-compiler-work-witness'];
 export const offerPhases=['registration','generation','seal','binding','precheck','call','postcheck','capture'];
@@ -79,8 +81,10 @@ function inspectOwnedOffer(e,settings,read){
  if(e.producerState==='failed'&&!reverified.includes(e.failureReason))return result('producer_failed',null);
  if(evidence.seal.files.some(f=>f.size>32*1024**2)||evidence.seal.files.reduce((n,f)=>n+2*f.size,0)>128*1024**2)fail('budget_exceeded');
  let matched=true;
+ // Each registered file is read with its directory's registered names so a bounded reader can reject unregistered entries.
+ const siblings=new Map();for(const f of evidence.seal.files)for(const p of [f.baselinePath,f.path]){const dir=p.split('/').slice(0,-1).join('/');if(!siblings.has(dir))siblings.set(dir,[]);siblings.get(dir).push(p.split('/').at(-1));}
  for(const f of evidence.seal.files)for(const p of [f.baselinePath,f.path]){
-  const bytes=read(p);fileReads++;if(bytes.length!==f.size||sha(bytes)!==f.sha256)matched=false;
+  const bytes=read(p,siblings.get(p.split('/').slice(0,-1).join('/')));fileReads++;if(bytes.length!==f.size||sha(bytes)!==f.sha256)matched=false;
  }
  if(e.producerState==='completed'){if(!matched)fail('content_mismatch');return result('accepted',null);}
  // A recorded content failure is accepted only when the reader also observes the mismatch.
@@ -109,4 +113,31 @@ export function readOwnedOffer(e,settings,read){
  // An executed action must have rewritten the envelope; a retained earlier ID contradicts the claim.
  if(e?.executionId!==classification.executionId)fail('claim_mismatch');
  return inspectOwnedOffer(e,settings,read);
+}
+
+// Import-time reader confined to root: no symlink in any component, regular final file, bounded
+// directory listing equal to the registered names, and the opened file must be the inspected one.
+export function boundedOfferReader(root,{maxEntries=16,maxFile=32*1024**2}={}){
+ const base=realpathSync(root);
+ return (p,siblings)=>{
+  if(!pathOK(p))fail('path_invalid');
+  const parts=p.split('/');let cursor=base,st;
+  for(let i=0;i<parts.length;i++){
+   cursor=path.join(cursor,parts[i]);try{st=lstatSync(cursor);}catch{fail('path_invalid');}
+   if(st.isSymbolicLink()||(i<parts.length-1?!st.isDirectory():!st.isFile()))fail('path_invalid');
+  }
+  if(st.size>maxFile)fail('budget_exceeded');
+  if(siblings){
+   const dir=opendirSync(path.dirname(cursor)),names=[];
+   try{for(let entry=dir.readSync();entry;entry=dir.readSync()){names.push(entry.name);if(names.length>maxEntries)fail('inventory_mismatch');}}finally{dir.closeSync();}
+   if(!eq(names.sort(),[...siblings].sort()))fail('inventory_mismatch');
+  }
+  const fd=openSync(cursor,constants.O_RDONLY|constants.O_NOFOLLOW);
+  try{
+   const opened=fstatSync(fd);if(!opened.isFile()||opened.ino!==st.ino||opened.dev!==st.dev||opened.size!==st.size)fail('path_invalid');
+   const bytes=Buffer.alloc(opened.size);let offset=0;
+   while(offset<bytes.length){const n=readSync(fd,bytes,offset,bytes.length-offset,offset);if(n===0)break;offset+=n;}
+   if(offset!==bytes.length)fail('path_invalid');return bytes;
+  }finally{closeSync(fd);}
+ };
 }
