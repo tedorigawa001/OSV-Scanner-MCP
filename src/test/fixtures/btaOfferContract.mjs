@@ -14,7 +14,7 @@ const list=(x,p,nonempty=true)=>{if(!Array.isArray(x)||(nonempty&&!x.length)||x.
 const pathOK=p=>str(p)&&!p.includes(String.fromCharCode(0))&&!p.includes('\\')&&!p.startsWith('/')&&p.split('/').every(x=>x&&x!=='.'&&x!=='..')&&!p.includes(':');
 const files=x=>list(x,f=>{keys(f,['path','size','sha256']);return pathOK(f.path)&&Number.isSafeInteger(f.size)&&f.size>=0&&digest(f.sha256);},false);
 // Producer-recorded failure reasons and the phases where each can legitimately be recorded.
-const reasonPhases={compile_failed:['call'],storage_failed:['generation','seal','postcheck','capture'],budget_exceeded:offerPhases,extra_evaluation:offerPhases,binding_mismatch:['binding','precheck'],configuration_unregistered:['precheck'],configuration_reused:['precheck'],content_mismatch:['precheck','postcheck','capture'],stale:['precheck','postcheck','capture'],path_invalid:['seal','precheck','postcheck','capture']};
+const reasonPhases={compile_failed:['call'],storage_failed:['generation','seal','postcheck','capture'],budget_exceeded:offerPhases,extra_evaluation:offerPhases,binding_mismatch:['binding','precheck'],configuration_unregistered:['precheck'],configuration_reused:['precheck'],ic_state_mismatch:['precheck'],content_mismatch:['precheck','postcheck','capture'],stale:['precheck','postcheck','capture'],path_invalid:['seal','precheck','postcheck','capture']};
 // Content claims the reader re-confirms after the trust gate; identity claims rest on the broker.
 const reverified=['stale','content_mismatch'];
 export const maxPlannedCaptures=8;
@@ -27,7 +27,7 @@ function checkEvidence(phase,v){
  if(phase==='seal'){
   keys(v,['files']);list(v.files,f=>{keys(f,['id','path','baselinePath','size','sha256']);return str(f.id)&&pathOK(f.path)&&pathOK(f.baselinePath)&&Number.isSafeInteger(f.size)&&f.size>0&&digest(f.sha256);});
  }
- if(phase==='binding'){keys(v,['configurationId','parameterId','serviceId','projectId','snapshotIds','sourcePath','sourceSha256','argumentsSha256','outputPath']);if(![v.configurationId,v.parameterId,v.serviceId,v.projectId].every(str))fail();list(v.snapshotIds,str);if(!pathOK(v.sourcePath)||!digest(v.sourceSha256)||!digest(v.argumentsSha256)||!pathOK(v.outputPath))fail();}
+ if(phase==='binding'){keys(v,['configurationId','parameterId','serviceId','projectId','snapshotIds','sourcePath','sourceSha256','argumentsSha256','outputPath','incrementalStatePath','sourceChanges']);if(![v.configurationId,v.parameterId,v.serviceId,v.projectId].every(str))fail();list(v.snapshotIds,str);if(!pathOK(v.sourcePath)||!digest(v.sourceSha256)||!digest(v.argumentsSha256)||!pathOK(v.outputPath)||!pathOK(v.incrementalStatePath)||!['unknown','known-empty'].includes(v.sourceChanges))fail();}
  if(['precheck','postcheck','capture'].includes(phase)){keys(v,['matched']);if(v.matched!==true)fail('content_mismatch');}
  if(phase==='call'){
   keys(v,['result','configurationId','parameterId','executionEvidence','compilerWorkStatus','outputs']);
@@ -35,10 +35,10 @@ function checkEvidence(phase,v){
  }
 }
 export function validateOwnedOffer(e){
- const common=['schema','graphId','exportId','project','invocation','stage','slot','profileId','producerState','plannedCaptures','limitations','naturalContentBinding','phases'];
+ const common=['schema','executionId','graphId','exportId','project','invocation','stage','slot','profileId','producerState','plannedCaptures','limitations','naturalContentBinding','phases'];
  const extra=e?.producerState==='failed'?['failureReason','failurePhase']:e?.producerState==='unavailable'?['unavailableReason','blockedBeforePhase','noRead']:[];
  if(JSON.stringify(e)?.length>1024**2)fail('budget_exceeded');keys(e,[...common,...extra]);
- if(e.schema!=='osv-mcp.gradle-owned-offer-v1'||!['completed','failed','unavailable'].includes(e.producerState)||!['graphId','exportId','project','invocation','stage','profileId'].every(k=>str(e[k]))||e.slot!=='snapshot'||!Number.isSafeInteger(e.plannedCaptures)||e.plannedCaptures<0||e.plannedCaptures>maxPlannedCaptures||e.naturalContentBinding!==false||!eq(e.limitations,offerLimitations))fail();
+ if(e.schema!=='osv-mcp.gradle-owned-offer-v1'||!['completed','failed','unavailable'].includes(e.producerState)||!['executionId','graphId','exportId','project','invocation','stage','profileId'].every(k=>str(e[k]))||e.slot!=='snapshot'||!Number.isSafeInteger(e.plannedCaptures)||e.plannedCaptures<0||e.plannedCaptures>maxPlannedCaptures||e.naturalContentBinding!==false||!eq(e.limitations,offerLimitations))fail();
  list(e.phases,x=>obj(x),false);if(e.phases.length>32)fail();
  const successful={};let index=0,captures=0;
  for(let i=0;i<e.phases.length;i+=2){
@@ -67,7 +67,7 @@ export function validateOwnedOffer(e){
  if(successful.call&&(successful.call.configurationId!==successful.binding.configurationId||successful.call.parameterId!==successful.binding.parameterId))fail('binding_mismatch');
  return successful;
 }
-export function readOwnedOffer(e,settings,read){
+function inspectOwnedOffer(e,settings,read){
  const evidence=validateOwnedOffer(e);let fileReads=0;
  const result=(importStatus,reason)=>({producerState:e.producerState,importStatus,reason,producerReason:e.failureReason??e.unavailableReason??null,fileReads,naturalReady:false,naturalContentBinding:false,consumptionStatus:'offered-inputs-only',executionEvidence:'bta-call-only',compilerWorkStatus:'unknown'});
  if(e.graphId!==settings.graphId||e.exportId!==settings.exportId)fail('claim_mismatch');
@@ -87,4 +87,22 @@ export function readOwnedOffer(e,settings,read){
  const source=read(evidence.binding.sourcePath);fileReads++;if(sha(source)!==evidence.binding.sourceSha256)matched=false;
  if(matched)fail('claim_mismatch');
  return result('producer_failed',null);
+}
+
+// Classifies fresh Gradle execution evidence before consulting any retained/cached envelope.
+export function classifyOfferExecution(w){
+ keys(w,['executionId','actionCalls','didWork','skipped','noSource','failed','skipMessage']);
+ if(!str(w.executionId)||![w.didWork,w.skipped,w.noSource,w.failed].every(x=>typeof x==='boolean')||![0,1].includes(w.actionCalls))fail('execution_invalid');
+ const executed=w.actionCalls===1;
+ if(w.failed||(executed?(w.skipped||w.noSource||!w.didWork||w.skipMessage!==null):(!w.skipped||w.didWork||!['FROM-CACHE','SKIPPED','UP-TO-DATE','NO-SOURCE'].includes(w.skipMessage)||w.noSource!==(w.skipMessage==='NO-SOURCE'))))fail('execution_invalid');
+ return {executionId:w.executionId,btaTaskActionExecuted:executed,importStatus:executed?'inspect-current-envelope':'unavailable',reason:executed?null:'owned_offer_execution_unsupported',executionEvidence:executed?'bta-task-action':'not-called',compilerWorkStatus:'unknown',naturalReady:false};
+}
+
+// The only adoption entry point requires fresh, caller-bound execution evidence.
+export function readOwnedOffer(e,settings,read){
+ const classification=classifyOfferExecution(settings.executionWitness);
+ if(!str(settings.executionId)||classification.executionId!==settings.executionId)fail('execution_invalid');
+ if(!classification.btaTaskActionExecuted)return {...classification,fileReads:0};
+ if(e?.executionId!==classification.executionId)fail('execution_invalid');
+ return inspectOwnedOffer(e,settings,read);
 }

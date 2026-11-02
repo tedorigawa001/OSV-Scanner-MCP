@@ -4,3 +4,4 @@ export const offerPhases:string[];
 export function validateOwnedOffer(envelope:any):any;
 export const offerJdkProfile:any;
 export const maxPlannedCaptures:number;
+export function classifyOfferExecution(witness:any):any;

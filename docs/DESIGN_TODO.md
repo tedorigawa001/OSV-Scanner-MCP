@@ -2072,3 +2072,17 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - [設計書§9.40](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#940-a6d5409レビュー修正producer記録拒否とcapture計画2026-11-02)へ、producer記録のfailedを`producer_failed`として受理しgraphを拒否しない判定へ修正。staleはgate後の再読取で不一致を確認した場合だけ受理し、一致すれば`claim_mismatch`。理由のphase固定、`producerReason`とreader理由の分離。
 - `plannedCaptures`と中間状態pendingを追加し、completedを終端化。unavailableはbinding以前に限定。nativeにcapture-failed／foreign-pathsを追加。
 - 両DSL・両版を再実行して各版30テスト。4 build・BTA呼出し20回、completed 4／failed 40／unavailable 4、producer記録拒否32件・reader graph拒否0件。記録v3、静的83テスト。本番採用・自然消費receipt0を維持。
+
+
+### 2026-11-02: OO09・変更なしBTA再呼出しとTask skip／cache対照
+
+- [設計書§9.41](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#941-oo09変更なしbta再呼出しと実task-skipcache対照2026-11-02)へ、同じsource・snapshot・IC・projectを新Handle／configuration／parameterで再呼出しするnative対照を追加。Knownのmodified／removedは空、結果はbta-call-only／unknownを維持。
+- project専用local cacheでseed→実SKIPPED→出力削除→実FROM-CACHEの3 buildを両DSL・両版で検証。fresh TaskState／executionIdとcache外action logを照合し、残存／復元reportを今回の成功へ採用しない。
+- 両版各36テスト、最終12 build・変更なし再呼出し4件・BTA呼出し24回・snapshot 8個。公開記録v4、静的103テスト。内部no-op判別・自然消費receipt・本番採用0は維持。次はstaging／保存証拠のnative拡充。
+
+
+### 2026-11-02: OO09レビュー修正（IC内容束縛・readerの実行gate）
+
+- [設計書§9.42](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#942-oo09レビュー修正ic内容束縛と取込入口の実行gate2026-11-02)へ、先行成功後のIC inventory・size／digest・実体の保存とpre-call照合を追加。独立したseedからの削除・改変・再初期化12件をBTA retry前に拒否。
+- readOwnedOfferにfresh witnessと期待executionIdを必須化。実SKIPPED／FROM-CACHEへ成功envelopeを渡す8件をfile reader 0で拒否し、実行済みwitnessでも古いenvelopeのIDを採用しない。
+- 両版各42テスト、静的121テスト。最終12 build・BTA呼出し36回・正常終了32回、completed 20／failed 52／unavailable 4。公開記録v5へ更新し旧未コミットv4は参考要約に保持。内部no-opはunknown、自然消費receipt・本番採用0を維持。

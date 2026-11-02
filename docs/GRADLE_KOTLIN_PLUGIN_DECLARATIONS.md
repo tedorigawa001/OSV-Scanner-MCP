@@ -2077,3 +2077,81 @@ Gradle 8.11.1／9.2.1で各版30テスト成功。最終matrixは4 build、BTA�
 検証記録はexperiment-v3とし、v2はa6d5409のcommit済み原本としてhash付き要約を`preReviews`へ残した。静的／公開記録再生は83テスト成功。修正前のreaderとv2記録では、83件中32件が失敗することを先に確認した。公開記録ではstale再読取の結果を記録値として照合するだけで、snapshot bytesを持たないため再読取そのものは再実行できない。
 
 本番取込・承認profile・自然消費receipt・内部no-op判別の実証は追加していない。bta-call-only／compilerWorkStatus=unknownと、§9.38の未実施範囲を維持する。
+
+
+### 9.41 OO09・変更なしBTA再呼出しと実Task skip／cache対照（2026-11-02）
+
+§9.40のhelper実証を拡張し、変更なしの実BTA再呼出しと、BTA task actionを実行しないGradleの対照を追加した。test-onlyの共通Groovy wrapper／Java brokerを両project DSLから使用し、既存KGPや本番adapterは変更しない。
+
+#### 変更なし再呼出しの束縛
+
+completedの直後に別invocation／別Handleのunchangedを登録済みの計画に従って実行する。source・library・snapshotを再生成／再書込せず、同じproject実参照、source path／bytes、snapshotのpath列とsealed descriptor、IC directory／shrunk snapshot、引数、出力先を再利用する。configuration／IC parameterは新しく生成し、別の実参照であることを記録する。projectのfinishは両呼出しの後まで遅延し、同じserviceとprojectで連続実行する。
+
+最初はSourcesChanges.Unknown、再呼出しは公開SourcesChanges.Knownのmodified／removedを両方空にして渡す。bindingにはsourceChangesとincrementalStatePathを追加し、期待するknown-empty、初回とのsource・引数・IC／出力先・projectの一致、configuration／parameter IDの相違を独立に検証する。unchangedEvidenceは実参照比較・呼出しcounterの増分・前後の出力inventoryを保存し、envelopeのbinding／call証拠と照合する。
+
+両対象版で正常終了し、出力inventory／digestは初回と一致した。ただし成功戻り値・既存出力・同一digestからcompiler内部のno-opを認定しない。再呼出しもexecutionEvidence=bta-call-only、compilerWorkStatus=unknown、naturalReady=falseである。今回確認したのは「変更なしと表明した具体入力・IC状態で実BTAをもう一度呼び、正常終了した」ことであり、compiler内部の作業・read・全supplierの有無ではない。
+
+#### 実Taskの未実行・復元対照
+
+各DSL／版の一時projectで次の3 buildを順に実行する。cacheはproject専用のlocal directoryを使い、remote cacheへは接続しない。JavaExecのcache許可とfixture／runtime入力・出力の指定はこの閉じた実証用であり、一般のBTA taskを安全にcache可能と認定する設定ではない。
+
+| build | 実処理と期待証拠 |
+| --- | --- |
+| seed | offerProofのJavaExec actionを実行。実BTA matrixとreportを生成し、local build cacheへ保存 |
+| skip | onlyIf=falseで同じtaskを実SKIPPEDにする。seedの成功reportは残っているがactionは実行しない |
+| cache | reportとbuild/proof出力を削除して再build。実FROM-CACHEで元出力が復元され、actionは実行しない |
+
+TaskStateのdidWork／skipped／noSource／failure／skipMessage、doFirstのaction counter、各build固有executionIdをcache対象外のafterTask reporterから取得する。cache外のaction logにはseed executionIdが1回だけ残り、skip／cache buildで増えないことを別に確認する。実行されていない状態の欠落・不正値・action実行との矛盾は拒否する。
+
+classifyOfferExecutionはこのfresh witnessを検証し、seedは「今回のenvelopeを検査可能」とするだけで実コンパイルを認定しない。skip／cacheはexecutionEvidence=not-called、importStatus=unavailable、理由execution_unsupportedとする。ハーネスはそれらをcurrent envelopeとしてreadOwnedOfferへ渡さない。残存／復元reportのSHA-256を元のseed reportと照合してhistoryとして保持するが、その中のcompletedを新しいBTA呼出し・新しいHandleの完了へ数えない。既存readerの信頼／profile gateやproducer_failedの取扱いは維持する。
+
+#### 結果・記録・回帰条件
+
+probeはv3、native matrixはv3、[検証JSON](validation/gradle-bta-offer-contract-2026-11-02.json)はexperiment-v4へ更新した。旧commit済みv3はhash・scope・観測時点・commit付き参考要約をpreReviewsへ残す。native source／fixture／runtime／親child JDK／実class inventoryを実行前後と集約時に照合し、公開metadataは同じ検証器で再生する。第三者snapshot bytesやlocal cache bytesは公開しない。
+
+Groovy／Kotlin × Gradle 8.11.1／9.2.1で各版36テスト成功。最終matrixは12 build（seed 4、SKIPPED 4、FROM-CACHE 4）、変更なし実再呼出し4件、実BTA呼出し24回（library 4、consumer 20）・正常終了20回、snapshot生成8個。completed 8／failed 40／producer unavailable 4、handle拒否24、producer記録拒否32、readerによるcontent拒否再確認16、reader graph拒否0。skip／cacheの8 buildはBTA呼出しを加算しない。数値は今回の最終matrixであり、前節と累積しない。
+
+静的／公開記録再生103テスト成功。unchangedのsource・引数・project・IC path変更、configuration／parameter ID再使用、known-emptyのunknownへの付替え、skip／cacheの成功採用、TaskState必須field欠落、FROM-CACHEとaction実行の矛盾を拒否する。source fingerprint不一致を更新だけで隠さず、現sourceで両版のnativeを再取得した。
+
+再現コマンドは§9.38と同じ（各版のハーネスが3 build×2 DSLを実行する）。OO09の変更なし再呼出し・実Task skip／cache復元の区別は今回の範囲で実証した。compiler内部no-opの判別・実消費receipt、worker／daemon・parallel、全observerの追加評価計測、未実施staging／完全な構築入力manifest、本番取込・profile承認は引き続き未成立。offered-inputs-onlyをdeclared_in完全性やcoverage改善へ昇格させない。
+
+最終確認（§9.41）: 通常全体2,519テスト成功・native opt-in等1,221件skip。typecheck・build・差分検査も成功。
+
+
+### 9.42 OO09レビュー修正・IC内容束縛と取込入口の実行gate（2026-11-02）
+
+§9.41にはIC状態をpathだけで比較する不足と、実行classifierがreaderから独立している不足があった。レビュー用の一時コピーでは、初回完了後にIC内容を消去してもunchangedがcompletedとなり、sameIcPath=trueのまま通過した。採用gateの回帰対照でも、修正前はSKIPPED／FROM-CACHEをreaderへ渡すとfile readerが呼ばれることを確認した。
+
+#### IC内容の観測点と拒否
+
+初回のpostcheckと予定captureを終えた後、completedへ遷移する前に、IC directoryの完全なsnapshotを保持する。rootのfileKey、全directory／regular fileの相対path・種類・fileKey、fileのsize／SHA-256を保存し、再呼出しのprecheckで新たに取得したsnapshotと照合する。shrunk snapshotを含む非空の先行状態を必須とし、snapshotを再呼出し側の内容で作り直さない。
+
+取得はNOFOLLOW_LINKSの属性照合と既存safeBytesを使い、symlink／非regular entryを許可しない。上限は4,096 entry、1 file 32 MiB、合計128 MiB。directoryのmtimeやsizeのような自然に変わる値は比較せず、fileの内容と実体を照合する。これは初回完了後から再呼出し直前までの二観測点の対応であり、区間内の変更・復元や全writer不存在の証明ではない。
+
+正常なunchangedとは別に、ic-delete-seed／ic-modify-seed／ic-reset-seedを実BTAで先行成功させ、それぞれの状態を固定する。各retryは新しいHandle／configuration／parameterを持ち、対応するseedと同じsource・snapshot・project・引数・出力先・IC pathを使い、Knownのmodified／removedは空である。別caseの自然なIC更新によって拒否されただけにならないよう、各対照は独立したIC directoryを持つ。
+
+| native負例 | 実変更と期待結果 |
+| --- | --- |
+| ic-delete | seed後にshrunk-classpath-snapshot.binを削除。inventory欠落をprecheckで拒否 |
+| ic-modify | 同fileを同sizeで1byte変更。digest不一致をprecheckで拒否 |
+| ic-reset | IC directory全体を削除して空directoryを再作成。状態の再初期化をprecheckで拒否 |
+
+いずれもproducerState=failed、failurePhase=precheck、failureReason=ic_state_mismatchを記録し、BTA retryのcall eventは生成しない。理由はproducer自身の拒否としてgate通過後にproducer_failedで受理する。静的readerが実参照や過去IC状態を再証明したとは扱わない。公開記録では、独立したseed baselineとpre-call snapshotの対応・内容・matched・call counter、caseごとの期待変更を検証する。
+
+#### 実行witnessを必須とする取込入口
+
+公開するtest用取込入口readOwnedOfferは、設定側の期待executionIdとexecutionWitnessを必須とする。独立したclassifierを呼出側で使い忘れても採用できない。witnessの必須field・状態整合性・期待IDを検証した後、action未実行ならenvelopeの成功状態へ進まず、executionEvidence=not-called／importStatus=unavailable／fileReads=0を返す。ここでの0はsnapshot／sourceのfile reader呼出し数で、ハーネスが読むreportやTaskStateなどのmetadata I/Oを含まない。
+
+action実行済みの場合も、envelopeのexecutionIdがfresh witnessのexecutionIdと一致することを、内容読取前に要求する。childへはdoFirst内で実行IDを環境変数として渡し、brokerが全envelopeとreportへ格納する。このIDは実行metadataとしてtask action時に設定し、local cache keyには加えない。FROM-CACHEのreportは元seed IDのままであり、新しいbuild IDへ付け替えない。
+
+nativeハーネスは各buildの残存／復元されたcompleted envelopeを実際にreadOwnedOfferへ渡す。seedでは通常の内容検証を行い、実SKIPPED／FROM-CACHEでは呼ばれると失敗するfile readerを渡して、入口自身が追加読取0で採用を止めることを確認する。分類結果だけでなく取込判定、実file reader counter、envelopeの元executionIdも記録・再検証する。freshな実行済みwitnessを使って古い成功を採用する試み、witness欠落、期待ID不一致も拒否する。
+
+#### 再検証結果と保存記録
+
+両DSL・Gradle 8.11.1／9.2.1で各版42テスト成功。最終matrixは12 build（seed／SKIPPED／FROM-CACHE各4）、正常な変更なしretry 4件、IC状態拒否12件、未実行buildでの成功envelope採用拒否8件。実BTA呼出しは36回（library 4、consumer 32）、正常終了32回・意図したcompile失敗4回、snapshot生成8個。追加したIC負例用seedを含めcompleted 20／failed 52／producer unavailable 4、handle拒否24、producer記録拒否44、content拒否のreader再確認16、reader graph拒否0。IC retry拒否とskip／cacheのbuildはBTA呼出しへ加算しない。
+
+probe／native matrixはv4、[公開検証記録](validation/gradle-bta-offer-contract-2026-11-02.json)はexperiment-v5へ更新した。旧未コミットv4はhash・観測時点・scope付き参考要約としてpreReviewsへ残し、現sourceで取り直した結果だけを現在のmatrixに収録する。IC inventoryはmetadataだけを保持し、cacheや第三者snapshotのbytesは公開しない。公開記録の再生でnative時のfile読取・実体比較を再実行したと扱わない。
+
+静的／公開記録再生121テスト成功。IC baseline欠落・pre-call snapshot欠落・digest改変・拒否を一致へ変更・削除後の再baseline化・検査中の追加BTA call、skip／cacheの採用表明・file reader追加・復元IDの付替えを拒否する。再現コマンドは§9.38と同じ。bta-call-only／compilerWorkStatus=unknown、自然消費receipt・本番採用0、未実施staging／完全な入力manifest／全observer計測の範囲は維持する。
+
+最終確認（§9.42）: 通常全体2,537テスト成功・native opt-in等1,227件skip。typecheck・build・差分検査も成功。

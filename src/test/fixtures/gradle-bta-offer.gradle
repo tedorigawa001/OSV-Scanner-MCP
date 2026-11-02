@@ -4,14 +4,23 @@ import groovy.json.JsonOutput
 import java.security.MessageDigest
 def p=new JsonSlurper().parse(file('runtime-profile.json'))
 def sha={File f->MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex().toString()}
+def state=[actionCalls:0]
+def executionId=System.getProperty('osv.offer.executionId')
 def compile=tasks.register('compileOfferDriver',JavaCompile){t->
  t.source(files('BtaOwnedDriver.java','BtaOfferProbe.java'));t.classpath=files(p.runtime.collect{file(it.artifact)})
  t.sourceCompatibility='21';t.targetCompatibility='21';t.destinationDirectory.set(layout.buildDirectory.dir('driver-classes'));t.options.release.set(21);t.options.compilerArgs.add('-proc:none')
 }
 tasks.register('offerProof',JavaExec){t->
+ t.inputs.files(p.fixtureFiles.collect{file(it)});t.outputs.file(file('offer-report.json'));t.outputs.dir(layout.buildDirectory.dir('proof'));t.outputs.cacheIf{true}
+ t.onlyIf{System.getProperty('osv.offer.skip')!='true'}
+ t.doFirst{t.environment('OSV_BTA_OFFER_EXECUTION_ID',executionId);state.actionCalls++;file('offer-actions.log').append(executionId+'\n')}
  t.dependsOn(compile);t.mainClass.set('BtaOfferProbe');t.maxHeapSize='768m';t.classpath=files(layout.buildDirectory.dir('driver-classes'),p.runtime.collect{file(it.artifact)})
  t.args(projectDir.canonicalPath,p.stdlib,p.exportId,p.profileId,p.registration.producerSha256,p.registration.runtimeSha256,p.registration.profileSha256)
  t.doLast{
   file('offer-gradle.json').text=JsonOutput.toJson([gradleVersion:gradle.gradleVersion,javaSha256:sha(new File(System.getProperty('java.home'),'bin/java')),javacSha256:sha(new File(System.getProperty('java.home'),'bin/javac')),parallel:gradle.startParameter.parallelProjectExecutionEnabled,maxWorkers:gradle.startParameter.maxWorkerCount,fixtureHashes:p.fixtureFiles.collectEntries{[(it):sha(file(it))]}])
  }
 }
+
+gradle.taskGraph.afterTask{task,result->if(task.name=='offerProof'){
+ file('offer-execution.json').text=JsonOutput.toJson([executionId:executionId,actionCalls:state.actionCalls,didWork:result.didWork,skipped:result.skipped,noSource:result.noSource,failed:result.failure!=null,skipMessage:result.skipMessage])
+}}

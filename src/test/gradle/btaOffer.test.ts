@@ -3,16 +3,16 @@ import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {offerSources,offerVerificationSources,verifyOfferCase} from '../fixtures/btaOfferProof.mjs';
 import {assertNoAbsolutePaths} from '../manual/kgpRecordPaths.mjs';
-import {readOwnedOffer,offerLimitations} from '../fixtures/btaOfferContract.mjs';
-const unavailable=()=>({schema:'osv-mcp.gradle-owned-offer-v1',graphId:'graph',exportId:'export',project:':',invocation:'one',stage:'consumer',slot:'snapshot',profileId:'test',producerState:'unavailable',plannedCaptures:0,limitations:[...offerLimitations],naturalContentBinding:false,phases:[],unavailableReason:'execution_unsupported',blockedBeforePhase:'registration',noRead:true});
+import {readOwnedOffer,offerLimitations,classifyOfferExecution} from '../fixtures/btaOfferContract.mjs';
+const unavailable=()=>({schema:'osv-mcp.gradle-owned-offer-v1',executionId:'unit-execution',graphId:'graph',exportId:'export',project:':',invocation:'one',stage:'consumer',slot:'snapshot',profileId:'test',producerState:'unavailable',plannedCaptures:0,limitations:[...offerLimitations],naturalContentBinding:false,phases:[],unavailableReason:'execution_unsupported',blockedBeforePhase:'registration',noRead:true});
 it('accepts a legal unavailable envelope with no source or file reads',()=>{
- const result=readOwnedOffer(unavailable(),{trust:false,profiles:{},graphId:'graph',exportId:'export'},()=>{throw Error('unexpected file read');});
+ const result=readOwnedOffer(unavailable(),{...settings(),trust:false,profiles:{}},()=>{throw Error('unexpected file read');});
  expect(result).toMatchObject({producerState:'unavailable',importStatus:'unavailable',reason:'owned_offer_trust_disabled',fileReads:0,naturalReady:false});
 });
 
 it('rejects unavailable with an invented successful call even when trust is disabled',()=>{
  const e:any=unavailable();e.phases=[{phase:'call',outcome:'success',evidence:{}}];
- expect(()=>readOwnedOffer(e,{trust:false,profiles:{}},()=>{throw Error('read');})).toThrow('owned_offer_schema_invalid');
+ expect(()=>readOwnedOffer(e,{...settings(),trust:false,profiles:{}},()=>{throw Error('read');})).toThrow('owned_offer_schema_invalid');
 });
 
 // Synthetic schema fixtures exercise the static reader; they are not native compilation evidence.
@@ -20,10 +20,10 @@ const bytes=Buffer.from('snapshot');
 const sha=createHash('sha256').update(bytes).digest('hex');
 const source=Buffer.from('fun main() {}\n'),sourceSha=createHash('sha256').update(source).digest('hex');
 const registration={producerSha256:'a'.repeat(64),runtimeSha256:'b'.repeat(64),profileSha256:'c'.repeat(64)};
-const settings=()=>({trust:true,profiles:{test:{registration,strategy:'in-process'}},graphId:'graph',exportId:'export'});
+const settings=()=>({executionId:'unit-execution',executionWitness:{executionId:'unit-execution',actionCalls:1,didWork:true,skipped:false,noSource:false,failed:false,skipMessage:null},trust:true,profiles:{test:{registration,strategy:'in-process'}},graphId:'graph',exportId:'export'});
 function complete():any{
  const e:any=unavailable();delete e.unavailableReason;delete e.blockedBeforePhase;delete e.noRead;e.producerState='completed';
- const evidence:any={registration,generation:{librarySha256:'d'.repeat(64),generatorSha256:'e'.repeat(64),snapshots:[{id:'lib',size:bytes.length,sha256:sha,inputSha256:'d'.repeat(64)}]},seal:{files:[{id:'lib',path:'staging/lib',baselinePath:'evidence/lib',size:bytes.length,sha256:sha}]},binding:{configurationId:'c',parameterId:'p',serviceId:'s',projectId:'project',snapshotIds:['lib'],sourcePath:'src/Consumer.kt',sourceSha256:sourceSha,argumentsSha256:'1'.repeat(64),outputPath:'classes'},precheck:{matched:true},call:{result:'COMPILATION_SUCCESS',configurationId:'c',parameterId:'p',executionEvidence:'bta-call-only',compilerWorkStatus:'unknown',outputs:[]},postcheck:{matched:true}};
+ const evidence:any={registration,generation:{librarySha256:'d'.repeat(64),generatorSha256:'e'.repeat(64),snapshots:[{id:'lib',size:bytes.length,sha256:sha,inputSha256:'d'.repeat(64)}]},seal:{files:[{id:'lib',path:'staging/lib',baselinePath:'evidence/lib',size:bytes.length,sha256:sha}]},binding:{configurationId:'c',parameterId:'p',serviceId:'s',projectId:'project',snapshotIds:['lib'],sourcePath:'src/Consumer.kt',sourceSha256:sourceSha,argumentsSha256:'1'.repeat(64),outputPath:'classes',incrementalStatePath:'ic',sourceChanges:'unknown'},precheck:{matched:true},call:{result:'COMPILATION_SUCCESS',configurationId:'c',parameterId:'p',executionEvidence:'bta-call-only',compilerWorkStatus:'unknown',outputs:[]},postcheck:{matched:true}};
  e.phases=Object.entries(evidence).flatMap(([phase,evidence])=>[{phase,outcome:'begin'},{phase,outcome:'success',evidence}]);return e;
 }
 it('checks original bytes on every import without upgrading empty outputs to compiler work',()=>{
@@ -129,7 +129,7 @@ it('rejects a claimed snapshot size over the per-file budget before calling a re
 
 const published=()=>JSON.parse(readFileSync(new URL('../../../docs/validation/gradle-bta-offer-contract-2026-11-02.json',import.meta.url),'utf8'));
 it('replays the native envelopes and gates with their original implementation fingerprints',()=>{
- const d=published();expect(d.schema).toBe('osv-mcp.bta-offer-contract-experiment-v3');expect(d.preReviews.map((p:any)=>p.schema)).toEqual(['osv-mcp.bta-offer-contract-experiment-v1','osv-mcp.bta-offer-contract-experiment-v2']);expect(d.scope.readerIntegrityRejections).toBe(0);assertNoAbsolutePaths(d);
+ const d=published();expect(d.schema).toBe('osv-mcp.bta-offer-contract-experiment-v5');expect(d.preReviews.map((p:any)=>p.schema)).toEqual(['osv-mcp.bta-offer-contract-experiment-v1','osv-mcp.bta-offer-contract-experiment-v2','osv-mcp.bta-offer-contract-experiment-v3','osv-mcp.bta-offer-contract-experiment-v4']);expect(d.scope.readerIntegrityRejections).toBe(0);assertNoAbsolutePaths(d);
  expect(Object.keys(d.sourcesSha256)).toEqual(offerSources);expect(Object.keys(d.verificationSourcesSha256)).toEqual(offerVerificationSources);
  for(const group of ['sourcesSha256','verificationSourcesSha256'])for(const [p,h]of Object.entries(d[group]))expect(createHash('sha256').update(readFileSync(new URL('../../../'+p,import.meta.url))).digest('hex'),p).toBe(h);
  const scope:Record<string,number>={};for(const c of d.cases){expect(c.sourceHashes).toEqual(d.sourcesSha256);for(const [k,v]of Object.entries(verifyOfferCase(c)))scope[k]=(scope[k]??0)+v;}
@@ -162,7 +162,7 @@ for(const detail of ['COMPILATION_SUCCESS','UNKNOWN_RESULT'])it('rejects contrad
 for(const name of ['storage-failed','call-failed'])it('rejects failed reclassified as unavailable even with all decisions rewritten: '+name,()=>{
  const c=published().cases[0],e=c.report.envelopes.find((e:any)=>e.invocation===name);
  delete e.failurePhase;delete e.failureReason;Object.assign(e,{producerState:'unavailable',phases:[],unavailableReason:'execution_unsupported',blockedBeforePhase:'registration',noRead:true});
- const s={trust:true,profiles:{[e.profileId]:{registration:c.registration,strategy:'in-process'}},graphId:e.graphId,exportId:e.exportId};
+ const s={executionId:e.executionId,executionWitness:c.executionEvidence[0].witness,trust:true,profiles:{[e.profileId]:{registration:c.registration,strategy:'in-process'}},graphId:e.graphId,exportId:e.exportId};
  const d=c.decisions.find((d:any)=>d.invocation===name);d.trusted=readOwnedOffer(e,s,()=>{throw Error('read');});d.gates=[{...s,trust:false},{...s,profiles:{}}].map(g=>readOwnedOffer(e,g,()=>{throw Error('read');}));
  expect(()=>verifyOfferCase(c)).toThrow('bta_offer_record_invalid');
 });
@@ -177,3 +177,59 @@ for(const field of ['failurePhase','failureReason'])it('rejects a different expe
 for(const field of ['libraryCalls','btaConsumerCalls','generatedSnapshots'])it('checks the reported counter against verified evidence: '+field,()=>{
  const c=published().cases[0];c.report[field]++;expect(()=>verifyOfferCase(c)).toThrow('bta_offer_record_invalid');
 });
+
+it('does not adopt a restored success report when the BTA task action did not execute',()=>{
+ const witness={executionId:'cache',actionCalls:0,didWork:false,skipped:true,noSource:false,failed:false,skipMessage:'FROM-CACHE'};
+ expect(classifyOfferExecution(witness)).toEqual({executionId:'cache',btaTaskActionExecuted:false,importStatus:'unavailable',reason:'owned_offer_execution_unsupported',executionEvidence:'not-called',compilerWorkStatus:'unknown',naturalReady:false});
+});
+
+for(const mode of ['skip','cache'])it('does not let '+mode+' reuse a cached success as a new BTA call',()=>{
+ const c=published().cases[0],e=c.executionEvidence.find((e:any)=>e.mode===mode);e.classification.importStatus='accepted';expect(()=>verifyOfferCase(c)).toThrow();
+});
+for(const key of ['sourcePath','sourceSha256','incrementalStatePath','projectId','argumentsSha256'])it('requires unchanged-call binding to retain '+key,()=>{
+ const c=published().cases[0],e=c.report.envelopes.find((e:any)=>e.invocation==='unchanged'),b=e.phases.find((p:any)=>p.phase==='binding'&&p.outcome==='success').evidence;
+ b[key]=key.endsWith('Sha256')?'0'.repeat(64):'different';expect(()=>verifyOfferCase(c)).toThrow();
+});
+for(const kind of ['configuration','parameter'])it('requires a new '+kind+' identity for the unchanged invocation',()=>{
+ const c=published().cases[0],first=c.report.envelopes[0],e=c.report.envelopes.find((e:any)=>e.invocation==='unchanged'),key=kind+'Id',original=first.phases.find((p:any)=>p.phase==='binding'&&p.outcome==='success').evidence[key];
+ for(const p of e.phases)if(p.outcome==='success'&&['binding','call'].includes(p.phase))p.evidence[key]=original;
+ expect(()=>verifyOfferCase(c)).toThrow();
+});
+it('does not accept an unknown-change recompile as the known-empty unchanged experiment',()=>{
+ const c=published().cases[0],e=c.report.envelopes.find((e:any)=>e.invocation==='unchanged');e.phases.find((p:any)=>p.phase==='binding'&&p.outcome==='success').evidence.sourceChanges='unknown';expect(()=>verifyOfferCase(c)).toThrow();
+});
+for(const field of ['actionCalls','didWork','skipped','noSource','failed','skipMessage','executionId'])it('rejects missing execution witness field '+field,()=>{
+ const w:any={executionId:'cache',actionCalls:0,didWork:false,skipped:true,noSource:false,failed:false,skipMessage:'FROM-CACHE'};delete w[field];expect(()=>classifyOfferExecution(w)).toThrow('owned_offer_schema_invalid');
+});
+it('rejects a FROM-CACHE witness that also claims to have executed the BTA task action',()=>expect(()=>classifyOfferExecution({executionId:'cache',actionCalls:1,didWork:false,skipped:true,noSource:false,failed:false,skipMessage:'FROM-CACHE'})).toThrow('owned_offer_execution_invalid'));
+it('marks a real task action only as eligible for envelope inspection, not as compiler work',()=>expect(classifyOfferExecution({executionId:'seed',actionCalls:1,didWork:true,skipped:false,noSource:false,failed:false,skipMessage:null})).toMatchObject({importStatus:'inspect-current-envelope',compilerWorkStatus:'unknown',naturalReady:false}));
+
+for(const skipMessage of ['SKIPPED','FROM-CACHE'])it('refuses a success envelope at the actual reader entry point for '+skipMessage,()=>{
+ const witness={executionId:'current',actionCalls:0,didWork:false,skipped:true,noSource:false,failed:false,skipMessage};let reads=0;
+ const result=readOwnedOffer(complete(),{...settings(),executionId:'current',executionWitness:witness},()=>{reads++;throw Error('unexpected-read');});
+ expect(result).toMatchObject({importStatus:'unavailable',executionEvidence:'not-called',fileReads:0});expect(reads).toBe(0);
+});
+it('refuses an old success envelope under a fresh executed witness',()=>{
+ const e=complete();e.executionId='old';const witness={executionId:'new',actionCalls:1,didWork:true,skipped:false,noSource:false,failed:false,skipMessage:null};
+ expect(()=>readOwnedOffer(e,{...settings(),executionId:'new',executionWitness:witness},()=>bytes)).toThrow('owned_offer_execution_invalid');
+});
+
+for(const name of ['ic-delete','ic-modify','ic-reset'])it('replays a real precheck IC refusal with no BTA retry: '+name,()=>{
+ const c=published().cases[0],check=c.report.icChecks.find((x:any)=>x.invocation===name),e=c.report.envelopes.find((x:any)=>x.invocation===name);
+ expect(check.matched).toBe(false);expect(check.baseline).not.toEqual(check.beforeCall);expect(check.callsAfterCheck).toBe(check.callsBefore);expect(e.phases.some((x:any)=>x.phase==='call')).toBe(false);expect(verifyOfferCase(c).icStateRejections).toBe(3);
+});
+const icFaults:Record<string,(c:any)=>void>={
+ 'missing IC baseline':c=>c.report.icBaselines.pop(),
+ 'missing pre-call IC snapshot':c=>delete c.report.icChecks[0].beforeCall,
+ 'fault declared matched':c=>c.report.icChecks[1].matched=true,
+ 'fault baseline replaced by current state':c=>{c.report.icChecks[1].baseline=c.report.icChecks[1].beforeCall;},
+ 'IC descriptor digest modified':c=>{c.report.icChecks[0].beforeCall.entries.find((x:any)=>x.kind==='file').sha256='0'.repeat(64);},
+ 'IC snapshot recaptured after deletion':c=>{const check=c.report.icChecks[1];c.report.icBaselines.find((x:any)=>x.invocation===check.seedInvocation).snapshot=check.beforeCall;check.baseline=check.beforeCall;},
+ 'unexpected BTA call during IC check':c=>c.report.icChecks[1].callsAfterCheck++,
+ 'skipped adoption accepted':c=>c.executionEvidence[1].adoption.importStatus='accepted',
+ 'cached adoption reader invoked':c=>c.executionEvidence[2].adoptionFileReads=1,
+ 'restored envelope execution relabeled':c=>c.executionEvidence[2].envelopeExecutionId=c.executionEvidence[2].witness.executionId,
+};
+for(const [name,fault]of Object.entries(icFaults))it('rejects IC / execution-gate record mutation: '+name,()=>{const c=published().cases[0];fault(c);expect(()=>verifyOfferCase(c)).toThrow();});
+it('requires an execution witness at the sole adoption entry point',()=>{const s:any=settings();delete s.executionWitness;expect(()=>readOwnedOffer(complete(),s,()=>bytes)).toThrow('owned_offer_schema_invalid');});
+it('binds execution witness to an independently expected invocation id',()=>expect(()=>readOwnedOffer(complete(),{...settings(),executionId:'other'},()=>bytes)).toThrow('owned_offer_execution_invalid'));
