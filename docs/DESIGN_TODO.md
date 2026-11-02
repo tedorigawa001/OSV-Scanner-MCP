@@ -2353,3 +2353,18 @@ A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全�
 - MC01〜MC36は未実装の回帰条件。M0 schema／閉包、M1 registry状態機械、M2 freeze／base／ready、M3 native切替／GC、M4実backend接続の順で実装する。今回は設計のみで、compaction・移行・削除・独立registry・本番採用を有効化していない。
 
 世代移行契約の文書検証: 公開文書command例と既存A1–A2／disk owner／restartの計123テスト成功。§9.66の11小節とMC01〜MC36の欠落・重複なし、diff整形検査成功を確認した。MC36件およびM0〜M4は未実装で、新規v2 schema／registry／compaction／GCの実装・native実証・本番採用は0。既存native対照の再実行を新protocolの成立証明へ数えない。
+
+
+### 2026-11-02: a3daabcレビュー修正（移行freezeのvalidity）
+
+- [設計書§9.67](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#967-a3daabcレビュー修正移行freezeのvalidity2026-11-02)へ、移行freezeで閉じるsessionを`restarted`ではなく専用の`migration-frozen`とし、restart・時間切れ・既存close理由と区別。MC07を拡充し、v1 kernel／snapshot decoderへのenum追加をv1 source freeze実装時の条件として明記。設計のみ。
+
+
+### 2026-11-02: 保存性能の設計・基準計測
+
+- §9.68へ全snapshot再生成・record再hash・checkpoint再同期の費用を分けた性能改善設計を追加。まずPO1の1回の検証内content memoとhead-only API、PO2のdirty追跡を行い、PO3のv2差分形式、PO4の独立immutable providerが必要なprefix cacheへ段階化する。
+- 現nativeのstat／hash名／flockだけでcross-requestのread／同期を省かない。公開checkpointの同期失敗・owner終了・期限・世代変更の拒否を維持し、cacheと原本・認可・予約を分離する。
+- opt-in baseline harnessとJSONを追加。memory／file protocol／native、A1–A2、payload／history／scope／churn別の54 rows、各warmup 1＋測定5回とboundary counters・native sync回数・31 source hashを記録。最適化版・speedupは未測定。
+- PF01〜PF28は最適化の未実装回帰条件。今回は設計と基準計測のみで、最適化・delta・provider・本番採用は有効化していない。次はPO1の安全な局所最適化とreference比較、M0以降の世代移行schema実装との接続。
+
+保存性能設計・基準計測の検証結果: opt-in baseline 1件成功（54 rows／270測定samples＋54 warmups、31 source fingerprint一致）。既存関連・文書123件成功、通常実行時の新benchmark 1件skip。型検査・build・diff整形検査成功。§9.68の10小節・PF01〜PF28の欠落／重複なしを確認した。PO1〜PO4とPF最適化側は未実装であり、測定値はbefore／after速度改善ではない。本番backend・profile・診断採用を有効化していない。

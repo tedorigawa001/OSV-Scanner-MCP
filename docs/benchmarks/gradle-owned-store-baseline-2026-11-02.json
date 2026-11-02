@@ -1,0 +1,3770 @@
+{
+  "schema": "osv-mcp.owned-store-baseline-v1",
+  "startedUTC": "2026-11-02T13:08:20.031Z",
+  "finishedUTC": "2026-11-02T13:09:15.937Z",
+  "node": "v26.12.1",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "cpu": "Apple M4",
+  "sourceHashes": {
+    "src/test/benchmarks/gradleOwnedStore.test.ts": "b1c6f6f96582330f4b1b5a3a0a9b9fd150b62837faec8ec01d65f552922b6922",
+    "src/test/fixtures/gradleOwnedAuthorityJournal.ts": "f6254be5c690c99944a76c850b75cc0b4b31aa0ed62a3d9299330755dbef8aec",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/test/fixtures/gradleOwnedJournalCheckpoint.ts": "3ca31e62fa5521d7352fc6f4a0528483444fcadce3351f53629e50198c251159",
+    "src/test/fixtures/gradleOwnedJournalFs.ts": "2cf1aa16d5d4a3df1d8df8fdac4b3ab21eb4366d90d1e69dcd2bf86cd08cdbad",
+    "src/test/fixtures/gradleOwnedAuthority.ts": "6ca5ff46bd1833ec474948d28f9d4f5927193cafcf09f01eed9b5c34835b6ebb",
+    "src/test/fixtures/gradleOwnedAuthoritySnapshot.ts": "de0b0f241b0465c6ba76914c3f547e9984d39ee6c27271ad4dbd4e2a5c57cdf2",
+    "src/test/fixtures/gradleOwnedAuthoritySchema.ts": "108ec4f0965f325f75e6888a0a0e6e22cc40963665c37b1a0a000d07d78bc38d",
+    "src/utils/gradleOwnedExecution.ts": "360a8d5e61a7b115619077cb444f8a863f6d6d0459be9d17b87ae4c43f279fd4",
+    "src/utils/gradleOwnedSchema.ts": "44fa3f141b1931e3043bd4e876f93b46132f54e1c36aaf7f6d3c43f1c6ea734c",
+    "src/utils/gradleGraph.ts": "73a36886ed6c8be17b63e5581392cca6c5ba5efb0463e475f7ee3913ac888e81",
+    "src/utils/gradlePlugins.ts": "582f72462c13927e7284e1c7ca70681f4e455e469596020cd4e8bc5e9ec637af",
+    "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
+    "src/utils/gradleJson.ts": "f7f3ef047d30a675cb55044072e8fb516dceeb822192777ea7b7444699c9dc9f",
+    "src/utils/gradlePluginSnapshots.ts": "2c0ce15f1c90e6c11916d2a8107c2d1c761719543932a0aeef722cfeb4acf2c1",
+    "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054",
+    "src/utils/projectWalk.ts": "5ff06d6df2c601017928d26709d6f4bf3ea9d9ff6813e627cfec82d010d9e316",
+    "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
+    "src/utils/openedFilePath.ts": "963ac04f6eb3744af00771feaaf054c08ca8b2dcc7d2846507525394d3fdff8f",
+    "src/utils/gradlePluginJar.ts": "b180ee353104a11e1ddd1a091930bda1aaf8138fcf5a1df7d66370ef8c848ab9",
+    "src/utils/gradleOrigins.ts": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884",
+    "src/utils/gradleDeclarations.ts": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be",
+    "src/utils/gradleCatalogs.ts": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b",
+    "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
+    "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
+    "src/utils/gradleOwnedPolicy.ts": "2ace3536b349b4b2368c5a01bb1979864bd7377aa218134f4f197b6259892bf2",
+    "src/utils/gradleOwnedManifest.ts": "3886c2ba26e50cb888fd8b5e7513c1ac1e0e152e0b29111de4224ebd07846e9b",
+    "src/utils/gradleExportJson.ts": "0fea68255a7dbabe559f1ee35bfcc156a565519c63ca16bb92614e1c866422fe",
+    "src/test/fixtures/gradleOwnedPolicyFixture.ts": "42ab32aedc435e92b5dee75863da7778f66c8131648546ba4a6e791b84b31c81",
+    "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
+    "package-lock.json": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285"
+  },
+  "repetitions": 5,
+  "warmups": 1,
+  "baselineOnly": true,
+  "optimizedImplementation": false,
+  "semantics": {
+    "cold": "new journal instance; storage and OS caches not cold",
+    "memoryCheckpoint": "no disk durability or fsync",
+    "fileProtocolOnMemory": "authentication and checkpoint resync protocol with in-memory bytes; no native fsync",
+    "native": "exclusive RootedJournalIO roots; fsync counters from native adapter",
+    "counters": "JournalIO boundary calls/returned bytes; nested native IO inside put excluded from boundary counts",
+    "memory": "before/after deltas, not peak memory; GC is uncontrolled",
+    "kernelClock": "fixed at zero to exclude lifecycle/deadline effects",
+    "timing": "only named operation; setup/clone/validation excluded; commit includes input payload/record construction",
+    "notMeasured": [
+      "optimized speedup",
+      "full 256 MiB store",
+      "disk-cold startup",
+      "power loss",
+      "GC compaction",
+      "Gradle or BTA execution",
+      "OSV network",
+      "production adoption"
+    ]
+  },
+  "rows": [
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h4",
+        "bytes": 1048576,
+        "history": 4
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          2.8145000000000095,
+          2.980499999999978,
+          3.001249999999999,
+          2.8969579999999837,
+          3.046208000000007
+        ],
+        "median": 2.980499999999978,
+        "min": 2.8145000000000095,
+        "max": 3.046208000000007
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          6504448,
+          6488064,
+          6488064,
+          6520832,
+          6520832
+        ],
+        "median": 6504448,
+        "min": 6488064,
+        "max": 6520832
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          976392,
+          1205960,
+          1203768,
+          1202896,
+          1174960
+        ],
+        "median": 1202896,
+        "min": 976392,
+        "max": 1205960
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 11,
+          "readCalls": 11,
+          "readBytes": 1056353,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 5,
+          "readCalls": 5,
+          "readBytes": 3025,
+          "putCalls": 5,
+          "putBytes": 3025,
+          "resyncPutCalls": 5,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 1056353,
+      "checkpointBytes": 3025,
+      "historicalRecordBytesPerFullVerification": 4194536
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h4",
+        "bytes": 1048576,
+        "history": 4
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          2.4513330000000053,
+          2.466000000000008,
+          2.448582999999985,
+          2.593874999999997,
+          2.727000000000004
+        ],
+        "median": 2.466000000000008,
+        "min": 2.448582999999985,
+        "max": 2.727000000000004
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          32768,
+          1196032,
+          6504448
+        ],
+        "median": 32768,
+        "min": 0,
+        "max": 6504448
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          1172856,
+          1177008,
+          1180616,
+          1180568,
+          1173192
+        ],
+        "median": 1177008,
+        "min": 1172856,
+        "max": 1180616
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 11,
+          "readCalls": 11,
+          "readBytes": 1056353,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 5,
+          "readCalls": 5,
+          "readBytes": 3025,
+          "putCalls": 5,
+          "putBytes": 3025,
+          "resyncPutCalls": 5,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 1056353,
+      "checkpointBytes": 3025,
+      "historicalRecordBytesPerFullVerification": 4194536
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h4",
+        "bytes": 1048576,
+        "history": 4
+      },
+      "operation": "warm-readLatest",
+      "elapsedMs": {
+        "samples": [
+          2.4920840000000055,
+          2.6751669999999876,
+          2.7873749999999973,
+          2.5062079999999867,
+          2.526207999999997
+        ],
+        "median": 2.526207999999997,
+        "min": 2.4920840000000055,
+        "max": 2.7873749999999973
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          114688,
+          3227648,
+          0,
+          0,
+          49152
+        ],
+        "median": 49152,
+        "min": 0,
+        "max": 3227648
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          1177512,
+          1097544,
+          1189256,
+          1168848,
+          1177584
+        ],
+        "median": 1177512,
+        "min": 1097544,
+        "max": 1189256
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 11,
+          "readCalls": 11,
+          "readBytes": 1056353,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 5,
+          "readCalls": 5,
+          "readBytes": 3025,
+          "putCalls": 5,
+          "putBytes": 3025,
+          "resyncPutCalls": 5,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 1056353,
+      "checkpointBytes": 3025,
+      "historicalRecordBytesPerFullVerification": 4194536
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h4",
+        "bytes": 1048576,
+        "history": 4
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          3.8732499999999845,
+          3.7859579999999937,
+          3.8881250000000023,
+          3.7117079999999874,
+          5.476208000000042
+        ],
+        "median": 3.8732499999999845,
+        "min": 3.7117079999999874,
+        "max": 5.476208000000042
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          32768,
+          0,
+          16384,
+          294912,
+          1097728
+        ],
+        "median": 32768,
+        "min": 0,
+        "max": 1097728
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          2272008,
+          2174400,
+          2175832,
+          2171760,
+          -15081392
+        ],
+        "median": 2174400,
+        "min": -15081392,
+        "max": 2272008
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 22,
+          "readCalls": 11,
+          "readBytes": 1056353,
+          "putCalls": 2,
+          "putBytes": 1838,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 4,
+          "listedEntries": 22,
+          "readCalls": 23,
+          "readBytes": 13915,
+          "putCalls": 23,
+          "putBytes": 13915,
+          "resyncPutCalls": 22,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        }
+      },
+      "storedBytes": 1056353,
+      "checkpointBytes": 3025,
+      "historicalRecordBytesPerFullVerification": 4194536
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h8",
+        "bytes": 1048576,
+        "history": 8
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          4.170374999999979,
+          4.061041999999986,
+          4.045874999999967,
+          4.228334000000018,
+          4.493875000000003
+        ],
+        "median": 4.170374999999979,
+        "min": 4.045874999999967,
+        "max": 4.493875000000003
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          0,
+          0,
+          32768
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 32768
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          2141336,
+          2130440,
+          2132336,
+          2133392,
+          2125776
+        ],
+        "median": 2132336,
+        "min": 2125776,
+        "max": 2141336
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 19,
+          "readCalls": 19,
+          "readBytes": 1063705,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 1063705,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 8389072
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h8",
+        "bytes": 1048576,
+        "history": 8
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          4.04525000000001,
+          4.112582999999972,
+          5.358083000000022,
+          4.099791000000039,
+          4.036666000000025
+        ],
+        "median": 4.099791000000039,
+        "min": 4.036666000000025,
+        "max": 5.358083000000022
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          114688,
+          131072,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 131072
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          2070608,
+          2081464,
+          -13406128,
+          2055584,
+          2063688
+        ],
+        "median": 2063688,
+        "min": -13406128,
+        "max": 2081464
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 19,
+          "readCalls": 19,
+          "readBytes": 1063705,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 1063705,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 8389072
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h8",
+        "bytes": 1048576,
+        "history": 8
+      },
+      "operation": "warm-readLatest",
+      "elapsedMs": {
+        "samples": [
+          3.9331659999999715,
+          5.151082999999971,
+          3.9520410000000084,
+          4.167082999999991,
+          4.651124999999979
+        ],
+        "median": 4.167082999999991,
+        "min": 3.9331659999999715,
+        "max": 5.151082999999971
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          131072,
+          0,
+          0,
+          32768
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 131072
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          2057768,
+          -7824184,
+          2057728,
+          2059328,
+          -8720608
+        ],
+        "median": 2057728,
+        "min": -8720608,
+        "max": 2059328
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 19,
+          "readCalls": 19,
+          "readBytes": 1063705,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 1063705,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 8389072
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h8",
+        "bytes": 1048576,
+        "history": 8
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          5.385083000000009,
+          6.447707999999977,
+          5.381665999999996,
+          6.1762090000000285,
+          5.281457999999986
+        ],
+        "median": 5.385083000000009,
+        "min": 5.281457999999986,
+        "max": 6.447707999999977
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          16384,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 16384
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          3600296,
+          -12743768,
+          3588856,
+          -7295952,
+          3589200
+        ],
+        "median": 3588856,
+        "min": -12743768,
+        "max": 3600296
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 38,
+          "readCalls": 19,
+          "readBytes": 1063705,
+          "putCalls": 2,
+          "putBytes": 1838,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 4,
+          "listedEntries": 38,
+          "readCalls": 39,
+          "readBytes": 23595,
+          "putCalls": 39,
+          "putBytes": 23595,
+          "resyncPutCalls": 38,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        }
+      },
+      "storedBytes": 1063705,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 8389072
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h8",
+        "bytes": 8388608,
+        "history": 8
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          26.604083999999943,
+          27.45570799999996,
+          27.094708000000082,
+          28.83000000000004,
+          26.9135
+        ],
+        "median": 27.094708000000082,
+        "min": 26.604083999999943,
+        "max": 28.83000000000004
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          513352,
+          -557992,
+          480840,
+          -444496,
+          349736
+        ],
+        "median": 349736,
+        "min": -557992,
+        "max": 513352
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 26,
+          "readCalls": 26,
+          "readBytes": 8408945,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8408945,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 67109328
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h8",
+        "bytes": 8388608,
+        "history": 8
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          29.704375000000027,
+          27.419750000000022,
+          29.326499999999896,
+          28.471917000000076,
+          26.752332999999908
+        ],
+        "median": 28.471917000000076,
+        "min": 26.752332999999908,
+        "max": 29.704375000000027
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          1048576,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 1048576
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          451320,
+          629056,
+          -791928,
+          -1045384,
+          262952
+        ],
+        "median": 262952,
+        "min": -1045384,
+        "max": 629056
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 26,
+          "readCalls": 26,
+          "readBytes": 8408945,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8408945,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 67109328
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h8",
+        "bytes": 8388608,
+        "history": 8
+      },
+      "operation": "warm-readLatest",
+      "elapsedMs": {
+        "samples": [
+          28.327415999999857,
+          30.23737499999993,
+          29.2701669999999,
+          28.401375000000144,
+          28.8315419999999
+        ],
+        "median": 28.8315419999999,
+        "min": 28.327415999999857,
+        "max": 30.23737499999993
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          16384,
+          8404992,
+          0,
+          0,
+          16384
+        ],
+        "median": 16384,
+        "min": 0,
+        "max": 8404992
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          166712,
+          151912,
+          260656,
+          -1058288,
+          -744288
+        ],
+        "median": 151912,
+        "min": -1058288,
+        "max": 260656
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 26,
+          "readCalls": 26,
+          "readBytes": 8408945,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8408945,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 67109328
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h8",
+        "bytes": 8388608,
+        "history": 8
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          34.80091700000003,
+          34.82791700000007,
+          34.55433300000004,
+          34.480375000000095,
+          34.41083299999991
+        ],
+        "median": 34.55433300000004,
+        "min": 34.41083299999991,
+        "max": 34.82791700000007
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          -49152,
+          49152,
+          0,
+          0,
+          16384
+        ],
+        "median": 0,
+        "min": -49152,
+        "max": 49152
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          1019200,
+          1533464,
+          453688,
+          217904,
+          2058432
+        ],
+        "median": 1019200,
+        "min": 217904,
+        "max": 2058432
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 52,
+          "readCalls": 26,
+          "readBytes": 8408945,
+          "putCalls": 2,
+          "putBytes": 2489,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 4,
+          "listedEntries": 38,
+          "readCalls": 39,
+          "readBytes": 23595,
+          "putCalls": 39,
+          "putBytes": 23595,
+          "resyncPutCalls": 38,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        }
+      },
+      "storedBytes": 8408945,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 67109328
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h32",
+        "bytes": 1048576,
+        "history": 32
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          15.52816699999994,
+          14.300666999999976,
+          15.686165999999957,
+          14.599375000000236,
+          15.514124999999694
+        ],
+        "median": 15.514124999999694,
+        "min": 14.300666999999976,
+        "max": 15.686165999999957
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          0,
+          0,
+          32768
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 32768
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          -5251400,
+          7774056,
+          -7952104,
+          7810728,
+          -5414968
+        ],
+        "median": -5251400,
+        "min": -7952104,
+        "max": 7810728
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 67,
+          "readCalls": 67,
+          "readBytes": 1107884,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 33,
+          "readCalls": 33,
+          "readBytes": 19988,
+          "putCalls": 33,
+          "putBytes": 19988,
+          "resyncPutCalls": 33,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 1107884,
+      "checkpointBytes": 19988,
+      "historicalRecordBytesPerFullVerification": 33556332
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h32",
+        "bytes": 1048576,
+        "history": 32
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          15.591417000000092,
+          15.672875000000204,
+          15.375540999999885,
+          15.349040999999943,
+          15.535083000000213
+        ],
+        "median": 15.535083000000213,
+        "min": 15.349040999999943,
+        "max": 15.672875000000204
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          0,
+          49152,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 49152
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          -8125752,
+          -8037152,
+          -8053144,
+          -7170088,
+          -8169440
+        ],
+        "median": -8053144,
+        "min": -8169440,
+        "max": -7170088
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 67,
+          "readCalls": 67,
+          "readBytes": 1107884,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 33,
+          "readCalls": 33,
+          "readBytes": 19988,
+          "putCalls": 33,
+          "putBytes": 19988,
+          "resyncPutCalls": 33,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 1107884,
+      "checkpointBytes": 19988,
+      "historicalRecordBytesPerFullVerification": 33556332
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h32",
+        "bytes": 1048576,
+        "history": 32
+      },
+      "operation": "warm-readLatest",
+      "elapsedMs": {
+        "samples": [
+          15.44900000000007,
+          17.206042000000252,
+          15.937750000000051,
+          15.658790999999837,
+          15.599249999999756
+        ],
+        "median": 15.658790999999837,
+        "min": 15.44900000000007,
+        "max": 17.206042000000252
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          32768,
+          16384,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 32768
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          -7838344,
+          -7871912,
+          -7775640,
+          -7889936,
+          -7869616
+        ],
+        "median": -7869616,
+        "min": -7889936,
+        "max": -7775640
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 67,
+          "readCalls": 67,
+          "readBytes": 1107884,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 33,
+          "readCalls": 33,
+          "readBytes": 19988,
+          "putCalls": 33,
+          "putBytes": 19988,
+          "resyncPutCalls": 33,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 1107884,
+      "checkpointBytes": 19988,
+      "historicalRecordBytesPerFullVerification": 33556332
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-1MiB-h32",
+        "bytes": 1048576,
+        "history": 32
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          18.53704199999993,
+          17.686041999999816,
+          17.62525000000005,
+          17.398791000000074,
+          20.12729100000024
+        ],
+        "median": 17.686041999999816,
+        "min": 17.398791000000074,
+        "max": 20.12729100000024
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          0,
+          0,
+          16384
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 16384
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          -6839152,
+          12439504,
+          12445152,
+          12433192,
+          -2316288
+        ],
+        "median": 12433192,
+        "min": -6839152,
+        "max": 12445152
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 134,
+          "readCalls": 67,
+          "readBytes": 1107884,
+          "putCalls": 2,
+          "putBytes": 1840,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 4,
+          "listedEntries": 134,
+          "readCalls": 135,
+          "readBytes": 81770,
+          "putCalls": 135,
+          "putBytes": 81770,
+          "resyncPutCalls": 134,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        }
+      },
+      "storedBytes": 1107884,
+      "checkpointBytes": 19988,
+      "historicalRecordBytesPerFullVerification": 33556332
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h32",
+        "bytes": 8388608,
+        "history": 32
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          101.95629199999985,
+          100.53483400000005,
+          102.14487499999996,
+          100.59166699999969,
+          100.75066599999991
+        ],
+        "median": 100.75066599999991,
+        "min": 100.53483400000005,
+        "max": 102.14487499999996
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          114688,
+          16384,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 114688
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          -395968,
+          405344,
+          -1411352,
+          395328,
+          461352
+        ],
+        "median": 395328,
+        "min": -1411352,
+        "max": 461352
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 74,
+          "readCalls": 74,
+          "readBytes": 8468748,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 33,
+          "readCalls": 33,
+          "readBytes": 19988,
+          "putCalls": 33,
+          "putBytes": 19988,
+          "resyncPutCalls": 33,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8468748,
+      "checkpointBytes": 19988,
+      "historicalRecordBytesPerFullVerification": 268437356
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h32",
+        "bytes": 8388608,
+        "history": 32
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          101.88758400000006,
+          100.33699999999953,
+          100.05187500000011,
+          99.83983400000034,
+          100.37958299999991
+        ],
+        "median": 100.33699999999953,
+        "min": 99.83983400000034,
+        "max": 101.88758400000006
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          32768,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 32768
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          325720,
+          374648,
+          878352,
+          324816,
+          315112
+        ],
+        "median": 325720,
+        "min": 315112,
+        "max": 878352
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 74,
+          "readCalls": 74,
+          "readBytes": 8468748,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 33,
+          "readCalls": 33,
+          "readBytes": 19988,
+          "putCalls": 33,
+          "putBytes": 19988,
+          "resyncPutCalls": 33,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8468748,
+      "checkpointBytes": 19988,
+      "historicalRecordBytesPerFullVerification": 268437356
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h32",
+        "bytes": 8388608,
+        "history": 32
+      },
+      "operation": "warm-readLatest",
+      "elapsedMs": {
+        "samples": [
+          100.68729100000019,
+          100.29229200000009,
+          105.58554099999947,
+          103.3149169999997,
+          102.66812500000015
+        ],
+        "median": 102.66812500000015,
+        "min": 100.29229200000009,
+        "max": 105.58554099999947
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          8404992,
+          0,
+          32768,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 8404992
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          861312,
+          327920,
+          -920792,
+          478712,
+          368952
+        ],
+        "median": 368952,
+        "min": -920792,
+        "max": 861312
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 74,
+          "readCalls": 74,
+          "readBytes": 8468748,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 33,
+          "readCalls": 33,
+          "readBytes": 19988,
+          "putCalls": 33,
+          "putBytes": 19988,
+          "resyncPutCalls": 33,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8468748,
+      "checkpointBytes": 19988,
+      "historicalRecordBytesPerFullVerification": 268437356
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h32",
+        "bytes": 8388608,
+        "history": 32
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          111.40912499999922,
+          115.92066700000032,
+          109.94795800000065,
+          109.29779099999905,
+          109.43024999999943
+        ],
+        "median": 109.94795800000065,
+        "min": 109.29779099999905,
+        "max": 115.92066700000032
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          49152,
+          4390912,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 4390912
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          1690304,
+          5557560,
+          5508544,
+          3377424,
+          5567136
+        ],
+        "median": 5508544,
+        "min": 1690304,
+        "max": 5567136
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 148,
+          "readCalls": 74,
+          "readBytes": 8468748,
+          "putCalls": 2,
+          "putBytes": 2491,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 4,
+          "listedEntries": 134,
+          "readCalls": 135,
+          "readBytes": 81770,
+          "putCalls": 135,
+          "putBytes": 81770,
+          "resyncPutCalls": 134,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        }
+      },
+      "storedBytes": 8468748,
+      "checkpointBytes": 19988,
+      "historicalRecordBytesPerFullVerification": 268437356
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h64",
+        "bytes": 8388608,
+        "history": 64
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          203.87487500000134,
+          204.64920800000255,
+          203.39012500000172,
+          202.0799999999981,
+          203.81345800000054
+        ],
+        "median": 203.81345800000054,
+        "min": 202.0799999999981,
+        "max": 204.64920800000255
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          16384,
+          49152,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 49152
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          680136,
+          666576,
+          -2176600,
+          288728,
+          -614952
+        ],
+        "median": 288728,
+        "min": -2176600,
+        "max": 680136
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 138,
+          "readCalls": 138,
+          "readBytes": 8548492,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 65,
+          "readCalls": 65,
+          "readBytes": 39380,
+          "putCalls": 65,
+          "putBytes": 39380,
+          "resyncPutCalls": 65,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8548492,
+      "checkpointBytes": 39380,
+      "historicalRecordBytesPerFullVerification": 536874732
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h64",
+        "bytes": 8388608,
+        "history": 64
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          212.7512910000005,
+          203.48254200000156,
+          202.38999999999942,
+          203.26754100000107,
+          203.56245900000067
+        ],
+        "median": 203.48254200000156,
+        "min": 202.38999999999942,
+        "max": 212.7512910000005
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          81920,
+          0,
+          16384,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 81920
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          376232,
+          -1303088,
+          455112,
+          -1507928,
+          -628944
+        ],
+        "median": -628944,
+        "min": -1507928,
+        "max": 455112
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 138,
+          "readCalls": 138,
+          "readBytes": 8548492,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 65,
+          "readCalls": 65,
+          "readBytes": 39380,
+          "putCalls": 65,
+          "putBytes": 39380,
+          "resyncPutCalls": 65,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8548492,
+      "checkpointBytes": 39380,
+      "historicalRecordBytesPerFullVerification": 536874732
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h64",
+        "bytes": 8388608,
+        "history": 64
+      },
+      "operation": "warm-readLatest",
+      "elapsedMs": {
+        "samples": [
+          205.16237499999988,
+          206.16795799999818,
+          203.099041999998,
+          205.22120800000266,
+          206.83770899999945
+        ],
+        "median": 205.22120800000266,
+        "min": 203.099041999998,
+        "max": 206.83770899999945
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          16384,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 16384
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          763088,
+          517264,
+          -1102296,
+          -884952,
+          -594800
+        ],
+        "median": -594800,
+        "min": -1102296,
+        "max": 763088
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 138,
+          "readCalls": 138,
+          "readBytes": 8548492,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 65,
+          "readCalls": 65,
+          "readBytes": 39380,
+          "putCalls": 65,
+          "putBytes": 39380,
+          "resyncPutCalls": 65,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8548492,
+      "checkpointBytes": 39380,
+      "historicalRecordBytesPerFullVerification": 536874732
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-8MiB-h64",
+        "bytes": 8388608,
+        "history": 64
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          214.6657090000008,
+          319.35158299999966,
+          215.20387499999924,
+          219.70708300000115,
+          216.414249999998
+        ],
+        "median": 216.414249999998,
+        "min": 214.6657090000008,
+        "max": 319.35158299999966
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          16384,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 16384
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          9681432,
+          8292568,
+          9501640,
+          10018400,
+          7475336
+        ],
+        "median": 9501640,
+        "min": 7475336,
+        "max": 10018400
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 276,
+          "readCalls": 138,
+          "readBytes": 8548492,
+          "putCalls": 2,
+          "putBytes": 2491,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 4,
+          "listedEntries": 262,
+          "readCalls": 263,
+          "readBytes": 159338,
+          "putCalls": 263,
+          "putBytes": 159338,
+          "resyncPutCalls": 262,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        }
+      },
+      "storedBytes": 8548492,
+      "checkpointBytes": 39380,
+      "historicalRecordBytesPerFullVerification": 536874732
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-32MiB-h8",
+        "bytes": 33554432,
+        "history": 8
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          110.84974999999758,
+          116.929666,
+          114.7967499999977,
+          116.0410410000004,
+          124.39366700000028
+        ],
+        "median": 116.0410410000004,
+        "min": 110.84974999999758,
+        "max": 124.39366700000028
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          10518528,
+          0,
+          0,
+          52314112
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 52314112
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          95664,
+          -38520,
+          -51384,
+          -585800,
+          432688
+        ],
+        "median": -38520,
+        "min": -585800,
+        "max": 432688
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 50,
+          "readCalls": 50,
+          "readBytes": 33592633,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 33592633,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 268435920
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-32MiB-h8",
+        "bytes": 33554432,
+        "history": 8
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          111.3691660000004,
+          111.09670800000094,
+          110.648333000001,
+          113.26245799999742,
+          111.56808400000227
+        ],
+        "median": 111.3691660000004,
+        "min": 110.648333000001,
+        "max": 113.26245799999742
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          16384,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 16384
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          77320,
+          1056,
+          56232,
+          123224,
+          489520
+        ],
+        "median": 77320,
+        "min": 1056,
+        "max": 489520
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 50,
+          "readCalls": 50,
+          "readBytes": 33592633,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 33592633,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 268435920
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-32MiB-h8",
+        "bytes": 33554432,
+        "history": 8
+      },
+      "operation": "warm-readLatest",
+      "elapsedMs": {
+        "samples": [
+          115.24137499999779,
+          112.7991660000007,
+          114.89929199999824,
+          114.65954200000124,
+          112.05966700000135
+        ],
+        "median": 114.65954200000124,
+        "min": 112.05966700000135,
+        "max": 115.24137499999779
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          33570816,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 33570816
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          29048,
+          13048,
+          99040,
+          89376,
+          85728
+        ],
+        "median": 85728,
+        "min": 13048,
+        "max": 99040
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 50,
+          "readCalls": 50,
+          "readBytes": 33592633,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 33592633,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 268435920
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "fixed-32MiB-h8",
+        "bytes": 33554432,
+        "history": 8
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          137.85862500000076,
+          183.98929200000202,
+          136.95108299999993,
+          136.0258329999997,
+          137.03591700000106
+        ],
+        "median": 137.03591700000106,
+        "min": 136.0258329999997,
+        "max": 183.98929200000202
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          311296,
+          8175616,
+          -1736704,
+          16384,
+          0
+        ],
+        "median": 16384,
+        "min": -1736704,
+        "max": 8175616
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          1631400,
+          1629232,
+          1625160,
+          2242544,
+          1608840
+        ],
+        "median": 1629232,
+        "min": 1608840,
+        "max": 2242544
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 100,
+          "readCalls": 50,
+          "readBytes": 33592633,
+          "putCalls": 2,
+          "putBytes": 4722,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 4,
+          "listedEntries": 38,
+          "readCalls": 39,
+          "readBytes": 23595,
+          "putCalls": 39,
+          "putBytes": 23595,
+          "resyncPutCalls": 38,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        }
+      },
+      "storedBytes": 33592633,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 268435920
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "churn-1MiB-h8",
+        "bytes": 1048576,
+        "history": 8,
+        "churn": true
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          6.752415999999357,
+          8.305124999998952,
+          6.626415999999153,
+          7.75800000000163,
+          6.658166999997775
+        ],
+        "median": 6.752415999999357,
+        "min": 6.626415999999153,
+        "max": 8.305124999998952
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          2047456,
+          -3053296,
+          2021544,
+          -2907144,
+          2021304
+        ],
+        "median": 2021304,
+        "min": -3053296,
+        "max": 2047456
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 26,
+          "readCalls": 26,
+          "readBytes": 8403737,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8403737,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 8389072
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "churn-1MiB-h8",
+        "bytes": 1048576,
+        "history": 8,
+        "churn": true
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          6.664499999998952,
+          6.671582999999373,
+          12.563250000002881,
+          7.302917000000889,
+          7.478666999999405
+        ],
+        "median": 7.302917000000889,
+        "min": 6.664499999998952,
+        "max": 12.563250000002881
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          2014992,
+          2013696,
+          -4737256,
+          2004624,
+          2013336
+        ],
+        "median": 2013336,
+        "min": -4737256,
+        "max": 2014992
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 26,
+          "readCalls": 26,
+          "readBytes": 8403737,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8403737,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 8389072
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "churn-1MiB-h8",
+        "bytes": 1048576,
+        "history": 8,
+        "churn": true
+      },
+      "operation": "warm-readLatest",
+      "elapsedMs": {
+        "samples": [
+          7.249959000000672,
+          7.390458000001672,
+          8.196167000001878,
+          6.57958299999882,
+          7.075999999997293
+        ],
+        "median": 7.249959000000672,
+        "min": 6.57958299999882,
+        "max": 8.196167000001878
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          16384,
+          0,
+          -6291456
+        ],
+        "median": 0,
+        "min": -6291456,
+        "max": 16384
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          2006080,
+          2007168,
+          -3622104,
+          2006360,
+          2007744
+        ],
+        "median": 2006360,
+        "min": -3622104,
+        "max": 2007744
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 26,
+          "readCalls": 26,
+          "readBytes": 8403737,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8403737,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 8389072
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "churn-1MiB-h8",
+        "bytes": 1048576,
+        "history": 8,
+        "churn": true
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          9.722125000000233,
+          9.259791999997105,
+          10.054917000001296,
+          8.661749999999302,
+          8.701082999999926
+        ],
+        "median": 9.259791999997105,
+        "min": 8.661749999999302,
+        "max": 10.054917000001296
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          -491520,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": -491520,
+        "max": 0
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          3494344,
+          3495168,
+          -3744752,
+          3493320,
+          3498600
+        ],
+        "median": 3494344,
+        "min": -3744752,
+        "max": 3498600
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 52,
+          "readCalls": 26,
+          "readBytes": 8403737,
+          "putCalls": 3,
+          "putBytes": 1050414,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 4,
+          "listedEntries": 38,
+          "readCalls": 39,
+          "readBytes": 23595,
+          "putCalls": 39,
+          "putBytes": 23595,
+          "resyncPutCalls": 38,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        }
+      },
+      "storedBytes": 8403737,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 8389072
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "churn-8MiB-h8",
+        "bytes": 8388608,
+        "history": 8,
+        "churn": true
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          62.18162499999744,
+          53.16566600000078,
+          51.740583000002516,
+          51.41658400000233,
+          50.53704199999993
+        ],
+        "median": 51.740583000002516,
+        "min": 50.53704199999993,
+        "max": 62.18162499999744
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          66322432,
+          131072,
+          0,
+          8421376,
+          81920
+        ],
+        "median": 131072,
+        "min": 0,
+        "max": 66322432
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          1846160,
+          1612768,
+          440136,
+          1765856,
+          2405144
+        ],
+        "median": 1765856,
+        "min": 440136,
+        "max": 2405144
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 82,
+          "readCalls": 82,
+          "readBytes": 67129201,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 67129201,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 67109328
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "churn-8MiB-h8",
+        "bytes": 8388608,
+        "history": 8,
+        "churn": true
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          50.28345799999806,
+          50.29737500000192,
+          50.93454099999872,
+          51.53266599999915,
+          50.69454200000109
+        ],
+        "median": 50.69454200000109,
+        "min": 50.28345799999806,
+        "max": 51.53266599999915
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          0,
+          32768,
+          114688
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 114688
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          -348656,
+          -113872,
+          -123192,
+          -214888,
+          -7520
+        ],
+        "median": -123192,
+        "min": -348656,
+        "max": -7520
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 82,
+          "readCalls": 82,
+          "readBytes": 67129201,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 67129201,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 67109328
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "churn-8MiB-h8",
+        "bytes": 8388608,
+        "history": 8,
+        "churn": true
+      },
+      "operation": "warm-readLatest",
+      "elapsedMs": {
+        "samples": [
+          50.01550000000134,
+          52.350665999998455,
+          50.45195799999783,
+          51.06658299999981,
+          49.71875
+        ],
+        "median": 50.45195799999783,
+        "min": 49.71875,
+        "max": 52.350665999998455
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          16384,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 16384
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          1992752,
+          -93336,
+          2023080,
+          -63536,
+          -120120
+        ],
+        "median": -63536,
+        "min": -120120,
+        "max": 2023080
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 82,
+          "readCalls": 82,
+          "readBytes": 67129201,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 67129201,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 67109328
+    },
+    {
+      "layer": "journal",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "name": "churn-8MiB-h8",
+        "bytes": 8388608,
+        "history": 8,
+        "churn": true
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          57.88337499999761,
+          57.61020799999824,
+          58.13108300000022,
+          57.33383300000423,
+          57.2447500000053
+        ],
+        "median": 57.61020799999824,
+        "min": 57.2447500000053,
+        "max": 58.13108300000022
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          0,
+          16384,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 16384
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          -292168,
+          -215032,
+          1625312,
+          -468904,
+          1641040
+        ],
+        "median": -215032,
+        "min": -468904,
+        "max": 1641040
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 164,
+          "readCalls": 82,
+          "readBytes": 67129201,
+          "putCalls": 10,
+          "putBytes": 8391097,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 4,
+          "listedEntries": 38,
+          "readCalls": 39,
+          "readBytes": 23595,
+          "putCalls": 39,
+          "putBytes": 23595,
+          "resyncPutCalls": 38,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        }
+      },
+      "storedBytes": 67129201,
+      "checkpointBytes": 5445,
+      "historicalRecordBytesPerFullVerification": 67109328
+    },
+    {
+      "layer": "journal",
+      "storage": "memory-checkpoint",
+      "scenario": {
+        "name": "memory-anchor-8MiB-h32",
+        "bytes": 8388608,
+        "history": 32,
+        "memoryCheckpoint": true
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          102.7241670000003,
+          103.49833400000352,
+          104.05625000000146,
+          103.71662500000093,
+          103.12487500000134
+        ],
+        "median": 103.49833400000352,
+        "min": 102.7241670000003,
+        "max": 104.05625000000146
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          16384,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 16384
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          1161952,
+          461208,
+          717864,
+          472760,
+          782016
+        ],
+        "median": 717864,
+        "min": 461208,
+        "max": 1161952
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 74,
+          "readCalls": 74,
+          "readBytes": 8468748,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 0,
+          "listedEntries": 0,
+          "readCalls": 0,
+          "readBytes": 0,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8468748,
+      "checkpointBytes": 0,
+      "historicalRecordBytesPerFullVerification": 268437356
+    },
+    {
+      "layer": "journal",
+      "storage": "memory-checkpoint",
+      "scenario": {
+        "name": "memory-anchor-8MiB-h32",
+        "bytes": 8388608,
+        "history": 32,
+        "memoryCheckpoint": true
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          118.06550000000425,
+          104.80904100000043,
+          104.18158300000505,
+          107.7209589999984,
+          114.21362500000396
+        ],
+        "median": 107.7209589999984,
+        "min": 104.18158300000505,
+        "max": 118.06550000000425
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          16384,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 16384
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          251040,
+          791872,
+          -170168,
+          344288,
+          -733048
+        ],
+        "median": 251040,
+        "min": -733048,
+        "max": 791872
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 74,
+          "readCalls": 74,
+          "readBytes": 8468748,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 0,
+          "listedEntries": 0,
+          "readCalls": 0,
+          "readBytes": 0,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8468748,
+      "checkpointBytes": 0,
+      "historicalRecordBytesPerFullVerification": 268437356
+    },
+    {
+      "layer": "journal",
+      "storage": "memory-checkpoint",
+      "scenario": {
+        "name": "memory-anchor-8MiB-h32",
+        "bytes": 8388608,
+        "history": 32,
+        "memoryCheckpoint": true
+      },
+      "operation": "warm-readLatest",
+      "elapsedMs": {
+        "samples": [
+          105.90566699999908,
+          106.91341700000339,
+          103.9563749999943,
+          105.44712499999878,
+          102.48779099999956
+        ],
+        "median": 105.44712499999878,
+        "min": 102.48779099999956,
+        "max": 106.91341700000339
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          -1255760,
+          957440,
+          764912,
+          -1244440,
+          418872
+        ],
+        "median": 418872,
+        "min": -1255760,
+        "max": 957440
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 74,
+          "readCalls": 74,
+          "readBytes": 8468748,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 0,
+          "listedEntries": 0,
+          "readCalls": 0,
+          "readBytes": 0,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        }
+      },
+      "storedBytes": 8468748,
+      "checkpointBytes": 0,
+      "historicalRecordBytesPerFullVerification": 268437356
+    },
+    {
+      "layer": "journal",
+      "storage": "memory-checkpoint",
+      "scenario": {
+        "name": "memory-anchor-8MiB-h32",
+        "bytes": 8388608,
+        "history": 32,
+        "memoryCheckpoint": true
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          109.59833300000173,
+          109.5124169999981,
+          108.23537500000384,
+          109.92387499999313,
+          109.54875000000175
+        ],
+        "median": 109.54875000000175,
+        "min": 108.23537500000384,
+        "max": 109.92387499999313
+      },
+      "rssDeltaBytes": {
+        "samples": [
+          0,
+          0,
+          0,
+          0,
+          16384
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 16384
+      },
+      "heapUsedDeltaBytes": {
+        "samples": [
+          -806536,
+          -768384,
+          1604792,
+          -197224,
+          -482456
+        ],
+        "median": -482456,
+        "min": -806536,
+        "max": 1604792
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 148,
+          "readCalls": 74,
+          "readBytes": 8468748,
+          "putCalls": 2,
+          "putBytes": 2491,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 0,
+          "listedEntries": 0,
+          "readCalls": 0,
+          "readBytes": 0,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        }
+      },
+      "storedBytes": 8468748,
+      "checkpointBytes": 0,
+      "historicalRecordBytesPerFullVerification": 268437356
+    },
+    {
+      "layer": "journal",
+      "storage": "native-rooted-files",
+      "scenario": {
+        "bytes": 1048576,
+        "history": 8
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          21.871250000003783,
+          34.75995800000237,
+          34.3761250000025,
+          35.20804099999805,
+          38.198167000002286
+        ],
+        "median": 34.75995800000237,
+        "min": 21.871250000003783,
+        "max": 38.198167000002286
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 19,
+          "readCalls": 19,
+          "readBytes": 1063705,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        },
+        "nativeSync": {
+          "files": 9,
+          "directories": 9
+        }
+      }
+    },
+    {
+      "layer": "journal",
+      "storage": "native-rooted-files",
+      "scenario": {
+        "bytes": 1048576,
+        "history": 8
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          20.692666000002646,
+          18.956959000002826,
+          19.008834000000206,
+          18.35566700000345,
+          17.517166999998153
+        ],
+        "median": 18.956959000002826,
+        "min": 17.517166999998153,
+        "max": 20.692666000002646
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 19,
+          "readCalls": 19,
+          "readBytes": 1063705,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        },
+        "nativeSync": {
+          "files": 9,
+          "directories": 9
+        }
+      }
+    },
+    {
+      "layer": "journal",
+      "storage": "native-rooted-files",
+      "scenario": {
+        "bytes": 1048576,
+        "history": 8
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          58.47250000000349,
+          59.45004099999642,
+          58.624000000003434,
+          63.09991699999955,
+          68.26512499999808
+        ],
+        "median": 59.45004099999642,
+        "min": 58.47250000000349,
+        "max": 68.26512499999808
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 38,
+          "readCalls": 19,
+          "readBytes": 1063705,
+          "putCalls": 2,
+          "putBytes": 1838,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 4,
+          "listedEntries": 38,
+          "readCalls": 39,
+          "readBytes": 23595,
+          "putCalls": 39,
+          "putBytes": 23595,
+          "resyncPutCalls": 38,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        },
+        "nativeSync": {
+          "files": 41,
+          "directories": 41
+        }
+      }
+    },
+    {
+      "layer": "journal",
+      "storage": "native-rooted-files",
+      "scenario": {
+        "bytes": 8388608,
+        "history": 8
+      },
+      "operation": "object-cold-open",
+      "elapsedMs": {
+        "samples": [
+          74.44474999999511,
+          70.15820799999346,
+          48.75083299999824,
+          56.57445899999584,
+          64.98579099999915
+        ],
+        "median": 64.98579099999915,
+        "min": 48.75083299999824,
+        "max": 74.44474999999511
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 26,
+          "readCalls": 26,
+          "readBytes": 8408945,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        },
+        "nativeSync": {
+          "files": 9,
+          "directories": 9
+        }
+      }
+    },
+    {
+      "layer": "journal",
+      "storage": "native-rooted-files",
+      "scenario": {
+        "bytes": 8388608,
+        "history": 8
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          42.40783399999782,
+          43.1450410000034,
+          46.01295899999968,
+          42.735415999995894,
+          44.44329200000357
+        ],
+        "median": 43.1450410000034,
+        "min": 42.40783399999782,
+        "max": 46.01295899999968
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 1,
+          "listedEntries": 26,
+          "readCalls": 26,
+          "readBytes": 8408945,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 1,
+          "listedEntries": 9,
+          "readCalls": 9,
+          "readBytes": 5445,
+          "putCalls": 9,
+          "putBytes": 5445,
+          "resyncPutCalls": 9,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 1,
+          "advance": 0
+        },
+        "nativeSync": {
+          "files": 9,
+          "directories": 9
+        }
+      }
+    },
+    {
+      "layer": "journal",
+      "storage": "native-rooted-files",
+      "scenario": {
+        "bytes": 8388608,
+        "history": 8
+      },
+      "operation": "commit-one",
+      "elapsedMs": {
+        "samples": [
+          78.11149999999907,
+          87.84074999999575,
+          76.67387500000041,
+          80.46670799999993,
+          86.96241599999485
+        ],
+        "median": 80.46670799999993,
+        "min": 76.67387500000041,
+        "max": 87.84074999999575
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 52,
+          "readCalls": 26,
+          "readBytes": 8408945,
+          "putCalls": 2,
+          "putBytes": 2489,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 0
+        },
+        "checkpoint": {
+          "listCalls": 4,
+          "listedEntries": 38,
+          "readCalls": 39,
+          "readBytes": 23595,
+          "putCalls": 39,
+          "putBytes": 23595,
+          "resyncPutCalls": 38,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 1
+        },
+        "nativeSync": {
+          "files": 41,
+          "directories": 41
+        }
+      }
+    },
+    {
+      "layer": "A1-A2-kernel",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "scopes": 1,
+        "large": false,
+        "coreBytes": 1250
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          1.9280829999988782,
+          1.504625000001397,
+          1.9026250000024447,
+          2.139459000005445,
+          1.359915999993973
+        ],
+        "median": 1.9026250000024447,
+        "min": 1.359915999993973,
+        "max": 2.139459000005445
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 40,
+          "readCalls": 40,
+          "readBytes": 59206,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 3
+        },
+        "checkpoint": {
+          "listCalls": 2,
+          "listedEntries": 10,
+          "readCalls": 10,
+          "readBytes": 6050,
+          "putCalls": 10,
+          "putBytes": 6050,
+          "resyncPutCalls": 10,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 0
+        }
+      }
+    },
+    {
+      "layer": "A1-A2-kernel",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "scopes": 1,
+        "large": false,
+        "coreBytes": 1250
+      },
+      "operation": "register-one",
+      "elapsedMs": {
+        "samples": [
+          2.0437500000043656,
+          1.808666999997513,
+          2.3052909999969415,
+          2.6188750000001164,
+          1.658625000003667
+        ],
+        "median": 2.0437500000043656,
+        "min": 1.658625000003667,
+        "max": 2.6188750000001164
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 3,
+          "listedEntries": 60,
+          "readCalls": 40,
+          "readBytes": 59206,
+          "putCalls": 3,
+          "putBytes": 6514,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 4
+        },
+        "checkpoint": {
+          "listCalls": 5,
+          "listedEntries": 27,
+          "readCalls": 28,
+          "readBytes": 16940,
+          "putCalls": 28,
+          "putBytes": 16940,
+          "resyncPutCalls": 27,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 3,
+          "advance": 1
+        }
+      }
+    },
+    {
+      "layer": "A1-A2-kernel",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "scopes": 1,
+        "large": true,
+        "coreBytes": 1229039
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          8.907749999998487,
+          9.758958999998868,
+          8.90429099999892,
+          9.36504199999763,
+          8.826999999997497
+        ],
+        "median": 8.907749999998487,
+        "min": 8.826999999997497,
+        "max": 9.758958999998868
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 48,
+          "readCalls": 48,
+          "readBytes": 2525168,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 3
+        },
+        "checkpoint": {
+          "listCalls": 2,
+          "listedEntries": 12,
+          "readCalls": 12,
+          "readBytes": 7260,
+          "putCalls": 12,
+          "putBytes": 7260,
+          "resyncPutCalls": 12,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 0
+        }
+      }
+    },
+    {
+      "layer": "A1-A2-kernel",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "scopes": 1,
+        "large": true,
+        "coreBytes": 1229039
+      },
+      "operation": "register-one",
+      "elapsedMs": {
+        "samples": [
+          11.009333000001789,
+          11.851834000000963,
+          16.044332999998005,
+          14.830625000002328,
+          12.565667000002577
+        ],
+        "median": 12.565667000002577,
+        "min": 11.009333000001789,
+        "max": 16.044332999998005
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 3,
+          "listedEntries": 72,
+          "readCalls": 48,
+          "readBytes": 2525168,
+          "putCalls": 3,
+          "putBytes": 6869,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 4
+        },
+        "checkpoint": {
+          "listCalls": 5,
+          "listedEntries": 32,
+          "readCalls": 33,
+          "readBytes": 19965,
+          "putCalls": 33,
+          "putBytes": 19965,
+          "resyncPutCalls": 32,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 3,
+          "advance": 1
+        }
+      }
+    },
+    {
+      "layer": "A1-A2-kernel",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "scopes": 16,
+        "large": true,
+        "coreBytes": 1229039
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          9.003457999999227,
+          10.231417000002693,
+          10.059417000004032,
+          10.018958000000566,
+          9.948540999997931
+        ],
+        "median": 10.018958000000566,
+        "min": 9.003457999999227,
+        "max": 10.231417000002693
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 78,
+          "readCalls": 78,
+          "readBytes": 2618582,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 3
+        },
+        "checkpoint": {
+          "listCalls": 2,
+          "listedEntries": 12,
+          "readCalls": 12,
+          "readBytes": 7260,
+          "putCalls": 12,
+          "putBytes": 7260,
+          "resyncPutCalls": 12,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 0
+        }
+      }
+    },
+    {
+      "layer": "A1-A2-kernel",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "scopes": 16,
+        "large": true,
+        "coreBytes": 1229039
+      },
+      "operation": "register-one",
+      "elapsedMs": {
+        "samples": [
+          12.81512500000099,
+          12.733333000003768,
+          12.625334000003932,
+          11.15608400000201,
+          11.328541000002588
+        ],
+        "median": 12.625334000003932,
+        "min": 11.15608400000201,
+        "max": 12.81512500000099
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 3,
+          "listedEntries": 117,
+          "readCalls": 78,
+          "readBytes": 2618582,
+          "putCalls": 3,
+          "putBytes": 17287,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 4
+        },
+        "checkpoint": {
+          "listCalls": 5,
+          "listedEntries": 32,
+          "readCalls": 33,
+          "readBytes": 19965,
+          "putCalls": 33,
+          "putBytes": 19965,
+          "resyncPutCalls": 32,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 3,
+          "advance": 1
+        }
+      }
+    },
+    {
+      "layer": "A1-A2-kernel",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "scopes": 64,
+        "large": true,
+        "coreBytes": 1229039
+      },
+      "operation": "warm-lookup",
+      "elapsedMs": {
+        "samples": [
+          11.926040999998804,
+          12.195291999996698,
+          12.315750000001572,
+          12.074791999999434,
+          11.98750000000291
+        ],
+        "median": 12.074791999999434,
+        "min": 11.926040999998804,
+        "max": 12.315750000001572
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 2,
+          "listedEntries": 174,
+          "readCalls": 174,
+          "readBytes": 2917938,
+          "putCalls": 0,
+          "putBytes": 0,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 3
+        },
+        "checkpoint": {
+          "listCalls": 2,
+          "listedEntries": 12,
+          "readCalls": 12,
+          "readBytes": 7260,
+          "putCalls": 12,
+          "putBytes": 7260,
+          "resyncPutCalls": 12,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 2,
+          "advance": 0
+        }
+      }
+    },
+    {
+      "layer": "A1-A2-kernel",
+      "storage": "file-checkpoint-protocol-on-memory",
+      "scenario": {
+        "scopes": 64,
+        "large": true,
+        "coreBytes": 1229039
+      },
+      "operation": "register-one",
+      "elapsedMs": {
+        "samples": [
+          16.21845800000301,
+          16.27587499999936,
+          16.203874999999243,
+          17.544792000000598,
+          16.572000000000116
+        ],
+        "median": 16.27587499999936,
+        "min": 16.203874999999243,
+        "max": 17.544792000000598
+      },
+      "boundaryCounters": {
+        "store": {
+          "listCalls": 3,
+          "listedEntries": 261,
+          "readCalls": 174,
+          "readBytes": 2917938,
+          "putCalls": 3,
+          "putBytes": 50650,
+          "resyncPutCalls": 0,
+          "assertOpenCalls": 4
+        },
+        "checkpoint": {
+          "listCalls": 5,
+          "listedEntries": 32,
+          "readCalls": 33,
+          "readBytes": 19965,
+          "putCalls": 33,
+          "putBytes": 19965,
+          "resyncPutCalls": 32,
+          "assertOpenCalls": 0
+        },
+        "checkpointCalls": {
+          "read": 3,
+          "advance": 1
+        }
+      }
+    }
+  ]
+}

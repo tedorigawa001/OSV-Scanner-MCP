@@ -3798,7 +3798,7 @@ selected-target以後にaborted-before-selectへ戻さない。制約不明・�
 
 start認可を独立controlへ保存しfreeze-requestedをCASした後、source側をdrain・closeして5 rootの専有を取得し、gate／drain証拠を確認する。進行中operationを通常のdurable ack境界で終えるか、結果不明ならA2の一つのtail復旧を先に完了する。start認可に固定したsourceBeforeHeadと異なるheadに進んでいた場合はstaleとする。A2でtailを解決し未freezeのAbsentWitnessを確認してpre-select abortを確定し、新migrationId／freezeIdと新認可で安定headを使う。同じfreeze requestのbodyを差し替えず、変化を無視してfreezeしない。
 
-sourceでは一つの予約済みtransactionで全current sessionをrestartedとして失効し、open uploadをcancel、全scopeをterminal／revokedにし、SourceFreezeResultをoperation-resultへ収録する。既にclosedなvalidity・成功terminal・ledger・raw metadataは保持する。freeze headはcommitとsource checkpointが完了してからcontrolのfrozenへ保存する。tombstone／plan／認可／世代遷移はsourceに追記しない。
+sourceでは一つの予約済みtransactionで全current sessionを移行freeze専用のvalidity `migration-frozen`として失効し（§9.62のrestartによる`restarted`や時間切れの`expired`とは区別する。§9.67）、open uploadをcancel、全scopeをterminal／revokedにし、SourceFreezeResultをoperation-resultへ収録する。既にclosedなvalidity・成功terminal・ledger・raw metadataは保持する。freeze headはcommitとsource checkpointが完了してからcontrolのfrozenへ保存する。tombstone／plan／認可／世代遷移はsourceに追記しない。
 
 freezeIdをdurableに一回化する。同じfreeze requestでackを失っても、source resultのrequest digest・参照control・失効集合を照合して既存headを回収し、もう一度全sessionを失効してrevision・予約を消費しない。restart予約の枯渇後も移行開始予約だけは使用可能とする。sourceの真のhard fullや閉包不正、freezeの予約不成立は無変更で停止し、任意削除で1 slotを作らない。
 
@@ -3863,7 +3863,7 @@ unlink後・Done前に停止した場合、認証済みPreparedに含まれるen
 | MC04 | sourceの受付／ack gate・read pin／grantをdrainできなければfreeze完了不可。旧cacheだけでackしない |
 | MC05 | restart予約枯渇後も移行開始予約が残り、sourceへ1 transactionだけ追記可能。hard fullで勝手にGCしない |
 | MC06 | sourceBeforeHeadの途中変化・tail復旧・freezeId交換を拒否し、ack紛失後は同freeze結果を回収して二重失効しない |
-| MC07 | source snapshotの失効／cancelと既存validity・成功terminal保持を確認。保守controlをv1 rootへ追加しない |
+| MC07 | source snapshotの失効／cancelと既存validity・成功terminal保持を確認。freezeで閉じたsessionは`migration-frozen`となり、restartの`restarted`・時間切れの`expired`・既存のclose理由を上書きしないこと。保守controlをv1 rootへ追加しない |
 | MC08 | pre-select abort後の再planは元freeze証拠を再使用し、新たなsource commitを無制限に消費しない |
 | MC09 | full／retireの欠落・二重分類・source namespace交換・既存tombstone消失を拒否。256／4,096を別計数 |
 | MC10 | 共有chunkの保持、全参照閉包・原本archiveを検査。latestだけをmarkしたplanを拒否 |
@@ -3897,3 +3897,174 @@ unlink後・Done前に停止した場合、認証済みPreparedに含まれるen
 RC01〜RC28も引き続き必要とする。MCは新規schema・registry・native故障実証の未実装条件であり、既存テストの再実行や文書検査で成立済みとしない。
 
 世代移行契約の文書検証: 公開文書command例と既存A1–A2／disk owner／restartの計123テスト成功。§9.66の11小節とMC01〜MC36の欠落・重複なし、diff整形検査成功を確認した。MC36件およびM0〜M4は未実装で、新規v2 schema／registry／compaction／GCの実装・native実証・本番採用は0。既存native対照の再実行を新protocolの成立証明へ数えない。
+
+
+### 9.67 a3daabcレビュー修正・移行freezeのvalidity（2026-11-02）
+
+§9.66.6はfreezeで全current sessionを`restarted`として失効させていた。36d0835でrestartによる失効（`restarted`）と時間切れ（`expired`）を区別したばかりであり、移行のためのfreezeはrestartとは別の事象である。同じ値にすると監査記録からrestartとfreezeを区別できず、§9.64.4の「close理由を上書きしない」（RC09）とも合わない。freeze専用のvalidity `migration-frozen`を設け、SourceFreezeResultの失効対象と合わせて記録することにした。MC07へこの区別を加えた。
+
+現在のv1 kernel・snapshot decoderのvalidity enumに`migration-frozen`はまだない。v1 source freezeを実装するときに、kernelの閉じる処理、snapshot decoderのenumとclosed判定、restart時の扱い（既に`migration-frozen`のsessionは上書きしない）を合わせて追加することを実装条件とする。本節は設計のみで、実装・native実行・本番採用は0件である。
+
+
+### 9.68 保存処理の性能改善設計と基準計測（2026-11-02）
+
+§9.64〜§9.67の安全性・保持・移行契約を変えず、まず現行v1を測定し、最適化の実装順と採用条件を定義する。今回追加したのはopt-in計測harnessとbaseline artifact、本節の設計であり、snapshot最適化・delta形式・incremental verifierは未実装である。最適化前後のspeedupを実測したとは扱わない。
+
+#### 9.68.1 現行処理と改善対象
+
+現A1–A2はgeneration確認でreadLatestを呼び、lookup経路でもreadLatestを呼ぶ。両者の返却record bytesを判定に使わなくても、現在のAPIでは連結・copyが行われる。saveExpirationは状態に変化がない場合も全snapshotを構築してhashを比較する。snapshot自体もfrozen textのBuffer化、ledger JSONの再parse、indexのための各record hashを行い、snapshotDigestで同じrecord群を再hashする。
+
+A2 recoverは毎回inventory・全blob・全commit・独立checkpointを再検証する。content-addressed chunkは物理保存でdedupされても、同じmetadataを参照する各commitについてBuffer.concatとrecord全体hashを繰り返す。FileJournalCheckpoint.readも全checkpointを認証して同じbytesをputし直し、nativeではfile／directory fsyncを伴う。これらを一つの「読み込み時間」にまとめて原因を断定しない。
+
+baselineの主な成長軸を、unique blob bytes U、全commitが参照するrecord bytes合計R、commit数H、現在record数N、snapshot dirty集合Dとする。現行recoverのrecord再連結・hash対象はUだけでなくRへ依存する。今回の境界counterはU側のreadを観測し、Rは保存commit descriptorから別に集計する。Rを実測crypto CPU時間・hash呼出し回数と同一視しない。
+
+#### 9.68.2 baseline harness・再現方法
+
+`src/test/benchmarks/gradleOwnedStore.test.ts`は既定skipの単一opt-in testで、環境変数`OSV_MCP_OWNED_STORE_BENCH=1`と任意の`OSV_MCP_OWNED_STORE_BENCH_OUTPUT`を使う。以下は再現用の公開commandであり、通常起動に設定しない。
+
+```sh
+OSV_MCP_OWNED_STORE_BENCH=1 OSV_MCP_OWNED_STORE_BENCH_OUTPUT=docs/benchmarks/gradle-owned-store-baseline-2026-11-02.json npm test -- src/test/benchmarks/gradleOwnedStore.test.ts --maxWorkers=1
+```
+
+記録は[baseline JSON](benchmarks/gradle-owned-store-baseline-2026-11-02.json)。各rowでwarmup 1回と測定5回、全samples・median／min／max、JournalIO境界のlist／read／put・返却bytes、checkpoint API回数・同値put、native fsync回数を保存する。同じscenarioのcounterが5回一致することと、record bytes・revision／resultをpublic APIで照合する。計測前後のRSS／heapUsed差分はmemory journal rowだけに保存し、peak memoryとは呼ばない。GCとhostの背景負荷は制御していない。
+
+| family | workloadと境界 |
+| --- | --- |
+| journal／memory | 固定1／8／32 MiB metadata、履歴4／8／32／64件、同じbytes再利用と毎commit変更を分ける。file-checkpoint protocolをMemoryJournalIO上で実行。別にMemoryCheckpointを対照にする |
+| journal／native | 1／8 MiB・履歴8件、RootedJournalIOの専有rootと実FileJournalCheckpointでfile／directory fsyncを含める。seedは全fileをsafe put・同期して準備 |
+| A1–A2 kernel | 実schemaのcore 1,250 bytesまたは1,229,039 bytes、1／16／64 scope。actual begin／upload／bind／activate後にlookupまたはscope登録。file protocolをmemory上で使用 |
+
+journalのoperationはobject-cold-open、warm-lookup、warm-readLatest、commit-one。nativeはreadLatestを除く3種、kernelはwarm-lookupとregister-oneで、合計54 rows・270測定samplesと54 warmupsを保存した。clone／seed準備・結果検証はtimed領域の外。commit-oneだけは入力payload／record構築もtimed領域へ含む。kernel requestはtimed領域の外で組み立てる。kernel clockは0固定であり、期限到達や実IPCの遅延を測っていない。
+
+object-coldは新journal instanceという意味で、storage／OS cacheは冷やしていない。nativeのJournalIO counterはwrapper境界だけを計数し、RootedJournalIO.put内部のlist／read等のsyscall総量は含めない。nativeSyncは別にadapterの実fsync回数を記録する。memory上のfile protocolで数えたresync putはfsync実行ではない。
+
+harnessと相対import閉包、package-lock.jsonの31 source hashを実行前後に照合して保存した。これは再現用のcode fingerprintであり、独立authority／実Taskの認証証拠ではない。測定環境はNode v26.12.1／macOS arm64／Apple M4。通常CIでは時間閾値を置かず、opt-in workloadを実行しない。
+
+#### 9.68.3 今回の基準値と解釈
+
+以下はwarm-lookupの中央値。最適化版との比較ではなく、workload／storage別の現行baselineである。
+
+| workload | storage | median ms | store境界read bytes | checkpoint再取得／同値put | native file／directory fsync |
+| --- | --- | ---: | ---: | --- | --- |
+| 1 MiB・履歴8 | memory／file protocol | 4.10 | 1,063,705 | 1回／9回 | 未実行 |
+| 8 MiB・履歴8 | memory／file protocol | 28.47 | 8,408,945 | 1回／9回 | 未実行 |
+| 8 MiB・履歴64 | memory／file protocol | 203.48 | 8,548,492 | 1回／65回 | 未実行 |
+| 1 MiB・履歴8 | native rooted files | 18.96 | 1,063,705 | 1回／9回 | 9／9 |
+| 8 MiB・履歴8 | native rooted files | 43.15 | 8,408,945 | 1回／9回 | 9／9 |
+| core約1.17 MiB・1 scope | A1–A2／memory file protocol | 8.91 | 2,525,168 | 2回／12回 | 未実行 |
+| core約1.17 MiB・64 scopes | A1–A2／memory file protocol | 12.07 | 2,917,938 | 2回／12回 | 未実行 |
+
+8 MiBの固定bytesについて、履歴8と64ではuniqueなmetadata blob量が同じでも、過去commitのrecord参照bytes合計は67,109,328から536,874,732へ増えた。この成長と現recoverの処理から、同一contentをcommitごとに再連結・再hashする部分を優先候補にする。ただし、全増加時間をcryptoだけへ帰属させるprofileはまだ取っていない。nativeとmemoryの差にもstat／列挙／copy等が含まれ、差分全体をfsync時間としない。
+
+最大256 MiB／256 commits、disk-cold startup、compaction／GC、実Gradle・BTA／OSV、実隔離backendは今回の計測対象外。raw journal workloadのmetadataはopaqueな合成payloadであり、A1 workloadと同じschema費用ではない。5 samplesのhost測定から一般的な性能保証や速度倍率を出さない。
+
+#### 9.68.4 PO1: 1回の検証内のcontent memoとhead-only API
+
+最初の実装候補はformatと外部I/O保証を変えず、同じrecover invocation内でcontent proofを再使用する方式とする。毎回のinventory、全blobの実readとchunk digest、全commit認証・chain・index・role／binding、現在の独立checkpointと同期は維持する。
+
+blob mapを外部aliasのないprivate bytesとして固定してから、recordの`{size,wholeSha256,orderedChunks:[{sha256,size}]}`をkeyにする有界memoを作る。一度実bytesを連結・whole hashへ照合した組合せだけをhitにし、同じrecover内の重複recordで連結・hashを省く。whole digestとsizeだけをkeyにして別chunk列を省略しない。role／session／schema／認可の判定までcontent proofとして再使用しない。
+
+memoはrecoverの終了・失敗で廃棄し、次requestのfile変化を見落とすcross-request cacheにしない。cacheが満杯ならevictして元の検証へ戻す。current native storageに新しいimmutable保証を仮定せず実装可能な範囲であり、read bytes／checkpoint確認回数が減ると約束しない。
+
+generation確認には、将来`verifyHead(expectedHead)`または同等のmetadata-only resultを返すAPIを設ける。内部の全検証はreadLatestと同等に行うが、呼出し元が使わない最新raw recordの連結・返却copyをしない。headが一致するだけで検証済みとしない。閉じたIO・専有喪失・checkpoint不能・世代変更ではcacheに関係なく拒否する。
+
+PO1の比較ではunique blob bytes／read calls等がbaselineと同じこと、同一contentの再連結／hash対象がuniqueなdescriptor組へ縮むことを測る。後者の専用counterは今後実装し、今回のR集計を実装済みcounterへ見せない。
+
+#### 9.68.5 PO2: A1 snapshotの変更追跡とimmutable record再使用
+
+全stateをserialize・hashして「変化なし」を調べる方式を、transaction builder内の明示versionとdirty集合へ置き換える。session／scope／upload／ledger／ack／slotごとにcopy-on-writeなstate nodeを持ち、commit済みroot versionを比較する。rollbackは元rootへ戻し、失敗した候補cacheを公開しない。expireのようにoperation前後で成立する変更も、別transactionとしてdirtyと保存を通す。
+
+| operation | 必ず追跡する変更 |
+| --- | --- |
+| begin | session manifest・初期upload・begin結果。slot参照は現revisionに束縛 |
+| upload／freeze | partial bytes・received／予約、upload index、最後のfrozen ref。frozen bytesを後から別内容へ交換しない |
+| bind-core | 固定core ref／manifest digest／plans・全scope genesis・index。raw coreは同じprivate bytesを共有 |
+| activate／supersede | old／new sessionとslot、同じconsumer／rootのslotをsummaryから参照する全session。対象sessionだけdirtyにして他のcurrentRevisionを古くしない |
+| register／event／seal | scope index・upload・ledger・reservation・terminalとsession集約・ack。raw capabilityは保存しない |
+| abort／revoke／expire／restart／freeze | 対象と必要な全scope・upload cancel・slot・集約、専用validity・既存terminal。処理失敗時のexpiryも取りこぼさない |
+| lookup／retry | 通常は変更なしだが、expiry・世代・checkpoint・必要な現在gateは毎回確認。古い成功responseをそのままfreshにしない |
+
+record bytesとdescriptorは初回受理時にsealしたprivate handleへ関連付ける。入力Buffer・返却Bufferとaliasを共有せず、Object.freezeだけでBuffer内容をimmutableにしたとみなさない。wireからsha256やhandle IDだけを受け取り、再hash不要の証明としない。将来の内部sealed-record APIはWeakMap等で本物の発行元・boot／epochを照合し、偽object・閉鎖後・別journalのhandleを拒否する。
+
+full snapshotを出す互換段階でも、変更していないraw metadata・ledger recordの再parse／serialize／hashを省ける。ただし現在のflatなsession-index／descriptor arrayはNへ依存するままで、全operationをO(D)と呼ばない。record順とcanonical bytesが同じ旧形式では、同じimmutable logical state・実ID／nonceを入力にしたreference full builderとbyte単位で比較する。別のfresh modelで発行したランダムIDを消して見かけの同値を作らない。version bump漏れを正当化するためのcache TTLは設けない。
+
+#### 9.68.6 PO3: v2の差分recordとmaterialized state root
+
+§9.66のv2 commitを具体実装する際、recordMode=fullまたはdeltaのstrict unionを別schema versionで明示する。既存v1の欠落recordを暗黙に「前のまま」と読む変更は禁止する。最初のCompactedBaseはfull閉包を持ち、その後のdeltaはexactなpre-state rootへ束縛する。
+
+将来のdelta bodyはauthority／lineage／epoch／generation・parent commit、fromStateRoot／toStateRoot、型付きlogical keyによるadd／replace／remove、各変更のexpected old digestと新ref、operation／result、更新後のnamespace／budget／index rootを必須にする。重複key・unknown field・同一keyの競合更新・from root違いは拒否する。任意JSON pointerや任意file pathによる更新を許さない。
+
+論理recordのremoveは物理unlinkを認可しない。partial uploadをfrozenへ置き換えた旧recordも、保持すべき過去commit／controlが参照する間は残す。retired化には§9.66のintent・認可・receipt・tombstoneの閉包を要求し、delta一つで成功terminalや履歴を消さない。
+
+将来は型付きmapを有界のpersistent shard／treeへ分け、変更pathだけ再計算できる形を採る。tree arity・key encoding・pageサイズ・canonical順序・membership／non-membership証拠をschemaへ固定する。ledger／occurrenceの順をsortし直さず、少なくともold refを含む変更path・新ref・to rootを検証する。cacheにあるmapを全体の真実として採用しない。
+
+起動／importは承認baseからfull検証・replayを行い、verified state rootを確立する。reference full materializerと各操作後のlogical state・判定・保存bindingを比較する。差分とfullではjournal head／storage量が変わり得るため、異なる形式のhead digest一致を同値性の条件にしない。payload・core／scope binding・outcome・失効・retryの一回性を同値とし、実storage差はquotaへ反映する。
+
+#### 9.68.7 PO4: cross-request incremental検証の信頼境界
+
+現RootedJournalIOのpath／inode／size／mtime／ctime、content-addressed名、advisory flockだけでは、任意writerがbyteを変えられないことの独立証明にならない。metadata stat一致だけでreadやhashを省くfast pathは採用しない。周期的full scrubも、改変と次scrubの間のackを正当化する代わりにしない。
+
+cross-requestでprefix proofを再使用するには、承認storage providerがimmutable namespace／generationを管理し、actual bytes・inventory・root identityへ束縛したliveなimmutability receiptと失効順序を提供することを条件とする。単なるlocal counterや自己署名ではなく、Bの独立保護・provider profile・reader／writer gateとの接続まで採用条件に含む。現在はこのproviderを実装していないため、defaultは従来のfull-read検証のままとする。
+
+cache keyはauthority／lineage／generation／epoch、root pair／storage instance、base／verified head、schema／parser／profile／policy version、checkpoint issuer、provider lease／generationを含む。内容digestだけのglobal cacheや、別sessionへ認可結果を転用するcacheを作らない。独立registryの現在世代、local checkpointのfresh確認、session／scopeのcurrent性・expiry／revocation・actual read grantはcacheと分離して毎回検査する。
+
+positive receipt・同epoch prefixが確定した場合だけ、その不変prefixと新しいsuffixを分けて検証する。new／changed entries、追加commitとその必要閉包・前head・index・budgetは実検証する。suffixがない場合もcheckpoint・provider存続・gateを省かない。新世代／key・policy変更・lease失効・root交換・marker不明では全cacheを破棄し、承認されたfull modeへ戻すか停止する。
+
+providerがない場合のcache missと、認証失敗・byte改変を区別する。前者は最初からfull modeを選べるが、確認済み不正をcache missへ格下げして別bytesで成功にしない。storageの現在性や認可自体が確認できない場合は、cacheがあってもack・採用を拒否する。
+
+#### 9.68.8 checkpointの耐久性とcache
+
+checkpoint再同期の回数だけを減らして、§9.60の「公開したがdirectory sync未完了」の不具合を再導入しない。起動・owner交代・未知の前回write・公開後sync失敗では、原本認証とfile／directory再同期を終えるまでdurable handleを発行しない。readで見えたhead・stat・過去の成功timestampだけをhandleにしない。
+
+将来のhandleは、実sync完了証拠・exact checkpoint bytes／head・storage generation・owner boot・承認issuer／profileに束縛する。same-generationのimmutable providerとdurable-prefix契約が成立する場合だけ、変更していない過去checkpointの再parse／再fsyncを省く候補にできる。新しいcheckpoint advanceのfile／directory sync・CAS／readbackは必須。readbackの可視性をdurabilityと混同しない。
+
+書込み／同期失敗・未知CAS結果・owner終了後はhandleを失効させる。unknownなlocal tail、公開checkpointの再同期不足、source→target切替、freeze／GC phaseでは、fastなhistorical ackを返さない。既存のfail-stop、再open、世代照合、最後のawait後の期限検査、raw capabilityの非復元をすべて維持する。
+
+#### 9.68.9 cache資源・比較方法と実装順
+
+初期の候補上限はprivate cache byte payload合計64 MiB、proof entries 4,096、parsed node数100,000とし、既存budgetと小さい方を採用する。candidate値であり現定数への変更ではない。共有handleは一度だけ課金し、key／index／dirty mapも別に計数する。node数とserialized sizeの制限を実RSSの上限保証とは呼ばない。
+
+evictionは正しさに影響せず再検証へ戻る必要がある。cache不足をpayload省略・proofなしのhit・不要sessionの物理削除で解決しない。transaction失敗時は未commit cacheをpublishせず、正しいprefixと混ぜない。cacheの状態をdurable予約台帳や原本の代用にしない。
+
+実装順はPO0=今回のbaseline、PO1=one-pass content memo／head-only API、PO2=A1 dirty追跡・immutable recordのfull形式再使用、PO3=承認v2 delta／full materializer、PO4=独立storage provider付きprefix cacheとする。PO1／PO2はcheckpoint・全file検証を維持した比較から始める。PO3はM0以降のschema／世代移行契約と協調し、PO4はBの信頼境界が成立するまで有効化しない。
+
+将来のbefore／after比較は今回のsource hashと同じ入力・storage mode・checkpoint mode・timed領域を使い、baselineとcandidateを交互順に実行する。nativeとmemoryの比較、異なる履歴数の比較をspeedupと呼ばない。elapsed timeの中央値・全sampleと、read／hash／concat／serialize／fsync／cache hit・miss／dirty entriesを分けて記録する。新しい内部counterは実装後に追加する。
+
+cold instanceとwarm operation、固定metadataとchurn、小／大payload、長いhistory・多数scope、cache hit／eviction／全失効、失敗／recovery／GC phaseを別scenarioにする。peak memoryは独立processや外部observer等で計測条件を別に用意する。速くするためにdurable sync・fresh checkpoint・実bytes検査・セキュリティ故障対照を落とした比較を採用しない。
+
+#### 9.68.10 回帰・採用条件（PF01〜PF28、最適化側はすべて未実装）
+
+| ID | 条件・期待結果 |
+| --- | --- |
+| PF01 | baselineの入力・source／dependency fingerprint・Node／storage mode・timed領域を固定し、最適化版と同じ処理を比較する |
+| PF02 | PO1で全inventory・blob read／chunk digest・全commit認証・fresh checkpointを維持し、one-pass重複contentだけを再使用する |
+| PF03 | 同じwhole hash／sizeでも異なるchunk列・順序・sizeのdescriptorをmemo hitにせず実照合する |
+| PF04 | 同じcontentの別role／session／scope／schemaに、認可や解析結果を転用しない |
+| PF05 | head-only APIがreadLatest相当の不正を拒否し、不要な返却copyだけを省くことを確認 |
+| PF06 | input／返却Bufferの改変・偽sealed handle・別journal／bootのhandleでprivate bytesを変更できないことを確認 |
+| PF07 | begin／chunk／freeze／bindのdirty依存とcanonical bytesをfull builderへ照合し、予約・indexの更新漏れを拒否 |
+| PF08 | activate／supersedeで同slotを参照する全summaryを更新し、別sessionのcurrentRevisionを古くしない |
+| PF09 | register／event／reservation／seal／terminal／session集約／ackの変更を取りこぼさない |
+| PF10 | abort／revoke／expire／restart／migration-frozenの区別、既存terminal保持、upload cancelを維持 |
+| PF11 | logical rejectionのrollbackと、その前後で成立するexpiryの保存を比較。未commit cacheを公開しない |
+| PF12 | lookup／retryのcache hitでも現在gate・期限・失効・世代を再確認し、historical ackを再launchにしない |
+| PF13 | full／deltaのversion・from/to root・expected old ref・重複key・unknown fieldを検査し、v1欠落を暗黙継承しない |
+| PF14 | 各delta適用後をreference full materializerへ照合。ledger／occurrence順とpublic outcome・bindingの同値を確認 |
+| PF15 | logical removeで旧commitが必要なblobをunlinkせず、retired化に保持・移行証拠を要求する |
+| PF16 | nativeのstat一致、mtime復元、同名置換・内容変更、未知entry、外部hardlink等の対照で、現full modeが不正を拒否することを維持 |
+| PF17 | immutable provider receiptなし／未承認profileではcross-request fast pathを選ばない |
+| PF18 | fake／replayed provider receipt・別root／epoch／lease・current control不一致ではcache hitを拒否 |
+| PF19 | checkpoint未取得・rollback・head交換・未確定tailをcacheで隠さず、原本と独立anchorの照合を維持 |
+| PF20 | checkpoint公開後sync失敗・再open・retryでは、再同期成功までdurable handle／ackを返さない |
+| PF21 | owner close／専有喪失・最後のawait後のexpiryで、保存済みcacheだけのA1 ackを拒否 |
+| PF22 | 失敗したadvance／未知CAS結果・過去prefixの不正をcache missへ格下げせず、fail-stop／明示復旧を維持 |
+| PF23 | key／profile／schema／policy／registry世代変更、restart／freeze／cutover／GCでcacheを失効させ、旧証拠へfallbackしない |
+| PF24 | cache byte／entry／node上限、eviction・miss・churnでbudget超過前に再検証か停止し、proofなしでhitにしない |
+| PF25 | source／target／tombstone・hold／archiveの変更をdirty集合と保持閉包に反映し、GC認可をcacheから再生成しない |
+| PF26 | 変更の少ない履歴と全件変更の履歴、多数scope・大payload・max境界で性能とmemoryを別に比較。CIにwall-clockの必達閾値を置かない |
+| PF27 | file／directory sync・process停止・retryの故障対照をbefore／after両方で行い、省略した検証やsyncを速度改善へ数えない |
+| PF28 | 未実装provider／delta／v2移行、test key・memory protocolの速さを本番採用・実隔離・実Gradle／OSVの性能として報告しない |
+
+PFは今後の最適化の条件であり、今回のbaseline testで実装済みとしない。RC／MCの保持・移行条件も維持する。現時点でperformance fast path、本番backend・profile・診断採用を有効化しない。
+
+保存性能設計・基準計測の検証結果: opt-in baseline 1件成功（54 rows／270測定samples＋54 warmups、31 source fingerprint一致）。既存関連・文書123件成功、通常実行時の新benchmark 1件skip。型検査・build・diff整形検査成功。§9.68の10小節・PF01〜PF28の欠落／重複なしを確認した。PO1〜PO4とPF最適化側は未実装であり、測定値はbefore／after速度改善ではない。本番backend・profile・診断採用を有効化していない。
