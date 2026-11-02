@@ -4,7 +4,7 @@
  * synchronous mode is memory-only, optional async mode saves audit snapshots through the A2 fixture. It
  * launches nothing and ALWAYS reports backendEligible=false. */
 import {decodeAuthoritySnapshot,SNAPSHOT_SESSION_LIMIT} from './gradleOwnedAuthoritySnapshot.js';
-import {type AuthorityJournal,type JournalRecord,type JournalHead} from './gradleOwnedAuthorityJournal.js';
+import {type AuthorityJournal,type JournalRecord,type JournalHead,type JournalSealedRecord} from './gradleOwnedAuthorityJournal.js';
 import {randomBytes} from 'node:crypto';
 import {types as utilTypes} from 'node:util';
 import {authorityOperation,authorityProjection,authorityScope,AUTHORITY_LIMITS,type AuthorityOperation,type AuthorityMetadataRef,type AuthorityPlan,type AuthorityScope} from './gradleOwnedAuthoritySchema.js';
@@ -21,7 +21,7 @@ type Scope={plan:AuthorityPlan;revision:number;lifecycle:'planned'|'registered'|
 type Upload={id:string;purpose:'core'|'seal';scope?:AuthorityScope;witnessId?:string;revision:number;state:'open'|'frozen'|'cancelled';chunks:Buffer[];received:number;total?:number;digest?:string;text?:string;ref?:AuthorityMetadataRef};
 type Ack={digest:string;reply:any};
 type Session={id:string;owner:string;consumerId:string;scanRunId:string;projectRootId:string;settingsDigest:string;scopeRequestsDigest:string;manifestDigest?:string;graphId:string;exportId:string;executionId:string;nonce:string;coreUploadId:string;created:number;revision:number;lifecycle:'draft'|'core-bound'|'active'|'committed'|'closed';validity:'unselected'|'current'|'superseded'|'revoked'|'expired'|'aborted'|'restarted';core?:GradleGraph;coreRef?:AuthorityMetadataRef;coreDigest?:string;rootDigest?:string;scopes:Map<string,Scope>;uploads:Map<string,Upload>;acks:Map<string,Ack>;metadataBytes:number;ledgerBytes:number;eventCount:number};
-type State={sessions:Map<string,Session>;slots:Map<string,{revision:number;sessionId?:string}>;begins:Map<string,Ack>};
+type State={version:number;sessions:Map<string,Session>;slots:Map<string,{revision:number;sessionId?:string}>;begins:Map<string,Ack>};
 export class OwnedAuthorityContractError extends Error {constructor(reason:string){super('authority_contract_'+reason);}}
 function fail(reason:string):never {throw new OwnedAuthorityContractError(reason);}
 function requireThat(ok:unknown,reason:string):asserts ok {if(!ok)fail(reason);}
@@ -41,17 +41,28 @@ function assertData(value:unknown):void {
  }
  visit(value,0);
 }
-function clone(s:State):State {
- return {slots:new Map([...s.slots].map(([k,v])=>[k,{...v}])),begins:new Map(s.begins),sessions:new Map([...s.sessions].map(([k,v])=>[k,{...v,scopes:new Map([...v.scopes].map(([k,v])=>[k,{...v,events:[...v.events]}])),uploads:new Map([...v.uploads].map(([k,v])=>[k,{...v,chunks:[...v.chunks]}])),acks:new Map(v.acks)}]))};
-}
-export interface OwnedAuthorityContractConfig {authorityId:string;policy:OwnedPolicy;now:()=>number;limits?:{[K in keyof typeof AUTHORITY_LIMITS]?:number};journal?:AuthorityJournal}
+export interface OwnedAuthorityContractConfig {authorityId:string;policy:OwnedPolicy;now:()=>number;limits?:{[K in keyof typeof AUTHORITY_LIMITS]?:number};journal?:AuthorityJournal;verifySnapshotReuse?:boolean;snapshotMode?:'reuse'|'full-reference'}
 export class OwnedAuthorityContract {
  #actors=new WeakMap<object,Identity>();
- #state:State={sessions:new Map(),slots:new Map(),begins:new Map()};
+ #state:State={version:0,sessions:new Map(),slots:new Map(),begins:new Map()};
  #lastTime=0;
  #journal?:AuthorityJournal;
  #historicalOperations=new Map<string,{id:string;requestDigest:string;resultDigest:string}[]>();
- #durableBusy=false;#durableStopped=false;#durableDigest='';#expectedHead?:JournalHead;
+ #versionClock=0;#durableVersion=0;
+ #snapshotStats={builds:0,referenceComparisons:0,recordsCreated:0,serializedBytes:0,metadataBytes:0,reusedRecords:0};
+ #sessionRecords=new WeakMap<Session,{slot:unknown;manifest:unknown;index:unknown;records:JournalSealedRecord[]}>();
+ #uploadRecords=new WeakMap<Upload,{index:unknown;records:JournalSealedRecord[]}>();
+ #ledgerRecords=new WeakMap<string[],JournalSealedRecord[]>();
+ #terminalRecords=new WeakMap<Terminal,JournalSealedRecord>();
+ #descriptors=new WeakMap<JournalSealedRecord,{id:string;role:JournalRecord['role'];size:number;sha256:string}>();
+ #seenRecords=new WeakSet<JournalSealedRecord>();
+ #committedSnapshot?:JournalSealedRecord[];
+ get snapshotMetrics(){return {...this.#snapshotStats};}
+ #fork():void{this.#state={...this.#state,sessions:new Map(this.#state.sessions),slots:new Map(this.#state.slots),begins:new Map(this.#state.begins)};}
+ #changed():void{this.#state.version=++this.#versionClock;}
+ #editSession(s:Session):Session{const edited={...s,scopes:new Map(s.scopes),uploads:new Map(s.uploads),acks:new Map(s.acks)};this.#state.sessions.set(s.id,edited);this.#changed();return edited;}
+ #writeScope(s:Session,scope:AuthorityScope):Scope{const k=key(scope),sc={...this.#scope(s,scope)};s.scopes.set(k,sc);return sc;}
+ #durableBusy=false;#durableStopped=false;#expectedHead?:JournalHead;
  #durableAcks=new Map<string,{requestDigest:string;resultDigest:string}>();
  readonly #limits:Record<keyof typeof AUTHORITY_LIMITS,number>;
  constructor(private readonly config:OwnedAuthorityContractConfig){
@@ -114,15 +125,18 @@ export class OwnedAuthorityContract {
  }
  #clock():number {const now=this.config.now();requireThat(Number.isSafeInteger(now)&&now>=this.#lastTime,'clock_invalid');this.#lastTime=now;return now;}
  #expire(now:number):boolean {
-  let changed=false;for(const s of this.#state.sessions.values())if(s.lifecycle!=='closed'&&now-s.created>=this.#limits.sessionMilliseconds){this.#closeSession(s,'expired','expired');changed=true;}return changed;
+  const expired=[...this.#state.sessions.values()].filter(s=>s.lifecycle!=='closed'&&now-s.created>=this.#limits.sessionMilliseconds);if(!expired.length)return false;this.#fork();
+  for(const old of expired)this.#closeSession(this.#editSession(old),'expired','expired');return true;
  }
- #closeScope(s:Session,sc:Scope,outcome:Terminal['outcome'],reason?:string):void {
+ #closeScope(s:Session,original:Scope,outcome:Terminal['outcome'],reason?:string):Scope {
+  const sc=this.#writeScope(s,original.plan);
   // Terminal scopes cannot resume their upload. Release only the pending slot;
   // retained chunks and their reserved byte budget remain charged to the session.
   const upload=sc.uploadId?s.uploads.get(sc.uploadId):undefined;
-  if(upload?.state==='open'){upload.state='cancelled';upload.revision++;}
+  if(upload?.state==='open')s.uploads.set(upload.id,{...upload,state:'cancelled',revision:upload.revision+1});
   if(sc.lifecycle!=='terminal'){sc.terminal={outcome,ledgerHead:sc.head,...(reason?{reason}:{})};sc.lifecycle='terminal';sc.revision++;}
   if(s.lifecycle==='active'&&[...s.scopes.values()].every(x=>x.lifecycle==='terminal'))s.lifecycle='committed';
+  return sc;
  }
  // Lifecycle closure (expire/abort) and validity loss (supersede/revoke) are recorded distinctly.
  #closeSession(s:Session,validity:'revoked'|'superseded'|'expired'|'aborted'|'restarted',reason:string):void {
@@ -168,7 +182,6 @@ export class OwnedAuthorityContract {
   this.#durableBusy=true;
   try {
    await this.#verifyGeneration();
-   if(!this.#durableDigest)this.#durableDigest=this.#snapshotDigest(this.#snapshot());
    this.#expire(started);await this.#saveExpiration();
    let reply:any;
    try{reply=this.#dispatch(actor,c);}catch(e){await this.#saveExpiration();throw e;}
@@ -198,8 +211,7 @@ export class OwnedAuthorityContract {
    }
   }finally{this.#durableBusy=false;}
  }
- #snapshotDigest(records:JournalRecord[]):string {return ownedDigest(records.map(r=>({id:r.id,role:r.role,size:r.bytes.length,sha256:ownedSha256(r.bytes)})));}
- #snapshot():JournalRecord[] {
+ #referenceSnapshot():JournalRecord[] {
   requireThat(this.#state.sessions.size<=SNAPSHOT_SESSION_LIMIT,'budget_exceeded');
   const records:JournalRecord[]=[],manifests:unknown[]=[],sessions:unknown[]=[];
   const add=(role:JournalRecord['role'],id:string,value:unknown)=>records.push({role,id,bytes:Buffer.from(canonicalOwnedJson(value,64*1024*1024))});
@@ -227,16 +239,62 @@ export class OwnedAuthorityContract {
   add('session-index','root',{slots:[...this.#state.slots],sessions,records:records.map(r=>({id:r.id,role:r.role,size:r.bytes.length,sha256:ownedSha256(r.bytes)})),backendEligible:false});
   return records;
  }
+ #sealSnapshotRecord(r:JournalRecord,metadata=false):JournalSealedRecord{
+  const h=this.#journal!.sealRecord(r);this.#descriptors.set(h,this.#journal!.describeRecord(h));this.#snapshotStats.recordsCreated++;
+  if(metadata)this.#snapshotStats.metadataBytes+=r.bytes.length;else this.#snapshotStats.serializedBytes+=r.bytes.length;return h;
+ }
+ #encodeRecord(role:JournalRecord['role'],id:string,value:unknown){return this.#sealSnapshotRecord({role,id,bytes:Buffer.from(canonicalOwnedJson(value,64*1024*1024))});}
+ #buildSnapshot():{records:JournalSealedRecord[]}{
+  this.#snapshotStats.builds++;requireThat(this.#state.sessions.size<=SNAPSHOT_SESSION_LIMIT,'budget_exceeded');
+  let records:JournalSealedRecord[]=[];
+  if(this.config.snapshotMode==='full-reference')records=this.#referenceSnapshot().map(r=>this.#sealSnapshotRecord(r,r.role==='metadata-snapshot'));
+  else {
+   const manifests:unknown[]=[],sessions:unknown[]=[];
+   for(const s of this.#state.sessions.values()){
+    const currentSlot=this.#state.slots.get(slot(s));let cached=this.#sessionRecords.get(s);
+    if(!cached||cached.slot!==currentSlot){
+     const {scopes,uploads,acks,core:_core,...manifest}=s;const local:JournalSealedRecord[]=[],uploadIndex:unknown[]=[];
+     for(const u of uploads.values()){
+      let upload=this.#uploadRecords.get(u);
+      if(!upload){const {chunks,text,...info}=u,parts=text===undefined?chunks:[Buffer.from(text)],raw=parts.map((bytes,i)=>this.#sealSnapshotRecord({role:'metadata-snapshot',id:s.id+':'+u.id+':'+i,bytes},true));upload={index:{...info,records:raw.map(h=>this.#descriptors.get(h)!.id)},records:raw};this.#uploadRecords.set(u,upload);}
+      local.push(...upload.records);uploadIndex.push(upload.index);
+     }
+     for(const [k,sc]of scopes){
+      const id=ownedDigest({sessionId:s.id,scope:k});let ledger=this.#ledgerRecords.get(sc.events);
+      if(!ledger){ledger=[this.#encodeRecord('event-ledger',id,{sessionId:s.id,scope:sc.plan,head:sc.head,sequence:sc.sequence,events:sc.events.map(e=>parseOwnedJson(e))})];
+       const action=sc.events.map(e=>parseOwnedJson(e) as any).find(e=>e.payload.kind==='action-start');
+       if(action)ledger.push(this.#encodeRecord('action-reservation',id,{sessionId:s.id,scope:sc.plan,witnessId:sc.witnessId,consumed:true,sequence:action.sequence,eventDigest:ownedSha256(canonicalOwnedJson(action))}));this.#ledgerRecords.set(sc.events,ledger);
+      }
+      // Preserve reference record order: ledger, terminal, action reservation.
+      local.push(ledger[0]!);
+      if(sc.terminal){let terminal=this.#terminalRecords.get(sc.terminal);if(!terminal){terminal=this.#encodeRecord('terminal-record',id,{sessionId:s.id,scope:sc.plan,terminal:sc.terminal});this.#terminalRecords.set(sc.terminal,terminal);}local.push(terminal);}
+      if(ledger[1])local.push(ledger[1]);
+     }
+     cached={slot:currentSlot,manifest:{...manifest,plans:[...scopes.values()].map(sc=>sc.plan)},index:{summary:this.#summary(s),uploads:uploadIndex,operations:[...(this.#historicalOperations.get(s.id)??[]),...[...acks].map(([id,a])=>({id:ownedSha256(id),requestDigest:a.digest,resultDigest:ownedSha256(canonicalOwnedJson(redactReply(a.reply)))}))]},records:local};this.#sessionRecords.set(s,cached);
+    }
+    records.push(...cached.records);manifests.push(cached.manifest);sessions.push(cached.index);
+   }
+   records.push(this.#encodeRecord('session-manifest','root',{schema:'osv-mcp.gradle-owned-authority-snapshot-v1',authorityId:this.config.authorityId,limits:this.#limits,sessions:manifests}));
+   if(!records.some(h=>this.#descriptors.get(h)!.role==='event-ledger'))records.push(this.#encodeRecord('event-ledger','empty',{events:[]}));
+   records.push(this.#encodeRecord('session-index','root',{slots:[...this.#state.slots],sessions,records:records.map(h=>this.#descriptors.get(h)!),backendEligible:false}));
+  }
+  if(this.config.verifySnapshotReuse)this.#compareSnapshot(records);
+  for(const h of records){if(this.#seenRecords.has(h))this.#snapshotStats.reusedRecords++;this.#seenRecords.add(h);}
+  return {records};
+ }
+ #compareSnapshot(records:JournalSealedRecord[]):void{
+  const expected=this.#referenceSnapshot();requireThat(expected.length===records.length,'snapshot_reuse_mismatch');
+  for(const [i,h]of records.entries()){const r=this.#journal!.materializeRecord(h),e=expected[i]!;requireThat(r.id===e.id&&r.role===e.role&&r.bytes.equals(e.bytes),'snapshot_reuse_mismatch');}this.#snapshotStats.referenceComparisons++;
+ }
  async #save(operationId:string,requestDigest:string,reply:unknown){
   try{
-   const records=this.#snapshot(),digest=this.#snapshotDigest(records);
-   records.push({role:'operation-result',id:'root',bytes:Buffer.from(canonicalOwnedJson(redactReply(reply)))});
-   const receipt=await this.#journal!.commit({operationId,requestDigest,records,expectedHead:this.#expectedHead});
-   this.#expectedHead=this.#journal!.head;this.#durableDigest=digest;return receipt;
+   const {records}=this.#buildSnapshot(),result=this.#journal!.sealRecord({role:'operation-result',id:'root',bytes:Buffer.from(canonicalOwnedJson(redactReply(reply)))});
+   const receipt=await this.#journal!.commitSealed({operationId,requestDigest,records:[...records,result],expectedHead:this.#expectedHead});
+   this.#expectedHead=this.#journal!.head;this.#durableVersion=this.#state.version;this.#committedSnapshot=records;return receipt;
   }catch(e){this.#durableStopped=true;throw e;}
  }
  async #saveExpiration():Promise<void>{
-  try{if(this.#snapshotDigest(this.#snapshot())!==this.#durableDigest)await this.#save(fresh(),ownedDigest({domain:'authority-expiration-v1'}),{maintenance:'expiration',backendEligible:false});}
+  try{if(this.#state.version!==this.#durableVersion)await this.#save(fresh(),ownedDigest({domain:'authority-expiration-v1'}),{maintenance:'expiration',backendEligible:false});else if(this.config.verifySnapshotReuse&&this.#committedSnapshot)this.#compareSnapshot(this.#committedSnapshot);}
   catch(e){this.#durableStopped=true;throw e;}
  }
  #dispatch(actor:object,input:unknown):any {
@@ -245,7 +303,7 @@ export class OwnedAuthorityContract {
   let c:AuthorityOperation;let encoded:string;
   try{assertData(input);encoded=canonicalOwnedJson(input);c=authorityOperation.parse(parseOwnedJson(encoded));}catch{fail('schema_invalid');}
   const now=this.#clock();this.#expire(now);
-  const before=this.#state;this.#state=clone(before);
+  const before=this.#state;this.#fork();
   let ended=now;
   try {
    const digest=ownedSha256(encoded),reply=this.#apply(identity,c,digest,now);
@@ -269,10 +327,10 @@ export class OwnedAuthorityContract {
    if(prior){requireThat(prior.digest===digest,'replay_conflict');return {...prior.reply,historical:true};}
    requireThat([...this.#state.sessions.keys()].filter(id=>!this.#historicalOperations.has(id)).length<this.#limits.sessions,'budget_exceeded');
    const s:Session={id:fresh(),owner:identity.id,consumerId:c.consumerId,scanRunId:c.scanRunId,projectRootId:c.projectRootId,settingsDigest:c.settingsDigest,scopeRequestsDigest:c.scopeRequestsDigest,graphId:fresh(),exportId:fresh(),executionId:fresh(),nonce:fresh(),coreUploadId:fresh(),created:now,revision:1,lifecycle:'draft',validity:'unselected',scopes:new Map(),uploads:new Map(),acks:new Map(),metadataBytes:0,ledgerBytes:0,eventCount:0};
-   s.uploads.set(s.coreUploadId,{id:s.coreUploadId,purpose:'core',revision:0,state:'open',chunks:[],received:0});this.#state.sessions.set(s.id,s);
+   this.#changed();s.uploads.set(s.coreUploadId,{id:s.coreUploadId,purpose:'core',revision:0,state:'open',chunks:[],received:0});this.#state.sessions.set(s.id,s);
    const reply=this.#summary(s);this.#state.begins.set(ackKey,{digest,reply});return reply;
   }
-  const s=this.#state.sessions.get(c.sessionId);requireThat(s,'session_missing');this.#authorize(identity,s,c);
+  let s=this.#state.sessions.get(c.sessionId);requireThat(s,'session_missing');this.#authorize(identity,s,c);
   if(c.operation==='lookup'){
    const sc=this.#scope(s,c.scope);const current=s.validity==='current'&&s.lifecycle!=='closed'&&sc.validity==='current';
    return {backendEligible:false,diagnosticEligible:false,ownedFileReads:0,readerProjection:{status:'unavailable',reason:'backend-unsupported'},contractStatus:current?sc.terminal?.outcome??'receipt-missing':'session-unavailable',...(current&&sc.terminal?{terminal:sc.terminal}:{})};
@@ -281,6 +339,7 @@ export class OwnedAuthorityContract {
   if(c.operation!=='bind-core'&&c.operation!=='activate'&&!(c.operation==='put-metadata-chunk'&&c.purpose==='core'))this.#live(s);
   const prior=s.acks.get(ackKey);if(prior){requireThat(prior.digest===digest,'replay_conflict');return {...prior.reply,historical:true};}
   requireThat(s.acks.size<this.#limits.operations,'budget_exceeded');
+  s=this.#editSession(s);
   let reply:any;
   if(c.operation==='put-metadata-chunk')reply=this.#chunk(s,c);
   else if(c.operation==='bind-core'){
@@ -299,16 +358,16 @@ export class OwnedAuthorityContract {
   }else if(c.operation==='activate'){
    requireThat(s.lifecycle==='core-bound'&&s.revision===c.expectedRevision,'lifecycle_invalid');
    const current=this.#state.slots.get(slot(s));requireThat((current?.revision??0)===c.expectedCurrentRevision,'slot_conflict');
-   if(current?.sessionId){const old=this.#state.sessions.get(current.sessionId)!;this.#closeSession(old,'superseded','superseded');}
+   if(current?.sessionId){const old=this.#state.sessions.get(current.sessionId)!;this.#closeSession(this.#editSession(old),'superseded','superseded');}
    this.#state.slots.set(slot(s),{revision:c.expectedCurrentRevision+1,sessionId:s.id});s.validity='current';s.lifecycle='active';s.revision++;reply=this.#summary(s);
   }else if(c.operation==='register-scope'){
-   const sc=this.#scope(s,c.scope);requireThat(sc.lifecycle==='planned'&&sc.revision===c.expectedRevision,'lifecycle_invalid');
+   const sc=this.#writeScope(s,c.scope);requireThat(sc.lifecycle==='planned'&&sc.revision===c.expectedRevision,'lifecycle_invalid');
    requireThat([...s.uploads.values()].filter(u=>u.state==='open').length<this.#limits.pendingUploads,'budget_exceeded');
    sc.witnessId=fresh();sc.uploadId=fresh();sc.capability=fresh();sc.lifecycle='registered';sc.revision++;
    s.uploads.set(sc.uploadId,{id:sc.uploadId,purpose:'seal',scope:copy(c.scope),witnessId:sc.witnessId,revision:0,state:'open',chunks:[],received:0});
    reply={...this.#scopeReply(sc),capability:sc.capability};
   }else if(c.operation==='append-event'){
-   const sc=this.#scope(s,c.scope);requireThat(sc.validity==='current'&&sc.revision===c.expectedRevision&&c.sequence===sc.sequence+1&&c.previousDigest===sc.head,'revision_mismatch');
+   const sc=this.#writeScope(s,c.scope);requireThat(sc.validity==='current'&&sc.revision===c.expectedRevision&&c.sequence===sc.sequence+1&&c.previousDigest===sc.head,'revision_mismatch');
    if(c.event.kind==='action-start'){requireThat(sc.lifecycle==='registered'&&sc.capability===c.event.capability,'capability_invalid');sc.lifecycle='executing';}
    else {
     requireThat((sc.lifecycle==='executing'||sc.lifecycle==='registered')&&!sc.observation,'lifecycle_invalid');
@@ -317,16 +376,16 @@ export class OwnedAuthorityContract {
    }
    const event={sessionId:s.id,scope:c.scope,sequence:c.sequence,previousDigest:c.previousDigest,issuerRole:identity.role,payload:c.event.kind==='action-start'?{kind:'action-start',capabilityConsumed:true}:c.event};
    const text=canonicalOwnedJson(event);const size=Buffer.byteLength(text);requireThat(s.eventCount<this.#limits.events&&s.ledgerBytes+size<=this.#limits.ledgerBytes,'budget_exceeded');
-   sc.events.push(text);sc.head=ownedSha256(text);sc.sequence++;sc.revision++;s.eventCount++;s.ledgerBytes+=size;reply=this.#scopeReply(sc);
+   sc.events=[...sc.events,text];sc.head=ownedSha256(text);sc.sequence++;sc.revision++;s.eventCount++;s.ledgerBytes+=size;reply=this.#scopeReply(sc);
   }else if(c.operation==='seal-scope'){
-   const sc=this.#scope(s,c.scope);requireThat(sc.validity==='current'&&sc.revision===c.expectedRevision&&sc.head===c.ledgerHead,'revision_mismatch');
+   const sc=this.#writeScope(s,c.scope);requireThat(sc.validity==='current'&&sc.revision===c.expectedRevision&&sc.head===c.ledgerHead,'revision_mismatch');
    if(c.phase==='prepare'){requireThat((sc.lifecycle==='registered'||sc.lifecycle==='executing')&&sc.observation,'lifecycle_invalid');sc.lifecycle='sealing';sc.revision++;reply=this.#scopeReply(sc);}
-   else {requireThat(sc.lifecycle==='sealing','lifecycle_invalid');const terminal=this.#seal(s,sc,c);this.#closeScope(s,sc,terminal.outcome);sc.terminal=terminal;reply=this.#scopeReply(sc);}
+   else {requireThat(sc.lifecycle==='sealing','lifecycle_invalid');const terminal=this.#seal(s,sc,c);const closed=this.#closeScope(s,sc,terminal.outcome);closed.terminal=terminal;reply=this.#scopeReply(closed);}
   }else {
-   if(c.scope){const sc=this.#scope(s,c.scope);requireThat(c.expectedRevision===sc.revision,'revision_mismatch');if(c.operation==='abort')requireThat(sc.lifecycle!=='terminal','lifecycle_invalid');
+   if(c.scope){const sc=this.#writeScope(s,c.scope);requireThat(c.expectedRevision===sc.revision,'revision_mismatch');if(c.operation==='abort')requireThat(sc.lifecycle!=='terminal','lifecycle_invalid');
     // An independently observed Task exception keeps its own terminal kind; otherwise the cause is unknown.
     const lookup=sc.observation?.lookup,aborted=lookup?.status==='unavailable'&&lookup.reason==='execution-aborted';
-    this.#closeScope(s,sc,aborted?'execution-aborted':'unavailable',c.reason);if(c.operation==='revoke'){sc.validity='revoked';sc.revision++;}reply=this.#scopeReply(sc);}
+    const closed=this.#closeScope(s,sc,aborted?'execution-aborted':'unavailable',c.reason);if(c.operation==='revoke'){closed.validity='revoked';closed.revision++;}reply=this.#scopeReply(closed);}
    else {requireThat(c.expectedRevision===s.revision,'revision_mismatch');this.#closeSession(s,c.operation==='abort'?'aborted':'revoked',c.reason);reply=this.#summary(s);}
   }
   const safeReply={...reply,backendEligible:false,diagnosticEligible:false,ownedFileReads:0};s.acks.set(ackKey,{digest,reply:copy(safeReply)});return safeReply;
@@ -334,7 +393,7 @@ export class OwnedAuthorityContract {
  #scopeReply(sc:Scope):any {return {revision:sc.revision,lifecycle:sc.lifecycle,validity:sc.validity,ledgerHead:sc.head,sequence:sc.sequence,...(sc.witnessId?{witnessId:sc.witnessId}:{}),...(sc.uploadId?{uploadId:sc.uploadId}:{}),...(sc.terminal?{terminal:sc.terminal}:{})};}
  #ref(s:Session,ref:AuthorityMetadataRef,purpose:'core'|'seal'):Upload {const u=s.uploads.get(ref.uploadId);requireThat(u&&u.state==='frozen'&&u.purpose===purpose&&same(u.ref,ref),'ref_mismatch');return u;}
  #chunk(s:Session,c:Extract<AuthorityOperation,{operation:'put-metadata-chunk'}>):any {
-  const u=s.uploads.get(c.uploadId);requireThat(u&&u.purpose===c.purpose&&u.state==='open'&&u.revision===c.expectedRevision,'upload_invalid');
+  const old=s.uploads.get(c.uploadId);requireThat(old,'upload_invalid');const u={...old,chunks:[...old.chunks]};s.uploads.set(u.id,u);requireThat(u&&u.purpose===c.purpose&&u.state==='open'&&u.revision===c.expectedRevision,'upload_invalid');
   if(c.purpose==='core')requireThat(s.lifecycle==='draft','lifecycle_invalid');
   else {const sc=this.#scope(s,c.scope);requireThat((sc.lifecycle==='registered'||sc.lifecycle==='executing')&&sc.validity==='current'&&same(u.scope,c.scope)&&u.witnessId===c.witnessId,'scope_mismatch');}
   const maximum=c.purpose==='core'?this.#limits.coreBytes:this.#limits.projectionBytes;

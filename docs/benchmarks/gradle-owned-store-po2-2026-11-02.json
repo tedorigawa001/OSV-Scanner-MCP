@@ -1,0 +1,2060 @@
+{
+  "schema": "osv-mcp.owned-store-po2-comparison-v1",
+  "beforeCommit": "16bf69f",
+  "beforeHashes": {
+    "src/test/benchmarks/gradleOwnedStore.test.ts": "b1c6f6f96582330f4b1b5a3a0a9b9fd150b62837faec8ec01d65f552922b6922",
+    "src/test/fixtures/gradleOwnedAuthorityJournal.ts": "70efaca62d5e2cf35936042c128ae88df30dc50b7a98e1d11f6e54ed4ff8eed7",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/test/fixtures/gradleOwnedJournalCheckpoint.ts": "3ca31e62fa5521d7352fc6f4a0528483444fcadce3351f53629e50198c251159",
+    "src/test/fixtures/gradleOwnedJournalFs.ts": "2cf1aa16d5d4a3df1d8df8fdac4b3ab21eb4366d90d1e69dcd2bf86cd08cdbad",
+    "src/test/fixtures/gradleOwnedAuthority.ts": "581f5e2cca36e0f97f9ca7b8c2fda16f8545482b39c637cd1b1ea41aa66d7b2a",
+    "src/test/fixtures/gradleOwnedAuthoritySnapshot.ts": "de0b0f241b0465c6ba76914c3f547e9984d39ee6c27271ad4dbd4e2a5c57cdf2",
+    "src/test/fixtures/gradleOwnedAuthoritySchema.ts": "108ec4f0965f325f75e6888a0a0e6e22cc40963665c37b1a0a000d07d78bc38d",
+    "src/utils/gradleOwnedExecution.ts": "360a8d5e61a7b115619077cb444f8a863f6d6d0459be9d17b87ae4c43f279fd4",
+    "src/utils/gradleOwnedSchema.ts": "44fa3f141b1931e3043bd4e876f93b46132f54e1c36aaf7f6d3c43f1c6ea734c",
+    "src/utils/gradleGraph.ts": "73a36886ed6c8be17b63e5581392cca6c5ba5efb0463e475f7ee3913ac888e81",
+    "src/utils/gradlePlugins.ts": "582f72462c13927e7284e1c7ca70681f4e455e469596020cd4e8bc5e9ec637af",
+    "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
+    "src/utils/gradleJson.ts": "f7f3ef047d30a675cb55044072e8fb516dceeb822192777ea7b7444699c9dc9f",
+    "src/utils/gradlePluginSnapshots.ts": "2c0ce15f1c90e6c11916d2a8107c2d1c761719543932a0aeef722cfeb4acf2c1",
+    "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054",
+    "src/utils/projectWalk.ts": "5ff06d6df2c601017928d26709d6f4bf3ea9d9ff6813e627cfec82d010d9e316",
+    "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
+    "src/utils/openedFilePath.ts": "963ac04f6eb3744af00771feaaf054c08ca8b2dcc7d2846507525394d3fdff8f",
+    "src/utils/gradlePluginJar.ts": "b180ee353104a11e1ddd1a091930bda1aaf8138fcf5a1df7d66370ef8c848ab9",
+    "src/utils/gradleOrigins.ts": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884",
+    "src/utils/gradleDeclarations.ts": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be",
+    "src/utils/gradleCatalogs.ts": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b",
+    "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
+    "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
+    "src/utils/gradleOwnedPolicy.ts": "2ace3536b349b4b2368c5a01bb1979864bd7377aa218134f4f197b6259892bf2",
+    "src/utils/gradleOwnedManifest.ts": "3886c2ba26e50cb888fd8b5e7513c1ac1e0e152e0b29111de4224ebd07846e9b",
+    "src/utils/gradleExportJson.ts": "0fea68255a7dbabe559f1ee35bfcc156a565519c63ca16bb92614e1c866422fe",
+    "src/test/fixtures/gradleOwnedPolicyFixture.ts": "42ab32aedc435e92b5dee75863da7778f66c8131648546ba4a6e791b84b31c81",
+    "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
+    "package-lock.json": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285",
+    "src/test/benchmarks/gradleOwnedStorePo1.test.ts": "8c9d33087792d505922c5fa1cd3c0e04448b4a9fe16816a9b6a22b28a835b762"
+  },
+  "afterHashes": {
+    "src/test/benchmarks/gradleOwnedStore.test.ts": "b1c6f6f96582330f4b1b5a3a0a9b9fd150b62837faec8ec01d65f552922b6922",
+    "src/test/fixtures/gradleOwnedAuthorityJournal.ts": "df213ca2a6d6ce3dfd7822745ac78d1a91506d9141f6575f2470b2c73c72d4da",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/test/fixtures/gradleOwnedJournalCheckpoint.ts": "3ca31e62fa5521d7352fc6f4a0528483444fcadce3351f53629e50198c251159",
+    "src/test/fixtures/gradleOwnedJournalFs.ts": "2cf1aa16d5d4a3df1d8df8fdac4b3ab21eb4366d90d1e69dcd2bf86cd08cdbad",
+    "src/test/fixtures/gradleOwnedAuthority.ts": "6bed67749ddd6142b1025e24eedb656a448545078bfb2b81e996b340ad320655",
+    "src/test/fixtures/gradleOwnedAuthoritySnapshot.ts": "de0b0f241b0465c6ba76914c3f547e9984d39ee6c27271ad4dbd4e2a5c57cdf2",
+    "src/test/fixtures/gradleOwnedAuthoritySchema.ts": "108ec4f0965f325f75e6888a0a0e6e22cc40963665c37b1a0a000d07d78bc38d",
+    "src/utils/gradleOwnedExecution.ts": "360a8d5e61a7b115619077cb444f8a863f6d6d0459be9d17b87ae4c43f279fd4",
+    "src/utils/gradleOwnedSchema.ts": "44fa3f141b1931e3043bd4e876f93b46132f54e1c36aaf7f6d3c43f1c6ea734c",
+    "src/utils/gradleGraph.ts": "73a36886ed6c8be17b63e5581392cca6c5ba5efb0463e475f7ee3913ac888e81",
+    "src/utils/gradlePlugins.ts": "582f72462c13927e7284e1c7ca70681f4e455e469596020cd4e8bc5e9ec637af",
+    "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
+    "src/utils/gradleJson.ts": "f7f3ef047d30a675cb55044072e8fb516dceeb822192777ea7b7444699c9dc9f",
+    "src/utils/gradlePluginSnapshots.ts": "2c0ce15f1c90e6c11916d2a8107c2d1c761719543932a0aeef722cfeb4acf2c1",
+    "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054",
+    "src/utils/projectWalk.ts": "5ff06d6df2c601017928d26709d6f4bf3ea9d9ff6813e627cfec82d010d9e316",
+    "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
+    "src/utils/openedFilePath.ts": "963ac04f6eb3744af00771feaaf054c08ca8b2dcc7d2846507525394d3fdff8f",
+    "src/utils/gradlePluginJar.ts": "b180ee353104a11e1ddd1a091930bda1aaf8138fcf5a1df7d66370ef8c848ab9",
+    "src/utils/gradleOrigins.ts": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884",
+    "src/utils/gradleDeclarations.ts": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be",
+    "src/utils/gradleCatalogs.ts": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b",
+    "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
+    "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
+    "src/utils/gradleOwnedPolicy.ts": "2ace3536b349b4b2368c5a01bb1979864bd7377aa218134f4f197b6259892bf2",
+    "src/utils/gradleOwnedManifest.ts": "3886c2ba26e50cb888fd8b5e7513c1ac1e0e152e0b29111de4224ebd07846e9b",
+    "src/utils/gradleExportJson.ts": "0fea68255a7dbabe559f1ee35bfcc156a565519c63ca16bb92614e1c866422fe",
+    "src/test/fixtures/gradleOwnedPolicyFixture.ts": "42ab32aedc435e92b5dee75863da7778f66c8131648546ba4a6e791b84b31c81",
+    "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
+    "package-lock.json": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285",
+    "src/test/benchmarks/gradleOwnedStorePo1.test.ts": "8c9d33087792d505922c5fa1cd3c0e04448b4a9fe16816a9b6a22b28a835b762",
+    "src/test/benchmarks/gradleOwnedStorePo2.test.ts": "eea493a54bf1f471504627a00e3c9502a6e557e5d8f9ef6598dbef59db1cbd0f"
+  },
+  "startedUTC": "2026-11-02T14:27:18.539Z",
+  "finishedUTC": "2026-11-02T14:28:00.972Z",
+  "repetitions": 5,
+  "warmups": 1,
+  "node": "v26.12.1",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "cpu": "Apple M4",
+  "notes": [
+    "interleaved before/after order; fresh independent kernel and storage per sample",
+    "setup and post-timing assertions excluded; recovery verification remains timed",
+    "opaque random IDs differ; compare public outcome and exact IO sizes",
+    "assertOpen count may increase; read/list/put/checkpoint and native fsync must match",
+    "before lacks snapshot and seal instrumentation; null means not measured, never zero",
+    "same-state byte equivalence is checked by separate full-builder oracle regressions",
+    "no process peak RSS measured, no CI wall-clock threshold, no Gradle/BTA/OSV or backend adoption"
+  ],
+  "rows": [
+    {
+      "scenario": {
+        "scopes": 1,
+        "large": false,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "warm-lookup",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 40,
+            "readCalls": 40,
+            "readBytes": 59226,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 10,
+            "readCalls": 10,
+            "readBytes": 6050,
+            "putCalls": 10,
+            "putBytes": 6050,
+            "resyncPutCalls": 10,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            1.2882920000000126,
+            2.845708000000002,
+            3.5257080000000087,
+            1.1386249999999905,
+            1.0987499999999955
+          ],
+          "median": 1.2882920000000126,
+          "min": 1.0987499999999955,
+          "max": 3.5257080000000087
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 40,
+            "readCalls": 40,
+            "readBytes": 59226,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 10,
+            "readCalls": 10,
+            "readBytes": 6050,
+            "putCalls": 10,
+            "putBytes": 6050,
+            "resyncPutCalls": 10,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            1.5342089999999757,
+            1.464125000000024,
+            1.3742500000000177,
+            1.8334590000000048,
+            1.255457999999976
+          ],
+          "median": 1.464125000000024,
+          "min": 1.255457999999976,
+          "max": 1.8334590000000048
+        }
+      },
+      "speedupBeforeOverAfter": 1.1364853620142092,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 1,
+        "large": false,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "register-one",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 60,
+            "readCalls": 40,
+            "readBytes": 59226,
+            "putCalls": 3,
+            "putBytes": 6516,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 15
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 27,
+            "readCalls": 28,
+            "readBytes": 16940,
+            "putCalls": 28,
+            "putBytes": 16940,
+            "resyncPutCalls": 27,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          }
+        },
+        "snapshotDelta": {
+          "builds": 1,
+          "referenceComparisons": 0,
+          "recordsCreated": 2,
+          "serializedBytes": 6046,
+          "metadataBytes": 0,
+          "reusedRecords": 2
+        },
+        "sealDelta": {
+          "records": 3,
+          "copyBytes": 6512,
+          "hashBytes": 13024,
+          "committedRecords": 5
+        },
+        "elapsedMs": {
+          "samples": [
+            1.6418750000000273,
+            1.528583000000026,
+            1.555417000000034,
+            1.78125,
+            1.528415999999993
+          ],
+          "median": 1.555417000000034,
+          "min": 1.528415999999993,
+          "max": 1.78125
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 60,
+            "readCalls": 40,
+            "readBytes": 59226,
+            "putCalls": 3,
+            "putBytes": 6516,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 27,
+            "readCalls": 28,
+            "readBytes": 16940,
+            "putCalls": 28,
+            "putBytes": 16940,
+            "resyncPutCalls": 27,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            1.8095420000000217,
+            2.057791000000009,
+            1.7366250000000036,
+            1.7835410000000138,
+            1.747792000000004
+          ],
+          "median": 1.7835410000000138,
+          "min": 1.7366250000000036,
+          "max": 2.057791000000009
+        }
+      },
+      "speedupBeforeOverAfter": 1.1466642064475152,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 1,
+        "large": false,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "retry-begin",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 40,
+            "readCalls": 40,
+            "readBytes": 59226,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 10,
+            "readCalls": 10,
+            "readBytes": 6050,
+            "putCalls": 10,
+            "putBytes": 6050,
+            "resyncPutCalls": 10,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            0.9966249999999945,
+            1.0099589999999807,
+            0.9364160000000084,
+            1.1387079999999514,
+            0.9313750000000027
+          ],
+          "median": 0.9966249999999945,
+          "min": 0.9313750000000027,
+          "max": 1.1387079999999514
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 40,
+            "readCalls": 40,
+            "readBytes": 59226,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 10,
+            "readCalls": 10,
+            "readBytes": 6050,
+            "putCalls": 10,
+            "putBytes": 6050,
+            "resyncPutCalls": 10,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            1.169916999999998,
+            1.158124999999984,
+            1.1059159999999792,
+            1.3113329999999905,
+            1.2817920000000527
+          ],
+          "median": 1.169916999999998,
+          "min": 1.1059159999999792,
+          "max": 1.3113329999999905
+        }
+      },
+      "speedupBeforeOverAfter": 1.173878841088679,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 1,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "warm-lookup",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 48,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            3.7297499999999673,
+            4.009916000000089,
+            3.5364999999999327,
+            3.75324999999998,
+            3.49995899999999
+          ],
+          "median": 3.7297499999999673,
+          "min": 3.49995899999999,
+          "max": 4.009916000000089
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 48,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            5.468500000000063,
+            6.485084000000029,
+            5.477709000000004,
+            6.113458000000037,
+            5.497542000000067
+          ],
+          "median": 5.497542000000067,
+          "min": 5.468500000000063,
+          "max": 6.485084000000029
+        }
+      },
+      "speedupBeforeOverAfter": 1.473970641463936,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 1,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "register-one",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 72,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 3,
+            "putBytes": 6871,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 15
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 32,
+            "readCalls": 33,
+            "readBytes": 19965,
+            "putCalls": 33,
+            "putBytes": 19965,
+            "resyncPutCalls": 32,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          }
+        },
+        "snapshotDelta": {
+          "builds": 1,
+          "referenceComparisons": 0,
+          "recordsCreated": 2,
+          "serializedBytes": 6309,
+          "metadataBytes": 0,
+          "reusedRecords": 2
+        },
+        "sealDelta": {
+          "records": 3,
+          "copyBytes": 6775,
+          "hashBytes": 13550,
+          "committedRecords": 5
+        },
+        "elapsedMs": {
+          "samples": [
+            4.239000000000033,
+            4.121834000000035,
+            4.138332999999875,
+            4.107417000000169,
+            4.141250000000127
+          ],
+          "median": 4.138332999999875,
+          "min": 4.107417000000169,
+          "max": 4.239000000000033
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 72,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 3,
+            "putBytes": 6871,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 32,
+            "readCalls": 33,
+            "readBytes": 19965,
+            "putCalls": 33,
+            "putBytes": 19965,
+            "resyncPutCalls": 32,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            7.402124999999842,
+            9.008957999999893,
+            7.468583000000081,
+            9.598207999999886,
+            7.437458000000333
+          ],
+          "median": 7.468583000000081,
+          "min": 7.402124999999842,
+          "max": 9.598207999999886
+        }
+      },
+      "speedupBeforeOverAfter": 1.8047322436353734,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 1,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "retry-begin",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 48,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            3.49100000000044,
+            3.46875,
+            3.5127080000002024,
+            3.5287499999999454,
+            3.43487499999992
+          ],
+          "median": 3.49100000000044,
+          "min": 3.43487499999992,
+          "max": 3.5287499999999454
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 48,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            5.232417000000169,
+            5.865541000000121,
+            5.113709000000199,
+            5.949415999999928,
+            5.203792000000249
+          ],
+          "median": 5.232417000000169,
+          "min": 5.113709000000199,
+          "max": 5.949415999999928
+        }
+      },
+      "speedupBeforeOverAfter": 1.4988304210826435,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 16,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "warm-lookup",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 78,
+            "readCalls": 78,
+            "readBytes": 2618602,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            4.2618750000001455,
+            4.397375000000011,
+            4.238832999999886,
+            4.362624999999753,
+            4.235291999999845
+          ],
+          "median": 4.2618750000001455,
+          "min": 4.235291999999845,
+          "max": 4.397375000000011
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 78,
+            "readCalls": 78,
+            "readBytes": 2618602,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            6.557792000000063,
+            8.256792000000132,
+            6.608458999999584,
+            8.333834000000024,
+            6.562917000000198
+          ],
+          "median": 6.608458999999584,
+          "min": 6.557792000000063,
+          "max": 8.333834000000024
+        }
+      },
+      "speedupBeforeOverAfter": 1.550598973456368,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 16,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "register-one",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 117,
+            "readCalls": 78,
+            "readBytes": 2618602,
+            "putCalls": 3,
+            "putBytes": 17289,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 30
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 32,
+            "readCalls": 33,
+            "readBytes": 19965,
+            "putCalls": 33,
+            "putBytes": 19965,
+            "resyncPutCalls": 32,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          }
+        },
+        "snapshotDelta": {
+          "builds": 1,
+          "referenceComparisons": 0,
+          "recordsCreated": 2,
+          "serializedBytes": 17886,
+          "metadataBytes": 0,
+          "reusedRecords": 17
+        },
+        "sealDelta": {
+          "records": 3,
+          "copyBytes": 18352,
+          "hashBytes": 36704,
+          "committedRecords": 20
+        },
+        "elapsedMs": {
+          "samples": [
+            5.262375000000247,
+            5.321541999999681,
+            5.056166999999732,
+            5.231915999999728,
+            5.1899999999996
+          ],
+          "median": 5.231915999999728,
+          "min": 5.056166999999732,
+          "max": 5.321541999999681
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 117,
+            "readCalls": 78,
+            "readBytes": 2618602,
+            "putCalls": 3,
+            "putBytes": 17289,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 32,
+            "readCalls": 33,
+            "readBytes": 19965,
+            "putCalls": 33,
+            "putBytes": 19965,
+            "resyncPutCalls": 32,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            9.571124999999483,
+            10.861291999999594,
+            8.89929200000006,
+            10.856917000000067,
+            8.87133300000005
+          ],
+          "median": 9.571124999999483,
+          "min": 8.87133300000005,
+          "max": 10.861291999999594
+        }
+      },
+      "speedupBeforeOverAfter": 1.8293728339675142,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 16,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "retry-begin",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 78,
+            "readCalls": 78,
+            "readBytes": 2618602,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            4.1553329999997,
+            4.445749999999862,
+            4.282499999999345,
+            4.276707999999417,
+            4.182499999999891
+          ],
+          "median": 4.276707999999417,
+          "min": 4.1553329999997,
+          "max": 4.445749999999862
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 78,
+            "readCalls": 78,
+            "readBytes": 2618602,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            8.582292000000052,
+            8.8642090000003,
+            6.333999999999833,
+            8.171249999999418,
+            6.489540999999917
+          ],
+          "median": 8.171249999999418,
+          "min": 6.333999999999833,
+          "max": 8.8642090000003
+        }
+      },
+      "speedupBeforeOverAfter": 1.9106401465801575,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 64,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "warm-lookup",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 174,
+            "readCalls": 174,
+            "readBytes": 2917958,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            6.435458999999355,
+            6.50683300000037,
+            6.393500000000131,
+            6.32220899999993,
+            6.287374999999884
+          ],
+          "median": 6.393500000000131,
+          "min": 6.287374999999884,
+          "max": 6.50683300000037
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 174,
+            "readCalls": 174,
+            "readBytes": 2917958,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            10.50537499999973,
+            9.983874999999898,
+            10.121500000000196,
+            9.92291699999987,
+            10.442958999999973
+          ],
+          "median": 10.121500000000196,
+          "min": 9.92291699999987,
+          "max": 10.50537499999973
+        }
+      },
+      "speedupBeforeOverAfter": 1.5830922030186891,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 64,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "register-one",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 261,
+            "readCalls": 174,
+            "readBytes": 2917958,
+            "putCalls": 3,
+            "putBytes": 50652,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 78
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 32,
+            "readCalls": 33,
+            "readBytes": 19965,
+            "putCalls": 33,
+            "putBytes": 19965,
+            "resyncPutCalls": 32,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          }
+        },
+        "snapshotDelta": {
+          "builds": 1,
+          "referenceComparisons": 0,
+          "recordsCreated": 2,
+          "serializedBytes": 54991,
+          "metadataBytes": 0,
+          "reusedRecords": 65
+        },
+        "sealDelta": {
+          "records": 3,
+          "copyBytes": 55457,
+          "hashBytes": 110914,
+          "committedRecords": 68
+        },
+        "elapsedMs": {
+          "samples": [
+            8.138542000000598,
+            7.854041999999936,
+            7.835374999999658,
+            7.863749999999527,
+            7.945499999999811
+          ],
+          "median": 7.863749999999527,
+          "min": 7.835374999999658,
+          "max": 8.138542000000598
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 261,
+            "readCalls": 174,
+            "readBytes": 2917958,
+            "putCalls": 3,
+            "putBytes": 50652,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 32,
+            "readCalls": 33,
+            "readBytes": 19965,
+            "putCalls": 33,
+            "putBytes": 19965,
+            "resyncPutCalls": 32,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            14.493749999999636,
+            13.989416000000347,
+            14.50995899999998,
+            14.358208999999988,
+            13.894374999999854
+          ],
+          "median": 14.358208999999988,
+          "min": 13.894374999999854,
+          "max": 14.50995899999998
+        }
+      },
+      "speedupBeforeOverAfter": 1.825873024956395,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 64,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "retry-begin",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 174,
+            "readCalls": 174,
+            "readBytes": 2917958,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            7.908166999999594,
+            6.262958999999682,
+            6.501917000001413,
+            6.189834000000701,
+            7.759375000001455
+          ],
+          "median": 6.501917000001413,
+          "min": 6.189834000000701,
+          "max": 7.908166999999594
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 174,
+            "readCalls": 174,
+            "readBytes": 2917958,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            10.33770800000002,
+            9.993457999999919,
+            10.36291700000038,
+            10.115834000000177,
+            10.145791999999346
+          ],
+          "median": 10.145791999999346,
+          "min": 9.993457999999919,
+          "max": 10.36291700000038
+        }
+      },
+      "speedupBeforeOverAfter": 1.5604308698491756,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 4,
+        "large": true,
+        "sessions": 4
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "warm-lookup",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 192,
+            "readCalls": 192,
+            "readBytes": 3297618,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 42,
+            "readCalls": 42,
+            "readBytes": 25432,
+            "putCalls": 42,
+            "putBytes": 25432,
+            "resyncPutCalls": 42,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            10.468082999999751,
+            10.655124999999316,
+            10.285499999999956,
+            10.83745799999997,
+            10.818083000000115
+          ],
+          "median": 10.655124999999316,
+          "min": 10.285499999999956,
+          "max": 10.83745799999997
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 192,
+            "readCalls": 192,
+            "readBytes": 3297618,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 42,
+            "readCalls": 42,
+            "readBytes": 25432,
+            "putCalls": 42,
+            "putBytes": 25432,
+            "resyncPutCalls": 42,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            20.195832999999766,
+            17.984458000000814,
+            20.620208000000275,
+            18.31316599999991,
+            18.235083999999915
+          ],
+          "median": 18.31316599999991,
+          "min": 17.984458000000814,
+          "max": 20.620208000000275
+        }
+      },
+      "speedupBeforeOverAfter": 1.7187190201899167,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 4,
+        "large": true,
+        "sessions": 4
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "register-one",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 288,
+            "readCalls": 192,
+            "readBytes": 3297618,
+            "putCalls": 3,
+            "putBytes": 27481,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 33
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 107,
+            "readCalls": 108,
+            "readBytes": 65398,
+            "putCalls": 108,
+            "putBytes": 65398,
+            "resyncPutCalls": 107,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          }
+        },
+        "snapshotDelta": {
+          "builds": 1,
+          "referenceComparisons": 0,
+          "recordsCreated": 2,
+          "serializedBytes": 30802,
+          "metadataBytes": 0,
+          "reusedRecords": 20
+        },
+        "sealDelta": {
+          "records": 3,
+          "copyBytes": 31268,
+          "hashBytes": 62536,
+          "committedRecords": 23
+        },
+        "elapsedMs": {
+          "samples": [
+            12.030415999999605,
+            12.512042000000292,
+            12.198207999997976,
+            13.967667000000802,
+            12.678749999999127
+          ],
+          "median": 12.512042000000292,
+          "min": 12.030415999999605,
+          "max": 13.967667000000802
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 288,
+            "readCalls": 192,
+            "readBytes": 3297618,
+            "putCalls": 3,
+            "putBytes": 27481,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 107,
+            "readCalls": 108,
+            "readBytes": 65398,
+            "putCalls": 108,
+            "putBytes": 65398,
+            "resyncPutCalls": 107,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            28.416583000000173,
+            27.57945800000016,
+            28.25325000000157,
+            27.56641600000148,
+            29.192207999996754
+          ],
+          "median": 28.25325000000157,
+          "min": 27.56641600000148,
+          "max": 29.192207999996754
+        }
+      },
+      "speedupBeforeOverAfter": 2.2580846515701363,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 4,
+        "large": true,
+        "sessions": 4
+      },
+      "storage": "file-checkpoint-protocol-on-memory",
+      "operation": "retry-begin",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 192,
+            "readCalls": 192,
+            "readBytes": 3297618,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 42,
+            "readCalls": 42,
+            "readBytes": 25432,
+            "putCalls": 42,
+            "putBytes": 25432,
+            "resyncPutCalls": 42,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            11.272957999997743,
+            11.118291999999201,
+            10.581874999999854,
+            11.685958000001847,
+            11.711416999998619
+          ],
+          "median": 11.272957999997743,
+          "min": 10.581874999999854,
+          "max": 11.711416999998619
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 192,
+            "readCalls": 192,
+            "readBytes": 3297618,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 42,
+            "readCalls": 42,
+            "readBytes": 25432,
+            "putCalls": 42,
+            "putBytes": 25432,
+            "resyncPutCalls": 42,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            19.999665999999706,
+            20.010957999998936,
+            21.20050000000265,
+            19.816749999998137,
+            38.86412500000006
+          ],
+          "median": 20.010957999998936,
+          "min": 19.816749999998137,
+          "max": 38.86412500000006
+        }
+      },
+      "speedupBeforeOverAfter": 1.7751292961441836,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 1,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "native-rooted-files",
+      "operation": "warm-lookup",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 48,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          },
+          "nativeSync": {
+            "files": 12,
+            "directories": 12
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            84.8312079999996,
+            56.69541599999866,
+            18.89483399999881,
+            21.022915999998077,
+            19.922708000001876
+          ],
+          "median": 21.022915999998077,
+          "min": 18.89483399999881,
+          "max": 84.8312079999996
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 48,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          },
+          "nativeSync": {
+            "files": 12,
+            "directories": 12
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            97.61104200000045,
+            25.493583999999828,
+            20.096874999999272,
+            18.758708999997907,
+            19.644875000001775
+          ],
+          "median": 20.096874999999272,
+          "min": 18.758708999997907,
+          "max": 97.61104200000045
+        }
+      },
+      "speedupBeforeOverAfter": 0.9559508776042824,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 1,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "native-rooted-files",
+      "operation": "register-one",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 72,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 3,
+            "putBytes": 6871,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 15
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 32,
+            "readCalls": 33,
+            "readBytes": 19965,
+            "putCalls": 33,
+            "putBytes": 19965,
+            "resyncPutCalls": 32,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          },
+          "nativeSync": {
+            "files": 36,
+            "directories": 36
+          }
+        },
+        "snapshotDelta": {
+          "builds": 1,
+          "referenceComparisons": 0,
+          "recordsCreated": 2,
+          "serializedBytes": 6309,
+          "metadataBytes": 0,
+          "reusedRecords": 2
+        },
+        "sealDelta": {
+          "records": 3,
+          "copyBytes": 6775,
+          "hashBytes": 13550,
+          "committedRecords": 5
+        },
+        "elapsedMs": {
+          "samples": [
+            63.182708000000275,
+            64.48637500000041,
+            97.0300830000051,
+            69.4537499999933,
+            70.09379199999967
+          ],
+          "median": 69.4537499999933,
+          "min": 63.182708000000275,
+          "max": 97.0300830000051
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 3,
+            "listedEntries": 72,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 3,
+            "putBytes": 6871,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 5
+          },
+          "checkpoint": {
+            "listCalls": 5,
+            "listedEntries": 32,
+            "readCalls": 33,
+            "readBytes": 19965,
+            "putCalls": 33,
+            "putBytes": 19965,
+            "resyncPutCalls": 32,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 3,
+            "advance": 1
+          },
+          "nativeSync": {
+            "files": 36,
+            "directories": 36
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            84.93729099999837,
+            130.1007910000044,
+            81.31066600000486,
+            80.90295799999876,
+            65.92241700000159
+          ],
+          "median": 81.31066600000486,
+          "min": 65.92241700000159,
+          "max": 130.1007910000044
+        }
+      },
+      "speedupBeforeOverAfter": 1.1707167143604584,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    },
+    {
+      "scenario": {
+        "scopes": 1,
+        "large": true,
+        "sessions": 1
+      },
+      "storage": "native-rooted-files",
+      "operation": "retry-begin",
+      "after": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 48,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          },
+          "nativeSync": {
+            "files": 12,
+            "directories": 12
+          }
+        },
+        "snapshotDelta": {
+          "builds": 0,
+          "referenceComparisons": 0,
+          "recordsCreated": 0,
+          "serializedBytes": 0,
+          "metadataBytes": 0,
+          "reusedRecords": 0
+        },
+        "sealDelta": {
+          "records": 0,
+          "copyBytes": 0,
+          "hashBytes": 0,
+          "committedRecords": 0
+        },
+        "elapsedMs": {
+          "samples": [
+            26.46483299999818,
+            22.026082999997016,
+            19.05279100000189,
+            18.94491699999344,
+            30.975875000003725
+          ],
+          "median": 22.026082999997016,
+          "min": 18.94491699999344,
+          "max": 30.975875000003725
+        }
+      },
+      "before": {
+        "boundaryCounters": {
+          "store": {
+            "listCalls": 2,
+            "listedEntries": 48,
+            "readCalls": 48,
+            "readBytes": 2525188,
+            "putCalls": 0,
+            "putBytes": 0,
+            "resyncPutCalls": 0,
+            "assertOpenCalls": 4
+          },
+          "checkpoint": {
+            "listCalls": 2,
+            "listedEntries": 12,
+            "readCalls": 12,
+            "readBytes": 7260,
+            "putCalls": 12,
+            "putBytes": 7260,
+            "resyncPutCalls": 12,
+            "assertOpenCalls": 0
+          },
+          "checkpointCalls": {
+            "read": 2,
+            "advance": 0
+          },
+          "nativeSync": {
+            "files": 12,
+            "directories": 12
+          }
+        },
+        "snapshotDelta": null,
+        "sealDelta": null,
+        "elapsedMs": {
+          "samples": [
+            20.803333000003477,
+            29.753124999995634,
+            29.229417000002286,
+            20.524666999997862,
+            24.445917000004556
+          ],
+          "median": 24.445917000004556,
+          "min": 20.524666999997862,
+          "max": 29.753124999995634
+        }
+      },
+      "speedupBeforeOverAfter": 1.1098622029167813,
+      "equivalent": true,
+      "ioAndSyncEquivalent": true
+    }
+  ]
+}

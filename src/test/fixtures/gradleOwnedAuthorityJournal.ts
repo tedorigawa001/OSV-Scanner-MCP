@@ -53,9 +53,13 @@ function checkDescriptors(records:Commit['records']):void {
 }
 export type JournalFault='before-records'|'after-records'|'before-commit'|'after-commit'|'before-checkpoint'|'after-checkpoint'|'before-ack'|'before-recovery-checkpoint'|'after-recovery-checkpoint';
 export interface JournalConfig extends JournalIdentity {contentMemoEntries?:number;contentMemoKeyBytes?:number;key:Buffer;io:JournalIO;checkpoint:JournalCheckpoint;fault?:(phase:JournalFault)=>void|Promise<void>}
+export type JournalSealedRecord=Readonly<{kind:'journal-sealed-record'}>;
 export interface JournalReceipt {operationId:string;revision:number;headDigest:string;resultDigest:string;backendEligible:false;replayed?:true}
 export class AuthorityJournal {
  readonly #identity:JournalIdentity;readonly #key:Buffer;readonly #io:JournalIO;readonly #checkpoint:JournalCheckpoint;readonly #fault?:JournalConfig['fault'];
+ readonly #sealed=new WeakMap<JournalSealedRecord,{descriptor:Commit['records'][number];chunks:Map<string,Buffer>}>();
+ #sealStats={records:0,copyBytes:0,hashBytes:0,committedRecords:0};
+ get sealedRecordMetrics(){return {...this.#sealStats};}
  readonly #memoEntries:number;readonly #memoKeyBytes:number;#verification?:JournalVerificationMetrics;
  #blocked=false;#busy=false;#rejectedBeforeWrite=false;#head:JournalHead;#commits:{body:Commit;head:JournalHead}[]=[];#blobs=new Map<string,Buffer>();
  private constructor(c:JournalConfig){this.#memoEntries=c.contentMemoEntries??JOURNAL_MEMO_LIMITS.entries;this.#memoKeyBytes=c.contentMemoKeyBytes??JOURNAL_MEMO_LIMITS.keyBytes;journalAssert(Number.isSafeInteger(this.#memoEntries)&&this.#memoEntries>=0&&this.#memoEntries<=JOURNAL_MEMO_LIMITS.entries&&Number.isSafeInteger(this.#memoKeyBytes)&&this.#memoKeyBytes>=0&&this.#memoKeyBytes<=JOURNAL_MEMO_LIMITS.keyBytes,'configuration_invalid');this.#identity=identitySchema.parse({authorityId:c.authorityId,storeEpoch:c.storeEpoch,keyId:c.keyId});journalAssert(Buffer.isBuffer(c.key)&&c.key.length===32,'configuration_invalid');this.#key=Buffer.from(c.key);this.#io=c.io;this.#checkpoint=c.checkpoint;this.#fault=c.fault;this.#head=journalGenesis(this.#identity);}
@@ -101,13 +105,29 @@ export class AuthorityJournal {
  // recovery, which may re-sync or advance the checkpoint) stops it until an explicit re-open.
  #reject(ok:unknown,reason:string):asserts ok {if(!ok){this.#rejectedBeforeWrite=true;throw new AuthorityJournalError(reason);}}
  async #exclusive<T>(work:()=>Promise<T>):Promise<T>{journalAssert(!this.#blocked,'recovery_required');journalAssert(!this.#busy,'busy');this.#busy=true;this.#rejectedBeforeWrite=false;try{return await work();}catch(e){if(!this.#rejectedBeforeWrite)this.#blocked=true;throw e;}finally{this.#busy=false;this.#rejectedBeforeWrite=false;}}
+ #assertSealsAvailable():void{journalAssert(!this.#blocked,'recovery_required');journalAssert(!this.#busy,'busy');this.#io.assertOpen?.();}
+ sealRecord(r:JournalRecord):JournalSealedRecord {
+  this.#assertSealsAvailable();id.parse(r.id);z.enum(journalRoles).parse(r.role);journalAssert(Buffer.isBuffer(r.bytes)&&r.bytes.length<=JOURNAL_LIMITS.transactionBytes,'record_invalid');
+  const bytes=Buffer.from(r.bytes),chunks=new Map<string,Buffer>(),refs:{sha256:string;size:number}[]=[];
+  for(let at=0;at<bytes.length;at+=JOURNAL_LIMITS.chunkBytes){const part=bytes.subarray(at,at+JOURNAL_LIMITS.chunkBytes),sha256=ownedSha256(part);refs.push({sha256,size:part.length});chunks.set(sha256,part);}
+  const descriptor={id:r.id,role:r.role,size:bytes.length,sha256:ownedSha256(bytes),chunks:refs},handle=Object.freeze({kind:'journal-sealed-record' as const});
+  this.#sealed.set(handle,{descriptor,chunks});this.#sealStats.records++;this.#sealStats.copyBytes+=bytes.length;this.#sealStats.hashBytes+=bytes.length*2;return handle;
+ }
+ #getSeal(handle:JournalSealedRecord){this.#assertSealsAvailable();const seal=this.#sealed.get(handle);journalAssert(seal,'sealed_record_invalid');return seal;}
+ describeRecord(handle:JournalSealedRecord){const {id,role,size,sha256}=this.#getSeal(handle).descriptor;return {id,role,size,sha256};}
+ materializeRecord(handle:JournalSealedRecord):JournalRecord{const {descriptor:r,chunks}=this.#getSeal(handle);return {id:r.id,role:r.role,bytes:Buffer.concat(r.chunks.map(c=>chunks.get(c.sha256)!))};}
  async commit(input:{operationId:string;requestDigest:string;records:JournalRecord[];expectedHead?:JournalHead}):Promise<JournalReceipt>{
-  // Seal caller-owned values before the first asynchronous storage/checkpoint operation.
+  journalAssert(Array.isArray(input.records)&&input.records.length<=JOURNAL_LIMITS.records,'budget_exceeded');
+  let total=0;for(const r of input.records){journalAssert(Buffer.isBuffer(r.bytes),'record_invalid');total+=r.bytes.length;journalAssert(total<=JOURNAL_LIMITS.transactionBytes,'budget_exceeded');}
+  return this.commitSealed({...input,records:input.records.map(r=>this.sealRecord(r))});
+ }
+ async commitSealed(input:{operationId:string;requestDigest:string;records:JournalSealedRecord[];expectedHead?:JournalHead}):Promise<JournalReceipt>{
+  // Only seals minted by this live journal can skip input copying/hashing. Recovery is never skipped.
   const operationId=id.parse(input.operationId),requestDigest=hash.parse(input.requestDigest);
   const expectedHead=input.expectedHead?journalHeadSchema.parse(input.expectedHead):undefined;
   journalAssert(Array.isArray(input.records)&&input.records.length<=JOURNAL_LIMITS.records,'budget_exceeded');
   const records:Commit['records']=[],chunks=new Map<string,Buffer>();let rawTotal=0;
-   for(const r of input.records){id.parse(r.id);z.enum(journalRoles).parse(r.role);journalAssert(Buffer.isBuffer(r.bytes)&&r.bytes.length<=JOURNAL_LIMITS.transactionBytes,'record_invalid');rawTotal+=r.bytes.length;journalAssert(rawTotal<=JOURNAL_LIMITS.transactionBytes,'budget_exceeded');const refs:{sha256:string;size:number}[]=[];for(let at=0;at<r.bytes.length;at+=JOURNAL_LIMITS.chunkBytes){const bytes=Buffer.from(r.bytes.subarray(at,at+JOURNAL_LIMITS.chunkBytes)),sha256=ownedSha256(bytes);refs.push({sha256,size:bytes.length});chunks.set(sha256,bytes);}records.push({id:r.id,role:r.role,size:r.bytes.length,sha256:ownedSha256(r.bytes),chunks:refs});}
+  for(const handle of input.records){const seal=this.#getSeal(handle);rawTotal+=seal.descriptor.size;journalAssert(rawTotal<=JOURNAL_LIMITS.transactionBytes,'budget_exceeded');records.push(seal.descriptor);for(const [d,b]of seal.chunks)chunks.set(d,b);}
   checkDescriptors(records);const inputDigest=indexDigest(records);
   return this.#exclusive(async()=>{
    await this.#recover();const prior=this.#commits.find(c=>c.body.operationId===operationId);
@@ -116,8 +136,8 @@ export class AuthorityJournal {
    const body:Commit={schema:'osv-mcp.gradle-owned-journal-commit-v1',authorityId:this.#identity.authorityId,storeEpoch:this.#identity.storeEpoch,revision:this.#head.revision+1,previousHead:this.#head.headDigest,operationId,requestDigest,inputDigest,resultDigest:records.find(r=>r.role==='operation-result')!.sha256,records};
    const encoded=sealJournalValue(body,this.#identity.keyId,this.#key),next={authorityId:this.#identity.authorityId,storeEpoch:this.#identity.storeEpoch,revision:body.revision,headDigest:ownedSha256(encoded)};
    const current=await this.#io.list(JOURNAL_LIMITS.entries);const newChunks=[...chunks].filter(([d])=>!this.#blobs.has(d));this.#reject(current.length+newChunks.length+1<=JOURNAL_LIMITS.entries&&current.reduce((n,f)=>n+f.size,0)+newChunks.reduce((n,[,b])=>n+b.length,0)+encoded.length<=JOURNAL_LIMITS.storeBytes,'budget_exceeded');
-   await this.#hit('before-records');for(const [digest,bytes]of newChunks)await this.#io.put(blobName(digest),bytes);await this.#hit('after-records');await this.#hit('before-commit');await this.#io.put(commitName(body.revision),encoded);await this.#hit('after-commit');await this.#hit('before-checkpoint');await this.#advance(this.#head,next);await this.#hit('after-checkpoint');
-   this.#head=next;this.#commits.push({body,head:next});for(const [d,b]of chunks)this.#blobs.set(d,b);await this.#hit('before-ack');return this.#receipt({body,head:next});
+   await this.#hit('before-records');for(const [digest,bytes]of newChunks)await this.#io.put(blobName(digest),Buffer.from(bytes));await this.#hit('after-records');await this.#hit('before-commit');await this.#io.put(commitName(body.revision),encoded);await this.#hit('after-commit');await this.#hit('before-checkpoint');await this.#advance(this.#head,next);await this.#hit('after-checkpoint');
+   this.#sealStats.committedRecords+=records.length;this.#head=next;this.#commits.push({body,head:next});for(const [d,b]of chunks)this.#blobs.set(d,b);await this.#hit('before-ack');return this.#receipt({body,head:next});
   });
  }
  async lookupOperation(operationId:string):Promise<JournalReceipt|undefined>{return this.#exclusive(async()=>{await this.#recover();const c=this.#commits.find(c=>c.body.operationId===operationId);return c?this.#receipt(c):undefined;});}

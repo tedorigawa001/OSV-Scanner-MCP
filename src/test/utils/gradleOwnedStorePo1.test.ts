@@ -25,3 +25,17 @@ it('preserves read/sync boundaries while avoiding repeated record hash and head 
   expect(r.after.lastRecovery.peakMemoEntries).toBeLessThanOrEqual(4096);expect(r.after.lastRecovery.peakMemoKeyBytes).toBeLessThanOrEqual(8*1024*1024);
  }
 });
+
+it('matches every warm-lookup row published in the PO1 design table',()=>{
+ const design=readFileSync('docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md','utf8'),start=design.indexOf('| workload | storage | before ms | after ms | 倍率 |');
+ expect(start).toBeGreaterThan(0);
+ const table=design.slice(start).split('\n').slice(2).filter((l,i,a)=>a.slice(0,i+1).every(x=>x.startsWith('| ')));
+ const rows=record.rows.filter((r:any)=>r.operation==='warm-lookup');
+ expect(table).toHaveLength(rows.length);
+ for(const [i,line] of table.entries()){
+  const cells=line.split('|').slice(1,-1).map(c=>c.trim()),r=rows[i];
+  if(r.scenario.name)expect(cells[0]).toBe(r.scenario.name);
+  expect(cells[1]).toBe(r.storage);
+  expect(cells.slice(2)).toEqual([r.before.elapsedMs.median.toFixed(2),r.after.elapsedMs.median.toFixed(2),r.speedupBeforeOverAfter.toFixed(2)]);
+ }
+});

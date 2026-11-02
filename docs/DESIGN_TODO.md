@@ -2383,3 +2383,14 @@ A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全�
 - 次はPO2のdirty追跡・full形式record再使用の設計具体化と実装・比較。PO3／PO4、M0以降のcompaction・世代移行、隔離authority backend／認証IPC・Task／broker・G3／G4・本番採用は残る。PO1はtest fixture内の参照実装で、新規Gradle／BTA／OSV実接続は行っていない。
 
 PO1の検証結果: 新規22静的／回帰テストとopt-in比較1件成功。全体104 files／3,709 tests成功、23 files／1,417 tests skipped。型検査・build成功。固定8 MiB・履歴64件のwarm lookupは205.98→13.83 ms、native 8 MiB・履歴8件は42.47→19.10 ms。churn 1 MiBは10.40→12.01 msで遅くなった。macOS arm64／Node 26.12.1上の参照実証であり、本番backend・profile・診断採用は無効のまま。
+
+
+### 2026-11-02: PO2・dirty追跡とfull形式record再使用
+
+- §9.71へroot version、session／scope／upload／event列のcopy-on-write、slotを含むsession fragmentのinvalidations、journal所有private sealとfull snapshotの再使用を実装。lookup／retryの変化なし判定を全snapshotのserialize／hashからversion比較へ置き換えた。
+- checkpoint完了後だけdurableVersion・commit済みrecord列を更新。論理失敗は旧rootへ戻し、expiryは独立保存し、保存障害時は停止する。全履歴・全blob・独立checkpoint・owner／期限／世代gateは維持する。
+- 同じkernelの同じstate・ID／nonceからreference full builderを作り、変更時と変化なし経路のrecord順・ID・role・bytesを照合。nonempty metadata・partial／freeze・rollback・slot共有・event／terminal・close／expire／restartとsealの出自・aliasを検証する。disk owner終了の注入先も実保存経路commitSealedへ移し、保存完了直後のack拒否を維持した。
+- PO1実commit 16bf69fとの18 rows／180測定samples＋36 warmupsで、public outcomeとread／write／checkpoint／native syncの同等性を確認。1 session／64 scopesの登録は14.36→7.86 ms、4 sessions／4 scopesは28.25→12.51 ms。native lookupは20.10→21.02 msで改善しなかった。peak process memoryは未測定。
+- 次はPO3とM0以降を連携したv2差分schema／materializer・認証付きcompaction／世代移行。PO4の独立immutable storage provider、隔離authority backend／認証IPC・実Task／broker・G3／G4・本番採用も残る。PO2はtest fixture内のfull形式互換の実装で、差分形式やGCを有効化していない。
+
+PO2の最終検証: 新規24回帰と比較記録の静的照合2件、opt-in比較1件成功。型検査・build成功。全体106 files／3,736 tests成功、24 files／1,418 tests skipped。既存のnative writer排他・SIGKILL／restart・保存障害・checkpoint再同期・owner終了後のack拒否・期限／世代変更を含めて再実行した。owner終了注入はcommitSealed完了直後へ移し、注入が1回実行されたことも検査する。公開baseline／PO1比較記録は変更していない。diff整形検査と、distにauthority／journal・test fixtureが含まれないことを確認した。

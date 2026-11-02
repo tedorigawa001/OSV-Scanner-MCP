@@ -4140,3 +4140,73 @@ env OSV_MCP_OWNED_PO1_BEFORE_ROOT=<before-root> OSV_MCP_OWNED_PO1_OUTPUT=<output
 重複が多い条件で改善した一方、churnやsmall kernelでは改善が成立しない条件もある。private copy・memo管理等を含む結果であり、速度差をhashだけに帰属させない。全66 rowsでpublic outcomeとI/O・同期の比較に成功したが、native故障matrix全体をbefore／after交互に計測したものではない。既存の故障回帰は現在版で別途再実行する。
 
 PO1の最終検証: 新規20回帰と比較記録の静的照合2件成功。opt-in比較1件成功（66 rows／660測定samples＋132 warmups）。型検査・build成功。通常全体104 files／3,709 tests成功、23 files／1,417 tests skipped。既存の保存障害・native writer排他／SIGKILL・restart・期限境界も含めて再実行した。公開baselineとその表は変更していない。比較JSONのnote中の「setup and validation excluded」はseedの準備と測定後の結果照合を指し、各API内のrecover／認証検証は測定時間に含む。
+
+
+### 9.71 PO2・dirty追跡とfull形式のprivate record再使用（2026-11-02）
+
+#### 9.71.1 stateと保存境界
+
+A1のrootへboot内の単調なversionを追加した。論理transactionではrootのMapをforkし、書き換えるsessionのscope／upload／ack Mapだけをcopy-on-writeで分離する。scope・uploadは変更対象だけ複製し、event列はappend時に新しい配列へ置き換える。slotは新しい値へ置き換える。変更を開始するとroot versionを進め、失敗した論理transactionでは旧rootへ戻す。version割当counterを戻さないので、後続候補とversionが衝突しない。
+
+expireは対象がある場合だけ独立したforkでsession／scope／upload／slotを更新する。operation前後・失敗時・最後のawait後の期限判定を維持し、保存したroot versionとの差でexpiration保存を判定する。`durableVersion`とcommit済みsnapshot handle列はcheckpoint完了後だけ更新する。保存失敗中の候補は公開せず、従来通りkernelを停止する。restartは新kernel・新cacheで検証済みbytesをdecodeし、失効snapshotを保存してから返す。
+
+lookup／retryは通常root versionを変えず、全stateのsnapshot生成・digest計算を行わない。一方、PO1の`verifyHead`、全file／commit／独立checkpointの照合・再同期、owner・世代・現在性・期限gateとhistorical ackの扱いは維持する。cacheを根拠にrelaunchやfreshな成功を作らない。
+
+#### 9.71.2 レコード再使用と信頼範囲
+
+private WeakMapでupload node→raw metadata、event配列→ledger／action reservation、terminal object→terminal、session node＋現在のslot object→manifest／index fragmentを関連付ける。同じslotのrevisionを参照する別sessionも、slot objectが変わればsummaryを再生成する。session lifecycleだけが変わっても、raw metadataやevent列が同じならそれらのレコードを再生成しない。
+
+journalへ`sealRecord`／`describeRecord`／`materializeRecord`／`commitSealed`を追加した。sealは当該live journal instanceが発行したopaque objectで、private WeakMapに所有bytes・whole digest・chunk列を保存する。受理時にbytesをcopy／hashし、返却materializationやstorageのputへもcopyを渡す。入力・返却Buffer・storage writerがprivateな内容を変更できないよう分離する。Object.freezeだけをbytes不変性の根拠にしない。
+
+別journal／再open後／偽objectのseal、fail-stop後やowner終了後の利用を拒否する。wireのdigest・IDからsealを生成した扱いにはせず、本番readerへ新しい信用を追加しない。`commitSealed`は総record bytes・個数・descriptor／role等の既存制約を検査し、保存済み全blob／commitとcheckpointを再検証してから通常のfull commitを書く。通常の`commit`もprivate sealを経由し、総入力sizeをcopy前に制限する。sealは現在のstore内容が正しいことを保証するreceiptではない。
+
+root manifest・flat session-index・descriptor配列・commitのcanonical化は変更時に引き続き全体へ依存する。Mapのfork、期限対象の走査も残る。全operationをO(D)と呼ばず、v1から省略recordを暗黙継承する形式変更もしない。cacheのkeyはprivate state object、値は有限stateに対応するprivate recordであり、旧候補はWeakMapのkeyと共に回収可能にする。process peak RSSは別測定を要する。
+
+#### 9.71.3 同値性・回帰と診断counter
+
+既存のfull snapshot builderをreferenceとして保持した。fixture専用`verifySnapshotReuse:true`では**同じkernelの同じlogical state・ID・nonce**からreferenceを作り、record順・role・ID・全bytesを比較する。変更なしと判定した経路でも、commit済みrecord列を現在のreferenceへ照合するので、version bump漏れを検出できる。診断用`full-reference` modeは変更時のrecordを全て再生成する対照であり、本番の新profileではない。
+
+`snapshotMetrics`はbuild数、reference照合数、新規record数、canonical JSONのbytes、初回metadata bytes、再使用record数を記録する。journalの`sealedRecordMetrics`はseal数・private copy bytes・whole＋chunk hash bytes・成功commitのrecord数を記録する。いずれも累積診断counterのcopyであり、採用証拠・ack・容量予約に使用しない。内部回収可能性とprocess peak memoryの保証も区別する。
+
+新規回帰は非空metadata、partial→freezeと失敗候補rollback、slot共有sessionのsummary、ledger順序・action予約・terminal・upload cancel、scope／sessionのabort／revoke、各期限境界、restart、seal偽装・別journal・再open・fail-stop、入力／出力／storage alias、同じsealの再hash省略を対象とする。既存の保存障害・checkpoint同期失敗・writer排他／SIGKILL・再起動・期限・世代gateも再実行する。PFのPO2に当たる条件を扱うが、delta／immutable storage provider／compaction／GCの未実装条件を完了とはしない。
+
+#### 9.71.4 性能比較・再現
+
+[PO2比較JSON](benchmarks/gradle-owned-store-po2-2026-11-02.json)は、実際のPO1 commit `16bf69f`を別directoryへ展開・compileした版と現在版を交互に測定した記録である。展開した32 source fingerprintをPO1比較記録のafterHashesへ照合し、現在版33 fingerprintsも測定前後で一致確認した。各条件で両版を独立に作成し、warmup各1＋測定各5回。18 rows／180測定samples＋36 warmupsで、same provider／storage／入力幅／scope・session数／測定境界を使用した。
+
+両版のopaque random IDは別物なので、性能harnessではpublic outcomeとI/O bytes・counterを比較する。同一stateのbyte単位の同値性は§9.71.3のreference oracleで別に実証した。32件の変更前sourceと33件の変更後sourceにはharnessとlockfileも含む。変更前に存在しないsnapshot／seal内部counterはnullとし、0と見せない。API内の全recoverは測定時間に含め、setupと測定後の結果assertionを除外した。
+
+| workload | storage | operation | before ms | after ms | 倍率 |
+| --- | --- | --- | ---: | ---: | ---: |
+| 1 sessions／1 scopes／small | file-checkpoint-protocol-on-memory | warm-lookup | 1.46 | 1.29 | 1.14 |
+| 1 sessions／1 scopes／small | file-checkpoint-protocol-on-memory | register-one | 1.78 | 1.56 | 1.15 |
+| 1 sessions／1 scopes／small | file-checkpoint-protocol-on-memory | retry-begin | 1.17 | 1.00 | 1.17 |
+| 1 sessions／1 scopes／large | file-checkpoint-protocol-on-memory | warm-lookup | 5.50 | 3.73 | 1.47 |
+| 1 sessions／1 scopes／large | file-checkpoint-protocol-on-memory | register-one | 7.47 | 4.14 | 1.80 |
+| 1 sessions／1 scopes／large | file-checkpoint-protocol-on-memory | retry-begin | 5.23 | 3.49 | 1.50 |
+| 1 sessions／16 scopes／large | file-checkpoint-protocol-on-memory | warm-lookup | 6.61 | 4.26 | 1.55 |
+| 1 sessions／16 scopes／large | file-checkpoint-protocol-on-memory | register-one | 9.57 | 5.23 | 1.83 |
+| 1 sessions／16 scopes／large | file-checkpoint-protocol-on-memory | retry-begin | 8.17 | 4.28 | 1.91 |
+| 1 sessions／64 scopes／large | file-checkpoint-protocol-on-memory | warm-lookup | 10.12 | 6.39 | 1.58 |
+| 1 sessions／64 scopes／large | file-checkpoint-protocol-on-memory | register-one | 14.36 | 7.86 | 1.83 |
+| 1 sessions／64 scopes／large | file-checkpoint-protocol-on-memory | retry-begin | 10.15 | 6.50 | 1.56 |
+| 4 sessions／4 scopes／large | file-checkpoint-protocol-on-memory | warm-lookup | 18.31 | 10.66 | 1.72 |
+| 4 sessions／4 scopes／large | file-checkpoint-protocol-on-memory | register-one | 28.25 | 12.51 | 2.26 |
+| 4 sessions／4 scopes／large | file-checkpoint-protocol-on-memory | retry-begin | 20.01 | 11.27 | 1.78 |
+| 1 sessions／1 scopes／large | native-rooted-files | warm-lookup | 20.10 | 21.02 | 0.96 |
+| 1 sessions／1 scopes／large | native-rooted-files | register-one | 81.31 | 69.45 | 1.17 |
+| 1 sessions／1 scopes／large | native-rooted-files | retry-begin | 24.45 | 22.03 | 1.11 |
+
+倍率はbefore／afterで、1未満は遅くなった条件である。native warm lookupは20.10→21.02 msで改善しなかった。全条件でread／list／put／checkpointとnative file／directory fsyncの回数・bytesが一致した。`assertOpen`回数だけは追加のseal gateで増え得るため実数を記録し、同数を条件にしない。memory上のfile protocolは実fsyncではない。
+
+現在版のlookup／retryは全条件でsnapshot builds・seal copy／hash bytesが0だった。registerはfull snapshotを1回作り、root manifest／indexの2 recordsとoperation resultだけを新規sealにした。既存metadataの初回seal bytesは0で、1 session／64 scopesでは65 recordsを再使用した。ただし保存済みblobの読取／hash、Map fork・flat index／manifestの全体走査は残る。
+
+再現時は`16bf69f`を一時directoryに展開し、依存moduleを用意して`tsc -p <before-root>/tsconfig.json --outDir <before-root>/out`でcompileする。公開済み比較記録を出力先にしない。
+
+```bash
+env OSV_MCP_OWNED_PO2_BEFORE_ROOT=<before-root> OSV_MCP_OWNED_PO2_OUTPUT=<output-path> npm test -- src/test/benchmarks/gradleOwnedStorePo2.test.ts --maxWorkers=1
+```
+
+macOS arm64／Node v26.12.1／Apple M4上の参照実証で、OS cache・GC・背景負荷を制御していない。peak RSS／heapの比較は未実施であり、counterを総copy・総hash・総memoryへ読み替えない。wall-clockの必達閾値はCIへ入れない。通常testはbenchmarkをskipし、保存記録の構造・統計・I/O・counterを静的に照合する。新規の実Gradle／BTA／OSVの実行や本番backend・profile・診断採用は行っていない。
+
+PO2の最終検証: 新規24回帰と比較記録の静的照合2件、opt-in比較1件成功。型検査・build成功。全体106 files／3,736 tests成功、24 files／1,418 tests skipped。既存のnative writer排他・SIGKILL／restart・保存障害・checkpoint再同期・owner終了後のack拒否・期限／世代変更を含めて再実行した。owner終了注入はcommitSealed完了直後へ移し、注入が1回実行されたことも検査する。公開baseline／PO1比較記録は変更していない。diff整形検査と、distにauthority／journal・test fixtureが含まれないことを確認した。
