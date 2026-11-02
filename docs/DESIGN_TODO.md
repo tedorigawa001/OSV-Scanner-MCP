@@ -2288,3 +2288,13 @@ A2レビュー修正後の検証結果: A2は42件から45件へ増加（memory 
 ### 2026-11-02: 102c7a0レビュー修正（A2 journalの書込み前拒否）
 
 - §9.60へ修正の小節を追加。`revision_conflict`／`operation_conflict`／書込み前の`budget_exceeded`ではinstanceを止めず、書込み開始後と復旧処理の失敗だけを停止対象とした。回帰2件。操作ごとの全store再検証を性能上の限界として明記。nativeの再実行なし。
+
+
+### 2026-11-02: A1 operationとA2保存層の接続
+
+- §9.61へoptional journal／dispatchDurableを追加。A1状態変更をmanifest・metadata・ledger・terminal・index・resultに保存し、checkpoint完了後だけackする。action-startと同じcommitの予約をlaunch前の境界とし、生capabilityを保存しない。
+- busy中の参照／操作／provisioningを拒否。保存障害時は停止。同操作retryは保存receiptを再検証しcommitを増やさない。期限到達を保存し、最後のawait後にも期限を再確認する。
+- 回帰23件（実ファイル経由1件を含む）。G0 seal、partial／freeze、複数scope、abort／revoke／expire／supersede、保存故障・期限境界を対象とする。実brokerのlaunch・実隔離・Gradle／BTA native・OSV実接続は未実施。
+- 次は履歴から未完了sessionを失効させて新sessionを受け付けるrestart処理。現時点ではrestart_unsupportedとしてlive復元を拒否する。snapshotの差分化・quota／retention／compaction・writer排他、publish中断の隔離復旧、B／C・G3／G4・本番採用も残る。
+
+A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全体99 files／3,633 tests成功、21 files／1,415 tests skipped。既存A2のSIGKILL 3ケースも成功。diff整形検査成功、distにauthority／journal fixtureが含まれないことを確認した。通常起動のbackend・本番profile・診断採用は有効化していない。

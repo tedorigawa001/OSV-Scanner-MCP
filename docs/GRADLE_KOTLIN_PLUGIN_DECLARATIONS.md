@@ -3405,3 +3405,39 @@ A2レビュー修正後の検証結果: A2は42件から45件へ増加（memory 
 書込みを始めた後の失敗と、復旧処理（再syncやcheckpoint前進を伴う）の失敗では、従来どおりinstanceを停止し、明示的な再openを要求する。回帰を2件加えた。書込み前の競合2件の後もfile数が変わらず次のcommitが成功すること、after-recordsで失敗した後は`recovery_required`で止まることを確認する。修正前の実装では前者が失敗することを先に確認した。
 
 性能の限界として、commit・lookup・readLatestのたびに`#recover`がmanifest・全blob（最大256 MiB）・commit chain・checkpointを読み直して検証する。参照実装として正しさを優先した形であり、本番backendではincrementalな検証と、その安全性の実証が別に必要である。
+
+
+### 9.61 A1 operationとA2保存層の接続（参照実装、2026-11-02）
+
+OwnedAuthorityContractのtest fixtureへ、optional journalとasync dispatchDurableを追加した。journalを指定しない従来の同期A1は変更しない。journal指定時は同期dispatch／inspectをasync_requiredで拒否する。principalは引き続き認証なしのharness provisioningであり、公開backendへ昇格しない。
+
+#### 保存・返答の順序
+
+1. actorと純粋dataのcommandを確認し、最初のawait前にcanonical化・schema検証・copyする。単一instanceのbusy gateを閉じる。保存中は別dispatch・inspect・principal発行を拒否する。
+2. 期限到達によるclosureを先に保存し、A1 operationを適用する。begin、partial upload／freeze、bind-core、activateと旧currentのsupersede、register-scope、event、prepare／seal、abort／revokeをsnapshotへ反映する。
+3. manifest・raw metadata・ledger・terminal・index・operation-resultを一つのA2 commitに渡し、expectedHeadで保存世代を照合する。commitと独立checkpoint・readback完了後だけ返答する。保存・再検証に失敗したkernelはrecovery_requiredで停止し、後続の許可・返答を拒否する。A1の純粋なschema／権限／revision／replay拒否はそのまま利用可能とする。ただしbridgeはA2呼出しの失敗を保守的に停止対象とする。
+4. 最後の非同期保存後にclockを再確認する。失効が発生すればclosureを保存して再確認する（閉じるsession数は有界）。最終clockと返答の間にawaitを置かず、session／chunk期限超過のackを拒否する。保存が既に成立していてもackが返らない場合があり、ack未取得を操作未適用と同一視しない。
+
+#### recordの対応とaction予約
+
+- session-manifestのrootにauthority／limits／session識別子・pins／plansを収め、session-indexのrootへ全session summary・current slot・upload状態／予算・operation digest・recordのid／長さ／digestを収める。
+- metadata-snapshotはpartial chunkまたはfreeze済みの正確なUTF-8 bytesを保存する。freeze後はchunksを重複保存せず、各uploadを一度だけ収録する。cancelledなpartialと予約予算も保持する。ledgerはsession／scopeとsequence／head／全event、terminalは同じscopeのterminalを保存する。
+- action-startはA1でcapabilityを一回消費し、そのeventと同じcommitにaction-reservation（session／plan／witnessId／consumed／sequence／event digest）を保存する。このackの完了を外部launch前の予約境界とする。ただし実broker／process launcherは未接続。テストのlaunch counterはack成功後のcallbackであり、実Taskの実行を意味しない。
+- 生のcapabilityはlive kernel内だけに置く。保存result／operation indexにはcapabilityDigestを使い、ledgerにはcapabilityConsumedを使う。snapshotからprincipal・capabilityを復元する入口はない。
+- 同一live actor／session／operationIdをjournal idに束縛する。同じ操作の再試行はA1の権限・lifecycle・request照合を再実行し、保存済みreceiptを再検証してhistorical replyを返し、commitを増やさない。lookupは保存層を再検証し、現在の失効を適用してからunavailable／backend-unsupportedを返す。lookupの古い結果を再利用しない。
+
+#### 制限・次の段階
+
+このsnapshotは参照実装のaudit記録であり、live stateを復元するschema／readerではない。履歴のあるjournalからkernelを作る操作はrestart_unsupportedとする。再起動後の未完了session失効を保存して新sessionを受け付ける処理は次の課題であり、今回成立したのは保存とackの接続までである。保存失敗後も履歴のjournal再openは可能だが、古いactor・permit・capabilityを復活させない。
+
+毎回全live stateをsnapshot化・全storeを再検証するため大規模運用の性能は未解決。A2の64 MiB transaction／256 MiB store／4,096 records／256 commitsが上限となり、複数session・ledger込みのsnapshotが上限を超えればackを拒否する。A1の各単体上限を同時にすべて使えると主張しない。差分保存、quota・retention・compaction、writer lease／複数process排他、publish中断の隔離復旧は残る。
+
+Bの独立principal／認証IPC／checkpoint保護、Cの独立Task観測、async caller取得とlease／permit、G3／G4・本番producer／profile承認・実接続は未実装のまま。別root／別key・harness role・保存された観測内容を独立なTask事実の証明と数えない。
+
+#### 回帰・実証範囲
+
+新規23件。beginのdurable ackと同操作retry、partial／freezeのbytes、bind／activate／register、raw capabilityの非保存、action予約中のbusyと遅延ack、6保存境界でのno-launch／停止、完全G0 sealのledger／terminal、abort／revoke／expire／supersede、複数scopeのterminal保持・upload cancellation、command／replyのcopy、checkpoint不能、chunk期限、保存中と別session失効保存中の期限到達を確認する。最初のbegin回帰は実装前にdispatchDurable未定義で失敗することを確認した。
+
+実ファイルadapter経由でbeginからaction-startまで保存し、journal再open後のaction reservationとcheckpoint世代を確認する1件を含む。実行profileはmacOS arm64／Node 26.12.1。既存A2のSIGKILLテストを再実行するが、今回のA1 bridge全体をSIGKILLした実証ではない。実brokerのlaunch・電源断・実隔離・Gradle／BTA native・OSV実接続・本番診断採用はいずれも今回0。
+
+A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全体99 files／3,633 tests成功、21 files／1,415 tests skipped。既存A2のSIGKILL 3ケースも成功。diff整形検査成功、distにauthority／journal fixtureが含まれないことを確認した。通常起動のbackend・本番profile・診断採用は有効化していない。
