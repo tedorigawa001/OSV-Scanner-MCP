@@ -2368,3 +2368,8 @@ A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全�
 - PF01〜PF28は最適化の未実装回帰条件。今回は設計と基準計測のみで、最適化・delta・provider・本番採用は有効化していない。次はPO1の安全な局所最適化とreference比較、M0以降の世代移行schema実装との接続。
 
 保存性能設計・基準計測の検証結果: opt-in baseline 1件成功（54 rows／270測定samples＋54 warmups、31 source fingerprint一致）。既存関連・文書123件成功、通常実行時の新benchmark 1件skip。型検査・build・diff整形検査成功。§9.68の10小節・PF01〜PF28の欠落／重複なしを確認した。PO1〜PO4とPF最適化側は未実装であり、測定値はbefore／after速度改善ではない。本番backend・profile・診断採用を有効化していない。
+
+
+### 2026-11-02: 943dc1cレビュー修正（baseline記録の保護と照合）
+
+- [設計書§9.69](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#969-943dc1cレビュー修正baseline記録の保護と照合2026-11-02)へ、再現commandの出力先を`<output-path>`にして公開baselineの上書きを避けることと、baseline記録の構造・§9.68.3の表の値を照合する静的テストの追加を記録。nativeの再実行なし。

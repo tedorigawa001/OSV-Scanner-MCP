@@ -3923,10 +3923,10 @@ baselineの主な成長軸を、unique blob bytes U、全commitが参照するre
 `src/test/benchmarks/gradleOwnedStore.test.ts`は既定skipの単一opt-in testで、環境変数`OSV_MCP_OWNED_STORE_BENCH=1`と任意の`OSV_MCP_OWNED_STORE_BENCH_OUTPUT`を使う。以下は再現用の公開commandであり、通常起動に設定しない。
 
 ```sh
-OSV_MCP_OWNED_STORE_BENCH=1 OSV_MCP_OWNED_STORE_BENCH_OUTPUT=docs/benchmarks/gradle-owned-store-baseline-2026-11-02.json npm test -- src/test/benchmarks/gradleOwnedStore.test.ts --maxWorkers=1
+OSV_MCP_OWNED_STORE_BENCH=1 OSV_MCP_OWNED_STORE_BENCH_OUTPUT=<output-path> npm test -- src/test/benchmarks/gradleOwnedStore.test.ts --maxWorkers=1
 ```
 
-記録は[baseline JSON](benchmarks/gradle-owned-store-baseline-2026-11-02.json)。各rowでwarmup 1回と測定5回、全samples・median／min／max、JournalIO境界のlist／read／put・返却bytes、checkpoint API回数・同値put、native fsync回数を保存する。同じscenarioのcounterが5回一致することと、record bytes・revision／resultをpublic APIで照合する。計測前後のRSS／heapUsed差分はmemory journal rowだけに保存し、peak memoryとは呼ばない。GCとhostの背景負荷は制御していない。
+`<output-path>`には一時fileを指定する。公開済みのbaseline JSONを直接出力先にすると、確認のための実行だけで基準値・時刻・source hashが置き換わる。基準を更新するときだけ、意図して出力を置き換え、§9.68.3の表も合わせて直す。記録は[baseline JSON](benchmarks/gradle-owned-store-baseline-2026-11-02.json)。記録の構造と§9.68.3の表の値は`src/test/utils/gradleOwnedStoreBaseline.test.ts`で照合する（§9.69）。各rowでwarmup 1回と測定5回、全samples・median／min／max、JournalIO境界のlist／read／put・返却bytes、checkpoint API回数・同値put、native fsync回数を保存する。同じscenarioのcounterが5回一致することと、record bytes・revision／resultをpublic APIで照合する。計測前後のRSS／heapUsed差分はmemory journal rowだけに保存し、peak memoryとは呼ばない。GCとhostの背景負荷は制御していない。
 
 | family | workloadと境界 |
 | --- | --- |
@@ -4068,3 +4068,9 @@ cold instanceとwarm operation、固定metadataとchurn、小／大payload、長
 PFは今後の最適化の条件であり、今回のbaseline testで実装済みとしない。RC／MCの保持・移行条件も維持する。現時点でperformance fast path、本番backend・profile・診断採用を有効化しない。
 
 保存性能設計・基準計測の検証結果: opt-in baseline 1件成功（54 rows／270測定samples＋54 warmups、31 source fingerprint一致）。既存関連・文書123件成功、通常実行時の新benchmark 1件skip。型検査・build・diff整形検査成功。§9.68の10小節・PF01〜PF28の欠落／重複なしを確認した。PO1〜PO4とPF最適化側は未実装であり、測定値はbefore／after速度改善ではない。本番backend・profile・診断採用を有効化していない。
+
+
+### 9.69 943dc1cレビュー修正・baseline記録の保護と照合（2026-11-02）
+
+- §9.68.2の再現commandは、出力先が公開済みのbaseline JSONそのものだったため、確認の実行だけで基準値・時刻・source hashが置き換わった。出力先を`<output-path>`とし、一時fileへ出力して、基準の更新時だけ意図して置き換えることを明記した。
+- baseline記録を読み直す静的テスト`src/test/utils/gradleOwnedStoreBaseline.test.ts`を加えた。schema、`baselineOnly:true`・`optimizedImplementation:false`、54 rows、各rowの測定samples数がrepetitions（5）と一致し、median／min／maxがsamplesから求めた値であること、§9.68.3の表の中央値・store境界read bytes・checkpoint再取得／同値put・native fsync回数が記録と一致することを確認する。測定値そのものは環境で変わるため、新しい計測とは比較しない。
