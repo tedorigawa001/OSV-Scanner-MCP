@@ -2314,6 +2314,12 @@ A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全�
 
 再起動処理の検証結果: 新規27件成功。型検査・build成功。全体100 files／3,661 tests成功、21 files／1,415 tests skipped。既存A2のSIGKILL 3ケースと、新規のrestart失効commit直後の実SIGKILL 1ケースを再実行した。diff整形検査成功、distにauthority／journal／snapshot fixtureが含まれないことを確認。実行環境はmacOS arm64／Node v26.12.1。本番backend・profile・診断採用は無効のまま。
 
+
+### 2026-11-02: 5eee209レビュー修正（restart失効のvalidity）
+
+- §9.62へ修正の小節を追加。restartで閉じたsessionのvalidityを`restarted`とし、時間切れの`expired`と区別。snapshot decoderの照合にも追加し、restart前に時間切れだったsessionは`expired`のまま保持することを回帰で固定。nativeの再実行なし。
+
+
 ### 2026-11-02: 保存運用第1段（writer排他・publish中断の認証復旧）
 
 - §9.63へ2 rootを専有するOwnedJournalDiskを追加。nonblocking flockをdescriptor終了まで保持し、両root取得前は保存しない。別adapterのputも同じlockへ従い、競合writerを拒否。transaction／IO実行中のcloseを拒否する。

@@ -20,7 +20,7 @@ type Terminal={outcome:'structure-verified'|'not-executed'|'execution-aborted'|'
 type Scope={plan:AuthorityPlan;revision:number;lifecycle:'planned'|'registered'|'executing'|'sealing'|'terminal';validity:'current'|'revoked';head:string;sequence:number;witnessId?:string;uploadId?:string;capability?:string;observation?:{lookup:ReturnType<typeof ownedLookupSchema.parse>;leases:unknown[]};terminal?:Terminal;events:string[]};
 type Upload={id:string;purpose:'core'|'seal';scope?:AuthorityScope;witnessId?:string;revision:number;state:'open'|'frozen'|'cancelled';chunks:Buffer[];received:number;total?:number;digest?:string;text?:string;ref?:AuthorityMetadataRef};
 type Ack={digest:string;reply:any};
-type Session={id:string;owner:string;consumerId:string;scanRunId:string;projectRootId:string;settingsDigest:string;scopeRequestsDigest:string;manifestDigest?:string;graphId:string;exportId:string;executionId:string;nonce:string;coreUploadId:string;created:number;revision:number;lifecycle:'draft'|'core-bound'|'active'|'committed'|'closed';validity:'unselected'|'current'|'superseded'|'revoked'|'expired'|'aborted';core?:GradleGraph;coreRef?:AuthorityMetadataRef;coreDigest?:string;rootDigest?:string;scopes:Map<string,Scope>;uploads:Map<string,Upload>;acks:Map<string,Ack>;metadataBytes:number;ledgerBytes:number;eventCount:number};
+type Session={id:string;owner:string;consumerId:string;scanRunId:string;projectRootId:string;settingsDigest:string;scopeRequestsDigest:string;manifestDigest?:string;graphId:string;exportId:string;executionId:string;nonce:string;coreUploadId:string;created:number;revision:number;lifecycle:'draft'|'core-bound'|'active'|'committed'|'closed';validity:'unselected'|'current'|'superseded'|'revoked'|'expired'|'aborted'|'restarted';core?:GradleGraph;coreRef?:AuthorityMetadataRef;coreDigest?:string;rootDigest?:string;scopes:Map<string,Scope>;uploads:Map<string,Upload>;acks:Map<string,Ack>;metadataBytes:number;ledgerBytes:number;eventCount:number};
 type State={sessions:Map<string,Session>;slots:Map<string,{revision:number;sessionId?:string}>;begins:Map<string,Ack>};
 export class OwnedAuthorityContractError extends Error {constructor(reason:string){super('authority_contract_'+reason);}}
 function fail(reason:string):never {throw new OwnedAuthorityContractError(reason);}
@@ -87,7 +87,7 @@ export class OwnedAuthorityContract {
    }
    const invalidated:string[]=[];
    for(const session of model.#state.sessions.values()){
-    if(session.lifecycle!=='closed'){model.#closeSession(session,'expired','authority-restarted');invalidated.push(session.id);}
+    if(session.lifecycle!=='closed'){model.#closeSession(session,'restarted','authority-restarted');invalidated.push(session.id);}
     for(const scope of session.scopes.values())if(scope.validity==='current'){scope.validity='revoked';scope.revision++;}
     for(const upload of session.uploads.values())if(upload.state==='open'){upload.state='cancelled';upload.revision++;}
    }
@@ -125,7 +125,7 @@ export class OwnedAuthorityContract {
   if(s.lifecycle==='active'&&[...s.scopes.values()].every(x=>x.lifecycle==='terminal'))s.lifecycle='committed';
  }
  // Lifecycle closure (expire/abort) and validity loss (supersede/revoke) are recorded distinctly.
- #closeSession(s:Session,validity:'revoked'|'superseded'|'expired'|'aborted',reason:string):void {
+ #closeSession(s:Session,validity:'revoked'|'superseded'|'expired'|'aborted'|'restarted',reason:string):void {
   for(const sc of s.scopes.values())this.#closeScope(s,sc,'unavailable',reason);
   s.validity=validity;s.lifecycle='closed';s.revision++;
   const current=this.#state.slots.get(slot(s));if(current?.sessionId===s.id)this.#state.slots.set(slot(s),{revision:current.revision+1});

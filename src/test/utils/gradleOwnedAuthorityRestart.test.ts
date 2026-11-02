@@ -20,7 +20,7 @@ const json=(records:Awaited<ReturnType<AuthorityJournal['readLatest']>>,role:str
 it('durably invalidates the old draft before a restarted kernel accepts a new session',async()=>{
  const f=await setup(),request=f.begin(),old=await f.model.dispatchDurable(f.caller,request);
  const restarted=await OwnedAuthorityContract.restart(f.config);
- const saved=json(await f.journal.readLatest(),'session-index')[0];expect(saved.sessions[0].summary).toMatchObject({sessionId:old.sessionId,lifecycle:'closed',validity:'expired'});
+ const saved=json(await f.journal.readLatest(),'session-index')[0];expect(saved.sessions[0].summary).toMatchObject({sessionId:old.sessionId,lifecycle:'closed',validity:'restarted'});
  expect(saved.sessions[0].uploads[0].state).toBe('cancelled');
  await expect(restarted.dispatchDurable(f.caller,request)).rejects.toThrow('permission_denied');
  const caller=restarted.principal('caller'),next=await restarted.dispatchDurable(caller,f.begin());expect(next.sessionId).not.toBe(old.sessionId);
@@ -53,7 +53,7 @@ it('fences the old kernel and rejects old actors, bearer capabilities and action
  await expect(restarted.dispatchDurable(next.broker,{...action(f,next),event:{kind:'action-start',capability:r.capability}})).rejects.toThrow('capability_invalid');
  const current=await restarted.dispatchDurable(next.broker,action(f,next));expect(current.lifecycle).toBe('executing');
  const saved=await f.journal.readLatest(),index=json(saved,'session-index')[0];
- expect(index.sessions.find((s:any)=>s.summary.sessionId===r.sessionId).summary).toMatchObject({lifecycle:'closed',validity:'expired',scopes:[{validity:'revoked',lifecycle:'terminal'}]});
+ expect(index.sessions.find((s:any)=>s.summary.sessionId===r.sessionId).summary).toMatchObject({lifecycle:'closed',validity:'restarted',scopes:[{validity:'revoked',lifecycle:'terminal'}]});
  expect(json(saved,'action-reservation').find((v:any)=>v.sessionId===r.sessionId)).toMatchObject({consumed:true,witnessId:r.witnessId});
  expect(Buffer.concat(saved.map(r=>r.bytes)).includes(r.capability)).toBe(false);
 });
@@ -66,7 +66,7 @@ it('does not expose the new kernel before restart invalidation is checkpointed',
  let armed=false,release!:()=>void,hit!:()=>void;const wait=new Promise<void>(r=>release=r),reached=new Promise<void>(r=>hit=r);
  const f=await setup(async phase=>{if(armed&&phase==='before-checkpoint'){hit();await wait;}});await activate(f);armed=true;
  let ready=false;const pending=OwnedAuthorityContract.restart(f.config).then(m=>{ready=true;return m;});await reached;expect(ready).toBe(false);
- release();const restarted=await pending;expect(ready).toBe(true);expect(json(await f.journal.readLatest(),'session-index')[0].sessions[0].summary.validity).toBe('expired');
+ release();const restarted=await pending;expect(ready).toBe(true);expect(json(await f.journal.readLatest(),'session-index')[0].sessions[0].summary.validity).toBe('restarted');
  expect(await restarted.dispatchDurable(restarted.principal('caller'),f.begin())).toMatchObject({lifecycle:'draft'});
 });
 for(const phase of ['before-records','after-records','after-commit','before-checkpoint','after-checkpoint','before-ack'] as JournalFault[]){
@@ -74,7 +74,7 @@ for(const phase of ['before-records','after-records','after-commit','before-chec
   let armed=false;const f=await setup(p=>{if(armed&&p===phase)throw Error('restart fault');}),s=await activate(f);armed=true;
   let issued=0;await expect(OwnedAuthorityContract.restart(f.config).then(()=>{issued++;})).rejects.toThrow('restart fault');expect(issued).toBe(0);
   const journal=await AuthorityJournal.open({...f.storage,fault:undefined}),restarted=await OwnedAuthorityContract.restart({...f.config,journal});
-  const index=json(await journal.readLatest(),'session-index')[0];expect(index.sessions[0].summary).toMatchObject({sessionId:s.sessionId,validity:'expired',lifecycle:'closed',revision:s.revision+1});
+  const index=json(await journal.readLatest(),'session-index')[0];expect(index.sessions[0].summary).toMatchObject({sessionId:s.sessionId,validity:'restarted',lifecycle:'closed',revision:s.revision+1});
   expect(index.slots[0][1]).toEqual({revision:2});
   await expect(restarted.dispatchDurable(f.caller,f.begin())).rejects.toThrow('permission_denied');
  });
@@ -132,7 +132,7 @@ it('keeps startup closed while the published restart checkpoint cannot be re-syn
  await expect(OwnedAuthorityContract.restart(config)).rejects.toThrow('checkpoint_unavailable');expect(published).toBe(true);
  for(let i=0;i<2;i++)await expect(AuthorityJournal.open(storage)).rejects.toThrow('checkpoint_unavailable');expect(failures).toBe(3);
  failing=false;const reopened=await AuthorityJournal.open(storage),restarted=await OwnedAuthorityContract.restart({...config,journal:reopened});
- expect(json(await reopened.readLatest(),'session-index')[0].sessions[0].summary).toMatchObject({lifecycle:'closed',validity:'expired',revision:2});
+ expect(json(await reopened.readLatest(),'session-index')[0].sessions[0].summary).toMatchObject({lifecycle:'closed',validity:'restarted',revision:2});
  expect(await restarted.dispatchDurable(restarted.principal('caller'),f.begin())).toMatchObject({lifecycle:'draft'});
 });
 it('reopens real files and checkpoints invalidation before issuing a fresh actor',async()=>{
@@ -146,7 +146,7 @@ it('reopens real files and checkpoints invalidation before issuing a fresh actor
   const original=new OwnedAuthorityContract(config),caller=original.principal('caller'),r=await register(f,original,caller,await activate(f,original,caller));await original.dispatchDurable(r.broker,action(f,r));
   for(const handle of handles.splice(0))handle.close();
   const fresh=await open(),reopened=await AuthorityJournal.open({...storage,...fresh}),restarted=await OwnedAuthorityContract.restart({...config,journal:reopened,now:()=>0});
-  const saved=await reopened.readLatest();expect(json(saved,'session-index')[0].sessions[0].summary).toMatchObject({lifecycle:'closed',validity:'expired',scopes:[{validity:'revoked'}]});
+  const saved=await reopened.readLatest();expect(json(saved,'session-index')[0].sessions[0].summary).toMatchObject({lifecycle:'closed',validity:'restarted',scopes:[{validity:'revoked'}]});
   expect((await fresh.checkpoint.read()).revision).toBe(reopened.head.revision);
   expect(json(saved,'action-reservation')[0]).toMatchObject({sessionId:r.sessionId,consumed:true});
   await expect(restarted.dispatchDurable(r.broker,action(f,r))).rejects.toThrow('permission_denied');
@@ -185,7 +185,7 @@ const f=ownedPolicyFixture();await OwnedAuthorityContract.restart({authorityId:'
   const child=path.join(base,'restart-child.mjs');await fs.writeFile(child,script);
   const result=await new Promise<{signal?:string|null;message?:string}>(resolve=>execFile(process.execPath,[child],{timeout:15000},error=>resolve(error??{})));expect(result.signal,result.message).toBe('SIGKILL');
   const fresh=await open(),reopened=await AuthorityJournal.open({...storage,...fresh}),restarted=await OwnedAuthorityContract.restart({...config,journal:reopened});
-  const saved=json(await reopened.readLatest(),'session-index')[0];expect(saved.sessions[0].summary).toMatchObject({sessionId:r.sessionId,lifecycle:'closed',validity:'expired',revision:4});
+  const saved=json(await reopened.readLatest(),'session-index')[0];expect(saved.sessions[0].summary).toMatchObject({sessionId:r.sessionId,lifecycle:'closed',validity:'restarted',revision:4});
   expect(saved.slots[0][1]).toEqual({revision:2});
   await expect(restarted.dispatchDurable(r.broker,action(f,r))).rejects.toThrow('permission_denied');
   const next=await activate(f,restarted,restarted.principal('caller'),2);expect(next.validity).toBe('current');
@@ -209,3 +209,12 @@ for(const mutation of ['schema','metadata-ref','ledger-chain','reservation','non
   await expect(OwnedAuthorityContract.restart(f.config)).rejects.toThrow('authority_snapshot_invalid');expect(f.journal.head.revision).toBe(before);
  });
 }
+
+it('records restart invalidation as restarted while keeping an earlier time expiry as expired',async()=>{
+ const f=await setup(),expiredSession=await f.model.dispatchDurable(f.caller,f.begin());
+ f.advance(600000);const open=await f.model.dispatchDurable(f.caller,f.begin());
+ await OwnedAuthorityContract.restart(f.config);
+ const sessions=json(await f.journal.readLatest(),'session-index')[0].sessions.map((s:any)=>s.summary);
+ expect(sessions.find((s:any)=>s.sessionId===expiredSession.sessionId)).toMatchObject({lifecycle:'closed',validity:'expired'});
+ expect(sessions.find((s:any)=>s.sessionId===open.sessionId)).toMatchObject({lifecycle:'closed',validity:'restarted'});
+});

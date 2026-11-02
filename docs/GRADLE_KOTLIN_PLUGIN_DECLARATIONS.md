@@ -3453,7 +3453,7 @@ A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全�
 
 1. A2 readLatestでmanifest／全blob／commit chain／独立checkpointを再検証・再同期する。古いcommitだけの改変・欠落・rollback・checkpoint不能でも失敗し、空storeへのfallbackはしない。
 2. `gradleOwnedAuthoritySnapshot.ts`のdecoderでlatest snapshotを検証する。strict schemaとcanonical JSON、authority・記録したlimits、manifest／summary／current slot、metadataの参照・長さ・digest・freeze、ledgerのsequence／previousDigest／head、terminalとaction-reservationの対応、全recordの参照閉包を確認する。未参照recordや不整合を拒否し、検証完了前にはrestart commitを作らない。partial metadataは未完了のbytesとして保持し、freeze済みmetadataはUTF-8／canonical JSONとcoreまたはsealのschemaを再検証する。G0 sealの判定やTask観測を新たに実行した証拠とは数えない。
-3. 既存sessionを履歴として取り込み、draft／core-bound／active／committedをclosed・validity=expiredへ移す。完了済みterminalもsessionのcurrent性は失効させるが、元のterminal outcome・digest・ledger・metadataを保持する。未完了scopeはunavailable／authority-restartedで閉じ、scopeのvalidityをrevoked、open uploadをcoreも含めcancelledとする。current slotを消してrevisionを進め、既に閉じたsessionとslotを再起動のたびに二重更新しない。
+3. 既存sessionを履歴として取り込み、draft／core-bound／active／committedをclosed・validity=restartedへ移す（時間切れのexpiredとは区別する）。完了済みterminalもsessionのcurrent性は失効させるが、元のterminal outcome・digest・ledger・metadataを保持する。未完了scopeはunavailable／authority-restartedで閉じ、scopeのvalidityをrevoked、open uploadをcoreも含めcancelledとする。current slotを消してrevisionを進め、既に閉じたsessionとslotを再起動のたびに二重更新しない。
 4. 旧head・失効session一覧を持つmaintenance=restartのresultと、全履歴・失効状態をexpectedHead付きの一つのcommitに保存する。checkpointとreadback完了後だけ新kernelを返し、その後に新actor・sessionを発行できる。保存失敗・容量不足・checkpoint再同期失敗時はinstanceを返さない。保存済みだが返答前に停止した場合、次の起動でそのcommitをA2が復旧し、失効を二重適用せず新boot markerを保存する。
 
 #### 旧権限の不継承と世代の照合
@@ -3477,6 +3477,11 @@ actorのWeakMap、capability、live ack cache、実行許可、旧clockの原点
 実行profileはmacOS arm64／Node 26.12.1。障害matrixとcheckpoint再同期失敗は例外注入であり、実電源断・媒体故障の実証ではない。Linux／x64、実隔離・認証IPC、旧processの外部強制停止、Gradle／BTA native・OSV実接続・本番profile承認・診断採用は今回0。単一writer・test fixtureという前提と、本番backend無効を維持する。
 
 再起動処理の検証結果: 新規27件成功。型検査・build成功。全体100 files／3,661 tests成功、21 files／1,415 tests skipped。既存A2のSIGKILL 3ケースと、新規のrestart失効commit直後の実SIGKILL 1ケースを再実行した。diff整形検査成功、distにauthority／journal／snapshot fixtureが含まれないことを確認。実行環境はmacOS arm64／Node v26.12.1。本番backend・profile・診断採用は無効のまま。
+
+#### 5eee209レビュー修正: restartによる失効の記録（2026-11-02）
+
+restartで閉じたsessionのvalidityを、時間切れと同じ`expired`ではなく`restarted`で記録するように直した。scopeを持たないdraft sessionでは、scope terminalの理由（authority-restarted）が残らないため、修正前はrestartによる失効と時間切れを記録から区別できなかった。restart前に時間切れで閉じていたsessionは`expired`のまま保持し、restartで上書きしない。snapshot decoderのvalidity enumと、closedとvalidityの対応の照合にも`restarted`を加えた。restartのテストは28件で、そのうち1件（restart前の時間切れとrestart失効の区別）を新たに加えた。修正前の実装では、更新した期待値を含む複数件が失敗することを先に確認した。
+
 
 ### 9.63 保存運用の第1段: writer排他とpublish中断の認証復旧（参照実装、2026-11-02）
 

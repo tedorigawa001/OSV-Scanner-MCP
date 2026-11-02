@@ -7,7 +7,7 @@ import {parseGradleGraph} from '../../utils/gradleGraph.js';
 import type {JournalRecord} from './gradleOwnedAuthorityJournal.js';
 export const SNAPSHOT_SESSION_LIMIT=256;
 const n=z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
-const validity=z.enum(['unselected','current','superseded','revoked','expired','aborted']);
+const validity=z.enum(['unselected','current','superseded','revoked','expired','aborted','restarted']);
 const lifecycle=z.enum(['draft','core-bound','active','committed','closed']);
 const terminal=z.object({outcome:z.enum(['structure-verified','not-executed','execution-aborted','unavailable','invalid']),ledgerHead:hash,bundleDigest:hash.optional(),envelopeDigest:hash.optional(),sealMetadataRef:authorityMetadataRef.optional(),reason:id.optional()}).strict();
 const scopeSummary=z.object({scope:authorityScope,revision:n,lifecycle:z.enum(['planned','registered','executing','sealing','terminal']),validity:z.enum(['current','revoked']),ledgerHead:hash,sequence:n,witnessId:id.optional(),uploadId:id.optional(),terminal:terminal.optional()}).strict();
@@ -50,7 +50,7 @@ function decode(records:JournalRecord[],authorityId:string):DecodedSnapshot {
   for(const k of ['graphId','exportId','executionId','nonce','coreUploadId','revision','lifecycle','validity','metadataBytes','ledgerBytes','eventCount'] as const)check(view[k]===s[k]);
   check(equal(view.coreMetadataRef??null,s.coreRef??null)&&equal(view.manifestDigest??null,s.manifestDigest??null));
   const slot=slots.get(JSON.stringify([s.consumerId,s.projectRootId]));check(view.currentRevision===(slot?.revision??0));
-  check((s.validity==='current')===(slot?.sessionId===s.id));check((s.lifecycle==='closed')===['expired','aborted','revoked','superseded'].includes(s.validity));
+  check((s.validity==='current')===(slot?.sessionId===s.id));check((s.lifecycle==='closed')===['expired','aborted','revoked','superseded','restarted'].includes(s.validity));
   check(s.manifestDigest?!!s.coreRef&&!!s.coreDigest&&!!s.rootDigest:s.plans.length===0&&!s.coreRef&&!s.coreDigest&&!s.rootDigest&&(s.lifecycle==='draft'||s.lifecycle==='closed'));
   if(s.manifestDigest)check(s.scopeRequestsDigest===ownedDigest(s.plans.map(onlyScope))&&s.manifestDigest===ownedDigest({domain:'authority-session-manifest-v1',authorityId,sessionId:s.id,graphId:s.graphId,exportId:s.exportId,executionId:s.executionId,nonce:s.nonce,settingsDigest:s.settingsDigest,coreMetadataRef:s.coreRef,coreGraphDigest:s.coreDigest,rootRegistryDigest:s.rootDigest,scopes:s.plans}));
   check(s.plans.length===view.scopes.length&&new Set(s.plans.map(scopeKey)).size===s.plans.length&&new Set(view.scopes.map(sc=>scopeKey(sc.scope))).size===view.scopes.length);
