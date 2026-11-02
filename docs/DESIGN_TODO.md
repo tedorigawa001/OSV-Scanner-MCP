@@ -2261,3 +2261,19 @@ A1検証結果: 新規71テスト成功。型検査・build成功、全体96 fil
 - 修正前の失敗を確認した上で13回帰を追加。A1は84テストへ増加。実証は引き続きメモリ内contractのみで、durable store／crash復旧・隔離／IPC・native・本番採用は未実施。
 
 A1レビュー修正後の検証結果: A1 84件成功（追加13件）。型検査・build成功、全体96 files／3,560 tests成功、21 files／1,415 tests skipped。diff整形検査成功。新規native／OSV実行・durable／隔離backend採用・本番profile承認・診断採用は0。
+
+### 2026-11-02: A2保存層の参照実装・実ファイル復旧
+
+- §9.60へHMAC認証journal、chunk・commit内index、独立checkpoint、immutable保存・fsync・ack順序、復旧とrollback拒否を追加。すべてtest fixtureであり公開buildから除外する。
+- 新規42件（memory 27／実ファイル15）。実SIGKILL後の再openを3地点で確認。保存障害、改変・欠落・巻戻し、checkpoint失敗、symlink／hardlink／root交換、容量・列挙上限を含む。実行profileはmacOS arm64／Node 26.12.1。A1のrole改変負例も、乱数依存の並び順で変更前後が同じroleにならないよう修正。
+- A2全体は未完了。次はA1 transactionへの保存接続、launch前reservation、restart失効、writer排他・運用quota、publish直後のnlink=2の隔離復旧。Bの実隔離・認証IPC・checkpoint保護、CのTask観測、G3／G4・本番採用は引き続き未実施。今回の別root／別keyを独立principalの実証と数えない。
+
+A2保存層の検証結果: 新規42件成功。型検査・build成功。全体98 files／3,605 tests成功、21 files／1,415 tests skipped。diff整形検査成功。build後のdistにA1／A2 fixtureが含まれないことを確認した。上記範囲以外の本番backend採用・隔離・Gradle／BTA native・OSV実接続は0。
+
+
+### 2026-11-02: A2レビュー修正（checkpoint再同期の保存境界）
+
+- §9.60へ公開後のdirectory同期失敗と再同期の契約を追記。checkpoint全chainの認証後に同じbytesを再同期し、成功するまでhead／historical ackを返さない。既存同値fileのputもfile／directoryの再同期を必須とする。
+- 回帰3件追加（memory・実ファイルの再open／retry拒否、保存障害matrixの同期前境界）。修正前の誤成功を確認し、同期失敗継続中は拒否、成功後だけ同revisionのackを返すことを検証。実媒体エラー・電源断を模した実証ではなく、A2の残課題・本番採用範囲は変えない。
+
+A2レビュー修正後の検証結果: A2は42件から45件へ増加（memory 28／実ファイル17）、全件成功。型検査・build成功。全体98 files／3,608 tests成功、21 files／1,415 tests skipped。diff整形検査成功、distにA1／A2 fixtureが含まれないことを再確認。実SIGKILL 3ケースも再実行した。新規Gradle／BTA native・OSV実接続・本番backend採用は0。

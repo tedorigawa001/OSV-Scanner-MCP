@@ -65,7 +65,7 @@ for(const change of ['missing-carrier','missing-index','dangling-ref','role','le
  if(change==='missing-carrier')m.projection.ownedOfferObjects.pop();
  if(change==='missing-index')m.projection.ownedOfferObjects=m.projection.ownedOfferObjects.filter((x:any)=>x.role!=='evidence-index');
  if(change==='dangling-ref')m.projection.ownedOfferBundles[0].bundleRef.objectDigest=ownedSha256('missing');
- if(change==='role')m.projection.ownedOfferObjects[0].role='manifest-bundle';
+ if(change==='role'){const carrier=m.projection.ownedOfferObjects[0];carrier.role=carrier.role==='manifest-bundle'?'evidence-index':'manifest-bundle';}
  if(change==='length')m.projection.ownedOfferBundles[0].bundleRef.byteLength++;
  if(change==='orphan')m.projection.ownedOfferObjects.push(m.projection.ownedOfferObjects[0]);
  if(change==='noncanonical')m.projection.ownedOfferObjects[0].bytes+=' ';

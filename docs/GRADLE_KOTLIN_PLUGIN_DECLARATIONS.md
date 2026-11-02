@@ -3345,3 +3345,43 @@ A1検証結果: 新規71テスト成功。型検査・build成功、全体96 fil
 追加回帰13件: abort後の次scope登録と再upload拒否、skip 4理由後の枠解放、partial chunkの予約予算維持・新規容量超過・historical retry、既定32枠での33連続abort、execution-aborted／unavailable／invalid後の枠解放、期限切れ後／lookup途中の期限到達、失効済みsessionへの繰返しlookupと別current sessionの保持。各不具合の回帰が修正前に失敗し、修正後に成功することを確認した。A1は71件から84件へ増加した。メモリ内contractに限る実証範囲とA2以降の未実装事項は変更しない。
 
 A1レビュー修正後の検証結果: A1 84件成功（追加13件）。型検査・build成功、全体96 files／3,560 tests成功、21 files／1,415 tests skipped。diff整形検査成功。新規native／OSV実行・durable／隔離backend採用・本番profile承認・診断採用は0。
+
+### 9.60 段階A2: 認証journal・独立checkpoint・実ファイル復旧の参照実装（2026-11-02）
+
+A2の保存層を`src/test/fixtures/gradleOwnedAuthorityJournal.ts`、`gradleOwnedJournalFs.ts`、`gradleOwnedJournalCheckpoint.ts`へ追加した。本番backendの有効化ではない。A1 kernelの実行・upload transactionを自動保存する接続はまだなく、record payloadはrole付きのopaque bytesである。A1の状態schemaの意味検証をこの層で代替しない。単一writerを外部で保証する前提であり、同一instanceの再入拒否とcheckpoint CASを、複数processの排他leaseの実証と数えない。
+
+#### 保存形式とackの境界
+
+- authorityId／storeEpoch／keyIdをgenesisへ束縛し、manifestと各commitをcanonical JSONのHMAC-SHA256で認証する。keyはstore外から渡す。自己hashのみの真正性判定はしない。
+- session-manifest、metadata-snapshot、event-ledger、terminal-record、session-index、action-reservation、operation-resultのroleを持つrecordを保存できる。manifest／index／resultを各1件、ledgerを1件以上必須とする。roleとidの重複、chunkの順序・長さ・digest、record全体digest、result digestとindexを照合する。capabilityや認証principalを生成・復元するAPIはない。
+- 1 MiB chunk、64 MiB transaction、256 MiB store、4,096 entries／records、256 commitsを上限とする。入力bytesは最初のawait前にcopyする。content-addressed blob、全indexを含む不変commit、独立checkpointのCASとreadbackの順で保存し、完了後だけreceiptを返す。同operationIdはrequestと入力indexが一致する場合だけhistorical replayする。
+- ファイルadapterは0700 rootのheld descriptorとopenat／linkat／unlinkatを使う。0600 regular file・nlink=1・同device・root inodeを検査し、tempへ書込→file fsync→非置換publish→temp除去→directory fsyncを行う。既存finalを上書きしない。symlink、hardlink、path置換、未知entry、容量超過を拒否する。列挙は要求上限+1件で停止する。
+
+#### 復旧と拒否
+
+manifest、全final blob、連続commit chain、各record、独立checkpointを再検証する。checkpointより古いstore、別epoch／authority／key、署名改変、欠落record、index改変、複数の未checkpoint commitを拒否する。checkpoint不能時にlocal時刻・HEADへfallbackしない。正当な未checkpoint commitは最大1件だけ再syncしてcheckpointへ進める。書込失敗後のinstanceは停止し、明示的な再openが必要となる。
+
+未publish tempと未参照blobは容量に数え、terminalへ採用しない。linkによるpublish直後・temp除去前に停止した場合、nlink=2を自動修復せずfail closedとする（隔離／operatorによる復旧手順は残課題）。独立checkpointも同時にrollbackされた場合の検出は証明していない。別directory・別test keyは独立principalの保護を意味せず、その保証はBへ残す。restartで復元するのはjournal recordとhistorical receiptだけであり、A1のlive session・permit・caller・Task witnessを復元しない。
+
+#### 検証範囲
+
+journalの27件と実ファイルの15件、計42件。保存各境界の例外注入、ack前失敗、同一operationのreplay、bytesのcopy、改変・欠落・巻戻し・checkpoint障害、symlink／hardlink／root交換、容量・列挙上限を確認した。子processをafter-records／after-commit／after-checkpointの3地点で実SIGKILLし、親から再open・同操作の再試行を行い、revisionが1回だけ進むことを確認した。型除去APIを持たないNodeではこの3件をskipする。
+
+実ファイル／process停止の実行profileはmacOS arm64・Node 26.12.1のみ。Linux／x64のコード分岐は未検証。disk errorは例外注入であり、実電源断・媒体故障・fsyncのhardware保証・敵対processとの競合を実証していない。Gradle／BTA nativeとOSV実接続は今回0。backendEligible=falseを維持し、G3／G4・本番profile承認・診断採用を有効化しない。
+
+次はA2のA1 transaction接続（外部launch前のaction reservationのdurable ackを含む）、停止後の未完了sessionの失効、writer lease／排他と保存quotaの運用、上記publish中断の隔離復旧。その後Bの認証IPC・独立principal／key／checkpoint保護、CのTask観測へ進む。
+
+A2保存層の検証結果: 新規42件成功。型検査・build成功。全体98 files／3,605 tests成功、21 files／1,415 tests skipped。diff整形検査成功。build後のdistにA1／A2 fixtureが含まれないことを確認した。上記範囲以外の本番backend採用・隔離・Gradle／BTA native・OSV実接続は0。
+
+
+#### A2レビュー修正: checkpointの公開後同期失敗と再同期（2026-11-02）
+
+checkpointのfinal名が公開されtempが削除された後、directory fsyncが失敗すると、従来のreadは見えている認証済みheadをそのまま返していた。journalはcheckpoint済みと判定してhistorical ackを返せるため、可視性とdurable保存の境界が一致していなかった。
+
+FileJournalCheckpoint.readは、まずgenesisからheadまでの全chainを認証・照合し、その後に検証済みの同じbytesをimmutable putへ渡して全checkpoint fileとdirectoryを再同期する。同期がすべて完了してからheadを返す。再同期失敗はjournalでcheckpoint_unavailableとなり、open・lookup・historical retryにhead／ackを返さない。失敗したinstanceは従来どおりrecovery_requiredで停止し、再openが必要である。JournalIO.putの既存同値fileに対する再同期責任をinterfaceへ明記した。最大257 checkpointの再同期であり、読取がwrite／fsyncを伴う参照実装として扱う。
+
+回帰を3件追加した。memory fault modelでは、公開済みだが同期失敗のcheckpointを2回の再openでも拒否し、同期成功後だけrevision=1のreplayを返すことと、lookupでも再同期失敗を拒否することを確認する。実ファイルではfinal公開・temp削除後のbefore-directory-syncに例外を注入し、可視なnlink=1のcheckpointがあっても再openを2回拒否し、同期成功後だけ同じoperationのackを返しcommitが増えないことを確認する。既存file保存障害matrixにもこの境界を追加した。再同期は既存fileにもfile fsyncとdirectory fsyncを実行する。修正前にはmemory回帰がopenの誤成功で失敗することを確認した。
+
+実ファイルの故障はfsync直前の例外注入であり、実媒体のfsyncエラーや電源断を発生させた実証ではない。実SIGKILLの3地点と、macOS arm64限定・A1 transaction未接続・隔離未実証・本番採用無効の範囲は変更しない。
+
+A2レビュー修正後の検証結果: A2は42件から45件へ増加（memory 28／実ファイル17）、全件成功。型検査・build成功。全体98 files／3,608 tests成功、21 files／1,415 tests skipped。diff整形検査成功、distにA1／A2 fixtureが含まれないことを再確認。実SIGKILL 3ケースも再実行した。新規Gradle／BTA native・OSV実接続・本番backend採用は0。
