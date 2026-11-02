@@ -2409,3 +2409,13 @@ PO2の最終検証: 新規24回帰と比較記録の静的照合2件、opt-in比
 - 次はM0のtyped maintenance/control schema・ref閉包、M1の独立LineageRegistryと、P1以降のv2 durable writer／checkpoint／A1接続。persistent tree／delta更新の性能・native crash・quota／移行／GC・PO4・本番採用は残る。PO3全体の完了ではなく、静的な最初の実装単位である。
 
 PO3/P0の検証結果: 新規71回帰成功（24 delta prefix比較と実A1 snapshotのaudit対照を含む）。全体107 files／3,807 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにv2／authority／journal・test fixtureが含まれないことを確認した。既存native保存・SIGKILL・checkpoint／owner・期限境界も全体で再実行したが、v2 native保存や独立registryの成立証明へ数えない。新規の本番backend・profile・診断採用、移行・GC、Gradle／BTA／OSV実接続は0。
+
+
+### 2026-11-03: PO4/Q0・immutable provider／prefix proof契約の具体設計
+
+- §9.74へ独立providerの主体・Enrollment・SealedSnapshot／inventory／Acquire／Completeの入出力、fresh challenge・reader boot／peer・prefix／root bindingを追加。現flock／hash名やmemory Mapを不変性の証明としない。
+- serviceのseal／namespace／writer fence、registry read pinとfreeze／cutover／GCの順序、結果引渡しまでのpin・最終authority gateの協調、失効・応答紛失・再起動の条件を具体化。timestampだけで分散した現在性を保証しない。
+- 初期cacheでもcheckpoint全認証・file／directory再同期を維持し、provider不在と認証不正・unavailable・通常missを区別。cache資源・比較counterとIP01〜IP28の未実装回帰条件を追加。
+- 次はQ1のstrict schema／fresh challenge・pin状態機械・publish gateのmemory contract実証。その後Q2の隔離service／認証IPC／native、Q3の実cache・suffix比較、Q4の独立profile／authority・PO3／M0接続。今回は設計のみで、原本read省略・provider・承認profile・本番採用を有効化していない。
+
+PO4/Q0の文書検証: 公開command例と既存A1–A2／disk／restart／v2 auditの計182テスト成功。§9.74の8小節とIP01〜IP28の欠落・重複なし、diff整形検査成功を確認した。IP28件とQ1以降は未実装で、今回の新規provider・原本read省略・認証IPC・native隔離・性能測定・本番採用は0。既存native対照の再実行をprovider成立の証拠には数えない。

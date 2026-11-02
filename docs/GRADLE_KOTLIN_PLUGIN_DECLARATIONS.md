@@ -4257,3 +4257,130 @@ payloadをprivate BufferへcopyしてSHA-256／sizeを照合し、全履歴の�
 最初にmodule未実装による失敗、次にdelta未対応による失敗を確認してから実装した。新規Gradle／BTA／OSV実接続、v2 native保存・crash復旧、性能比較はこのP0では実施しない。後続P1でのdurable保存と採用前gateの成立が必要である。
 
 PO3/P0の検証結果: 新規71回帰成功（24 delta prefix比較と実A1 snapshotのaudit対照を含む）。全体107 files／3,807 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにv2／authority／journal・test fixtureが含まれないことを確認した。既存native保存・SIGKILL・checkpoint／owner・期限境界も全体で再実行したが、v2 native保存や独立registryの成立証明へ数えない。新規の本番backend・profile・診断採用、移行・GC、Gradle／BTA／OSV実接続は0。
+
+
+### 9.74 PO4/Q0・immutable providerとcross-request prefix proofの取得契約（設計、2026-11-03）
+
+#### 9.74.1 範囲・前提・主体
+
+§9.68.7を具体化する最初の単位Q0である。今回は設計のみ。RootedJournalIOのflock、hash名、stat一致、同じ署名key、同じprocessが返すbooleanだけでは、request間に他writerが内容やinventoryを変えなかった証拠にしない。既存の全file読取・hash・全commit認証・checkpoint再同期を継続し、fast pathや承認profileを有効化しない。
+
+- operatorはprovider implementation closure、platform／配置、隔離principal／IPC peer、issuer／key世代、許可authority／lineage／root pair、protocol／parser／policy版を独立registryへ登録する。projectやreceipt本文が登録対象を追加する入口は作らない。
+- provider serviceはsealed namespaceとpublish／writer fence・read pinの唯一の管理者となる。build、通常reader、broker、journal作者はsealed bytes、directory inventory、generation marker、service鍵・memory・管理IPCを変更できない。親directory・mount・FD／handle継承・debug／process制御・バックアップ復元を含む迂回を隔離profileへ列挙する。
+- authorityは論理transaction・session／scopeのcurrent性・期限・失効・operation一回性・ackを所有する。providerが同じbytesを保持した事実は、journal MAC／schemaやTaskの実行、profile承認を代行しない。
+- checkpoint issuerはexact headのdurabilityとrollback保護を所有する。providerの不変性receiptをcheckpointの同期完了証拠へ読み替えない。初期Q3でもFileJournalCheckpointの全認証・再同期を維持する。
+- cache verifierはfull検証済みprefixとそのprivate証拠だけを保存する。providerへ任意path／URLの読取・任意callback・code実行を要求しない。
+
+provider rootへ通常のRootedJournalIO writerを併用しない。service以外の書込経路を閉じた構成がnativeで実証できなければ`provider_unsupported`とする。既存fixtureのMemoryJournalIOのprivate Mapも、独立隔離providerを実装したことにはならない。
+
+#### 9.74.2 object・binding・署名責任
+
+すべてstrict canonical UTF-8 JSON、safe integer、固定schema／domain、既知fieldのみ。opaque refはrole／id／SHA-256／byteLengthであり、file pathとして解決しない。receiptのdigestは保存済み実envelope bytesに対して計算し、自分自身のdigestをbodyへ入れない。
+
+| object | 必須内容・責任 |
+| --- | --- |
+| ProviderEnrollment v1 | providerId／issuer／key epoch／実装closure・隔離evidence／承認profile、authority・lineage・root pairの許可集合、protocol／parser版。独立registry側に置く |
+| SealedSnapshot v1 | authority／lineage／journal generation／epoch、storeRootId／checkpointRootId／rootPairId、storageInstanceId／providerBootId／namespaceGeneration／fence、exact manifest digest、inventoryRoot／entry数／bytes、base digest／prefix head／format。providerが実bytes・完全inventory・同期後のsealを観測して発行する |
+| InventoryPage v1 | snapshot ref、ordinal／総page数、前後のpage rootまたは承認layoutのmembership proof、役割付きentryの限定名・size・byte digest。単なる任意entry一覧を完全inventoryの証拠にしない |
+| AcquirePrefixRequest v1 | requestId／fresh challenge、認証readerのpeer／boot ID、期待Enrollment／control revision、root pair／storage instance／format、cachedPrefix head／inventory root、希望する上限・operation binding。keyや生pathは受け取らない |
+| PrefixReadGrant v1 | requestのdigest／challenge／reader boot・peer、独立registry read pin ref、snapshot ref、prefix extension証拠ref、provider現在boot／generation／fence、single-use grantId／grant sequence、provider有効期限・clock domain、許可するmetadata読取範囲。承認providerが認証channelへ返す |
+| CompletePrefixUse v1 | grantId／useId／expected fence／request digest、検証したprefix＋suffix head／state root、現在checkpoint ref、authority gate binding、candidate result digest。grantと同じpeer・bootだけが送れる |
+| PrefixUseReceipt v1 | Complete要求digest、grantと正確なsnapshot／head／checkpoint、provider／registry pinの有効性、linearization sequence、消費結果。遅延responseから新しいgrantを作らない |
+
+初期inventory layoutは64 entries/page、canonicalな`{rootRole,entryKind,opaqueName}`順。rootRoleはstore／checkpoint、entryKindは承認formatのmanifest／commit／blob／checkpointへ限定する。seal時は実inventoryを完全列挙し、未知entry・duplicate・symlink／外部hardlink・publish未完了temp・不明tailがあるnamespaceを陽性snapshotにしない。pending tailは既存のfull recoveryを完了してから別snapshotとしてsealする。
+
+cached prefixの再使用には、以前full検証したexact prefix envelope／manifest／inventoryと、今回snapshot内のprefixが同一であることを証明する。extension証拠はprefix inventory rootとcurrent inventory root、追加entriesの完全な集合、前head／新headを束縛する。個々のblobがmembershipを持つことだけでは、隠れた追加commit・未知entryがない証拠にならない。layout／証明方式はprofileへ固定し、未対応ならfast pathを選ばない。
+
+#### 9.74.3 serviceのseal・namespace lifecycle
+
+namespaceは`open → sealing → sealed → draining → retired`の単調状態とし、seal失敗は`quarantined`へ進める。同じnamespace generationをopenへ戻さない。修復・新append viewは別snapshot／単調generationとして公開する。sealed object bytesの変更・同名置換は禁止する。新しいheadの公開はexclusive publish fenceと次snapshotを必要とし、snapshot内の完全inventoryを後から増やさない。
+
+sealはwriter停止／tail解決→有界の全inventory・実bytes検証→file／directory同期→durable generation marker公開・再同期→readbackの順。途中保存・公開後sync失敗・結果不明では陽性grantを出さない。provider再起動時は旧bootのgrantを全失効し、journal／checkpoint／generation markerの認証・rollback検証・再同期を終えてから新bootで受付を開始する。local counterの初期化を新しい信頼世代へ見せない。
+
+writerはservice発行のlive fenceに束縛し、stale writer／旧boot／旧namespaceのpublishを拒否する。Q3初期方式では選択済みhead／inventoryのpublishをread pinの存続中は進めず、次のwriterを待機させる。candidate領域への未公開writeも別inventory／quotaへ課金し、選択viewへ紛れ込ませない。この直列化の費用を性能比較へ含める。append-onlyと名付けただけの同じdirectoryへの並行追加は不可。
+
+#### 9.74.4 fresh取得・cache key・private proof
+
+1. readerは独立設定のpeer／Enrollment／protocol pinを確認し、毎requestでCSPRNGのfresh 256-bit challengeと単調なreader-boot内request sequenceを発行する。pending要求との一致だけを受け、完了済みchallenge、別peer／boot、順序を戻したresponseを拒否する。再送は同じ未完了requestの配送としてのみ扱い、新しいuse権限を増やさない。
+2. providerは現在の独立LineageRegistryからread pinを取得する。pinはauthority／lineage／generation／epoch／root pair／control revision・phase・承認profileを固定し、freeze／cutover／GCのbarrierと同じ順序で管理する。単なる最新署名recordや時刻だけでは足りない。pin取得不能・phase不明ではgrantを返さない。
+3. providerはsealed snapshotとcachedPrefixの連続性、writer fence、owner／boot、quota・expiryを確認してgrantを発行する。cacheなしなら同じpinの下でfull verificationを行う。grant自体がprefixのjournal検証を済ませた扱いにはしない。
+4. verifierはgrant署名・issuer／key／profile、fresh binding、snapshot／inventory／prefix extension、現在checkpointを照合する。cache keyはauthority・lineage・generation・epoch、root pair・storage instance、provider boot／namespace generation／fence、base／format／verified head／inventory root、schema／parser／policy／profile／registry revision、checkpoint issuer／key世代、grant peer／reader bootを含む。grant IDを更新してもdata proofを別identityへ転用しない。
+5. hitで再使用するのは、exact prefixについてfull検証済みのMAC／chain／descriptor／bytes proofのみ。suffixの全commit・追加payload・完全inventoryの変化・state root／budgetを検証する。PO3のauthority auditを使う場合は、verified prefixの監査済み最終stateからsuffixの全stateの履歴不変条件も確認する。単なるrecord-level rootをauthority履歴の検証結果と交換しない。
+6. candidate proofは検証完了後も未公開とし、Complete／checkpoint／authority gate成功後だけcurrent cacheへ移す。copyしたprivate bytesと発行元に束縛したopaque handleを使い、wireのdigest／handle IDから作らない。認可・current性・lease・ackの事実をcontent proofへ混ぜない。
+
+serviceのclockとreaderのclockの値を直接比較しない。grantの期限はproviderが自身のmonotonic clockで判定し、readerは承認transportの最大round-trip／local elapsed上限も別に適用する。message内の自己申告timestampだけで有効期間を延長しない。read grant候補の最長5秒・pending 64件／peer、challengeは256 bitsを初期設計値とし、実装・負荷試験・profile承認前に現在の定数へ適用しない。
+
+#### 9.74.5 final gate・失効・barrier
+
+read pinは`active → completing → decision-recorded → delivering → released`とし、各中間状態から`cancelling → cancelled/expired`へ進める。decision-recordedは結果を記録しただけでpinは存続し、delivering後の引渡し・releaseまで解放しない。release後の同use結果は監査用のhistorical recordでありliveなgrantではない。新grantの発行、Complete受理、revoke／freeze／cutover開始は同じ線形化順序へ置く。draining開始後は新grantを拒否し、Completeより先に失効が確定したgrantを成功にしない。
+
+providerの不変性pinとregistry read pinは、suffix検証・checkpoint照合・authorityの最終gateから結果の受渡し境界まで存続させる。Complete要求を送っただけでpinを解放しない。成功確定／response引渡し／明示release、認証channel切断によるpeer終了の確認、または期限・fence失効が保護された順序で確定してから解放する。古いComplete／releaseは別useを完了・取消できない。responseを失ったretryは同じuseId／要求digestの結果照会に限り、再launch・新しいgrantの消費へ変換しない。
+
+採用profileには、authority serviceとprovider／registryのpinを最終結果の公開まで協調させる実装を固定する。単独readerが「最後にproviderへ問い合わせた」後でpinを解放し、別serviceのauthority gateを非同期に呼ぶだけの構成は未成立とする。分散した瞬間的なfreshnessをtimestampで保証したことにせず、Completeと失効の線形化点を記録し、送信済みresponseの到着時刻と区別する。readerも最後のawait後にlocal deadline／owner／authority session・scopeの期限と世代を再確認し、期限を越えた成功を返さない。
+
+registryのfreeze／cutover／GCは新規readを閉じ、既存pinのCompleteまたは強制失効・peer fencingを確認してからbarrierを進める。timeoutしたclientの処理が止まったことを推測せず、期限切れtokenによるComplete・ack・旧writerのpublishが全入口で拒否されることを必須とする。drainが確認できなければ移行・GCを止める。古いproofがreader memoryに残ること自体を現行のread権限にしない。
+
+#### 9.74.6 checkpoint・failure・full mode
+
+初期Q3ではprefix blob／commitの再読取省略だけを候補にし、checkpointの全認証・同値put／file・directory再同期、advanceのCAS／readbackを減らさない。providerのgrantに`durable:true`を付けても代替しない。checkpoint chainの再同期省略は別のdurable-prefix契約・障害実証・profile承認が成立するまで未対応とする。
+
+| 結果／拒否分類 | cache・要求の扱い |
+| --- | --- |
+| `provider_unsupported`／`profile_unapproved` | fast pathの入口を開かない。通常のfull検証が独立に許可される構成だけ、初めからfull modeを使う |
+| `proof_miss`／通常eviction | 同じliveなgate／pinの下で有界full検証し、成功した証拠だけcache候補へ。bytesや未知entriesを省略しない |
+| `receipt_invalid`／`challenge_replayed`／`binding_mismatch`／`inventory_mismatch`／`content_mismatch` | 要求を拒否・候補破棄・同bootのfast pathを停止。不正をmissへ格下げしてfull再読取で成功へ見せない |
+| `grant_expired`／`grant_revoked`／`generation_changed`／`owner_closed` | 旧cacheの利用を拒否しpinを取消。新しいboot／世代と独立gateを確立するまで旧proofから応答しない |
+| `checkpoint_unavailable`／`rollback_detected`／`sync_incomplete`／`tail_unknown` | ack・Complete成功なし。既存のfail-stop／明示recoveryを要求し、cacheで可視なheadをdurableにしない |
+| `provider_unavailable`／`control_unavailable` | 存続・現在性を証明できない。cacheがあっても拒否。失敗したgrantの途中でproviderを迂回してfull modeへ降りない |
+| `cache_budget_exceeded` | 既存budget内へevictできればmiss処理。無理なら停止。保持・削除認可・durable予約をcacheから再生成しない |
+
+profile／policy／parser／key世代変更、provider restart、root交換、registry revision／phase変更、revoke、freeze／cutover／GCで、対応するcurrent proofと未完了candidateを失効させる。正常な新世代への移行と、同世代の認証不正のincidentを分ける。後者を新しいnonceによる即retryで消さない。
+
+#### 9.74.7 有界cache・実装順・比較
+
+初期cache上限候補はprivate payload 64 MiB、proof entries 4,096、parsed nodes 100,000、key／index bookkeeping 8 MiB。重複handleはpayloadを一度だけ数え、challenge／pending grant／inventory pages／未commit候補を別にも数える。inventory pageは最大64 entries、両root合計8,192 entries、取得閉包64 MiB以内とし、基底store上限が小さければそちらを優先する。上限を超えるprefixは全件cachedとせず、承認full modeか停止を選ぶ。candidate値を現実装の保証へ読み替えない。
+
+- Q0（今回）: 主体・protocol入出力・pin／失効・checkpoint責任・拒否分類と回帰条件の設計。
+- Q1: strict schema／challenge照合・read pin状態機械・cache key／publish gateのmemory contract実証。陽性は`wouldReusePrefix`という診断に限定し、原本read省略・本番provider登録は行わない。
+- Q2: 独立principalのprovider service／認証IPC・durable seal／generation／writer fence／再起動復旧をnative実証。攻撃側からの全書込経路・遅延response・pin drainを実証し、未成立platformはunsupportedとする。
+- Q3: 採用条件を満たすproviderだけを接続するbounded prefix cacheとsuffix verifier。cold／hit／miss／evict／churn、large history／scope、全失効・tail・checkpoint故障でfull referenceと結果・認可・retentionを比較。read削減と同期維持をcounterで確認する。
+- Q4: Q2/Q3のevidenceを独立registryの承認profileへ束縛し、B／C以降のauthority採用とPO3／M0以降の世代移行へ接続する。既定の本番採用は別に決定する。
+
+性能比較はsame input／source／dependency fingerprint・Node／storage／checkpoint modeで交互測定し、providerとの通信・pin待ち・writer直列化も時間に含める。省いた原本read bytes、再検証したsuffix bytes、challenge／Complete往復、cache hit／miss・peak bookkeeping、実file／directory sync、process peak RSSを別に記録する。memory stubの速さをnative providerの性能としない。wall-clock必達閾値をCIに設けず、結果・失効・故障対照が一致することを合否にする。
+
+#### 9.74.8 回帰・採用条件（IP01〜IP28、未実装）
+
+| ID | 条件・期待結果 |
+| --- | --- |
+| IP01 | providerなし／承認profileなしではread省略0。本番入口を閉じたまま承認full modeだけを実行 |
+| IP02 | 偽署名・未知issuer／key／protocol・unknown field・非canonical／重複JSON keyを拒否 |
+| IP03 | fresh challenge・reader boot／peer・request digest／sequenceが違うresponse、完了済みchallengeの再送を拒否 |
+| IP04 | authority／lineage／epoch／generation／root pair／storage instance／provider boot違いでhitしない |
+| IP05 | cached prefix head／manifest／inventory root違い、非連続suffix・欠落追加entryを拒否 |
+| IP06 | membershipだけ正しいblob集合で未知commit／entryを隠したviewを拒否。完全inventoryを検査 |
+| IP07 | prefixのMAC／schema／role／authority audit proofを未検証digestや別parser／policyへ転用しない |
+| IP08 | pending temp／不明tail／checkpoint未確定では陽性seal・grantなし。full recovery完了後だけ新snapshot |
+| IP09 | seal途中の保存障害・file／directory sync失敗・公開後sync失敗で陽性grant0 |
+| IP10 | provider実process終了後、旧bootのgrant／writer fenceを拒否し、履歴・marker再検証前に受付を開かない |
+| IP11 | build principalからfile／親directory／mount／hardlink／FD／debug経由の変更を拒否。未記録entry追加もseal不可 |
+| IP12 | stale writer、同名bytes置換、sealed directoryへの追加を拒否。新headは新view／fenceで公開 |
+| IP13 | pin中にwriterを待機させ、Complete／取消まで選択headを変えない。並行reader／writerの順序を記録 |
+| IP14 | freeze／cutover／GCのregistry barrierとAcquire／Completeの競合を順序付け、失効後の新grant・成功なし |
+| IP15 | suffix検証途中・最後のawait後のexpiry／revoke／owner closeで成功を返さない |
+| IP16 | Complete応答紛失・同useの再送は結果照会だけ。同じgrantから二重use・launch権限を作らない |
+| IP17 | Complete／releaseの別peer／boot／useIdを拒否し、他のpinを解放しない |
+| IP18 | client切断／停止／deadlineで取消を確定し、古いprocess再開後のComplete・ack／publishを拒否 |
+| IP19 | pinを早期解放した後でauthority gateを非同期確認する構成を採用しない。引渡し境界の協調を実証 |
+| IP20 | cache hitでもcheckpointをfresh取得・全認証／再同期。公開後sync失敗・再open／retryのackを拒否 |
+| IP21 | checkpoint rollback／head交換／unknown CASをcached headで隠さずfail-stop |
+| IP22 | 認証不正・byte改変をmissとしてfullへfallbackしない。provider／control unavailable時もcache応答0 |
+| IP23 | 正常eviction／通常missでは同じlive gateでfull検証し、未検証candidateをcurrent cacheへpublishしない |
+| IP24 | payload／entry／node／key／pending／pageの上限と上限＋1を検査し、有界evictionか停止。proofなしhitなし |
+| IP25 | 入力／返却Buffer改変・偽handle・別boot handleでprivate proofを変更できない |
+| IP26 | policy／profile／parser／key／registry phase変更、restart／freeze／GCで旧candidate・proofを失効 |
+| IP27 | full referenceと結果・binding・retry・失効・retentionを比較し、native read削減とcheckpoint同期維持を分けて計数 |
+| IP28 | Q1 memory診断、署名record、未検証platformを独立隔離・本番採用・性能改善として報告しない |
+
+IPは採用前に実装・実証する条件であり、今回の文書検証で成立済みとはしない。PO3/P0のrecord-level static replayや既存の全読取検証にも、provider receiptによるread省略を追加していない。
+
+PO4/Q0の文書検証: 公開command例と既存A1–A2／disk／restart／v2 auditの計182テスト成功。§9.74の8小節とIP01〜IP28の欠落・重複なし、diff整形検査成功を確認した。IP28件とQ1以降は未実装で、今回の新規provider・原本read省略・認証IPC・native隔離・性能測定・本番採用は0。既存native対照の再実行をprovider成立の証拠には数えない。
