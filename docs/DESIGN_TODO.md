@@ -2394,3 +2394,18 @@ PO1の検証結果: 新規22静的／回帰テストとopt-in比較1件成功。
 - 次はPO3とM0以降を連携したv2差分schema／materializer・認証付きcompaction／世代移行。PO4の独立immutable storage provider、隔離authority backend／認証IPC・実Task／broker・G3／G4・本番採用も残る。PO2はtest fixture内のfull形式互換の実装で、差分形式やGCを有効化していない。
 
 PO2の最終検証: 新規24回帰と比較記録の静的照合2件、opt-in比較1件成功。型検査・build成功。全体106 files／3,736 tests成功、24 files／1,418 tests skipped。既存のnative writer排他・SIGKILL／restart・保存障害・checkpoint再同期・owner終了後のack拒否・期限／世代変更を含めて再実行した。owner終了注入はcommitSealed完了直後へ移し、注入が1回実行されたことも検査する。公開baseline／PO1比較記録は変更していない。diff整形検査と、distにauthority／journal・test fixtureが含まれないことを確認した。
+
+
+### 2026-11-03: 931fdf8レビューでの追記（PO2の変更時の注意）
+
+- §9.71.2の末尾へ、snapshot再使用の正しさがstateを直接書き換えない規律に依存すること、取りこぼしを検出するreference照合はtest fixtureでのみ有効であること、新しい操作・fieldを加えるときの必須事項（新しいobjectの作成と`verifySnapshotReuse:true`の回帰）を追記。文書のみ。
+
+
+### 2026-11-03: PO3/P0・v2 full／delta静的contractとreplay
+
+- §9.72へ独立v2 schema／HMAC envelope、型付きkey、full／delta strict union、exact old ref・from/to／namespace／index／budget roots、外側base／checkpoint pin、全履歴replayを追加。v1の欠落を暗黙継承せず、既存writer／readerは変更しない。
+- payload・返却値をcopyし、過去に必要なbytesも保持・課金する。terminal／reservation／tombstone／controlの削除・置換をfull経由でも拒否する。M0のretirement/control閉包が未実装のため物理削除・本番採用を許可しない。
+- 24 delta prefixのreference比較と、実A1のpartial／freeze・binding・ledger／terminal・retry／expiry／restart snapshotの全bytes／decoder照合を追加。承認baseとcheckpointはfixture呼出し側のpinで、独立registry接続の実証ではない。
+- 次はM0のtyped maintenance/control schema・ref閉包、M1の独立LineageRegistryと、P1以降のv2 durable writer／checkpoint／A1接続。persistent tree／delta更新の性能・native crash・quota／移行／GC・PO4・本番採用は残る。PO3全体の完了ではなく、静的な最初の実装単位である。
+
+PO3/P0の検証結果: 新規71回帰成功（24 delta prefix比較と実A1 snapshotのaudit対照を含む）。全体107 files／3,807 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにv2／authority／journal・test fixtureが含まれないことを確認した。既存native保存・SIGKILL・checkpoint／owner・期限境界も全体で再実行したが、v2 native保存や独立registryの成立証明へ数えない。新規の本番backend・profile・診断採用、移行・GC、Gradle／BTA／OSV実接続は0。

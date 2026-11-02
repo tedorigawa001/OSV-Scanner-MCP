@@ -4162,6 +4162,8 @@ journalへ`sealRecord`／`describeRecord`／`materializeRecord`／`commitSealed`
 
 root manifest・flat session-index・descriptor配列・commitのcanonical化は変更時に引き続き全体へ依存する。Mapのfork、期限対象の走査も残る。全operationをO(D)と呼ばず、v1から省略recordを暗黙継承する形式変更もしない。cacheのkeyはprivate state object、値は有限stateに対応するprivate recordであり、旧候補はWeakMapのkeyと共に回収可能にする。process peak RSSは別測定を要する。
 
+**変更時の注意（931fdf8レビューでの追記）。** 再使用の正しさは、kernelがstateを直接書き換えず、変更するsession・scope・upload・ledger配列・terminalを必ず新しいobjectに置き換える規律に依存する。再使用cacheはobjectの同一性をkeyにするため、既存objectのfieldや配列を直接変更すると、cacheが変更を検出できず、古いrecordのsnapshotがそのまま保存される。この取りこぼしを検出する`verifySnapshotReuse`のreference照合はtest fixtureでのみ有効で、通常のdispatchでは実行しない。kernelへ新しい操作やfieldを加えるときは、`#editSession`／`#writeScope`等を通じて新しいobjectを作ること、その操作を`verifySnapshotReuse:true`の回帰テストへ加えることを必須とする。
+
 #### 9.71.3 同値性・回帰と診断counter
 
 既存のfull snapshot builderをreferenceとして保持した。fixture専用`verifySnapshotReuse:true`では**同じkernelの同じlogical state・ID・nonce**からreferenceを作り、record順・role・ID・全bytesを比較する。変更なしと判定した経路でも、commit済みrecord列を現在のreferenceへ照合するので、version bump漏れを検出できる。診断用`full-reference` modeは変更時のrecordを全て再生成する対照であり、本番の新profileではない。
@@ -4210,3 +4212,48 @@ env OSV_MCP_OWNED_PO2_BEFORE_ROOT=<before-root> OSV_MCP_OWNED_PO2_OUTPUT=<output
 macOS arm64／Node v26.12.1／Apple M4上の参照実証で、OS cache・GC・背景負荷を制御していない。peak RSS／heapの比較は未実施であり、counterを総copy・総hash・総memoryへ読み替えない。wall-clockの必達閾値はCIへ入れない。通常testはbenchmarkをskipし、保存記録の構造・統計・I/O・counterを静的に照合する。新規の実Gradle／BTA／OSVの実行や本番backend・profile・診断採用は行っていない。
 
 PO2の最終検証: 新規24回帰と比較記録の静的照合2件、opt-in比較1件成功。型検査・build成功。全体106 files／3,736 tests成功、24 files／1,418 tests skipped。既存のnative writer排他・SIGKILL／restart・保存障害・checkpoint再同期・owner終了後のack拒否・期限／世代変更を含めて再実行した。owner終了注入はcommitSealed完了直後へ移し、注入が1回実行されたことも検査する。公開baseline／PO1比較記録は変更していない。diff整形検査と、distにauthority／journal・test fixtureが含まれないことを確認した。
+
+
+### 9.72 PO3/P0・v2 full／delta静的contractと全履歴replay（2026-11-03）
+
+#### 9.72.1 今回の範囲と採用境界
+
+§9.68.6の最初の実装単位P0として、`src/test/fixtures/gradleOwnedJournalV2.ts`へ独立したstatic contractを追加した。既存v1 journal／checkpoint／A1の保存経路を切り替えていない。新しいfile操作・durable ack・削除・独立registry・承認profileは提供せず、本番buildに含めない。
+
+呼出し側はauthority／lineage／epoch／generation／profile、`baseRef`、初回envelopeのexact digest、最終checkpointのrevision／exact envelope digest、keyId／認証keyを別に与える。これはfixture内のpinであり、独立LineageRegistryの現在値・fresh challenge・承認／activation receiptを取得した実証ではない。`baseRef`はopaqueなCompactedBase参照を束縛するだけで、そのcontrol閉包・source transform・tombstone完全性を検証していない。出力は常に`backendEligible:false`・`diagnosticEligible:false`・`controlClosureVerified:false`・`physicalDeletionAuthorized:false`となる。
+
+PO3全体やM0全体の完了とはしない。P0はrecord-levelの整合性とreplayを扱い、M0のtyped maintenance/control schemas・閉包、M1の独立世代選択、P1以降のv2 durable writer／reader・A1接続は後続とする。
+
+#### 9.72.2 schemaとdigest
+
+- commitは`osv-mcp.gradle-owned-journal-commit-v2`／schemaVersion=2、`recordMode=full|delta`のstrict union。fullにchanges、deltaにrecords、unknown fieldやJSON pointerを混在させない。専用のv2 HMAC envelope domainを使い、canonical UTF-8 JSON・重複JSON key・MAC・keyIdを検査する。v1 envelopeへfallbackしない。
+- common bodyはauthority／lineage／epoch／generation／profile、`baseRef`、revision／previousCommit、fromStateRoot／toStateRoot、namespaceRoot／indexRoot／budgetRoot／usage、operation ID／request digest／result refを持つ。envelope自身のdigestをbodyへ入れず、次のcommitと外側checkpointが実bytesのdigestを参照する。
+- logical keyはstrictな`{role,id}`。既存journal roleにtombstone-core／retire-receipt／control-object／maintenance-recordを加え、refは`{sha256,byteLength}`に限定する。IDはopaque文字列であり、file pathやURLとして解決しない。role追加だけでretirement/control認可が成立したとはしない。
+- 初期layoutは`typed-flat-map-v1`に固定する。keyをcanonical JSON化した文字列のUTF-16辞書順でmapを並べ、重複・順序違いを拒否する。payload bytesやledger／occurrenceの配列をsortしない。namespaceRootは順序付きkey列、indexRootはkey＋ref列、budgetRootはusageから固定domainで計算し、toStateRootはlayoutと3 rootへ束縛する。
+- usageは現在状態のrecord数・logical bytes・unique payload bytes。別に全履歴envelopeと過去から必要な全payloadのstorageUsageを返す。現在状態から消えたrecordを、過去の保存費用からも消したことにしない。
+
+persistent shard／tree、membership proof、O(D)でのroot更新はまだ実装していない。flat map全体の走査・canonical化と、毎回の全履歴認証を行う。今回のstatic contractの速度をPO3の本番性能改善として報告しない。
+
+#### 9.72.3 replay・変更・保持
+
+初回はfullのみを受け、genesis digestへbinding・baseRef・layoutを束縛する。最初の実envelope digestをpinへ照合してから全commitを認証する。各commitでbinding／baseRef、連続revision／parent、exactなfromStateRoot、operation IDの一回性を検査する。fullは現在のmapを完全に指定し、欠落recordを旧状態から暗黙継承しない。
+
+deltaのaddはkey不在、replace／removeはそのkeyのexactなexpectedOldRefを要求する。changeはkey順・一意とし、同一keyへの複数操作を拒否する。新しいmapを作ってからroot・usage・operation result refを再計算し、bodyへ一致しない候補は返さない。最終headと外側checkpointが一致するまで最終結果を返さない。古いhead・truncate・別lineage／generationの履歴を現在の成功結果にしない。
+
+現段階ではremoveをmetadata-snapshotと旧empty ledgerに限定する。terminal／action reservation／tombstone／retire receipt／control object／maintenance recordの削除、およびそれらの異なるrefへの置換を拒否する。この制限は後続fullへの切替でも迂回できない。metadataの論理removeも、過去commitが参照する実bytesの廃棄を許可しない。実sessionのretirementを有効にするにはM0以降のintent・認可・tombstone/control閉包が別途必要である。
+
+payloadをprivate BufferへcopyしてSHA-256／sizeを照合し、全履歴の必要refを満たすこと、入力に無関係なpayloadがないことを確認する。返却bytesも別copyにする。過去payloadの欠落は、現在full snapshotに不要でも拒否する。入力の重複payloadもaggregate入力budgetへ計上し、unique storage bytesとは区別する。全payloadは呼出し側が渡すbytesだけを使い、refから外部へ取得しない。
+
+上限は4,096 records／4,096 changes／256 commits／8,192 supplied payloads、現在logical bytes 64 MiB、1 envelope 8 MiB、envelope履歴64 MiB、入力payload＋履歴256 MiB。root/indexのcanonical encodingにも既存8 MiB・depth／node budgetを適用する。同じlogical bytesでもID幅等で先に別上限へ達し得る。論理上限をprocess peak RSSの保証としない。
+
+#### 9.72.4 A1とのaudit対照と回帰
+
+`auditAuthoritySnapshot:true`は、認証・materialize後のrecordから既存session-index内のrecord順を復元し、既存のstrict `decodeAuthoritySnapshot`へ渡す。これによりv1 full snapshotと同じ宣言順・ledger順・binding・raw metadata・session／scope状態をauditする。新しいactor／capability／実行許可を復元する処理ではない。通常のrecord-level整合性だけではauthority snapshotの意味・policyを保証しないことを負例でも固定した。
+
+回帰ではsignatureが正しい不正bodyも作り、from／to／parent／revision／authority／lineage／epoch／generation／profile／base pin、namespace／index／budget／usage、旧digest／size、重複・順序・add-existing／replace-absent、result ref／operation再使用を拒否する。unknown field・混在mode・v1・未対応layout／role・JSON pointer・必須record／payload欠落・改変・孤立payload・MAC・非canonical／不正UTF-8・初回deltaも対象とする。
+
+24回のdelta更新を各prefixでreference full record列へ照合する。さらに実A1のbegin、非空coreのpartial→freeze、bind、activate、register、action予約、observation、seal、retry、expiry、restartの各保存snapshotをfull／delta混在でreplayし、同じID／nonce・全payload bytesと既存decoderの結果を比較する。retryでA1 commitが増えないことも確認する。入力／返却alias、履歴保持費用と古いpayload欠落、保護recordの削除・置換、v1/v2相互誤読、件数／file size上限を検証する。
+
+最初にmodule未実装による失敗、次にdelta未対応による失敗を確認してから実装した。新規Gradle／BTA／OSV実接続、v2 native保存・crash復旧、性能比較はこのP0では実施しない。後続P1でのdurable保存と採用前gateの成立が必要である。
+
+PO3/P0の検証結果: 新規71回帰成功（24 delta prefix比較と実A1 snapshotのaudit対照を含む）。全体107 files／3,807 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにv2／authority／journal・test fixtureが含まれないことを確認した。既存native保存・SIGKILL・checkpoint／owner・期限境界も全体で再実行したが、v2 native保存や独立registryの成立証明へ数えない。新規の本番backend・profile・診断採用、移行・GC、Gradle／BTA／OSV実接続は0。
