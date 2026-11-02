@@ -2171,3 +2171,10 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - Groovy／Kotlin × Gradle 8.11.1／9.2.1で最終4 build、各版48 nativeテスト。javac 4・driver child 4、実BTA呼出し24（library 8／consumer 16）・snapshot生成24。offer 76（completed 8／failed 68）、runtime起動前拒否16を含む拒否84。自然消費receipt・本番採用0。
 - [検証データ](validation/gradle-owned-bta-manifest-2026-11-02.json)・再現collector・静的133テストを追加。元source・runtime profile・binding・到達済み証拠・reader観測・bundle交換と件数改変を拒否。型検査・build成功、全体92 files／3,081 tests成功（21 files／1,415 tests skipped）。
 - proof専用schemaに限定。本番manifest／coreGraph／envelope／追加信頼gateへの統合、JDK／Node imageとloader／executorの独立承認、全observer・host評価bytes・任意writer排除は次段階。compilerWorkStatus=unknown、自然消費receipt・declared_in／coverageへの昇格なしを維持。
+
+### 2026-11-02: 所有BTA manifestの本番採用契約（設計）
+
+- [設計書§9.52](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#952-所有bta-manifestの本番採用契約profile読取前gate設計2026-11-02)へ、追加trust／独立profile registry・JDK／Node／platform image・executor／loaderの必須証拠と責任分離を追加。現在hash・CodeSource・producerのtrue表明だけでは採用しない。
+- caller-owned broker／別authority storeの隔離・session／lease・状態別witness、graph v4 wrapper・coreGraphDigest・envelope v2・本番bundleと終端receipt／indexの非循環対応を具体化。shared build／generationは同一session内のtyped use receiptへ限定する。
+- G0〜G4の判定順・閉鎖時のowned読取0、producer failed／unavailableとreader拒否の理由・stage／phase許可表、現在／拒否時保存bytesの照合、budget／cacheとdiagnostic-only metadataを定義。
+- AP01〜AP32の回帰条件を追加（すべて未実施）。本番profile承認・本番producer／reader実装・authority／imageのnative実証・全observer・3 tool実接続は後続。今回は設計のみ、新規native／BTA実行・本番採用0。

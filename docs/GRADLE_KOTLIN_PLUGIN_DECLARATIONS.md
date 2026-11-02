@@ -2634,3 +2634,253 @@ node src/test/manual/gradleOwnedBtaManifestResults.mjs /private/tmp/owned-bta-ma
 所有recipeでsourceから実BTA入力までのmanifest対応と、限定caseでの鮮度確認・拒否を実証した。保証の根拠は承認候補executorの表明とcallerの実行witnessであり、公開recordの再生だけで過去の実行・ロード済みbytesを独立認証したとは扱わない。JDK／Node image全体、loader／transformer、host script評価bytes、任意の同時writer排除、全observerの追加評価計測は未成立である。
 
 KGP所有getterやGradle Provider／FileCollectionを追加評価しない所有driver方式を維持するが、既存KGPの自然消費bytes receiptや透過取得が成立したという結果ではない。次はtoolchain／loader／executorの追加信頼・profile・読取前gateと、このproof manifestから本番adapter／静的取込へ渡す採用条件の具体化である。現時点で本番profile承認・scan系toolでの診断採用・coverage／declared_in補完を有効にしない。
+
+### 9.52 所有BTA manifestの本番採用契約・profile・読取前gate（設計、2026-11-02）
+
+本節は§9.37・§9.47〜9.51を本番実装へ渡すための追加設計である。以下の設定・schema・authority store・採用APIは未実装。今回profileを承認せず、既存test profileや9c978e1の記録を承認registryへ転記しない。新規native／BTA実行・本番採用は0。本番対応に必要な未成立条件を明記し、受理可能なrecordを自己生成するだけで採用を有効にしない。
+
+#### 9.52.1 採用scopeとassuranceの責任
+
+採用modelを`owned-bta-offered-inputs-v1`、completenessDomainを`owned-recipe-inputs`に固定する。acceptedでも`consumptionStatus=offered-inputs-only`、`observationKind=before-call-and-after-call`、`naturalContentBinding=false`、`compilerWorkStatus=unknown`である。snapshot全件の自然消費、全writer排除、loaded bytecodeの独立認証、既存KGPの透過取得へ昇格させない。§9.37の固定limitationsは全件必須とし、image／launcher／loaderへの依存もmetadataで明示する。
+
+判定fieldを分離する。`manifestStructure=verified`は渡されたmetadataの構造・digest・閉包、`inputCompleteness=verified`は承認recipeの必須roleと登録集合の照合、`currentContentMatch=matched`は今回のreader読取、`producerBuildAssurance=trusted-recipe-receipt`は所有executorの構築表明、`executionAssurance=caller-witness`は独立callerの実行記録、`loaderAssurance=approved-loader-policy`は承認launcher／loaderの表明である。未読取は`not_checked`、取得不能は`unavailable`とし、他fieldの成功から埋めない。
+
+公開先は独立した`owned_bta_offered_inputs`診断metadataとする。既存のrelation／introduced_by・lock由来coverage・既に独立成立したdeclared_inを変更しない。owned証拠が全contextでacceptedでもdeclared_inの不足を補わず、coverage.completeやKotlin pipeline全体のreadyを上げない。構造不正なcompanion graphを採用できない場合の既存fallbackは維持し、owned拒否を理由に有効なlockの脆弱性照会まで中止しない。
+
+#### 9.52.2 設定と独立承認registry
+
+将来のconsumer設定を以下に固定する。reader起動時に読み、graph・環境変数の文字列を返すproducer・profile本文のattestationから設定を書き換えない。§9.37のtrustOwnedBtaOfferedInputs／approvedOwnedBtaProfilesはこの設定をparseした内部値の名称とする。
+
+| 設定 | 契約 |
+| --- | --- |
+| OSV_MCP_GRADLE_OWNED_BTA_TRUST | 未設定・空はdisabled。`owned-bta-offered-inputs-v1`だけを許可。未知値は設定invalid・警告・owned採用disabled |
+| OSV_MCP_GRADLE_OWNED_BTA_PROFILES | 本番profile本文の小文字hex64桁canonical SHA-256、comma区切り最大32件。空は承認0件。重複・不正値でこの集合を無効化し警告 |
+
+profile本文・image仕様・recipe・authority・root registryはoperatorが管理する別のstartup設定／組込みregistryから取得する。設定のdigest集合にあり、かつ独立registryに正しい本文が存在する場合だけapprovedとなる。graphが提示した本文・path・URLを読んでregistryへ追加しない。署名なしのrecordが自分のissuerやrootを承認することも認めない。registry設定fileの読取はstartup metadata I/Oであり、artifact読取の許可を意味しない。
+
+旧helper／catalog／plugin／Kotlin pipelineのtrustは代用不可。本設定の不正で独立した旧経路を無効化しない。既知profile digestと本文の不一致・同じprofileIdの別本文はregistry invalidとし、候補digestへ自動更新しない。IDだけ既知でもdigest未承認ならunapproved。旧test-only profile、proof-v1／v2のrecord、未知schema・recipeを本番profileとして読まない。
+
+#### 9.52.3 OwnedBtaAdoptionProfileの必須field
+
+schemaを`osv-mcp.gradle-owned-bta-profile-v1`とする。以下はすべてstrict objectであり、未知field・未知enum・重複ID・空の必須列・0 digestを拒否する。profileDigestは§9.49のASCII key・canonical JSON方式で本文全体へ計算し、本文に自身のdigestを入れない。子profileはdigestで参照し、独立registry内で閉じたDAGにする。operator承認はこの本文digestを固定する行為であり、booleanの自己表明だけでは成立しない。
+
+| field | 必須値・参照先 |
+| --- | --- |
+| schema／model／purpose | 上記schema／owned-bta-offered-inputs-v1／diagnostic-only固定 |
+| profileId／tuple | profileId、OS・architecture、Gradle・JDK・Node・BTA API／impl・Kotlin compiler版。版番号の一致だけでは承認しない |
+| schemas | graph wrapper v4、coreGraph v1〜v3の明示集合、offer envelope v2、manifest bundle v1、object schema version集合。registryにないschemaを動的登録しない |
+| recipeRegistryId／recipes | reader配布物の確認済みrecipe registry ID。prepare・javac-build・packaging・runtime-selection・library-build・snapshot-generation・offer・captureの各recipeDigest。各role・入力／出力・phase・理由enumを固定 |
+| executorProfileDigest | 下記executor／launcher policyと実装closure。source・module・runtimeの対応、登録締切と実参照brokerを含む |
+| jdkImageProfileDigest／nodeImageProfileDigest／platformProfileDigest | provisionerが承認したimage・platform仕様。実行file以外の内容も含める |
+| loaderProfileDigest／hostControlPolicy | 下記owned child loader契約。初期hostControlPolicyはdata-only-broker-v1。host scriptをowner内で評価する方式は初期対象外 |
+| runtimePolicy | API／impl／compiler／stdlib等の閉じたartifact entry、raw JAR digest、role、occurrence列、service provider選択、generator artifact／format／granularity。順序・重複を保存 |
+| executionPolicy | synchronous、BTAはowned JVM child内in-process、fallback=error、parallel=false、configurationCache=false、driverBuildCache=false。worker／daemon／任意loaderへの切替不可 |
+| sourcePolicy／packagePolicy | 登録source・生成元・literal／resourceの型、encoding、引数／env／propertyの許可集合。fresh driver output、proc:none、implicit:none、未知argfile／generator禁止。JAR全entryのstage対応 |
+| storagePolicy／budgets | root role別policy、sealed bytes／baseline、write前検証、reader予算と全context合計。数値は承認profileに必須 |
+| authorityId／observationProfileDigest | 独立callerのwitness authorityと、全対象observer・区間・評価種別・control比較・no-read計測の確認済みrecipe |
+| requiredLimitations／reviewAssertions | §9.37固定limitationsとproducer-build／caller-witness／loader-attestedへの依存。inputsClosed、brokerOwnsConfiguration、noUnregisteredAgents、publicObservationReviewedを明示true |
+
+子profileやrecipeは親のadoption profile digestを本文へ戻さず、承認仕様のhash循環も禁止する。Node imageはruntime image、entrypointとアプリmodule closureはexecutor profileが所有し、相互を自己参照させない。driver自体のsource bundle／entrypointはexecutor profileでdigest固定する。任意のproject Java sourceをdriverとして実行する承認にはしない。consumer／library sourceは別のdata入力roleである。
+
+reviewAssertionsがtrueでも対応するimage・loader・observation証拠は省略できない。§9.51のnative成功はrecipe候補の証拠であり、image・authority・全observerのprofileを満たしたことにはしない。候補tupleは既存4組に限るが、いずれも本節の新条件が実装・実証されるまではapproved profileを配布しない。
+
+#### 9.52.4 image・executor・loaderごとの必須証拠
+
+証拠は「独立承認した仕様」「今回の実体を結ぶreceipt」「readerによる現在照合」の三つに分ける。仕様と現在fileのhashだけから、過去の使用実体を推定しない。
+
+| 対象 | 独立仕様と今回の必須証拠 | それだけでは不足するもの |
+| --- | --- | --- |
+| JDK image | provisioner-sealed-image-v1。java／javac、release、lib/modules、native library、conf／security等を含む全file／directory inventory、raw size／digest、platform依存closure。承認root・image ID・lease ID、起動前／終了後の同一image照合、各processの実行file・argv・env／property・image leaseへの束縛 | bin/java／javac hash、archive名／版、展開前archive digestのみ |
+| Node image | 同policy。Node executable、実行に使うbuiltin／module source closure、ICU／OpenSSL等のデータ・設定、動的library／addonの許可集合とplatform closure。実argv／execArgv・env、entrypoint／import graph・実ロード元とimage lease。初期addon・require/import preload・任意loaderは空集合 | process.execPathの自己hash、Node版、entrypoint fileだけ |
+| platform | OS／architectureと承認platform image・native dependency仕様。image外のlibrary／設定／探索pathを閉じる。locale／timezone／encoding・tmp領域等の許可ambient条件を明示し、未登録探索を禁止。nonce等はcaller発行の具体literalとして束縛 | OS名の自己申告、未確認の動的依存列、secretをhashだけ保存した一覧 |
+| executor／launcher | 固定runtime上でロードする全module・native bindingのdigest／順序・loader recipe、今回実行instance、entrypoint、source seal、process start／exit、入力／fresh root／output・packaging receipt。解決済み具体値だけを受け、Provider／FileCollection／callbackを実行しない | disk上のJSの事後hash、stdout内の成功文字列、Task名だけ |
+| JVM child loader | owned-jvm-child-loader-attested-v1。実classpath occurrenceと全JAR／directory inventory、system／parent loader、サービスdescriptorと選択impl、起動argv・module設定・transform policy。brokerに閉じたconfiguration／parameterの生成・useIncrementalCompilation・直前照合と一回使用 | CodeSource、class名、現在JAR digestだけによるloaded bytecodeの独立証明 |
+| observation | observer全件のID／実装digest、対象getter・supplier／resolution／transform／file I/O別の承認計測範囲、登録からcaptureまでの必須event、controlとの比較と区間検証 | getterを呼ばなかったというboolean、未計測内部supplierを0とした数値 |
+
+image inventoryは独立provisionerが承認済みrootから発行する。provisioning receiptはissuer・profileDigest・inventoryDigest・root role・image lease・検証時点を束縛し、producer record内の任意issuer宣言から作らない。readerは承認済みissuer／leaseのreceiptを検証する。初期imageはregular file／directoryのみでsymlinkを許さず、既存bounded readerを緩和しない。実環境にlinkや外部dependencyが必要で、別policyの実証がなければimage_unsupportedで止める。
+
+image leaseはimmutable-through-runというprovisionerの管理表明であり、任意writer排除やOS全体の独立証明ではない。readerによる現在照合とも別に表示する。外部native依存・ambient inputを閉じる方法が確認できないplatformではcompleteとしない。receiptの実装方法・issuer真正性が未成立の現状を、profileのtrue値で回避しない。
+
+loaderの初期transform policyはnone、agents・custom classloader・patch-module／upgrade-module-path・追加service providerは空集合とする。JAVA_TOOL_OPTIONS／JDK_JAVA_OPTIONS／_JAVA_OPTIONS、NODE_OPTIONS／NODE_PATH、--require／--import／loader、agentlib／agentpath等の注入を許可しない。Gradle host自身の既知agentはowned childへの承認に含まれず、子へ継承してはならない。許可する別policyは別profileと実証を必要とする。
+
+hostControlPolicy=data-only-broker-v1では、独立callerが所有するbrokerだけが承認recipeを起動する。Gradle build logicは具体的な入力要求を提出できるが、任意code／callback／起動envをbrokerへ持ち込めない。brokerは要求を承認recipe・root・scopeへ照合し、外部authorityから実行記録を得る。Gradle scriptを単に現在hashしただけでは評価bytesの証拠にならない。hostがexecutor内でscript／pluginを評価・ロードして構築を制御する方式は別のhost-controlled policyと既存provenance契約の証拠を必要とし、初期未対応とする。coreGraphが従来どおりtrusted build由来である前提を、この診断scopeの信頼で拡張しない。
+
+#### 9.52.5 caller authority・実行witnessとfreshness
+
+reader API案は`inspectOwnedBtaExport(transport, policy, trustedCaller, readOwnedFile)`とする。policyとtrustedCallerはoperator／アプリ側から渡す。transportのwitness JSONをそのままtrustedCallerへ代入するAPIは設けない。
+
+trustedCallerはbeginExportSessionでgraphId／exportId／executionId・nonce・project root registry・許可context／invocation集合を発行する。graph解決後にcoreGraphの構造・lock／入力対応を既存経路で検証し、canonical coreGraphDigestをsessionへ固定する。owned stageをこの固定値へ結び、後でcoreが変わったら新exportへやり直す。現在hashを古いreceiptの新baselineにしない。
+
+初期authority backendはcaller-owned-receipt-store-v1とし、build directory外でtrusted brokerだけが書ける別storeをoperatorが設定する。project fileやrecordがstore path／issuerを指定できない。backendはisolationEvidenceRefを必須とし、別OS principalまたは同等の検証済み隔離境界で、build logic／producer childがregistry・store・authority credentialを書き換えられないことを確認する。単なる別directory・同一UIDのfile permission・afterTask reporterではこの条件を満たさない。認証済みIPCを使う場合もissuerと接続先をoperator側で固定し、projectからendpoint／鍵を追加しない。この隔離・通信方式が実装・実証されるまではbackendを利用可能としない。別hostへの可搬receiptは別の署名／issuer policyが必要で、単なる署名fieldやproducer発行鍵は承認にならない。
+
+final witnessの必須内容はauthorityId、sessionId／nonce、graph／export／execution ID、coreGraphDigest、project／context／invocation、Task／action ID、actionCalls、executed／didWork／skipped／noSource／failed／skipMessage、broker／child process instance、stage開始／終了と結果、起動したimage／executor／loader lease、予定capture・実施capture、producerState、最終bundle／envelopeのdigestの組である。buildやgeneratorを共有した場合は元のexecution／invocation IDとreuse関係も保存する。
+
+witnessはcommon headerとstageExecutions配列を持つtyped unionにする。commonはauthority／session／nonce・core／scope・Task／action状態・planned capturesとterminal status。process instance・image lease・call開始／終了・結果は実際に到達したstageExecutionsだけに要求する。未到達は空列または対応entry省略とし、childCalls=0へ架空process IDを入れない。export seal済みterminalだけに最終pairを要求し、abort／export失敗のlookupにはpairを要求しない。
+
+witnessIdはauthority内の照合キーであり真正性の証明ではない。witness本体はexportの参照DAG外の独立storeで確定する。envelopeはwitnessIdだけを持ち、witnessDigestや最終bundle digestを持たない。authorityがenvelope・bundle確定後に両digestを記録するため循環hashを作らない。readerは生のTaskState JSONではなくstoreの検証済みlookup結果と独立したsession期待値を使う。
+
+lookupはverified／not-executed／unavailable／invalidの判別union。API引数欠落・不正型はexecution_invalid。適正なlookupが「receipt未取得／backend未対応」を返す場合はwitness_unavailableで入力読取0とする。これは不正witnessを欠落扱いする例外ではない。verifiedでID・digest・状態が合わない場合はgraph拒否する。
+
+実行済みの正常witnessはactionCalls=1・executed／didWork=true・skipped／noSource／failed=false・skipMessage=nullを要求する。producerが正常にfailed記録を出した場合も外側Taskは成功してexportがsealされている必要がある。Task例外中断はauthorityがsealed success witnessを発行せずexecution_abortedのunavailableへ分類する。Task failedなのにsealed successを名乗るwitnessはinvalidである。
+
+SKIPPED／FROM-CACHE／UP-TO-DATE／NO-SOURCEはactionCalls=0でnot-executedとし、残存・復元envelopeを今回の成功へ採用しない。この場合、envelope内で明らかな構造矛盾は拒否するが、古いexecutionIdを今回IDへ一致させるために入力を開かない。実行済みwitnessへ古いenvelopeを付けた場合はclaim_mismatch。build前の合法なfailed／unavailableはchild launch 0でよく、completedだけに必要なBTA呼出しwitnessを一律に要求しない。
+
+「今回」はtrusted callerが当該project／scopeへ選んだcurrent sessionで決め、mtime・producerのcreatedAt・最大timestampで選ばない。storeのcurrent／superseded／revoked状態を確認する。reader再起動後も独立storeと有効leaseがなければwitness_unavailable。過去のacceptedをcacheから復元せず、再取込では現在内容を再読取する。witnessはcallerの真正性に依存し、任意に偽造したcaller入力から過去の実行を独立認証できるとは表明しない。
+
+#### 9.52.6 本番transport・coreGraphDigestと参照の向き
+
+現行graph v1〜v3のstrict schemaへ未知fieldを足さない。将来のwrapperをschema=osv-mcp.gradle-graph、schemaVersion=4とし、必須fieldを`schema, schemaVersion, graphId, exportId, coreGraph, ownedOfferBundles, ownedOfferObjects`に限定する。coreGraphは完全な既存v1／v2／v3 objectで、owned field・wrapperへの参照を持たない。既存parserのlock／project／context／edge対応を検証し、canonical bytes全体をhashする。object順はcanonical化するが配列の順序を変更しない。
+
+ownedOfferBundlesのentryは`{project,context,invocation,bundleRef,envelopeRef}`。project／contextはcoreGraphの実IDと1対1に対応させ、同じキーの重複を拒否する。entryから新contextを作らない。owned scopeのないcontextはentry不要。省略したentryを理由に既存宣言・脆弱性coverageを不完全へ変更しないが、owned診断候補は生成しない。
+
+初期transportでは全metadata objectをownedOfferObjects内に`{role,objectDigest,bytes}`としてinline収録する。bytesはcanonical JSONのUTF-8文字列、全refは`{role,objectDigest,byteLength}`。binaryのsource／JAR／snapshot／imageは承認rootのfile refに分離する。gate前に任意sidecarを開いてmetadata closureを完成させる方式は採らない。全状態のbundle／envelope／index／状態objectの欠落・循環・role違反をinline parseだけで判定できるようにする。ownedOfferObjectsは全entryから到達するobjectの和集合とし、orphan・重複digest・同じdigestへのrole付替えを拒否する。bundleごとのindexは当該prefixと状態／観測証拠の閉包だけを列挙し、別context用objectの混入を許さない。共有objectの物理保存は1件でよいが、各use receiptとindexからの参照は残す。
+
+本番bundleは§9.47のosv-mcp.gradle-owned-manifest-bundle-v1、envelopeは本番用osv-mcp.gradle-owned-offer-v2とする。v1のtest helperと§9.51のowned-bta-proof-*はそのまま受理せず、producerが本番契約を満たして新規生成する。schema名だけの置換・旧成功記録の後付けラップを禁止する。
+
+参照の向きは次の通り固定する。
+
+1. coreGraphをfreezeし、callerがcoreGraphDigestを固定する。
+2. stageの入力・build／runtime／generation・offer内部のcall／observation objectを作る。objectは上流refだけを持つ。
+3. envelope v2を終端状態で確定する。共通binding・coreGraphDigest・要求profile／recipe ID、解決済みなら両digest、witnessId、状態field、offer phaseの証拠refを保持する。bundleや終端receiptへのrefは持たない。
+4. completedならofferReceipt、failedならfailureReceipt、unavailableならunavailableEvidenceがenvelopeRefと上流／観測証拠を持つ。failed／unavailableでもenvelopeとの対応を直接検証できるようにする。
+5. evidence indexを作る。存在するstage／観測／状態objectとenvelopeを列挙するが、index自身とbundleは列挙しない。
+6. bundleを確定し、wrapper entryにbundleRef／envelopeRefの組を置く。authority storeが最終pairを独立記録する。
+
+offerReceiptが持つenvelopeRefはentryのenvelopeRefと一致させる。失敗／未対応では対応する状態objectのenvelopeRefへ照合する。全objectのbindingKindに応じたbindingと、entry・envelope・bundleの状態／coreGraphDigestを検証し、自己hashと上位refを全部更新してもcallerの期待pair・session・core digestと異なれば拒否する。bundle自身のdigestやwitness本体をenvelopeへ戻さない。
+
+buildの共有は初期policyで同一session・project・profile／recipe・image lease内だけに限定する。共有objectは`bindingKind=shared-build`のtyped schemaで元のbuildExecutionId／buildInvocationId・許可scopeを保持する。現在のcontext／invocationからは`bindingKind=offer-context`のbuild-use receiptで参照し、callerが承認したscope集合へ照合する。generation共有も同じ方法でgeneration-use receiptを作り、cohort／generator／format／元sealを一致させる。単にcontext bindingを削除して共有扱いにしない。別export／projectの流用や共有artifactの再構築件数への加算は初期禁止である。
+
+#### 9.52.7 状態別必須証拠とstage／phaseの対応
+
+bundleのstageはprepare→build→runtime-selection→snapshot-generation→offerのまま、completedThroughは連続成功prefixの最後である。profileDigest／recipeDigest、evidenceIndexRef、状態とentryの共通bindingは§9.47のunionを維持する。
+
+| 完了stage | 本番で成功refが要求する中身 |
+| --- | --- |
+| prepare | 入力role全件、source／引数／env／property／classpath／生成元、image／executorを今回へ束縛する準備証拠、元sealと保存bytes参照。未生成outputのdigestは禁止 |
+| build | fresh outputの開始・直前空判定、compiler開始／終了と結果、同じrootの全output、入力の元sealへの終了後照合、JAR全entryのstage対応、build／packaging receipt |
+| runtime-selection | 実起動argv・env、driver JAR／runtime occurrence、image lease、loader／service providerの選択と実行instance、元build-use receipt |
+| snapshot-generation | library source／構築receiptまたは独立承認外部artifact、全cohort occurrence、generator実体／format／granularity、save結果、size／digest・元seal、generation-use receipt |
+| offer | 登録締切、実service／project／configuration／parameterのbinding、呼出し前gate、BTA開始／正常終了、postcheck、予定capture全件、元IC／source／snapshotへの照合、envelopeRefを持つofferReceipt |
+
+| producerState | 必須・禁止条件とreader結果 |
+| --- | --- |
+| completed | completedThrough=offer、全成功ref・承認解決済みdigest・終端envelope・authority witness。failure／unavailable fieldなし。G0〜G4全成功時だけaccepted |
+| failed | completedThroughはnone〜snapshot-generation、failureStageは直後、failurePhase／failureReason・独立failureReceiptとenvelopeRef、成功prefixと失敗時点までの観測。失敗stage以降の成功ref、偽出力、後続successを禁止。合法ならproducer_failed |
+| unavailable・解決済み | approved、profile／recipe digestと実際の成功prefix、blockedStageは直後、理由・notAttemptedRoles／取得不能範囲を持つunavailableEvidenceとenvelopeRef。未到達stageのfile／実参照／出力は要求しない。合法ならproducer_unavailable |
+| unavailable・profile未解決 | approvalStatus=unavailable、completedThrough=none、blockedStage=prepare、理由profile_unapprovedのみ。要求ID、最小index／状態object／envelopeは必要。解決前の両digest・全成功refは禁止 |
+
+approvedはproducerが独立profileを解決済みという記録だけで、consumer設定を有効化しない。approvedのままprofile_unapprovedを名乗ることを禁止する。元のimage仕様を解決できても実imageのlease／証拠が得られなければ、prepare成功refを作らずimage_unsupportedのunavailableとする。別途既知の改変を検出済みならfailedであり、unsupportedへ付け替えない。
+
+v2のoffer内部phaseをregistration→generation-binding→seal→binding→precheck→call→postcheck→captureとする。generation-bindingは上流generation-use receiptとの照合であり、各offerでgeneratorを再実行した証拠ではない。v1 fixtureのgenerationというfieldを意味を変えてコピーしない。到達した各phaseのbegin／success／failureと観測参照、開始時に固定した予定capture数を要求する。offer未到達のfailed／unavailableではphase列は空でよく、未到達phaseのbeginや成功を補わない。postcheckedは中間状態でありcompleted envelopeを発行しない。
+
+call前の失敗はBTA開始を禁止し、call開始後の失敗は開始記録と、戻った場合は実result／例外を要求する。正常resultはCOMPILATION_SUCCESSだけ、非成功result／例外はfailed。内部no-opの判定はunknownのまま。postcheck／capture失敗はcall-only witnessを保持するが、offer成功refを作らない。失敗したcompilerの部分output・未完JARはfailureReceiptのdiagnostic evidenceのみで、runtime／成功inventoryへ利用しない。index／状態objectの保存失敗は成功bundleを発行せずexport失敗とする。
+
+#### 9.52.8 readerのG0〜G4・no-readの定義
+
+| gate | 実施内容・閉じた場合の扱い |
+| --- | --- |
+| G0 metadataのみ | 上限付きparse、重複key／未知field／非canonical bytes、schema／state union、inline ref closure／role／DAG・全pair、coreGraphの既存構造と計算digestを検査。既知の独立profile本文と既読metadataで判明する不一致も拒否する。artifactを開かず、providerを評価しない |
+| G1 consumer設定 | trust・registry／allowlistを確認。invalid／disabled／unapproved／unsupported recipeはunavailable。G0の不正をdisabledに格下げしない。適正なunresolved profile unionはconsumerにも未承認ならここで止まる |
+| G2 authority／実行 | trustedCallerのcurrent session・coreGraphDigest・scopeとauthority lookupを検証。not-executed／未取得／abortなら入力読取0。実行済みなら全ID・pair・状態・capture計画・process／lease対応を照合。不正／矛盾はexecution_invalidまたはclaim_mismatch |
+| G3 承認と状態ごとの読取計画 | profileに必要な証拠・image／loader／executor／observation capabilityをmetadata上で確認。初期未対応capabilityは閉じる。状態別prefixと理由に従って必要なroot・ref・保存baselineだけの計画を作る。合法なfailed／unavailableでは、未到達stageのimage lease／process／observationを要求しない。capability_unsupportedはreader／registryの実装方式が未対応の場合であり、状態union上合法な未取得を証拠欠落へ変更しない。過去の全inventoryを無条件に読む計画は禁止 |
+| G4 bounded content | operator root registryだけから読む。image→executor／source→build／runtime→library／snapshot→source／IC／observationsを必要な到達範囲で照合。全inventory・size／raw digest・元seal・保存bytesと現在値を検証。readerはGradle／compiler／generatorを起動しない |
+
+no-readはreadOwnedFile／owned artifact・source・baseline・image resolverの呼出し0、KGP getter／supplier評価0を意味する。既読のexport JSON・独立startup metadata／authority store I/Oや、従来のcoreGraph検証用I/Oとは分けて計数する。既存経路が同じfileを読んでいても、gate閉鎖中のowned currentContentMatchをmatchedにしない。
+
+G0では全metadataをinlineで検証するため、missing index／状態objectを確かめるためにgateを迂回してfileを開かない。知らないrootIdはG4で探索せずpath_invalid。profile／graphから新しい読取rootを認可しない。alias・symlink・path置換・未記録entry・file／directory衝突を拒否し、O_NOFOLLOWとopen実体照合、上限＋1で止まるlisting、bounded streamingを要求する。
+
+初期実装のhard ceiling案はmetadata全体64 MiB・1 object 8 MiB・1024 objects・16384 ref・深さ32・1000000 JSON nodes、snapshotは既存の1 file 32 MiB／slot合計128 MiB／16 entry、一般artifactは1 file 512 MiB／全context合計4 GiB／inventory 65536 entryとする。JAR展開bytes／entry／compression比もprofileに明示上限を要求し、reader配布物のhard ceilingより緩いprofileは無効。これらはまだ承認値ではなく、実装・性能／native実証後に固定する候補である。
+
+同一file／objectのhashを1 import内で再利用する場合も、各root／scopeの権限・path／実体・seal対応を先に検証し、occurrence列をdeduplicateしない。cache keyにprofile／recipe／authority session・lease・root registry世代を含める。別scanへ過去のcontent matchを流用しない。予算超過は部分acceptedにしない。
+
+#### 9.52.9 reader／producerの拒否理由とgraphへの影響
+
+本節のreader理由は将来の本番名`owned_manifest_*`に統一する。旧test helperのowned_offer_*／owned_bta_*は変更しない。初期schemaの理由列挙を以下に固定し、理由から別stageへ暗黙変換しない。
+
+| reader理由 | 分類・判定 |
+| --- | --- |
+| trust_disabled／configuration_invalid／profile_unapproved／recipe_unapproved | G1 unavailable。producerState保持、owned入力読取0 |
+| witness_unavailable／action_not_executed／execution_aborted | G2 unavailable。自然ready=false、not-calledまたは未確認を維持。偽のwitnessは含めない |
+| capability_unsupported | G3 unavailable。registryで未実証のimage／loader／observation recipe等。completedの必須ref欠落をこの理由へ置き換えない |
+| schema_invalid／required_evidence_missing／budget_exceeded | 構造・状態・必要ref・metadata上限の違反。graph拒否。file予算超過もreader拒否でありproducer_failedへ格下げしない |
+| profile_mismatch | 承認済み仕様／digest／tuple・image／runtimeと主張が不一致。graph拒否 |
+| execution_invalid | caller API／witnessの欠落・不正型・状態矛盾。graph拒否 |
+| claim_mismatch | 実行済みwitnessとのID／pair／scope／core digest矛盾、状態とreceiptの不一致、後述のstale拒否を確認できない。graph拒否 |
+| content_mismatch／path_invalid／inventory_mismatch | 非canonical bytes／object raw digest不一致、completed等の現在照合の不一致、読取境界違反、登録集合不一致。graph拒否 |
+
+接頭辞を含む正式名は例としてowned_manifest_profile_mismatch、owned_manifest_action_not_executed。known profileの実artifact不一致を「未知profile」としてunavailableへ逃がさない。configuration_invalidはoperator設定の不正であり、malformed graphのschema_invalidとは区別する。G0の優先順はparse／上限→typed schema・state→role／DAG／必須ref→canonical bytes・digest／pair→core／既知profileとのmetadata照合とする。source／staging等の現在file欠落はcontent_mismatch、必須保存baselineの欠落はrequired_evidence_missing、許可root外・symlink・アクセス境界違反はpath_invalidとする。
+
+producer側のunavailable理由と合法なblockedStageは、prepareのprofile_unapproved（未解決のみ）／recipe_unsupported／image_unsupported／host_control_unsupported、buildのbuild_recipe_unsupported、runtime-selectionのloader_unsupported、snapshot-generationのgeneration_unsupported、offerのexecution_unsupportedに限定する。成功prefixのrefは保持し、それ以降の成功を捏造しない。notAttemptedRolesには未読取の範囲だけを記録し、一部imageを検査済みなのに全入力no-read=trueとは表明しない。
+
+producer failedは、prepareのcapture／seal、buildのallocate-output／verify-empty／compiler／verify-inputs／collect-output／packaging、runtime-selectionのselect／verify、snapshot-generationのlibrary-build／generate／save／verify、offerの上記内部phaseへ結ぶ。input_changed、inventory_mismatch、storage_failed、budget_exceeded、build_failed、output_root_exists／invalid／not_empty、runtime_binding_mismatch、generation_binding_mismatch、configuration_unregistered／binding_mismatch、parameter_binding_mismatch、context_binding_mismatch、ic_state_mismatch、snapshot_stale／snapshot_storage_mismatch、library_stale、compile_failed、extra_evaluationのstage／phase許可表をrecipe registryへ固定する。field名を見て任意phaseへ許す実装は禁止し、unknown reason／phaseはschema_invalidとする。具体的な初期許可表は次項に定義する。
+
+合法なproducer拒否はimportStatus=producer_failed／producer_unavailableで保持し、graph拒否へ自動昇格させない。completedはG4全成功時だけaccepted。identity・実参照・過去IC・write失敗・過去のpath拒否等は承認brokerの表明として扱い、readerが過去の実体を再証明したと表示しない。
+
+snapshot_stale／snapshot_storage_mismatch／library_stale／input_changedの内容拒否は、承認recipeが`claimVerification=current-or-saved-observation`を持つ場合に限り受理する。readerは元sealと、拒否のphase・role・occurrence・期待／観測size／digestに束縛された保存bytes／observationを比較する。現在fileが復元済みなら、拒否時保存bytesの現在内容を元sealへ照合してproducer_failedを確認できる。拒否時の観測digestだけでは不足。currentも保存観測も一致していて不一致を確認できない場合、保存観測欠落、理由／phaseの付替えはclaim_mismatch／required_evidence_missingで拒否する。この規則をwrite前のsymlink拒否等のidentity表明へ拡張して、未生成fileを読ませない。
+
+#### 9.52.10 初期failed理由のstage／phase許可表
+
+表にない組は不正。状態objectは失敗event・元prefix・観測済みref・not-produced項目を要求する。保存障害は実際に発生したphaseだけに許す。予算・追加評価の失敗も、該当phaseの計測／limit証拠なしでは合法にならない。
+
+| stage | phase | 許可するfailureReason |
+| --- | --- | --- |
+| prepare | capture／seal | input_changed、inventory_mismatch、storage_failed、budget_exceeded、extra_evaluation |
+| build | allocate-output | output_root_exists、output_root_invalid、storage_failed |
+| build | verify-empty | output_root_not_empty、output_root_invalid、budget_exceeded |
+| build | compiler | build_failed、extra_evaluation |
+| build | verify-inputs | input_changed、output_root_invalid、budget_exceeded |
+| build | collect-output | inventory_mismatch、output_root_invalid、storage_failed、budget_exceeded |
+| build | packaging | build_failed、inventory_mismatch、storage_failed、budget_exceeded |
+| runtime-selection | select／verify | runtime_binding_mismatch、input_changed、inventory_mismatch、storage_failed、budget_exceeded |
+| snapshot-generation | library-build | build_failed、input_changed、inventory_mismatch、storage_failed、budget_exceeded、extra_evaluation |
+| snapshot-generation | generate／save／verify | generation_binding_mismatch、input_changed、inventory_mismatch、storage_failed、budget_exceeded、extra_evaluation |
+| offer | registration | storage_failed、budget_exceeded、extra_evaluation |
+| offer | generation-binding | generation_binding_mismatch、context_binding_mismatch、storage_failed、budget_exceeded |
+| offer | seal | snapshot_storage_mismatch、input_changed、inventory_mismatch、storage_failed、budget_exceeded、extra_evaluation |
+| offer | binding | configuration_unregistered、configuration_binding_mismatch、parameter_binding_mismatch、context_binding_mismatch、storage_failed、budget_exceeded |
+| offer | precheck | configuration_unregistered、configuration_binding_mismatch、parameter_binding_mismatch、context_binding_mismatch、ic_state_mismatch、snapshot_stale、snapshot_storage_mismatch、library_stale、input_changed、inventory_mismatch、budget_exceeded、extra_evaluation |
+| offer | call | compile_failed、extra_evaluation |
+| offer | postcheck／capture | snapshot_stale、snapshot_storage_mismatch、library_stale、input_changed、inventory_mismatch、storage_failed、budget_exceeded、extra_evaluation |
+
+readerのpath_invalid／inventory_mismatchは表のproducer理由と混同しない。初期producerの安全な読取がpath違反を検出した場合は、上記inventory_mismatchに詳細`boundaryFailure=path_invalid`と対象role／phase・実施済み操作を記録する。既存fixtureのpath_invalidを本番で無条件に同名変換せず、boundaryFailureを持つ型付き失敗証拠の生成が必要である。
+
+#### 9.52.11 回帰テスト条件（AP01〜AP32、すべて未実施）
+
+本節の本番契約向け条件であり、§9.51の133テストや4 buildを実施済みとして数えない。metadata静的contract→独立authority／image／gate→本番producer／reader→3 toolの順に進める。native条件はGroovy／Kotlin × Gradle 8.11.1／9.2.1を別tupleで記録する。
+
+| ID | 条件・期待結果 |
+| --- | --- |
+| AP01 | trust既定off／未知値／空allowlist／不正digest／重複。ownedのみdisabled、他trustと既存graph経路を維持。自己設定・graphのprofile path／URLで有効化できない |
+| AP02 | 独立registryの本文hash・profile ID・子profile DAG。既知IDの本文交換、自己更新digest、test profile／未知recipe／revoked profileを拒否。profile bodyをprojectから探索しない |
+| AP03 | java／javacは同じでもlib/modules・conf／native libraryが異なるJDKを拒否。image receipt／lease・image全inventory欠落をacceptedにしない |
+| AP04 | Node executableが同じでもimport module・ICU／native依存・preloadが異なる場合を拒否。NODE_OPTIONS／NODE_PATH／execArgv注入をnativeで遮断し、markerとsource読取0を確認 |
+| AP05 | image symlink・外部dependency・未知platform policyはunsupported。未計測のimage closureをarchive自己hash／true attestationで承認できない |
+| AP06 | current provisioner receiptを別process／root／leaseへ交換、失効・終了前後差分、未承認issuerを拒否。同一UIDのbuildからauthority store／credentialを書き換える試行を遮断できなければbackend unsupported。現在一致だけで過去使用実体を証明しない |
+| AP07 | loader／service provider・agent／patch-module／parent loader追加を拒否。CodeSource現在値とclass名が一致してもloader receipt欠落は不合格 |
+| AP08 | 外部caller brokerのdata-only要求。host callback・任意script／plugin・env／argfileをownerへ持ち込む試行を拒否。host-controlled方式を既存scriptの事後hashで代用できない |
+| AP09 | trust off・未承認profile・未対応recipe／capability・witness未取得・Task未実行でowned reader／image／source／baseline callback 0、KGP getter／supplier 0。metadata／既存graph I/Oと別計数 |
+| AP10 | G0はtrust offでも未知schema／field・duplicate key・非canonical bytes・欠落index／状態object・role違反・循環を拒否。補完sidecarを開かない |
+| AP11 | caller API欠落・witness型不正・Task状態矛盾はexecution_invalid。正式なlookup unavailableとの違い、producerStateをreaderが変更しないことを確認 |
+| AP12 | SKIPPED／FROM-CACHE／UP-TO-DATE／NO-SOURCEへ残存成功envelopeを渡してunavailable。action未実行で古いexecutionIdを検証するためのartifact読取を行わない |
+| AP13 | 実行済みfresh witness＋古いenvelope／別pair／別scope、偽のauthority store path、producer作成witnessを拒否。witnessId一致だけでは採用しない |
+| AP14 | reader再起動・current session supersede／revoke・profile変更で過去accepted cacheを失効。mtime／timestamp変更だけでは新sessionを選べない |
+| AP15 | coreGraphにowned参照を入れた循環、edge／lock／source等の変更、core digest自己更新をcaller期待値から拒否。新wrapperは旧schemaへ黙ってstripしない |
+| AP16 | envelope→terminal receipt／bundleの逆参照、offerReceiptとentryのenvelope交換、failed／unavailable pair交換を拒否。indexはenvelopeを含む既存objectのみで自身を含めない |
+| AP17 | build共有の元ID／artifact・same session／project／image leaseを検証。contextごとのuse receipt欠落、別export／project流用を拒否し、新規compiler件数へ加えない |
+| AP18 | generation共有のcohort／generator／format／元sealとuse receipt。library順序／重複削除・旧snapshot bytes・generation改名やref自己更新を拒否 |
+| AP19 | completedの全stage証拠・正常BTA結果・post／予定capture全件。output存在・Task成功・内部no-op不明だけで完了としない。performed／自然readyへ昇格しない |
+| AP20 | failedの全合法stage／phaseのprefixを受理。未到達ref・null／0 digest・後続success・部分classの実行・理由付替えを拒否 |
+| AP21 | unavailableの解決前／後、stageごとの合法理由を受理。approved＋profile_unapproved、解決前digest、未取得imageをprepare成功扱いするunionを拒否 |
+| AP22 | call失敗result／例外はfailed、開始・終了が必要。unknown result／開始後の記録欠落・捕捉前completed・失敗後再使用を拒否 |
+| AP23 | 完了後のsource／runtime／library／snapshot改変を最初のreader読取で拒否。過去currentContentMatchや新baselineへ付替えできない |
+| AP24 | producerの内容拒否をcurrentまたはphase-bound保存bytesで確認。復元済み現file＋正しい拒否時bytesはproducer_failed、観測digestだけ／一致bytesしかない場合はgraph拒否 |
+| AP25 | write前symlink／空root／実体／保存失敗等のbroker拒否は未生成fileを要求せずproducer_failed。readerで新たに見つけた境界違反をproducer_failedへ格下げしない |
+| AP26 | source／JAR／snapshot／imageのroot role交換・alias・symlink・未記録file・hard ceiling超過。listing上限＋1・streaming byte上限をnative確認し、部分acceptedにしない |
+| AP27 | 全context合計budgetと重複ref cache。hashを共有しても権限／scope／path確認を省かず、occurrenceは維持。別scanへのcache持越しで鮮度を迂回できない |
+| AP28 | controlと全observerのsupplier／resolution／transform／file I/O別比較。event欠落・登録区間外への移動・phase偽装・未計測0表明を拒否 |
+| AP29 | evidence index／状態保存失敗ではbundle成功発行なし。両方欠落はreader unavailable、envelopeだけ・dangling refはrequired_evidence_missing |
+| AP30 | accepted／producer_failed／producer_unavailable／reader unavailable／invalidをmetadataで区別し、limitations・assurance軸を保持。独立declared_in／relation／introduced_by・lock coverageへ混ぜない |
+| AP31 | known profileの不一致はprofile_mismatch、未知profileはunapproved。故障原因が検査可能なmetadata上にある場合、gate閉鎖を口実に隠さない |
+| AP32 | 本番実装後のscan_project／scan_java_project／suggest_fixとOSV再照会。入力本文／image／snapshot／sourceをOSVへ送信しない。trust off・未承認・改変・有効証拠の各対照を記録 |
+
+今回の成果は設計の追加だけである。次の実装単位はG0の本番transport／pair／state contractと、independent registry／authority lookupのno-readテスト。image／loader receiptの公開API／管理方式と全observerの実証が揃うまでは、本番profile承認・診断採用を有効化しない。
