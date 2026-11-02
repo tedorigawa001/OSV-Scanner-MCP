@@ -1970,7 +1970,7 @@ run-local IDやrecordの自己hashは真正性を保証しない。静的取込�
 | task action未実行（§9.43） | owned_offer_action_not_executed | importStatus=unavailable、executionEvidence=not-called。envelopeの構造は検証するが内容は読まない。非対応strategyのexecution_unsupportedとは区別する |
 | 実行witness不正（§9.43） | owned_offer_execution_invalid | 呼出側が渡したwitnessの欠落・状態矛盾・期待ID不一致。graphを拒否する |
 | 構造不正 | owned_offer_schema_invalid／owned_offer_required_evidence_missing | graphを拒否。必須非空列の空配列・未知status・必須limitations欠落・状態とphaseの矛盾を含む |
-| integrity違反 | owned_offer_profile_mismatch／owned_offer_claim_mismatch／owned_offer_path_invalid／owned_offer_inventory_mismatch（§9.46） | graphを拒否。completedなのに再照合で内容・binding・鮮度が合わない場合、failedのfailureReason・failurePhaseが証拠と食い違う場合、記録された拒否を別理由・別phaseへ付け替えた場合、実行済みwitnessの下でenvelopeが別のexecutionIdを持つ場合（§9.43）を含む。部分metadataやdeclared_inへ縮退させない |
+| integrity違反 | owned_offer_profile_mismatch／owned_offer_claim_mismatch／owned_offer_content_mismatch／owned_offer_path_invalid／owned_offer_inventory_mismatch（§9.46） | graphを拒否。completedなのに再照合で内容が合わない場合はcontent_mismatch、producerが記録したstale等の拒否をreaderが確認できない場合はclaim_mismatchとする（§9.48）。binding・鮮度が合わない場合、failedのfailureReason・failurePhaseが証拠と食い違う場合、記録された拒否を別理由・別phaseへ付け替えた場合、実行済みwitnessの下でenvelopeが別のexecutionIdを持つ場合（§9.43）を含む。部分metadataやdeclared_inへ縮退させない |
 
 未知profile IDはunapprovedだが、既知承認profile IDを名乗って実artifactが異なる場合はmismatchとする。未定義の「省略可能な証拠mode」は設けない。合法なfailed／unavailableは上記unionで判定し、未到達証拠の省略だけでgraphを拒否しない。completedを表明して必須証拠が欠ける場合や、failed／unavailableの状態・phaseに矛盾する証拠がある場合は構造不正である。producerが記録したfailureReasonはreaderのintegrity理由へ昇格させず、readerのintegrity違反をproducer_failedへ格下げしない。本理由は設計案であり、§9.36のtest fixtureの既存reason文字列を今回変更しない。
 
@@ -2316,9 +2316,9 @@ evidenceIndexRefは全状態で要求するが、既に保存できたobjectだ�
 
 各refはrole・objectDigest・byteLengthを持ち、型が一致する保存objectだけを参照できる。file参照はrootIdと相対path、size、raw SHA-256を持ち、rootIdはreader設定側の承認root registryで解決する。manifestの絶対pathやURLで新しい読取rootを許可しない。artifact cacheの座標や表示名はidentityの代用にしない。root registryはproject／source／build evidence／approved toolchain image／approved runtime artifactを役割別に分ける。
 
-object digestは、typed schemaの既知ASCII field名を昇順にし、配列の順序・重複を維持する再帰的canonical JSONのUTF-8 bytesから算出する。文字列はJSON.stringifyと同じescaping、整数は非負のsafe integerのみ、lone surrogate・未知field・重複JSON keyを拒否する。logical pathのcase・Unicode・空白・percent文字を変換しない。fileのraw digestはBOM／改行／encodingを正規化しない。canonical JSONのcross-language test vectorを実装前に固定する。
+object digestは、typed schemaの既知ASCII field名を昇順にし、配列の順序・重複を維持する再帰的canonical JSONのUTF-8 bytesから算出する。文字列はJSON.stringifyと同じescaping、整数は非負のsafe integerのみ、lone surrogate・未知field・重複JSON keyを拒否する。logical pathのcase・Unicode・空白・percent文字を変換しない。fileのraw digestはBOM／改行／encodingを正規化しない。canonical JSONのcross-language test vectorを実装前に固定する。JSON.stringifyは`\b`・`\f`と、その他のU+0000〜U+001Fを`\u00xx`（小文字hex）でescapeし、U+007F以上は原文のまま出力する。既存test fixtureの`BtaOwnedDriver.json()`はbackslash・引用符・`\n`・`\r`・`\t`だけをescapeするため、この規則を満たさない。collectorやreceiptのdigest計算へ流用しない（§9.48）。
 
-循環hashを作らないため、将来のgraph wrapperをcoreGraphとownedOfferBundlesへ分け、coreGraphにはbundleへの参照を置かない。coreGraphDigestはcoreGraph全体のcanonical digestで、trusted callerが期待する値へ照合する。bundle digestはheaderとrefのcanonical bytesから算出し、bundle自身のdigestをheaderへ入れない。各receiptも上位bundle digestを含めず、共通binding IDと上流のobject refを保持する。class／JAR／compiler出力のinventoryは実際の成果物rootだけを対象とし、receipt・manifestは別evidence rootへ保存して自己参照を避ける。未知の循環参照・参照先のrole違反はschema不正とする。
+循環hashを作らないため、将来のgraph wrapperをcoreGraphとownedOfferBundlesへ分け、coreGraphにはbundleへの参照を置かない。offer envelopeとbundleの間も参照の向きを一方に固定する（§9.48）。envelopeはbundleのdigest・refを持たず、bundleの`offerReceiptRef`はenvelopeとは別のoffer receipt objectを指す。offer receiptはenvelopeのdigestを含んでよいが、envelope・offer receiptのどちらもbundle digestを含めない。envelopeとbundleの対応は、`ownedOfferBundles`の各entryが両方のdigestを組として持つことで結ぶ。readerはその組と、bundle内のoffer receiptが持つenvelope digestの一致を照合する。coreGraphDigestはcoreGraph全体のcanonical digestで、trusted callerが期待する値へ照合する。bundle digestはheaderとrefのcanonical bytesから算出し、bundle自身のdigestをheaderへ入れない。各receiptも上位bundle digestを含めず、共通binding IDと上流のobject refを保持する。class／JAR／compiler出力のinventoryは実際の成果物rootだけを対象とし、receipt・manifestは別evidence rootへ保存して自己参照を避ける。未知の循環参照・参照先のrole違反はschema不正とする。
 
 #### 9.47.3 必須入力roleと生成の対応
 
@@ -2388,13 +2388,22 @@ snapshot領域の32 MiB／128 MiB／16 entryをruntime JARやtoolchain inventory
 | 既知profileを名乗る別digest、現在内容と成功表明が不一致、別binding・古いreceiptの交換、authority自己申告 | reader profile_mismatch／claim_mismatch／content_mismatch。graph拒否し、producer_failedや部分的な診断へ格下げしない |
 | path逸脱・symlink・登録外entryをreaderが検出 | reader path_invalid／inventory_mismatch。producerのpath_invalidとは別の判定 |
 
+bundleや状態objectの欠落は、readerから見た状態で分ける（§9.48）。
+
+| 状態 | 分類と扱い |
+| --- | --- |
+| envelopeとbundleがともにない（index・状態objectを保存できなかったexport失敗を含む） | reader unavailable（owned_offer_envelope_missing）。producerStateを推測せず、入力を読まない |
+| bundleを必須とするprofileで、envelopeだけがありbundleがない | reader required_evidence_missing。構造不正としてgraphを拒否する |
+| bundleはあるがindex・failure／unavailable証拠の参照先がない | reader required_evidence_missing |
+| bundleを必須としない現行test profile（§9.38〜9.46） | bundleの有無を判定へ使わない。§9.37の判定を維持する |
+
 合法な未対応と、成功表明に必要な証拠の欠落を取り違えない。新しい理由がどのstageで合法かをschemaに固定し、未知reason・失敗後のsuccessを拒否する。failedの内容拒否をreaderが再確認する範囲は承認recipeに明記し、実参照や過去の実行artifactとの関係を静的readerが独立に再証明したと扱わない。
 
 #### 9.47.7 回帰条件と次の公開API実証（未実装）
 
 | ID | 条件 |
 | --- | --- |
-| BM01 | canonical JSONのobject順・配列順／重複・日本語／空白path・raw sourceのBOM／CRLFをcross-language vectorで確認。別内容の正規化による同一視を拒否 |
+| BM01 | canonical JSONのobject順・配列順／重複・日本語／空白path・raw sourceのBOM／CRLFをcross-language vectorで確認。U+0000〜U+001F・U+007F・U+2028／U+2029・surrogate pairを含む文字列でJava／Node.jsのbytesが一致し、lone surrogateを両方で拒否する。別内容の正規化による同一視を拒否 |
 | BM02 | completedの全ref、failed／unavailableの各completedThroughと次stageの正常unionを受理。prefix分の必須ref欠落、未到達の成功ref、null／空／全0 digestによる穴埋め、解決前のprofile／recipe digest、failure／unavailable refの混在を拒否。evidence indexは存在するobjectだけを参照し、未知field・循環・self digest・receiptを含む成果物inventoryも拒否 |
 | BM03 | coreGraph変更、graph／export／context／execution／invocation交換と上位refの自己更新を、trusted callerの期待値から拒否 |
 | BM04 | source追加／欠落／変更、seal後・最初の構築前の改変、事後hashへの再baseline化を拒否。構築後も元sealへ照合 |
@@ -2416,3 +2425,62 @@ snapshot領域の32 MiB／128 MiB／16 entryをruntime JARやtoolchain inventory
 | BM20 | 完全なmanifestを自然消費receipt・compilerWorkStatus=performed・declared_in補完・coverage改善へ変換することを拒否 |
 
 実証は、(a) schema／canonical digest／状態別の静的contract、(b) 所有compiler recipeの構築と実class対応、(c) 実runtime／library／snapshot／offerのref閉包と鮮度、の順に進める。nativeはGroovy／Kotlin wrapper × Gradle 8.11.1／9.2.1を別tupleで実行し、採用条件・fixture hash・実artifact・拒否数・実compiler／BTA呼出し数を保存する。JavaCompile／既存buildの透過対応、承認imageやloader policyが未成立なら未成立として結果に残す。全observer・manifestが揃うまで本番profile承認・本番取込を有効化しない。
+
+
+### 9.48 13af673レビュー修正・参照の向き・reader理由・欠落時の分類（2026-11-02）
+
+§9.47の設計について、次の4点を文書だけで直した。実装・native実行・承認profileは0件のままである。
+
+- offer envelopeとbundleの参照の向きを固定した。envelopeはbundleを参照せず、bundleの`offerReceiptRef`はenvelopeとは別のoffer receiptを指す。両者の対応は`ownedOfferBundles`のdigestの組で結ぶ。これで、bundle→offer receipt→envelope→bundleの循環hashを避ける。
+- §9.37.5のreader integrity理由に`owned_offer_content_mismatch`を加えた。completedを再読取して内容が合わない場合（実装済み）と、producerが記録した拒否をreaderが確認できない場合（`claim_mismatch`）を分ける。
+- envelopeとbundleの欠落、bundleだけの欠落、index参照先の欠落をreaderがどう分類するかを§9.47.6へ加えた。現行test profileではbundleを判定に使わない。
+- canonical JSONのescape規則を具体化した。既存の`BtaOwnedDriver.json()`はこの規則を満たさず、collectorへ流用しないことを明記した。BM01へ制御文字・U+2028／U+2029・surrogateのvectorを加えた。
+
+§9.47の記述が前提とする§9.46（取込み時のbounded reader）は62ca4f0でcommitした。
+
+### 9.49 manifestの静的contract実装（2026-11-02）
+
+§9.47末尾の実証(a)として、`src/test/fixtures/ownedManifestContract.mjs`へbundleのtyped union、canonical JSON、保存metadataの参照閉包検証を実装した。これはtest用の静的contractであり、本番adapter／readerを有効化しない。返却する`structure_verified`はこの層の構造検証結果であり、`diagnosticEligible=false`・`naturalContentBinding=false`を維持する。
+
+#### 入出力とschema
+
+`verifyManifest({coreGraph,bundle,envelope,entry,objects}, expected)`は、渡されたbytesのみを扱い、project fileの読取・Provider評価・compiler／BTA呼出しを行わない。entryは`{bundleDigest,envelopeDigest}`、objectsは`{objectDigest,bytes}[]`である。expectedには呼出側が独立保持するgraph／export／project／context／execution／invocation、profile／recipe ID・digest、coreGraphDigest、共有上流のbuildInvocationId、許可するlogical rootIdsを渡す。coreGraph自身の意味的妥当性と実行witnessの真正性はこのAPIの保証に含まれず、既存の上位検証の責任である。
+
+bundleは§9.47.2の`osv-mcp.gradle-owned-manifest-bundle-v1`を使い、共通header・累積成功ref・failed／unavailable固有fieldを厳密に区別する。未知field、必須field欠落、未到達ref、未解決なのに付いたprofile／recipe digest、null／空／全0 digestを拒否する。approvedは独立したexpected digestへ一致させるだけで、追加信頼を有効にしない。
+
+この段階の保存objectは`osv-mcp.gradle-owned-object-static-v1`で、schema／role／binding／refs／filesを共通必須とする。bindingはinvocationを除く共通IDであり、共有上流構築をofferごとの新規構築と数えない。roleごとの追加fieldと参照は次の通り固定する。
+
+| role | 必須追加field・ref |
+| --- | --- |
+| input-manifest | buildInvocationId、非空のsource file列。上流object refなし |
+| build-receipt | buildInvocationId、対応input-manifestへの単一ref |
+| runtime-selection | buildInvocationId、対応build-receiptへの単一ref |
+| generation-receipt | buildInvocationId、対応runtime-selectionへの単一ref |
+| offer-receipt | invocation／envelopeDigest、対応generation-receiptへの単一ref |
+| failure-receipt | invocation／stage／phase／reason／completedThrough、bundleと一致する成功prefixのref列 |
+| unavailable-evidence | invocation／stage／reason／completedThrough、bundleと一致する成功prefixのref列。phaseは禁止 |
+| evidence-index | 存在するprefix objectと状態objectのrefのみ。重複・自分自身・bundleへの参照は禁止 |
+
+fileは`{rootId,path,size,sha256}`で、許可logical root、相対path、非負safe integer、非0 SHA-256を要求する。絶対path・drive path・backslash・空component・`.`／`..`・NUL、evidence／receipt／manifest rootを成果物として列挙することを拒否する。実rootの実体確認やsymlink拒否はこの静的検証では行わず、後続のbounded readerへ残す。
+
+envelopeは本番形式とは別の`osv-mcp.gradle-owned-envelope-static-v1`で、共通ID・producerState・completedThrough・naturalContentBinding=falseのみを持つ。envelopeからbundleへの逆参照は認めず、completedのoffer receiptにあるenvelopeDigestとentryの組を照合する。既存offer envelopeや旧profileの契約は変更しない。この最小object schemaには§9.47.3の全入力role・構築output・artifact inventoryの実証をまだ含めない。将来それらのschemaと実証を加えるまで、この構造結果を「完全な入力manifest」や本番採用へ昇格させない。
+
+#### canonical digest・閉包・拒否
+
+Node側はduplicate keyを検出するJSON parserとcanonical encoderを分離した。UTF-8不正、lone surrogate、負数・小数・負0・unsafe integer、配列のhole、深さ超過を拒否する。object keyを辞書順に並べ、配列の順序・重複、文字列のUnicode・空白・percent・BOM／CRLFを保持する。保存objectはcanonical bytesそのものを要求し、refのrole・byteLength・SHA-256を照合する。
+
+参照探索は状態別に必要な全objectがindexに収録されることを要求し、未収録・余分なobject、role違反、重複index、循環を拒否する。循環検査は未検証の自己申告digestを信じる前に行い、その後で各保存objectの実bytesを再hashする。上限は1 object 1MiB・object総量8MiB・128 objects・4096 ref探索・JSON深さ32・100000 nodesである。
+
+失敗phase／理由も任意文字列にしない。prepareのcapture／seal、buildのallocate-output／verify-empty／compiler／packaging、runtime-selectionのselect、snapshot-generationのgenerate、offerのbinding／precheck／call／postcheck／captureと、実装の`failureCases`に固定した理由の組だけを認める。unavailableはprepareのtoolchain_unsupported／profile_unapproved／recipe_unsupported、buildのbuild_unsupported、runtime-selectionのloader_unsupported、snapshot-generationのgenerator_unsupported、offerのconsumer_unsupportedに限定する。この表は静的fixtureの初期語彙であり、既存native producerの理由全件を新形式へ移行したという意味ではない。
+
+構造不正は`owned_manifest_schema_invalid`、循環はcycle、欠落はrequired_evidence_missing、独立expectedとの不一致はbinding_mismatch、保存bytes／digest不一致はcontent_mismatch、状態receiptとbundleの主張矛盾はclaim_mismatchとして拒否する。envelopeとbundleが両方ない場合だけはowned_offer_envelope_missingのunavailableを返す。ここでの理由は静的contract用で、本番readerのproducer_failed／producer_unavailableや信頼gateの代替にはしない。
+
+#### 回帰テスト・再現・判定
+
+`src/test/gradle/ownedManifest.test.ts`にBM01・BM02・BM03・BM17の104テストを追加した。正常prefixと失敗phaseの組、必須／禁止ref、空・偽ref、index／状態object欠落、未知field、循環、file path、親refも更新したcontext・build・envelope交換と状態claim改変を確認する。BM17の構築失敗は合法な静的metadataを表すfixtureであり、実compilerの失敗・root新規作成・保存失敗・再試行を今回新しくnative実証したものではない。
+
+`src/test/manual/gradleOwnedManifestResults.mjs`をNodeで実行すると、固定hashのJDK 21.0.13で独立した`ManifestCanonicalProbe.java`を構築し、Nodeとの12 vector（正常6・拒否6）のbytes一致を確認する。制御文字全域、DEL、U+2028／U+2029、surrogate pair、lone surrogate、BOM／CRLF、数値境界を含み、既存`BtaOwnedDriver.json()`は使用しない。probeはJSON parserの共用による循環した検証を避けるため、型付きbinary vectorから独立にJSONを生成する。duplicate JSON keyの拒否はNode parserの回帰で確認する。
+
+[検証データ](validation/gradle-owned-manifest-contract-2026-11-02.json)には実JDK／javac・probe class・sourceのhash、12 vectorと36行の正常union／失敗phase検証結果を保存した。再生テストで現在sourceのhashと結果を照合する。Gradle／Kotlin DSLのnative matrix、実driver構築、BTA呼出しは今回0。単独canonical probeのjavac／java各1回をdriver構築やBTAの実行件数へ加えない。
+
+型検査・build・全体テストの結果はDESIGN_TODOへ記録する。次は実証(b)の所有compiler recipe、source→新規output→実行artifactの対応と、実証(c)の実runtime／library／snapshot／offerの入力閉包・鮮度である。toolchain image、loader／executorの独立承認、全observer、自然消費receipt、本番採用は未成立を維持する。

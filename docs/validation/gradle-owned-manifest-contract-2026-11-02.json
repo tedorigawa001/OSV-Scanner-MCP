@@ -1,0 +1,553 @@
+{
+  "schema": "osv-mcp.owned-manifest-static-validation-v1",
+  "date": "2026-11-02",
+  "nodeVersion": "v26.12.1",
+  "scope": "static metadata only; no Gradle, KGP or BTA execution; no real file completeness or natural-consumption receipt",
+  "sources": {
+    "src/test/fixtures/ownedManifestContract.mjs": "b9ca037ed1331ea90b66c9fe38af460e652479f1bfdcf3ea34a397f72114402f",
+    "src/test/fixtures/ownedManifestContract.d.mts": "8f55320e004f71b3a43851f1a69f4b3ee8521f75d901a3d3106642e182fae366",
+    "src/test/fixtures/ownedManifestFixtures.mjs": "31c1847a08d54d44726164763cd02702586960241919908773d22602f28b8dc9",
+    "src/test/fixtures/ManifestCanonicalProbe.java": "11a9125d4921ae7cc3068dbc18f709240b3a3670971eff3871019a9b71d8d06d",
+    "src/test/manual/gradleOwnedManifestResults.mjs": "9558998291a8853adb124b651fa21e3b333dca19b950e7c2bde19452a6e63da3",
+    "src/test/gradle/ownedManifest.test.ts": "6282fdf4a7f188daf4f816fe7e4a7122c1c402b4557616fe7ac0957302cd3a8a"
+  },
+  "jdk": {
+    "version": "openjdk 21.0.13 2026-10-20 LTS\nOpenJDK Runtime Environment Temurin-21.0.13+9 (build 21.0.13+9-LTS)\nOpenJDK 64-Bit Server VM Temurin-21.0.13+9 (build 21.0.13+9-LTS, mixed mode, sharing)",
+    "javaSha256": "0f642542ea1f0be6957557c0db96653ec128113bb5a4aaa7c2534d1d72ddb51f",
+    "javacSha256": "40425235eaac99cccf8ed57522d946313d8b5200161d1faf846b3e60d554c2ed",
+    "probeClassSha256": "9312b2e754fb4f3627238024950c15e53a0964d7cdf020ec2b491fcc812a5a93"
+  },
+  "canonicalComparison": [
+    {
+      "vector": 0,
+      "node": "eyJhIjoiXHUwMDAwXHUwMDAxXHUwMDAyXHUwMDAzXHUwMDA0XHUwMDA1XHUwMDA2XHUwMDA3XGJcdFxuXHUwMDBiXGZcclx1MDAwZVx1MDAwZlx1MDAxMFx1MDAxMVx1MDAxMlx1MDAxM1x1MDAxNFx1MDAxNVx1MDAxNlx1MDAxN1x1MDAxOFx1MDAxOVx1MDAxYVx1MDAxYlx1MDAxY1x1MDAxZFx1MDAxZVx1MDAxZn/igKjigKnwn5iAXFxcIiIsInoiOlsi5pel5pys6KqeIOepuueZvS8lIiwic2FtZSIsInNhbWUiXX0=",
+      "java": "eyJhIjoiXHUwMDAwXHUwMDAxXHUwMDAyXHUwMDAzXHUwMDA0XHUwMDA1XHUwMDA2XHUwMDA3XGJcdFxuXHUwMDBiXGZcclx1MDAwZVx1MDAwZlx1MDAxMFx1MDAxMVx1MDAxMlx1MDAxM1x1MDAxNFx1MDAxNVx1MDAxNlx1MDAxN1x1MDAxOFx1MDAxOVx1MDAxYVx1MDAxYlx1MDAxY1x1MDAxZFx1MDAxZVx1MDAxZn/igKjigKnwn5iAXFxcIiIsInoiOlsi5pel5pys6KqeIOepuueZvS8lIiwic2FtZSIsInNhbWUiXX0=",
+      "matched": true
+    },
+    {
+      "vector": 1,
+      "node": "W251bGwsdHJ1ZSxmYWxzZSwwLDkwMDcxOTkyNTQ3NDA5OTFd",
+      "java": "W251bGwsdHJ1ZSxmYWxzZSwwLDkwMDcxOTkyNTQ3NDA5OTFd",
+      "matched": true
+    },
+    {
+      "vector": 2,
+      "node": "eyJhIjoxLCJ6IjoyfQ==",
+      "java": "eyJhIjoxLCJ6IjoyfQ==",
+      "matched": true
+    },
+    {
+      "vector": 3,
+      "node": "WyJhIiwiYiIsImEiXQ==",
+      "java": "WyJhIiwiYiIsImEiXQ==",
+      "matched": true
+    },
+    {
+      "vector": 4,
+      "node": "Iu+7v3NvdXJjZVxyXG4i",
+      "java": "Iu+7v3NvdXJjZVxyXG4i",
+      "matched": true
+    },
+    {
+      "vector": 5,
+      "node": "InNvdXJjZVxuIg==",
+      "java": "InNvdXJjZVxuIg==",
+      "matched": true
+    },
+    {
+      "vector": 6,
+      "node": "REJECT",
+      "java": "REJECT",
+      "matched": true
+    },
+    {
+      "vector": 7,
+      "node": "REJECT",
+      "java": "REJECT",
+      "matched": true
+    },
+    {
+      "vector": 8,
+      "node": "REJECT",
+      "java": "REJECT",
+      "matched": true
+    },
+    {
+      "vector": 9,
+      "node": "REJECT",
+      "java": "REJECT",
+      "matched": true
+    },
+    {
+      "vector": 10,
+      "node": "REJECT",
+      "java": "REJECT",
+      "matched": true
+    },
+    {
+      "vector": 11,
+      "node": "REJECT",
+      "java": "REJECT",
+      "matched": true
+    }
+  ],
+  "cases": [
+    {
+      "state": "completed",
+      "through": "offer",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "completed",
+        "completedThrough": "offer",
+        "objects": 6,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "state": "failed",
+      "through": "none",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "none",
+        "objects": 2,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "state": "failed",
+      "through": "prepare",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "prepare",
+        "objects": 3,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "state": "failed",
+      "through": "build",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "build",
+        "objects": 4,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "state": "failed",
+      "through": "runtime-selection",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "runtime-selection",
+        "objects": 5,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "state": "failed",
+      "through": "snapshot-generation",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "snapshot-generation",
+        "objects": 6,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "state": "unavailable",
+      "through": "none",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "unavailable",
+        "completedThrough": "none",
+        "objects": 2,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "state": "unavailable",
+      "through": "prepare",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "unavailable",
+        "completedThrough": "prepare",
+        "objects": 3,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "state": "unavailable",
+      "through": "build",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "unavailable",
+        "completedThrough": "build",
+        "objects": 4,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "state": "unavailable",
+      "through": "runtime-selection",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "unavailable",
+        "completedThrough": "runtime-selection",
+        "objects": 5,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "state": "unavailable",
+      "through": "snapshot-generation",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "unavailable",
+        "completedThrough": "snapshot-generation",
+        "objects": 6,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "prepare",
+      "phase": "capture",
+      "reason": "input_changed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "none",
+        "objects": 2,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "prepare",
+      "phase": "capture",
+      "reason": "storage_failed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "none",
+        "objects": 2,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "prepare",
+      "phase": "capture",
+      "reason": "budget_exceeded",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "none",
+        "objects": 2,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "prepare",
+      "phase": "seal",
+      "reason": "input_changed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "none",
+        "objects": 2,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "prepare",
+      "phase": "seal",
+      "reason": "storage_failed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "none",
+        "objects": 2,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "prepare",
+      "phase": "seal",
+      "reason": "budget_exceeded",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "none",
+        "objects": 2,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "build",
+      "phase": "allocate-output",
+      "reason": "output_root_exists",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "prepare",
+        "objects": 3,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "build",
+      "phase": "allocate-output",
+      "reason": "output_root_invalid",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "prepare",
+        "objects": 3,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "build",
+      "phase": "allocate-output",
+      "reason": "storage_failed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "prepare",
+        "objects": 3,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "build",
+      "phase": "verify-empty",
+      "reason": "output_root_not_empty",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "prepare",
+        "objects": 3,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "build",
+      "phase": "verify-empty",
+      "reason": "output_root_invalid",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "prepare",
+        "objects": 3,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "build",
+      "phase": "compiler",
+      "reason": "build_failed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "prepare",
+        "objects": 3,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "build",
+      "phase": "packaging",
+      "reason": "build_failed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "prepare",
+        "objects": 3,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "build",
+      "phase": "packaging",
+      "reason": "inventory_mismatch",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "prepare",
+        "objects": 3,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "build",
+      "phase": "packaging",
+      "reason": "storage_failed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "prepare",
+        "objects": 3,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "runtime-selection",
+      "phase": "select",
+      "reason": "runtime_mismatch",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "build",
+        "objects": 4,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "runtime-selection",
+      "phase": "select",
+      "reason": "storage_failed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "build",
+        "objects": 4,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "snapshot-generation",
+      "phase": "generate",
+      "reason": "generation_failed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "runtime-selection",
+        "objects": 5,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "snapshot-generation",
+      "phase": "generate",
+      "reason": "storage_failed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "runtime-selection",
+        "objects": 5,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "offer",
+      "phase": "binding",
+      "reason": "binding_mismatch",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "snapshot-generation",
+        "objects": 6,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "offer",
+      "phase": "precheck",
+      "reason": "input_changed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "snapshot-generation",
+        "objects": 6,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "offer",
+      "phase": "call",
+      "reason": "call_failed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "snapshot-generation",
+        "objects": 6,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "offer",
+      "phase": "postcheck",
+      "reason": "input_changed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "snapshot-generation",
+        "objects": 6,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "offer",
+      "phase": "capture",
+      "reason": "input_changed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "snapshot-generation",
+        "objects": 6,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    },
+    {
+      "stage": "offer",
+      "phase": "capture",
+      "reason": "storage_failed",
+      "result": {
+        "status": "structure_verified",
+        "producerState": "failed",
+        "completedThrough": "snapshot-generation",
+        "objects": 6,
+        "diagnosticEligible": false,
+        "naturalContentBinding": false
+      }
+    }
+  ]
+}

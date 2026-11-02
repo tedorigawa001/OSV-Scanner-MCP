@@ -2128,3 +2128,17 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - §9.47.2のbundleをproducerState／completedThrough／failureStage・blockedStage別のunionへ具体化。成功refの累積prefixと未到達refの禁止、独立したfailure／unavailable証拠、解決前のprofile digest省略、index保存失敗の扱いを追加。
 - §9.47.4へ新規・空の専用driver output root、作成時とcompiler直前の空判定・実体照合、入力rootとの非alias、失敗後のroot再利用禁止を追加。共有driver artifactとOO09のconsumer／IC再利用とは分離。
 - BM02／BM06／BM17に状態別ref、古い内側class・resource混入、部分output・失敗prefix・再試行の回帰条件を拡充。設計のみで新規native実行・本番採用0を維持。
+
+
+### 2026-11-02: 13af673レビュー修正（manifest設計の参照の向きと分類）
+
+- [設計書§9.48](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#948-13af673レビュー修正参照の向きreader理由欠落時の分類2026-11-02)へ、envelopeはbundleを参照せず`ownedOfferBundles`のdigestの組で結ぶ参照の向きを追加し、offer receiptとenvelopeを分離。
+- §9.37.5のreader理由へ`owned_offer_content_mismatch`を追加し、claim_mismatchとの違いを明記。bundle・index欠落時のreader分類を§9.47.6へ追加。
+- canonical JSONのescape規則を具体化し、既存`BtaOwnedDriver.json()`の流用を禁止。BM01を拡充。設計のみで実装・native実行・本番採用0。
+
+### 2026-11-02: manifestのschema・canonical digest・状態別refの静的contract
+
+- [設計書§9.49](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#949-manifestの静的contract実装2026-11-02)とtest用validatorを追加。bundleの状態／連続prefix別の必須・禁止ref、独立したprofile／recipe・binding、envelopeとのdigestの組、indexの閉包・循環・自己参照・未知fieldを検証する。
+- BM01／BM02／BM03／BM17の104テストを追加。親refも再hashしたcontext／build／invocation・状態claimの交換を拒否。独立Java encoderとNodeで12 vector（正常6・拒否6）を比較し、36行の静的ケース・source fingerprint・JDK／probeのhashを[検証データ](validation/gradle-owned-manifest-contract-2026-11-02.json)へ保存。再現ハーネスと再生テストを追加。
+- 型検査・build・全体テスト成功（90 files、2,709 tests、19 files／1,289 tests skipped）。追加Gradle native／実driver構築／BTA呼出し0。canonical oracleのみjavac／java各1回。
+- 最小stage metadataの静的contractに限定。全入力role／実output・artifact・snapshotのschema拡張と実内容・鮮度の実証は次段階。structure_verifiedから診断採用・declared_in・coverageへ昇格せず、本番profile承認・自然消費receipt・本番採用0を維持。
