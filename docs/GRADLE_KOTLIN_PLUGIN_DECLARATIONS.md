@@ -4474,3 +4474,77 @@ fixture上限はsource入力64 MiB、inventory 8,192 entries、wire 1 MiB、read
 IP02〜IP07・IP13〜IP28の一部に対応する**memory contractの条件**を実証したが、nativeのread省略・隔離・完全inventory・durable seal／checkpoint・実process停止・独立registryの採用条件を満たしたとはしない。Q2の独立principal／認証IPCとseal／boot／writer fence／handoffのnative実証、Q3の実cacheとsuffix verifier・性能／memory比較、Q4の独立profileとauthority／PO3・M0接続が後続である。既存providerなしのfull検証を維持する。
 
 PO4/Q1の検証結果: 新規98回帰成功。全体108 files／3,910 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。既存のnative保存／SIGKILL・checkpoint／owner・期限境界も全体で再実行したが、providerのnative成立証明へ数えない。distにprefix／authority／journalのtest fixtureが含まれないことを確認した。実原本read省略・実checkpoint同期の置換・独立registry／認証IPC・性能計測・本番採用の追加は0。
+
+
+### 9.77 M0/A・移行control schemaと同一migration内の参照閉包（2026-11-03）
+
+#### 9.77.1 実装範囲・認証と非採用の境界
+
+§9.66のM0の最初の単位として、`src/test/fixtures/gradleOwnedMigration.ts`へ34種類のcontrol record、10 phaseのselector、認証envelopeと参照閉包の静的verifierを追加した。全入力はbytesとoperator側から渡すpinであり、filesystem／networkへrefを解決する処理、registry CAS、freeze・移行・unlink・通常受付はない。既存v1／v2／prefix fixtureと本番readerへ接続していない。
+
+scopeは`static-local-control-closure`。成功時も`selectionCurrentVerified`／`authorizationCurrentVerified`／`backendEligible`／`diagnosticEligible`／`physicalDeletionAuthorized`／`sourceTransformVerified`／`targetArtifactsVerified`／`storageDurabilityVerified`はすべてfalseである。`closureVerified:true`は、提供されたcontrol envelopeの認証・実bytes参照・局所整合性だけを表す。issuerの署名があることを、実際の原本archive・file sync・source／target内容・独立registryの現在性の確認に置き換えない。
+
+同一authority／lineage／migration／freeze、source／target identity、policy／profile／clock domainを全recordへ固定する。source／targetはformat・generation・epoch・root pair・store／checkpoint root・key ID／checkpoint issuerを持つ。sourceと異なるtarget epoch、generation+1、5つの異なるopaque root IDを要求する。root IDはpathとして解決しない。物理的な包含・alias・所有権・新規空root・専用keyのprovision実証はM2以降に残る。
+
+issuer pinは外側から与えるauthority／lineage／profileと、issuer ID／key ID／role／32-byte test keyに限定する。record本文やprojectからissuerを自己登録しない。operator、registry、source-authority、migration-verifier、compactor、coordinator、gc-executor、checkpoint、target-authority、policy、archive、clockのroleをrecord typeへ固定し、別roleの正しいMACでも拒否する。これはtest keyの参照contractであり、独立principal／鍵保護の実証ではない。
+
+#### 9.77.2 record・phase・閉包
+
+bodyは`osv-mcp.gradle-migration-control-body-v1`／schemaVersion=1、envelopeは専用domainの`osv-mcp.gradle-migration-control-envelope-v1`とする。canonical UTF-8 JSON、safe integer、strict schema、既知issuer／role／key、MACを検査する。unknown field、非canonical、重複JSON key、不正UTF-8、未知record typeを拒否する。
+
+34種類はsource enrollment／target provision／start authorization／freeze request・result・witness・absence、inventory page／root、policy／hold／time／archive、retirement intent／retention plan／release authorization／tombstone core／import map／compacted base、storage sync evidence／target checkpoint／ready／activation authorization・receipt、GC batch plan／authorization／barrier／prepared／done／completion、retire receipt／target finalization／final checkpoint／completion receiptである。freeze resultのvalidityは`migration-frozen`に固定し、`restarted`へ取り違えない。
+
+refは`{role,id,sha256,byteLength}`で、fieldごとに期待するrecord roleを固定する。SHA-256と長さは実envelope bytesに対して照合し、本文の自己hashを信用しない。同じrole＋idの重複object、欠落、role／digest／長さの交換、孤立recordを拒否する。型付きfield以外の任意refs配列やURL／JSON pointerで依存先を増やせない。
+
+| selector phase | 入口の必須ref（祖先もすべて実bytesで解決） |
+| --- | --- |
+| serving-source | source-enrollment |
+| freeze-requested | freeze-requested → start-authorization → source-enrollment／target-provision |
+| frozen | source-freeze-witnessと、その証拠に一致するinventory-root |
+| prepared | retention-planと、そのplanへのrelease-authorization |
+| ready | target-ready → base／plan／release／target checkpoint／sync |
+| selected-target | activation-receipt → activation authorization／ready |
+| deleting-source | gc-barrierと、none／prepared ref／done refのstrict progress union |
+| gc-complete | gc-completion → 全batchのdone／preparedとbarrier |
+| completed | completion-receipt → final checkpoint／finalization → retire receipts／GC完了／base |
+| aborted-before-select | unfrozenのabsence witness、またはfrozenのfreeze witnessのstrict union |
+
+必須refをoptionalとして扱わず、そのphaseにないfieldをselectorへ追加した場合も拒否する。ただしselectorは外側から渡した**形のpin**であって、現在のregistry phaseを認証した結果ではない。phase遷移・idempotent CAS・fresh challengeはM1で実装する。
+
+ref graphは明示stackで走査し、循環を拒否する。role／idで構造を辿ってから全辺の実bytesを照合するため、hashを満たせない構造的cycleも無限に追わない。共有refは一度解析するが、長さのmemoを持ち、最初に短い経路で訪れたnodeを長い経路から使っても、最長ref経路の予算を取りこぼさない。
+
+#### 9.77.3 保持分類・base・genesis
+
+source inventoryはpage順・ordinal、全entry件数／合計bytes、root role／名前のcanonical順・一意性を照合する。各rootの4,096 entries／256 MiBも維持する。entry名は単一の限定名で、slash／wildcard等を許さず、file identityはregular／nlink=1の型に限定する。これらは提供されたinventory内の整合性であり、実directoryを完全列挙した検証ではない。
+
+planのkeep／retireがsource namespace集合を過不足なく一度ずつ分類すること、retireに対応するintentが一つずつ存在することを検査する。intentの元binding／scope／terminal／reservation root、policy／hold／time／archiveのinventory binding、clock domain、holdに含まれるnamespaceのretire禁止も検査する。operator認可のpurposeはstart-only／retention-transform／select-target／delete-sourceへ固定し、validFrom < validUntilを要求する。現在時刻での認可や実行権限を付与する処理はない。
+
+import mapはnamespaceを一度ずつ分類し、source record root／countと一致させる。retained側は同じrecord root／count、retired側は対応するtombstone core envelopeへ束縛する。baseは同じplan／release／map／core集合を参照し、retained namespace root／core集合root・material digest・budgetへ一致する必要がある。session／tombstone／record数と既知control bytesも計数する。raw materialの完全な移入表・source原本との変換同値性・実target bytesの検査はM2以降である。
+
+baseのcontrolClosureRootは**baseの祖先だけ**のexact envelope refを固定domain `migration-control-ancestors-v1`でhashする。base自身・未来のready／activation／GC receiptは含めない。bundleのclosureRootも別domain `migration-control-bundle-v1`でbinding・selector・全record refを束縛する。後からreceiptを含めたfuture headを自己参照させない。
+
+target genesisは§9.66.4の`journal-v2-genesis` domainでauthority／lineage／target generation／epoch、manifest digestとactual base envelope digestを束縛し、target checkpointのrevision=0と比較する。readyはそのbase／plan／release／manifest／checkpoint／sync refへ一致させる。これはcontrol契約上の式の照合であり、manifest artifactの実bytes検証ではない。PO3/P0のprototype `v2Genesis`を変更・自動接続していない。durable v2 manifest／writer／startupとの整合は後続で統一する。
+
+#### 9.77.4 GC progress・retire receipt・finalization
+
+GC認可は選択targetのready／plan／inventoryへ束縛する。batch計画は固定source inventory全体と同じentry／file identity／size／digestを、data／temp、commit・manifest、checkpointの順で一度だけ含める。別root・inventory外・順序外のentryを認可しない。batchは最大64 entriesである。認可は全entryを直接含めず、typed gc-batch-planのref配列を持つ。1 MiBのrecord上限を維持しながら全inventoryを束縛し、比較時はpaged aggregateの予算を使う。
+
+Preparedは同じbarrierの指定batch indexと同じ内容だけを持ち、0番には前Doneなし、以後は直前indexのDoneを要求する。Doneはexact Preparedと削除entry集合root・source sync evidenceを参照する。同じbarrier／indexの別Prepared、同じPreparedの別Done、completionが選んだ前Doneとは別のbranchへの差込みを拒否する。completionは全batchを順に過不足なく含み、残存entryなし・root identity／archive保持・logical unlinkという型の証拠を要求する。
+
+retire receiptはbase内のcore、同じbaseを選択したactivation、同じGC barrier／completionへ結ぶ。finalizationはbaseの全coreについてexactなretire receiptを一つずつ持たなければならず、coreだけでcompletedへ進めない。finalizationにはfuture headを含めず、後続のfinal checkpointとregistry completion receiptが実head欄を束縛する。既存actorを復元しない、finalization段階のadmissionはclosedという型も固定した。ここでのsync／GC完了等は署名された**claim**の整合性であり、実unlink・file／directory sync・CASの確認や実行許可ではない。
+
+#### 9.77.5 上限・持越しの境界・回帰
+
+上限は1 record 1 MiB、閉包64 MiB／1,024 records／16,384 refs、inventory 8,192 entries／64 entries per page、GC batch 64 entries。JSONのdepth 32／aggregate nodes 1,000,000に加え、ref graphは最大1,024 edgesの深さ（node数上限でも制限）とする。明示stackを使うので、複数batchの前Done連鎖をJSON depth 32と混同して拒否しない。件数・全bytesをparse前にpreflightし、raw inputの重複も課金する。小さいfixture上限も強制し、上限引上げ・負数・小数を許可しない。logical budgetをpeak RSS保証とはしない。
+
+M0/Aは同一migration内のlocal control閉包に限定する。既存tombstoneや過去migrationのcarried controlがある場合は`carry_unsupported`で明示的に拒否する。旧証拠を省いて閉包が完成したことにしない。origin binding・旧issuer profile・持越しrootを検証するM0/Bが必要であり、M0全体の完了とはしない。
+
+新規97件でphase別の陽性、8,192-entryの合成inventory／128 page／128 batch plan・Doneの上限対照、prepared／done progressと複数batch、abortの両形式、署名が正しく後続refまで再生成した不整合body、欠落・orphan・重複・role／ref交換・issuer／MAC・不正JSON・binding／root／generation、carry拒否、循環、最長共有経路、record／aggregate／page／batch等の予算を検証する。restart validity・symlink／hardlink／領域外名、coreだけのretired完了、代替Doneによる分岐も拒否する。
+
+最初にmodule未実装の失敗を確認した。次に、認証・byte refがすべて正しくても保持分類・GC scope・base等の関係が未検査だと不整合を受理すること、代替Doneのbranchを受理することを負例で確認し、関係検査を追加してから再実行した。MC01／MC09〜MC18／MC23〜MC25／MC29／MC32／MC35等の**静的な一部条件**に対応するもので、source freeze・registry・durability・GCのnative採用条件を成立済みとしない。
+
+#### 9.77.6 次の実装単位
+
+M0/Bで過去control／tombstone持越しのorigin・issuer・参照閉包を実装する。その後M1の独立LineageRegistry／phase／CAS参照contract、M2のfreeze予約・実source検証・plan／base／ready構築、M3の5 root専有・cutover／GC／crash対照、M4の隔離backend／reader接続へ進む。PO4/Q2の独立provider／認証IPC、v2 durable writerとcheckpointも引き続き必要である。今回のstatic成功から移行・削除・current admissionを有効化する入口は作っていない。合成inventoryの上限対照はcontrolの表現・閉包予算の検証であり、そのentry集合が実際のv1／v2 sourceとして有効だった実証ではない。
+
+M0/Aの検証結果: 新規97回帰成功。8,192-entryの合成inventory／128 inventory pages／128 batch plans・Doneを含め、全体109 files／4,007 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。34 control typesと§9.77の6小節を確認し、distにmigration／authority／provider fixtureが含まれないことを確認した。既存のnative保存・SIGKILL等の再実行をM0の実移行／削除・独立registry・target artifact／同期の証明へ数えない。今回の新規file操作・GC・current admission・本番採用は0。

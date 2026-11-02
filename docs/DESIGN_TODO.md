@@ -2439,3 +2439,13 @@ PO4/Q0の文書検証: 公開command例と既存A1–A2／disk／restart／v2 au
 - 新規98件。native provider／IPC／独立registry／実durability・実read省略・性能改善・本番採用は未実施。次はQ2の隔離service／認証IPC・seal／boot／writer fence／handoffのnative実証、その後Q3実cache・suffix比較、Q4独立profile／authority・PO3／M0接続。
 
 PO4/Q1の検証結果: 新規98回帰成功。全体108 files／3,910 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。既存のnative保存／SIGKILL・checkpoint／owner・期限境界も全体で再実行したが、providerのnative成立証明へ数えない。distにprefix／authority／journalのtest fixtureが含まれないことを確認した。実原本read省略・実checkpoint同期の置換・独立registry／認証IPC・性能計測・本番採用の追加は0。
+
+
+### 2026-11-03: M0/A・migration control schemaとlocal参照閉包
+
+- §9.77へ34 control types／10 phase selector、roleに固定したissuer pinとcanonical認証envelope、exactなbyte ref閉包・循環／orphan／重複拒否を実装。全bytes・records・refs／nodesを有界にし、共有refの最長経路を明示stackで検証する。
+- 保持分類・intent／import map、base祖先root／budget／genesis、ready／activation、typed batch planでページ化したGC scopeとPrepared／Done／completionの単一連鎖、retire receipts／finalizationの局所整合性を照合する。署名・全refが正しくても不整合なbodyを拒否する。
+- 新規97件。実source／target bytes・archive／sync・独立registryの現在性を検証したものではなく、全採用・実行権限はfalse。既存tombstone／過去controlの持越しはcarry_unsupportedとし、黙って省かない。既存v1／v2／providerや本番readerは変更していない。
+- 次はM0/Bのcarried evidence／origin／issuer閉包、その後M1独立registryのphase／CAS、M2 freeze／plan／base／ready構築、M3 native cutover／GC・crash、M4実backend接続。v2 durable writer／checkpoint、PO4/Q2以降・本番採用も残る。
+
+M0/Aの検証結果: 新規97回帰成功。8,192-entryの合成inventory／128 inventory pages／128 batch plans・Doneを含め、全体109 files／4,007 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。34 control typesと§9.77の6小節を確認し、distにmigration／authority／provider fixtureが含まれないことを確認した。既存のnative保存・SIGKILL等の再実行をM0の実移行／削除・独立registry・target artifact／同期の証明へ数えない。今回の新規file操作・GC・current admission・本番採用は0。
