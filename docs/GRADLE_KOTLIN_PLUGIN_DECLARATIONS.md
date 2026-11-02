@@ -4415,3 +4415,62 @@ PO4/Q0の文書検証: 公開command例と既存A1–A2／disk／restart／v2 au
 - IP15・IP23へ、この区別と上限超過時の扱いの対照を加えた。
 
 あわせて、PO2の比較記録を照合する静的テスト（`gradleOwnedStorePo2.test.ts`）を直した。§9.71.4の表を読む範囲が文書の末尾までになっていたため、3e9ee00で§9.74に表が加わった時点で行数が合わなくなり、失敗していた。読む範囲を§9.71の終わり（次の`###`見出し）までに区切り、表の値を1つ変えると失敗することも確認した。
+
+
+### 9.76 PO4/Q1・fresh grant／read pin／公開gateのmemory contract実証（2026-11-03）
+
+#### 9.76.1 実装範囲と信頼の限界
+
+§9.74・§9.75に沿って、`src/test/fixtures/gradleOwnedPrefixContract.ts`へ独立したmemory contractを追加した。`principal()`はtrusted harnessがreader／operator／checkpoint／authorityのopaque objectを発行するだけで、OS peer認証・独立registry・隔離serviceを実装していない。署名keyも同じtest processが所有する。constructorのsupported／approvedは診断用のfixture設定であり、起動設定・本番registryへ登録する入口ではない。
+
+modelが成功時に返すのは`wouldReusePrefix`と`cachedProofStored`で、常に`backendEligible:false`・`diagnosticEligible:false`・`originalReadsSkipped:0`である。coldでもwarmでも実際には`replayV2`へ全commit・全payloadを渡して再検証する。既存のjournal、FileJournalCheckpoint、A1、scanner、OSV接続へcacheを接続しておらず、read／hash／checkpoint同期の省略や性能改善を実施したとはしない。
+
+Q1が扱うのはmessageの構造・binding、private proofの出自、順序・期限・gateの論理条件である。SealedSnapshotのdurable seal、実inventoryの完全列挙、InventoryPageの公開membership／extension proof、provider restart／peer fencing、実registry barrierとservice間の引渡しはQ2以降に残る。IP01〜IP28のnative採用条件全体が成立したわけではない。
+
+#### 9.76.2 source・schema・binding
+
+operatorが渡すv2 sourceは、全履歴replay・base／checkpoint pin・MAC・全ref／bytesを検証してからprivate copyで保持する。sourceのbindingはauthority／lineage／epoch／generation／journal profile／baseへ固定する。record modeとauthority-audit modeを分け、後者では実際に全stateの既存authority decoder・履歴不変条件を検証する。通常record proofをflagの変更だけでauthority proofへ昇格させない。
+
+sourceからmanifest・commit・blobと各revisionのcheckpoint viewを**メモリ内で合成**し、完全なinventory mapとdigestを作る。このcheckpoint viewは`{revision,commitDigest}`の合成bytesであり、実FileJournalCheckpointの認証chain・fsync観測ではない。constructorやgateから実同期済みと主張するreceiptを発行しない。新しいsourceを公開するときは既存inventory全体が同じbytesのprefixとして残ることを要求し、cacheがevict済みでも署名済みfork／巻戻しを拒否する。read pin存続中はsource公開を拒否し、別viewのnamespace generation／fenceを単調に進める。
+
+Acquire、grant／full-required、Complete、use receiptとそのHMAC envelopeにstrict schema・canonical UTF-8 JSON・safe integer・message size上限を適用する。重複JSON key、unknown field、未知issuer、MAC不正、非canonical・不正UTF-8を拒否する。全messageはprovider／journal／root／storage／boot／generation／fence／policy／parser／schema／profile／registry revision／checkpoint issuer・key世代とreader peer／bootへ束縛する。
+
+grantにはfresh challenge／request ID／単調request sequence／request digest、snapshot／inventory／manifest／head、registry pin、cached key、extension digest、providerのclock domain／issued／expiresを持たせる。model内の実発行台帳・current snapshotにも照合し、署名が正しいfield差替えを拒否する。署名さえあれば外部providerの主張が成立すると扱わない。Q1のextension digestはprivateな完全mapとの差分から作る診断証拠で、外部から届く公開inventory proofを実装したものではない。
+
+#### 9.76.3 fresh challenge・期限・suffix
+
+readerのboot内で256-bit CSPRNG challengeとrequest ID、単調sequenceを発行する。pending要求に一致しないresponseや受理済みchallengeを拒否する。同じ未完了Acquireの再送は同じresponseを返し、grant／pinを増やさない。返却Bufferとprivate responseを分離する。
+
+providerとreaderには別のmonotonic clockを与え、時刻値を直接比較しない。provider側expiresと、reader側のrequest開始からのelapsedを独立に確認する。両者の原点が異なる正常例を回帰に含む。grant前に応答がないpending要求も期限で解放する。自然な期限切れはuseとcandidate／pinを不成功にするが、同じcontextのcommit済みprefix proofは保持し、新challenge／grantで取り直せる。revoke／owner終了／context変更は旧proofを失効させる。
+
+fixtureのgrant上限は5秒、suffixは追加32 commits／16 MiB payload／2,048 entriesを候補値として固定し、テストでは小さい値を指定できる。suffixが上限を超える場合は陽性grantを出さず、`full-required: suffix_limit_exceeded`を返す。supported／approvedなしもfull-requiredとし、陽性grantを作らない。いずれも原本read省略を選択する設定ではない。native性能実証によって5秒以内の検証を保証した数値でもない。
+
+#### 9.76.4 pin・checkpoint／authority gate・公開
+
+正常phaseは`active → completing → decision-recorded → delivering → released`。cancel／expiryはメモリ内の一つのtransitionとしてcancelled／expiredへ進め、外部peerの停止待ち・cancelling protocolは実装していない。registry drainは新規受付を閉じ、全pinを論理的にfenceしてからbarrierを完了する。実processが停止した証明には数えない。
+
+`verify`は全sourceを再検証してprivate candidate handleを作る。checkpoint役はmodel内の同期状態とversion、authority役はcurrent状態とversionに束縛したprivate gate handleを発行する。別instance／peer／grantのhandle、偽object、gateの取り違えを拒否する。checkpoint unavailable／sync-incomplete／rollback／tail-unknownでは陽性grantもgateも出さない。これは故障状態の論理モデルであり、実checkpointの同期処理を代替する実装ではない。
+
+Completeはcandidateのhead／state root、operation binding、checkpoint／authority ref、grant／use IDへ束縛する。decisionを記録してもpinを解放しない。同じ未完了Completeの再送は同じuse receiptを返す。受理後のduplicate deliveryや二重publishを拒否し、release後の照会は`historical:true`・`wouldReusePrefix:false`の監査結果だけとなる。新しいgrant／実行権限を作らない。
+
+`publish`はcache候補と予算／evictionを一時構造で計算し、最後にprovider・reader期限、owner・現在context、checkpoint／authority versionを再確認してからcurrent cacheへ反映する。公開準備の途中で期限へ達した負例でも、candidateを公開しない。deliveringのpinはpublish前にreleaseできず、publish後も明示release／取消までsource公開を止める。古いreleaseが新しいuseのpending枠を解放しないことも検査する。phase境界への時間・失効・故障の注入で順序を実証したもので、非同期IPC間のatomic handoffを実証したものではない。
+
+#### 9.76.5 private proof・資源・出自
+
+proofは実際にfull replayが成功したprivate sourceに関連付け、handleはinstance内WeakMapで検証する。cache keyはreader peer／boot、全identity、snapshot／manifest／inventory、verified headを含む。次のviewでの再使用は、旧viewの完全inventoryが新viewの同じprefixであることを照合した新grantの下だけで候補にする。旧namespaceのkeyをそのままcurrent viewへ採用しない。
+
+cache evict後も使用中のpinがproofを保持する間は、payload・entry／node／key bytesへ計上する。同じprivate sourceを共有するproofはpayloadを一度だけ数える。新しい候補が上限へ収まらなければcache登録を見送り、既存cacheをevictして次のuseを通常検証へ戻す。使用中のproofはevictionで根拠を失わせない。
+
+fixture上限はsource入力64 MiB、inventory 8,192 entries、wire 1 MiB、reader 64、pending 64、保持use history 256件。cache候補はpayload 64 MiB／entries 4,096／private proof metadata nodes 100,000／key bookkeeping 8 MiB。小さい上限・0のcache無効化、上限を超える不正設定を検査する。use履歴は署名message・ref・phaseのmetadataだけを残し、released／cancelled／expiredのpinから大きいsourceとprefix proofへの参照を切る。sourceとcache、pending／historyの各上限は別であり、cache 64 MiBをprocess全体のpeak RSS上限へ読み替えない。
+
+`metrics`は成功したfull replayの回数、grant／publish数、live pin数、cacheのlogical bytes／entries／metadata nodes／key bytes、modelが保持するsource payload bytesを返すcopyである。実filesystemのread／fsync回数・peak heapの計測ではない。`originalReadsSkipped`は常に0で、nativeのread削減をこのcounterから報告しない。
+
+#### 9.76.6 回帰と後続
+
+新規98件でcold→warmの陽性、完全prefix extension、suffix上限超過、未対応／未承認、署名が正しい不整合fieldと全identity、wireの不正、再送・replay、各phaseのexpiry／drain、checkpoint／authorityの最終変更、早期release、Complete応答紛失、偽／別peer handle、cache上限とeviction・pin中の計上、sourceと署名keyのalias、切断とboot変更、authority audit、candidate改変、公開準備中expiry、cacheなしでのfork拒否を確認する。
+
+最初のmodule未実装に加え、Acquire再送時の二重grant、local expiry後のpin残留、無応答pendingの残留、wire上限、終了済みpinのpayload保持、checkpoint不明時の陽性grant、eviction時のpin proof計上、公開準備中の期限、sourceの署名済みforkについて、負例の失敗を確認してから修正した。
+
+IP02〜IP07・IP13〜IP28の一部に対応する**memory contractの条件**を実証したが、nativeのread省略・隔離・完全inventory・durable seal／checkpoint・実process停止・独立registryの採用条件を満たしたとはしない。Q2の独立principal／認証IPCとseal／boot／writer fence／handoffのnative実証、Q3の実cacheとsuffix verifier・性能／memory比較、Q4の独立profileとauthority／PO3・M0接続が後続である。既存providerなしのfull検証を維持する。
+
+PO4/Q1の検証結果: 新規98回帰成功。全体108 files／3,910 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。既存のnative保存／SIGKILL・checkpoint／owner・期限境界も全体で再実行したが、providerのnative成立証明へ数えない。distにprefix／authority／journalのtest fixtureが含まれないことを確認した。実原本read省略・実checkpoint同期の置換・独立registry／認証IPC・性能計測・本番採用の追加は0。

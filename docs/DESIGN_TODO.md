@@ -2429,3 +2429,13 @@ PO4/Q0の文書検証: 公開command例と既存A1–A2／disk／restart／v2 au
 ### 2026-11-03: 3e9ee00レビュー修正（grantの自然な期限切れとsuffix上限）
 
 - [設計書§9.75](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#975-3e9ee00レビュー修正grantの自然な期限切れとsuffix上限2026-11-03)へ、grantの自然な期限切れを失効・世代変更と分けて同じboot・世代のprefix proofを保持し取り直せるようにし、grantあたりのsuffix上限を超える場合は最初からfull modeを選ぶことを記録。IP15／IP23を拡充。設計のみ。あわせて、後続節の表を拾って3e9ee00以降失敗していたPO2記録照合テストの読取範囲を§9.71内へ区切った。
+
+
+### 2026-11-03: PO4/Q1・fresh grant／read pin／公開gateのmemory contract
+
+- §9.76とtest fixtureへstrict wire／HMAC・fresh challenge／reader boot・全identity binding、private proof／handle、Acquire／Complete再送、read pinのphaseと最終公開gateを実装。陽性はwouldReusePrefixという診断だけで、常にbackendEligible／diagnosticEligible=false・originalReadsSkipped=0。
+- 自然な期限切れは旧proofを保持して新grantへ、失効・context変更は旧proofを拒否。suffix上限超過は陽性grantを出さずfull-required。checkpoint不明時もgrantを出さない。pinを結果引渡しまで保持し、公開準備後にもdeadline／gateを再確認する。
+- sourceとcandidateは毎回v2全履歴replayを行う。authority-audit modeは実decoder／履歴検査まで実行。新source公開時の完全prefix照合でcacheなしの署名済みforkも拒否する。use終了後のpayload参照を解放し、evict後もpinが持つproofを予算へ計上する。
+- 新規98件。native provider／IPC／独立registry／実durability・実read省略・性能改善・本番採用は未実施。次はQ2の隔離service／認証IPC・seal／boot／writer fence／handoffのnative実証、その後Q3実cache・suffix比較、Q4独立profile／authority・PO3／M0接続。
+
+PO4/Q1の検証結果: 新規98回帰成功。全体108 files／3,910 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。既存のnative保存／SIGKILL・checkpoint／owner・期限境界も全体で再実行したが、providerのnative成立証明へ数えない。distにprefix／authority／journalのtest fixtureが含まれないことを確認した。実原本read省略・実checkpoint同期の置換・独立registry／認証IPC・性能計測・本番採用の追加は0。
