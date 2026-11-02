@@ -54,3 +54,23 @@ for(const key of ['outputSet','outputStart','compiler','postInputs','packaging',
 it('BM04 refuses a claimed post-compiler check moved into the precompiler phase',()=>{const {t,c}=clone();c.postInputs.point='precompiler';expect(()=>verifyBuildCase(c,t.policy)).toThrow('claim_mismatch');});
 import {verifyRequestedRecipe} from '../fixtures/ownedJavacContract.mjs';
 it('BM05 validates concrete requested recipe options before any input capture',()=>{expect(verifyRequestedRecipe(structuredClone(javacRecipe))).toBe(true);for(const patch of [{processorPolicy:'full'},{sourcepath:['src']},{generators:['unregistered']},{argumentFile:'unknown.args'}])expect(()=>verifyRequestedRecipe({...structuredClone(javacRecipe),...patch})).toThrow('recipe_invalid');});
+
+import {verifyInventory,codeUnitOrder} from '../fixtures/ownedJavacContract.mjs';
+import {executorProcess} from '../fixtures/ownedJavacExpected.mjs';
+it('orders inventories by code units, not locale collation, and rejects other orders',()=>{
+ expect(['b','日本語 空白','Z','a'].sort(codeUnitOrder)).toEqual(['Z','a','b','日本語 空白']);
+ const {c}=clone();const inv=structuredClone(c.inputManifest.sourceInventory);expect(()=>verifyInventory(inv)).not.toThrow();
+ inv.files.reverse();expect(()=>verifyInventory(inv)).toThrow('owned_javac_inventory_mismatch');
+});
+for(const [name,fault] of Object.entries({
+ 'inherited NODE_OPTIONS':(t:any)=>{t.report.executorProcess.environment.NODE_OPTIONS='--require x';},
+ 'unlisted inherited variable':(t:any)=>{t.report.executorProcess.otherVariables.push('NODE_OPTIONS');},
+ 'extra executor option':(t:any)=>{t.report.executorProcess.execArgv=['--require','x'];},
+ 'preload executed':(t:any)=>{t.injection.markerCreated=true;},
+ 'injection not offered':(t:any)=>{delete t.injection;},
+}))it('rejects an executor process not isolated from the harness environment: '+name,()=>{const r=load();fault(r.cases[0]);expect(()=>verifyJavacRecord(r,{currentSources:false})).toThrow();});
+it('records the fixed executor environment and code-unit ordered source inventory natively',()=>{
+ const r=load();expect(r.schema).toBe('osv-mcp.owned-javac-construction-proof-v2');expect(r.preReviews.map((p:any)=>[p.schema,p.committedIn])).toEqual([['osv-mcp.owned-javac-construction-proof-v1','cd2b982']]);
+ for(const t of r.cases){expect(t.report.executorProcess).toEqual(executorProcess(t.report.nodeRuntime.platform));expect(JSON.stringify(t.report.executorProcess)).not.toMatch(/0x[0-9A-F]+:/);expect(t.injection).toMatchObject({nodeOptionsOffered:true,markerCreated:false});}
+ const stderr=r.cases[0].report.cases.find((c:any)=>c.case==='implicit-source-blocked').compiler.stderr;expect(stderr).toContain('<case>/src/日本語 空白/Driver.java');expect(stderr).not.toContain('???');
+});

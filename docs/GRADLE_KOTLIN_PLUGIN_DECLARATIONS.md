@@ -2550,3 +2550,87 @@ node src/test/manual/gradleOwnedJavacResults.mjs /private/tmp/owned-javac \
 閉じたrecipeでのsource seal→fresh output→JAR→限定Java mainの対応は実証できた。一方、JDK／Nodeのimage全体の独立承認、loader／transformerの完全な証拠、host scriptの評価bytes、任意の同時writer排除は未成立である。現在内容のhash・run内token・callerが保持したTask witnessを、過去の実行の独立認証として扱わない。
 
 Node executorは具体的なsource／引数／保存bytesだけを扱い、Gradle Provider／FileCollection／KGP getterを追加評価しない。ただし全observerのsupplier・resolution・transform・file I/Oを計測した実証ではない。実BTA runtime／library／snapshot／offerのmanifest閉包・鮮度、信頼無効／profile未承認時の本番no-read gate、既存buildへの透過対応は次段階へ残す。本番profile承認や取込を有効化せず、declared_in・coverage・compilerWorkStatusへ昇格させない。
+
+#### cd2b982レビュー修正（2026-11-02）
+
+構築を担う所有executor（Node）の起動環境、inventoryの並び順、記録した診断の3点を直し、両DSL・Gradle 8.11.1／9.2.1のnativeを再実行した。BTA呼出し・ダウンロードは0である。
+
+- Gradle recipeはexecutorの環境変数を全て消し、`TZ=UTC`だけを渡して`node -- producer`で起動する。修正前は`NODE_OPTIONS`（`--require`等）を含むGradleの環境をexecutorがそのまま受け継いでいた。javac／javaの子processは修正前から固定環境である。nativeハーネスは毎回`NODE_OPTIONS`でpreload scriptを渡し、それがexecutorで実行されない（marker fileが作られない）ことを記録・検証する。
+- executorの実環境は、固定値（`TZ`）の値と、それ以外の変数の名前だけを記録する。macOSは空環境で起動しても`__CF_USER_TEXT_ENCODING`（値にuser IDを含む）を加えるため、darwinに限りこの名前だけを許可し、値は記録しない。`execArgv`は空であることを要求する。
+- source／output inventoryを、ICUのcollationに依存する`localeCompare`ではなくUTF-16 code unit順に並べ、verifierでもその順序を必須にした。並べた配列は入力manifest・output set・receiptのdigestへ入るため、Node／ICUの版で順序が変わるとdigestが変わりうる。
+- 記録するjavac／javaの出力で、長いpathから先に`<artifact>`／`<output>`／`<case>`／`<workspace>`へ置き換える。修正前はrootを先に置換していたため、内側の3 tokenが一度も現れなかった。javacに`-J-Dstdout.encoding=UTF-8`／`-J-Dstderr.encoding=UTF-8`を渡し、LANG=Cのままでも日本語pathの診断を`???`へ失わずに記録する。
+- 記録の重複（各caseのsource・class・JARの全bytes）の縮小は見送った。
+
+記録はproof-v2とし、`baselineRevision`を加えた。v1はcd2b982のcommit済み原本として要約を`preReviews`へ残した。件数は変わらない（156 case、javac 76回、artifact実行20回、completed 12／refused 144、BTA 0）。静的テストは216件から217件になり、修正前の実装と記録では8件が失敗することを先に確認した。executor binaryのhashは引き続きexecutor自身の自己申告であり、Node imageの承認は未成立である。
+
+### 9.51 所有javac driverと実BTAのmanifest接続・鮮度の限定実証（2026-11-02）
+
+§9.47の実証(c)として、所有javacで構築したJARを実BTA runtimeへ接続し、source→fresh output→driver artifact→runtime→library cohort→snapshot generation→configuration／parameter→offerの対応を保存した。Groovy／Kotlin wrapper × Gradle 8.11.1／9.2.1で実行したtest-onlyの実証である。本番adapter・scan系toolへの取込は有効にしない。
+
+#### 構築からruntimeへの対応
+
+`OwnedBtaManifestDriver.java`を所有executor `ownedBtaManifestProducer.mjs`が直接javacで構築する。§9.50の空classpath recipeとは別に、`gradleBtaDriverRuntime.mjs`の閉じたtest profile（Kotlin 2.0.20／2.2.20）へ一致する非空classpathを明示する。profileの全JARをprivate runtime rootへコピーし、coordinate・raw SHA-256・size・occurrence・pathを保持する。stdlibの同一artifactを末尾にもう一度入れ、重複を消さないことも確認する。
+
+sourceのraw bytes、具体的なjavac引数・固定env、java／javac hash、executor source群を入力manifestへsealする。output rootは新規作成し、作成直後とcompiler直前に空と同じ実体tokenを確認する。終了後の入力を元sealへ照合し、内側Binding classを含む全classを新規JARへ収録する。MANIFESTは固定literal、class entryはoutput-setへ結ぶ。build receiptはinput／output／JARのdigestを持つ。Node自体はGradleのProcessBuilderで環境を消しTZ=UTCだけを渡して起動し、Node optionsを継承しない。javac／java childのenvはLANG=C・LC_ALL=C・TZ=UTCに限定する。
+
+Java childのclasspathはdriver JARを先頭に、manifestと同じruntime occurrence列を渡す。childは実`java.class.path`を照合し、driver・BTA API・implementation・Kotlin compilerのCodeSourceと現在のraw JAR hashを記録する。runtime順序変更・重複削除・private runtime JAR改変・driver JAR改変の4件は、childを起動せず拒否する。実行後もdriver／runtime／sourceを元sealへ照合する。原本のGradle cacheは変更しない。
+
+#### library・snapshot・configuration／parameter
+
+実BTAで旧libraryと現在libraryを各1回構築する。source集合・BTA引数・configuration・正常終了・全outputを保存し、新規library JARの全entryをcompiler outputへ対応付ける。未知resourceを自己申告で許すpolicyは設けない。library JARのraw digestをprimary identityとする。
+
+cohortは`library, stdlib, library`の3 occurrenceである。各library入力のdigestを保持したまま、実`calculateClasspathSnapshot(..., CLASS_MEMBER_LEVEL)`と`saveSnapshot`で3 snapshotを生成する。旧／現在で計6回であり、同じartifactの重複も独立したoccurrenceとsave先として保持する。generation receiptはsource・library output／JAR・cohort digest・各snapshotのsize／digest・generatorの実artifact・format／granularity・上流driver build receiptを結ぶ。旧libraryと現在libraryのJARおよびlibrary snapshotのdigestが異なることを確認する。
+
+offerは私有stagingと保存evidenceへsnapshotをコピーし、元generation receiptを変更しない。public BTA APIで作成したconfigurationとparameterを実参照で登録し、成功した`useIncrementalCompilation`のreceiver・parameter・snapshot path列・SourcesChangesを保存する。呼出し直前には、登録済みconfiguration／binding／parameter、service所有project、source hash、引数、generation、cohortの対応を検査する。JSONのID文字列だけでは呼出しを認可しない。
+
+正常offerは実`compileJvm`へ渡し、consumer class等の出力を確認する。変更なしrepeatでは同じsource・引数・snapshot path・IC基準を使い、configuration／parameter／bindingは新しく作る。ICの前回成功後inventoryとrepeat前inventoryを照合する。内部no-opの判別は行わず、成功してもexecutionEvidence=bta-call-only・compilerWorkStatus=unknownを維持する。
+
+#### 鮮度確認と拒否範囲
+
+全19 offer caseを次の独立した期待表へ照合する。失敗理由をproducerの自己申告だけから期待値へ採用しない。
+
+| 検証 | 結果 |
+| --- | --- |
+| 正常offer・変更なしrepeat | 実BTA正常終了、offered-inputs-only |
+| staging改変・snapshot交換・旧snapshot bytesの流用 | snapshot_stale、consumer呼出し前に拒否 |
+| 保存evidence改変 | snapshot_storage_mismatch、consumer呼出し前に拒否 |
+| generation receipt交換 | generation_binding_mismatch |
+| library JAR改変 | library_stale。拒否時の破損bytesも別fileへ保存してreaderが照合 |
+| cohortの順序変更・重複削除 | cohort_binding_mismatch |
+| default／別登録configuration | configuration_unregistered／configuration_binding_mismatch |
+| 別parameter・parameterへのsnapshot順序変更 | parameter_binding_mismatch |
+| project・引数交換 | context_binding_mismatch |
+| 登録後のconsumer source変更 | source_stale |
+| BTA戻り後のsnapshot改変 | postflightでsnapshot_stale。実BTA呼出しは件数へ含める |
+| postflight後・capture前の改変 | captureでsnapshot_stale。過去の成功で補わない |
+
+保存evidence→staging→libraryの内容をpreflight／postflight／captureで元generationへ照合する。Java child終了後、Node readerも各caseの保存snapshot・staging・consumer sourceを実際に再読取し、最後に観測された状態へ一致させる。元generationのsource・library JAR・全output・snapshotも最初のreader captureで再照合する。library改変の対照だけは共用libraryを次case用に復元するため、拒否時に保存した破損fileで過去の拒否を確認し、現在の復元済みlibraryをstaleと判定しない。
+
+#### proof bundle・保存証拠
+
+`owned-bta-proof-bundle-v1`はこの実証専用の参照DAGである。canonical bytesの各objectへrole／objectDigest／byteLengthを付け、input manifest・output-set・build receipt・runtime selection・2 generation receipt・19 offer／failure receiptを結ぶ。indexは既存objectだけを列挙し、自身・上位bundleへ逆参照しない。header自身のdigestも別fieldに置く。readerは独立に検証したnative証拠から期待するDAGを照合し、追加／欠落・role交換・循環や自己参照への変更を拒否する。
+
+このschemaは本番`osv-mcp.gradle-owned-manifest-bundle-v1`への採用ではなく、構築・runtime・generation・offerの閉包を検証するtest用表現である。graphのcoreGraphDigest／追加信頼／profile承認／envelopeとの組を含む本番取込の契約は後続に残す。offer／failure receiptのproducerStateは今回の限定executor内の結果であり、scanのcoverage・declared_inへ変換しない。
+
+[検証データ](validation/gradle-owned-bta-manifest-2026-11-02.json)へ、実JDK／Gradle API・executor／fixtureのhash、source／class／JAR bytes、runtime occurrence、generationとbinding・全観測、proof bundleを保存する。collectorは保存native証拠を検証してから件数を算出する。公開recordに絶対pathや秘密environment値は入れない。
+
+#### 検証結果・再現
+
+最終4 buildでjavac 4回・driver Java child 4回、実BTA compileJvm 24回（library 8・consumer 16）、snapshot生成24回を確認した。offerは76件でcompleted 8／failed 68、runtime起動前拒否16を加えた拒否は84件である。BTA後の失敗8件も実consumer呼出し16回へ含める。自然消費receipt・本番採用は0を維持する。開発中の中間実行はこの最終matrixへ加算しない。
+
+`btaManifest.integration.test.ts`は各版48テスト（各DSL24）、`btaManifest.test.ts`は133テストで記録を再生し、source／runtime／generation／binding・到達済み証拠の欠落、最初のreader観測の差分、参照交換、偽の成功化、件数水増しを拒否する。再現は既存JDK／runtime cacheを使い、各版について以下を実行する。
+
+```bash
+env JAVA_HOME=<jdk-home> GRADLE_USER_HOME=<gradle-cache> \
+  OSV_MCP_TEST_GRADLE=<gradle-8.11.1-or-9.2.1>/bin/gradle \
+  OSV_MCP_BTA_MANIFEST_OUTPUT=/private/tmp/owned-bta-manifest-<version>.json \
+  npx vitest run src/test/gradle/btaManifest.integration.test.ts --maxWorkers=1
+node src/test/manual/gradleOwnedBtaManifestResults.mjs /private/tmp/owned-bta-manifest \
+  docs/validation/gradle-owned-bta-manifest-2026-11-02.json
+```
+
+#### 採用判定
+
+所有recipeでsourceから実BTA入力までのmanifest対応と、限定caseでの鮮度確認・拒否を実証した。保証の根拠は承認候補executorの表明とcallerの実行witnessであり、公開recordの再生だけで過去の実行・ロード済みbytesを独立認証したとは扱わない。JDK／Node image全体、loader／transformer、host script評価bytes、任意の同時writer排除、全observerの追加評価計測は未成立である。
+
+KGP所有getterやGradle Provider／FileCollectionを追加評価しない所有driver方式を維持するが、既存KGPの自然消費bytes receiptや透過取得が成立したという結果ではない。次はtoolchain／loader／executorの追加信頼・profile・読取前gateと、このproof manifestから本番adapter／静的取込へ渡す採用条件の具体化である。現時点で本番profile承認・scan系toolでの診断採用・coverage／declared_in補完を有効にしない。

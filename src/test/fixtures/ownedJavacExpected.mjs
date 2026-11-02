@@ -1,6 +1,10 @@
 import {sha256,objectDigest} from './ownedManifestContract.mjs';
 export const javacRecipe=Object.freeze({id:'owned-javac-closed-v1',release:21,encoding:'UTF-8',processorPolicy:'none',implicitPolicy:'none',classpath:[],modulepath:[],sourcepath:[],generators:[],resources:[],environment:{LANG:'C',LC_ALL:'C',TZ:'UTC'},manifest:'Manifest-Version: 1.0\r\n\r\n',maxEntries:64,maxFileBytes:1048576,maxTotalBytes:4194304});
 export const javacRecipeDigest=objectDigest(javacRecipe);
+// Fixed environment and Node options of the owned executor process itself. Variables the OS adds at process
+// start are recorded by name only (macOS __CF_USER_TEXT_ENCODING carries the user id), never by value.
+export const executorEnvironment=Object.freeze({TZ:'UTC'});
+export const executorProcess=platform=>({environment:{...executorEnvironment},otherVariables:platform==='darwin'?['__CF_USER_TEXT_ENCODING']:[],execArgv:[]});
 export function driverSource(removed=true,value='one') {return `import java.nio.file.*;\npublic class Driver {\n public static class Inner { static String value(){ return "${value}"; } }\n ${removed?'public static class Removed {}':''}\n public static void main(String[] args) throws Exception {\n  var uri=Paths.get(args[0]).toRealPath().toUri();\n  if(!Driver.class.getProtectionDomain().getCodeSource().getLocation().toURI().equals(uri) || !Inner.class.getProtectionDomain().getCodeSource().getLocation().toURI().equals(uri)) throw new IllegalStateException("origin");\n  System.out.println("owned-driver:"+Inner.value()+":inner");\n }\n}\n`;}
 // Explicit, independent expectations. Refusals never derive their expected state from producer metadata.
 export const buildCases=Object.freeze({

@@ -5,3 +5,5 @@ export const javacSources:string[];
 export function driverSource(removed?:boolean,value?:string):string;
 export function expectedSources(name:string):Record<string,string>;
 export function expectedSourceHashes(name:string):Record<string,string>;
+export const executorEnvironment:Readonly<Record<string,string>>;
+export function executorProcess(platform:string):{environment:Record<string,string>;otherVariables:string[];execArgv:string[]};

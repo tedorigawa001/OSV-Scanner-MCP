@@ -2156,3 +2156,18 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - Groovy／Kotlin × Gradle 8.11.1／9.2.1で各39 case、各版78 nativeテスト。最終4 build・156 case、実javac呼出し76・JAR実行20・正常構築12・拒否144。保存失敗前に実行済みの8回も実行件数に含める。BTA呼出し・自然消費receipt・本番採用0。
 - [検証データ](validation/gradle-owned-javac-construction-2026-11-02.json)と再現ハーネスを追加し、BM04〜BM07・BM17の静的210テストでsource fingerprint・API／JDK pins・状態別必須証拠・実entry・元seal・実行件数を再生。型検査・build成功、全体91 files／2,941 tests成功（20 files／1,367 tests skipped）。
 - 構築scopeのbuildState完了に限定し、本番offer完了や入力closure全体の採用へ昇格しない。JDK／Node image全体・loader／executorの独立承認、host script評価bytes・全observer・任意writer排除、実BTA runtime／library／snapshot／offer閉包と鮮度、本番取込は次段階。
+
+
+### 2026-11-02: cd2b982レビュー修正（所有javac executorの環境とinventory順序）
+
+- §9.50へ修正の小節を追加。Gradle recipeがexecutor（Node）の環境を消して`TZ=UTC`だけを渡し、ハーネスが渡す`NODE_OPTIONS` preloadが実行されないことをnativeで記録・検証。OSが加える変数は名前だけを記録。
+- inventoryをcode unit順にし、verifierで順序を必須化。javac診断のtoken置換順と出力encodingを修正。記録の重複縮小は見送り。
+- 両DSL・両版を再実行（各78テスト）。記録proof-v2、静的217テスト、件数不変、BTA 0、本番採用0を維持。
+
+### 2026-11-02: 所有javac driver→実BTAのmanifest閉包・鮮度実証
+
+- [設計書§9.51](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#951-所有javac-driverと実btaのmanifest接続鮮度の限定実証2026-11-02)へ、所有source／fresh output／driver JAR→固定runtime→library cohort→実snapshot生成→configuration／parameter→offerの対応を追加。test用canonical proof bundleのrole・digest・byteLengthと閉包も検証する。
+- runtime／cohortの順序・重複を保持。staging・保存bytes・library・sourceの改変、snapshot／generation／configuration／parameter／project／引数交換と旧snapshot流用を拒否。BTA後・capture前の改変と、最初のNode reader captureまで検証。library全JAR entryとcompiler outputを結ぶ。
+- Groovy／Kotlin × Gradle 8.11.1／9.2.1で最終4 build、各版48 nativeテスト。javac 4・driver child 4、実BTA呼出し24（library 8／consumer 16）・snapshot生成24。offer 76（completed 8／failed 68）、runtime起動前拒否16を含む拒否84。自然消費receipt・本番採用0。
+- [検証データ](validation/gradle-owned-bta-manifest-2026-11-02.json)・再現collector・静的133テストを追加。元source・runtime profile・binding・到達済み証拠・reader観測・bundle交換と件数改変を拒否。型検査・build成功、全体92 files／3,081 tests成功（21 files／1,415 tests skipped）。
+- proof専用schemaに限定。本番manifest／coreGraph／envelope／追加信頼gateへの統合、JDK／Node imageとloader／executorの独立承認、全observer・host評価bytes・任意writer排除は次段階。compilerWorkStatus=unknown、自然消費receipt・declared_in／coverageへの昇格なしを維持。

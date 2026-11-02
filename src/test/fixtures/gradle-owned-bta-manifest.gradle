@@ -1,0 +1,18 @@
+import groovy.json.JsonOutput
+import java.security.MessageDigest
+def sha={File f->MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex().toString()}
+def entered=false
+def executionId=System.getProperty('owned.bta.executionId')
+tasks.register('ownedBtaManifest') {
+ doLast {
+  entered=true
+  def builder=new ProcessBuilder(System.getProperty('owned.bta.node'),System.getProperty('owned.bta.producer'),projectDir.canonicalPath,System.getProperty('java.home'),System.getProperty('owned.bta.cache'),gradle.gradleVersion,executionId).directory(projectDir).redirectErrorStream(true)
+  builder.environment().clear();builder.environment().put('TZ','UTC')
+  def child=builder.start();def out=child.inputStream.getText('UTF-8');def code=child.waitFor()
+  if(code!=0)throw new GradleException("owned BTA manifest (${code}): ${out}")
+ }
+}
+gradle.taskGraph.afterTask { t,s -> if(t.name=='ownedBtaManifest'){
+ def api=new File(org.gradle.api.tasks.TaskInputs.protectionDomain.codeSource.location.toURI())
+ file('bridge-gradle.json').text=JsonOutput.toJson([executionId:executionId,gradleVersion:gradle.gradleVersion,gradleApiSha256:sha(api),actionEntered:entered,taskState:[executed:s.executed,didWork:s.didWork,skipped:s.skipped,noSource:s.noSource,failed:s.failure!=null]])
+}}

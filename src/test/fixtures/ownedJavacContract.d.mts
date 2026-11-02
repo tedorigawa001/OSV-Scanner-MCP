@@ -8,3 +8,4 @@ export function expectedArgs(sources:any):string[];
 export function buildFail(reason?:string):never;
 
 export function verifyRequestedRecipe(recipe:any):boolean;
+export function codeUnitOrder(a:string,b:string):number;

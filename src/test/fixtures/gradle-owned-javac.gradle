@@ -10,7 +10,10 @@ def entered=false
 def task=tasks.register('ownedJavacProof') {
  doLast {
   entered=true
-  def p=new ProcessBuilder(node,producer,projectDir.canonicalPath,System.getProperty('java.home'),runId).directory(projectDir).redirectErrorStream(true).start()
+  // The owned executor gets only its fixed environment; NODE_OPTIONS and other inherited values never reach it.
+  def pb=new ProcessBuilder(node,'--',producer,projectDir.canonicalPath,System.getProperty('java.home'),runId).directory(projectDir).redirectErrorStream(true)
+  pb.environment().clear();pb.environment().put('TZ','UTC')
+  def p=pb.start()
   def output=p.inputStream.getText('UTF-8');def code=p.waitFor()
   if(code!=0)throw new GradleException("owned javac producer failed (${code}): ${output}")
  }
