@@ -1,21 +1,33 @@
 {
-  "schema": "osv-mcp.owned-manifest-static-validation-v1",
-  "date": "2026-11-02",
+  "schema": "osv-mcp.owned-manifest-static-validation-v2",
+  "recordedAt": "2026-11-02T03:44:08.817Z",
+  "baselineRevision": "451b629d92f5e3065742c190b8d1dd31f19c3b47",
+  "preReviews": [
+    {
+      "schema": "osv-mcp.owned-manifest-static-validation-v1",
+      "sha256": "190f4eb23112133c0b4c1dab1f91e5ad8c645ea390eb5575f9b8f20c688b42fe",
+      "recordedAt": "2026-11-02",
+      "committedIn": "451b629",
+      "cases": 36,
+      "vectors": 12,
+      "note": "Committed v1 that accepted contradictory approval/unavailable reasons, non-ASCII field names and non-canonical top-level bytes; superseded."
+    }
+  ],
   "nodeVersion": "v26.12.1",
   "scope": "static metadata only; no Gradle, KGP or BTA execution; no real file completeness or natural-consumption receipt",
   "sources": {
-    "src/test/fixtures/ownedManifestContract.mjs": "b9ca037ed1331ea90b66c9fe38af460e652479f1bfdcf3ea34a397f72114402f",
+    "src/test/fixtures/ownedManifestContract.mjs": "e0939aac03397da27691ca984bccec7a1b63513e049ce4809bef741429311dc7",
     "src/test/fixtures/ownedManifestContract.d.mts": "8f55320e004f71b3a43851f1a69f4b3ee8521f75d901a3d3106642e182fae366",
-    "src/test/fixtures/ownedManifestFixtures.mjs": "31c1847a08d54d44726164763cd02702586960241919908773d22602f28b8dc9",
-    "src/test/fixtures/ManifestCanonicalProbe.java": "11a9125d4921ae7cc3068dbc18f709240b3a3670971eff3871019a9b71d8d06d",
-    "src/test/manual/gradleOwnedManifestResults.mjs": "9558998291a8853adb124b651fa21e3b333dca19b950e7c2bde19452a6e63da3",
-    "src/test/gradle/ownedManifest.test.ts": "6282fdf4a7f188daf4f816fe7e4a7122c1c402b4557616fe7ac0957302cd3a8a"
+    "src/test/fixtures/ownedManifestFixtures.mjs": "83cf6a17b3203a212f8a87188a965809be0b789cf80c5bf24a25b5e739de93a2",
+    "src/test/fixtures/ManifestCanonicalProbe.java": "f6b99d76d00cc889a263e2adce00b72ae2055a3e2f3121e4f6620f47fb5c76c5",
+    "src/test/manual/gradleOwnedManifestResults.mjs": "64a7d146e944d35105ddcdd48b7fb546585a3f05d6e160a2cec3310f0d622d0a",
+    "src/test/gradle/ownedManifest.test.ts": "84f9b220f77be51c5394f9cfcf2094d03ac1a1ec062a3b6462349cb2538ae7bf"
   },
   "jdk": {
     "version": "openjdk 21.0.13 2026-10-20 LTS\nOpenJDK Runtime Environment Temurin-21.0.13+9 (build 21.0.13+9-LTS)\nOpenJDK 64-Bit Server VM Temurin-21.0.13+9 (build 21.0.13+9-LTS, mixed mode, sharing)",
     "javaSha256": "0f642542ea1f0be6957557c0db96653ec128113bb5a4aaa7c2534d1d72ddb51f",
     "javacSha256": "40425235eaac99cccf8ed57522d946313d8b5200161d1faf846b3e60d554c2ed",
-    "probeClassSha256": "9312b2e754fb4f3627238024950c15e53a0964d7cdf020ec2b491fcc812a5a93"
+    "probeClassSha256": "75b1b02194756489f1b93d8f48f1347ffdef043f6f0d7ada92aefa8f49c2ca04"
   },
   "canonicalComparison": [
     {
@@ -88,6 +100,30 @@
       "vector": 11,
       "node": "REJECT",
       "java": "REJECT",
+      "matched": true
+    },
+    {
+      "vector": 12,
+      "node": "REJECT",
+      "java": "REJECT",
+      "matched": true
+    },
+    {
+      "vector": 13,
+      "node": "REJECT",
+      "java": "REJECT",
+      "matched": true
+    },
+    {
+      "vector": 14,
+      "node": "REJECT",
+      "java": "REJECT",
+      "matched": true
+    },
+    {
+      "vector": 15,
+      "node": "eyIgfiI6MSwiISI6Mn0=",
+      "java": "eyIgfiI6MSwiISI6Mn0=",
       "matched": true
     }
   ],

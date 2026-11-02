@@ -1,0 +1,24 @@
+// Public Gradle Task action wrapper around the closed, concrete-value producer.
+import groovy.json.JsonOutput
+import java.security.MessageDigest
+
+def sha={File f->MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex().toString()}
+def runId=System.getProperty('osv.javac.executionId')
+def node=System.getProperty('osv.javac.node')
+def producer=System.getProperty('osv.javac.producer')
+def entered=false
+def task=tasks.register('ownedJavacProof') {
+ doLast {
+  entered=true
+  def p=new ProcessBuilder(node,producer,projectDir.canonicalPath,System.getProperty('java.home'),runId).directory(projectDir).redirectErrorStream(true).start()
+  def output=p.inputStream.getText('UTF-8');def code=p.waitFor()
+  if(code!=0)throw new GradleException("owned javac producer failed (${code}): ${output}")
+ }
+}
+gradle.taskGraph.afterTask { t,state -> if(t.name=='ownedJavacProof'){
+ def api=new File(org.gradle.api.tasks.TaskInputs.protectionDomain.codeSource.location.toURI()).canonicalFile
+ file('gradle-javac-report.json').text=JsonOutput.toJson([schema:'osv-mcp.owned-javac-gradle-v1',executionId:runId,gradleVersion:gradle.gradleVersion,actionEntered:entered,
+  taskState:[executed:state.executed,didWork:state.didWork,skipped:state.skipped,noSource:state.noSource,failed:state.failure!=null],
+  javaSha256:sha(new File(System.getProperty('java.home'),'bin/java')),javacSha256:sha(new File(System.getProperty('java.home'),'bin/javac')),gradleApiSha256:sha(api),
+  maxWorkers:gradle.startParameter.maxWorkerCount,parallel:gradle.startParameter.parallelProjectExecutionEnabled])
+}}

@@ -2142,3 +2142,17 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - BM01／BM02／BM03／BM17の104テストを追加。親refも再hashしたcontext／build／invocation・状態claimの交換を拒否。独立Java encoderとNodeで12 vector（正常6・拒否6）を比較し、36行の静的ケース・source fingerprint・JDK／probeのhashを[検証データ](validation/gradle-owned-manifest-contract-2026-11-02.json)へ保存。再現ハーネスと再生テストを追加。
 - 型検査・build・全体テスト成功（90 files、2,709 tests、19 files／1,289 tests skipped）。追加Gradle native／実driver構築／BTA呼出し0。canonical oracleのみjavac／java各1回。
 - 最小stage metadataの静的contractに限定。全入力role／実output・artifact・snapshotのschema拡張と実内容・鮮度の実証は次段階。structure_verifiedから診断採用・declared_in・coverageへ昇格せず、本番profile承認・自然消費receipt・本番採用0を維持。
+
+
+### 2026-11-02: 451b629レビュー修正（manifest静的contractの抜け道）
+
+- §9.49へ修正の小節を追加。approvalStatusとunavailable理由を対応させ（未解決はprofile_unapprovedのみ、解決済みでは禁止）、field名を印字可能ASCIIに限定し（encoder・parser・Java oracle）、bundle・envelope・coreGraphにもcanonical bytesを要求。
+- 再生テストでJDK hashを照合し、記録をv2（recordedAt／baselineRevision、v1はpreReviews）へ更新。静的126テスト、canonical 16 vector一致。Gradle・BTA実行0、本番採用0を維持。
+
+### 2026-11-02: 所有javac recipeの構築manifest・fresh output・実行artifactの限定実証
+
+- [設計書§9.50](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#950-所有javac-recipeの構築manifest新規output実行artifactの限定実証2026-11-02)へ、具体source／引数／env・空classpath／sourcepathを持つ構築manifest、元sealとの前後比較、新規・空rootの2点検査、全class inventoryとJARの出自対応を追加。JARからouter／inner classを実ロード・実行する。
+- sourceの変更・追加・欠落、未登録source・processor／implicit source／argfile／generator、既存root・symlink・alias・未記録entry・root置換、余分／欠落classと不正JARを拒否。削除sourceの旧内側classが新rootへ混入せず旧outputが不変であること、compiler失敗時のGood.classを隔離し旧root再試行を拒否、新root再試行が成功することを実証。
+- Groovy／Kotlin × Gradle 8.11.1／9.2.1で各39 case、各版78 nativeテスト。最終4 build・156 case、実javac呼出し76・JAR実行20・正常構築12・拒否144。保存失敗前に実行済みの8回も実行件数に含める。BTA呼出し・自然消費receipt・本番採用0。
+- [検証データ](validation/gradle-owned-javac-construction-2026-11-02.json)と再現ハーネスを追加し、BM04〜BM07・BM17の静的210テストでsource fingerprint・API／JDK pins・状態別必須証拠・実entry・元seal・実行件数を再生。型検査・build成功、全体91 files／2,941 tests成功（20 files／1,367 tests skipped）。
+- 構築scopeのbuildState完了に限定し、本番offer完了や入力closure全体の採用へ昇格しない。JDK／Node image全体・loader／executorの独立承認、host script評価bytes・全observer・任意writer排除、実BTA runtime／library／snapshot／offer閉包と鮮度、本番取込は次段階。

@@ -1,0 +1,10 @@
+// Consolidate native runs. Never fabricates runs, upgrades profiles or refreshes artifact approvals.
+import {readFileSync,writeFileSync} from 'node:fs';
+import {javacSources,javacRecipeDigest} from '../fixtures/ownedJavacExpected.mjs';
+import {javacVerificationSources,fileFingerprints,verifyJavacTuple,verifyJavacRecord} from '../fixtures/ownedJavacProof.mjs';
+import {assertNoAbsolutePaths} from './kgpRecordPaths.mjs';
+const [prefix,out]=process.argv.slice(2);if(!prefix||!out)throw Error('usage: prefix output');
+const cases=[];for(const v of ['8.11.1','9.2.1']){const m=JSON.parse(readFileSync(prefix+'-'+v+'.json','utf8'));if(m.schema!=='osv-mcp.owned-javac-matrix-v1'||m.cases.length!==2||m.cases.some(t=>t.gradleVersion!==v))throw Error('bad native matrix');cases.push(...m.cases);}
+const scope={};for(const t of cases)for(const [k,v]of Object.entries(verifyJavacTuple(t)))scope[k]=(scope[k]??0)+v;
+const result={schema:'osv-mcp.owned-javac-construction-proof-v1',recordedAt:new Date().toISOString(),recipeDigest:javacRecipeDigest,sourcesSha256:fileFingerprints(javacSources),verificationSourcesSha256:fileFingerprints(javacVerificationSources),scope,limitations:['test-only','javac-closed-recipe-only','buildState-is-build-scope-not-offer-completed','full-jdk-and-node-images-not-approved','source-to-output-is-owned-executor-assertion','no-class-per-source-origin-claim','code-source-is-not-independent-loaded-byte-proof','host-script-evaluated-bytes-not-proven','no-arbitrary-concurrent-writer-exclusion','no-kgp-getters-used-but-no-global-observer-proof','no-bta-runtime-or-snapshot-manifest','no-natural-consumption-receipt','no-production-profile-or-import'],cases};
+verifyJavacRecord(result);assertNoAbsolutePaths(result);writeFileSync(out,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(scope));

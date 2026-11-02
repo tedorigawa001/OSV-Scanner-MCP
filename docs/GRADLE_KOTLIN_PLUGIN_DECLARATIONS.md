@@ -2484,3 +2484,69 @@ Node側はduplicate keyを検出するJSON parserとcanonical encoderを分離�
 [検証データ](validation/gradle-owned-manifest-contract-2026-11-02.json)には実JDK／javac・probe class・sourceのhash、12 vectorと36行の正常union／失敗phase検証結果を保存した。再生テストで現在sourceのhashと結果を照合する。Gradle／Kotlin DSLのnative matrix、実driver構築、BTA呼出しは今回0。単独canonical probeのjavac／java各1回をdriver構築やBTAの実行件数へ加えない。
 
 型検査・build・全体テストの結果はDESIGN_TODOへ記録する。次は実証(b)の所有compiler recipe、source→新規output→実行artifactの対応と、実証(c)の実runtime／library／snapshot／offerの入力閉包・鮮度である。toolchain image、loader／executorの独立承認、全observer、自然消費receipt、本番採用は未成立を維持する。
+
+#### 451b629レビュー修正（2026-11-02）
+
+静的contractをすり抜ける3種の入力を直した。Gradle・BTA・ダウンロードは0で、canonical oracleのjavac／javaを各1回だけ再実行した。
+
+- 承認状態とunavailable理由を対応させた。approvalStatus=unavailable（profile未解決）はprepareの`profile_unapproved`だけを許し、解決済み（approved）では`profile_unapproved`を禁止する。修正前は、approvedのまま`profile_unapproved`を名乗るbundleや、未解決のまま`toolchain_unsupported`を名乗るbundleを受理していた。
+- object field名を、空でない印字可能ASCII（U+0020〜U+007E）に限った。修正前はASCII以外のkeyを受理してUTF-16順に並べていた。Java oracleもUTF-16順のため一致していたが、code point順で並べる実装とは結果が変わる。encoder・parser・Java oracleの三者で同じ拒否を行い、vectorを4件追加した（拒否3、ASCII順の正常1）。
+- bundle・envelope・coreGraphにも、保存objectと同じくcanonical bytesそのものを要求する。修正前は`123.0`・`1e0`・余分な空白・key順の変更を、parse後のdigestが同じなら受理していた。非canonicalな入力は`owned_manifest_content_mismatch`で拒否する。
+- 再生テストで、記録のjava／javac hashを固定JDK profileへ照合する。記録へ`recordedAt`／`baselineRevision`を加え、schemaをv2とした。v1は451b629のcommit済み原本として要約を`preReviews`へ残した。
+
+静的テストは104件から126件になった。修正前のcontractでは126件中19件が失敗することを先に確認した。Java／Nodeのcanonical比較は16 vectorで一致した。structure_verifiedの意味と、本番採用・自然消費receipt0は変わらない。
+
+### 9.50 所有javac recipeの構築manifest・新規output・実行artifactの限定実証（2026-11-02）
+
+§9.47の実証(b)として、閉じたjavac recipeを所有するtest用executorと、構築入力／output-set／JAR／構築receiptのtyped contractを追加した。source集合から新規outputを作り、全classを新規JARへ収録して、そのJARから`Driver`と`Driver.Inner`を実際にロード・実行した。Groovy／Kotlinのwrapper × Gradle 8.11.1／9.2.1で同じ条件を確認した。
+
+#### recipeと構築manifest
+
+`ownedJavacExpected.mjs`の`owned-javac-closed-v1`を初期recipeとする。実行は`ownedJavacProducer.mjs`が所有し、GradleのTask actionはJDK公開APIのProcessBuilderでこのexecutorを起動する。Kotlin wrapperも既存の実証と同様に共通Groovy scriptをapplyする。Kotlin sourceをjavacへ渡す実証や、KGP taskの入力を透過的に採取する方式ではない。
+
+compilerは固定hashのJDK 21.0.13の`bin/javac`を、具体的な引数列・cwd・明示envで起動する。sourceはUTF-8、`--release 21`、`-proc:none`・`-implicit:none`・`-g:none`を固定し、classpath／sourcepathを所有する空directoryへ限定する。modulepath・processor・generator・resource・argfileの追加は初期recipeで認めない。compiler／Java childのenvはLANG=C・LC_ALL=C・TZ=UTCのみにし、親のCLASSPATH・JAVA_TOOL_OPTIONS等を継承しない。
+
+新しい`osv-mcp.gradle-owned-javac-input-v1`は、buildInvocationId、独立したrecipeDigest、source directory全inventory（directory名・file名・raw bytes・size・SHA-256）、明示env・引数列、空入力の列、java／javac hash、executor source群とNode executable／versionの情報を持つ。日本語／空白pathは配列要素の値として保存し、ASCII以外のobject keyへ変換しない。source順とoutput inventoryは別に保持し、compilerへ渡したsource集合からoutput集合への対応を表す。class単位のsource帰属をSourceFile属性から推定しない。
+
+構築時の型は§9.49の最小stage objectとは別のtest schemaである。input manifest・output-set・build receipt・evidence indexをcanonical digestで結び、output-setはbuildInvocationId・専用rootのrun内実体token・全inventoryへ対応させる。caseの`buildState=completed`はこの所有Java構築の完了だけを意味し、offerのproducerState=completedや、本番bundleの全stage完了を意味しない。旧static-v1の全stage objectを実BTAへ移行したものでもない。
+
+#### seal・空root・outputとartifact
+
+source capture後に入力manifestを別evidence rootへCREATE_NEWで保存し、compiler前と正常終了後の現在inventoryを、最初のsealへ比較する。差分を新しいbaselineへ置き換えない。seal後のsource変更・追加・欠落はcompiler呼出し前に、終了後の変更はpackaging前に拒否する。未登録sourceの混入もcapture時に拒否する。
+
+outputは承認したworkspace内のoutput parentへbuildInvocationIdごとに新規作成する。既存の空directory・file・symlinkも再使用しない。ancestor symlink・source rootとのaliasを割当前に拒否し、作成直後とcompiler直前に同じroot実体とdirect entry数0を確認する。直前検査は最初の1 entryで拒否し、class／resource／隠しfile／空directory／symlinkの混入時にはcompilerを呼ばない。root置換も同様に拒否する。
+
+正常終了後の同じrootから、内側classを含む全inventoryを取得する。初回は`Driver`・`Driver$Inner`・`Driver$Removed`と`Retired`・`Retired$Nested`を構築する。次の構築で`Retired.java`を実際に削除し、DriverからRemovedの宣言も除去する。新規outputとJARはDriver／Innerだけになり、元outputの全bytesは不変である。削除sourceのdigestと前回source cohortも照合する。
+
+JARは所有packagerが新規fileへCREATE_NEWで作る。classはoutput-set ref、META-INF/MANIFEST.MFはrecipeに固定したCRLF literalへ結び、全entryとoriginを照合する。JAR全体のraw SHA-256を主identityとし、entry inventoryは代用にしない。readerは抽出せずにlocal／central header・CRC・名前・順序・内容を照合し、未知resource、MANIFEST欠落／別literal、重複名、traversal、file／directory衝突、展開予算超過を拒否する。予算対照は実際に圧縮した大きなentryを用い、展開前のsize上限で止める。
+
+`java -cp <artifact> Driver <artifact>`の直前と直後に同じJARのraw digestを照合する。mainはouter／inner両classのCodeSourceが引数のJAR URIと一致することを確認し、内側classのmethodを実行する。構築receiptはsource seal・output-set・JAR digest・正常compiler終了・限定Java main実行scopeを結ぶ。これは所有executorの実行表明であり、CodeSourceをロード済みbytecodeの独立証明へ昇格させない。
+
+#### failed prefix・部分output・保存失敗
+
+2 sourceのうちGood.javaは正常、Broken.javaは未解決methodを含む負例で、実javacがGood.classを生成して非0終了することを確認した。この部分outputはfailureの診断inventoryだけに残し、packaging・Java実行・成功receiptを禁止する。同じrootでの再試行は、旧rootの内容を変えずcompiler呼出し0で拒否する。別のbuildInvocationId・新規rootでの正常再試行も検証し、Good.classを混在させない。
+
+失敗phaseまでのcompiler記録・空root検査・元sealとの比較・output inventory等を必須にし、終端の理由だけを残して到達済み証拠を削る改変を拒否する。理由／phase／buildStateはcase別の独立した期待表へ照合する。実CREATE_NEWのpackaging保存失敗では既存artifactが不変であることを確認する。index／状態保存先をdirectoryにして実保存を失敗させる対照では、exported=falseとし成功receipt・indexを公開しない。この2 caseは保存前にJava mainを実行済みなので、実行件数から除外しない。
+
+#### 検証結果と再現
+
+[検証データ](validation/gradle-owned-javac-construction-2026-11-02.json)は、4 tuple・各39 case（合計156）、実javac呼出し76回、JARからのJava main実行20回、正常構築12件、拒否144件を保持する。今回のBTA呼出し・自然消費receipt・本番採用は全て0である。件数は保存された各caseを検証してから計算する。開発中の中間試行をこの最終matrixの件数へ混ぜない。
+
+BM04〜BM07・BM17について、`javacBuild.integration.test.ts`は両DSLで各版78テスト、`javacBuild.test.ts`は210テストで現在source hash・実API artifact・JDK pins・Task実行witness・native証拠を再生する。改変対照には自己hashも更新したsource／recipe／output交換、時刻付替え、未知field、失敗後success、部分outputの実行表明、成功証拠欠落、JAR entryの出自変更、保存失敗のexport成功化、件数水増しを含む。
+
+再現時はJDK 21.0.13とGradle cacheを用意し、各版について次を実行する。公開recordへ絶対pathは保存しない。
+
+```bash
+env JAVA_HOME=<jdk-home> GRADLE_USER_HOME=<gradle-cache> \
+  OSV_MCP_TEST_GRADLE=<gradle-8.11.1-or-9.2.1>/bin/gradle \
+  OSV_MCP_JAVAC_OUTPUT=/private/tmp/owned-javac-<version>.json \
+  npx vitest run src/test/gradle/javacBuild.integration.test.ts --maxWorkers=1
+node src/test/manual/gradleOwnedJavacResults.mjs /private/tmp/owned-javac \
+  docs/validation/gradle-owned-javac-construction-2026-11-02.json
+```
+
+#### 採用判定と残る範囲
+
+閉じたrecipeでのsource seal→fresh output→JAR→限定Java mainの対応は実証できた。一方、JDK／Nodeのimage全体の独立承認、loader／transformerの完全な証拠、host scriptの評価bytes、任意の同時writer排除は未成立である。現在内容のhash・run内token・callerが保持したTask witnessを、過去の実行の独立認証として扱わない。
+
+Node executorは具体的なsource／引数／保存bytesだけを扱い、Gradle Provider／FileCollection／KGP getterを追加評価しない。ただし全observerのsupplier・resolution・transform・file I/Oを計測した実証ではない。実BTA runtime／library／snapshot／offerのmanifest閉包・鮮度、信頼無効／profile未承認時の本番no-read gate、既存buildへの透過対応は次段階へ残す。本番profile承認や取込を有効化せず、declared_in・coverage・compilerWorkStatusへ昇格させない。

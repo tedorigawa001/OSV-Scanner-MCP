@@ -3,6 +3,8 @@ import {createHash} from 'node:crypto';
 export const manifestLimits=Object.freeze({maxDepth:32,maxNodes:100000,maxObjectBytes:1048576,maxTotalBytes:8388608,maxObjects:128,maxRefs:4096});
 const fail=(reason='schema_invalid')=>{throw Error('owned_manifest_'+reason);};
 export const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
+// Field names are printable ASCII so every language sorts them identically (UTF-16 and code-point order agree).
+const fieldName=k=>{if(!/^[\x20-\x7e]+$/.test(k))fail();return k;};
 function unicode(s){for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);if(c>=0xd800&&c<=0xdbff){const next=s.charCodeAt(++i);if(!(next>=0xdc00&&next<=0xdfff))fail();}else if(c>=0xdc00&&c<=0xdfff)fail();}return s;}
 export function canonicalBytes(value){
  let nodes=0;const visiting=new Set();
@@ -16,13 +18,15 @@ export function canonicalBytes(value){
    if(Object.keys(v).length!==v.length||Object.keys(v).some((k,i)=>k!==String(i)))fail();result='['+v.map(x=>encode(x,depth+1)).join(',')+']';
   }else{
    if(![Object.prototype,null].includes(Object.getPrototypeOf(v))||Reflect.ownKeys(v).some(k=>typeof k!=='string'))fail();
-   result='{'+Object.keys(v).sort().map(k=>JSON.stringify(unicode(k))+':'+encode(v[k],depth+1)).join(',')+'}';
+   result='{'+Object.keys(v).map(fieldName).sort().map(k=>JSON.stringify(k)+':'+encode(v[k],depth+1)).join(',')+'}';
   }
   visiting.delete(v);return result;
  }
  const bytes=Buffer.from(encode(value,0),'utf8');if(bytes.length>manifestLimits.maxObjectBytes)fail('budget_exceeded');return bytes;
 }
 export const objectDigest=value=>sha256(canonicalBytes(value));
+// Top-level transport objects must already be canonical, like stored objects.
+function parseCanonical(input){const value=parseManifestJson(input);if(!Buffer.from(typeof input==='string'?Buffer.from(input,'utf8'):input).equals(canonicalBytes(value)))fail('content_mismatch');return value;}
 export function parseManifestJson(input){
  let text;if(typeof input==='string')text=input;else if(Buffer.isBuffer(input)||input instanceof Uint8Array){try{text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(input);}catch{fail();}}else fail();
  if(Buffer.byteLength(text,'utf8')>manifestLimits.maxObjectBytes)fail('budget_exceeded');
@@ -37,7 +41,7 @@ export function parseManifestJson(input){
   if(c==='"')return string();
   if(c==='{'){
    at++;ws();const result=Object.create(null),seen=new Set();if(text[at]==='}'){at++;return result;}
-   while(true){ws();if(text[at]!=='"')fail();const k=string();if(seen.has(k))fail('duplicate_key');seen.add(k);ws();if(text[at++]!==':')fail();result[k]=value(depth+1);ws();const end=text[at++];if(end==='}')return result;if(end!==',')fail();}
+   while(true){ws();if(text[at]!=='"')fail();const k=fieldName(string());if(seen.has(k))fail('duplicate_key');seen.add(k);ws();if(text[at++]!==':')fail();result[k]=value(depth+1);ws();const end=text[at++];if(end==='}')return result;if(end!==',')fail();}
   }
   if(c==='['){at++;ws();const result=[];if(text[at]===']'){at++;return result;}while(true){result.push(value(depth+1));ws();const end=text[at++];if(end===']')return result;if(end!==',')fail();}}
   for(const [word,v]of [['null',null],['true',true],['false',false]])if(text.startsWith(word,at)){at+=word.length;return v;}
@@ -64,7 +68,8 @@ function state(v){
  if(!v||typeof v!=='object'||Array.isArray(v))fail();
  const n=v.completedThrough==='none'?-1:stages.indexOf(v.completedThrough);if(n< -1||(!stages.includes(v.completedThrough)&&v.completedThrough!=='none'))fail();
  if(!['completed','failed','unavailable'].includes(v.producerState)||!['approved','unavailable'].includes(v.approvalStatus))fail();
- const required=[];if(v.approvalStatus==='approved'){required.push('profileDigest','recipeDigest');if(!digest(v.profileDigest)||!digest(v.recipeDigest))fail();}else if(v.producerState!=='unavailable'||n!==-1||v.blockedStage!=='prepare')fail();
+ // Unresolved approval is exactly an unapproved profile at prepare; a resolved profile cannot claim profile_unapproved.
+ const required=[];if(v.approvalStatus==='approved'){required.push('profileDigest','recipeDigest');if(!digest(v.profileDigest)||!digest(v.recipeDigest)||v.unavailableReason==='profile_unapproved')fail();}else if(v.producerState!=='unavailable'||n!==-1||v.blockedStage!=='prepare'||v.unavailableReason!=='profile_unapproved')fail();
  for(let i=0;i<5;i++)if(i<=n){required.push(successRefs[i]);ref(v[successRefs[i]],roles[i]);}
  if(v.producerState==='completed'){if(n!==4||v.approvalStatus!=='approved')fail();}
  else {if(n===4)fail();if(v.producerState==='failed'){required.push('failureStage','failurePhase','failureReason','failureReceiptRef');if(v.approvalStatus!=='approved'||v.failureStage!==stages[n+1]||!reasons[v.failureStage]?.[v.failurePhase]?.includes(v.failureReason))fail();ref(v.failureReceiptRef,'failure-receipt');}else{required.push('blockedStage','unavailableReason','unavailableEvidenceRef');if(v.blockedStage!==stages[n+1]||!unavailableReasons[v.blockedStage]?.includes(v.unavailableReason))fail();ref(v.unavailableEvidenceRef,'unavailable-evidence');}}
@@ -74,15 +79,15 @@ function state(v){
 export function verifyManifest(input,expected){
  if(!input.envelope&&!input.bundle)return {status:'unavailable',reason:'owned_offer_envelope_missing',diagnosticEligible:false};
  if(!input.bundle)fail('required_evidence_missing');
- const bundle=parseManifestJson(input.bundle),s=state(bundle);
+ const bundle=parseCanonical(input.bundle),s=state(bundle);
  shape(bundle,['schema','completenessDomain',...ids,'coreGraphDigest','producerState','completedThrough','approvalStatus','evidenceIndexRef','limitations',...s.required]);
  if(bundle.schema!=='osv-mcp.gradle-owned-manifest-bundle-v1'||bundle.completenessDomain!=='owned-recipe-inputs'||!Array.isArray(bundle.limitations)||bundle.limitations.some(x=>typeof x!=='string'))fail();
  for(const k of ids){nonempty(bundle[k]);if(bundle[k]!==expected[k])fail('binding_mismatch');}
  if(bundle.coreGraphDigest!==expected.coreGraphDigest||!digest(bundle.coreGraphDigest))fail('binding_mismatch');
- const core=parseManifestJson(input.coreGraph);if(!core||typeof core!=='object'||Array.isArray(core))fail();if(Object.hasOwn(core,'ownedOfferBundles')||objectDigest(core)!==bundle.coreGraphDigest)fail('binding_mismatch');
+ const core=parseCanonical(input.coreGraph);if(!core||typeof core!=='object'||Array.isArray(core))fail();if(Object.hasOwn(core,'ownedOfferBundles')||objectDigest(core)!==bundle.coreGraphDigest)fail('binding_mismatch');
  if(bundle.approvalStatus==='approved')for(const k of ['profileDigest','recipeDigest'])if(bundle[k]!==expected[k])fail('binding_mismatch');
  if(!input.envelope)fail('required_evidence_missing');
- const envelope=parseManifestJson(input.envelope);shape(envelope,['schema',...ids,'producerState','completedThrough','naturalContentBinding']);
+ const envelope=parseCanonical(input.envelope);shape(envelope,['schema',...ids,'producerState','completedThrough','naturalContentBinding']);
  if(envelope.schema!=='osv-mcp.gradle-owned-envelope-static-v1'||envelope.naturalContentBinding!==false)fail();
  for(const k of [...ids,'producerState','completedThrough'])if(envelope[k]!==bundle[k])fail('binding_mismatch');
  shape(input.entry,['bundleDigest','envelopeDigest']);if(input.entry.bundleDigest!==objectDigest(bundle)||input.entry.envelopeDigest!==objectDigest(envelope))fail('content_mismatch');

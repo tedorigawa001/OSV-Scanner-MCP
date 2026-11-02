@@ -21,11 +21,15 @@ describe('BM01 strict canonical JSON',()=>{
   expect(objectDigest(['a','b'])).not.toBe(objectDigest(['b','a']));
  });
  it.each([NaN,Infinity,-1,-0,1.5,undefined,'\ud800','\udc00'])('rejects invalid value %#',x=>expect(()=>canonicalBytes(x)).toThrow());
+ it.each([{'\u00e9':1},{'\ud83d\ude00':1},{'':1},{'a\u007f':1},{'a\n':1}])('rejects non-printable-ASCII field name %#',x=>expect(()=>canonicalBytes(x)).toThrow('owned_manifest_schema_invalid'));
+ it.each(['{"\u00e9":1}','{"":1}'])('parser rejects field name %s',s=>expect(()=>parseManifestJson(s)).toThrow('owned_manifest_schema_invalid'));
 });
 describe('BM02 state unions and closed inventory',()=>{
  it('accepts complete prefix without authorizing diagnostics',()=>expect(check(manifestFixture())).toMatchObject({status:'structure_verified',objects:6,diagnosticEligible:false,naturalContentBinding:false}));
  for(const state of ['failed','unavailable'])for(const through of ['none',...stages.slice(0,4)])it(`${state} after ${through}`,()=>expect(check(manifestFixture(state,through)).producerState).toBe(state));
- it('accepts unresolved approval with no resolved digests',()=>{const f=manifestFixture('unavailable','none');delete f.bundle.profileDigest;delete f.bundle.recipeDigest;f.bundle.approvalStatus='unavailable';reseal(f);expect(check(f).status).toBe('structure_verified');});
+ it('accepts unresolved approval with no resolved digests',()=>expect(check(manifestFixture('unavailable','none',{unresolved:true})).status).toBe('structure_verified'));
+ it('rejects a resolved profile claiming profile_unapproved',()=>expect(()=>check(manifestFixture('unavailable','none',{reason:'profile_unapproved'}))).toThrow('owned_manifest_schema_invalid'));
+ for(const reason of ['toolchain_unsupported','recipe_unsupported'])it('rejects unresolved approval with a non-approval reason: '+reason,()=>expect(()=>check(manifestFixture('unavailable','none',{unresolved:true,reason}))).toThrow('owned_manifest_schema_invalid'));
  for(const key of successRefs)it(`requires ${key}`,()=>reject(manifestFixture(),f=>delete f.bundle[key]));
  it.each([null,'',{role:'input-manifest',objectDigest:'0'.repeat(64),byteLength:1}])('rejects dummy ref %#',v=>reject(manifestFixture(),f=>f.bundle.inputManifestRef=v));
  for(const state of ['failed','unavailable'])for(const through of ['none',...stages.slice(0,4)])it(`forbids future ref ${state}/${through}`,()=>reject(manifestFixture(state,through),f=>f.bundle[successRefs[through==='none'?0:stages.indexOf(through)+1]!]=manifestFixture().bundle.offerReceiptRef));
@@ -37,6 +41,12 @@ describe('BM02 state unions and closed inventory',()=>{
   const g=manifestFixture();g.transport.objects[0].bytes=Buffer.from('{}');expect(()=>check(g)).toThrow();
  });
  it('classifies missing envelope and bundle',()=>{expect(verifyManifest({},{})).toMatchObject({reason:'owned_offer_envelope_missing'});expect(()=>verifyManifest({envelope:'{}'},{})).toThrow('required_evidence_missing');});
+});
+describe('BM01 canonical top-level transport bytes',()=>{
+ const variants:Record<string,(b:string)=>string>={'non-canonical integer':b=>b.replace(/"byteLength":(\d+)/,'"byteLength":$1.0'),'exponent integer':b=>b.replace(/"byteLength":(\d+)/,'"byteLength":$1e0'),'extra whitespace':b=>b.replace(':',' : '),'reordered keys':b=>JSON.stringify(Object.fromEntries(Object.entries(JSON.parse(b)).reverse()))};
+ for(const field of ['bundle','envelope','coreGraph'])for(const [name,change]of Object.entries(variants))it(`rejects ${name} in ${field}`,()=>{
+  const f=manifestFixture(),before=f.transport[field].toString(),after=change(before);if(after===before)return;f.transport[field]=Buffer.from(after);expect(()=>check(f)).toThrow('owned_manifest_content_mismatch');
+ });
 });
 describe('BM03 independent binding',()=>{
  for(const key of ['graphId','exportId','project','context','executionId','invocation','profileId','recipeId','coreGraphDigest','profileDigest','recipeDigest'])it(`rejects self-resealed ${key}`,()=>reject(manifestFixture(),f=>{f.bundle[key]=sha256('changed');if(key in f.envelope)f.envelope[key]=f.bundle[key];},'binding_mismatch'));
@@ -58,9 +68,13 @@ it('BM02 rejects file traversal, absolute paths and evidence inventories',()=>{
 
 import {readFileSync} from 'node:fs';
 import {vectors,fingerprints,staticCases} from '../manual/gradleOwnedManifestResults.mjs';
+import {offerJdkProfile} from '../fixtures/btaOfferContract.mjs';
 it('replays saved static results, canonical vectors and source fingerprints',()=>{
  const record=JSON.parse(readFileSync('docs/validation/gradle-owned-manifest-contract-2026-11-02.json','utf8'));
  expect(record.sources).toEqual(fingerprints());expect(record.cases).toEqual(staticCases());
+ expect(record.schema).toBe('osv-mcp.owned-manifest-static-validation-v2');expect(record.baselineRevision).toMatch(/^[0-9a-f]{40}$/);expect(Number.isNaN(Date.parse(record.recordedAt))).toBe(false);
+ expect(record.jdk).toMatchObject({javaSha256:offerJdkProfile.java.sha256,javacSha256:offerJdkProfile.javac.sha256});expect(record.jdk.probeClassSha256).toMatch(/^[0-9a-f]{64}$/);
+ expect(record.preReviews.map((p:any)=>[p.schema,p.committedIn])).toEqual([['osv-mcp.owned-manifest-static-validation-v1','451b629']]);
  expect(record.canonicalComparison).toHaveLength(vectors.length);
  for(const [i,v]of vectors.entries()){let node;try{node=canonicalBytes(v).toString('base64');}catch{node='REJECT';}expect(record.canonicalComparison[i]).toEqual({vector:i,node,java:node,matched:true});}
 });
