@@ -2219,3 +2219,24 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - 通常起動はbackend unsupported／独立profile registry空のまま。isolationEvidenceRefの形式検証は隔離の認証ではなく、test adapterは実authority採用に数えない。次は隔離backend・session発行／保存の設計と実証、その後G3／G4・本番producer・profile承認・native／3ツール実接続。共有use receiptも残る。
 
 検証結果: G2 contract 134件＋cache追加3件、計137件を追加。型検査・build成功。全体95 files／3,473 tests成功、21 files／1,415 tests skipped。新規Gradle／BTA native・OSV実接続・実authority採用・本番profile承認・診断採用は0。
+
+
+### 2026-11-02: 199d16cレビュー修正（G2 caller APIと分類）
+
+- §9.56へ修正の小節を追加。caller adapterをplain objectに限る方針を型と文書に明記し、class adapterの拒否をテストで固定。lookupの例外を`witness_unavailable`へ、profileとsessionのauthority不一致を`configuration_invalid`へ変更。nativeの再実行なし。
+
+### 2026-11-02: G2隔離authority backendの具体設計
+
+- [設計書§9.57](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#957-g2隔離authority-backend-信頼境界session-lifecycle保存取得失効契約設計2026-11-02)へ、operator／caller／authority／broker／buildの権限、Task等のfield別観測責任、独立設定と認証wire、session lifecycle・current CAS・一回実行とretry、terminalのdurable保存・独立rollback checkpointを追加。
+- 保存先認証とTask事実の観測を分離し、同一UID別directory・afterTask・自己署名・hash chainだけでは採用しない。同期G2へのasync snapshot取得段、失効とlookup／将来のread grant・finalValidateの線形化点、開始済みreadとgate前読取0の区別を具体化。
+- 実証A（protocol／store）・B（実隔離／IPC）・C（独立Task対応）とAB01〜AB36の未実施回帰条件を追加。両DSL×両Gradle版でも未成立cellをunsupportedに保持する。今回は設計変更のみ。backend・session発行／保存・認証IPC・Task observer・permitの実装／native実証、本番profile承認・診断採用は未実施。
+
+今回の文書検証: 公開文書のcommand例・既存G2 contractの計138テスト成功、diff整形検査成功。新節の10小節とAB01〜AB36の欠落・重複なしを確認。AB条件の新規テスト実装・backend／native実行は行っていない。
+
+### 2026-11-02: G2隔離backend設計レビュー2件の反映
+
+- §9.57のbind-coreへ実canonical coreのmetadata snapshot、seal-scopeへ対象scopeの完全G0 wrapperと全carrier閉包を必須化。authority発行uploadId・有界chunk転送・freeze・不変ref・保存／検証順と、最終複数scope exportへの併合を具体化し、sidecar／artifactでの補完を禁止した。
+- sessionにsealingを置かず、scopeのplanned→registered→executing→sealing→terminalと、全scope terminal時だけのsession committedを分離。A commit後のB継続／成功／abort、scope単独とsession全体の失効、独立revisionを定義。
+- AB18／AB33を拡充、AB37〜AB42を追加（すべて未実施条件）。今回は設計修正のみ。実backend・snapshot upload／freeze・新schema・回帰テスト実装／native実証・本番profile承認／診断採用は未実施。
+
+レビュー修正後の文書検証: 公開文書・既存G2 contractの138テスト成功、diff整形検査成功。AB01〜AB42の欠落・重複と表の連続性、完全metadata受渡し・scope／session分離・TODO更新を確認。AB37〜AB42は条件の追加のみで、backend／新規回帰テスト／native実証は未実施。

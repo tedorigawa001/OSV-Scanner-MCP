@@ -3010,7 +3010,7 @@ isolationEvidenceRefは独立callerの管理証拠への参照であり、文字
 
 #### lookupと状態別判定
 
-lookupはstrictなverified／not-executed／unavailable／invalidのunionとする。session・結果は1 object 8 MiB、既存canonical／depth／node上限でsnapshotを作り検証する。API欠落・不正型・未知field／enum・例外・非同期Promiseをexecution_invalidとし、例外messageを公開しない。正式なreceipt-missing／backend-unsupported／session-unavailableだけをwitness_unavailableへ分類する。
+lookupはstrictなverified／not-executed／unavailable／invalidのunionとする。session・結果は1 object 8 MiB、既存canonical／depth／node上限でsnapshotを作り検証する。API欠落・不正型・未知field／enum・非同期Promiseをexecution_invalidとする。lookupが例外を投げた場合はreceipt storeの障害としてwitness_unavailableに分類し、例外messageを公開しない（§9.56の199d16cレビュー修正）。正式なreceipt-missing／backend-unsupported／session-unavailableだけをwitness_unavailableへ分類する。
 
 - verified: `osv-mcp.gradle-owned-execution-witness-v1`を要求。authority／session／nonce／root世代／scopeとTask・Action・broker、全実行ID、core digest、witness ID、最終bundle／envelopeのdigest pair、producer状態、予定／成功capture数を照合する。TaskはactionCalls=1、executed／didWork=true、skipped／noSource／failed=false、skipMessage=null。
 - not-executed: SKIPPED／FROM-CACHE／UP-TO-DATE／NO-SOURCEとactionCalls=0を要求し、didWork／failed=false、skipMessageと理由、noSourceの整合を確認する。current lookupのbinding／scopeは必要だが、残存exportの古いexecution IDやpairを今回へ合わせるためにartifactを開かずaction_not_executedにする。
@@ -3036,3 +3036,263 @@ AP09／AP11〜AP15／AP19〜AP22／AP30のG2 metadata部分を回帰化。全状
 今回は静的contractと本番readerへの接続に限定する。隔離backend・認証通信・session発行／store保存、実image leaseとprovisioner、G3／G4、本番producer、Groovy／Kotlin × 両Gradle版のnative、OSV実接続は未実施。これらの採用条件が揃うまで本番診断採用0を維持する。
 
 検証結果: G2 contract 134件＋cache追加3件、計137件を追加。型検査・build成功。全体95 files／3,473 tests成功、21 files／1,415 tests skipped。新規Gradle／BTA native・OSV実接続・実authority採用・本番profile承認・診断採用は0。
+
+#### 199d16cレビュー修正（2026-11-02）
+
+G2 contractのcaller APIと分類を3点直した。nativeの再実行は不要である。
+
+- `TrustedOwnedCaller`は、自身のpropertyがbackend・session・lookupの3つだけのplain objectに限る方針を維持し、型のJSDocと本節に明記した。class instance（lookupがprototype上にある）やloggerなど追加fieldを持つadapterは`execution_invalid`である。これを固定するテストを加えた。
+- lookupの例外を`execution_invalid`から`witness_unavailable`へ変えた。receipt storeの一時的な障害を、producerの表明の不正（owned invalid）と区別する。例外messageは引き続き出力に含めない。非同期Promiseを返すlookupはAPIの誤用として`execution_invalid`のままである。
+- adoption profileのauthorityIdとcaller sessionのauthorityIdの不一致を、`claim_mismatch`から`configuration_invalid`（unavailable）へ変えた。producerの表明ではなく、operator設定どうしの不整合である。
+
+READMEの「witness検証が未実装」という記述は、199d16cで既に「isolated authority backendがない」へ直されていた。G2のテストは132件から137件になり、修正前の実装では3件が失敗することを先に確認した。
+
+### 9.57 G2隔離authority backend: 信頼境界・session lifecycle・保存／取得／失効契約（設計、2026-11-02）
+
+本節は§9.56の静的contractを実backendへ接続するための追加設計である。backend IDは`caller-owned-receipt-store-v1`を維持するが、IDを名乗るobjectだけでは採用しない。実装・隔離native実証・承認profileは未成立であり、通常起動のunsupported、G3停止、owned読取0、本番診断採用0は変更しない。以下のAB01〜AB42もすべて未実施の回帰条件である。
+
+#### 9.57.1 採用単位と信頼境界
+
+初期対象は単一host上の、operatorが配置したauthority service・独立caller・固定recipe brokerである。別hostへのreceipt可搬、projectが選ぶendpoint／鍵、buildが起動した「authority」、同一UIDの別directoryだけの隔離は対象外とする。OS／配置方式ごとに隔離profileを承認し、証拠がないplatformではbackend-unsupportedを返す。Groovy／KotlinやGradle版の対応実績からOS隔離の成立を推定しない。
+
+| 主体 | 許可 | 禁止・境界 |
+| --- | --- | --- |
+| operator／provisioner | authority・transport・隔離profile、recipe／image／root registry、接続先・peer identity・世代を独立配置 | graph・project環境・receipt本文から承認対象を追加しない |
+| 独立caller／reader | 選択sessionのbegin／bind／activate・lookup／失効要求、既存core検証、将来のG3／G4・結果公開 | producerのTaskStateや自己署名recordをtrusted lookupへ代入しない。storeを直接編集しない |
+| authority service | 許可主体の認証、session／event ledger／terminal recordの唯一の書込、current pointer・失効・監査のtransaction管理 | compiler・Gradle script・任意callbackをservice内で実行しない。host requestを実行witnessへ自動変換しない |
+| 固定recipe broker／承認observer | scopeごとの限定capabilityで、所有processの起動・結果と承認範囲の観測eventを送る | session承認・current変更・他scopeへの登録・registry／store／認証情報の書換えは不可 |
+| Gradle host／build logic／producer child | data-only要求と有界export proposalを提出する。scopeに許されたdata入出力だけを使う | service管理API、署名／MAC鍵、store・checkpoint・reader memory・認証handleの読取／変更／継承は禁止 |
+| 攻撃者としてのbuild依存code | 偽のstore／socket／issuerの作成、file改変、古いbytesや通信の再送を試行する | OS隔離・承認済みservice／caller自体・operatorを侵害できないことが採用前提。これらの侵害を防ぐと表明しない |
+
+readerとbuildを同じprincipalで動かし、buildからreaderのmemory・handle・権限を取得できる配置は不採用である。別principalも名前だけでは足りず、親directory・mount・IPC endpoint・process制御・認証handleの継承・設定注入まで、承認profileが列挙する迂回経路をnativeで試す。未検証のdebug／管理権限がbuild側に残ればunsupportedとする。試験のためにhost全体の保護設定を緩めない。
+
+`isolationEvidenceRef`は独立registry内の隔離仕様と検証記録を結ぶ。必須内容はplatform／配置版、主体と権限の対応、service／broker／reader実装closureのpin、store／checkpoint／credential／IPC境界、実際の拒否試験結果と適用範囲である。pathやbooleanだけでは有効にしない。profile digest・隔離配置世代が変われば旧sessionを失効し、再検証まで採用を停止する。
+
+#### 9.57.2 各事実の発行権限と観測責任
+
+認証された送信者であることと、その送信者が事実を確認できることを分ける。authorityはfieldごとの発行権限・承認observer recipe・対象instance／scopeを照合する。
+
+| 事実 | 根拠となる主体／観測 | 不足する根拠 |
+| --- | --- | --- |
+| session ID／nonce／scope／Task・Action・broker ID | 独立callerの要求をauthorityが認可・新規発行した台帳 | projectが選ぶID、exportのcreatedAt |
+| coreGraphDigest／rootRegistryDigest | callerの既存core構造・lock／入力対応検証と独立root registry snapshot | producerが自己hashを更新したgraph、現在fileから作り直したbaseline |
+| process instance／開始終了／結果 | 承認brokerが自分で起動・待機したchildの記録。instanceはrun内発行のopaque IDで、PIDだけにしない | stdoutの成功文字列、外部processを名乗るpayload |
+| image／executor／loader lease | 独立provisioner／brokerの承認recipeが発行し、profile・holder・今回のsessionへ束縛 | 現在hash・CodeSource・自己申告のimage名だけ |
+| Task／Actionの状態・回数・skip理由 | 当該Gradle executionを対象にした独立した承認Task observer | build principalで走るafterTask、TaskState JSON、broker childが1回起動した事実だけ |
+| configuration／parameter・予定captureと実施event | 実参照を所有する承認broker／observerの閉じたrecipe | hostが渡すhandle ID文字列だけ、未計測supplierを0とする表明 |
+| 最終bundle／envelope pair | event ledgerと有界G0 metadataの整合を確認したauthorityのterminal commit | 任意digestへのsign要求、producerによる「成功」申請だけ |
+
+特に、storeを別principalへ置くだけではhost内のTask状態を独立観測できない。初期backendの保存・認証実証が成功しても、Task observerの発行根拠が未成立ならverified／not-executedを発行しない。未知のTask状態をSKIPPEDへ推定せず、session-unavailableで止める。syntheticな所有Actionの試験はprotocolの陽性対照に限定し、実Gradle Taskのwitness採用証拠とは別に数える。G3の全observer・image検証も省略しない。
+
+#### 9.57.3 独立設定・認証transportと入力上限
+
+operator設定にbackend profile digest、authorityId、service実装pin、transport policy、接続先とpeer／role、隔離証拠、store／checkpoint配置、root registry世代、予算を固定する。設定不正・未承認policyはownedだけを無効化し、projectに探索・修復させない。MCPのscan引数・transportにendpoint／store path／鍵／authority bodyを受け取るfieldは追加しない。
+
+接続先は承認配置で固定し、接続の両端を認証する。loopbackであること、socket名、UIDや証明書の自己申告だけを認証の代わりにしない。OS主体と起動instance・roleを承認配置へ結び、scope限定capabilityを別途確認する。childへ管理credentialをenv／argv／継承handleで渡さない。serviceの入出力はdata-onlyで、callback、module、任意実行file、任意file読取要求を解釈しない。
+
+通信の外枠を`osv-mcp.gradle-owned-authority-wire-v1`として独立schemaにする。必須fieldはprotocolVersion、authorityId／authorityInstanceId、storeEpoch、connectionId、requestId、fresh challenge、operationId、operation、scope binding、payload digest、sequence、payloadと認証情報である。認証情報の生成・検証は承認transport実装が行い、graph由来鍵・自己署名は使わない。応答はrequest digest／challengeとtransaction revisionを束縛し、別接続・別要求の応答を再使用できない。外枠のfieldを既存session v1／witness v1へ黙って追加しない。
+
+初期hard ceilingは1 frame 8 MiB、1 transaction内canonical payload合計64 MiB、深さ32・JSON nodes 1,000,000、1 session 2,000 scopes・256 leases、1 scope 1,024 process records、待機request 32件、1 sessionのevent 16,384件・ledger 64 MiB・生存時間10分とする。参照はscopeごとにも数え、超過は処理前に拒否する。session v1／witness v1の既存上限が小さい箇所は小さい方を採る。通信待機は1要求5秒・自動retry 0、期限超過は明示unavailableとし、起動・保存・sealを無断で再実行しない。性能実証で上限を変える場合はprofile改訂と再承認を必要とする。
+
+#### 9.57.4 session lifecycleとcurrentの選択
+
+authority内の**session lifecycle**、**scope lifecycle**、**有効性**を別軸で管理する。§9.56のsession.statusはcurrent／superseded／revokedという有効性の投影であり、以下の実行進捗・terminal種別・producerStateの代わりにしない。未activate・期限切れ・未回復のsessionからcurrent snapshotを発行しない。
+
+| session lifecycle／操作 | 必須条件と固定する内容 |
+| --- | --- |
+| begin → draft | 認証済みcallerのみ。authorityが再使用しないsession／graph／export／execution IDと256-bit nonce、core用uploadIdを発行。consumer instance・scanRun ID・project root identity・operator設定世代・scope要求digestを保存。旧currentは変更しない |
+| bind-core: draft → core-bound | callerが既存core検証を完了し、§9.57.5のcoreMetadataRefで実canonical core bytesを渡す。authorityも既存v1〜v3構造とdigestを検証し、core snapshot、root registry digest、確定scope集合、pin、Task／Action／broker ID、capture計画を固定。以後in-place変更不可 |
+| activate: core-bound → active | current slotに期待する直前revisionでCAS。旧sessionを全scopeまとめてsupersededにする。勝者の確定scopeはplannedとして開始し、敗者へ実行capabilityを出さない |
+| scope進行中: activeのまま | 1件でもplanned／registered／executing／sealingのscopeがあればactiveを維持する。1 scopeのseal・commit・abortで他scopeの登録・実行・event追記・sealを停止しない |
+| 全scope terminal: active → committed | 確定scope集合の全memberがterminalになったtransactionでのみ移る。成功・未実行・abort・invalidが混在してよい。committedは全scope成功や診断採用を意味しない。currentで有効なterminalだけをscopeごとに取得できる |
+| session abort／expire: active等 → closed | 対象はsession全体。未確定scopeを根拠付きabort／unavailableのterminalへ閉じ、scopeへの新規operationを止める。過去terminal bytesは変更しない。閉じたsessionからcurrentなverifiedを復元しない |
+| session supersede／revoke | lifecycleとは独立した有効性を全scopeまとめて失効させる。未確定scopeを閉じ、実行・seal・新規read grantを禁止。既存terminalのbytesと監査履歴は保持する |
+
+sessionにはsealing状態を設けない。event列を閉じるのは次表の**対象scopeだけ**である。親sessionのcommitted／closedは集約・全体停止であり、scopeのterminal種別はそれぞれ保持する。
+
+| scope lifecycle／操作 | 必須条件・許可／禁止 |
+| --- | --- |
+| planned → registered | register-scopeで確定memberを一度だけ登録し、予約witnessId・seal用uploadId・一回実行capability・genesis digestを発行。scope／Task／Action／brokerの追加・交換不可 |
+| registered → executing | 正規のstartとcapability消費をdurableに確定してから実行。stage／process／phaseの開始終了、実参照・captureを対象scopeのledgerへ追記する |
+| registered → sealing | 独立Task observerが未実行を確定した場合だけ、Action開始なしで進める。未実行terminalに架空process・pairを要求しない |
+| executing → sealing | ledger headを固定し、そのscopeへの新規実行・event追記を禁止する。未終了process・Task／capture未確定ならverifiedへ進めず、未完了を仮eventで補完しない。親sessionはactiveのまま、別scopeの進行は継続可能 |
+| sealing → terminal | 完全なG0 seal metadataと固定ledgerが整合するverified、または根拠に応じたnot-executed／execution-aborted／unavailable／invalidをdurableに確定。verifiedは合法なproducer failed／unavailableを含められるが、readerの診断採用とは別 |
+| scope abort／expire／revoke → terminalまたは有効性失効 | 対象scopeだけを閉じる。Task例外を独立観測済みならexecution-aborted、根拠不明ならunavailable。確定済みterminalは書換えずtombstoneで失効する。他scopeに同じleaseの失効等が波及する場合だけ、その依存関係に従って追加失効する |
+
+scopeへのlate event・二度目のseal・再openは拒否する。同operationId・同payloadのseal retryは元のterminalを指す履歴ackだけを返し、新しいterminalや実行権限を作らない。session全体の失効とscope commitが競合した場合は同じauthority transaction順で決め、失効後にscope単独で再有効化できない。
+
+例としてA／Bの2 scopeがある場合、Aのsealing→verified terminal後もsessionはactiveであり、Bはevent追記・正常完了またはabortできる。Bもterminalになった時点でsessionがcommittedへ移る。AのterminalはBの結果で書換えず、BのabortだけではAを無効化しない。session全体のrevokeならAの取得・permitも失効させる。A／Bの完了順を逆にしても各scopeのterminalと有効性は同じになる。
+
+同じslotで並行scanを行う初期方式ではactivateの勝者だけをcurrentにする。敗者・旧sessionのwitnessを後から選ばない。複数currentを許す将来方式は別policyとする。leaseのpin／holder／sessionは不変、active／revokedとそのrevisionは独立管理する。失効したleaseのIDを新しいimageへ再割当てしない。
+
+APIの役割を分離する。callerだけにbegin／bindCore／activate／register-scope／revoke、broker・observerだけに自分のscopeへのappendEvent／seal proposal、readerだけに選択sessionのlookup／将来のread permit・final validationを認可する。各要求はoperationIdとpayload digestを持つ。同じoperationId・同じpayloadのretryは前回ackを返すだけで実行回数を増やさない。同じoperationIdで別payload、終端後のbegin相当操作、sequenceの巻戻しは拒否する。新しいwire challengeで正規retryを行うことと、古い認証frameのreplayを区別する。
+
+操作payloadは別schema `osv-mcp.gradle-owned-authority-operation-v1`のstrict unionとし、operation enumはbegin／put-metadata-chunk／bind-core／activate／register-scope／append-event／seal-scope／abort／revoke／lookup／acquire-snapshot／grant-read／final-validateに閉じる。各payloadにschema version・operationId・expectedRevisionを要求する。expectedRevisionは対象session／scope／uploadのrevisionであり、対象kindをoperation unionで固定する。scope操作は自身のrevisionと親current世代・失効を同じtransactionで検査し、別scopeの進行によるglobal commit revision更新だけでは拒否しない。別sessionの管理権限を同じscope capabilityで代用しない。
+
+| 操作 | payloadの追加必須入力 | 成功応答 |
+| --- | --- | --- |
+| begin | scanRun ID、consumer instance、operator設定digest、project rootの独立ID、要求scope集合digest | authority発行ID／nonce、draft revision。実行権限なし |
+| put-metadata-chunk | authority発行uploadId、purpose／session／scope binding、予定total size／digest、chunk ordinal／raw size／digest／base64 bytes | 有界metadata uploadの受理ordinal／revision。最終chunkで完全snapshotをfreeze |
+| bind-core | draft ID／nonce、coreMetadataRef、検証済みcore digest、root registry digest、確定scope／pin／capture計画 | core snapshot refとimmutable manifest digest、core-bound revision |
+| activate | core-bound manifest digest、current slot、期待する前session／revision | 新current revision、旧sessionのsupersede記録 |
+| register-scope | active session、plannedの事前確定scope、Task／Action／broker binding | 予約witnessId、seal用uploadId、限定された一回実行capability。新scope追加は不可 |
+| append-event | scope capability、issuer role／instance、sequence／previous digest、typed event | 受理ledger headとsequence。権限のないfieldは拒否 |
+| seal-scope | 対象scope／witnessId、固定ledger head、合法terminal種別。verifiedではsealMetadataRef・selected pairを必須とし、他terminalでは禁止 | 対象scopeだけのimmutable terminal ID／digest、公開可能commit revision |
+| abort／revoke | 対象session／scope／lease、期待revision、closed enumの理由 | tombstone revision。producerの状態を書換えない |
+| lookup／acquire-snapshot | callerが選んだsession、完全scope binding、claim集合、fresh request challenge | 認証済みtransaction snapshot／結果、内部read revision |
+| grant-read／final-validate | 一回permit、claim／計画digest、対象openまたは観測結果digest | revision付きの一回許可／結果確定。現段階では未対応 |
+
+begin時点のscopeは要求であり、承認済み確定scopeにするのはbind-coreである。nonceはfreshnessの識別子であって認証鍵ではない。scope登録は確定済みmemberの実行準備だけを行う。同じscopeへの別operationIdによる二重登録は、実行前でも拒否し、witnessIdを再発行しない。eventの最初のprevious digestは、domain／session／scope／immutable manifest digestを持つcanonical genesis objectのhashとし、0 digestや親への循環参照を使わない。record自身のdigest／認証tagは保存外枠へ分け、payloadが自分のdigestを含まない形でcanonical化する。
+
+process起動は外部副作用なので、store transactionだけでexactly-onceを保証したとはしない。authorityが一回capabilityの消費とlaunch reservationをdurableに確定してからbrokerへ起動を許す。同じcapabilityは消費済みなら起動できない。消費後・起動前のcrashでは起動0回、起動後のack喪失では0回か1回の未確認として閉じ、自動再起動しない。復旧時に実instanceの確認ができなければ未確定／中断のままで、新sessionによる明示再試行だけを許す。旧childが生存する場合の終了／隔離確認も必要で、成功eventを推測しない。
+
+期限はauthority instanceの単調な経過時間へ束縛する。service再起動で旧期限をwall-clockから延長せず、旧connection・permitを無効にする。保管上限到達時は新規sessionを拒否し、active record・失効tombstone・rollback anchorを削って採用を継続しない。履歴整理はoperatorの明示maintenanceとして行い、削除済みsessionをcurrentへ戻せないretired epochを独立checkpointに保持する。
+
+#### 9.57.5 witness保存・terminal commit
+
+保存対象を次の4種へ分離する。配置はoperatorが与え、論理IDから固定schemaで解決する。requestの任意pathを連結して開かない。
+
+1. immutable session manifestとmetadata snapshot: bind-coreで固定した実core bytes／coreMetadataRef、全binding・設定／隔離profile・scope・pinと初期世代。verified terminalにはsealMetadataRefと選択entryも保存する。
+2. append-only event ledger: authority instance／store epoch／session／scope／発行role・instance／sequence／前event digest／payload digestを束縛する。eventの認証と内容に関する発行権限を両方確認する。
+3. immutable terminal record: current session・scope・witnessId、state、Taskとstage／process／lease／capture、最終pairまたはpair不要の理由、ledger head、record digestを束縛する。
+4. mutable transaction indexと失効tombstone: current slot／revision、terminal参照、session／leaseの有効性、失効理由・操作主体、独立checkpointの位置。これはrecordの過去bytesを置き換えない。
+
+verifiedのseal proposalは、以下の完全なmetadata受渡しを経てauthorityがG0検証と固定ledgerとの照合を行う。bundle／envelopeのbytesやdigestだけを受けてverifiedを発行する入口は設けない。
+
+**実core bytesの登録。** beginで発行するcore用uploadIdはcaller専用・当該draft専用で、purpose=coreに固定する。callerは既存検証済みv1〜v3 graph全体のcanonical UTF-8 bytesをmetadataとして渡す。authorityは既存core parserとcanonical digest計算を独立して行い、要求coreGraphDigestと一致したsnapshotだけをbind-coreで消費する。coreMetadataRefは`{uploadId,purpose,byteLength,rawSha256}`のstrict objectであり、scopeやfile path／URLを持たない。rawSha256は実canonical core bytesのhashで、payload自身に自己digestを含めない。bind後のsource変更を新coreのbaselineへ更新しない。
+
+**scope単位のseal snapshot。** register-scopeでauthorityが発行するseal用uploadIdはpurpose=seal、session／scope／予約witnessId、固定core snapshot refに束縛する。upload内容は`osv-mcp.gradle-graph` schemaVersion=4の完全なG0 wrapperとする。必須root fieldは既存のschema／schemaVersion／graphId／exportId／coreGraph／ownedOfferBundles／ownedOfferObjectsだけで、coreGraphにはbind済みcore全体を収録する。ownedOfferBundlesは対象scopeのentryを**ちょうど1件**、ownedOfferObjectsはそのentryのbundle・envelope・evidence indexと参照閉包の全carrierの**過不足ない集合**に限定する。他scopeの未完了metadataを待つ必要はなく、別scopeのobjectをorphanとして混ぜない。
+
+各carrierは既存の`{role,objectDigest,bytes}`で、bytesは実canonical object文字列、refのrole／digest／byteLengthも実値へ一致させる。carrier配列はobjectDigestのASCII昇順・重複なしとし、coreの配列・phase・cohort・occurrenceの順序は変更しない。body内のfile refは検証対象metadataであり、authorityがfileを開く許可ではない。sealMetadataRefは`{uploadId,purpose,byteLength,rawSha256}`だけのstrict refで、完全なscope wrapper snapshotを指す。uploadId単体やproject側のcached pathをsnapshot refとして扱わない。
+
+**転送・freeze・保持。** put-metadata-chunkはpurposeで分岐するstrict unionとする。coreはcallerのdraft権限だけに許し、scope／witnessIdを禁止する。sealは当該scopeのbroker／observerの限定権限とscope／予約witnessIdを必須にする。uploadIdは照合キーであり、それだけで書込権限にはならない。別purposeのfieldを足してroleを迂回できない。1 frame 8 MiBより大きいmetadataも扱えるように、put-metadata-chunkのraw chunkを1 MiB以下にする。各chunkは認証済みuploadに対して順番に受理し、初回に固定したtotal raw size／digest、ordinal、各raw size／digestを検証する。base64表現にもframe上限を適用する。同じoperationの同じchunk retry以外の重複・欠落・順序違反・宣言size超過・session／purpose交換を拒否する。最後まで受理して全raw bytesのdigest・UTF-8・canonical JSON・構造を確認するまでsnapshot refを発行しない。中途uploadはsealやbindの入力にならない。
+
+coreは既存上限16 MiB、seal wrapperは64 MiB、objectは8 MiB・1024 carriers・16384 refs・深さ32・1,000,000 nodesを上限とする。個別上限に加え、全scope合計でsession内のcore＋seal snapshot raw保存量64 MiB、同時未完了upload数32、各uploadの待機期限5秒を検査する。1 wrapperが上限内でも合計超過なら拒否し、保存できないmetadataを省略して採用しない。ledger予算とmetadata予算は別計数し、同じauthority保存領域は1 session合計256 MiBを上限とし、terminal／index／一時chunkを含めた実保存量もprofileへ明示する。frame／sessionの小さい方の予算は維持する。圧縮・外部sidecar・任意pathからの補完は初期対象外とする。
+
+freeze後のsnapshotはauthority所有metadata store内にimmutableに保存し、session／scope／purpose／uploadId／raw digest／byteLengthで解決する。保存完了と参照発行はdurable commitに含め、後で同uploadIdの内容を交換・追記・別sessionへ再利用できない。これはmetadata I/Oであり、owned artifact／image／sourceの読取とは分ける。破損・欠落したfreeze済みsnapshotをproducerへの再取得や現在fileのhashで修復しない。
+
+**sealの検証順。** scopeのledger headと候補snapshotを固定し、(1) refと認証済み保存bytes、(2) session／scope／witnessId／purpose、(3) coreの実canonical bytes・digestがbind済みsnapshotと一致、(4) 全carrierのcanonical bytes／role／digest／byteLengthと既存G0のstate・pair・index閉包・循環／orphan検証、(5) selected entryのpairと要求pair、(6) Task／Action・process／lease・capture・producer stateと独立ledgerの対応、を順に確認する。全hashを自己更新した別core／別scopeや、別uploadの正しいmetadataでも固定先が違えば拒否する。失敗時は対象scopeをinvalid等の根拠に応じたterminalへ閉じ、snapshotを実行証拠へ昇格せず、他scopeのledgerを閉じない。未完了を埋めるartifact読取は0とする。
+
+G0検証はmetadata専用の内部段階APIで行い、authorityからG1／G2 lookupを再帰実行しない。これにより、G0 parserが必要なcoreと全objectはauthority内で完結する。所有processの成功eventがあってもmetadata closureを省略できず、完全metadataがあっても独立Task観測や実行ledgerを省略できない。build前の合法なproducer failed／unavailableには、その合法prefixに必要なmetadataだけを要求し、未到達process・image leaseは要求しない。
+
+**最終の複数scope exportとの対応。** 各scopeをsealする時点のsingle-entry wrapperは検証用投影であり、最終exportの全scope完了を装うものではない。最終wrapperは同じgraph／export／coreを用い、確定scopeのentryと検証済みcarrierの和集合を過不足なく収録する。個々のbundle／envelope／object bytesはseal済みsnapshotと同一であり、後から再hashしてpairを変えない。readerは最終wrapper全体のG0を改めて検証し、各entryのauthority terminalへ照合する。未確定・abortしたscopeの成功entryを作らず、G0上の省略を既存lock coverageの欠落へ変換しない。共有build／generationのtyped use receiptは引き続き未実装で、他scopeのbindingを外して共有objectを流用しない。
+
+verifiedのterminalだけに最終pairを必須とする。not-executedは独立Task状態を保存してpairを持たず、abortもpairを必要としない。export失敗・保存失敗でpairを確定できなければverifiedを発行せず、receipt-missingまたはsession-unavailableへ閉じる。保存失敗後に残った部分recordを成功として探索しない。
+
+terminal recordの保存とindex参照・commit revisionの公開は一つのdurable transactionにする。ackは、recordとledgerが永続化され、indexがそのrecordだけを指し、独立checkpointへcommitが確認された後に返す。部分write・容量超過・disk full・同期失敗・途中crashはack前に停止する。再起動時は認証済みcommitだけを公開し、sealedを名乗る未確定record、dangling index、同じwitnessIdの別bytesはquarantineしてinvalid-receiptにする。path置換・symlink／hardlink alias・未記録entry・世代違いのstore rootも拒否する。nativeでこの保存意味を確認できないstorage policyはunsupportedとする。
+
+canonical digestやhash chainは内容整合の検査であり、発行者認証でもrollback防止でもない。record認証に使う鍵／handleはauthorityが保護し、buildへ渡さない。store全体を古い正しいbackupへ戻す攻撃には、DBと一緒に巻き戻せない独立caller管理のcheckpointを要求する。checkpointはauthorityId／storeEpoch／commitRevision／head digestを認証し、compare-and-swapでのみ進む。local durable commit後にcheckpointを進め、確認前のcommitをreaderへ公開しない。両者の更新間でcrashした場合は、旧anchorと一致するprefix＋未公開local commitを照合してから再認証・再確定する。checkpointより古いDB・異なるheadが確認できた場合はinvalid-receipt、checkpoint自体の取得不能・未確認の復旧はsession-unavailableとして閉じる。ローカル最大timestampから復旧しない。
+
+checkpointの隔離・耐久性が未実証なら、再起動後に旧sessionを復元してverifiedを返さない。storeEpochを新規発行して新sessionを要求するだけでは、偽の古いserviceへの接続を防げないため、readerが信頼するauthority instance／epochの更新認可も独立設定側で行う。世代を自動採用しない。
+
+#### 9.57.6 取得contractと現在の同期readerへの接続
+
+初期backendはsession選択とlookupを同じ認証済みtransaction snapshotへ束縛する。requestの完全キーはauthority／store epoch／選択session／nonce／root registry世代／graph／export／execution／core／project／context／invocation／witnessIdである。serverはcallerの選択sessionと要求scopeを先に認可し、witnessIdだけで全storeを検索しない。
+
+| authorityの結果 | readerへ渡す条件・投影 |
+| --- | --- |
+| verified | current session、合法なsealed terminal、未失効の使用lease、認証済みledger／record／index／checkpointが一致。既存witness v1を返す。G3／G4採用は別 |
+| not-executed | current scopeの独立Task観測がAction未実行を確定。古いenvelopeのwitnessIdで古いrecordを探索せず、current Taskのbinding・理由だけを返す |
+| unavailable | 正式なreceipt未確定・backend未対応・session失効／未取得。Task例外中断は根拠付きexecution-aborted variant。期限・接続切断もfreshな取得が成立しない理由として閉じる |
+| invalid | 認証・record／index／checkpointの整合違反、別scope／別issuer、実行済みscopeに古い／別witnessIdを付けた要求、未知protocol・破損record。欠落扱いへ格下げしない |
+
+正規の繰返しlookupは読取操作として許す。ただし毎回current revision・失効・lease・request challengeを検証し、過去のverified応答をfreshな結果へ再ラベルしない。reader再起動・profile／root registry変更・session切替では以前のsnapshotを失効する。
+
+現在の`parseGradleExport`／`inspectOwnedExecution`は同期APIである。実IPCをそのcallback内で暗黙に開始したり、Promiseを同期結果として渡したりしない。将来のscan orchestrationへ明示的なasync取得段を設け、G0／G1が通った候補だけについて`acquireOwnedCallerSnapshot(selectedSession, exactClaims)`を呼ぶ。authority wireの認証・revision・challenge・全scopeの取得を完了してから、既存のstrict session v1＋同期lookupへ投影する。外枠のstore epoch・read revision等はadapterのclosureへ保持する。公開する同期adapterは§9.56の修正どおりbackend／session／lookupだけのplain objectとし、追加propertyやprototype methodで契約を拡張しない。認証・破損など確認済み不正は明示invalid結果へ投影し、transport障害だけをlookup例外／正式unavailableとして扱う。例外messageは出さず、profileとsessionの設定済みauthority不一致はconfiguration_invalidに分離する。coreを二度parseして予算を二重消費する実装にせず、G0／G1後に候補を保持する内部段階APIを追加する。
+
+snapshotは一回のimport・完全なclaim集合・reader connectionへ固定し、共有cacheから再利用しない。§9.56のrefreshOwnedExecutionを呼ぶだけでは新しいIPC取得の代わりにならない。再captureはasync取得もやり直す。取得から適用までのsession切替・失効は後述のpermit／final validationで扱う。adapterの取得・失効APIを本番orchestrationへ接続するまでは、testの同期lookupだけでbackend採用済みとしない。
+
+#### 9.57.7 失効・競合・読取の線形化点
+
+失効対象はsession、scope、image／executor／loader lease、authority／隔離profile、root registry世代、reader接続である。operator・認可callerだけが理由付きrevokeを要求でき、authorityはcurrent index・有効lease・tombstoneを同一transaction revisionで更新する。profile／隔離配置変更は関連sessionをまとめて失効させる。現実装の起動時固定G1設定をその場で書き換える意味ではなく、新設定で新sessionを選ぶ必要がある。
+
+lookupの線形化点はauthorityがcurrent／失効とterminal参照を同一transactionで読み、応答revisionを確定した時点とする。失効commitより後に開始したlookupへ旧verifiedを返さない。失効と同時実行の要求はtransaction順で一意に決め、mtime・wall-clockだけで勝敗を選ばない。
+
+将来G3／G4を開くには、snapshotに加えてauthority発行の一回のread permitを必要とする。permitはsession／revision／claim集合digest／最終pair／全使用lease世代／reader connection／読取計画digest／有効期限を束縛し、graphへ保存しない。G3完了前にはartifact読取権限を出さない。readerは各新規openの許可と、結果公開前の`finalValidate(permit, observedResultDigest)`を確認する。capture全体のpermitの下に、読取計画のentryとopenOrdinalへ束縛する一回のchild grantを発行する。同じordinalの二度目のopenは拒否し、同じopenからのbounded streamingは許す。全予定entryの完了・未完了をauthorityへ記録し、finalValidateでcapture permitを一回だけ消費する。単なるsnapshot TTLを失効検知の代用にしない。初期permitは発行から30秒以内、延長・再発行で同じcaptureを密かに続けず、期限切れは今回の判定を破棄する。
+
+revoke commitと新規read grant／finalValidateはauthority上で直列化する。revokeが先なら後続grant・結果確定を拒否し、途中結果を診断へ採用しない。finalValidateが先なら、そのrevision時点の結果として完了した事実は残すが、後のscanへacceptedをcacheしない。既に許可・開始されたOS readや過去に公開済みの結果を取り消せるとは表明しない。gate閉鎖時の読取0は、失効が読取許可より先に確定したケースで検証する。実行中の失効は追加grant停止・途中bytes破棄・結果不採用として別計数する。
+
+通信断・service再起動・lease期限切れ・checkpoint確認不能ではpermitを更新せず停止する。再接続時は新しいconnection challengeとfreshな取得を要求し、古いpermitや復元したcallbackを引き継がない。今回G3／G4は閉じているため、このpermit APIも未実装・全owned読取0である。
+
+#### 9.57.8 拒否理由と既存coreへの影響
+
+backend内部の監査理由は認証・権限・replay・sequence・storage・rollback・失効を区別し、request／scope／revisionと関連付ける。credential・任意path・source bytes・認証tokenはログやMCP応答へ出さない。readerへのprojectionでは次の区分を維持する。
+
+| 条件 | reader理由／状態 |
+| --- | --- |
+| profileとsessionの設定済みauthority不一致 | configuration_invalid。producerの不正へ分類せずownedのみunavailable |
+| 未承認配置・未成立の隔離／Task observer・未取得／失効session・通信期限切れ／lookup障害例外 | 正式なunavailableとしてwitness_unavailable。診断採用false |
+| current Taskの独立した未実行観測 | action_not_executed。残存envelopeを今回の実行へ採用しない |
+| 独立したTask例外中断 | execution_aborted。sealed successを作らない |
+| 不正API／未知wire／認証失敗／replay／破損・矛盾record | invalid-receiptを経てexecution_invalid。攻撃者に再設定・fallbackを委ねない |
+| 認証済みwitnessと固定core／scope／pair／stateの比較不一致 | claim_mismatch |
+| 全G2条件を満たすがG3未実装 | capability_unsupported。executionWitness=verifiedは独立caller contractへの対応の確認に限定 |
+
+失効は過去recordの内容が不正になったこととは区別する。正規のsupersede／revokeをinvalid-receiptへ変更せず、内容改変や認証不正を単なるunavailableへ隠さない。失効後の古い認証frameをfresh要求として再送する行為は別のreplay違反である。G0 invalid・G1無効は常に先行し、backendへ接続するためのsidecar探索を行わない。ownedの失敗は既存coreのrelation／introduced_by／declared_in／coverageへ波及させない。
+
+#### 9.57.9 公開API・native実証の採用条件
+
+実証を三段階に分ける。Aはprotocol／durable storeとfault injection、Bは実principal・実IPC・敵対buildによる隔離、Cは実Gradle Taskと所有broker／observerの事実対応である。Aのunit成功をBへ、synthetic Taskの成功をCへ数えない。公開APIで必要なTask観測を成立させられなければ、その配置はC未成立のunsupportedとして打ち切り、内部APIやhostの自己申告で穴埋めしない。
+
+Bの陽性対照は認可caller／brokerだけが許可operationを行えること、陰性対照は同じ要求bytesをbuild principal・child・未認可peerから送ることとする。protected store・checkpoint・credential・socket親・reader processの攻撃前後を独立harnessが検査し、領域外write／credential取得／無断stage起動が0であることを計数する。失敗したsystem callを起動しなかったことに数えず、試行数・拒否数・変更byte数を分ける。攻撃markerの生成・検査役を攻撃build自身へ任せない。
+
+Cは承認対象の隔離配置ごとにGroovy／Kotlin × Gradle 8.11.1／9.2.1で、実Task実行、SKIPPED／UP-TO-DATE／FROM-CACHE／NO-SOURCE、Task例外、合法なproducer failed／unavailable、再export・session切替を確認する。brokerのTask外起動、未認可Actionの同じTask ID、偽のTaskState、scope間eventの交換を対照にする。Task観測を独立化できないmatrix cellを正常caseとして埋めない。
+
+検証recordは実行platform・主体／隔離policy・実装とAPI artifactのsource／raw hash、service／caller／broker／observerの実行instance、承認pin、wire／event sequence、store／checkpointの前後revision、各caseの結果・拒否理由・独立計数を結ぶ。secretは保存せず、認証試験はopaque key IDと検証結果で再現する。control／observer・fault case・試行／完了／拒否件数は保存証拠から算出する。backend採用にはA・B・CとG3の必要profile実証を揃え、欠落・自己hashだけの再生成・別実行版混在を拒否する。
+
+#### 9.57.10 回帰テスト条件（AB01〜AB42、すべて未実施）
+
+| ID | 条件・故障対照 | 必須結果 |
+| --- | --- | --- |
+| AB01 | 既定off、未承認backend／隔離profile、未知platform／設定 | backend-unsupportedまたは設定invalid。G0／G1を保持、owned読取0 |
+| AB02 | 同一UID別directory、principal名だけ変更、未検証process権限が残る配置 | 隔離採用不可。単なるisolationEvidenceRefで有効化しない |
+| AB03 | build／childからstore・registry・credential・checkpoint・socket親を変更／alias置換 | 独立harnessで無断変更byte・credential取得・領域外write 0を確認 |
+| AB04 | 認証handle継承、env／argv注入、reader process制御、brokerを名乗るchild | 権限取得／管理API実行0。未試験経路が残ればunsupported |
+| AB05 | project指定endpoint／issuer／鍵、偽socket、未認可peer・service instance | 認証／role違反を拒否しfallback探索なし。成功応答を採用しない |
+| AB06 | producerの成功JSON・任意digestへのseal要求、別roleのTask／lease event | issuer認証済みでも観測権限を欠けば拒否。verifiedの新規発行0 |
+| AB07 | 過去のwire frame・応答を別challenge／request／connectionへ再送 | replay拒否。自己hash更新や正しい署名の旧応答もfreshにならない |
+| AB08 | event欠落・重複・順序交換・sequence巻戻し・別scope／instanceへ移動 | ledgerとphase検証で拒否。未計測を0とする補完なし |
+| AB09 | 偽TaskState、afterTaskだけ、Task外のbroker起動、未承認Task observer | C未成立。Task真偽を保存認証だけで承認せずsession-unavailable |
+| AB10 | bind前start、core再束縛、登録締切後のscope／Action／capture計画変更 | lifecycle拒否。新session以外で元sealを変更できない |
+| AB11 | 同operationId同payloadのretry、同ID別payload、旧wireの再利用 | 正規retryは同ack・起動1回以下。消費前後・起動前後・ack喪失のcrashでも自動再起動なし。別payload／旧wireは拒否 |
+| AB12 | 同slotの同時activate、別project root／consumerへのcurrent流用 | CAS勝者だけcurrent。敗者／旧scopeへstage許可なし |
+| AB13 | session／nonce／graph／export／execution／root世代の交換と全hash更新 | caller固定値から拒否。mtime・最大timestampで選び直さない |
+| AB14 | 同scopeの別operationによる二重登録、witnessId予約と別scopeの同ID、実行済みscopeへ旧witnessId | 予約重複／交換は拒否。別store探索・receipt-missingへの格下げなし |
+| AB15 | stage／process begin-endの欠落・重複・phase偽装、Actionの二度実行 | sealed verifiedなし。abort／invalidを根拠に従って分離 |
+| AB16 | leaseのprofile／holder／session交換、失効ID再利用、未到達childの捏造 | lease対応拒否。合法なprepare前拒否にはchild leaseを要求しない |
+| AB17 | completed／合法failed／unavailableの全到達prefixと状態付替え | 実ledgerに一致するterminalのみ保存。部分outputを成功に使わない |
+| AB18 | pairの片方交換、envelopeのwitnessId変更、固定coreの自己再hash。bundle／envelopeだけでclosureを渡さない | 完全なcore／seal snapshotでG0を行いseal拒否。digestだけのsign oracleを作らない |
+| AB19 | terminal／index／ledger write、永続化、checkpoint確認の各境界で失敗・crash | 確認前ackなし。部分recordのverified公開0、root／旧record不変 |
+| AB20 | store symlink／hardlink alias・親path置換・未記録entry・容量上限超過 | 有界処理で拒否。protected領域外write0、listingは上限＋1以内 |
+| AB21 | record／index／ledgerのbytes改変と自己hash／hash chain再計算 | 発行者認証・固定headからinvalid。欠落や未対応へ格下げしない |
+| AB22 | store全体を古い正しいbackupへ戻す、checkpointだけ別世代へ交換 | 独立anchorからrollback拒否。旧epoch／timestampで自動復旧なし |
+| AB23 | local commit後・anchor確認前のcrash、未公開commitの再起動回復 | 旧anchorとのprefix一致・再確定前は非公開。二重seal／二重起動なし |
+| AB24 | 通常の繰返しlookup、reader再起動・callback復元・service再接続 | fresh取得だけ使用。正規lookupは許可し、旧snapshot／permitは再利用不可 |
+| AB25 | SKIPPED／UP-TO-DATE／FROM-CACHE／NO-SOURCE＋古い成功envelope | 独立Task観測からnot-executed。古いpair探索・artifact読取0 |
+| AB26 | Task例外、producerの合法failed、Task状態未知、export保存失敗 | aborted／verifiedなfailed記録／session-unavailable／receipt-missingを根拠別に分離 |
+| AB27 | malformed caller／frame／schema／型、巨大payload、通信期限超過 | 型・認証不正はinvalid、正式timeoutはunavailable。secret非公開・予算有界 |
+| AB28 | G0 invalid、G1 disabled／未承認、G2取得不能の各段階 | G0／G1閉鎖ならauthority接続0。全caseでowned artifact／image／baseline reader・getter／supplier 0 |
+| AB29 | revokeをlookup／新規read grant／finalValidateの直前・同時・直後に挿入 | transaction順で決定。revoke後の新規grant／採用なし、開始済みreadは別計数 |
+| AB30 | 取得後のsession supersede／profile・root registry変更／lease失効 | stale snapshotを採用しない。途中bytes破棄、再captureはfresh取得 |
+| AB31 | permitの期限・scope／claim集合／pair／connection／計画digestの交換、openOrdinal／finalValidateの再使用 | 新規open／final確定を拒否。TTL内であることだけで失効を迂回しない |
+| AB32 | service切断・再起動・checkpoint未取得、認証情報rotation | 旧permit更新なし。新epochの認可と新sessionなしにverified復旧しない |
+| AB33 | Aのsealing→commit中・後にBが追記・正常終了／abort。順序を反転し、scope単独revokeとsession全体revokeも比較 | Aだけを閉じてsessionはBのterminalまでactive。B終了後だけcommitted。各scope結果は順序非依存で、単独abortは他scopeを壊さずsession revokeは全scopeに波及 |
+| AB34 | 全G2正常とG3未実装、拒否・未取得と既存coreの比較 | capability_unsupported／診断採用false維持。relation・introduced_by・declared_in・coverage不変 |
+| AB35 | A／B／Cの実証データでcase欠落・件数改変・source／実行版／API artifact交換 | 保存証拠から拒否。synthetic／native／未成立を別集計する |
+| AB36 | 認可配置で両DSL×両Gradle版、非対応配置、Task観測が成立しないcell | 成立したcellだけ採用候補。未成立をunsupportedのまま記録し承認profileを自動発行しない |
+| AB37 | coreMetadataRefの欠落・digestだけのbind、別session／purposeのref、自己再hashした別core | 実canonical coreのG0構造・固定bytesから拒否。project file／sidecar探索0 |
+| AB38 | sealMetadataRefなし・中途upload、evidence index／carrier欠落、role／length交換、dangling ref・循環・orphan | authorityの完全single-entry G0検証で拒否。verified発行・artifact／source読取0 |
+| AB39 | chunk欠落・順序／ordinal／宣言size違反・重複、別scope／witnessIdへのupload交換、個別／session合計予算超過、途中crash | freeze済みrefを発行しない。保存領域は有界で、再開／retryでも別bytesへの更新・予算迂回・不完全snapshotのseal不可 |
+| AB40 | freeze後のmetadata改変・削除・同uploadIdの上書き、正しい別snapshot／pairへの交換 | 認証済みraw size／digestと固定bindingからinvalid。再取得・現在fileからの修復なし |
+| AB41 | Aをcommitした後Bを成功／abort／invalidへ進め、Bのlate event・再seal・再openを試行。全scope terminal前にsession完了を要求 | Bは正規進行でき、Aは不変。閉じたscopeだけを拒否し、全member terminal以前はsessionをcommittedにしない |
+| AB42 | 複数single-entry sealから最終wrapperを併合し、carrier追加／欠落・entry／pair交換・core再hash・他scope流用を行う | 正常併合は各pairと全体G0を通る。不正併合はG0／authority照合で拒否。未確定scopeを成功へ補完せず既存coverageは維持 |
+
+実装順はAのlifecycle／transaction／projection→Bの隔離・認証IPCとrollback anchor→CのTask／brokerの独立対応→async orchestration接続とpermitである。いずれも本節追加だけでは完了していない。G3／G4・本番producer・共有use receipt・profile承認・3ツール／OSV実接続は引き続き別の採用条件として残す。
+
+今回の文書検証: 公開文書のcommand例・既存G2 contractの計138テスト成功、diff整形検査成功。新節の10小節とAB01〜AB36の欠落・重複なしを確認。AB条件の新規テスト実装・backend／native実行は行っていない。
+
+#### 9.57レビュー修正: seal用metadataとscope／sessionの分離（2026-11-02）
+
+指摘された2件を本節へ反映した。bind-coreの実core snapshot、seal-scopeの完全single-entry wrapperと全参照閉包、chunk転送・freeze・認証済みmetadata保存、最終複数scope wrapperとの対応を定義した。sessionのsealingを廃し、scope単独の実行／sealing／terminalとsession全体の集約・失効を分離した。AB18／AB33を拡充し、AB37〜AB42を追加した。追加は設計・回帰条件のみで、backend／新schema／テスト実装・native実証・本番採用は未実施である。
+
+レビュー修正後の文書検証: 公開文書・既存G2 contractの138テスト成功、diff整形検査成功。AB01〜AB42の欠落・重複と表の連続性、完全metadata受渡し・scope／session分離・TODO更新を確認。AB37〜AB42は条件の追加のみで、backend／新規回帰テスト／native実証は未実施。

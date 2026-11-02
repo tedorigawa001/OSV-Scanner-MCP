@@ -32,7 +32,7 @@ for(const reason of ['SKIPPED','FROM-CACHE','UP-TO-DATE','NO-SOURCE'])it('reject
 it('separates an unsealed Task exception from a sealed failed producer',()=>{const f=ownedExecutionCase();f.caller.lookup=()=>({status:'unavailable',reason:'execution-aborted',binding:f.witness.binding,task:{...f.witness.task,failed:true}});expect(run(f).owned?.reasons).toEqual(['owned_manifest_execution_aborted']);});
 for(const [label,change,reason] of [
  ['session nonce',(f:any)=>f.session.nonce='other','claim_mismatch'],
- ['session authority',(f:any)=>f.session.authorityId='other','claim_mismatch'],
+ ['session authority',(f:any)=>f.session.authorityId='other','configuration_invalid'],
  ['session core digest',(f:any)=>f.session.coreGraphDigest=ownedSha256('other'),'claim_mismatch'],
  ['session root generation',(f:any)=>f.session.rootRegistryDigest=ownedSha256('other'),'claim_mismatch'],
  ['unknown scope',(f:any)=>f.session.scopes[0].context='other','claim_mismatch'],
@@ -74,10 +74,10 @@ for(const [label,change,reason] of [
  ['wrong image pin',(f:any)=>f.session.leases[0].profileDigest=ownedSha256('other'),'claim_mismatch'],
  ['unknown lease',(f:any)=>f.witness.stageExecutions[1].processes[0].leases.jdk='missing','witness_unavailable'],
  ['revoked lease',(f:any)=>f.session.leases[0].status='revoked','witness_unavailable'],
-] as const)it('rejects '+label+' with '+reason,()=>{const f=ownedExecutionCase();change(f);const result=run(f);expect(result.owned).toMatchObject({manifestStructure:'verified',importStatus:reason==='witness_unavailable'?'unavailable':'invalid',reasons:['owned_manifest_'+reason],ownedFileReads:0,diagnosticEligible:false});expect(result.graph).toEqual(f.doc.coreGraph);});
+] as const)it('rejects '+label+' with '+reason,()=>{const f=ownedExecutionCase();change(f);const result=run(f);expect(result.owned).toMatchObject({manifestStructure:'verified',importStatus:reason==='witness_unavailable'||reason==='configuration_invalid'?'unavailable':'invalid',reasons:['owned_manifest_'+reason],ownedFileReads:0,diagnosticEligible:false});expect(result.graph).toEqual(f.doc.coreGraph);});
 for(const field of ['noSource','skipped','failed','executed','didWork'])for(const value of [undefined,'false',0,null])it('rejects missing or non-boolean '+field+' '+value,()=>{const f=ownedExecutionCase();if(value===undefined)delete (f.witness.task as any)[field];else (f.witness.task as any)[field]=value;expect(run(f).owned?.reasons).toEqual(['owned_manifest_execution_invalid']);});
 for(const result of [undefined,null,{}, {status:'success'}, {status:'unavailable',reason:'unknown'}, {status:'verified'}, {status:'invalid',reason:'invalid-receipt'}])it('does not hide malformed or invalid lookup data: '+JSON.stringify(result),()=>{const f=ownedExecutionCase();f.caller.lookup=()=>result;expect(run(f).owned?.reasons).toEqual(['owned_manifest_execution_invalid']);});
-it('rejects a throwing lookup without exposing its message or trying a fallback',()=>{const f=ownedExecutionCase();let calls=0;f.caller.lookup=()=>{calls++;throw Error('/secret/store');};expect(run(f).owned?.reasons).toEqual(['owned_manifest_execution_invalid']);expect(calls).toBe(1);});
+it('treats a throwing lookup as unavailable without exposing its message or trying a fallback',()=>{const f=ownedExecutionCase();let calls=0;f.caller.lookup=()=>{calls++;throw Error('/secret/store');};const owned=run(f).owned;expect(owned?.reasons).toEqual(['owned_manifest_witness_unavailable']);expect(owned?.importStatus).toBe('unavailable');expect(JSON.stringify(owned)).not.toContain('secret');expect(calls).toBe(1);});
 it('passes a frozen session-bound request and no paths to lookup',()=>{const f=ownedExecutionCase();const lookup=f.caller.lookup;let request:any;f.caller.lookup=(r:any)=>{request=r;return lookup(r);};run(f);expect(Object.isFrozen(request)).toBe(true);expect(request).toMatchObject({sessionId:'session',nonce:'nonce',witnessId:'witness',rootRegistryDigest:f.session.rootRegistryDigest});expect(Object.keys(request).some(k=>/path|url|store/i.test(k))).toBe(false);});
 
 for(const status of ['superseded','revoked'])it('does not reuse a witness from '+status+' session',()=>{const f=ownedExecutionCase();f.session.status=status;let calls=0;f.caller.lookup=()=>{calls++;return f.result;};expect(run(f).owned?.reasons).toEqual(['owned_manifest_witness_unavailable']);expect(calls).toBe(0);});
@@ -99,3 +99,13 @@ it('bounds returned authority metadata without leaking content',()=>{const f=own
 
 it('binds broker instance to the independent session scope',()=>{const f=ownedExecutionCase();f.witness.brokerInstanceId='other';expect(run(f).owned?.reasons).toEqual(['owned_manifest_claim_mismatch']);});
 for(const kind of ['jdk','node','executor','platform','loader'])it('binds '+kind+' lease to its actual holder',()=>{const f=ownedExecutionCase();f.session.leases.find((l:any)=>l.kind===kind).holderId='other';expect(run(f).owned?.reasons).toEqual(['owned_manifest_claim_mismatch']);});
+
+it('accepts only a plain caller object with exactly backend, session and lookup',()=>{
+ const f=executionFixture();
+ class Adapter{backend='caller-owned-receipt-store-v1' as const;session=f.caller.session;lookup(r:any){return f.caller.lookup(r);}}
+ expect(inspectOwnedExecution(f.claim,new Adapter(),f.authorization)).toBe('execution_invalid');
+ expect(inspectOwnedExecution(f.claim,{...f.caller,logger:()=>{}},f.authorization)).toBe('execution_invalid');
+ expect(inspectOwnedExecution(f.claim,{...f.caller},f.authorization)).toBe('capability_unsupported');
+});
+it('still rejects an asynchronous lookup as an API misuse',()=>{const f=executionFixture();expect(inspectOwnedExecution(f.claim,{...f.caller,lookup:async(r:any)=>f.caller.lookup(r)},f.authorization)).toBe('execution_invalid');});
+it('reports an authority disagreement between profile and session as configuration_invalid, not an owned rejection',()=>{const f=ownedExecutionCase();f.session.authorityId='other';expect(run(f).owned).toMatchObject({importStatus:'unavailable',reasons:['owned_manifest_configuration_invalid']});});

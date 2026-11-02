@@ -27,7 +27,7 @@ const lookupSchema=z.union([
  z.object({status:z.literal('invalid'),reason:z.literal('invalid-receipt')}).strict()
 ]);
 export const unsupportedOwnedCaller=Object.freeze({backend:'unsupported'} as const);
-export type OwnedExecutionReason='execution_invalid'|'claim_mismatch'|'witness_unavailable'|'action_not_executed'|'execution_aborted'|'capability_unsupported';
+export type OwnedExecutionReason='execution_invalid'|'claim_mismatch'|'configuration_invalid'|'witness_unavailable'|'action_not_executed'|'execution_aborted'|'capability_unsupported';
 export interface OwnedExecutionClaim {
  graphId:string;exportId:string;executionId:string;coreGraphDigest:string;project:string;context:string;invocation:string;
  profileDigest:string;recipeDigest:string;witnessId:string;bundleDigest:string;envelopeDigest:string;
@@ -41,7 +41,10 @@ export interface OwnedLookupRequest {
  readonly graphId:string;readonly exportId:string;readonly executionId:string;readonly coreGraphDigest:string;
  readonly project:string;readonly context:string;readonly invocation:string;readonly witnessId:string;
 }
-/** An application-owned adapter, never an object decoded from the transport. */
+/** An application-owned adapter, never an object decoded from the transport.
+ * It must be a plain object whose own properties are exactly backend, session and lookup;
+ * class instances (lookup on the prototype) and extra fields are rejected as execution_invalid.
+ * lookup must return synchronously; a thrown error is treated as an unavailable receipt. */
 export interface TrustedOwnedCaller {
  readonly backend:'caller-owned-receipt-store-v1';readonly session:unknown;
  lookup(request:Readonly<OwnedLookupRequest>):unknown;
@@ -56,14 +59,17 @@ export function inspectOwnedExecution(claim:OwnedExecutionClaim,caller:unknown,a
   if(hasKeys(caller,['backend'])&&caller.backend==='unsupported')return 'witness_unavailable';
   if(!hasKeys(caller,['backend','session','lookup'])||caller.backend!=='caller-owned-receipt-store-v1'||typeof caller.lookup!=='function')return 'execution_invalid';
   const auth=ownedAuthorizationSchema.parse(authorization),session=ownedSessionSchema.parse(snapshot(caller.session));
-  if(session.authorityId!==auth.authorityId)return 'claim_mismatch';
+  // Profile and caller session disagreeing on the authority is an operator configuration error, not a producer claim.
+  if(session.authorityId!==auth.authorityId)return 'configuration_invalid';
   if(session.status!=='current')return 'witness_unavailable';
   // Scope is chosen by the independent current session, never by timestamps or exported hints.
   const scope=session.scopes.find(s=>s.project===claim.project&&s.context===claim.context&&s.invocation===claim.invocation);
   if(!scope)return 'claim_mismatch';
   if(scope.profileDigest!==claim.profileDigest||scope.recipeDigest!==claim.recipeDigest)return 'claim_mismatch';
   const request=Object.freeze({authorityId:session.authorityId,sessionId:session.sessionId,nonce:session.nonce,rootRegistryDigest:session.rootRegistryDigest,graphId:session.graphId,exportId:session.exportId,executionId:session.executionId,coreGraphDigest:session.coreGraphDigest,project:scope.project,context:scope.context,invocation:scope.invocation,witnessId:claim.witnessId});
-  const result=lookupSchema.parse(snapshot(caller.lookup(request)));
+  // A failing receipt store is unavailable evidence; its message is never surfaced.
+  let response:unknown;try{response=caller.lookup(request);}catch{return 'witness_unavailable';}
+  const result=lookupSchema.parse(snapshot(response));
   if(result.status==='invalid')return 'execution_invalid';
   if(result.status==='unavailable'&&result.reason!=='execution-aborted')return 'witness_unavailable';
   const expectedBinding={...request,profileDigest:scope.profileDigest,recipeDigest:scope.recipeDigest};
