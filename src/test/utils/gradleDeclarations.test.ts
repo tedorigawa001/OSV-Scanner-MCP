@@ -404,3 +404,19 @@ it.each(["duplicate-key", "unknown-field", "invalid-json", "wrong-version"])("do
   expect(captured.metadata.reasons).toContain("catalog_graph_inputs_unverifiable");
   expect(captured.coverageReasons).toEqual([]);
 });
+it.each(['malformed-owned','valid-g0','owned-depth-budget'])('v4 %s preserves trusted declarations and original core freshness rules',async kind=>{
+ const {ownedFixture}=await import('../fixtures/gradleOwnedFixture.js');
+ const {rewriteOwned}=await import('../fixtures/gradleOwnedFixture.js');
+ const {ownedDigest}=await import('../../utils/gradleOwnedJson.js');
+ const {dir,graph}=await fixture();const legacy=await new GradleGraphCache(dir,undefined,'registered-helper-v1').capture(path.join(dir,'gradle.lockfile'),Buffer.from(lock));
+ const v4=ownedFixture();v4.coreGraph=graph;rewriteOwned(v4,()=>true,v=>{if(v.binding)v.binding.coreGraphDigest=ownedDigest(graph);if('coreGraphDigest'in v)v.coreGraphDigest=ownedDigest(graph);});
+ if(kind==='malformed-owned')v4.ownedOfferBundles=false;
+ let text=JSON.stringify(v4);if(kind==='owned-depth-budget')text=text.replace(/"ownedOfferObjects":\[/,'"ownedOfferObjects":['+'['.repeat(150)+'0'+']'.repeat(150)+',');
+ await writeFile(path.join(dir,'osv-mcp-gradle-dependencies.json'),text);
+ const current=await new GradleGraphCache(dir,undefined,'registered-helper-v1').capture(path.join(dir,'gradle.lockfile'),Buffer.from(lock));
+ expect(current.metadata.declaration_provenance).toEqual(legacy.metadata.declaration_provenance);expect(current.metadata.declarations_complete).toBe(true);expect(current.coverageReasons).toEqual(legacy.coverageReasons);
+ for(const [name,version]of [['g:a','1'],['g:b','2']]as const)expect(current.lookup!(name,version)).toEqual(legacy.lookup!(name,version));
+ expect(current.metadata.owned_manifest?.diagnosticEligible).toBe(false);
+ await writeFile(path.join(dir,'build.gradle'),'// changed core input');
+ const stale=await new GradleGraphCache(dir,undefined,'registered-helper-v1').capture(path.join(dir,'gradle.lockfile'),Buffer.from(lock));expect(stale.metadata.reasons).toContain('stale_input_hash');expect(stale.lookup!('g:a','1').relation).toBe('unknown');
+});

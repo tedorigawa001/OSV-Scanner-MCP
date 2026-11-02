@@ -1,3 +1,4 @@
+import {parseGradleExport, type OwnedManifestStatus} from "./gradleOwnedManifest.js";
 import {loadBudget} from "./gradlePluginSnapshots.js";
 import { GradlePluginReader, startupPluginSettings, type PluginSettings, type PluginAnalysis, type PluginStatus } from "./gradlePlugins.js";
 import { catalogEntriesMatch, loadCatalogModels, UnsupportedCatalogModel, type CatalogModels } from "./gradleCatalogs.js";
@@ -6,7 +7,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { readRegularFile } from "./safeRead.js";
 import { isInsideDir } from "./projectWalk.js";
-import { analyzeGradleContext, createGradleBudget, gradleKey, parseGradleGraph, parseGradleLock, UnsupportedGradleSchemaVersion, type GradleGraph, type GradleContext, type GradleBudget } from "./gradleGraph.js";
+import { analyzeGradleContext, createGradleBudget, gradleKey, parseGradleLock, UnsupportedGradleSchemaVersion, type GradleGraph, type GradleContext, type GradleBudget } from "./gradleGraph.js";
 import { analyzeDeclarations, catalogVerified, DECLARATION_CONTRACT, DECLARATION_MODEL, startupDeclarationTrust, knownDeclarations, parseDeclarationContract, type DeclarationTrust, type DeclarationTrustConfig, startupCatalogTrust, type CatalogTrust, type CatalogTrustConfig, CATALOG_MODEL } from "./gradleDeclarations.js";
 import type { RelationInfo, RelationLookup } from "./dependencyRelations.js";
 
@@ -17,6 +18,7 @@ interface DeclarationContextProvenance {
   configuration: string; trust_status: DeclarationTrustStatus; assurance: string | null; contract_paths: string[]; catalog_trust_status?: DeclarationTrustStatus; plugin_trust_status?:PluginStatus; plugin_applications?:PluginAnalysis["applications"];
 }
 export interface GradleMetadata {
+  owned_manifest?: OwnedManifestStatus;
   path: string; metadata_paths: string[]; status: "complete" | "partial" | "unavailable";
   declaration_provenance?: { trust_model: string; trust_status: DeclarationTrustStatus;
     plugin_trust_model?:string;plugin_trust_status?:PluginStatus;catalog_trust_model?: string; catalog_trust_status?: DeclarationTrustStatus; contract_paths: string[]; assurance: string | null; limitations: string[]; contexts: DeclarationContextProvenance[] };
@@ -27,7 +29,7 @@ const unknown = (): RelationInfo => ({ relation: "unknown", introducedByComplete
 
 /** One cache per scan; all metadata/input bytes and work limits are shared. */
 export class GradleGraphCache {
-  private readonly documents = new Map<string, Promise<{ graph?: GradleGraph; reason?: string }>>();
+  private readonly documents = new Map<string, Promise<{ graph?: GradleGraph; owned?:OwnedManifestStatus; reason?: string }>>();
   /** SHA-256 of a readable input, "absent" when it does not exist, null when it cannot be verified. */
   private readonly inputs = new Map<string, Promise<string | null>>();
   private readonly inputBytes = new Map<string, Buffer>();
@@ -54,10 +56,10 @@ export class GradleGraphCache {
     let pending = this.documents.get(file);
     if (!pending) {
       pending = (async () => {
-        const read = await readRegularFile(file, { boundary: this.boundary, maxBytes: Math.min(16 * 1024 * 1024, this.remaining) });
+        const read = await readRegularFile(file, { boundary: this.boundary, maxBytes: Math.min(64 * 1024 * 1024, this.remaining) });
         if (!read.ok) return { reason: read.failure === "not_found" ? "metadata_missing" : `metadata_${read.failure}` };
         this.remaining -= read.bytes.length;
-        try { return { graph: parseGradleGraph(read.bytes.toString("utf8"), this.budget) }; }
+        try { return parseGradleExport(new TextDecoder("utf-8", {fatal:true,ignoreBOM:true}).decode(read.bytes), this.budget); }
         catch (error) { return { reason: error instanceof UnsupportedGradleSchemaVersion ? "unsupported_schema_version" : "invalid_or_over_budget_metadata" }; }
       })();
       this.documents.set(file, pending);
@@ -126,20 +128,21 @@ export class GradleGraphCache {
     if (lockBytes.length > Math.min(16 * 1024 * 1024, this.lockRemaining)) { metadata.reasons.push("captured_lock_size_limit"); return result; }
     this.lockRemaining -= lockBytes.length;
     if (path.basename(lockPath) !== "gradle.lockfile") { metadata.reasons.push("buildscript_not_supported"); return result; }
-    const candidates: { graph: GradleGraph; root: string; lockId: string; hash: string }[] = [];
+    const candidates: { graph: GradleGraph; owned?:OwnedManifestStatus; root: string; lockId: string; hash: string }[] = [];
     let directory = path.dirname(lockPath);
     // Ancestors are bounded by the scan root, even when allowedRoot is larger.
     for (let depth = 0; depth < 128 && isInsideDir(this.boundary, directory); depth++) {
       const file = path.join(directory, GRADLE_COMPANION), doc = await this.document(file);
       if (doc.graph) {
         const lock = doc.graph.lockfiles.find(l => path.resolve(directory, l.path) === lockPath);
-        if (lock) { candidates.push({ graph: doc.graph, root: directory, lockId: lock.id, hash: lock.sha256 }); metadata.metadata_paths.push(sanitizeExternalText(path.relative(this.boundary, file))); }
+        if (lock) { candidates.push({ graph: doc.graph, owned:doc.owned, root: directory, lockId: lock.id, hash: lock.sha256 }); metadata.metadata_paths.push(sanitizeExternalText(path.relative(this.boundary, file))); }
       } else if (doc.reason !== "metadata_missing") metadata.reasons.push(doc.reason!);
       if (directory === this.boundary) break;
       directory = path.dirname(directory);
     }
     if (candidates.length !== 1) { metadata.reasons.push(candidates.length ? "ambiguous_metadata" : "metadata_unavailable"); return result; }
     const candidate = candidates[0]!;
+    if(candidate.owned){metadata.owned_manifest=candidate.owned;metadata.reasons.push(...candidate.owned.reasons);}
     if (candidate.hash !== sha256(lockBytes)) { metadata.reasons.push("stale_lock_hash"); return result; }
     for (const input of candidate.graph.inputs.files) {
       const actual = await this.input(path.resolve(candidate.root, input.path));

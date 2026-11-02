@@ -1,11 +1,11 @@
 import { mkdtemp, realpath, writeFile, rm, mkdir, symlink } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, it, expect } from "vitest";
+import { afterEach, it, expect, vi } from "vitest";
 import { GradleGraphCache, sha256, GRADLE_COMPANION } from "../../utils/gradleGraphCache.js";
 import { graphFixture } from "../fixtures/gradleGraphFixture.js";
 const dirs: string[] = [];
-afterEach(async () => { for (const dir of dirs.splice(0)) await rm(dir, { recursive: true, force: true }); });
+afterEach(async () => { vi.restoreAllMocks(); for (const dir of dirs.splice(0)) await rm(dir, { recursive: true, force: true }); });
 async function fixture() { const dir = await realpath(await mkdtemp(path.join(os.tmpdir(), "gradle-cache-test-"))); dirs.push(dir); return dir; }
 const bytes = Buffer.from("g:a:1=runtimeClasspath\ng:b:2=runtimeClasspath\n");
 async function metadata(dir: string) { const graph = graphFixture(); graph.lockfiles[0]!.sha256 = sha256(bytes); await writeFile(path.join(dir, GRADLE_COMPANION), JSON.stringify(graph)); return graph; }
@@ -57,4 +57,26 @@ it("treats creation of an input recorded as absent as stale metadata", async () 
   const stale = await new GradleGraphCache(dir).capture(path.join(dir, "gradle.lockfile"), bytes);
   expect(stale.metadata.reasons).toContain("stale_input_hash");
   expect(stale.lookup!("g:b", "2").relation).toBe("unknown");
+});
+it('preserves core relations and coverage when v4 owned metadata is invalid',async()=>{
+ const dir=await fixture(),core=await metadata(dir);
+ const legacy=await new GradleGraphCache(dir).capture(path.join(dir,'gradle.lockfile'),bytes);
+ await writeFile(path.join(dir,GRADLE_COMPANION),JSON.stringify({schema:'osv-mcp.gradle-graph',schemaVersion:4,graphId:'g',exportId:'e',coreGraph:core,ownedOfferBundles:'invalid',ownedOfferObjects:[]}));
+ const result=await new GradleGraphCache(dir).capture(path.join(dir,'gradle.lockfile'),bytes);
+ expect(result.lookup!('g:a','1')).toEqual(legacy.lookup!('g:a','1'));expect(result.lookup!('g:b','2')).toEqual(legacy.lookup!('g:b','2'));
+ expect(result.coverageReasons).toEqual(legacy.coverageReasons);expect(result.metadata.status).toBe(legacy.metadata.status);
+});
+
+import * as safeReader from '../../utils/safeRead.js';
+import {ownedFixture} from '../fixtures/gradleOwnedFixture.js';
+import {rewriteOwned} from '../fixtures/gradleOwnedFixture.js';
+import {ownedDigest} from '../../utils/gradleOwnedJson.js';
+it('G0 never opens an owned source or runtime artifact, even when current bytes differ',async()=>{
+ const dir=await fixture(),doc=ownedFixture();doc.coreGraph.lockfiles[0].sha256=sha256(bytes);
+ rewriteOwned(doc,()=>true,v=>{if(v.binding)v.binding.coreGraphDigest=ownedDigest(doc.coreGraph);if('coreGraphDigest'in v)v.coreGraphDigest=ownedDigest(doc.coreGraph);});
+ await mkdir(path.join(dir,'日本語 空白','%'),{recursive:true});await writeFile(path.join(dir,'日本語 空白','%','Driver.java'),'current bytes deliberately differ from the claim');
+ await writeFile(path.join(dir,GRADLE_COMPANION),JSON.stringify(doc));const spy=vi.spyOn(safeReader,'readRegularFile');
+ const result=await new GradleGraphCache(dir).capture(path.join(dir,'gradle.lockfile'),bytes);
+ expect(result.metadata.owned_manifest).toMatchObject({manifestStructure:'verified',currentContentMatch:'not_checked',ownedFileReads:0,diagnosticEligible:false});
+ expect(spy.mock.calls.map(c=>path.relative(dir,c[0]))).toEqual([GRADLE_COMPANION,'osv-mcp-gradle-declarations.json']);
 });

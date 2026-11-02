@@ -2190,3 +2190,10 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 
 - [設計書§9.53](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#953-be8ec20レビュー修正graph拒否の範囲理由の対応2026-11-02)へ、「graph拒否」はowned診断を出さないことであり、coreGraphの採否は既存の検証だけで決めると定義。trust disabled時のG0違反は警告に限定し、G0のprofile参照を設定・registryが有効な場合に限った。
 - reader理由に`envelope_missing`を追加し、§9.51のnative理由から本番の許可表への対応を明記。設計のみで実装・native実行・本番採用0。
+
+### 2026-11-02: G0の本番transport・状態／pair／閉包contract
+
+- [設計書§9.54](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#954-g0本番transport状態pair閉包contractの実装2026-11-02)と本番utilityを追加し、GradleGraphCacheがv4 wrapperのcoreGraphを既存v1〜v3経路で検証するよう接続。owned内部の不正をcoreのdeclared_in／relation／introduced_by・coverageへ波及させない。
+- bundle v1・envelope v2・object／ref／evidence union、canonical bytes／digest、state prefix・理由表、pair・index閉包・循環／orphan・未知field、phase／BTA binding／captureをG0で検証。外部sidecar／artifactは開かず、正常でもcapability_unsupported／診断採用falseを維持。
+- 新規176テスト＋cache／宣言／plugin 6件＋3 toolのmock回帰2件。固定Java／Node canonical vectorとの一致、core freshness維持とowned source非読取も確認。型検査・build成功、全体93 files／3,269 tests成功（21 files／1,415 tests skipped）。新規native／外部スキャナー実接続0。
+- G1の設定・独立承認registry、G2のauthority／session／witness、共有use receipt、profile固有の全証拠・G3／G4、producer・本番診断採用は未実装。G0 verifiedをinput completeness／current content／実行真正性へ昇格しない。

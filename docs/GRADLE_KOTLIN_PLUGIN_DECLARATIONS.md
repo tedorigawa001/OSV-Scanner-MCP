@@ -2918,3 +2918,49 @@ readerのpath_invalid／inventory_mismatchは表のproducer理由と混同しな
 - §9.51のnative理由（source_stale／cohort_binding_mismatch／runtime_stale／driver_stale）から本番のstage／phase・理由への対応表を§9.52.10へ加え、`binding_mismatch`の略記を`configuration_binding_mismatch`へ直した。
 
 §9.52が前提とする9c978e1のレビュー修正（実体tokenとexecutor注入対照）は70dc261でcommitした。
+
+### 9.54 G0本番transport・状態／pair／閉包contractの実装（2026-11-02）
+
+§9.52〜9.53の最初の実装単位として、`src/utils/gradleOwnedManifest.ts`の`parseGradleExport`をGradleGraphCacheへ接続した。v4 wrapperからcoreGraphを取り出し、既存のv1〜v3 parserとlock／入力hash・catalog／plugin／宣言の検証へ渡す。既存exporterをv4へ変更する作業、本番profile／authority／G1〜G4、producer・読取採用は今回の対象外である。
+
+#### wrapperとowned部分の分離
+
+`gradleExportJson.ts`はroot fieldをtokenで区切り、各値の元textを保持する。coreGraphはそのtextを従来のduplicate-key・schema・参照検証へ渡し、ownedOfferBundles／ownedOfferObjectsは別の上限付きparserへ渡す。owned内部のduplicate key・未知field・過大depthが、既存parserへ波及して正常coreを消さない。root fieldの重複・必須field欠落・未知root field、core自体の不正・未対応版、読めない／上限を超えるtransportは従来と同じcompanion fallbackの対象である。壊れたrootの境界を推測してcoreを拾う方式ではない。
+
+coreGraphのarray順を保持したcanonical digestをbundle／envelopeのcoreGraphDigestへ照合する。wrapper外側の空白やJSON表現はobject digestの対象にせず、refの対象となるinline objectのbytesはcanonicalそのものを要求する。callerが保持する独立sessionの期待digestとの比較はG2に残し、G0内で全hashを自己更新した別exportを真正な現在実行と認証しない。
+
+#### 追加した本番G0 schema
+
+`gradleOwnedSchema.ts`にbundle v1・offer envelope v2・object v1・ref・carrier・wrapper entryをstrict schemaとして追加した。旧static-v1／proof用objectは受理しない。共通bindingはgraph／export／project／context／execution／invocation、profile／recipe ID、coreGraphDigestで、entryのproject／contextは実coreの対応へ照合する。
+
+object v1の共通fieldは`schema, role, binding, refs, evidence`、終端receiptだけが`envelopeRef`を持つ。roleはinput-manifest／build-receipt／runtime-selection／generation-receipt／offer-receipt／failure-receipt／unavailable-evidence／evidence-index／evidenceの閉じた集合とした。carrierは`role, objectDigest, bytes`で、bundle／envelopeも同じinline storeへ置く。refのrole・objectDigest・byteLength、index自身を除く閉包、orphan／重複digest・entry・不正role・循環を検証する。indexに書かれた一覧を正解とせず、stage・phase・終端refから閉包を独立に求めて照合する。
+
+G0のevidence recordはinventory／process／binding／observation／failure／unavailableのtyped unionで、任意のdata objectを許可しない。inventoryはinputRole・file ref列・directory列、processはoperation／instance／開始終了／result、bindingは実参照の記録ID・source／引数／snapshot列、observationはphase・matchedとfile列を持つ。file refはrootId／相対path／size／raw SHA-256で、pathやURLで読取rootを追加できない。processのBTA callはconfiguration／parameter IDを必須にしてbindingへ照合する。snapshot列の順序と同一fileの重複occurrenceを保持し、勝手にsort／deduplicateしない。
+
+これはmetadataの文法・参照・状態を検査する初期本番schemaであり、image／loader／executorの全必須証拠がprofileに従って揃ったことを保証するものではない。profile固有の全role／receipt・authority／observationの採用検証と、必要な追加record型は後続に残す。共有build／generation用bindingKind・use receiptもまだ受理せず、現object v1はoffer-contextの完全なbindingを要求する。未実装の共有形式をcontext field削除だけで通さない。
+
+#### state・phase・canonicalの検証
+
+completedThroughの累積prefix、failedの直後stage／phase／reason、解決前・後unavailableの理由とdigestの有無を検証する。失敗／未到達の成功ref、null・0 digest、failure／unavailable混在、bundleとenvelope／終端receiptの状態不一致を拒否する。§9.52.10の初期stage／phase理由表をコード化した。
+
+envelopeのbegin／success／failure順、callのCOMPILATION_SUCCESS、事前binding、postcheckと予定capture全件を要求する。failedでは最終failure以降のsuccessを禁止する。unavailableのofferはblockedBeforePhaseを必須とし、成功したBTA callより前で止まる。offer未到達のprefixはphase列を空にし、prepareのcaptureというphase名とofferの予定capture回数を混同しない。
+
+`gradleOwnedJson.ts`はduplicate key・非ASCII field名・lone surrogate・負0／負数／小数／unsafe integerを拒否する。object keyだけを並べ、array順／重複、文字列のUnicode・空白・percent・BOM／CRLFを保持する。既存の独立Java／Node canonical vectorの保存bytesとも照合する。source／JAR等のraw bytesを正規化する処理はない。
+
+G0の上限はtransport 64MiB、inline object 8MiB／1024件、ref探索work 16384、depth 32、decoded metadata全体1000000 JSON nodesとした。coreの既存index／traversal budgetとは別に計数する。GradleGraphCacheのscan全体のtransport読取budgetも有限のままにし、巨大で読めないwrapperを無制限に回復させることはしない。
+
+#### 出力と採用の閉鎖
+
+結果は既存GradleMetadataの`owned_manifest`に構造状態・importStatus・固定理由を記録し、既存reasonsにも警告理由を追加する。`owned_bta_offered_inputs`の診断payloadは発行しない。正常G0でもmanifestStructure=verified／importStatus=unavailable／owned_manifest_capability_unsupported、diagnosticEligible=false、currentContentMatch=not_checked、naturalContentBinding=false、compilerWorkStatus=unknown、ownedFileReads=0である。
+
+両pair欠落・owned entryなしはenvelope_missing、片方だけ／dangling refはrequired_evidence_missing。構造不正・内容digest不一致・binding矛盾等もownedだけをinvalidにし、coreGraphのrelation・introduced_by・既存declared_in・coverage判定は変更しない。core自体のstale input／lockやplugin不一致は引き続き従来の経路で拒否する。
+
+この入口にprofile loader・authority lookup・owned file reader・KGP getter・process実行は存在しない。将来のtrust環境変数を設定しても、今回の実装だけで診断採用が有効にならない。G0 verifiedは承認済み実行／入力完全性／現在内容一致を意味せず、G1〜G4へ持ち越せる過去の成功cacheでもない。
+
+#### 回帰と今回の実証範囲
+
+`gradleOwnedManifest.test.ts`の176テストで、全state prefix／初期failed理由表、pair・role・byteLength・閉包・循環・orphan、必須／禁止ref、未知field、自己hashも更新したbinding交換、canonical、深い／重複keyを含むowned JSON、phase／capture・重複snapshotを確認する。
+
+既存cache・declaration・pluginのテストには計6件を追加し、core v1〜v3のrelation・introduced_by・trusted declared_inとplugin assurance、coverageを維持すること、通常のcore freshness違反は拒否すること、owned sourceの現在bytesが違ってもG0で開かないことをspyで確認した。3 toolテスト2件ではscan_project／scan_java_project／suggest_fixのパッケージ・候補・hintと宣言元がlegacy coreと同一であることを確認した。OSV runnerはmockであり、実接続・native Gradle／BTAの追加実行は0。
+
+AP10・AP15・AP16・AP20・AP21・AP29・AP30等のmetadata部分を進めたが、AP01〜AP32全体の完了とは扱わない。独立profile／authority・image／loader・no-read設定gate・全observer・実接続と本番採用は引き続き未成立である。次はG1の設定／独立registryとG2のauthority lookupのcontract・読取前gateを実装し、G0 invalidと設定disabledを区別する。

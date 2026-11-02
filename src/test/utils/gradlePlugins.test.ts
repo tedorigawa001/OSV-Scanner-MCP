@@ -103,3 +103,9 @@ it('still rejects a loader profile that does not match the plugin specification'
  const f=await fixture(),a=f.graph.contexts[0].declarations.pluginApplications[0];a.loaderProfileDigest='0'.repeat(64);await f.save();
  const r=await f.capture();expect(r.lookup!('g:a','1').relation).toBe('unknown');expect(r.metadata.reasons).toContain('plugin_loader_profile_mismatch');
 });
+it('keeps accepted convention-plugin provenance when a v4 owned partition is malformed',async()=>{
+ const f=await fixture(),before=await f.capture();
+ await writeFile(path.join(f.root,'osv-mcp-gradle-dependencies.json'),JSON.stringify({schema:'osv-mcp.gradle-graph',schemaVersion:4,graphId:'g',exportId:'e',coreGraph:f.graph,ownedOfferBundles:'invalid',ownedOfferObjects:[]}));
+ const after=await f.capture();expect(after.metadata.declaration_provenance).toEqual(before.metadata.declaration_provenance);expect(after.metadata.declarations_complete).toBe(true);expect(after.coverageReasons).toEqual(before.coverageReasons);
+ expect(after.lookup!('g:a','1')).toEqual(before.lookup!('g:a','1'));expect(after.metadata.owned_manifest?.manifestStructure).toBe('invalid');
+});

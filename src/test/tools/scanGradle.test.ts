@@ -172,7 +172,7 @@ it("all three tools retain origins across 24 sparse-sharing contexts in three do
 
 it("keeps lock scanning and reports a newer metadata version as unsupported in all three tools", async () => {
   const graph = await fixture();
-  await writeFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify({ ...graph, schemaVersion: 4 }));
+  await writeFile(path.join(dir, "osv-mcp-gradle-dependencies.json"), JSON.stringify({ ...graph, schemaVersion: 5 }));
   for (const handler of [handleScanProject, handleScanJavaProject, handleSuggestFix]) {
     const payload = JSON.parse((await handler({ project_path: dir }, { candidateCheck: "disabled" })).content[0]!.text);
     expect(payload.coverage.complete).toBe(true);
@@ -304,4 +304,21 @@ it("reads the trust setting once; later environment changes are ignored", async 
     const later = JSON.parse((await handleScanProject({ project_path: dir })).content[0]!.text);
     expect(later.packages.find((p: any) => p.name === "g:a").declared_in).toEqual(["build.gradle"]);
   }
+});
+
+it.each(['valid-g0','invalid-owned'])('all three tools preserve trusted core results with v4 %s',async kind=>{
+ const {ownedFixture,rewriteOwned}=await import('../fixtures/gradleOwnedFixture.js');
+ const {ownedDigest}=await import('../../utils/gradleOwnedJson.js');
+ const d=await registeredFixture();vi.stubEnv('OSV_MCP_GRADLE_DECLARATION_TRUST','registered-helper-v1');
+ const handlers=[handleScanProject,handleScanJavaProject,handleSuggestFix],before=[];
+ for(const handler of handlers)before.push(JSON.parse((await handler({project_path:dir},{candidateCheck:'disabled'})).content[0]!.text));
+ const wrapper=ownedFixture();wrapper.coreGraph=d.graph;rewriteOwned(wrapper,()=>true,v=>{if(v.binding)v.binding.coreGraphDigest=ownedDigest(d.graph);if('coreGraphDigest'in v)v.coreGraphDigest=ownedDigest(d.graph);});
+ if(kind==='invalid-owned')wrapper.ownedOfferObjects=false;
+ await writeFile(path.join(dir,'osv-mcp-gradle-dependencies.json'),JSON.stringify(wrapper));
+ for(const [i,handler]of handlers.entries()){
+  const after=JSON.parse((await handler({project_path:dir},{candidateCheck:'disabled'})).content[0]!.text);
+  expect(after.packages??after.suggestions).toEqual(before[i].packages??before[i].suggestions);expect(after.coverage.complete).toBe(before[i].coverage.complete);
+  const metadata=after.coverage.dependency_metadata.gradle[0];expect(metadata.declaration_provenance).toEqual(before[i].coverage.dependency_metadata.gradle[0].declaration_provenance);expect(metadata.declarations_complete).toBe(true);
+  expect(metadata.owned_manifest).toMatchObject({diagnosticEligible:false,currentContentMatch:'not_checked',ownedFileReads:0,manifestStructure:kind==='valid-g0'?'verified':'invalid'});
+ }
 });
