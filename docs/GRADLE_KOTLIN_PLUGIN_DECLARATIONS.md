@@ -3346,6 +3346,18 @@ A1検証結果: 新規71テスト成功。型検査・build成功、全体96 fil
 
 A1レビュー修正後の検証結果: A1 84件成功（追加13件）。型検査・build成功、全体96 files／3,560 tests成功、21 files／1,415 tests skipped。diff整形検査成功。新規native／OSV実行・durable／隔離backend採用・本番profile承認・診断採用は0。
 
+#### 9ef598eレビュー修正（2026-11-02）
+
+A1 kernelの置き場所と、状態の分類を4点直した。nativeの再実行は不要である。
+
+- `gradleOwnedAuthority.ts`と`gradleOwnedAuthoritySchema.ts`を`src/utils`から`src/test/fixtures`へ移した。`principal()`は認証なしで任意のroleの主体を作れるため、build対象（`tsconfig.build.json`は`src/test`を除外）と公開packageから外す。buildし直したdistにこの2 fileが含まれないことを確認した。
+- 期限切れとsession全体のabortを、revokeと区別して記録する。validityは期限切れで`expired`、abortで`aborted`、revokeで`revoked`、supersedeで`superseded`となる。lookupの結果はいずれもsession-unavailableで変わらない。
+- scopeのabortは、observerが独立に記録したTask例外中断（execution-aborted）があればterminalを`execution-aborted`とし、なければ`unavailable`とする。
+- seal-scopeのverified以外の経路は、観測したlookupとsession scopeだけから分類する。claimのうち`inspectOwnedExecution`が読むのはproject／context／invocation・profile／recipe digest・witnessIdだけで、残りは比較されない占位値であることをコメントに書いた。verified以外の経路がG3（capability_unsupported）へ届いた場合は`claim_mismatch`として拒否する。
+
+authorityのテストは84件から87件になり、修正前のkernelでは5件が失敗することを先に確認した。
+
+
 ### 9.60 段階A2: 認証journal・独立checkpoint・実ファイル復旧の参照実装（2026-11-02）
 
 A2の保存層を`src/test/fixtures/gradleOwnedAuthorityJournal.ts`、`gradleOwnedJournalFs.ts`、`gradleOwnedJournalCheckpoint.ts`へ追加した。本番backendの有効化ではない。A1 kernelの実行・upload transactionを自動保存する接続はまだなく、record payloadはrole付きのopaque bytesである。A1の状態schemaの意味検証をこの層で代替しない。単一writerを外部で保証する前提であり、同一instanceの再入拒否とcheckpoint CASを、複数processの排他leaseの実証と数えない。

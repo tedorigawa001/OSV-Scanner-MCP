@@ -2262,6 +2262,12 @@ A1検証結果: 新規71テスト成功。型検査・build成功、全体96 fil
 
 A1レビュー修正後の検証結果: A1 84件成功（追加13件）。型検査・build成功、全体96 files／3,560 tests成功、21 files／1,415 tests skipped。diff整形検査成功。新規native／OSV実行・durable／隔離backend採用・本番profile承認・診断採用は0。
 
+
+### 2026-11-02: 9ef598eレビュー修正（A1 kernelの置き場所と状態分類）
+
+- §9.59へ修正の小節を追加。認証なしのA1 kernelを`src/test/fixtures`へ移してbuild・公開packageから除外。期限切れ・abort・revoke・supersedeのvalidityを区別し、scope abortで観測済みのTask例外を`execution-aborted`として保持。verified以外のsealの占位claimを明記し、G3到達を拒否。authorityテスト87件。nativeの再実行なし。
+
+
 ### 2026-11-02: A2保存層の参照実装・実ファイル復旧
 
 - §9.60へHMAC認証journal、chunk・commit内index、独立checkpoint、immutable保存・fsync・ack順序、復旧とrollback拒否を追加。すべてtest fixtureであり公開buildから除外する。

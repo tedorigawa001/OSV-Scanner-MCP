@@ -1,5 +1,5 @@
 import {it,expect,vi} from 'vitest';
-import {OwnedAuthorityContract} from '../../utils/gradleOwnedAuthority.js';
+import {OwnedAuthorityContract} from '../fixtures/gradleOwnedAuthority.js';
 import {ownedPolicyFixture} from '../fixtures/gradleOwnedPolicyFixture.js';
 import {createOwnedRegistry,parseOwnedSettings} from '../../utils/gradleOwnedPolicy.js';
 import {ownedDigest,ownedSha256} from '../../utils/gradleOwnedJson.js';
@@ -79,7 +79,7 @@ it('an upload and a frozen ref do not accept overwrite or ref substitution',()=>
 for(const field of ['ordinal','totalSha256','chunkSha256','base64','totalBytes'])it('rejects invalid chunk '+field+' without reserving memory or advancing revision',()=>{const f=setup(),b=begin(f),bytes=Buffer.from(canonicalOwnedJson(graphFixture()));const c:any={operation:'put-metadata-chunk',sessionId:b.sessionId,uploadId:b.coreUploadId,purpose:'core',expectedRevision:0,totalBytes:bytes.length,totalSha256:ownedSha256(bytes),ordinal:0,chunkSha256:ownedSha256(bytes),base64:bytes.toString('base64')};if(field==='ordinal')c.ordinal=1;else if(field==='totalBytes')c.totalBytes++;else if(field==='base64')c.base64='not base64';else c[field]=ownedSha256('wrong');expect(()=>call(f,f.caller,c)).toThrow();expect(f.model.inspect(f.reader,b.sessionId).metadataBytes).toBe(0);});
 it('core must be canonical, structurally valid and bound with its exact digest',()=>{const f=setup(),b=begin(f);expect(()=>upload(f,f.caller,b,'core',JSON.stringify(graphFixture()))).toThrow('metadata_invalid');expect(f.model.inspect(f.reader,b.sessionId).metadataBytes).toBe(0);const ref=upload(f,f.caller,b,'core',graphFixture());expect(()=>call(f,f.caller,{operation:'bind-core',sessionId:b.sessionId,expectedRevision:1,coreMetadataRef:ref,coreGraphDigest:ownedSha256('other'),rootRegistryDigest:ownedSha256('root'),scopes:[]})).toThrow();});
 it('metadata quotas and unfinished upload counts close the operation',()=>{const f=setup({metadataBytes:1}),b=begin(f);expect(()=>upload(f,f.caller,b,'core',graphFixture())).toThrow('budget_exceeded');const g=setup({pendingUploads:1}),rs=[requests[0]!,{...requests[0]!,invocation:'second'}],s=active(g,rs);register(g,s,rs[0]);expect(()=>register(g,s,rs[1])).toThrow('budget_exceeded');});
-it('expires a current session without extending it on lookup or retry',()=>{const f=setup({sessionMilliseconds:10}),s=active(f);f.advance(10);expect(f.model.inspect(f.reader,s.sessionId)).toMatchObject({lifecycle:'closed',validity:'revoked'});expect(()=>register(f,s)).toThrow('not_current');});
+it('expires a current session without extending it on lookup or retry',()=>{const f=setup({sessionMilliseconds:10}),s=active(f);f.advance(10);expect(f.model.inspect(f.reader,s.sessionId)).toMatchObject({lifecycle:'closed',validity:'expired'});expect(()=>register(f,s)).toThrow('not_current');});
 it('rejects monotonic clock rollback',()=>{const f=setup(),b=begin(f);f.advance(5);f.model.inspect(f.reader,b.sessionId);f.advance(-1);expect(()=>f.model.inspect(f.reader,b.sessionId)).toThrow('clock_invalid');});
 it('a scope revoke preserves another terminal but a session revoke stops all lookups',()=>{const f=setup(),rs=[requests[0]!,{...requests[0]!,invocation:'second'}],s=active(f,rs),a=complete(f,s,rs[0]),b=register(f,s,rs[1]);call(f,f.caller,{operation:'revoke',sessionId:s.sessionId,scope:b.scope,expectedRevision:b.revision,reason:'operator-request'});expect(call(f,f.reader,{operation:'lookup',sessionId:s.sessionId,scope:rs[0],expectedRevision:0}).contractStatus).toBe('structure-verified');const state=f.model.inspect(f.caller,s.sessionId);call(f,f.caller,{operation:'revoke',sessionId:s.sessionId,expectedRevision:state.revision,reason:'operator-request'});expect(call(f,f.reader,{operation:'lookup',sessionId:s.sessionId,scope:rs[0],expectedRevision:0}).contractStatus).toBe('session-unavailable');expect(f.model.inspect(f.reader,s.sessionId).scopes[0].terminal).toEqual(a.result.terminal);});
 
@@ -123,7 +123,7 @@ for(const during of [false,true])it('returns unavailable '+(during?'when expiry 
  const result=call(f,f.reader,{operation:'lookup',sessionId:s.sessionId,scope:requests[0],expectedRevision:0});
  f.clockStep(0);
  expect(result).toMatchObject({contractStatus:'session-unavailable',readerProjection:{status:'unavailable',reason:'backend-unsupported'},backendEligible:false,diagnosticEligible:false,ownedFileReads:0});
- expect(result).not.toHaveProperty('terminal');expect(f.model.inspect(f.reader,s.sessionId)).toMatchObject({lifecycle:'closed',validity:'revoked'});
+ expect(result).not.toHaveProperty('terminal');expect(f.model.inspect(f.reader,s.sessionId)).toMatchObject({lifecycle:'closed',validity:'expired'});
 });
 
 for(const reason of ['SKIPPED','FROM-CACHE','UP-TO-DATE','NO-SOURCE'])it('releases the upload slot after '+reason+' without losing its terminal',()=>{
@@ -163,4 +163,17 @@ it('repeated expired lookups stay unavailable and cannot invalidate another curr
  for(let i=0;i<2;i++)expect(call(f,f.reader,query)).toMatchObject({contractStatus:'session-unavailable',readerProjection:{status:'unavailable',reason:'backend-unsupported'}});
  expect(call(f,f.reader,{...query,sessionId:current.sessionId})).toMatchObject({contractStatus:'structure-verified'});
  expect(f.model.inspect(f.reader,current.sessionId).validity).toBe('current');
+});
+
+it('records session abort and revoke as different validity outcomes',()=>{
+ for(const [operation,validity] of [['abort','aborted'],['revoke','revoked']] as const){const f=setup(),s=active(f);call(f,f.caller,{operation,sessionId:s.sessionId,expectedRevision:s.revision,reason:'operator-request'});expect(f.model.inspect(f.reader,s.sessionId)).toMatchObject({lifecycle:'closed',validity});}
+});
+it('keeps an observed Task exception as execution-aborted when the scope is aborted',()=>{
+ const f=setup(),s=active(f);let r=start(f,register(f,s));const m=material(r);r=observe(f,r,{status:'unavailable',reason:'execution-aborted',binding:m.witness.binding,task:{...m.witness.task,failed:true}});
+ const aborted=call(f,f.caller,{operation:'abort',sessionId:s.sessionId,scope:requests[0],expectedRevision:r.revision,reason:'execution-unavailable'});
+ expect(aborted.terminal.outcome).toBe('execution-aborted');
+});
+it('closes an aborted scope without an observed exception as unavailable',()=>{
+ const f=setup(),s=active(f),r=start(f,register(f,s));
+ expect(call(f,f.caller,{operation:'abort',sessionId:s.sessionId,scope:requests[0],expectedRevision:r.revision,reason:'operator-request'}).terminal.outcome).toBe('unavailable');
 });

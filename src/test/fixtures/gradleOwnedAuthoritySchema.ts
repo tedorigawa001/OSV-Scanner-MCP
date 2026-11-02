@@ -1,7 +1,7 @@
-/** Stage A1 logical operations only. No IPC authentication or persistence claims. */
+/** Stage A1 logical operations only (test fixture, not shipped). No IPC authentication or persistence claims. */
 import {z} from 'zod';
-import {ownedLookupSchema,ownedSessionSchema} from './gradleOwnedExecution.js';
-import {carrierSchema,entrySchema} from './gradleOwnedSchema.js';
+import {ownedLookupSchema,ownedSessionSchema} from '../../utils/gradleOwnedExecution.js';
+import {carrierSchema,entrySchema} from '../../utils/gradleOwnedSchema.js';
 export const authorityId=z.string().min(1).max(1024);
 export const authorityHash=z.string().regex(/^[a-f0-9]{64}$/).refine(s=>s!=='0'.repeat(64));
 const id=authorityId,hash=authorityHash;

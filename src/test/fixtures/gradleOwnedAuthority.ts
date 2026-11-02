@@ -1,14 +1,15 @@
-/** Stage A1 reference kernel: bounded, in-memory logical transactions only.
- * Never installed as TrustedOwnedCaller. It authenticates no peer, persists nothing,
+/** Stage A1 reference kernel: bounded, in-memory logical transactions only. TEST FIXTURE:
+ * kept outside src/utils so it is never built into the published package, because principal()
+ * mints any role without authentication. Never installed as TrustedOwnedCaller. It authenticates no peer, persists nothing,
  * launches nothing and ALWAYS reports backendEligible=false. */
 import {randomBytes} from 'node:crypto';
 import {types as utilTypes} from 'node:util';
 import {authorityOperation,authorityProjection,authorityScope,AUTHORITY_LIMITS,type AuthorityOperation,type AuthorityMetadataRef,type AuthorityPlan,type AuthorityScope} from './gradleOwnedAuthoritySchema.js';
-import {type OwnedPolicy} from './gradleOwnedPolicy.js';
-import {canonicalOwnedJson,parseOwnedJson,ownedDigest,ownedSha256,OWNED_LIMITS} from './gradleOwnedJson.js';
-import {parseGradleGraph,createGradleBudget,type GradleGraph} from './gradleGraph.js';
-import {parseGradleExportG0} from './gradleOwnedManifest.js';
-import {inspectOwnedExecution,type OwnedExecutionClaim,ownedLookupSchema} from './gradleOwnedExecution.js';
+import {type OwnedPolicy} from '../../utils/gradleOwnedPolicy.js';
+import {canonicalOwnedJson,parseOwnedJson,ownedDigest,ownedSha256,OWNED_LIMITS} from '../../utils/gradleOwnedJson.js';
+import {parseGradleGraph,createGradleBudget,type GradleGraph} from '../../utils/gradleGraph.js';
+import {parseGradleExportG0} from '../../utils/gradleOwnedManifest.js';
+import {inspectOwnedExecution,type OwnedExecutionClaim,ownedLookupSchema} from '../../utils/gradleOwnedExecution.js';
 
 type Role='caller'|'reader'|'broker'|'observer';
 type Identity={id:string;role:Role;sessionId?:string;scope?:AuthorityScope};
@@ -16,7 +17,7 @@ type Terminal={outcome:'structure-verified'|'not-executed'|'execution-aborted'|'
 type Scope={plan:AuthorityPlan;revision:number;lifecycle:'planned'|'registered'|'executing'|'sealing'|'terminal';validity:'current'|'revoked';head:string;sequence:number;witnessId?:string;uploadId?:string;capability?:string;observation?:{lookup:ReturnType<typeof ownedLookupSchema.parse>;leases:unknown[]};terminal?:Terminal;events:string[]};
 type Upload={id:string;purpose:'core'|'seal';scope?:AuthorityScope;witnessId?:string;revision:number;state:'open'|'frozen'|'cancelled';chunks:Buffer[];received:number;total?:number;digest?:string;text?:string;ref?:AuthorityMetadataRef};
 type Ack={digest:string;reply:any};
-type Session={id:string;owner:string;consumerId:string;scanRunId:string;projectRootId:string;settingsDigest:string;scopeRequestsDigest:string;manifestDigest?:string;graphId:string;exportId:string;executionId:string;nonce:string;coreUploadId:string;created:number;revision:number;lifecycle:'draft'|'core-bound'|'active'|'committed'|'closed';validity:'unselected'|'current'|'superseded'|'revoked';core?:GradleGraph;coreRef?:AuthorityMetadataRef;coreDigest?:string;rootDigest?:string;scopes:Map<string,Scope>;uploads:Map<string,Upload>;acks:Map<string,Ack>;metadataBytes:number;ledgerBytes:number;eventCount:number};
+type Session={id:string;owner:string;consumerId:string;scanRunId:string;projectRootId:string;settingsDigest:string;scopeRequestsDigest:string;manifestDigest?:string;graphId:string;exportId:string;executionId:string;nonce:string;coreUploadId:string;created:number;revision:number;lifecycle:'draft'|'core-bound'|'active'|'committed'|'closed';validity:'unselected'|'current'|'superseded'|'revoked'|'expired'|'aborted';core?:GradleGraph;coreRef?:AuthorityMetadataRef;coreDigest?:string;rootDigest?:string;scopes:Map<string,Scope>;uploads:Map<string,Upload>;acks:Map<string,Ack>;metadataBytes:number;ledgerBytes:number;eventCount:number};
 type State={sessions:Map<string,Session>;slots:Map<string,{revision:number;sessionId?:string}>;begins:Map<string,Ack>};
 export class OwnedAuthorityContractError extends Error {constructor(reason:string){super('authority_contract_'+reason);}}
 function fail(reason:string):never {throw new OwnedAuthorityContractError(reason);}
@@ -62,7 +63,7 @@ export class OwnedAuthorityContract {
  }
  #clock():number {const now=this.config.now();requireThat(Number.isSafeInteger(now)&&now>=this.#lastTime,'clock_invalid');this.#lastTime=now;return now;}
  #expire(now:number):void {
-  for(const s of this.#state.sessions.values())if(s.lifecycle!=='closed'&&now-s.created>=this.#limits.sessionMilliseconds){this.#closeSession(s,'revoked','expired');}
+  for(const s of this.#state.sessions.values())if(s.lifecycle!=='closed'&&now-s.created>=this.#limits.sessionMilliseconds){this.#closeSession(s,'expired','expired');}
  }
  #closeScope(s:Session,sc:Scope,outcome:Terminal['outcome'],reason?:string):void {
   // Terminal scopes cannot resume their upload. Release only the pending slot;
@@ -72,7 +73,8 @@ export class OwnedAuthorityContract {
   if(sc.lifecycle!=='terminal'){sc.terminal={outcome,ledgerHead:sc.head,...(reason?{reason}:{})};sc.lifecycle='terminal';sc.revision++;}
   if(s.lifecycle==='active'&&[...s.scopes.values()].every(x=>x.lifecycle==='terminal'))s.lifecycle='committed';
  }
- #closeSession(s:Session,validity:'revoked'|'superseded',reason:string):void {
+ // Lifecycle closure (expire/abort) and validity loss (supersede/revoke) are recorded distinctly.
+ #closeSession(s:Session,validity:'revoked'|'superseded'|'expired'|'aborted',reason:string):void {
   for(const sc of s.scopes.values())this.#closeScope(s,sc,'unavailable',reason);
   s.validity=validity;s.lifecycle='closed';s.revision++;
   const current=this.#state.slots.get(slot(s));if(current?.sessionId===s.id)this.#state.slots.set(slot(s),{revision:current.revision+1});
@@ -184,8 +186,11 @@ export class OwnedAuthorityContract {
    if(c.phase==='prepare'){requireThat((sc.lifecycle==='registered'||sc.lifecycle==='executing')&&sc.observation,'lifecycle_invalid');sc.lifecycle='sealing';sc.revision++;reply=this.#scopeReply(sc);}
    else {requireThat(sc.lifecycle==='sealing','lifecycle_invalid');const terminal=this.#seal(s,sc,c);this.#closeScope(s,sc,terminal.outcome);sc.terminal=terminal;reply=this.#scopeReply(sc);}
   }else {
-   if(c.scope){const sc=this.#scope(s,c.scope);requireThat(c.expectedRevision===sc.revision,'revision_mismatch');if(c.operation==='abort')requireThat(sc.lifecycle!=='terminal','lifecycle_invalid');this.#closeScope(s,sc,'unavailable',c.reason);if(c.operation==='revoke'){sc.validity='revoked';sc.revision++;}reply=this.#scopeReply(sc);}
-   else {requireThat(c.expectedRevision===s.revision,'revision_mismatch');this.#closeSession(s,'revoked',c.reason);reply=this.#summary(s);}
+   if(c.scope){const sc=this.#scope(s,c.scope);requireThat(c.expectedRevision===sc.revision,'revision_mismatch');if(c.operation==='abort')requireThat(sc.lifecycle!=='terminal','lifecycle_invalid');
+    // An independently observed Task exception keeps its own terminal kind; otherwise the cause is unknown.
+    const lookup=sc.observation?.lookup,aborted=lookup?.status==='unavailable'&&lookup.reason==='execution-aborted';
+    this.#closeScope(s,sc,aborted?'execution-aborted':'unavailable',c.reason);if(c.operation==='revoke'){sc.validity='revoked';sc.revision++;}reply=this.#scopeReply(sc);}
+   else {requireThat(c.expectedRevision===s.revision,'revision_mismatch');this.#closeSession(s,c.operation==='abort'?'aborted':'revoked',c.reason);reply=this.#summary(s);}
   }
   const safeReply={...reply,backendEligible:false,diagnosticEligible:false,ownedFileReads:0};s.acks.set(ackKey,{digest,reply:copy(safeReply)});return safeReply;
  }
@@ -223,12 +228,15 @@ export class OwnedAuthorityContract {
     requireThat(claim.project===sc.plan.project&&claim.context===sc.plan.context&&claim.invocation===sc.plan.invocation&&claim.witnessId===sc.witnessId&&claim.profileId===sc.plan.profileId&&claim.recipeId===sc.plan.recipeId&&claim.coreGraphDigest===s.coreDigest&&claim.executionId===s.executionId&&claim.profileDigest===sc.plan.profileDigest&&claim.recipeDigest===sc.plan.recipeDigest&&claim.bundleDigest===c.pair.bundleDigest&&claim.envelopeDigest===c.pair.envelopeDigest,'claim_mismatch');
    }else {
     requireThat(!c.sealMetadataRef&&!c.pair,'unexpected_metadata');
+    // Non-verified lookups are classified from the observed lookup and session scope only: inspectOwnedExecution
+    // reads project/context/invocation, profile/recipe digests and witnessId here. The remaining fields are inert
+    // placeholders that only a verified lookup would compare; a non-verified path reaching G3 is rejected below.
     claim={profileId:sc.plan.profileId,recipeId:sc.plan.recipeId,graphId:s.graphId,exportId:s.exportId,executionId:s.executionId,coreGraphDigest:s.coreDigest!,project:sc.plan.project,context:sc.plan.context,invocation:sc.plan.invocation,profileDigest:sc.plan.profileDigest,recipeDigest:sc.plan.recipeDigest,witnessId:sc.witnessId!,bundleDigest:'1'.repeat(64),envelopeDigest:'1'.repeat(64),plannedCaptures:sc.plan.plannedCaptures,captures:0,state:{producerState:'unavailable',completedThrough:'none',approvalStatus:'approved',profileDigest:sc.plan.profileDigest,recipeDigest:sc.plan.recipeDigest,blockedStage:'prepare',unavailableReason:'image_unsupported'},stages:[],processes:[]};
    }
    const authorization=this.config.policy.registry.authorization(sc.plan,this.config.policy.settings);requireThat(authorization,'profile_unapproved');
    const session={schema:'osv-mcp.gradle-owned-session-v1',authorityId:this.config.authorityId,sessionId:s.id,nonce:s.nonce,graphId:s.graphId,exportId:s.exportId,executionId:s.executionId,coreGraphDigest:s.coreDigest,rootRegistryDigest:s.rootDigest,isolationEvidenceRef:ownedDigest({domain:'unproven-stage-a1',authorityId:this.config.authorityId}),status:'current',scopes:[{project:sc.plan.project,context:sc.plan.context,invocation:sc.plan.invocation,taskId:sc.plan.taskId,actionId:sc.plan.actionId,brokerInstanceId:sc.plan.brokerInstanceId,plannedCaptures:sc.plan.plannedCaptures,profileDigest:sc.plan.profileDigest,recipeDigest:sc.plan.recipeDigest}],leases:observation.leases};
    const reason=inspectOwnedExecution(claim,{backend:'caller-owned-receipt-store-v1',session,lookup:()=>observation.lookup},authorization);
-   if(reason==='capability_unsupported')return {...base,outcome:'structure-verified',...c.pair!,sealMetadataRef:c.sealMetadataRef!};
+   if(reason==='capability_unsupported'){requireThat(observation.lookup.status==='verified','claim_mismatch');return {...base,outcome:'structure-verified',...c.pair!,sealMetadataRef:c.sealMetadataRef!};}
    if(reason==='action_not_executed')return {...base,outcome:'not-executed'};
    if(reason==='execution_aborted')return {...base,outcome:'execution-aborted'};
    if(reason==='witness_unavailable')return {...base,outcome:'unavailable',reason};
