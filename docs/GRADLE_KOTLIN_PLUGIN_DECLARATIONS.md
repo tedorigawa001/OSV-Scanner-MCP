@@ -2256,3 +2256,148 @@ probe／native matrixはv7、[検証記録](validation/gradle-bta-offer-contract
 内部no-opはunknown、自然消費receipt・本番採用0を維持する。全writer排除、汎用の構築／入力manifestと静的path取込、全observerの追加評価計測は別工程である。
 
 最終確認（§9.45）: 通常全体2,593テスト成功・native opt-in等1,281件skip。typecheck・build・差分検査も成功。
+
+
+### 9.47 producer所有driverの構築・入力manifest契約（設計、2026-11-02）
+
+§9.37のmanifest要件を、§9.38〜9.46の限定実証から次の公開API実証へ進められる形へ具体化する。本節は設計であり、新規collector／本番schema／承認profileの実装・native実行は行っていない。既存のtest記録のsource hash・実class inventory・runtime manifestを、以下の全要件に適合したmanifestへ読み替えない。
+
+#### 9.47.1 完全性の範囲と採用する表明
+
+completenessDomainはowned-recipe-inputsとし、独立に承認したrecipeが構築・起動・snapshot生成・BTA呼出しへ渡す入力集合を対象にする。Gradle全体、任意plugin／buildSrc／applied script、compilerの内部read-plan、KGP所有4入力全体の完全性ではない。対象recipeの入力を列挙できない場合、その範囲はunavailableであり、既知の入力だけをcompleteとして出さない。
+
+状態は区別して保持する。manifestStructureは構造と参照閉包、inputCompletenessは承認recipeの必須role・directory inventory・入力宣言との一致、currentContentMatchはreaderが確認した現在の内容一致、producerBuildAssuranceはtrusted-recipe-receipt、executionAssuranceはcaller-witness、loaderAssuranceはapproved-loader-policyとする。どれか一つの成功を他の成功へ変換しない。run-local ID、自己hash、CodeSourceのpath、同じclass名、現在のfile内容だけでは過去の実行bytecodeや実消費bytesを再証明できない。
+
+採用先は引き続き診断metadataだけで、consumptionStatus=offered-inputs-only、executionEvidence=bta-call-only、compilerWorkStatus=unknown、naturalContentBinding=falseとする。manifestが完全でも自然slotのready、declared_in補完、coverage.complete改善、全Kotlin構築pipelineの採用条件を満たしたことにはしない。
+
+#### 9.47.2 bundleと参照の形式
+
+仮称osv-mcp.gradle-owned-manifest-bundle-v1を、将来のoffer envelopeから参照する別objectとする。既存test用envelopeのv1やexperiment記録のversionは今回変更しない。bundle headerの共通必須fieldはschema、completenessDomain、graphId／exportId／project／context／executionId／invocation、要求profileId／recipeId、coreGraphDigest、producerState、completedThrough、approvalStatus、evidenceIndexRef、limitationsとする。成功stageのrefは一律に要求せず、次の状態・到達stageのunionで決める。null・空文字列・全0 digest・架空objectで未生成refを埋めない。
+
+stage順はprepare→build→runtime-selection→snapshot-generation→offerとし、completedThroughは必要な成功receiptが揃った連続prefixの終端（noneを含む）とする。prepareでsealするinputManifestRefはdriver構築用の入力manifestであり、まだ生成されていないclass／snapshotのdigestを含めない。後続stageは、そのstage用の入力manifestと上流output refを自分のreceiptへ保持する。§9.47.3の全roleはこの閉包全体で満たすもので、prepare時に未来の出力を列挙する要求ではない。
+
+| completedThrough | 必須の成功ref（累積） | 禁止する未到達の成功ref |
+| --- | --- | --- |
+| none | なし | inputManifestRef・buildReceiptRef・runtimeSelectionRef・generationReceiptRef・offerReceiptRef |
+| prepare | inputManifestRef | buildReceiptRef・runtimeSelectionRef・generationReceiptRef・offerReceiptRef |
+| build | 上記＋buildReceiptRef | runtimeSelectionRef・generationReceiptRef・offerReceiptRef |
+| runtime-selection | 上記＋runtimeSelectionRef | generationReceiptRef・offerReceiptRef |
+| snapshot-generation | 上記＋generationReceiptRef | offerReceiptRef |
+| offer | 上記＋offerReceiptRef | なし |
+
+| producerState | 到達stageと追加必須field／ref | 禁止・省略条件 |
+| --- | --- | --- |
+| completed | completedThrough=offer。表の成功ref全件。approvalStatus=approved、profileDigest／recipeDigest必須 | failureStage／failurePhase／failureReason／failureReceiptRef、blockedStage／unavailableReason／unavailableEvidenceRefを禁止 |
+| failed | completedThroughはnone〜snapshot-generation。failureStageは直後のstage、failurePhase／failureReason／failureReceiptRef必須。approvalStatus=approved、profileDigest／recipeDigest必須 | 失敗stage自身と以降の成功refを禁止。failureReceiptへ実施済みsubphase・結果／例外・部分出力・not-producedを記録し、それを成功refへ代用しない |
+| unavailable | completedThroughはnone〜snapshot-generation。blockedStageは直後のstage、unavailableReason／unavailableEvidenceRef必須。成功prefix分のrefだけを要求 | blockedStage以降の成功refとfailure用field／refを禁止。合法な未対応だけを許可し、既知の失敗を未対応へ付け替えない |
+
+approvalStatus=approvedはproducer側で独立したprofile／recipeを解決したという記録で、reader設定の追加信頼や承認を有効化しない。unavailableでも既に解決済みならprofileDigest／recipeDigestを要求する。解決前はapprovalStatus=unavailable、producerState=unavailable、completedThrough=none、blockedStage=prepareに限り、両digestと全成功refを禁止して要求IDだけを保持する。未承認profileの自己申告digestで解決済みを装わない。
+
+evidenceIndexRefは全状態で要求するが、既に保存できたobjectだけを列挙するmetadata indexである。failureReceiptRef／unavailableEvidenceRefはbinding・理由・観測済みprefixを持つ独立した小さいobjectとして保存し、indexにはこれらと存在する成功objectのrefを入れる。index自身とbundleへの逆参照を置かない。未生成の入力／成果物を要求せず、読取未実施を成功として記録しない。状態object／indexそのものを保存できなければ、成功bundleを作らずexport失敗として扱う。
+
+例えばprepare中の入力改変はcompletedThrough=none＋failureStage=prepare＋failureReceiptRefだけで合法なfailedとなる。構築失敗はprepareの成功refとbuildのfailure receipt、snapshot生成失敗はruntime-selectionまでの成功refとgenerationのfailure receiptを要求する。未承認toolchainはprepare前のunavailable、build成功後の未対応loaderはbuildまでのprefixを持つunavailableとして表す。これらへ未到達refの欠落を理由にschema拒否を行わない。
+
+共有する上流構築receiptは元のbuildInvocationId／artifact IDを維持し、このofferからの利用refとして結ぶ。prefixを満たしても、新しいofferのたびにcompilerを実行したとは数えない。readerはstage別のbinding対応を照合し、共有refで別構築や別contextの出力を混在させない。
+
+各refはrole・objectDigest・byteLengthを持ち、型が一致する保存objectだけを参照できる。file参照はrootIdと相対path、size、raw SHA-256を持ち、rootIdはreader設定側の承認root registryで解決する。manifestの絶対pathやURLで新しい読取rootを許可しない。artifact cacheの座標や表示名はidentityの代用にしない。root registryはproject／source／build evidence／approved toolchain image／approved runtime artifactを役割別に分ける。
+
+object digestは、typed schemaの既知ASCII field名を昇順にし、配列の順序・重複を維持する再帰的canonical JSONのUTF-8 bytesから算出する。文字列はJSON.stringifyと同じescaping、整数は非負のsafe integerのみ、lone surrogate・未知field・重複JSON keyを拒否する。logical pathのcase・Unicode・空白・percent文字を変換しない。fileのraw digestはBOM／改行／encodingを正規化しない。canonical JSONのcross-language test vectorを実装前に固定する。
+
+循環hashを作らないため、将来のgraph wrapperをcoreGraphとownedOfferBundlesへ分け、coreGraphにはbundleへの参照を置かない。coreGraphDigestはcoreGraph全体のcanonical digestで、trusted callerが期待する値へ照合する。bundle digestはheaderとrefのcanonical bytesから算出し、bundle自身のdigestをheaderへ入れない。各receiptも上位bundle digestを含めず、共通binding IDと上流のobject refを保持する。class／JAR／compiler出力のinventoryは実際の成果物rootだけを対象とし、receipt・manifestは別evidence rootへ保存して自己参照を避ける。未知の循環参照・参照先のrole違反はschema不正とする。
+
+#### 9.47.3 必須入力roleと生成の対応
+
+| role | 必須証拠・完全性条件 |
+| --- | --- |
+| driver-sources | 実compilerへ渡す全sourceの順序・raw bytes／保存参照・encoding、source directoryの全inventory。内側classも含む構築結果へsource集合として結ぶ。SourceFile属性だけでclass単位の宣言元を断定しない |
+| driver-build-recipe | 所有executorの実装artifact／source、compilerの実起動方式、実行file／toolchain image、引数列・cwd・明示environment・system property、compile classpath／module path、source path、processor／plugin／生成source policy |
+| driver-build-inputs | response fileの元bytesと展開列、明示resource・生成sourceの上流receipt、構築に使う追加file／literal。未登録のgenerator・自動探索・暗黙source探索を許可しない |
+| driver-output-set | §9.47.4の新規・空の専用rootの開始証拠、compiler正常終了、同じroot実体の終了証拠とclass／nonclass全inventory・size／digest。余分なclass、欠落、後付けresourceを拒否。JARへ格納する場合はpackaging receiptと全entryの対応も要求 |
+| execution-environment | 独立に承認したJDK imageとGradle／launcher、loader policy、起動引数、明示env／property、実行strategy。bin/java／javacのhashだけでJDK全体を完全としない |
+| runtime-classpath | 実BTA childへ渡す全directory／JARの順序・重複・全内容digest、API／impl／compiler／stdlib等のrole。承認profileの閉じた集合と一致。親loader・service provider選択もpolicyの範囲へ含む |
+| library-cohort | BTAのcompile classpathとsnapshot generatorへ渡すlibrary列の順序・重複・logical ID・内容digest。自作libraryは構築receipt、外部artifactは独立承認artifactとの一致が必要 |
+| snapshot-generation | 実generator instance／実行artifact・format／granularity／設定、元libraryの各occurrence、実save先、返却結果、保存size／digest。一括生成ならbatchの全入力・全出力と対応granularityを明示し、曖昧な1対1対応を捏造しない |
+| offer-inputs | consumer source集合、実引数列・classpath・出力先、実configuration／parameterへのbinding、snapshot列、IC基準とKnown／Unknown changes。初回完了後→repeat前のIC内容束縛を維持 |
+| storage-and-observation | §9.44〜9.46の保存ledger・capacity policy・読取root・保存bytes参照、予定capture、phase順と全observerの承認済み計測範囲。未計測を0と表明しない |
+
+同じartifactを複数roleで使う場合も各roleとoccurrenceを残す。content objectの保存は共用できるが、classpathやsnapshotの配列をdeduplicate／sortして意味を変えない。input directoryはrecipeで閉じたrootとし、checkout全体を無条件に走査しない。登録名との全inventory照合で完全性を確認し、見つけたfileだけを一覧にしてcompleteとしない。
+
+JARはraw file全体のdigestをprimary identityにし、entry inventoryは欠落・追加とstage対応の検証に用いる。class entryはcompilerのoutput-set ref、resourceは登録file refまたは承認generatorのoutput ref、MANIFEST等の固定metadataはrecipeに固定したliteral bytes refへ結ぶ。未知のnonclass entryを「tool生成」と自己申告するだけでは許可しない。entry名の重複、path traversal、絶対path、file／directory衝突、展開予算超過を拒否し、名前を正規化して危険なentryを合法化しない。JARを検証するために展開・実行しない。
+
+#### 9.47.4 構築receiptと信頼境界
+
+最初の実証候補は、所有executorが具体的なsource／classpath／引数を固定してjavacを起動する閉じたrecipeとする。annotation processingは-proc:none、暗黙source探索は明示sourcepathと-implicit:none等の固定policyで禁止する。Kotlin compilerやprocessorを使う別recipeは、独自の入力closureと実証が必要。今回のJavaCompileが成功したことだけでその全入力closureを確認したとは扱わない。
+
+初期driver構築recipeのoutput rootは、buildInvocationIdごとに所有executorが承認output parent配下へ新規作成する専用directoryとする。既存rootは空でも再利用しない。候補pathが既存file／directory／symlinkの場合はoutput_root_exists、祖先のsymlink・root逸脱・別実体への置換はoutput_root_invalidとして、compilerを起動せずbuildのfailedに記録する。caller所有pathを削除・掃除して新規とみなす処理は禁止する。
+
+root作成直後とcompiler呼出し直前の2点で、同じroot実体であることとdirect entry数0を検証する。class／resource／隠しfile／symlink／空の子directoryもentryとして数え、一つでもあればoutput_root_not_emptyで止める。空判定は最初の1 entryで拒否でき、directory全件を走査・sortしない。rootの所有buildInvocationId、承認parent、lexical path、nativeでの実体token、作成・直前検査の順序と空inventoryを開始証拠へ保存する。outputはsource root、登録済み入力directory、compile classpath／module path／source pathと包含・alias関係を持たないことを検証し、旧driver出力を暗黙のcompiler探索先に入れない。
+
+compiler終了後は同じroot実体へ全output inventoryを対応付け、必要なdriver entrypointとpackaging用の登録entryが揃うことを確認する。実体変更は失敗とし、現在の別rootを今回のoutputとして採用しない。JARを作る場合も新規archiveをCREATE_NEWで作り、fresh output-setと登録resource／literalだけから全entryを構成する。compile成功後にpackagingが失敗した場合はbuild失敗であり、成功buildReceiptRefは発行しない。
+
+compiler失敗時の部分outputはfailureReceiptの診断証拠に限り、実行・packaging・成功output集合へ利用しない。再試行には新しいbuildInvocationIdと新しい空rootを要求する。最初のrecipeでは増分構築・既存outputへの上書き・build cache復元を新規driver構築として認めない。将来の増分recipeは親output manifest、削除／継承規則、書込結果の帰属を含む別契約と実証を必要とする。
+
+この空root条件は実際にdriverをjavacで構築するstageへ適用する。構築済みdriver artifactの上流ref利用や、OO09のBTA consumer出力／IC状態の再利用を禁止するものではない。それらは元build receiptまたは親consumer／IC基準に結び、新しいdriver構築へ数えない。fresh rootと検査点は過去のclass混入を防ぐ開始条件であり、任意の同時writerの不存在を独立証明する機構ではない。outputへの書込を所有compilerと承認packagerに限定するproducer信頼も必要である。
+
+source capture・sealは、所有producerが実行する具体invocationの構成完了後、実compiler呼出しの直前に置く。configuration時点の先行hashやTask.inputs.filesへの追加getで代用しない。自然に完成した具体値／保存済みbytesだけを受け取り、Provider・FileCollection・任意callbackを追加評価しない。compiler終了後の出力inventoryへbuild receiptを発行し、起動前と終了後の入力を元sealへ照合する。変化した入力は同じreceiptの新baselineへ置き換えず、failedにする。
+
+receiptは実compiler instance／process、source集合、実引数・environment、toolchain、全入力ref、結果、output-set ref、時系列を結ぶ。静的readerはこの結び付けを再実行・再コンパイルして証明せず、承認済みexecutorの表明として受理する。構築されたdriver classが対応source集合の出力であることと、そのclassが実行されたというloaderの表明は別のassuranceである。CodeSource現在値だけでロード／変換前後のbytecode一致を保証しない。追加信頼で未承認transformer・agent・loaderを許可しない。
+
+JDKは実行file以外のmodule／library／設定を含む承認imageへ結ぶ。初期候補はtrusted provisionerが承認・固定したimage inventoryと現在のimageの一致を確認できるものに限り、archive digestの自己申告だけでは採用しない。image内linkを許す場合は別の明示policyと閉包が必要で、現在のbounded readerのsymlink拒否を暗黙に緩和しない。対応を確立できなければtoolchain image assuranceはunavailableである。
+
+起動env／propertyは所有launcherが明示的に構成する。JAVA_TOOL_OPTIONS等のagent／任意引数注入、未登録argfile・classpath追加、未承認native／service-provider入力を受理しない。完全な環境値やsecretを公開manifestへ列挙せず、承認した非secret値は保存値へ、秘密入力が必要なrecipeは別の保護された証拠契約へ結ぶ。未定義secretをhashだけ保存してcompleteとしない。
+
+Gradleのsettings／init／build script・convention pluginを構築制御へ使う場合、実際に評価／ロードされた実体と対応付ける既存の承認済みprovenance契約が必要である。事後にscriptの現在bytesをhashするだけでは、評価したbytesとの一致を証明できない。最初のmanifest実証が保証するのは所有compiler recipeの入力であり、未証明のhost script評価や任意Gradle build全体へ完全性を拡張しない。
+
+#### 9.47.5 seal・静的取込・鮮度
+
+prepareでdriver用入力manifestを構成してsealし、build→runtime-selection→snapshot-generation→offerで各stage用の入力manifestとreceiptを上流refへ順に結ぶ。bundleの必須ref・失敗／未対応の省略は§9.47.2のunionに従う。各stageは自分の入力がreadyであることを確認してから進み、出力生成前の不明refを成功値で埋めない。planned captures、IC基準、storage ledgerは各invocation開始時に固定する。offer内部の失敗phase・未到達証拠の省略は§9.37を維持し、bundleのstage順と混同しない。
+
+readerは有界parseでschema・ref型・DAG・必須role・binding／状態の構造矛盾を検証し、trusted callerのgraph／export／context／execution／invocationへ照合する。信頼無効・未知profile・未知recipe・Task未実行では、構造検証を維持しつつ入力file／artifact／KGP getterへ進まない。既存の実行gateとbounded readerを迂回してmanifest参照を開かない。readerはGradle・compiler・generatorを実行しない。
+
+gate通過後は承認rootだけからobject／fileをbounded streamingで読み、size／digest・全inventory・保存bytes・元sealとの対応を照合する。source・driver class・library・runtime・snapshotの現在値をそれぞれ対応するseal／receiptへ確認し、内容一致だけでreceiptの真正性や現在の実行を証明したとしない。run-local identity tokenは同一native観測内の実体比較に限り、別process／再取込の実inodeへ読み替えない。
+
+snapshot領域の32 MiB／128 MiB／16 entryをruntime JARやtoolchain inventoryへ流用しない。新artifact用readerはprofileに固定した別budgetとし、初期案は1 file 512 MiB、全raw file 4 GiB、inventory 65,536 entry、metadata object 8 MiB。listingは上限＋1で停止し、上限内だけsortする。JAR展開byte・entry数・compression比・object参照総数・depth・全context合計のbudgetも固定し、同じobjectへの重複refで無限に再読取しない。実装・native実証で妥当性を確認するまで、この数値を本番の承認値としない。
+
+過去runの証拠はhistoryとして区別する。現在のcoreGraphやsourceが変わったのに古いmanifestへ一致を表明、fresh witnessへ古いenvelopeを付替え、他contextのoutputを混在させる場合はreader integrity拒否である。過去のcurrentContentMatchを再取込時に再使用せず、最初の読取から元sealへ確認する。元の証拠が不足する場合に現fileから再baseline化しない。
+
+#### 9.47.6 未対応・失敗・拒否の分類
+
+以下のowned_manifest_*は設計上の理由案であり、既存のfixture reasonや公開APIは今回変更しない。producerの記録理由とreaderのgraph拒否理由を分離する。
+
+| 条件 | 分類と扱い |
+| --- | --- |
+| 対応外recipe／image／loader、入力closureの取得方法未成立 | producer unavailable。必須証拠未取得と読取しなかった範囲を明示し、completeを出さない |
+| 取得不能な入力を含めcompletedと表明、必須ref欠落、循環・role不正、未知schema | reader schema_invalid／required_evidence_missing。信頼無効でも構造矛盾を拒否 |
+| producerが記録したinput_changed／inventory_mismatch／storage_failed／budget_exceeded／build_failed／output_root_exists／output_root_invalid／output_root_not_empty | 合法なphase・証拠と一致すればproducer_failedとして保持し、診断候補にしない。未到達の後続receiptは要求しない |
+| caller信頼無効、profile／recipe未承認、Task action未実行 | reader unavailable。入力読取0、producerStateを上書きしない |
+| 既知profileを名乗る別digest、現在内容と成功表明が不一致、別binding・古いreceiptの交換、authority自己申告 | reader profile_mismatch／claim_mismatch／content_mismatch。graph拒否し、producer_failedや部分的な診断へ格下げしない |
+| path逸脱・symlink・登録外entryをreaderが検出 | reader path_invalid／inventory_mismatch。producerのpath_invalidとは別の判定 |
+
+合法な未対応と、成功表明に必要な証拠の欠落を取り違えない。新しい理由がどのstageで合法かをschemaに固定し、未知reason・失敗後のsuccessを拒否する。failedの内容拒否をreaderが再確認する範囲は承認recipeに明記し、実参照や過去の実行artifactとの関係を静的readerが独立に再証明したと扱わない。
+
+#### 9.47.7 回帰条件と次の公開API実証（未実装）
+
+| ID | 条件 |
+| --- | --- |
+| BM01 | canonical JSONのobject順・配列順／重複・日本語／空白path・raw sourceのBOM／CRLFをcross-language vectorで確認。別内容の正規化による同一視を拒否 |
+| BM02 | completedの全ref、failed／unavailableの各completedThroughと次stageの正常unionを受理。prefix分の必須ref欠落、未到達の成功ref、null／空／全0 digestによる穴埋め、解決前のprofile／recipe digest、failure／unavailable refの混在を拒否。evidence indexは存在するobjectだけを参照し、未知field・循環・self digest・receiptを含む成果物inventoryも拒否 |
+| BM03 | coreGraph変更、graph／export／context／execution／invocation交換と上位refの自己更新を、trusted callerの期待値から拒否 |
+| BM04 | source追加／欠落／変更、seal後・最初の構築前の改変、事後hashへの再baseline化を拒否。構築後も元sealへ照合 |
+| BM05 | implicit source探索、processor／pluginの自動検出、未登録generator・生成source・argfileを拒否。追加評価なしで取得不能な入力はno-readのunavailable |
+| BM06 | 新規・空の専用driver output root→source集合→実compiler invocation→正常終了→同じrootの全outputを実証。既存の空root、class／resource／隠しfile／空子directory／symlink混入、作成後〜起動前の追加、root置換・入力rootとのaliasをcompiler呼出し0で拒否。内側classを含むbuild1の後、削除したsourceのbuild2を新rootへ構築して古いclassがないことと旧root不変を確認。旧root再使用・失敗後の部分output再利用・後付けresource・別構築output交換を拒否。consumer／IC再利用は独立に正常系を維持し、class単位source対応へ水増ししない |
+| BM07 | JAR全entryとcompiler output／file／literal／generator stageの対応。余分なresource・欠落MANIFEST・未登録生成物、重複名・traversal・展開予算超過を拒否 |
+| BM08 | javac／javaが同じでもJDK module／library／設定が異なるimageを拒否。未承認image/link policy・実image未照合はunavailableで停止 |
+| BM09 | runtimeの追加／欠落／順序・重複変更、API／impl／compiler／stdlibのrole交換、service provider・loader policy不一致を拒否 |
+| BM10 | CodeSourceだけを実行bytecodeの独立証明に昇格、未承認agent／transformer・parent loader入力、環境注入を拒否 |
+| BM11 | library occurrenceの順序・重複・digestとsnapshot生成／save結果を実BTAで照合。別cohort・format・generator・parameter列の交換を拒否 |
+| BM12 | 変更なしrepeatは新Handleと同じIC基準・source／snapshot／引数を使用。IC削除・改変・再初期化とsnapshot再baseline化を拒否 |
+| BM13 | seal後・precheck／postcheck／capture前後・初回reader capture前の改変、保存bytes欠落／破損を拒否。履歴証拠で現入力を補わない |
+| BM14 | 全rootのwrite前symlink拒否・read時symlink／path置換・未記録file・保存失敗・容量超過。大directoryで列挙上限＋1とartifact streaming上限を確認 |
+| BM15 | 信頼無効・profile／recipe未承認・Task未実行でartifact／source reader・KGP getter読取0。保持された不正schemaはgate前に拒否 |
+| BM16 | SKIPPED／FROM-CACHEの成功receiptを新しい構築・BTA実行へ数えない。fresh witness＋古いenvelope、偽のwitnessだけでは真正性を保証しない範囲も固定 |
+| BM17 | prepare中の入力改変、buildのroot割当／空判定／compiler／packaging失敗、snapshot生成失敗、offer失敗、prepare前toolchain未対応・build後loader未対応の合法prefixを受理。未到達receiptは要求せず、部分classはfailure receiptだけに保持し実行不可。index／状態証拠の保存失敗で成功bundleを生成しない。failed→completed／unavailable、飛び越したstage・偽のcompletedThrough／failureStage／phase／理由、成功ref付替え、失敗後旧rootへの再試行と固定件数の水増しを拒否 |
+| BM18 | controlと全承認observerを比較し、supplier評価・解決・transform・file I/Oを区別。manifest収集の追加評価、計測欠落、区間偽装を拒否 |
+| BM19 | 未対応secret／host script評価・buildSrc等の不完全なclosureを、既知fileの一覧だけでcompleteにしない。policy別必須証拠欠落を拒否 |
+| BM20 | 完全なmanifestを自然消費receipt・compilerWorkStatus=performed・declared_in補完・coverage改善へ変換することを拒否 |
+
+実証は、(a) schema／canonical digest／状態別の静的contract、(b) 所有compiler recipeの構築と実class対応、(c) 実runtime／library／snapshot／offerのref閉包と鮮度、の順に進める。nativeはGroovy／Kotlin wrapper × Gradle 8.11.1／9.2.1を別tupleで実行し、採用条件・fixture hash・実artifact・拒否数・実compiler／BTA呼出し数を保存する。JavaCompile／既存buildの透過対応、承認imageやloader policyが未成立なら未成立として結果に残す。全observer・manifestが揃うまで本番profile承認・本番取込を有効化しない。

@@ -2107,3 +2107,17 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - [設計書§9.45](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#945-保存境界レビュー修正書込前symlink拒否と列挙上限2026-11-02)へ、source読取前と各write直前の両保存先・祖先検証を追加。root／共通祖先symlinkの12件で保存write試行・保存byte・領域外の保存書込0を確認。
 - source listingの計数とlimitをsortより前へ移動。202-file directoryの8件で17 entry（上限16＋1）に停止し、全listingの上限も検証。
 - 両版各96テスト、静的177テスト。最終12 build・BTA呼出し60回、保存領域拒否116。公開記録v8へ更新し旧未コミットv7は参考要約へ。内部no-opはunknown、自然消費receipt・本番採用0を維持。
+
+
+### 2026-11-02: producer所有driverの構築・入力manifest契約（設計）
+
+- [設計書§9.47](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#947-producer所有driverの構築入力manifest契約設計2026-11-02)へ、owned-recipe-inputsの完全性domain、必須role、bundle／ref DAGと循環hash回避、canonical bytes、source→構築output→実行artifact→snapshot／offerの対応を具体化。
+- 独立承認profile・toolchain image・loader／executorの信頼と、readerの現在内容照合・caller witnessを分離。seal時刻、保存bytes、全inventory・budget・no-read gate、producer失敗とreader拒否の分類を設計。
+- BM01〜BM20の回帰条件と静的contract→所有構築recipe→実BTA入力閉包の実証順を追加。設計のみで新規native実行・承認profile・自然消費receipt・本番採用0。
+
+
+### 2026-11-02: 構築・入力manifest設計のレビュー修正
+
+- §9.47.2のbundleをproducerState／completedThrough／failureStage・blockedStage別のunionへ具体化。成功refの累積prefixと未到達refの禁止、独立したfailure／unavailable証拠、解決前のprofile digest省略、index保存失敗の扱いを追加。
+- §9.47.4へ新規・空の専用driver output root、作成時とcompiler直前の空判定・実体照合、入力rootとの非alias、失敗後のroot再利用禁止を追加。共有driver artifactとOO09のconsumer／IC再利用とは分離。
+- BM02／BM06／BM17に状態別ref、古い内側class・resource混入、部分output・失敗prefix・再試行の回帰条件を拡充。設計のみで新規native実行・本番採用0を維持。
