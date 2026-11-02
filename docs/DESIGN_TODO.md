@@ -2240,3 +2240,24 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - AB18／AB33を拡充、AB37〜AB42を追加（すべて未実施条件）。今回は設計修正のみ。実backend・snapshot upload／freeze・新schema・回帰テスト実装／native実証・本番profile承認／診断採用は未実施。
 
 レビュー修正後の文書検証: 公開文書・既存G2 contractの138テスト成功、diff整形検査成功。AB01〜AB42の欠落・重複と表の連続性、完全metadata受渡し・scope／session分離・TODO更新を確認。AB37〜AB42は条件の追加のみで、backend／新規回帰テスト／native実証は未実施。
+
+
+### 2026-11-02: cf3bc07レビュー修正（authority backend設計の数値上限）
+
+- [設計書§9.58](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#958-cf3bc07レビュー修正seal容量待機期限仮の時間上限2026-11-02)へ、seal projectionのcoreを`coreMetadataRef`の参照にしてcoreを1回だけ数える予算へ修正（scope上限との矛盾を解消）。待機期限をchunk要求ごとと明記し、session 10分・permit 30秒を仮の値として期限切れ時のunavailable停止を定義。設計のみで実装・native実行・本番採用0。
+
+### 2026-11-02: 段階A1の参照contract実装
+
+- [設計書§9.59](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#959-段階a1-sessionscopemetadata-uploadfreezeg0-sealの参照contract実装2026-11-02)へ、in-memory logical transactionを持つsession／scope状態機械、core snapshot・chunk upload／freeze、core参照付きseal projection、G0専用入口とG2 metadata照合、current CAS／失効・idempotent retryを実装。
+- 13 MiB超のcoreを6 scopeで共有する容量対照、chunkごとの期限、各prefix・scope独立進行・metadata故障等のlogical回帰を追加。principalはharness用でありOS認証ではなく、terminalはstructure-verifiedに限定。通常起動のbackend unsupported／profile空・診断採用false／owned読取0を保持。
+- 段階A全体は未完了。次はA2のdurable保存／crash復旧／独立checkpoint・fault injection。Bの隔離・IPC、CのTask観測、lease管理・async取得・permit、G3／G4・本番producer／profile承認・native／OSV実接続も残る。§9.58の未コミット設計修正を取り込み、本番採用へ昇格しない。
+
+A1検証結果: 新規71テスト成功。型検査・build成功、全体96 files／3,547 tests成功、21 files／1,415 tests skipped。13 MiB超core×6 scopeのraw予算、期限・prefix・権限・metadata拒否・scope独立進行を含む。durable store／IPC／Gradle・BTA native／OSV実接続・本番backend／profile承認・診断採用は0。
+
+### 2026-11-02: A1レビュー指摘2件の修正
+
+- terminal scopeの未完了uploadをcancelledにしてpending枠を解放。abort・skip等の後も他scopeを登録でき、保持partial bytesの予約予算は維持し、cancelled uploadの新規writeは拒否する。
+- lookupは終了時刻のexpiryを適用して結果を再計算。期限切れ後・途中到達ともsession-unavailableを返し、古いterminalを返さない。変異操作の期限検査・rollbackと、本番backend未対応／読取0は維持する。
+- 修正前の失敗を確認した上で13回帰を追加。A1は84テストへ増加。実証は引き続きメモリ内contractのみで、durable store／crash復旧・隔離／IPC・native・本番採用は未実施。
+
+A1レビュー修正後の検証結果: A1 84件成功（追加13件）。型検査・build成功、全体96 files／3,560 tests成功、21 files／1,415 tests skipped。diff整形検査成功。新規native／OSV実行・durable／隔離backend採用・本番profile承認・診断採用は0。

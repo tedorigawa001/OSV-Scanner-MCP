@@ -30,7 +30,7 @@ function refs(value:Node['value']):OwnedRef[] {
 }
 function bindOf(v:Node['value']):OwnedBinding {return 'binding' in v?v.binding:binding.parse(Object.fromEntries(Object.keys(binding.shape).map(k=>[k,(v as Record<string,unknown>)[k]])));}
 function sameBinding(a:OwnedBinding,b:OwnedBinding):void {for(const key of Object.keys(binding.shape) as (keyof OwnedBinding)[])required(a[key]===b[key],'claim_mismatch');}
-function inspectOwned(graph:GradleGraph,graphId:string,exportId:string,entriesText:string,objectsText:string,policy:OwnedPolicy,caller:unknown,refresh:{current?:(()=>OwnedManifestStatus)}):OwnedManifestStatus {
+function inspectOwned(graph:GradleGraph,graphId:string,exportId:string,entriesText:string,objectsText:string,policy:OwnedPolicy,caller:unknown,refresh:{current?:(()=>OwnedManifestStatus)},g0?:{executions:OwnedExecutionClaim[]}):OwnedManifestStatus {
  const claims:OwnedClaim[]=[];
  const executions:OwnedExecutionClaim[]=[];
  const jsonBudget={nodes:OWNED_LIMITS.nodes};
@@ -148,6 +148,7 @@ function inspectOwned(graph:GradleGraph,graphId:string,exportId:string,entriesTe
  }
  required(reached.size===nodes.size,'inventory_mismatch');
  if(missing||entries.length===0)return status('unavailable','owned_manifest_envelope_missing');
+ if(g0){g0.executions=executions;return status('verified','owned_manifest_capability_unsupported');}
  const reasons=[...new Set(claims.map(c=>policy.registry.check(c,policy.settings)))];
  if(reasons.includes('profile_mismatch'))return {...status('verified','owned_manifest_profile_mismatch'),importStatus:'invalid'};
  if(reasons.some(r=>r!=='witness_unavailable'))return {...status('verified','owned_manifest_'+reasons[0]),reasons:reasons.map(r=>'owned_manifest_'+r)};
@@ -162,7 +163,7 @@ function legacy(text:string,budget:GradleBudget):GradleExport {
  if(Buffer.byteLength(text)>LEGACY_GRAPH_BYTES)throw new LegacyGradleMetadataTooLarge();
  return {graph:parseGradleGraph(text,budget)};
 }
-export function parseGradleExport(text:string,budget:GradleBudget=createGradleBudget(),policy:OwnedPolicy=startupOwnedPolicy(),caller:unknown=unsupportedOwnedCaller):GradleExport {
+function parseExport(text:string,budget:GradleBudget,policy:OwnedPolicy|undefined,caller:unknown,g0?:{executions:OwnedExecutionClaim[]}):GradleExport {
  // Anything the root slicer cannot read keeps the previous legacy parser behavior and reasons.
  let fields:Map<string,string>;try{fields=exportFields(text);}catch{return legacy(text,budget);}
  if((!fields.has('schema')||JSON.parse(fields.get('schema')!)!=='osv-mcp.gradle-graph')||!fields.has('schemaVersion')||JSON.parse(fields.get('schemaVersion')!)!==4)return legacy(text,budget);
@@ -173,6 +174,15 @@ export function parseGradleExport(text:string,budget:GradleBudget=createGradleBu
  // Legacy validation and budget are intentionally independent of owned errors.
  const graph=parseGradleGraph(fields.get('coreGraph')!,budget);
  const refresh:{current?:(()=>OwnedManifestStatus)}={};
- try{const owned=inspectOwned(graph,header.graphId,header.exportId,fields.get('ownedOfferBundles')!,fields.get('ownedOfferObjects')!,policy,caller,refresh);return {graph,owned,...(refresh.current?{refreshOwnedExecution:refresh.current}:{})};}
+ try{const owned=inspectOwned(graph,header.graphId,header.exportId,fields.get('ownedOfferBundles')!,fields.get('ownedOfferObjects')!,policy!,caller,refresh,g0);return {graph,owned,...(refresh.current?{refreshOwnedExecution:refresh.current}:{})};}
  catch(error){return {graph,owned:status('invalid',error instanceof OwnedManifestError?error.message:'owned_manifest_schema_invalid')};}
+}
+
+/** Metadata-only authority validation; never consults startup settings, G1 or caller lookup. */
+export function parseGradleExportG0(text:string,budget:GradleBudget=createGradleBudget()):GradleExport&{executions:OwnedExecutionClaim[]} {
+ const g0:{executions:OwnedExecutionClaim[]}={executions:[]};const parsed=parseExport(text,budget,undefined,unsupportedOwnedCaller,g0);
+ return {...parsed,executions:g0.executions};
+}
+export function parseGradleExport(text:string,budget:GradleBudget=createGradleBudget(),policy:OwnedPolicy=startupOwnedPolicy(),caller:unknown=unsupportedOwnedCaller):GradleExport {
+ return parseExport(text,budget,policy,caller);
 }

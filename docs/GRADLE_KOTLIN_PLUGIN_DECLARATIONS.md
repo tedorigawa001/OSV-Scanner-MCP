@@ -3092,7 +3092,7 @@ operator設定にbackend profile digest、authorityId、service実装pin、trans
 
 通信の外枠を`osv-mcp.gradle-owned-authority-wire-v1`として独立schemaにする。必須fieldはprotocolVersion、authorityId／authorityInstanceId、storeEpoch、connectionId、requestId、fresh challenge、operationId、operation、scope binding、payload digest、sequence、payloadと認証情報である。認証情報の生成・検証は承認transport実装が行い、graph由来鍵・自己署名は使わない。応答はrequest digest／challengeとtransaction revisionを束縛し、別接続・別要求の応答を再使用できない。外枠のfieldを既存session v1／witness v1へ黙って追加しない。
 
-初期hard ceilingは1 frame 8 MiB、1 transaction内canonical payload合計64 MiB、深さ32・JSON nodes 1,000,000、1 session 2,000 scopes・256 leases、1 scope 1,024 process records、待機request 32件、1 sessionのevent 16,384件・ledger 64 MiB・生存時間10分とする。参照はscopeごとにも数え、超過は処理前に拒否する。session v1／witness v1の既存上限が小さい箇所は小さい方を採る。通信待機は1要求5秒・自動retry 0、期限超過は明示unavailableとし、起動・保存・sealを無断で再実行しない。性能実証で上限を変える場合はprofile改訂と再承認を必要とする。
+初期hard ceilingは1 frame 8 MiB、1 transaction内canonical payload合計64 MiB、深さ32・JSON nodes 1,000,000、1 session 2,000 scopes・256 leases、1 scope 1,024 process records、待機request 32件、1 sessionのevent 16,384件・ledger 64 MiB・生存時間10分とする。生存時間10分は性能実証前の仮の値であり、実際のbuildがこれを超えた場合は、期限切れのsessionを延長せず、未確定のscopeをunavailableで閉じて診断を出さない（§9.58）。参照はscopeごとにも数え、超過は処理前に拒否する。session v1／witness v1の既存上限が小さい箇所は小さい方を採る。通信待機は1要求（put-metadata-chunkでは1 chunkの要求）ごとに5秒・自動retry 0、期限超過は明示unavailableとし、起動・保存・sealを無断で再実行しない。性能実証で上限を変える場合はprofile改訂と再承認を必要とする。
 
 #### 9.57.4 session lifecycleとcurrentの選択
 
@@ -3161,13 +3161,13 @@ verifiedのseal proposalは、以下の完全なmetadata受渡しを経てauthor
 
 **実core bytesの登録。** beginで発行するcore用uploadIdはcaller専用・当該draft専用で、purpose=coreに固定する。callerは既存検証済みv1〜v3 graph全体のcanonical UTF-8 bytesをmetadataとして渡す。authorityは既存core parserとcanonical digest計算を独立して行い、要求coreGraphDigestと一致したsnapshotだけをbind-coreで消費する。coreMetadataRefは`{uploadId,purpose,byteLength,rawSha256}`のstrict objectであり、scopeやfile path／URLを持たない。rawSha256は実canonical core bytesのhashで、payload自身に自己digestを含めない。bind後のsource変更を新coreのbaselineへ更新しない。
 
-**scope単位のseal snapshot。** register-scopeでauthorityが発行するseal用uploadIdはpurpose=seal、session／scope／予約witnessId、固定core snapshot refに束縛する。upload内容は`osv-mcp.gradle-graph` schemaVersion=4の完全なG0 wrapperとする。必須root fieldは既存のschema／schemaVersion／graphId／exportId／coreGraph／ownedOfferBundles／ownedOfferObjectsだけで、coreGraphにはbind済みcore全体を収録する。ownedOfferBundlesは対象scopeのentryを**ちょうど1件**、ownedOfferObjectsはそのentryのbundle・envelope・evidence indexと参照閉包の全carrierの**過不足ない集合**に限定する。他scopeの未完了metadataを待つ必要はなく、別scopeのobjectをorphanとして混ぜない。
+**scope単位のseal snapshot。** register-scopeでauthorityが発行するseal用uploadIdはpurpose=seal、session／scope／予約witnessId、固定core snapshot refに束縛する。upload内容は`osv-mcp.gradle-graph` schemaVersion=4のG0 wrapperから、coreGraphの本体を除いたseal projectionとする（§9.58）。必須root fieldはschema／schemaVersion／graphId／exportId／coreMetadataRef／ownedOfferBundles／ownedOfferObjectsで、coreMetadataRefはbind-coreで固定したcore snapshotへの参照に限る。authorityはこの参照からfreeze済みのcore bytesを展開して完全なwrapperを組み立て、G0を検証する。scopeごとにcore本体を再送・再保存しない。ownedOfferBundlesは対象scopeのentryを**ちょうど1件**、ownedOfferObjectsはそのentryのbundle・envelope・evidence indexと参照閉包の全carrierの**過不足ない集合**に限定する。他scopeの未完了metadataを待つ必要はなく、別scopeのobjectをorphanとして混ぜない。
 
-各carrierは既存の`{role,objectDigest,bytes}`で、bytesは実canonical object文字列、refのrole／digest／byteLengthも実値へ一致させる。carrier配列はobjectDigestのASCII昇順・重複なしとし、coreの配列・phase・cohort・occurrenceの順序は変更しない。body内のfile refは検証対象metadataであり、authorityがfileを開く許可ではない。sealMetadataRefは`{uploadId,purpose,byteLength,rawSha256}`だけのstrict refで、完全なscope wrapper snapshotを指す。uploadId単体やproject側のcached pathをsnapshot refとして扱わない。
+各carrierは既存の`{role,objectDigest,bytes}`で、bytesは実canonical object文字列、refのrole／digest／byteLengthも実値へ一致させる。carrier配列はobjectDigestのASCII昇順・重複なしとし、coreの配列・phase・cohort・occurrenceの順序は変更しない。body内のfile refは検証対象metadataであり、authorityがfileを開く許可ではない。sealMetadataRefは`{uploadId,purpose,byteLength,rawSha256}`だけのstrict refで、core本体を除くscopeのseal projection snapshotを指す。uploadId単体やproject側のcached pathをsnapshot refとして扱わない。
 
 **転送・freeze・保持。** put-metadata-chunkはpurposeで分岐するstrict unionとする。coreはcallerのdraft権限だけに許し、scope／witnessIdを禁止する。sealは当該scopeのbroker／observerの限定権限とscope／予約witnessIdを必須にする。uploadIdは照合キーであり、それだけで書込権限にはならない。別purposeのfieldを足してroleを迂回できない。1 frame 8 MiBより大きいmetadataも扱えるように、put-metadata-chunkのraw chunkを1 MiB以下にする。各chunkは認証済みuploadに対して順番に受理し、初回に固定したtotal raw size／digest、ordinal、各raw size／digestを検証する。base64表現にもframe上限を適用する。同じoperationの同じchunk retry以外の重複・欠落・順序違反・宣言size超過・session／purpose交換を拒否する。最後まで受理して全raw bytesのdigest・UTF-8・canonical JSON・構造を確認するまでsnapshot refを発行しない。中途uploadはsealやbindの入力にならない。
 
-coreは既存上限16 MiB、seal wrapperは64 MiB、objectは8 MiB・1024 carriers・16384 refs・深さ32・1,000,000 nodesを上限とする。個別上限に加え、全scope合計でsession内のcore＋seal snapshot raw保存量64 MiB、同時未完了upload数32、各uploadの待機期限5秒を検査する。1 wrapperが上限内でも合計超過なら拒否し、保存できないmetadataを省略して採用しない。ledger予算とmetadata予算は別計数し、同じauthority保存領域は1 session合計256 MiBを上限とし、terminal／index／一時chunkを含めた実保存量もprofileへ明示する。frame／sessionの小さい方の予算は維持する。圧縮・外部sidecar・任意pathからの補完は初期対象外とする。
+coreは既存上限16 MiB、core本体を除くseal projectionは1件48 MiB、objectは8 MiB・1024 carriers・16384 refs・深さ32・1,000,000 nodesを上限とする。個別上限に加え、session内のraw保存量はcore snapshotを1回だけ数え、それに全scopeのseal projection合計を足して64 MiB以下とする（§9.58）。同時未完了upload数は32、待機期限は各chunk要求ごとに5秒とし、upload全体の期限ではない。1 wrapperが上限内でも合計超過なら拒否し、保存できないmetadataを省略して採用しない。ledger予算とmetadata予算は別計数し、同じauthority保存領域は1 session合計256 MiBを上限とし、terminal／index／一時chunkを含めた実保存量もprofileへ明示する。frame／sessionの小さい方の予算は維持する。圧縮・外部sidecar・任意pathからの補完は初期対象外とする。
 
 freeze後のsnapshotはauthority所有metadata store内にimmutableに保存し、session／scope／purpose／uploadId／raw digest／byteLengthで解決する。保存完了と参照発行はdurable commitに含め、後で同uploadIdの内容を交換・追記・別sessionへ再利用できない。これはmetadata I/Oであり、owned artifact／image／sourceの読取とは分ける。破損・欠落したfreeze済みsnapshotをproducerへの再取得や現在fileのhashで修復しない。
 
@@ -3208,7 +3208,7 @@ snapshotは一回のimport・完全なclaim集合・reader connectionへ固定�
 
 lookupの線形化点はauthorityがcurrent／失効とterminal参照を同一transactionで読み、応答revisionを確定した時点とする。失効commitより後に開始したlookupへ旧verifiedを返さない。失効と同時実行の要求はtransaction順で一意に決め、mtime・wall-clockだけで勝敗を選ばない。
 
-将来G3／G4を開くには、snapshotに加えてauthority発行の一回のread permitを必要とする。permitはsession／revision／claim集合digest／最終pair／全使用lease世代／reader connection／読取計画digest／有効期限を束縛し、graphへ保存しない。G3完了前にはartifact読取権限を出さない。readerは各新規openの許可と、結果公開前の`finalValidate(permit, observedResultDigest)`を確認する。capture全体のpermitの下に、読取計画のentryとopenOrdinalへ束縛する一回のchild grantを発行する。同じordinalの二度目のopenは拒否し、同じopenからのbounded streamingは許す。全予定entryの完了・未完了をauthorityへ記録し、finalValidateでcapture permitを一回だけ消費する。単なるsnapshot TTLを失効検知の代用にしない。初期permitは発行から30秒以内、延長・再発行で同じcaptureを密かに続けず、期限切れは今回の判定を破棄する。
+将来G3／G4を開くには、snapshotに加えてauthority発行の一回のread permitを必要とする。permitはsession／revision／claim集合digest／最終pair／全使用lease世代／reader connection／読取計画digest／有効期限を束縛し、graphへ保存しない。G3完了前にはartifact読取権限を出さない。readerは各新規openの許可と、結果公開前の`finalValidate(permit, observedResultDigest)`を確認する。capture全体のpermitの下に、読取計画のentryとopenOrdinalへ束縛する一回のchild grantを発行する。同じordinalの二度目のopenは拒否し、同じopenからのbounded streamingは許す。全予定entryの完了・未完了をauthorityへ記録し、finalValidateでcapture permitを一回だけ消費する。単なるsnapshot TTLを失効検知の代用にしない。初期permitは発行から30秒以内、延長・再発行で同じcaptureを密かに続けず、期限切れは今回の判定を破棄する。30秒も仮の値であり、読取予算（全context合計4 GiB等）を期限内に読み終えない場合は、途中のbytesを破棄して`witness_unavailable`相当のunavailableで止め、部分的な結果を採用しない（§9.58）。
 
 revoke commitと新規read grant／finalValidateはauthority上で直列化する。revokeが先なら後続grant・結果確定を拒否し、途中結果を診断へ採用しない。finalValidateが先なら、そのrevision時点の結果として完了した事実は残すが、後のscanへacceptedをcacheしない。既に許可・開始されたOS readや過去に公開済みの結果を取り消せるとは表明しない。gate閉鎖時の読取0は、失効が読取許可より先に確定したケースで検証する。実行中の失効は追加grant停止・途中bytes破棄・結果不採用として別計数する。
 
@@ -3282,7 +3282,7 @@ Cは承認対象の隔離配置ごとにGroovy／Kotlin × Gradle 8.11.1／9.2.1
 | AB36 | 認可配置で両DSL×両Gradle版、非対応配置、Task観測が成立しないcell | 成立したcellだけ採用候補。未成立をunsupportedのまま記録し承認profileを自動発行しない |
 | AB37 | coreMetadataRefの欠落・digestだけのbind、別session／purposeのref、自己再hashした別core | 実canonical coreのG0構造・固定bytesから拒否。project file／sidecar探索0 |
 | AB38 | sealMetadataRefなし・中途upload、evidence index／carrier欠落、role／length交換、dangling ref・循環・orphan | authorityの完全single-entry G0検証で拒否。verified発行・artifact／source読取0 |
-| AB39 | chunk欠落・順序／ordinal／宣言size違反・重複、別scope／witnessIdへのupload交換、個別／session合計予算超過、途中crash | freeze済みrefを発行しない。保存領域は有界で、再開／retryでも別bytesへの更新・予算迂回・不完全snapshotのseal不可 |
+| AB39 | chunk欠落・順序／ordinal／宣言size違反・重複、別scope／witnessIdへのupload交換、個別／session合計予算超過、途中crash。16 MiB近いcoreと多数scopeのsealでも、coreを1回だけ数えて合計予算内に収まること | freeze済みrefを発行しない。保存領域は有界で、再開／retryでも別bytesへの更新・予算迂回・不完全snapshotのseal不可 |
 | AB40 | freeze後のmetadata改変・削除・同uploadIdの上書き、正しい別snapshot／pairへの交換 | 認証済みraw size／digestと固定bindingからinvalid。再取得・現在fileからの修復なし |
 | AB41 | Aをcommitした後Bを成功／abort／invalidへ進め、Bのlate event・再seal・再openを試行。全scope terminal前にsession完了を要求 | Bは正規進行でき、Aは不変。閉じたscopeだけを拒否し、全member terminal以前はsessionをcommittedにしない |
 | AB42 | 複数single-entry sealから最終wrapperを併合し、carrier追加／欠落・entry／pair交換・core再hash・他scope流用を行う | 正常併合は各pairと全体G0を通る。不正併合はG0／authority照合で拒否。未確定scopeを成功へ補完せず既存coverageは維持 |
@@ -3296,3 +3296,52 @@ Cは承認対象の隔離配置ごとにGroovy／Kotlin × Gradle 8.11.1／9.2.1
 指摘された2件を本節へ反映した。bind-coreの実core snapshot、seal-scopeの完全single-entry wrapperと全参照閉包、chunk転送・freeze・認証済みmetadata保存、最終複数scope wrapperとの対応を定義した。sessionのsealingを廃し、scope単独の実行／sealing／terminalとsession全体の集約・失効を分離した。AB18／AB33を拡充し、AB37〜AB42を追加した。追加は設計・回帰条件のみで、backend／新schema／テスト実装・native実証・本番採用は未実施である。
 
 レビュー修正後の文書検証: 公開文書・既存G2 contractの138テスト成功、diff整形検査成功。AB01〜AB42の欠落・重複と表の連続性、完全metadata受渡し・scope／session分離・TODO更新を確認。AB37〜AB42は条件の追加のみで、backend／新規回帰テスト／native実証は未実施。
+
+
+### 9.58 cf3bc07レビュー修正・seal容量・待機期限・仮の時間上限（2026-11-02）
+
+§9.57の数値の上限が互いに両立しない箇所を、文書だけで直した。backend・テスト実装・native実証・本番採用は0件のままである。
+
+- 修正前は、各scopeのseal snapshotにbind済みcore全体を収録しつつ、session内のcore＋seal合計を64 MiBに制限していた。core 13 MiBならsealできるscopeは4つまでで、最大2,000 scopeとは両立しなかった。seal projectionからcore本体を除き、bind-coreで固定したcore snapshotへの`coreMetadataRef`で参照する形へ改めた。authorityは参照からcore bytesを展開して完全なwrapperのG0を検証する。合計予算はcoreを1回だけ数える。AB39に、大きなcoreと多数scopeの対照を加えた。
+- 待機期限5秒は、upload全体ではなく各chunk要求ごとの期限と明記した。
+- session生存時間10分とread permit 30秒は性能実証前の仮の値であり、期限切れの場合は延長せず、unavailableで止めて部分的な結果や診断を出さないことを明記した。
+
+### 9.59 段階A1: session／scope・metadata upload／freeze・G0 sealの参照contract実装（2026-11-02）
+
+§9.57〜9.58の最初の実装単位として、`gradleOwnedAuthoritySchema.ts`と`OwnedAuthorityContract`を追加した。これは**in-memoryの参照kernel**であり、永続store・認証service・隔離backendではない。本番readerのstartup、独立profile registry空、unsupported adapter、G3／G4閉鎖を変更せず、kernelをTrustedOwnedCallerとして登録しない。
+
+実装したlogical operationはbegin、put-metadata-chunk、bind-core、activate、register-scope、append-event、seal-scope、scope／sessionのabort・revoke、lookupである。operationはschema version 1のstrict union。scope間の状態を混ぜず、opaqueなauthority発行ID／nonce・uploadId・witnessId・一回Action capability、scope別revision／sequence／ledger head、current slotのCASを検査する。begin／mutating operationの同ID同payload retryはhistorical ackのみ、変更payloadはreplay_conflict、lookupはack cacheを使わず毎回現在の有効性を確認する。sessionは全scope terminal時だけcommittedとなり、一部scopeのseal・invalid・abortで他scopeを止めない。
+
+coreは16 MiB以下の実canonical snapshotとして1回だけ登録し、scopeのseal projectionはcoreMetadataRefで参照する。1 MiB以下のraw chunk・厳密なbase64／raw digest・ordinal・宣言size・個別／全scope合計64 MiB・未完了upload数を検査する。途中のuploadからrefを作らず、最終検証後にimmutable refを発行する。freeze後の上書き・ref／purpose／scope／witnessId交換を拒否する。chunk要求ごとの仮の5秒期限とsessionの仮の10分期限は注入された単調clockで検証し、期限超過を再送で延長しない。これらは実IPCの待機計測・性能承認ではない。
+
+G0専用入口`parseGradleExportG0`を抽出した。startup trust設定・G1・authority lookupを参照せず、既存のG0構造／core／pair／全object閉包を検証して、検証済みclaimだけを返す。通常のparseGradleExportの既存動作は維持する。seal時はfreeze済みcoreからsingle-entry wrapperを組み立て、全carrierと固定ledger／scope／pair／witnessを照合する。metadata欠落・別core・未知profile ID・dangling ref等をartifact読取で補完しない。
+
+本実装でのseal-scopeは同じoperationのphase=prepare／commitに分ける。prepareは対象scopeだけをsealingにしてledgerを閉じる。commitはG0・G2 contract対応を検査し、そのscopeのterminalを確定する。別scopeは進行可能で、全scopeがterminalになった場合だけ親sessionをcommittedへ集約する。途中metadata／schema／予算違反はin-memory logical transactionをrollbackし、sealの整合違反は対象scopeのinvalid terminalとして保持する。scope revokeは他scopeのterminal bytesを変えず、session revoke／supersede／期限切れは全体を無効化する。
+
+#### A1の信頼・保存の限界
+
+`principal`はtrusted harnessがrole付きopaque handleを発行するためのAPIであり、IPC peerやOS principalを認証しない。broker／observer／caller／readerの論理権限は検査するが、隔離の陽性証拠ではない。commandにfunction／accessor／Proxyを持ち込む場合は呼び出さず拒否する。reader向けinspectionはcapabilityやmetadata本文を返さず、返却値の変更でkernel内部を変えられない。
+
+execution-observationはharnessのobserverから供給するG2型のaggregateであり、実Gradle Task・全supplier／phaseを独立計測したrecordではない。成功に対応するterminalも`structure-verified`と呼び、backendEligible=false／diagnosticEligible=false／ownedFileReads=0を固定する。lookupのreaderProjectionは常にunavailable／backend-unsupportedであり、modelのsynthetic isolation markerを実証済みisolationEvidenceRefへ昇格しない。正式な認証済みevent発行・native観測は段階B／Cに残す。
+
+保存はメモリ内のみ。logical transactionのrollback・不変snapshot・idempotencyは検証したが、durable ack、fsync／atomic commit、crash復旧、record MAC、独立rollback checkpoint、実storageのsymlink／hardlink／path置換防止は未実装である。履歴の再起動復元・実child起動のat-most-onceも保証しない。lease個別の管理service、async snapshot取得・read permit・finalValidateも未実装。A全体の完了やAB01〜AB42全体の成功とは扱わない。
+
+#### 回帰範囲と次の実装単位
+
+AB10〜AB18・AB24・AB25・AB26・AB28・AB30・AB33・AB34・AB37〜AB41の**logical metadata部分**を回帰化した。A commit後のB進行／成功／abortと順序反転、別scope不正の隔離、late event・二度目のAction／seal、core／pair／closureの欠落・交換、chunk境界とrollback、current CAS・失効と再lookup、合法なfailed／unavailableの全prefixを確認する。別principal／認証wireでの試行を実施した意味ではない。
+
+§9.58の容量対照では、実13 MiB超の有効coreと6 scopeのsealを用い、core＋projectionのsession raw予算がcoreを1回だけ数えることを確認する。coreをscopeごとに加算すると64 MiBを超える対照である。各chunkを時間内で処理したままupload全体を5秒超へ進める対照、単一chunk処理の期限超過・session失効・clock巻戻しも含む。これは性能benchmarkではない。
+
+次は段階A2のdurable store／transaction／checkpoint境界とfault injection、その後Bの実隔離・認証IPC、Cの独立Task観測へ進む。最終複数scope wrapperの生成producer、共有use receipt、G3／G4、本番profile承認、native／OSV実接続は残る。今回の変更で本番backend・自然消費receipt・診断採用を有効化しない。
+
+A1検証結果: 新規71テスト成功。型検査・build成功、全体96 files／3,547 tests成功、21 files／1,415 tests skipped。13 MiB超core×6 scopeのraw予算、期限・prefix・権限・metadata拒否・scope独立進行を含む。durable store／IPC／Gradle・BTA native／OSV実接続・本番backend／profile承認・診断採用は0。
+
+#### A1レビュー修正: terminal時のupload枠とlookup期限境界（2026-11-02）
+
+- abort、not-executed（SKIPPED／FROM-CACHE／UP-TO-DATE／NO-SOURCE）、execution-aborted、unavailable、invalidでscopeがterminalになる際、未完了uploadをcancelledへ移し、未完了upload数から除外する。freeze済みsnapshotは変更しない。保持するpartial chunkとその予約済みraw予算はsessionに課金したままにし、枠解放を繰り返して容量制限を迂回できない。cancelled uploadへの新規write／freezeは拒否し、同操作のhistorical ackでも再openしない。
+- lookupは終了時の単調clockでもexpiryを反映してから結果を再計算する。期限切れ後のlookupも、最初の読取では有効でも終了前に期限に達したlookupも、例外や古いterminalではなくcontractStatus=session-unavailableを返す。readerProjectionは従来どおりunavailable／backend-unsupported、backendEligible／diagnosticEligible=false、ownedFileReads=0を維持する。expiredなsessionの過去terminalは内部履歴として保存するが、lookup結果へ載せない。
+- register-scope等の変異操作は従来どおり終了時にも期限を検査し、途中失効ならrollbackしてcapabilityを返さない。chunk要求ごとのdeadlineも維持する。
+
+追加回帰13件: abort後の次scope登録と再upload拒否、skip 4理由後の枠解放、partial chunkの予約予算維持・新規容量超過・historical retry、既定32枠での33連続abort、execution-aborted／unavailable／invalid後の枠解放、期限切れ後／lookup途中の期限到達、失効済みsessionへの繰返しlookupと別current sessionの保持。各不具合の回帰が修正前に失敗し、修正後に成功することを確認した。A1は71件から84件へ増加した。メモリ内contractに限る実証範囲とA2以降の未実装事項は変更しない。
+
+A1レビュー修正後の検証結果: A1 84件成功（追加13件）。型検査・build成功、全体96 files／3,560 tests成功、21 files／1,415 tests skipped。diff整形検査成功。新規native／OSV実行・durable／隔離backend採用・本番profile承認・診断採用は0。

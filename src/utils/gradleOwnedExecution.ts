@@ -26,9 +26,11 @@ const lookupSchema=z.union([
  z.object({status:z.literal('unavailable'),reason:z.literal('execution-aborted'),binding:witnessBinding,task:taskSchema}).strict(),
  z.object({status:z.literal('invalid'),reason:z.literal('invalid-receipt')}).strict()
 ]);
+export const ownedLookupSchema=lookupSchema;
 export const unsupportedOwnedCaller=Object.freeze({backend:'unsupported'} as const);
 export type OwnedExecutionReason='execution_invalid'|'claim_mismatch'|'configuration_invalid'|'witness_unavailable'|'action_not_executed'|'execution_aborted'|'capability_unsupported';
 export interface OwnedExecutionClaim {
+ profileId:string;recipeId:string;
  graphId:string;exportId:string;executionId:string;coreGraphDigest:string;project:string;context:string;invocation:string;
  profileDigest:string;recipeDigest:string;witnessId:string;bundleDigest:string;envelopeDigest:string;
  plannedCaptures:number;captures:number;state:OwnedState;
