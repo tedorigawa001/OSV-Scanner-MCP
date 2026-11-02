@@ -2623,9 +2623,9 @@ offerは私有stagingと保存evidenceへsnapshotをコピーし、元generation
 ```bash
 env JAVA_HOME=<jdk-home> GRADLE_USER_HOME=<gradle-cache> \
   OSV_MCP_TEST_GRADLE=<gradle-8.11.1-or-9.2.1>/bin/gradle \
-  OSV_MCP_BTA_MANIFEST_OUTPUT=/private/tmp/owned-bta-manifest-<version>.json \
+  OSV_MCP_BTA_MANIFEST_OUTPUT=<output-prefix>-<version>.json \
   npx vitest run src/test/gradle/btaManifest.integration.test.ts --maxWorkers=1
-node src/test/manual/gradleOwnedBtaManifestResults.mjs /private/tmp/owned-bta-manifest \
+node src/test/manual/gradleOwnedBtaManifestResults.mjs <output-prefix> \
   docs/validation/gradle-owned-bta-manifest-2026-11-02.json
 ```
 
@@ -2634,6 +2634,17 @@ node src/test/manual/gradleOwnedBtaManifestResults.mjs /private/tmp/owned-bta-ma
 所有recipeでsourceから実BTA入力までのmanifest対応と、限定caseでの鮮度確認・拒否を実証した。保証の根拠は承認候補executorの表明とcallerの実行witnessであり、公開recordの再生だけで過去の実行・ロード済みbytesを独立認証したとは扱わない。JDK／Node image全体、loader／transformer、host script評価bytes、任意の同時writer排除、全observerの追加評価計測は未成立である。
 
 KGP所有getterやGradle Provider／FileCollectionを追加評価しない所有driver方式を維持するが、既存KGPの自然消費bytes receiptや透過取得が成立したという結果ではない。次はtoolchain／loader／executorの追加信頼・profile・読取前gateと、このproof manifestから本番adapter／静的取込へ渡す採用条件の具体化である。現時点で本番profile承認・scan系toolでの診断採用・coverage／declared_in補完を有効にしない。
+
+#### 9c978e1レビュー修正（2026-11-02）
+
+公開記録の実体token、executorへの注入対照、件数の算出、再現例のpathを直し、両DSL・Gradle 8.11.1／9.2.1のnativeを再実行した。ダウンロードは0である。
+
+- output rootの実体tokenを、run内で振る`entity-N`に置き換えた。修正前は`dev:ino:birthtimeNs`のsaltなしSHA-256の先頭16桁で、総当たりでdevice・inode番号・作成時刻を逆算できた。§9.43の「device番号・inode番号は記録しない」方針に合わせ、比較はnative内で行い、hash化した値も公開しない。
+- §9.50と同じく、nativeハーネスが毎回`NODE_OPTIONS`でpreload scriptを渡し、executorで実行されない（marker fileが作られない）ことを記録・検証する。Gradle recipeは`node -- producer`の形で起動する。
+- 1 tupleあたりの件数（javac・driver Java・library BTA呼出し・snapshot生成）を固定値ではなく、検証済みのcompiler／launch記録・library段階の呼出し・generationごとのsnapshot数から算出する。
+- 再現例のpathを`<output-prefix>`へ置き換えた。
+
+記録はproof-v2とし、`baselineRevision`を加えた。v1は9c978e1のcommit済み原本として要約を`preReviews`へ残した。件数は変わらない（javac 4、driver Java 4、実BTA 24、snapshot生成24、offer 76でcompleted 8／refused 84）。静的テストは133件から137件になり、修正前のverifierと記録では5件が失敗することを先に確認した。
 
 ### 9.52 所有BTA manifestの本番採用契約・profile・読取前gate（設計、2026-11-02）
 

@@ -1,5 +1,5 @@
 import {execFile,execFileSync} from 'node:child_process';
-import {readFile,writeFile,mkdtemp,rm,realpath} from 'node:fs/promises';
+import {readFile,writeFile,mkdtemp,rm,realpath,access} from 'node:fs/promises';
 import path from 'node:path';import os from 'node:os';import {fileURLToPath} from 'node:url';import {randomUUID} from 'node:crypto';
 import {beforeAll,afterAll,describe,it,expect} from 'vitest';
 import {bridgeSources,btaManifestCases,runtimeRefusals} from '../fixtures/ownedBtaManifestExpected.mjs';
@@ -18,13 +18,16 @@ for(const dsl of ['Groovy','Kotlin'])describe.skipIf(!binary)(`owned javac/BTA m
   const sourceHashes=Object.fromEntries(await Promise.all(bridgeSources.map(async p=>[p,sha256(await readFile(path.join(repo,p)))]))),executionId=randomUUID();
   const policy={executionId,sourceHashes,java:offerJdkProfile.java.sha256,javac:offerJdkProfile.javac.sha256,nodeRuntime:{sha256:sha256(await readFile(process.execPath)),version:process.version,platform:process.platform,arch:process.arch}};
   const args=['-p',root,'ownedBtaManifest',`-Downed.bta.executionId=${executionId}`,`-Downed.bta.node=${process.execPath}`,`-Downed.bta.producer=${path.join(repo,'src/test/fixtures/ownedBtaManifestProducer.mjs')}`,`-Downed.bta.cache=${process.env.GRADLE_USER_HOME}`,'--offline','--no-daemon','--no-configuration-cache','--no-build-cache','--no-parallel','--max-workers=1','--console=plain'];
-  const result=await new Promise<{code:number;output:string}>(resolve=>execFile(binary!,args,{env:process.env,timeout:300000,maxBuffer:4*1024**2},(e,o,err)=>resolve({code:e?1:0,output:o+err})));
+  // Offer an executor preload through NODE_OPTIONS; the recipe must not pass it to the owned executor.
+  const marker=path.join(root,'preload-marker'),preload=path.join(root,'preload.cjs'),preloadBody=`require('fs').writeFileSync(${JSON.stringify(marker)},'loaded');\n`;await writeFile(preload,preloadBody);
+  const result=await new Promise<{code:number;output:string}>(resolve=>execFile(binary!,args,{env:{...process.env,NODE_OPTIONS:'--require '+preload},timeout:300000,maxBuffer:4*1024**2},(e,o,err)=>resolve({code:e?1:0,output:o+err})));
   if(result.code)await writeFile(path.join(os.tmpdir(),`owned-bta-${version}-${dsl}.log`),result.output);expect(result.code,result.output).toBe(0);
   const report=JSON.parse(await readFile(path.join(root,'bridge-report.json'),'utf8')),gradle=JSON.parse(await readFile(path.join(root,'bridge-gradle.json'),'utf8'));
-  tuple={gradleVersion:version,dsl,policy,gradle,fixtureHashes:Object.fromEntries(Object.entries(files).map(([p,b])=>[p,sha256(b)])),report};
+  const markerCreated=await access(marker).then(()=>true,()=>false);expect(markerCreated).toBe(false);
+  tuple={gradleVersion:version,dsl,policy,gradle,fixtureHashes:Object.fromEntries(Object.entries(files).map(([p,b])=>[p,sha256(b)])),report,injection:{nodeOptionsOffered:true,preloadSha256:sha256(preloadBody),markerCreated}};
   try{verifyBtaManifestTuple(tuple);}catch(e){await writeFile(path.join(os.tmpdir(),`owned-bta-${version}-${dsl}-diagnostic.json`),JSON.stringify(tuple,null,2));throw e;}
   for(const [p,h]of Object.entries(sourceHashes))expect(sha256(await readFile(path.join(repo,p)))).toBe(h);
-  cases.push(tuple);if(process.env.OSV_MCP_BTA_MANIFEST_OUTPUT)await writeFile(process.env.OSV_MCP_BTA_MANIFEST_OUTPUT,JSON.stringify({schema:'owned-bta-matrix-v1',cases},null,2)+'\n');
+  cases.push(tuple);if(process.env.OSV_MCP_BTA_MANIFEST_OUTPUT)await writeFile(process.env.OSV_MCP_BTA_MANIFEST_OUTPUT,JSON.stringify({schema:'owned-bta-matrix-v2',cases},null,2)+'\n');
  },300000);
  it('binds owned source, fresh output and actual BTA runtime',()=>expect(verifyBtaManifestTuple(tuple).productionAdopted).toBe(0));
  for(const id of [...Object.keys(btaManifestCases),...Object.keys(runtimeRefusals)])it('native binding/freshness: '+id,()=>expect(verifyBtaManifestTuple(tuple).naturalReceipts).toBe(0));

@@ -18,7 +18,9 @@ function guard(p){if(!p.startsWith(root+path.sep)&&p!==root)btaFail('path_invali
 function read(p){guard(p);const before=fs.lstatSync(p);if(!before.isFile()||before.size>128*1024**2)btaFail('budget');const fd=fs.openSync(p,fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW);try{const stat=fs.fstatSync(fd);if(stat.ino!==before.ino||stat.dev!==before.dev)btaFail('changed');const bytes=Buffer.alloc(before.size+1);let n=0,k;while(n<bytes.length&&(k=fs.readSync(fd,bytes,n,bytes.length-n,null)))n+=k;const after=fs.lstatSync(p);if(n!==before.size||stat.ino!==after.ino||stat.dev!==after.dev||before.mtimeMs!==after.mtimeMs)btaFail('changed');return bytes.subarray(0,n);}finally{fs.closeSync(fd);}}
 function file(p){const bytes=read(p);return {path:path.relative(root,p).split(path.sep).join('/'),size:bytes.length,sha256:sha256(bytes)};}
 function create(p,b){guard(path.dirname(p));fs.writeFileSync(p,b,{flag:'wx'});}
-function token(p){const s=fs.lstatSync(p,{bigint:true});return sha256(s.dev+':'+s.ino+':'+s.birthtimeNs).slice(0,16);}
+// Run-local entity tokens; device/inode/birth time are compared natively but never published, hashed or not.
+const tokens=new Map();
+function token(p){const s=fs.lstatSync(p,{bigint:true}),k=s.dev+':'+s.ino+':'+s.birthtimeNs;if(!tokens.has(k))tokens.set(k,'entity-'+(tokens.size+1));return tokens.get(k);}
 const sourceHashes=Object.fromEntries(bridgeSources.map(p=>[p,sha256(fs.readFileSync(path.join(repo,p)))]));
 const nodeRuntime={sha256:sha256(fs.readFileSync(process.execPath)),version:process.version,platform:process.platform,arch:process.arch};
 for(const bin of ['java','javac'])if(sha256(fs.readFileSync(path.join(jdk,'bin',bin)))!==ownerJdkProfile[bin].sha256)btaFail('jdk');
@@ -62,6 +64,6 @@ const native=JSON.parse(read(path.join(root,'bta-native.json')));
 const readerChecks=native.offers.map(o=>{const last=o.capture??o.postflight??o.preflight;return {id:o.id,snapshots:last.snapshots.map(f=>file(path.join(root,f.path))),saved:last.saved.map(f=>file(path.join(root,f.path))),source:file(path.join(root,o.identity.source.path)),refusalLibrary:o.refusalLibraryEvidence?file(path.join(root,o.refusalLibraryEvidence.path)):null};});
 for(const [p,h]of Object.entries(sourceHashes))if(sha256(fs.readFileSync(path.join(repo,p)))!==h)btaFail('executor_changed');
 const generationReader=native.generations.map(g=>({source:file(path.join(root,g.source.path)),library:file(path.join(root,g.library.path)),outputs:g.libraryOutputs.map(f=>file(path.join(root,f.path))),snapshots:g.snapshots.map(f=>file(path.join(root,f.path)))}));
-const report={schema:'owned-bta-bridge-v1',executionId,sourceHashes,nodeRuntime,executorProcess,build:{input,inputDigest,start,compiler,postInputDigest,output,outputDigest,jar,receipt,receiptDigest,launch},runtimeRefusals:refusals,native,readerChecks,generationReader};
+const report={schema:'owned-bta-bridge-v2',executionId,sourceHashes,nodeRuntime,executorProcess,build:{input,inputDigest,start,compiler,postInputDigest,output,outputDigest,jar,receipt,receiptDigest,launch},runtimeRefusals:refusals,native,readerChecks,generationReader};
 report.manifestBundle=makeBridgeBundle(report);
 create(path.join(root,'bridge-report.json'),JSON.stringify(report,null,2)+'\n');

@@ -2172,6 +2172,12 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - [検証データ](validation/gradle-owned-bta-manifest-2026-11-02.json)・再現collector・静的133テストを追加。元source・runtime profile・binding・到達済み証拠・reader観測・bundle交換と件数改変を拒否。型検査・build成功、全体92 files／3,081 tests成功（21 files／1,415 tests skipped）。
 - proof専用schemaに限定。本番manifest／coreGraph／envelope／追加信頼gateへの統合、JDK／Node imageとloader／executorの独立承認、全observer・host評価bytes・任意writer排除は次段階。compilerWorkStatus=unknown、自然消費receipt・declared_in／coverageへの昇格なしを維持。
 
+
+### 2026-11-02: 9c978e1レビュー修正（BTA manifestの実体tokenと注入対照）
+
+- §9.51へ修正の小節を追加。output rootの実体tokenをrun内の`entity-N`へ置換（修正前はinode等のsaltなしhash）。nativeハーネスに`NODE_OPTIONS` preloadの対照を追加し、起動形を`node -- producer`へ統一。
+- tupleごとの件数を検証済み証拠から算出し、再現例のpathを`<output-prefix>`へ置換。両DSL・両版を再実行（各48テスト）、記録proof-v2、静的137テスト、件数不変、本番採用0を維持。
+
 ### 2026-11-02: 所有BTA manifestの本番採用契約（設計）
 
 - [設計書§9.52](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#952-所有bta-manifestの本番採用契約profile読取前gate設計2026-11-02)へ、追加trust／独立profile registry・JDK／Node／platform image・executor／loaderの必須証拠と責任分離を追加。現在hash・CodeSource・producerのtrue表明だけでは採用しない。
