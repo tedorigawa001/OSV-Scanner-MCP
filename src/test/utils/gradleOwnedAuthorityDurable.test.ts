@@ -93,6 +93,9 @@ it('stores a full G0 seal terminal with its metadata and ledger',async()=>{
  expect(terminal.terminal).toMatchObject({outcome:'structure-verified'});
  const saved=await f.journal.readLatest();expect(json(saved,'terminal-record')[0].terminal).toEqual(terminal.terminal);expect(json(saved,'event-ledger')[0].events).toHaveLength(2);
  expect(json(saved,'session-index')[0].sessions[0].summary.lifecycle).toBe('committed');expect(json(saved,'session-index')[0].backendEligible).toBe(false);
+ const restarted=await OwnedAuthorityContract.restart(f.config);
+ expect(json(await f.journal.readLatest(),'terminal-record')[0].terminal).toEqual(terminal.terminal);
+ expect(await call({...f,model:restarted},restarted.principal('reader'),{operation:'lookup',sessionId:s.sessionId,scope,expectedRevision:0})).toMatchObject({contractStatus:'session-unavailable',backendEligible:false});
 });
 for(const operation of ['abort','revoke'] as const)it('persists '+operation+' before returning its ack',async()=>{
  const f=await setup(),s=await active(f);await call(f,f.caller,{operation,sessionId:s.sessionId,expectedRevision:s.revision,reason:'operator-request'});
@@ -192,4 +195,25 @@ it('rechecks the target after another session expiry is saved asynchronously',as
  await expect(register(f,s)).rejects.toThrow('expired');
  const sessions=json(await f.journal.readLatest(),'session-index')[0].sessions;
  expect(sessions.every((s:any)=>s.summary.validity==='expired')).toBe(true);expect(hits).toBe(3);
+});
+
+// Models a store at its entry ceiling: padding temp entries are counted but never read.
+class FullJournalIO extends MemoryJournalIO {
+ full=false;
+ override async list(limit:number){const files=await super.list(limit);if(!this.full)return files;const pad=Array.from({length:4096-files.length},(_,i)=>({name:'pending-'+ownedSha256('pad'+i)+'.tmp',size:0}));return [...files,...pad].slice(0,limit+1);}
+}
+it('stops the durable kernel permanently once the journal store is at capacity, while the journal stays usable',async()=>{
+ const f=ownedPolicyFixture(),io=new FullJournalIO(),checkpoint=new MemoryCheckpoint(journalGenesis(identity));
+ const journal=await AuthorityJournal.create({...identity,key:Buffer.alloc(32,3),io,checkpoint});let seq=0;
+ const model=new OwnedAuthorityContract({authorityId:'caller',policy:{settings:parseOwnedSettings('owned-bta-offered-inputs-v1',f.claim.profileDigest),registry:createOwnedRegistry(f.raw)},now:()=>0,journal});
+ const caller=model.principal('caller');
+ const command=(payload:any)=>({schema:'osv-mcp.gradle-owned-authority-operation-v1',schemaVersion:1,operationId:'cap-'+(++seq),...payload});
+ const beginCommand=()=>command({operation:'begin',expectedRevision:0,consumerId:'consumer',scanRunId:'scan-'+seq,projectRootId:'root',settingsDigest:ownedSha256('settings'),scopeRequestsDigest:ownedDigest([scope])});
+ await model.dispatchDurable(caller,beginCommand());expect(journal.head.revision).toBe(1);
+ io.full=true;
+ await expect(model.dispatchDurable(caller,beginCommand())).rejects.toThrow('authority_journal_budget_exceeded');
+ await expect(model.dispatchDurable(caller,beginCommand())).rejects.toThrow('authority_contract_recovery_required');
+ expect(journal.head.revision).toBe(1);
+ // The journal itself rejected before writing and is not blocked; only a new authority on a new journal can resume.
+ await expect(journal.lookupOperation('none')).resolves.toBeUndefined();
 });

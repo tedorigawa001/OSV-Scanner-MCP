@@ -2298,3 +2298,18 @@ A2レビュー修正後の検証結果: A2は42件から45件へ増加（memory 
 - 次は履歴から未完了sessionを失効させて新sessionを受け付けるrestart処理。現時点ではrestart_unsupportedとしてlive復元を拒否する。snapshotの差分化・quota／retention／compaction・writer排他、publish中断の隔離復旧、B／C・G3／G4・本番採用も残る。
 
 A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全体99 files／3,633 tests成功、21 files／1,415 tests skipped。既存A2のSIGKILL 3ケースも成功。diff整形検査成功、distにauthority／journal fixtureが含まれないことを確認した。通常起動のbackend・本番profile・診断採用は有効化していない。
+
+
+### 2026-11-02: e0d73d6レビュー修正（durable kernelの容量上限での停止）
+
+- §9.61へ、1 commitのsnapshotが64 MiB未満・4,096 records以下という保存の目安と、最大scopeが保存できないこと、256 commitsが数session分で尽きうることを明記。store上限ではjournalは利用可能なままでも、kernelは`recovery_required`で停止し、新しいjournal・authorityでしか再開できないことを記載し、回帰1件を追加。nativeの再実行なし。
+
+
+### 2026-11-02: 再起動時の旧session失効・新session受付
+
+- §9.62へasync restart factoryとsnapshot decoderを追加。A2全履歴検証に加え、latest snapshotのschema・canonical表現・metadata／ledger／terminal／予約・参照閉包を照合し、旧currentを失効させたcommitとcheckpointが完了してから新kernelを返す。
+- 旧actor・capability・ack cache・実行許可・clock原点を復元しない。旧kernelはheadの世代変更で停止。旧成功terminal・raw metadata・operation digestは履歴として保持し、currentなlookupは返さない。新bootには新しいsession枠を与え、全体のA2容量上限は維持する。
+- 新規27回帰（実ファイル再openと、失効commit直後の子process実SIGKILL各1件を含む）。保存失敗・公開checkpointの同期失敗中は受付0、復旧後は二重失効なしで新sessionをactivateする。既存G0 sealテストにも再起動後の確認を追加。
+- 次はwriter排他／lease・容量管理／retention／compaction・limits移行・publish中断の隔離復旧。Bの実隔離／認証IPC／checkpoint保護、CのTask観測と実broker／permit、G3／G4・本番採用・各環境のnative／実接続も残る。今回の世代照合は実process停止や既に配達済みの実行許可を取り消すbackendの実証ではない。
+
+再起動処理の検証結果: 新規27件成功。型検査・build成功。全体100 files／3,661 tests成功、21 files／1,415 tests skipped。既存A2のSIGKILL 3ケースと、新規のrestart失効commit直後の実SIGKILL 1ケースを再実行した。diff整形検査成功、distにauthority／journal／snapshot fixtureが含まれないことを確認。実行環境はmacOS arm64／Node v26.12.1。本番backend・profile・診断採用は無効のまま。

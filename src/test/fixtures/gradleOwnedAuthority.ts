@@ -3,6 +3,7 @@
  * mints any role without authentication. Never installed as TrustedOwnedCaller. It authenticates no peer;
  * synchronous mode is memory-only, optional async mode saves audit snapshots through the A2 fixture. It
  * launches nothing and ALWAYS reports backendEligible=false. */
+import {decodeAuthoritySnapshot,SNAPSHOT_SESSION_LIMIT} from './gradleOwnedAuthoritySnapshot.js';
 import {type AuthorityJournal,type JournalRecord,type JournalHead} from './gradleOwnedAuthorityJournal.js';
 import {randomBytes} from 'node:crypto';
 import {types as utilTypes} from 'node:util';
@@ -48,7 +49,8 @@ export class OwnedAuthorityContract {
  #actors=new WeakMap<object,Identity>();
  #state:State={sessions:new Map(),slots:new Map(),begins:new Map()};
  #lastTime=0;
- readonly #journal?:AuthorityJournal;
+ #journal?:AuthorityJournal;
+ #historicalOperations=new Map<string,{id:string;requestDigest:string;resultDigest:string}[]>();
  #durableBusy=false;#durableStopped=false;#durableDigest='';#expectedHead?:JournalHead;
  #durableAcks=new Map<string,{requestDigest:string;resultDigest:string}>();
  readonly #limits:Record<keyof typeof AUTHORITY_LIMITS,number>;
@@ -62,7 +64,47 @@ export class OwnedAuthorityContract {
    this.#limits[k as keyof typeof AUTHORITY_LIMITS]=v;
   }
  }
- #available():void {requireThat(!this.#durableStopped,'recovery_required');requireThat(!this.#durableBusy,'busy');}
+ /** Restart factory: never exposes the new instance until historical invalidation is checkpointed. */
+ static async restart(config:OwnedAuthorityContractConfig & {journal:AuthorityJournal}):Promise<OwnedAuthorityContract> {
+  const {journal,authorityId}=config;
+  const model=new OwnedAuthorityContract({...config,journal:undefined});
+  model.#journal=journal;model.#durableBusy=true;
+  try {
+   requireThat(journal.head.authorityId===authorityId,'configuration_invalid');
+   const records=await journal.readLatest();model.#expectedHead=journal.head;
+   const fromHead=model.#expectedHead;
+   if(records.length){
+    const decoded=decodeAuthoritySnapshot(records,authorityId);
+    requireThat(same(decoded.limits,model.#limits),'restart_limits_mismatch');
+    model.#state.slots=new Map(decoded.slots.map(([k,v])=>[k,{...v}]));
+    for(const old of decoded.sessions){
+     const {plans:_,...manifest}=old.manifest;
+     const scopes=new Map<string,Scope>(old.scopes.map(({info,plan,events,observation})=>[key(info.scope),{plan,revision:info.revision,lifecycle:info.lifecycle,validity:info.validity,head:info.ledgerHead,sequence:info.sequence,events,...(info.witnessId?{witnessId:info.witnessId}:{}),...(info.uploadId?{uploadId:info.uploadId}:{}),...(info.terminal?{terminal:info.terminal}:{}),...(observation?{observation}:{})}]));
+     const uploads=new Map<string,Upload>(old.uploads.map(({info,parts,text})=>{const {records:_,...u}=info;return [info.id,{...u,chunks:info.state==='frozen'?[]:parts,...(text===undefined?{}:{text})}];}));
+     const session:Session={...manifest,scopes,uploads,acks:new Map()};
+     model.#state.sessions.set(session.id,session);model.#historicalOperations.set(session.id,old.operations);
+    }
+   }
+   const invalidated:string[]=[];
+   for(const session of model.#state.sessions.values()){
+    if(session.lifecycle!=='closed'){model.#closeSession(session,'expired','authority-restarted');invalidated.push(session.id);}
+    for(const scope of session.scopes.values())if(scope.validity==='current'){scope.validity='revoked';scope.revision++;}
+    for(const upload of session.uploads.values())if(upload.state==='open'){upload.state='cancelled';upload.revision++;}
+   }
+   // Clock origins, actors, ack caches, bearer capabilities and execution grants are not restored.
+   model.#clock();
+   await model.#save(fresh(),ownedDigest({domain:'authority-restart-v1',fromHead}),{maintenance:'restart',fromHead,invalidated,backendEligible:false});
+   model.#requireGeneration();return model;
+  }catch(e){model.#durableStopped=true;throw e;}
+  finally{model.#durableBusy=false;}
+ }
+ #requireGeneration():void {
+  if(this.#journal&&this.#expectedHead&&!same(this.#journal.head,this.#expectedHead)){this.#durableStopped=true;fail('generation_changed');}
+ }
+ #available():void {requireThat(!this.#durableStopped,'recovery_required');requireThat(!this.#durableBusy,'busy');this.#requireGeneration();}
+ async #verifyGeneration():Promise<void> {
+  try{await this.#journal!.readLatest();this.#requireGeneration();}catch(e){this.#durableStopped=true;throw e;}
+ }
  /** Trusted harness provisioning; deliberately NOT a wire/OS authentication API. */
  principal(role:Role,sessionId?:string,scope?:AuthorityScope):object {
   this.#available();
@@ -125,6 +167,7 @@ export class OwnedAuthorityContract {
   const operationId=ownedDigest({domain:'authority-operation-v1',actorId:identity.id,sessionId:c.operation==='begin'?'begin':c.sessionId,operationId:c.operationId});
   this.#durableBusy=true;
   try {
+   await this.#verifyGeneration();
    if(!this.#durableDigest)this.#durableDigest=this.#snapshotDigest(this.#snapshot());
    this.#expire(started);await this.#saveExpiration();
    let reply:any;
@@ -146,6 +189,7 @@ export class OwnedAuthorityContract {
    await this.#saveExpiration();
    for(;;){
     const ended=this.#clock();if(this.#expire(ended)){await this.#saveExpiration();continue;}
+    this.#requireGeneration();
     if(c.operation==='lookup')return copy(this.#apply(identity,c,requestDigest,ended));
     const target=this.#state.sessions.get(c.operation==='begin'?reply.sessionId:c.sessionId);
     if(target&&ended-target.created>=this.#limits.sessionMilliseconds)fail('expired');
@@ -156,6 +200,7 @@ export class OwnedAuthorityContract {
  }
  #snapshotDigest(records:JournalRecord[]):string {return ownedDigest(records.map(r=>({id:r.id,role:r.role,size:r.bytes.length,sha256:ownedSha256(r.bytes)})));}
  #snapshot():JournalRecord[] {
+  requireThat(this.#state.sessions.size<=SNAPSHOT_SESSION_LIMIT,'budget_exceeded');
   const records:JournalRecord[]=[],manifests:unknown[]=[],sessions:unknown[]=[];
   const add=(role:JournalRecord['role'],id:string,value:unknown)=>records.push({role,id,bytes:Buffer.from(canonicalOwnedJson(value,64*1024*1024))});
   for(const s of this.#state.sessions.values()){
@@ -175,7 +220,7 @@ export class OwnedAuthorityContract {
     const action=sc.events.map(e=>parseOwnedJson(e) as any).find(e=>e.payload.kind==='action-start');
     if(action)add('action-reservation',id,{sessionId:s.id,scope:sc.plan,witnessId:sc.witnessId,consumed:true,sequence:action.sequence,eventDigest:ownedSha256(canonicalOwnedJson(action))});
    }
-   sessions.push({summary:this.#summary(s),uploads:uploadIndex,operations:[...acks].map(([id,a])=>({id:ownedSha256(id),requestDigest:a.digest,resultDigest:ownedSha256(canonicalOwnedJson(redactReply(a.reply)))}))});
+   sessions.push({summary:this.#summary(s),uploads:uploadIndex,operations:[...(this.#historicalOperations.get(s.id)??[]),...[...acks].map(([id,a])=>({id:ownedSha256(id),requestDigest:a.digest,resultDigest:ownedSha256(canonicalOwnedJson(redactReply(a.reply)))}))]});
   }
   add('session-manifest','root',{schema:'osv-mcp.gradle-owned-authority-snapshot-v1',authorityId:this.config.authorityId,limits:this.#limits,sessions:manifests});
   if(!records.some(r=>r.role==='event-ledger'))add('event-ledger','empty',{events:[]});
@@ -222,7 +267,7 @@ export class OwnedAuthorityContract {
   if(c.operation==='begin'){
    requireThat(identity.role==='caller'&&!identity.sessionId,'permission_denied');const prior=this.#state.begins.get(ackKey);
    if(prior){requireThat(prior.digest===digest,'replay_conflict');return {...prior.reply,historical:true};}
-   requireThat(this.#state.sessions.size<this.#limits.sessions,'budget_exceeded');
+   requireThat([...this.#state.sessions.keys()].filter(id=>!this.#historicalOperations.has(id)).length<this.#limits.sessions,'budget_exceeded');
    const s:Session={id:fresh(),owner:identity.id,consumerId:c.consumerId,scanRunId:c.scanRunId,projectRootId:c.projectRootId,settingsDigest:c.settingsDigest,scopeRequestsDigest:c.scopeRequestsDigest,graphId:fresh(),exportId:fresh(),executionId:fresh(),nonce:fresh(),coreUploadId:fresh(),created:now,revision:1,lifecycle:'draft',validity:'unselected',scopes:new Map(),uploads:new Map(),acks:new Map(),metadataBytes:0,ledgerBytes:0,eventCount:0};
    s.uploads.set(s.coreUploadId,{id:s.coreUploadId,purpose:'core',revision:0,state:'open',chunks:[],received:0});this.#state.sessions.set(s.id,s);
    const reply=this.#summary(s);this.#state.begins.set(ackKey,{digest,reply});return reply;

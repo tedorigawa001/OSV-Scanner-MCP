@@ -3430,7 +3430,9 @@ OwnedAuthorityContractのtest fixtureへ、optional journalとasync dispatchDura
 
 このsnapshotは参照実装のaudit記録であり、live stateを復元するschema／readerではない。履歴のあるjournalからkernelを作る操作はrestart_unsupportedとする。再起動後の未完了session失効を保存して新sessionを受け付ける処理は次の課題であり、今回成立したのは保存とackの接続までである。保存失敗後も履歴のjournal再openは可能だが、古いactor・permit・capabilityを復活させない。
 
-毎回全live stateをsnapshot化・全storeを再検証するため大規模運用の性能は未解決。A2の64 MiB transaction／256 MiB store／4,096 records／256 commitsが上限となり、複数session・ledger込みのsnapshotが上限を超えればackを拒否する。A1の各単体上限を同時にすべて使えると主張しない。差分保存、quota・retention・compaction、writer lease／複数process排他、publish中断の隔離復旧は残る。
+毎回全live stateをsnapshot化・全storeを再検証するため大規模運用の性能は未解決。A2の64 MiB transaction／256 MiB store／4,096 records／256 commitsが上限となり、複数session・ledger込みのsnapshotが上限を超えればackを拒否する。A1の各単体上限を同時にすべて使えると主張しない。保存できる目安は、1 commitのsnapshot（全sessionのcore・seal projection・partial chunkに、ledger・terminal・index・resultを加えたもの）が64 MiB未満、かつrecord数が4,096件以下であることである。core 16 MiBとseal projection 48 MiBの最大組合せはそれだけで64 MiBに達するため、A1の上限どおりの最大scopeは保存できない。commitはupload chunk 1つや期限切れの保存1回ごとにも発生するため、256 commitsは数session分で尽きうる。
+
+storeが上限（commit数・entry数・容量）に達すると、A2 journal自体は書込み前の拒否として`budget_exceeded`を返し、journalは利用可能なまま残る。一方、bridgeはその時点でlive stateを既に適用しているため、kernelを`recovery_required`で停止し、以後のackを返さない。履歴のあるjournalからのkernel作成は`restart_unsupported`なので、再開には新しいjournalで新しいauthorityを作る必要がある。このstore上限による停止を固定する回帰を1件加えた（e0d73d6レビュー修正）。差分保存、quota・retention・compaction、writer lease／複数process排他、publish中断の隔離復旧は残る。
 
 Bの独立principal／認証IPC／checkpoint保護、Cの独立Task観測、async caller取得とlease／permit、G3／G4・本番producer／profile承認・実接続は未実装のまま。別root／別key・harness role・保存された観測内容を独立なTask事実の証明と数えない。
 
@@ -3441,3 +3443,37 @@ Bの独立principal／認証IPC／checkpoint保護、Cの独立Task観測、asyn
 実ファイルadapter経由でbeginからaction-startまで保存し、journal再open後のaction reservationとcheckpoint世代を確認する1件を含む。実行profileはmacOS arm64／Node 26.12.1。既存A2のSIGKILLテストを再実行するが、今回のA1 bridge全体をSIGKILLした実証ではない。実brokerのlaunch・電源断・実隔離・Gradle／BTA native・OSV実接続・本番診断採用はいずれも今回0。
 
 A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全体99 files／3,633 tests成功、21 files／1,415 tests skipped。既存A2のSIGKILL 3ケースも成功。diff整形検査成功、distにauthority／journal fixtureが含まれないことを確認した。通常起動のbackend・本番profile・診断採用は有効化していない。
+
+
+### 9.62 再起動時の履歴検証・旧session失効と新session受付（参照実装、2026-11-02）
+
+§9.61で残したrestart処理を、test fixtureのasync factory `OwnedAuthorityContract.restart(config)`へ実装した。同期constructorで履歴のあるjournalを渡す経路は従来どおりrestart_unsupportedとし、factoryだけが履歴の読取・検証・失効commitを経てinstanceを返す。通常起動のbackendや公開packageには接続していない。
+
+#### 起動の順序と保存境界
+
+1. A2 readLatestでmanifest／全blob／commit chain／独立checkpointを再検証・再同期する。古いcommitだけの改変・欠落・rollback・checkpoint不能でも失敗し、空storeへのfallbackはしない。
+2. `gradleOwnedAuthoritySnapshot.ts`のdecoderでlatest snapshotを検証する。strict schemaとcanonical JSON、authority・記録したlimits、manifest／summary／current slot、metadataの参照・長さ・digest・freeze、ledgerのsequence／previousDigest／head、terminalとaction-reservationの対応、全recordの参照閉包を確認する。未参照recordや不整合を拒否し、検証完了前にはrestart commitを作らない。partial metadataは未完了のbytesとして保持し、freeze済みmetadataはUTF-8／canonical JSONとcoreまたはsealのschemaを再検証する。G0 sealの判定やTask観測を新たに実行した証拠とは数えない。
+3. 既存sessionを履歴として取り込み、draft／core-bound／active／committedをclosed・validity=expiredへ移す。完了済みterminalもsessionのcurrent性は失効させるが、元のterminal outcome・digest・ledger・metadataを保持する。未完了scopeはunavailable／authority-restartedで閉じ、scopeのvalidityをrevoked、open uploadをcoreも含めcancelledとする。current slotを消してrevisionを進め、既に閉じたsessionとslotを再起動のたびに二重更新しない。
+4. 旧head・失効session一覧を持つmaintenance=restartのresultと、全履歴・失効状態をexpectedHead付きの一つのcommitに保存する。checkpointとreadback完了後だけ新kernelを返し、その後に新actor・sessionを発行できる。保存失敗・容量不足・checkpoint再同期失敗時はinstanceを返さない。保存済みだが返答前に停止した場合、次の起動でそのcommitをA2が復旧し、失効を二重適用せず新boot markerを保存する。
+
+#### 旧権限の不継承と世代の照合
+
+actorのWeakMap、capability、live ack cache、実行許可、旧clockの原点は復元しない。記録したoperation／result digestは監査履歴として保持する。同じoperationIdの文字列でも、新actorのbeginは新session／nonce／graph／export／execution識別子を発行する。旧actor object・保存したaction ack objectは新kernelのprincipalにならず、旧sessionへのaction再送はnot_current、新sessionへ持ち込んだ旧capabilityはcapability_invalidとなる。旧sessionのreader lookupはsession-unavailable／backend-unsupportedであり、保存した成功terminalをcurrentな診断へ採用しない。
+
+同一プロセス内に旧kernelが残るテストでも、開始時に保存履歴を再検証してexpected headを照合し、返答直前にも手元のheadを照合する。別journal object経由のrestartも次の操作でgeneration_changedとして停止する。これをOSのprocess停止・lease失効・実brokerのlaunch取消しの証明とはしない。独立process間の同時実行排他は従来どおり外部の単一writer前提であり、Bの隔離・認証IPCとwriter lease、Cの実Task／permit対応は残る。再起動前に既に配達したackによる実プロセスの実行可否を強制するbackendはまだ接続していない。
+
+#### 容量・互換性
+
+履歴はlive sessionとして再開せず、新bootのsession枠（既定32）から除外する。snapshotは最大256 session履歴とし、A2の256 commits・4,096 records・64 MiB transaction・256 MiB storeも引き続き適用する。履歴のbytes／ledger／予算を消さず保持するため、容量が不足すれば失効commitも新sessionも拒否する。retention／compactionで古い履歴を無制限に保持できるようにした実装ではない。記録したlimitsと新kernelのlimitsが異なる場合はrestart_limits_mismatchとし、履歴を別の上限で保存し直さない。limits変更の移行は未実装である。
+
+§9.61の「新しいjournalでしか再開できない」という当時の制限は、本節で検証・失効commitを保存する空きがある場合に限り解消した。保存容量が満杯のままならfactoryも拒否し、compaction／別journal移行は別課題のままである。
+
+#### 回帰と実証範囲
+
+新規27件。draft／active／executing／committedの失効、core uploadのcancel、新actor・fresh session、旧actor／capability／action要求／ack objectの拒否、旧kernelの世代停止、失効checkpoint前の受付0、6保存境界の失敗と再試行、checkpoint公開後の再同期失敗、繰返し再起動でのrevision維持、旧clock原点に依存しない受付、32 session枠の更新、limits不一致、過去blob改変・rollback・checkpoint不能、認証済みでも不正なsnapshotのschema／参照／ledger／予約／canonical表現／metadata改変を対象とする。実装前に最初のrestart回帰が未実装のfactoryで失敗することを確認した。既存の完全G0 sealテストにも、再起動後のterminal保持とlookup不可の確認を追加した。
+
+実ファイルを閉じ、別descriptor・journal objectで再openして失効保存と新sessionのactivateを確認する。また実ソースをprojectのTypeScript compilerで一時directoryへbuildし、子Node processでrestartを実行、失効commit直後・checkpoint前のafter-commitで実SIGKILLする。親が再openしてcommitを復旧し、旧sessionのrevisionを二重更新せず、旧actorを拒否して新sessionをactivateすることを確認した。compiler／childは各15秒で打切り、test全体の上限は45秒とする。
+
+実行profileはmacOS arm64／Node 26.12.1。障害matrixとcheckpoint再同期失敗は例外注入であり、実電源断・媒体故障の実証ではない。Linux／x64、実隔離・認証IPC、旧processの外部強制停止、Gradle／BTA native・OSV実接続・本番profile承認・診断採用は今回0。単一writer・test fixtureという前提と、本番backend無効を維持する。
+
+再起動処理の検証結果: 新規27件成功。型検査・build成功。全体100 files／3,661 tests成功、21 files／1,415 tests skipped。既存A2のSIGKILL 3ケースと、新規のrestart失効commit直後の実SIGKILL 1ケースを再実行した。diff整形検査成功、distにauthority／journal／snapshot fixtureが含まれないことを確認。実行環境はmacOS arm64／Node v26.12.1。本番backend・profile・診断採用は無効のまま。
