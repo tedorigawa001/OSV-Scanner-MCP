@@ -118,3 +118,22 @@ for(const trust of [undefined,'invalid','owned-bta-offered-inputs-v1'])it('G1 pr
  expect(result.lookup!('g:a','1')).toEqual(legacy.lookup!('g:a','1'));expect(result.lookup!('g:b','2')).toEqual(legacy.lookup!('g:b','2'));expect(result.coverageReasons).toEqual(legacy.coverageReasons);expect(result.metadata.status).toBe(legacy.metadata.status);
  expect(spy.mock.calls.map(c=>path.relative(dir,c[0]))).toEqual([GRADLE_COMPANION,'osv-mcp-gradle-declarations.json']);
 });
+
+import {ownedExecutionCase} from '../fixtures/gradleOwnedExecutionFixture.js';
+it('rechecks G2 lookup on repeated capture without reopening owned files or reusing a verified verdict',async()=>{
+ const dir=await fixture(),f=ownedExecutionCase('completed','offer',undefined,undefined,sha256(bytes));
+ await writeFile(path.join(dir,GRADLE_COMPANION),JSON.stringify(f.doc));let calls=0;const lookup=f.caller.lookup;f.caller.lookup=(r:any)=>{calls++;return lookup(r);};
+ const spy=vi.spyOn(safeReader,'readRegularFile');
+ const cache=new GradleGraphCache(dir,undefined,undefined,undefined,undefined,undefined,f.policy,f.caller);
+ const first=await cache.capture(path.join(dir,'gradle.lockfile'),bytes);expect(first.metadata.owned_manifest).toMatchObject({executionWitness:'verified',ownedFileReads:0,diagnosticEligible:false});
+ f.caller.lookup=()=>{calls++;return {status:'unavailable',reason:'receipt-missing'};};
+ const second=await cache.capture(path.join(dir,'gradle.lockfile'),bytes);expect(second.metadata.owned_manifest).toMatchObject({executionWitness:'unavailable',reasons:['owned_manifest_witness_unavailable'],ownedFileReads:0});expect(calls).toBe(2);
+ expect(second.lookup!('g:a','1')).toEqual(first.lookup!('g:a','1'));expect(second.lookup!('g:b','2')).toEqual(first.lookup!('g:b','2'));expect(second.coverageReasons).toEqual(first.coverageReasons);
+ expect(spy.mock.calls.map(c=>path.relative(dir,c[0]))).toEqual([GRADLE_COMPANION,'osv-mcp-gradle-declarations.json']);
+});
+for(const status of ['revoked','superseded'])it('does not retain G2 verification after current session becomes '+status,async()=>{
+ const dir=await fixture(),f=ownedExecutionCase('completed','offer',undefined,undefined,sha256(bytes));await writeFile(path.join(dir,GRADLE_COMPANION),JSON.stringify(f.doc));
+ const cache=new GradleGraphCache(dir,undefined,undefined,undefined,undefined,undefined,f.policy,f.caller);
+ expect((await cache.capture(path.join(dir,'gradle.lockfile'),bytes)).metadata.owned_manifest?.executionWitness).toBe('verified');f.session.status=status;
+ expect((await cache.capture(path.join(dir,'gradle.lockfile'),bytes)).metadata.owned_manifest).toMatchObject({executionWitness:'unavailable',reasons:['owned_manifest_witness_unavailable']});
+});

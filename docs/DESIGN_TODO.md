@@ -2211,3 +2211,11 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - AP01／AP02／AP09／AP10／AP31の静的部分を回帰化。G2 authority・session・witness、G3／G4の実体証拠・内容照合、本番producer・profile承認・native／実接続は残る。子pinは仕様hashでありimageやloaderの今回の実体証明ではない。
 
 検証結果: G1 policy 60件・cache追加3件の回帰を追加。型検査・build成功、全体94 files／3,336 tests成功、21 files／1,415 tests skipped。新規native／OSV実行・承認profile・診断採用は0。
+
+### 2026-11-02: G2 session・authority lookup・実行witnessの静的contract
+
+- [設計書§9.56](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#956-g2-独立callerのsession実行witness-contractと読取前gate2026-11-02)へ、current session／scope／root世代／authority、Task・Action・broker、process／lease、coreGraph／最終pair／状態／captureの照合を実装。lookupの未取得・未実行・中断・不正を分離し、API不正を未取得へ隠さない。
+- G0／G1閉鎖時はlookup 0、G2正常もG3 capability_unsupportedで停止。executionWitnessを分離し、coreの依存情報・coverageとowned読取0を維持。同じcacheで再captureしてもwitness判定は再照会し、欠落／失効を反映する。
+- 通常起動はbackend unsupported／独立profile registry空のまま。isolationEvidenceRefの形式検証は隔離の認証ではなく、test adapterは実authority採用に数えない。次は隔離backend・session発行／保存の設計と実証、その後G3／G4・本番producer・profile承認・native／3ツール実接続。共有use receiptも残る。
+
+検証結果: G2 contract 134件＋cache追加3件、計137件を追加。型検査・build成功。全体95 files／3,473 tests成功、21 files／1,415 tests skipped。新規Gradle／BTA native・OSV実接続・実authority採用・本番profile承認・診断採用は0。

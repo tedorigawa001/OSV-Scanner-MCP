@@ -2995,3 +2995,44 @@ G1を通過しても`witness_unavailable`で停止する。`diagnosticEligible=f
 検証は静的unit／cache／既存3ツール回帰に限定する。AP01（設定）、AP02（独立registryのmetadata部分）、AP09（G1 no-read）、AP10（G0優先とcore保持）、AP31（未承認と既知claim不一致）を部分的に具体化した。image・authority・全observerの実証、registry file loader、native Gradle／BTA、OSV実接続は今回実施せず、これらを完了扱いにしない。synthetic test registryは本番承認ではない。
 
 検証結果: G1 policy 60件・cache追加3件の回帰を追加。型検査・build成功、全体94 files／3,336 tests成功、21 files／1,415 tests skipped。新規native／OSV実行・承認profile・診断採用は0。
+
+### 9.56 G2: 独立callerのsession・実行witness contractと読取前gate（2026-11-02）
+
+§9.52.5／9.52.8のG2を静的contractとして実装した。`gradleOwnedExecution.ts`はoperator／アプリが渡したsessionと同期lookupだけを検証し、file・URL・process・Providerを開かない。`parseGradleExport`の第4引数、`GradleGraphCache`の最終引数へ明示的に渡す内部APIであり、MCPのproject入力やtransportからcallerを生成する入口はない。通常起動のadapterは`{backend:"unsupported"}`、独立registryは空のままである。
+
+#### sessionとauthority境界
+
+`osv-mcp.gradle-owned-session-v1`はauthorityId、sessionId／nonce、graph／export／execution ID、固定coreGraphDigest、rootRegistryDigest、isolationEvidenceRef、current／superseded／revoked、許可scope列とlease列を必須にする。scopeはproject／context／invocation、Task／Action／broker instance、profile／recipe digest、plannedCapturesを束縛する。同じscope key・lease IDの重複は拒否する。leaseはid／kind／profileDigest／holderId／activeまたはrevokedで、Node・executor・platformはbroker、JDK・loaderはprocess instanceへ照合する。
+
+profile registryから返すauthorizationはauthority IDとJDK／Node／platform／executor／loaderの独立pinだけに限定する。sessionのauthority・scope・digestと照合し、current以外ではlookupを呼ばずwitness_unavailable。lookupにはsessionから作る凍結済みrequestとenvelopeの照合キーwitnessIdだけを渡し、root path／store URL／credentialsをgraphから持ち込ませない。
+
+isolationEvidenceRefは独立callerの管理証拠への参照であり、文字列が存在するだけで隔離を認証したとはしない。別principal／認証IPC・receipt storeの実装とnative実証は未実施である。`caller-owned-receipt-store-v1`を名乗る内部test adapterを実backend採用と数えない。実backendを配布・有効化するまで、通常起動ではunsupportedを維持する。
+
+#### lookupと状態別判定
+
+lookupはstrictなverified／not-executed／unavailable／invalidのunionとする。session・結果は1 object 8 MiB、既存canonical／depth／node上限でsnapshotを作り検証する。API欠落・不正型・未知field／enum・例外・非同期Promiseをexecution_invalidとし、例外messageを公開しない。正式なreceipt-missing／backend-unsupported／session-unavailableだけをwitness_unavailableへ分類する。
+
+- verified: `osv-mcp.gradle-owned-execution-witness-v1`を要求。authority／session／nonce／root世代／scopeとTask・Action・broker、全実行ID、core digest、witness ID、最終bundle／envelopeのdigest pair、producer状態、予定／成功capture数を照合する。TaskはactionCalls=1、executed／didWork=true、skipped／noSource／failed=false、skipMessage=null。
+- not-executed: SKIPPED／FROM-CACHE／UP-TO-DATE／NO-SOURCEとactionCalls=0を要求し、didWork／failed=false、skipMessageと理由、noSourceの整合を確認する。current lookupのbinding／scopeは必要だが、残存exportの古いexecution IDやpairを今回へ合わせるためにartifactを開かずaction_not_executedにする。
+- unavailable・execution-aborted: current bindingと実行開始済み・failedなTask状態を要求し、sealed pairを要求しない。正常成功Taskの付替えを拒否する。合法ならexecution_aborted。
+- invalid: execution_invalid。verifiedのID・digest・状態の不一致はclaim_mismatchであり、未取得へ格下げしない。
+
+verifiedはcommon headerとstageExecutionsに分けた。成功prefixと失敗stageはG0 metadataから導く。unavailableのblocked stageは実際に開始された場合だけ必要とし、未開始では省略可能、child processを捏造しない。stage／processのbegin・endは正のsequenceで順序と包含を要求する。process recordのoperation・instance・result・開始終了・configuration／parameterは到達済みinline証拠の全occurrenceと一致させ、leaseのkind・独立pin・holder・有効状態を照合する。未到達stageのprocess・leaseを一律要求しない。
+
+この照合は独立callerの真正性に依存する。自己申告のsession・store recordから過去の実行やimageを独立認証したとは表明しない。G3のimage／executor／loader／全observer証拠とG4のfile照合は依然必要である。共有build／generationのuse receiptは未実装で、既存のper-context bindingを緩和しない。
+
+#### G0／G1、cache、metadata
+
+G0の全entry構造検証、G1の全claim承認が通るまではauthority lookup 0。G0 invalidやprofile_mismatchをcallerの状態で隠さない。G2不正はmanifestStructure=verifiedのままowned importStatus=invalidとし、既存coreGraphのrelation／introduced_by／declared_in／coverageへ波及させない。
+
+`owned_manifest.executionWitness`をnot_checked／verified／unavailable／invalidへ分離した。G2正常でもcapability_unsupportedでG3を閉じ、diagnosticEligible=false／ownedFileReads=0／currentContentMatch=not_checked／naturalContentBinding=false／compilerWorkStatus=unknownを維持する。producer_failed／producer_unavailable／acceptedへはまだ昇格しない。
+
+GradleGraphCacheはinline metadataの解析を共有できるが、G2判定を確定cacheしない。再captureでは独立session／lookupを再確認し、receipt欠落・supersede／revokeを反映する。内部`refreshOwnedExecution`はこの再判定用で、外部toolのmetadataには関数・session・witness・source bytesを載せない。別scanへのwitness検証済み状態の持越しも行わない。
+
+#### 検証範囲と残るgate
+
+AP09／AP11〜AP15／AP19〜AP22／AP30のG2 metadata部分を回帰化。全状態prefix、Task skip／cache／abort、必須booleanの欠落・型違反、current session・最終pair交換、自己hash再計算後のcore変更、stage／process／configuration／parameter／lease交換、no-read、再capture時の失効を検証する。G1のsynthetic profile fixtureを共通化したが、本番profile承認にはしない。
+
+今回は静的contractと本番readerへの接続に限定する。隔離backend・認証通信・session発行／store保存、実image leaseとprovisioner、G3／G4、本番producer、Groovy／Kotlin × 両Gradle版のnative、OSV実接続は未実施。これらの採用条件が揃うまで本番診断採用0を維持する。
+
+検証結果: G2 contract 134件＋cache追加3件、計137件を追加。型検査・build成功。全体95 files／3,473 tests成功、21 files／1,415 tests skipped。新規Gradle／BTA native・OSV実接続・実authority採用・本番profile承認・診断採用は0。

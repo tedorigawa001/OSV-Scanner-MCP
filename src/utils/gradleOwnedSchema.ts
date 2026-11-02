@@ -36,6 +36,7 @@ const record=z.discriminatedUnion('kind',[
  z.object({kind:z.literal('failure'),stage:z.enum(ownedStages),phase:id,reason:id,notProduced:z.array(id).max(64)}).strict(),
  z.object({kind:z.literal('unavailable'),stage:z.enum(ownedStages),reason:id,notAttemptedRoles:z.array(inputRoles).max(10),phase:z.enum(phases).optional()}).strict(),
 ]);
+export const ownedRecordSchema=record;
 export type OwnedRecord=z.infer<typeof record>;
 export const objectSchema=z.object({schema:z.literal('osv-mcp.gradle-owned-object-v1'),role:z.enum([...stageRoles,'failure-receipt','unavailable-evidence','evidence-index','evidence']),binding,refs:z.array(ownedRef).max(16384),evidence:z.array(record).max(1024),envelopeRef:ownedRef.optional()}).strict();
 export type OwnedObject=z.infer<typeof objectSchema>;

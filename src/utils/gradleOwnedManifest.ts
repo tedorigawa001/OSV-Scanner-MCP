@@ -1,22 +1,24 @@
+import {inspectOwnedExecution,unsupportedOwnedCaller,type OwnedExecutionClaim} from './gradleOwnedExecution.js';
 /** G0 metadata inspection and G1 operator approval. No owned file/process/authority loader. */
 import {startupOwnedPolicy,type OwnedPolicy,type OwnedClaim} from './gradleOwnedPolicy.js';
 import {z} from 'zod';
 import {parseGradleGraph, createGradleBudget, type GradleGraph, type GradleBudget} from './gradleGraph.js';
 import {exportFields} from './gradleExportJson.js';
 import {OWNED_LIMITS, OwnedManifestError, ownedFail, canonicalOwnedJson, parseOwnedJson, ownedDigest, ownedSha256} from './gradleOwnedJson.js';
-import {binding, bundleSchema, envelopeSchema, objectSchema, entrySchema, carrierSchema, stageRoles, successFields, phases, ownedLimitations, validateState, type OwnedRef, type OwnedBundle, type OwnedEnvelope, type OwnedObject, type OwnedBinding} from './gradleOwnedSchema.js';
+import {binding, bundleSchema, envelopeSchema, objectSchema, entrySchema, carrierSchema, stageRoles, successFields, phases, stateSchema, ownedStages, ownedLimitations, validateState, type OwnedRef, type OwnedBundle, type OwnedEnvelope, type OwnedObject, type OwnedBinding} from './gradleOwnedSchema.js';
 export interface OwnedManifestStatus {
+ executionWitness:'not_checked'|'verified'|'unavailable'|'invalid';
  manifestStructure:'verified'|'invalid'|'unavailable'; importStatus:'invalid'|'unavailable'; reasons:string[];
  diagnosticEligible:false; currentContentMatch:'not_checked'; naturalContentBinding:false; compilerWorkStatus:'unknown'; ownedFileReads:0;
 }
-export interface GradleExport {graph:GradleGraph;owned?:OwnedManifestStatus}
+export interface GradleExport {graph:GradleGraph;owned?:OwnedManifestStatus;refreshOwnedExecution?:()=>OwnedManifestStatus}
 /** A schemaVersion 4 document that does not have the wrapper shape. */
 export class InvalidGradleWrapper extends Error {constructor(){super('invalid_graph_wrapper');}}
 /** Non-wrapper (v1-v3) companions keep their previous 16 MiB limit; only v4 wrappers may use the larger transport. */
 export class LegacyGradleMetadataTooLarge extends Error {constructor(){super('metadata_too_large');}}
 export const LEGACY_GRAPH_BYTES=16*1024*1024;
 function status(manifestStructure:OwnedManifestStatus['manifestStructure'],reason:string):OwnedManifestStatus {
- return {manifestStructure,importStatus:manifestStructure==='invalid'?'invalid':'unavailable',reasons:[reason],diagnosticEligible:false,currentContentMatch:'not_checked',naturalContentBinding:false,compilerWorkStatus:'unknown',ownedFileReads:0};
+ return {executionWitness:'not_checked',manifestStructure,importStatus:manifestStructure==='invalid'?'invalid':'unavailable',reasons:[reason],diagnosticEligible:false,currentContentMatch:'not_checked',naturalContentBinding:false,compilerWorkStatus:'unknown',ownedFileReads:0};
 }
 type Node={ref:OwnedRef;bytes:string;value:OwnedBundle|OwnedEnvelope|OwnedObject};
 function equal(a:unknown,b:unknown):boolean {return canonicalOwnedJson(a)===canonicalOwnedJson(b);}
@@ -28,8 +30,9 @@ function refs(value:Node['value']):OwnedRef[] {
 }
 function bindOf(v:Node['value']):OwnedBinding {return 'binding' in v?v.binding:binding.parse(Object.fromEntries(Object.keys(binding.shape).map(k=>[k,(v as Record<string,unknown>)[k]])));}
 function sameBinding(a:OwnedBinding,b:OwnedBinding):void {for(const key of Object.keys(binding.shape) as (keyof OwnedBinding)[])required(a[key]===b[key],'claim_mismatch');}
-function inspectOwned(graph:GradleGraph,graphId:string,exportId:string,entriesText:string,objectsText:string,policy:OwnedPolicy):OwnedManifestStatus {
+function inspectOwned(graph:GradleGraph,graphId:string,exportId:string,entriesText:string,objectsText:string,policy:OwnedPolicy,caller:unknown,refresh:{current?:(()=>OwnedManifestStatus)}):OwnedManifestStatus {
  const claims:OwnedClaim[]=[];
+ const executions:OwnedExecutionClaim[]=[];
  const jsonBudget={nodes:OWNED_LIMITS.nodes};
  const rawEntries=parseOwnedJson(entriesText,OWNED_LIMITS.metadataBytes,jsonBudget),rawObjects=parseOwnedJson(objectsText,OWNED_LIMITS.metadataBytes,jsonBudget);
  if((Array.isArray(rawEntries)&&rawEntries.length>2000)||(Array.isArray(rawObjects)&&rawObjects.length>OWNED_LIMITS.objects))ownedFail('budget_exceeded');
@@ -128,18 +131,38 @@ function inspectOwned(graph:GradleGraph,graphId:string,exportId:string,entriesTe
    if('role' in v&&v.role==='evidence'){required(!v.envelopeRef);required(v.refs.every(r=>!['manifest-bundle','offer-envelope','evidence-index','offer-receipt','failure-receipt','unavailable-evidence'].includes(r.role)));}
   }
   reached.add(entry.bundleRef.objectDigest);reached.add(b.evidenceIndexRef.objectDigest);for(const d of closure)reached.add(d);
+  const processRecords:OwnedExecutionClaim['processes']=[];
+  function collect(r:OwnedRef,stage:typeof ownedStages[number],depth=0):void {
+   if(depth>OWNED_LIMITS.depth)ownedFail('budget_exceeded');const o=resolve(r).value;required('role' in o);
+   for(const record of o.evidence)if(record.kind==='process')processRecords.push({stage,record});
+   for(const ref of o.refs)if(ref.role==='evidence')collect(ref,stage,depth+1);
+  }
+  for(let i=0;i<=Math.min(n,3);i++)collect(b[successFields[i]!]!,ownedStages[i]!);
+  if(terminal)collect(terminal,b.failureStage??b.blockedStage!);
+  for(const p of e.phases)if('evidenceRef'in p)collect(p.evidenceRef,'offer');
+  const stages:OwnedExecutionClaim['stages']=ownedStages.slice(0,n+1).map(stage=>({stage,outcome:'success'}));
+  if(b.producerState==='failed')stages.push({stage:b.failureStage!,outcome:'failed'});
+  if(b.producerState==='unavailable'&&e.phases.length)stages.push({stage:b.blockedStage!,outcome:'unavailable'});
+  executions.push({...bindOf(b),profileDigest:b.profileDigest!,recipeDigest:b.recipeDigest!,witnessId:e.witnessId,bundleDigest:entry.bundleRef.objectDigest,envelopeDigest:entry.envelopeRef.objectDigest,plannedCaptures:e.plannedCaptures,captures:e.phases.filter(p=>p.phase==='capture'&&p.outcome==='success').length,state:stateSchema.parse(Object.fromEntries(Object.keys(stateSchema.shape).filter(k=>(b as Record<string,unknown>)[k]!==undefined).map(k=>[k,(b as Record<string,unknown>)[k]]))),stages,...(b.producerState==='unavailable'&&!e.phases.length?{optionalBlockedStage:b.blockedStage}:{}),processes:processRecords});
+
  }
  required(reached.size===nodes.size,'inventory_mismatch');
  if(missing||entries.length===0)return status('unavailable','owned_manifest_envelope_missing');
  const reasons=[...new Set(claims.map(c=>policy.registry.check(c,policy.settings)))];
  if(reasons.includes('profile_mismatch'))return {...status('verified','owned_manifest_profile_mismatch'),importStatus:'invalid'};
- return {...status('verified','owned_manifest_'+reasons[0]),reasons:reasons.map(r=>'owned_manifest_'+r)};
+ if(reasons.some(r=>r!=='witness_unavailable'))return {...status('verified','owned_manifest_'+reasons[0]),reasons:reasons.map(r=>'owned_manifest_'+r)};
+ const evaluate=():OwnedManifestStatus=>{
+ const outcomes=[...new Set(executions.map((e,i)=>{const auth=policy.registry.authorization(claims[i]!,policy.settings);return auth?inspectOwnedExecution(e,caller,auth):'execution_invalid';}))];
+ const invalid=outcomes.some(r=>r==='execution_invalid'||r==='claim_mismatch');
+ return {...status('verified','owned_manifest_'+outcomes[0]),importStatus:invalid?'invalid':'unavailable',executionWitness:invalid?'invalid':outcomes.every(r=>r==='capability_unsupported')?'verified':'unavailable',reasons:outcomes.map(r=>'owned_manifest_'+r)};
+ };
+ refresh.current=evaluate;return evaluate();
 }
 function legacy(text:string,budget:GradleBudget):GradleExport {
  if(Buffer.byteLength(text)>LEGACY_GRAPH_BYTES)throw new LegacyGradleMetadataTooLarge();
  return {graph:parseGradleGraph(text,budget)};
 }
-export function parseGradleExport(text:string,budget:GradleBudget=createGradleBudget(),policy:OwnedPolicy=startupOwnedPolicy()):GradleExport {
+export function parseGradleExport(text:string,budget:GradleBudget=createGradleBudget(),policy:OwnedPolicy=startupOwnedPolicy(),caller:unknown=unsupportedOwnedCaller):GradleExport {
  // Anything the root slicer cannot read keeps the previous legacy parser behavior and reasons.
  let fields:Map<string,string>;try{fields=exportFields(text);}catch{return legacy(text,budget);}
  if((!fields.has('schema')||JSON.parse(fields.get('schema')!)!=='osv-mcp.gradle-graph')||!fields.has('schemaVersion')||JSON.parse(fields.get('schemaVersion')!)!==4)return legacy(text,budget);
@@ -149,6 +172,7 @@ export function parseGradleExport(text:string,budget:GradleBudget=createGradleBu
  if(!parsedHeader.success)throw new InvalidGradleWrapper();const header=parsedHeader.data;
  // Legacy validation and budget are intentionally independent of owned errors.
  const graph=parseGradleGraph(fields.get('coreGraph')!,budget);
- try{return {graph,owned:inspectOwned(graph,header.graphId,header.exportId,fields.get('ownedOfferBundles')!,fields.get('ownedOfferObjects')!,policy)};}
+ const refresh:{current?:(()=>OwnedManifestStatus)}={};
+ try{const owned=inspectOwned(graph,header.graphId,header.exportId,fields.get('ownedOfferBundles')!,fields.get('ownedOfferObjects')!,policy,caller,refresh);return {graph,owned,...(refresh.current?{refreshOwnedExecution:refresh.current}:{})};}
  catch(error){return {graph,owned:status('invalid',error instanceof OwnedManifestError?error.message:'owned_manifest_schema_invalid')};}
 }

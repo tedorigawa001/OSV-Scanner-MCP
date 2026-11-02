@@ -1,3 +1,4 @@
+import {type OwnedAuthorization} from './gradleOwnedExecution.js';
 /** G1 consumes operator-owned in-memory metadata only. No path, URL or executable loader. */
 import {z} from 'zod';
 import {ownedDigest,canonicalOwnedJson,parseOwnedJson,OWNED_LIMITS} from './gradleOwnedJson.js';
@@ -47,7 +48,7 @@ const recordSchema=z.object({digest:hash,body:z.unknown()}).strict();
 const registrySchema=z.object({profiles:z.array(recordSchema).max(32),pins:z.array(recordSchema).max(256),recipeRegistries:z.array(z.object({id,recipes:z.array(z.object({id,digest:hash}).strict()).max(256)}).strict()).max(32)}).strict();
 export interface OwnedClaim {profileId:string;recipeId:string;profileDigest?:string;recipeDigest?:string}
 export type OwnedGateReason='configuration_invalid'|'trust_disabled'|'profile_unapproved'|'recipe_unapproved'|'profile_mismatch'|'witness_unavailable';
-export interface OwnedRegistry {readonly invalid:boolean;check(claim:OwnedClaim,settings:OwnedSettings):OwnedGateReason}
+export interface OwnedRegistry {readonly invalid:boolean;check(claim:OwnedClaim,settings:OwnedSettings):OwnedGateReason;authorization(claim:OwnedClaim,settings:OwnedSettings):OwnedAuthorization|undefined}
 export function createOwnedRegistry(input:unknown):OwnedRegistry {
  const profiles=new Map<string,OwnedProfile>(),byId=new Map<string,string>(),pins=new Map<string,z.infer<typeof childSchema>>(),recipes=new Map<string,Map<string,string>>();let invalid=false;
  try {
@@ -76,6 +77,10 @@ export function createOwnedRegistry(input:unknown):OwnedRegistry {
   if(!recipe||!Object.values(p.recipes).includes(recipe))return 'recipe_unapproved';
   if(recipe!==c.recipeDigest)return 'profile_mismatch';
   return 'witness_unavailable';
+ },authorization(c:OwnedClaim,s:OwnedSettings):OwnedAuthorization|undefined {
+  if(this.check(c,s)!=='witness_unavailable')return undefined;
+  const p=profiles.get(c.profileDigest!)!;
+  return Object.freeze({authorityId:p.authorityId,jdkImageProfileDigest:p.jdkImageProfileDigest,nodeImageProfileDigest:p.nodeImageProfileDigest,platformProfileDigest:p.platformProfileDigest,executorProfileDigest:p.executorProfileDigest,loaderProfileDigest:p.loaderProfileDigest});
  }});
 }
 export const emptyOwnedRegistry=createOwnedRegistry({profiles:[],pins:[],recipeRegistries:[]});

@@ -1,3 +1,4 @@
+import {unsupportedOwnedCaller} from './gradleOwnedExecution.js';
 import {startupOwnedPolicy,type OwnedPolicy} from './gradleOwnedPolicy.js';
 import {parseGradleExport, InvalidGradleWrapper, LegacyGradleMetadataTooLarge, type OwnedManifestStatus} from "./gradleOwnedManifest.js";
 import {loadBudget} from "./gradlePluginSnapshots.js";
@@ -30,7 +31,7 @@ const unknown = (): RelationInfo => ({ relation: "unknown", introducedByComplete
 
 /** One cache per scan; all metadata/input bytes and work limits are shared. */
 export class GradleGraphCache {
-  private readonly documents = new Map<string, Promise<{ graph?: GradleGraph; owned?:OwnedManifestStatus; reason?: string }>>();
+  private readonly documents = new Map<string, Promise<{ graph?: GradleGraph; owned?:OwnedManifestStatus;refreshOwnedExecution?:()=>OwnedManifestStatus; reason?: string }>>();
   /** SHA-256 of a readable input, "absent" when it does not exist, null when it cannot be verified. */
   private readonly inputs = new Map<string, Promise<string | null>>();
   private readonly inputBytes = new Map<string, Buffer>();
@@ -46,7 +47,7 @@ export class GradleGraphCache {
   private readonly catalogTrust: CatalogTrust;
   private readonly catalogTrustInvalid: boolean;
   private readonly pluginReader:GradlePluginReader;
-  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), trustSetting: DeclarationTrust | DeclarationTrustConfig = startupDeclarationTrust(), private readonly declarationBudget: GradleBudget = createGradleBudget(), catalogSetting: CatalogTrust | CatalogTrustConfig = startupCatalogTrust(), private readonly pluginSettings:PluginSettings=startupPluginSettings(), private readonly ownedPolicy:OwnedPolicy=startupOwnedPolicy()) {
+  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), trustSetting: DeclarationTrust | DeclarationTrustConfig = startupDeclarationTrust(), private readonly declarationBudget: GradleBudget = createGradleBudget(), catalogSetting: CatalogTrust | CatalogTrustConfig = startupCatalogTrust(), private readonly pluginSettings:PluginSettings=startupPluginSettings(), private readonly ownedPolicy:OwnedPolicy=startupOwnedPolicy(), private readonly ownedCaller:unknown=unsupportedOwnedCaller) {
     const setting = typeof trustSetting === "object" ? trustSetting : { trust: trustSetting, invalid: false };
     this.trust = setting.trust; this.trustInvalid = setting.invalid;
     const catalog = typeof catalogSetting === "object" ? catalogSetting : { trust: catalogSetting, invalid: false };
@@ -55,12 +56,13 @@ export class GradleGraphCache {
 
   private document(file: string) {
     let pending = this.documents.get(file);
+    if(pending)return pending.then(result=>result.refreshOwnedExecution?{...result,owned:result.refreshOwnedExecution()}:result);
     if (!pending) {
       pending = (async () => {
         const read = await readRegularFile(file, { boundary: this.boundary, maxBytes: Math.min(64 * 1024 * 1024, this.remaining) });
         if (!read.ok) return { reason: read.failure === "not_found" ? "metadata_missing" : `metadata_${read.failure}` };
         this.remaining -= read.bytes.length;
-        try { return parseGradleExport(new TextDecoder("utf-8", {fatal:true,ignoreBOM:true}).decode(read.bytes), this.budget, this.ownedPolicy); }
+        try { return parseGradleExport(new TextDecoder("utf-8", {fatal:true,ignoreBOM:true}).decode(read.bytes), this.budget, this.ownedPolicy, this.ownedCaller); }
         catch (error) {
           // An oversized legacy companion is refused as before and does not consume the shared scan budget.
           if (error instanceof LegacyGradleMetadataTooLarge) { this.remaining += read.bytes.length; return { reason: "metadata_too_large" }; }

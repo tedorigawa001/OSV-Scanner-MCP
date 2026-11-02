@@ -6,16 +6,8 @@ import {ownedFixture,rewriteOwned} from '../fixtures/gradleOwnedFixture.js';
 import {parseGradleExport} from '../../utils/gradleOwnedManifest.js';
 import {createGradleBudget} from '../../utils/gradleGraph.js';
 const trust='owned-bta-offered-inputs-v1';
-function fixture(){
- const kinds=['executor','jdk-image','node-image','platform','loader','observation','recipe'];
- const pins=kinds.map(kind=>{const body={schema:'osv-mcp.gradle-owned-profile-pin-v1',id:kind,kind,specificationDigest:ownedSha256(kind),dependencies:[],...(kind==='recipe'?{recipeRoles:['prepare','javac-build','packaging','runtime-selection','library-build','snapshot-generation','offer','capture']}: {})};return {digest:ownedDigest(body),body};});
- const d=(kind:string)=>pins.find(p=>p.body.kind===kind)!.digest;
- const recipe=d('recipe');
- const profile:any={schema:'osv-mcp.gradle-owned-bta-profile-v1',model:trust,purpose:'diagnostic-only',profileId:'profile',tuple:{os:'darwin',architecture:'arm64',gradle:'8.11.1',jdk:'21',node:'22',btaApi:'2.2.0',btaImplementation:'2.2.0',kotlinCompiler:'2.2.0'},schemas:{graphWrapper:4,coreGraph:[1,2,3],envelope:2,bundle:1,objects:[1]},recipeRegistryId:'reviewed-test',recipes:Object.fromEntries(['prepare','javac-build','packaging','runtime-selection','library-build','snapshot-generation','offer','capture'].map(r=>[r,recipe])),executorProfileDigest:d('executor'),jdkImageProfileDigest:d('jdk-image'),nodeImageProfileDigest:d('node-image'),platformProfileDigest:d('platform'),loaderProfileDigest:d('loader'),hostControlPolicy:'data-only-broker-v1',runtimePolicy:{artifacts:[{id:'api',role:'api',sha256:ownedSha256('jar')}],occurrences:['api','api'],serviceProvider:'impl',generator:{artifactId:'api',format:'test',granularity:'class'}},executionPolicy:{synchronous:true,bta:'owned-jvm-child-in-process',fallback:'error',parallel:false,configurationCache:false,driverBuildCache:false},sourcePolicy:{types:['source','resource','literal'],encoding:'UTF-8',arguments:[],environment:[],properties:[],proc:'none',implicit:'none',unregisteredArgfiles:false,unregisteredGenerators:false},packagePolicy:{freshOutput:true,allEntriesMapped:true,entryStages:[{entry:'Driver.class',stage:'javac-build'}]},storagePolicy:{rootRoles:['staging'],baseline:'sealed-bytes',validateBeforeWrite:true,symlinks:false},budgets:{...OWNED_LIMITS,fileBytes:1024,totalFileBytes:2048,entries:32},authorityId:'caller',observationProfileDigest:d('observation'),requiredLimitations:[...ownedLimitations,'producer-build-attested','caller-witness-dependent','loader-attested-dependent'],reviewAssertions:{inputsClosed:true,brokerOwnsConfiguration:true,noUnregisteredAgents:true,publicObservationReviewed:true}};
- const raw={profiles:[{digest:ownedDigest(profile),body:profile}],pins,recipeRegistries:[{id:'reviewed-test',recipes:[{id:'recipe',digest:recipe}]}]};
- const claim={profileId:'profile',profileDigest:raw.profiles[0]!.digest,recipeId:'recipe',recipeDigest:recipe};
- return {raw,profile,claim};
-}
+import {ownedPolicyFixture as fixture} from '../fixtures/gradleOwnedPolicyFixture.js';
+
 const inspect=(doc:any,policy:OwnedPolicy)=>parseGradleExport(JSON.stringify(doc),createGradleBudget(),policy);
 function policyFixture(){const f=fixture();return {...f,policy:{settings:parseOwnedSettings(trust,f.claim.profileDigest),registry:createOwnedRegistry(f.raw)}};}
 it('defaults to disabled; only the exact new trust enables it',()=>{
