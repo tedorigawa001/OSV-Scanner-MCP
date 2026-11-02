@@ -1992,3 +1992,71 @@ run-local IDやrecordの自己hashは真正性を保証しない。静的取込�
 | OO14 | 両DSL・両対象版を個別profileで検証し、未実施strategy・残り3 slot・全pipelineへ実証範囲を拡張しない |
 
 次工程はこの契約に対するproducerの状態機械・envelopeの限定実証と、未実施staging条件の検証である。本番取込・承認profileの有効化はそれらの結果をレビューしてから別工程で行う。
+
+
+### 9.38 producer所有helper・状態別envelopeの限定実証（2026-11-02）
+
+§9.37の次工程1として、test-onlyの`BtaOfferProbe.java`、共通Groovy wrapper、`btaOfferContract.mjs`の静的readerを追加した。本番adapter・scanner・設定・schema validatorには接続していない。Groovy／Kotlinのproject wrapperから同じJava brokerを呼ぶ実証であり、Kotlinで別実装したhelperや既存KGPの透過対応ではない。
+
+#### 実configurationと状態遷移
+
+brokerの非公開Handleはowner、実service／project／configuration／IC parameterを保持する。configurationとparameterはbroker内で作成・設定し、具体snapshot列は変更不能なcopyにする。source hash、引数copy、出力先、snapshot descriptorを対応付け、public useIncrementalCompilationが返ってからbinding成功を記録する。registrationを閉じた後だけconsumerを許可し、precheck成功時に使用済みへ遷移する。call中の再入・完了後再使用・失敗後再使用は追加BTA呼出し前に拒否する。
+
+状態eventはphaseごとのbeginとsuccess／failureを持つ。未到達の証拠を埋めず、実callの失敗にはBTAのerror resultまたは例外種別を保存する。静的readerは状態union・成功prefix・最初のfailure・phase順・必須／禁止項目・固定limitationsを、信頼gateより前に検証する。failedだからといってintegrity違反を省略へ格下げしない。
+
+| native case | 実処理・検証 |
+| --- | --- |
+| completed | 正規非空snapshot 2個をpublic IC parameterへ渡し、実BTAでconsumerを呼び、pre／post検査成功。completedはbta-call-only／compilerWorkStatus=unknown |
+| storage-failed | 保存済みbaselineへCREATE_NEWで再書込し、実FileAlreadyExistsExceptionを捕捉。sealでfailedとし、未到達のbinding／call／postを要求しない |
+| call-failed | 不正Kotlin sourceを実BTAへ渡す。error resultとcall failureを記録し、出力／post成功を補わない |
+| post-failed | BTA正常終了後にstagingのsnapshotを変更。postcheckのstaleをgraph拒否として再生 |
+| foreign-config／foreign-project／foreign-parameter | 実public configuration、別ProjectId、同じsnapshot値を持つ別parameterを渡し、実参照不一致をprecheckで拒否 |
+| stale-precheck／source-changed | snapshotまたはsourceをbinding後に実変更し、call前に拒否 |
+| unsupported | registration前に止まる合法なunavailable。実consumerの成功へ数えない |
+
+別に、重複begin、call中再入、完了handle再使用、完了後の不正phase、failed handle再使用、締切後登録を実行し、操作前後のBTA call counterが変化しないことを検証する。context・parameter拒否はmetadataの書換えだけでなく、実BTAオブジェクトを使ったnative対照である。今回のforeign-configは既定configurationで、同値の別登録configurationは§9.36の別matrixが根拠となる。
+
+#### 静的gate・保存内容・profile
+
+readerはgraph／export identityを照合し、信頼無効・profile未承認・非対応strategyでは渡されたfile readerを呼ばない。信頼設定とprofileはenvelope外から渡す。nativeケースごとに、呼ばれると例外になるreaderでもgate結果を検証する。既にenvelope内で判明するintegrity違反はgate前に拒否し、その際もfile読取0である。
+
+承認されたcompletedだけ、元sealのbaselineとstagingをsize／digestへ再照合する。nativeで実bytesを読み、改変対照では最初の読取から元digestへ照合する。readerのテスト用上限はenvelope 1 MiB、1 snapshot 32 MiB、baselineとstaging合計128 MiB。配列・文字列・phase数にも上限を設け、pathは相対pathとして検証する。symlink／path置換への完全なnative検証、全inventory、競合writer・消費中変更の保証は次工程に残す。
+
+profileは既存の固定BTA runtime manifestとJDK profileを使う独立したtest用値であり、本番承認ではない。nativeハーネスは実runtime全JAR、Gradle親java／javacとchild java、実JavaCompileのclass inventory、fixture sourceを照合する。registrationにはproducer source／runtime manifest／profileのdigestを結ぶ。本番で必要な完全なproducer構築・入力manifestのschema／静的再照合をすべて実装したものではなく、今回のreaderは状態・gate・参照証拠の限定prototypeである。§9.37のenvelope名も仮称のままで、本番取込用の完成schemaとは扱わない。
+
+#### 結果・再現・残る範囲
+
+[検証JSON](validation/gradle-bta-offer-contract-2026-11-02.json)へ、source／検証source hash、実class inventory、全envelope・拒否記録・gate判定を保存した。Gradle 8.11.1／9.2.1 × Groovy／Kotlinの4 build、各版24テスト成功。BTA呼出し16回（library 4、consumer 12）、正常終了12回・意図したcompile失敗4回、正規snapshot 8個。completed 4、failed 32（うちintegrity拒否24）、unavailable 4、handle操作の拒否24件を確認した。成功呼出し数はcompiler内部の実作業回数・自然消費回数を意味しない。
+
+静的／公開記録再生50テストで、正常なfailed／unavailable prefix、状態別の証拠欠落・不正phase・limitations削除・configuration／parameter交換・誤ったwork表明・信頼gate内読取・profile不一致・改変を確認した。公開JSONはmetadata再生用であり、正規snapshot bytesを収録していない。native中に実施した内容再照合を、公開metadataだけで再実行したと扱わない。実証sourceはnative実行前後と集約時に照合し、保存記録と現在sourceの不一致をテストで拒否する。
+
+```sh
+env JAVA_HOME=/path/to/jdk21 GRADLE_USER_HOME=/path/to/cache OSV_MCP_TEST_GRADLE=/path/to/gradle-8.11.1/bin/gradle OSV_MCP_BTA_OFFER_OUTPUT=/tmp/bta-offer-8.11.1.json npx vitest run src/test/gradle/btaOffer.integration.test.ts --maxWorkers=1
+# 9.2.1もbinaryと出力suffixを変えて実行する。
+node src/test/manual/gradleBtaOfferResults.mjs /tmp/bta-offer docs/validation/gradle-bta-offer-contract-2026-11-02.json
+npx vitest run src/test/gradle/btaOffer.test.ts --maxWorkers=1
+```
+
+初回のJavaCompile設定不足と、最初のハーネスでのsnapshot読取用child processのbuffer不足は修正し、最終sourceで取り直した4 buildだけを記録に含めた。試行buildは上記件数へ加算していない。
+
+OO01〜OO05・OO08・OO10〜OO14のうち状態／gate／handle／metadataに関する部分を実証したが、全条件達成とはしない。OO06〜OO08の完全な入力manifest・storage／path安全性・容量故障のnative対照、全observerの評価計測、OO09の変更なしBTA再呼出しは未実施である。今回はProvider／KGP getterをobserverへ渡さず、readerの呼出し回数を検証したが、compiler内部全supplierの追加評価0は表明しない。本番helper・静的取込・profile承認、自然消費receipt、declared_in／coverageへの昇格は行っていない。
+
+最終確認（§9.38）: 通常全体2,466テスト成功・native opt-in等1,209件skip。typecheck・build・差分検査も成功。
+
+
+### 9.39 状態別envelopeのレビュー修正・call結果とcase別期待値（2026-11-02）
+
+§9.38の初期実証には、call失敗のdetailが非空文字列なら成功値・未知値も受理する問題と、保存記録のcase別期待状態を検証せず件数を固定で返す問題があった。修正前に成功／未知result、storage-failed／call-failedをunavailableへ変更して全判定も更新する4対照が失敗することを確認した（別途、source fingerprintの旧記録不一致も検出）。
+
+- callのfailureはreason=compile_failedを要求する。errorKind=resultでは、対象API artifactのenumを照合したCOMPILATION_ERROR／COMPILATION_OOM_ERROR／COMPILER_INTERNAL_ERRORだけを許可し、COMPILATION_SUCCESS・未知値をschema不正として拒否する。errorKind=exceptionは例外記録として区別する。既知error 3種の受理は静的対照であり、OOM／内部errorをnativeで発生させた実証ではない。
+- 全10 caseについてproducerState、failedのfailurePhase／failureReason、unavailableの理由／blockedBeforePhaseを独立した期待表へ固定する。call-failedのnative対照には実COMPILATION_ERROR resultを要求する。記録とtrusted／gate判定を同時に書き換えてもfailed→unavailableへ変更できない。
+- producerの報告をprobe-v2へ更新し、libraryの実結果・source／JAR digest・出力inventoryと、実snapshot生成descriptorを保存する。snapshot生成を各offerのgeneration記録へ照合し、libraryと固定runtimeのstdlib／generator artifactに対応付ける。
+- 完了／失敗／未対応は検証済みproducerStateから、consumer呼出し・正常終了は検証済みcallのbegin／successから集計する。library呼出しは検証済みlibrary結果、snapshot数は検証済み生成descriptor、handle拒否は理由・操作前後counterを検証したauditから算出する。producer側counterとの不一致も拒否し、caseの数だけから実行回数を推定しない。build数は検証したnative caseの数であり、内部compiler作業回数ではない。
+
+検証記録はexperiment-v2へ更新した。旧未コミットv1はhash・観測時点・scope付き参考要約をpreReviewsへ残し、現sourceに合う新規native結果だけを現在のmatrixとして収録する。両DSL・Gradle 8.11.1／9.2.1を取り直し、各版24テスト成功。最終matrixは4 build、BTA呼出し16回・正常終了12回、snapshot 8個、completed 4／failed 32／unavailable 4、handle拒否24／integrity拒否24である。前回実行分との累積値ではない。
+
+静的／公開記録再生は62テスト成功。成功・未知call結果の拒否、既知error 3種の受理、storage-failed／call-failedからunavailableへの全判定同時変更、失敗phase／理由の変更、library／consumer／snapshot counterの不一致を追加対照とした。再現コマンドは§9.38と同じ。
+
+本番取込・承認profile・自然消費receipt・内部no-op判別の実証は追加していない。bta-call-only／compilerWorkStatus=unknownと、§9.38の未実施範囲を維持する。
+
+最終確認（§9.39）: 通常全体2,478テスト成功・native opt-in等1,209件skip。typecheck・build・差分検査も成功。公開文書の再現例から個人用proxy接頭辞を除去し、文書検査も通過した。

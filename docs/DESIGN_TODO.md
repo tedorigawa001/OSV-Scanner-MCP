@@ -2051,3 +2051,17 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - completedを予定capture全件の完了後の終端状態とし、postcheck後は中間状態postchecked。completed→failedの遷移を廃止。
 - test記録の`observationKind`と本envelopeの`consumptionStatus`／`observationKind`の対応を明記。parameterのpath列不一致をfailed記録のbinding拒否とし、OO06でnative負例を必須化。OO13を拡充。
 - 設計変更のみ。実装・native実行・profile承認0、自然消費receipt・本番採用0を維持。
+
+
+### 2026-11-02: producer所有helper・状態別envelopeの限定実証
+
+- [設計書§9.38](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#938-producer所有helper状態別envelopeの限定実証2026-11-02)へtest-onlyのJava brokerと静的reader、native／公開記録再生ハーネスを追加。実configuration／parameter／project、登録締切・一回限り使用・再入・失敗後再使用、状態別phase／証拠の契約を限定実証。
+- 両DSL・両Gradle版で各版24テスト、4 build・BTA呼出し16回、snapshot 8個。completed 4／failed 32／unavailable 4、handle拒否24・integrity拒否24を記録。信頼無効・profile未承認時のreader読取0、静的／公開記録再生50テストを確認。
+- 完全な構築／入力manifest、本番取込・承認profile、storage全故障・全observer計測、OO09の変更なし再呼出しは未実施。bta-call-only／compilerWorkStatus=unknownを維持し、自然消費receipt・本番採用0。次はno-op対照とstaging条件の拡充。
+
+
+### 2026-11-02: 状態別envelopeのレビュー修正
+
+- [設計書§9.39](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#939-状態別envelopeのレビュー修正call結果とcase別期待値2026-11-02)へ、成功・未知call failure resultの拒否と、case別期待状態／phase／理由の照合を追加。failed→unavailableへ記録・判定を同時変更する回帰対照を追加。
+- probe-v2のlibrary実行／snapshot生成証拠と、検証済み状態・call event・拒否auditから件数を算出し、報告counterとの不一致を拒否。実証記録をv2へ更新し旧v1は参考要約に限定。
+- 両DSL・両Gradle版を再実行して各版24テスト、静的／公開記録62テスト成功。最終4 build・BTA呼出し16回、snapshot 8個、completed 4／failed 32／unavailable 4。本番採用・自然消費receipt0と既存の未実施範囲を維持。
