@@ -2656,7 +2656,7 @@ KGP所有getterやGradle Provider／FileCollectionを追加評価しない所有
 
 判定fieldを分離する。`manifestStructure=verified`は渡されたmetadataの構造・digest・閉包、`inputCompleteness=verified`は承認recipeの必須roleと登録集合の照合、`currentContentMatch=matched`は今回のreader読取、`producerBuildAssurance=trusted-recipe-receipt`は所有executorの構築表明、`executionAssurance=caller-witness`は独立callerの実行記録、`loaderAssurance=approved-loader-policy`は承認launcher／loaderの表明である。未読取は`not_checked`、取得不能は`unavailable`とし、他fieldの成功から埋めない。
 
-公開先は独立した`owned_bta_offered_inputs`診断metadataとする。既存のrelation／introduced_by・lock由来coverage・既に独立成立したdeclared_inを変更しない。owned証拠が全contextでacceptedでもdeclared_inの不足を補わず、coverage.completeやKotlin pipeline全体のreadyを上げない。構造不正なcompanion graphを採用できない場合の既存fallbackは維持し、owned拒否を理由に有効なlockの脆弱性照会まで中止しない。
+公開先は独立した`owned_bta_offered_inputs`診断metadataとする。既存のrelation／introduced_by・lock由来coverage・既に独立成立したdeclared_inを変更しない。owned証拠が全contextでacceptedでもdeclared_inの不足を補わず、coverage.completeやKotlin pipeline全体のreadyを上げない。構造不正なcompanion graphを採用できない場合の既存fallbackは維持し、owned拒否を理由に有効なlockの脆弱性照会まで中止しない。本節の「graph拒否」は、そのexportのowned診断（`owned_bta_offered_inputs`）を一件も出さず、理由を記録することを指す（§9.53）。coreGraphの採否は、v1〜v3と同じ既存の検証だけで決め、ownedOfferBundles／ownedOfferObjectsの不正を理由にcoreGraph・declared_in・relation・coverageを捨てない。wrapper v4自体が既存の構造規則（必須field・coreGraphのschema）を満たさない場合だけ、既存のcompanion graph不正と同じfallbackになる。
 
 #### 9.52.2 設定と独立承認registry
 
@@ -2790,7 +2790,7 @@ call前の失敗はBTA開始を禁止し、call開始後の失敗は開始記録
 
 | gate | 実施内容・閉じた場合の扱い |
 | --- | --- |
-| G0 metadataのみ | 上限付きparse、重複key／未知field／非canonical bytes、schema／state union、inline ref closure／role／DAG・全pair、coreGraphの既存構造と計算digestを検査。既知の独立profile本文と既読metadataで判明する不一致も拒否する。artifactを開かず、providerを評価しない |
+| G0 metadataのみ | 上限付きparse、重複key／未知field／非canonical bytes、schema／state union、inline ref closure／role／DAG・全pair、coreGraphの既存構造と計算digestを検査。既知の独立profile本文と既読metadataで判明する不一致も拒否する。ただしprofile本文の参照は、G1で検証するconsumer設定とregistryが有効な場合に限る（無効・未設定ならprofile照合をG1の判定へ送り、G0では行わない）。artifactを開かず、providerを評価しない。trustがdisabledでもG0は実行するが、その違反はowned診断を出さない理由と警告の記録だけに使い、coreGraphの採否へ影響させない（§9.53） |
 | G1 consumer設定 | trust・registry／allowlistを確認。invalid／disabled／unapproved／unsupported recipeはunavailable。G0の不正をdisabledに格下げしない。適正なunresolved profile unionはconsumerにも未承認ならここで止まる |
 | G2 authority／実行 | trustedCallerのcurrent session・coreGraphDigest・scopeとauthority lookupを検証。not-executed／未取得／abortなら入力読取0。実行済みなら全ID・pair・状態・capture計画・process／lease対応を照合。不正／矛盾はexecution_invalidまたはclaim_mismatch |
 | G3 承認と状態ごとの読取計画 | profileに必要な証拠・image／loader／executor／observation capabilityをmetadata上で確認。初期未対応capabilityは閉じる。状態別prefixと理由に従って必要なroot・ref・保存baselineだけの計画を作る。合法なfailed／unavailableでは、未到達stageのimage lease／process／observationを要求しない。capability_unsupportedはreader／registryの実装方式が未対応の場合であり、状態union上合法な未取得を証拠欠落へ変更しない。過去の全inventoryを無条件に読む計画は禁止 |
@@ -2811,6 +2811,7 @@ G0では全metadataをinlineで検証するため、missing index／状態object
 | reader理由 | 分類・判定 |
 | --- | --- |
 | trust_disabled／configuration_invalid／profile_unapproved／recipe_unapproved | G1 unavailable。producerState保持、owned入力読取0 |
+| envelope_missing | G0 unavailable。entryに対するenvelopeとbundleがともにない（index・状態objectを保存できなかったexport失敗を含む）。producerStateを推測せず入力を読まない。envelopeだけある・dangling refはrequired_evidence_missing（AP29、§9.53） |
 | witness_unavailable／action_not_executed／execution_aborted | G2 unavailable。自然ready=false、not-calledまたは未確認を維持。偽のwitnessは含めない |
 | capability_unsupported | G3 unavailable。registryで未実証のimage／loader／observation recipe等。completedの必須ref欠落をこの理由へ置き換えない |
 | schema_invalid／required_evidence_missing／budget_exceeded | 構造・状態・必要ref・metadata上限の違反。graph拒否。file予算超過もreader拒否でありproducer_failedへ格下げしない |
@@ -2823,7 +2824,7 @@ G0では全metadataをinlineで検証するため、missing index／状態object
 
 producer側のunavailable理由と合法なblockedStageは、prepareのprofile_unapproved（未解決のみ）／recipe_unsupported／image_unsupported／host_control_unsupported、buildのbuild_recipe_unsupported、runtime-selectionのloader_unsupported、snapshot-generationのgeneration_unsupported、offerのexecution_unsupportedに限定する。成功prefixのrefは保持し、それ以降の成功を捏造しない。notAttemptedRolesには未読取の範囲だけを記録し、一部imageを検査済みなのに全入力no-read=trueとは表明しない。
 
-producer failedは、prepareのcapture／seal、buildのallocate-output／verify-empty／compiler／verify-inputs／collect-output／packaging、runtime-selectionのselect／verify、snapshot-generationのlibrary-build／generate／save／verify、offerの上記内部phaseへ結ぶ。input_changed、inventory_mismatch、storage_failed、budget_exceeded、build_failed、output_root_exists／invalid／not_empty、runtime_binding_mismatch、generation_binding_mismatch、configuration_unregistered／binding_mismatch、parameter_binding_mismatch、context_binding_mismatch、ic_state_mismatch、snapshot_stale／snapshot_storage_mismatch、library_stale、compile_failed、extra_evaluationのstage／phase許可表をrecipe registryへ固定する。field名を見て任意phaseへ許す実装は禁止し、unknown reason／phaseはschema_invalidとする。具体的な初期許可表は次項に定義する。
+producer failedは、prepareのcapture／seal、buildのallocate-output／verify-empty／compiler／verify-inputs／collect-output／packaging、runtime-selectionのselect／verify、snapshot-generationのlibrary-build／generate／save／verify、offerの上記内部phaseへ結ぶ。input_changed、inventory_mismatch、storage_failed、budget_exceeded、build_failed、output_root_exists／invalid／not_empty、runtime_binding_mismatch、generation_binding_mismatch、configuration_unregistered／configuration_binding_mismatch、parameter_binding_mismatch、context_binding_mismatch、ic_state_mismatch、snapshot_stale／snapshot_storage_mismatch、library_stale、compile_failed、extra_evaluationのstage／phase許可表をrecipe registryへ固定する。field名を見て任意phaseへ許す実装は禁止し、unknown reason／phaseはschema_invalidとする。具体的な初期許可表は次項に定義する。
 
 合法なproducer拒否はimportStatus=producer_failed／producer_unavailableで保持し、graph拒否へ自動昇格させない。completedはG4全成功時だけaccepted。identity・実参照・過去IC・write失敗・過去のpath拒否等は承認brokerの表明として扱い、readerが過去の実体を再証明したと表示しない。
 
@@ -2852,6 +2853,16 @@ snapshot_stale／snapshot_storage_mismatch／library_stale／input_changedの内
 | offer | precheck | configuration_unregistered、configuration_binding_mismatch、parameter_binding_mismatch、context_binding_mismatch、ic_state_mismatch、snapshot_stale、snapshot_storage_mismatch、library_stale、input_changed、inventory_mismatch、budget_exceeded、extra_evaluation |
 | offer | call | compile_failed、extra_evaluation |
 | offer | postcheck／capture | snapshot_stale、snapshot_storage_mismatch、library_stale、input_changed、inventory_mismatch、storage_failed、budget_exceeded、extra_evaluation |
+
+§9.51のtest用native理由は、本番の表へ次のとおり対応させる（§9.53）。理由名だけを機械的に置換せず、本番producerが対応するphaseと観測証拠を新たに記録する。
+
+| §9.51の理由 | 本番のstage／phase・理由 |
+| --- | --- |
+| source_stale（登録後のconsumer source変更） | offer／precheck・input_changed（role=consumer-source） |
+| cohort_binding_mismatch（cohortの順序変更・重複削除） | offer／generation-binding・generation_binding_mismatch（cohort occurrence不一致） |
+| runtime_stale（private runtime JARの改変） | runtime-selection／verify・input_changed（role=runtime-classpath） |
+| driver_stale（driver JARの改変） | runtime-selection／verify・input_changed（role=driver-artifact） |
+| configuration_unregistered／configuration_binding_mismatch／parameter_binding_mismatch／context_binding_mismatch／generation_binding_mismatch／snapshot_stale／snapshot_storage_mismatch／library_stale／runtime_binding_mismatch | 同名。表の許可phaseに限る |
 
 readerのpath_invalid／inventory_mismatchは表のproducer理由と混同しない。初期producerの安全な読取がpath違反を検出した場合は、上記inventory_mismatchに詳細`boundaryFailure=path_invalid`と対象role／phase・実施済み操作を記録する。既存fixtureのpath_invalidを本番で無条件に同名変換せず、boundaryFailureを持つ型付き失敗証拠の生成が必要である。
 
@@ -2895,3 +2906,15 @@ readerのpath_invalid／inventory_mismatchは表のproducer理由と混同しな
 | AP32 | 本番実装後のscan_project／scan_java_project／suggest_fixとOSV再照会。入力本文／image／snapshot／sourceをOSVへ送信しない。trust off・未承認・改変・有効証拠の各対照を記録 |
 
 今回の成果は設計の追加だけである。次の実装単位はG0の本番transport／pair／state contractと、independent registry／authority lookupのno-readテスト。image／loader receiptの公開API／管理方式と全observerの実証が揃うまでは、本番profile承認・診断採用を有効化しない。
+
+
+### 9.53 be8ec20レビュー修正・graph拒否の範囲・理由の対応（2026-11-02）
+
+§9.52の設計について、次の4点を文書だけで直した。実装・native実行・profile承認は0件のままである。
+
+- 「graph拒否」の範囲を定義した（§9.52.1）。owned部分の不正は、そのexportのowned診断を出さない理由にとどめる。coreGraph・declared_in・relation・coverageは、v1〜v3と同じ既存の検証だけで採否を決める。owned機能を使わない利用者が、producerの壊れたowned部分によってGradle依存グラフ全体を失わないようにする。
+- G0がprofile本文を参照するのは、consumer設定とregistryが有効な場合に限った。trustがdisabledでもG0は実行するが、違反は警告とowned診断を出さない理由の記録に使うだけである（§9.52.8）。
+- reader理由に`envelope_missing`を加えた（§9.52.9）。envelopeとbundleがともにない場合のG0 unavailableで、AP29の期待に対応する。
+- §9.51のnative理由（source_stale／cohort_binding_mismatch／runtime_stale／driver_stale）から本番のstage／phase・理由への対応表を§9.52.10へ加え、`binding_mismatch`の略記を`configuration_binding_mismatch`へ直した。
+
+§9.52が前提とする9c978e1のレビュー修正（実体tokenとexecutor注入対照）は70dc261でcommitした。

@@ -2184,3 +2184,9 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - caller-owned broker／別authority storeの隔離・session／lease・状態別witness、graph v4 wrapper・coreGraphDigest・envelope v2・本番bundleと終端receipt／indexの非循環対応を具体化。shared build／generationは同一session内のtyped use receiptへ限定する。
 - G0〜G4の判定順・閉鎖時のowned読取0、producer failed／unavailableとreader拒否の理由・stage／phase許可表、現在／拒否時保存bytesの照合、budget／cacheとdiagnostic-only metadataを定義。
 - AP01〜AP32の回帰条件を追加（すべて未実施）。本番profile承認・本番producer／reader実装・authority／imageのnative実証・全observer・3 tool実接続は後続。今回は設計のみ、新規native／BTA実行・本番採用0。
+
+
+### 2026-11-02: be8ec20レビュー修正（graph拒否の範囲と理由の対応）
+
+- [設計書§9.53](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#953-be8ec20レビュー修正graph拒否の範囲理由の対応2026-11-02)へ、「graph拒否」はowned診断を出さないことであり、coreGraphの採否は既存の検証だけで決めると定義。trust disabled時のG0違反は警告に限定し、G0のprofile参照を設定・registryが有効な場合に限った。
+- reader理由に`envelope_missing`を追加し、§9.51のnative理由から本番の許可表への対応を明記。設計のみで実装・native実行・本番採用0。
