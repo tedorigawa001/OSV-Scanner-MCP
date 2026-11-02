@@ -1,4 +1,5 @@
-import {parseGradleExport, type OwnedManifestStatus} from "./gradleOwnedManifest.js";
+import {startupOwnedPolicy,type OwnedPolicy} from './gradleOwnedPolicy.js';
+import {parseGradleExport, InvalidGradleWrapper, LegacyGradleMetadataTooLarge, type OwnedManifestStatus} from "./gradleOwnedManifest.js";
 import {loadBudget} from "./gradlePluginSnapshots.js";
 import { GradlePluginReader, startupPluginSettings, type PluginSettings, type PluginAnalysis, type PluginStatus } from "./gradlePlugins.js";
 import { catalogEntriesMatch, loadCatalogModels, UnsupportedCatalogModel, type CatalogModels } from "./gradleCatalogs.js";
@@ -45,7 +46,7 @@ export class GradleGraphCache {
   private readonly catalogTrust: CatalogTrust;
   private readonly catalogTrustInvalid: boolean;
   private readonly pluginReader:GradlePluginReader;
-  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), trustSetting: DeclarationTrust | DeclarationTrustConfig = startupDeclarationTrust(), private readonly declarationBudget: GradleBudget = createGradleBudget(), catalogSetting: CatalogTrust | CatalogTrustConfig = startupCatalogTrust(), private readonly pluginSettings:PluginSettings=startupPluginSettings()) {
+  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), trustSetting: DeclarationTrust | DeclarationTrustConfig = startupDeclarationTrust(), private readonly declarationBudget: GradleBudget = createGradleBudget(), catalogSetting: CatalogTrust | CatalogTrustConfig = startupCatalogTrust(), private readonly pluginSettings:PluginSettings=startupPluginSettings(), private readonly ownedPolicy:OwnedPolicy=startupOwnedPolicy()) {
     const setting = typeof trustSetting === "object" ? trustSetting : { trust: trustSetting, invalid: false };
     this.trust = setting.trust; this.trustInvalid = setting.invalid;
     const catalog = typeof catalogSetting === "object" ? catalogSetting : { trust: catalogSetting, invalid: false };
@@ -59,8 +60,12 @@ export class GradleGraphCache {
         const read = await readRegularFile(file, { boundary: this.boundary, maxBytes: Math.min(64 * 1024 * 1024, this.remaining) });
         if (!read.ok) return { reason: read.failure === "not_found" ? "metadata_missing" : `metadata_${read.failure}` };
         this.remaining -= read.bytes.length;
-        try { return parseGradleExport(new TextDecoder("utf-8", {fatal:true,ignoreBOM:true}).decode(read.bytes), this.budget); }
-        catch (error) { return { reason: error instanceof UnsupportedGradleSchemaVersion ? "unsupported_schema_version" : "invalid_or_over_budget_metadata" }; }
+        try { return parseGradleExport(new TextDecoder("utf-8", {fatal:true,ignoreBOM:true}).decode(read.bytes), this.budget, this.ownedPolicy); }
+        catch (error) {
+          // An oversized legacy companion is refused as before and does not consume the shared scan budget.
+          if (error instanceof LegacyGradleMetadataTooLarge) { this.remaining += read.bytes.length; return { reason: "metadata_too_large" }; }
+          return { reason: error instanceof UnsupportedGradleSchemaVersion ? "unsupported_schema_version" : error instanceof InvalidGradleWrapper ? "invalid_graph_wrapper" : "invalid_or_over_budget_metadata" };
+        }
       })();
       this.documents.set(file, pending);
     }

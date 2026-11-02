@@ -86,7 +86,7 @@ it('refuses false success after a failure and nonmatching state receipts',()=>{
 });
 it('bounds object count and closes admission without a profile loader or artifact reader',()=>{
  const d=ownedFixture();d.ownedOfferObjects=Array(OWNED_LIMITS.objects+1).fill(d.ownedOfferObjects[0]);invalid(inspect(d),'budget_exceeded');
- const r=inspect(ownedFixture());expect(r.owned?.reasons).toEqual(['owned_manifest_capability_unsupported']);expect(r.owned?.ownedFileReads).toBe(0);
+ const r=inspect(ownedFixture());expect(r.owned?.reasons).toEqual(['owned_manifest_trust_disabled']);expect(r.owned?.ownedFileReads).toBe(0);
 });
 it('canonical JSON preserves bytes, array order and duplicates; rejects unsafe values',()=>{
  const x={z:['日本語 空白/%','a','a'],a:Array.from({length:32},(_,i)=>String.fromCharCode(i)).join('')+'\u007f\u2028\u2029😀'};

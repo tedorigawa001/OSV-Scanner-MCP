@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {startupOwnedSettings} from './utils/gradleOwnedPolicy.js';
 import {startupPluginSettings} from "./utils/gradlePlugins.js";
 import { DECLARATION_TRUST_ENV, startupDeclarationTrust, CATALOG_TRUST_ENV, startupCatalogTrust } from "./utils/gradleDeclarations.js";
 /**
@@ -48,6 +49,7 @@ export { ALLOWED_ROOT_ENV };
 
 // Declaration provenance is an explicit consumer policy, never a graph-file instruction.
 // Read once here. An unknown value keeps every scanning tool available and only disables Gradle declaration sources.
+if(startupOwnedSettings().invalid)console.error("osv-scanner-mcp: [warning] invalid Gradle owned BTA trust/profile configuration; owned diagnostics are disabled");
 if (startupDeclarationTrust().invalid) {
   console.error(`osv-scanner-mcp: [warning] ${DECLARATION_TRUST_ENV} must be registered-helper-v1 or unset; Gradle declaration sources are disabled`);
 }

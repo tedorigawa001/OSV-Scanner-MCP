@@ -2964,3 +2964,34 @@ G0の上限はtransport 64MiB、inline object 8MiB／1024件、ref探索work 163
 既存cache・declaration・pluginのテストには計6件を追加し、core v1〜v3のrelation・introduced_by・trusted declared_inとplugin assurance、coverageを維持すること、通常のcore freshness違反は拒否すること、owned sourceの現在bytesが違ってもG0で開かないことをspyで確認した。3 toolテスト2件ではscan_project／scan_java_project／suggest_fixのパッケージ・候補・hintと宣言元がlegacy coreと同一であることを確認した。OSV runnerはmockであり、実接続・native Gradle／BTAの追加実行は0。
 
 AP10・AP15・AP16・AP20・AP21・AP29・AP30等のmetadata部分を進めたが、AP01〜AP32全体の完了とは扱わない。独立profile／authority・image／loader・no-read設定gate・全observer・実接続と本番採用は引き続き未成立である。次はG1の設定／独立registryとG2のauthority lookupのcontract・読取前gateを実装し、G0 invalidと設定disabledを区別する。
+
+#### ed8def5レビュー修正（2026-11-02）
+
+v4 wrapperの追加に伴って、既存v1〜v3 companionの扱いが一緒に変わっていた点と、公開出力の文書を直した。nativeの再実行は不要である。
+
+- 1 fileの読取上限64MiBをv4 wrapperだけに限り、wrapperでないv1〜v3 companionは従来の16MiB上限へ戻した。超過時は従来どおり`metadata_too_large`とし、読み込んだ分をscan全体の予算へ返す。
+- root sliceで読めない文書は、従来のlegacy parserへそのまま渡して以前と同じ理由で扱う。`schemaVersion: 4`なのにwrapperの形でない文書は、汎用の`invalid_or_over_budget_metadata`ではなく専用の`invalid_graph_wrapper`で報告する。v5以上は従来どおり`unsupported_schema_version`である。
+- root sliceで`SyntaxKind.Unknown`や不正escapeの値を受け付けず、その場で拒否する。
+- companionのtextを不正なUTF-8のまま置換して読む動作はやめ、拒否する。READMEに明記した。
+- READMEのGradle節に、v4 wrapperの形、`owned_manifest`の意味、owned理由がpackages・relation・introduced_by・declared_in・coverage.completeを変えないこと、正常なG0でも`owned_manifest_capability_unsupported`が付くことを追記した。
+- G0の状態はexport単位で一つにまとめる。entryの1件でもrefを持たなければ、ほかのentryが検証できてもexport全体を`envelope_missing`とする。entry単位の報告は後続のG1以降で扱う。
+
+cacheのテストへ4件を加えた（16MiB上限と予算の返却、v4非wrapperの理由、v5の従来理由、root sliceのUnknown拒否）。修正前の実装では、このうち3件が失敗することを先に確認した。
+
+### 9.55 G1: consumer信頼設定と独立profile registry（2026-11-02）
+
+G0の構造検証に続くG1を本番readerへ実装した。`gradleOwnedPolicy.ts`はfile／URL／processを読み込まず、operator側の独立したin-memory registryだけを受ける。通常起動は空registryであり、承認済みprofileは配布しない。graph内の本文・path・issuerから登録する入口はない。
+
+- `OSV_MCP_GRADLE_OWNED_BTA_TRUST`は未設定・空でdisabled、`owned-bta-offered-inputs-v1`のみ有効。
+- `OSV_MCP_GRADLE_OWNED_BTA_PROFILES`は小文字hex64桁の非zero digestをcomma区切りで最大32件。空は承認0件、重複・空要素・空白・大文字・不正digestは設定全体をinvalidにする。起動時snapshotを固定し、未知設定には内容を含めない警告を出す。旧信頼設定は代用しない。
+- `createOwnedRegistry`は独立側の`profiles / pins / recipeRegistries`をcanonical JSONで複製し、有界parseする。profile本文のdigest、strict schema、profileId／pin ID／recipe IDの重複、子参照の閉包・循環・深さ、recipeのstage対応を確認する。失敗時はregistry全体をinvalidとし、digestを自動更新しない。
+- 子specificationは`osv-mcp.gradle-owned-profile-pin-v1`の`id / kind / specificationDigest / dependencies`で固定する。kindはexecutor・jdk-image・node-image・platform・loader・observation・recipe、recipeだけに`recipeRoles`を必須とする。これは独立した仕様のpinであり、仕様の実装・今回のimage receipt・実行真正性を検証した結果ではない。後続G2〜G4の証拠を代替しない。
+- adoption profileは§9.52.3の全必須fieldをstrict化した。tuple、schema version、runtime artifact occurrence、execution制限、source／package policy、storage・数値予算、authority、固定7 limitationsとproducer／caller／loaderへの3依存、reviewAssertionsを明示する。runtime occurrenceの順序・重複を保持し、未知artifact参照・欠落を拒否する。予算はreader hard limitを超えられない。
+
+判定順はG0→G1を維持する。G0 invalidは設定無効で隠さない。G1は`configuration_invalid / trust_disabled / profile_unapproved / recipe_unapproved`をunavailableにし、独立registryで承認済みdigestに対するprofileId／recipeDigestの不一致だけを`profile_mismatch`・owned import invalidにする。構造はverifiedのまま、coreGraphのrelation・introduced_by・declared_in・coverageを保持する。既知IDでもdigest未承認ならunapproved。設定・registryが不正なときはprofile比較を行わない。
+
+G1を通過しても`witness_unavailable`で停止する。`diagnosticEligible=false / ownedFileReads=0 / currentContentMatch=not_checked / naturalContentBinding=false / compilerWorkStatus=unknown`を維持し、診断payloadを出さない。G2のauthority・session・実行witness、G3の実体証拠、G4の現在内容照合とproducerは未実装である。
+
+検証は静的unit／cache／既存3ツール回帰に限定する。AP01（設定）、AP02（独立registryのmetadata部分）、AP09（G1 no-read）、AP10（G0優先とcore保持）、AP31（未承認と既知claim不一致）を部分的に具体化した。image・authority・全observerの実証、registry file loader、native Gradle／BTA、OSV実接続は今回実施せず、これらを完了扱いにしない。synthetic test registryは本番承認ではない。
+
+検証結果: G1 policy 60件・cache追加3件の回帰を追加。型検査・build成功、全体94 files／3,336 tests成功、21 files／1,415 tests skipped。新規native／OSV実行・承認profile・診断採用は0。

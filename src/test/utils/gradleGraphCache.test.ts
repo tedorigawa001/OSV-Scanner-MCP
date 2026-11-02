@@ -80,3 +80,41 @@ it('G0 never opens an owned source or runtime artifact, even when current bytes 
  expect(result.metadata.owned_manifest).toMatchObject({manifestStructure:'verified',currentContentMatch:'not_checked',ownedFileReads:0,diagnosticEligible:false});
  expect(spy.mock.calls.map(c=>path.relative(dir,c[0]))).toEqual([GRADLE_COMPANION,'osv-mcp-gradle-declarations.json']);
 });
+
+it('keeps the 16 MiB limit for non-wrapper companions and refunds the scan budget',async()=>{
+ const dir=await fixture(),core=await metadata(dir);
+ await writeFile(path.join(dir,GRADLE_COMPANION),JSON.stringify({...core,pad:'x'.repeat(16*1024*1024)}));
+ const cache=new GradleGraphCache(dir),result=await cache.capture(path.join(dir,'gradle.lockfile'),bytes);
+ expect(result.metadata.reasons).toContain('metadata_too_large');expect((cache as any).remaining).toBe(64*1024*1024);
+});
+it('reports a schemaVersion 4 document without the wrapper shape as invalid_graph_wrapper',async()=>{
+ const dir=await fixture(),core=await metadata(dir);
+ await writeFile(path.join(dir,GRADLE_COMPANION),JSON.stringify({...core,schemaVersion:4}));
+ const result=await new GradleGraphCache(dir).capture(path.join(dir,'gradle.lockfile'),bytes);
+ expect(result.metadata.reasons).toContain('invalid_graph_wrapper');expect(result.metadata.reasons).not.toContain('unsupported_schema_version');
+});
+it('still reports a later exporter schema version as unsupported',async()=>{
+ const dir=await fixture(),core=await metadata(dir);
+ await writeFile(path.join(dir,GRADLE_COMPANION),JSON.stringify({...core,schemaVersion:5}));
+ const result=await new GradleGraphCache(dir).capture(path.join(dir,'gradle.lockfile'),bytes);
+ expect(result.metadata.reasons).toContain('unsupported_schema_version');
+});
+import {exportFields} from '../../utils/gradleExportJson.js';
+it('rejects unknown root tokens instead of slicing them as values',()=>{
+ for(const text of ['{"a":foo}','{"a":"x","b":@}','{"a":"\\q"}'])expect(()=>exportFields(text)).toThrow('invalid_graph_wrapper');
+ expect(exportFields('{"a":1,"b":{"c":[true,null]}}').get('b')).toBe('{"c":[true,null]}');
+});
+
+import {parseOwnedSettings,emptyOwnedRegistry} from '../../utils/gradleOwnedPolicy.js';
+for(const trust of [undefined,'invalid','owned-bta-offered-inputs-v1'])it('G1 preserves core results and does not open owned inputs: '+trust,async()=>{
+ const dir=await fixture(),doc=ownedFixture();doc.coreGraph.lockfiles[0].sha256=sha256(bytes);
+ rewriteOwned(doc,()=>true,v=>{if(v.binding)v.binding.coreGraphDigest=ownedDigest(doc.coreGraph);if('coreGraphDigest'in v)v.coreGraphDigest=ownedDigest(doc.coreGraph);});
+ await writeFile(path.join(dir,GRADLE_COMPANION),JSON.stringify(doc.coreGraph));
+ const legacy=await new GradleGraphCache(dir).capture(path.join(dir,'gradle.lockfile'),bytes);
+ await writeFile(path.join(dir,GRADLE_COMPANION),JSON.stringify(doc));const spy=vi.spyOn(safeReader,'readRegularFile');
+ const policy={settings:parseOwnedSettings(trust),registry:emptyOwnedRegistry};
+ const result=await new GradleGraphCache(dir,undefined,undefined,undefined,undefined,undefined,policy).capture(path.join(dir,'gradle.lockfile'),bytes);
+ expect(result.metadata.owned_manifest?.reasons).toEqual(['owned_manifest_'+(!trust?'trust_disabled':trust==='invalid'?'configuration_invalid':'profile_unapproved')]);
+ expect(result.lookup!('g:a','1')).toEqual(legacy.lookup!('g:a','1'));expect(result.lookup!('g:b','2')).toEqual(legacy.lookup!('g:b','2'));expect(result.coverageReasons).toEqual(legacy.coverageReasons);expect(result.metadata.status).toBe(legacy.metadata.status);
+ expect(spy.mock.calls.map(c=>path.relative(dir,c[0]))).toEqual([GRADLE_COMPANION,'osv-mcp-gradle-declarations.json']);
+});

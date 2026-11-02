@@ -2197,3 +2197,17 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - bundle v1・envelope v2・object／ref／evidence union、canonical bytes／digest、state prefix・理由表、pair・index閉包・循環／orphan・未知field、phase／BTA binding／captureをG0で検証。外部sidecar／artifactは開かず、正常でもcapability_unsupported／診断採用falseを維持。
 - 新規176テスト＋cache／宣言／plugin 6件＋3 toolのmock回帰2件。固定Java／Node canonical vectorとの一致、core freshness維持とowned source非読取も確認。型検査・build成功、全体93 files／3,269 tests成功（21 files／1,415 tests skipped）。新規native／外部スキャナー実接続0。
 - G1の設定・独立承認registry、G2のauthority／session／witness、共有use receipt、profile固有の全証拠・G3／G4、producer・本番診断採用は未実装。G0 verifiedをinput completeness／current content／実行真正性へ昇格しない。
+
+
+### 2026-11-02: ed8def5レビュー修正（v4 wrapper追加に伴う既存経路の変化）
+
+- §9.54へ修正の小節を追加。64MiB上限をv4 wrapperに限定し、v1〜v3 companionは16MiB上限・`metadata_too_large`・予算返却を維持。v4の非wrapperは`invalid_graph_wrapper`、root sliceのUnknown tokenは拒否。
+- READMEのGradle節に、v4 wrapper・`owned_manifest`・owned理由がcoverage等を変えないことを追記。cacheテスト4件追加。nativeの再実行なし。
+
+### 2026-11-02: G1 consumer設定・独立profile registry
+
+- [設計書§9.55](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#955-g1-consumer信頼設定と独立profile-registry2026-11-02)に沿って、追加trust／digest集合の起動時固定・警告、strict profileと独立specification pin／recipe registryの閉包・digest・stage検証を実装。既定registryは空、graphからの自己承認・path／URL読込なし。
+- G0 invalidを優先し、G1の設定不正／信頼無効／profile・recipe未承認／既知claim不一致を分離。coreのrelation・introduced_by・declared_in・coverageを保持する。G1成功もwitness_unavailableで停止し入力読取0を維持。
+- AP01／AP02／AP09／AP10／AP31の静的部分を回帰化。G2 authority・session・witness、G3／G4の実体証拠・内容照合、本番producer・profile承認・native／実接続は残る。子pinは仕様hashでありimageやloaderの今回の実体証明ではない。
+
+検証結果: G1 policy 60件・cache追加3件の回帰を追加。型検査・build成功、全体94 files／3,336 tests成功、21 files／1,415 tests skipped。新規native／OSV実行・承認profile・診断採用は0。

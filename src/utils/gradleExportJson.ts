@@ -26,7 +26,7 @@ export function exportFields(text:string):Map<string,string> {
      depth--;
     }
    }
-  }else if(![SyntaxKind.StringLiteral,SyntaxKind.NumericLiteral,SyntaxKind.TrueKeyword,SyntaxKind.FalseKeyword,SyntaxKind.NullKeyword,SyntaxKind.Unknown].includes(token))invalid();
+  }else if(![SyntaxKind.StringLiteral,SyntaxKind.NumericLiteral,SyntaxKind.TrueKeyword,SyntaxKind.FalseKeyword,SyntaxKind.NullKeyword].includes(token)||scanner.getTokenError()!==ScanError.None)invalid();
   const end=scanner.getTokenOffset()+scanner.getTokenLength();fields.set(name,text.slice(begin,end));
   token=next();if(token===SyntaxKind.CloseBraceToken)break;if(token!==SyntaxKind.CommaToken)invalid();token=next();
  }
