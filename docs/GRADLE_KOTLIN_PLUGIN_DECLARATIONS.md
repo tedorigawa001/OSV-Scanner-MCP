@@ -3518,3 +3518,167 @@ RootedJournalIO.recoverPublishedは低水準の検証callbackを必要とするf
 次は容量・保持期間の契約、authenticatedなcompaction／checkpoint世代移行、上限到達後の再開方法、その後に差分snapshot・incremental検証と性能比較を進める。今回の排他とpair整理で容量上限を広げたり、既存historyを削除したりしない。
 
 保存運用第1段の検証結果: 新規23件成功。型検査・build成功。全体101 files／3,685 tests成功、21 files／1,415 tests skipped。実別processの競合拒否と、ownerのafter-publish SIGKILL後の専有再取得・認証復旧が成功。既存restartのSIGKILLも再実行した。diff整形検査成功、distにauthority／journal fixtureが含まれないことを確認。macOS arm64／Node 26.12.1のみの参照実証で、本番backend・profile・診断採用は無効のまま。
+
+
+### 9.64 保存容量・履歴保持の契約（設計、2026-11-02）
+
+§9.63の次段階として、通常受付・保守用容量、full履歴とtombstone、保持条件とcompactionへの引渡しを定義する。本節は設計であり、quota reservation、保持期限、履歴削除、archive、世代移行を実装・有効化した記録ではない。現実装のappend-only・全履歴検証・上限時停止は変更しない。
+
+#### 9.64.1 対象と不変条件
+
+- authority所有のmetadata store、journal、独立checkpoint、temp、移行候補root・保守control recordを対象にする。producerのsource／artifact／imageの削除権限は与えず、metadata内の任意file path／URLを開いて補完しない。
+- ack済み状態の原本を、単に「latest snapshotに不要」「mtimeが古い」「sessionがclosed」という理由でunlinkしない。元commitの認証・原本依存を残したままblobだけ消すと、現A2 readerではdangling referenceになる。旧rootは切替・削除認可まで不変とし、整理済みの履歴は新形式の新rootへ構築する。
+- 保持を終了したsessionを新しいsession・実行witnessとして再利用しない。生actor・capability・使用許可をarchive／tombstone／新世代へ移さない。success terminalの保持はcurrent性の保持を意味しない。
+- 容量不足をmetadata省略・digestのみの成功・上限の自動拡大・古いcheckpointへの復帰で解決しない。認証不正や未知inventoryを「不要データ」と分類して削除しない。
+
+#### 9.64.2 独立policyと既定動作
+
+独立operator設定にstrictな`osv-mcp.gradle-owned-retention-policy-v1`を置き、canonical bytesのdigestを承認profileと保守planへ束縛する。project、lockfile、journal内の自己申告policy、古いbackupを承認元としない。以下は将来schemaの必須項目であり、既存settingsへ未実装fieldを追加して動作するとは扱わない。
+
+| field | 契約・初期候補 |
+| --- | --- |
+| authorityId／policyId／revision | authority固定、独立registryのcurrent revisionと一致。旧revisionへのrollbackを拒否 |
+| mode | 初期候補はmanual。自動削除は無効。operatorが確定planを認可した場合だけfullからretiredへ進める |
+| fullRetention | 既定はexplicit-release。日数による自動候補化を選ぶ場合だけpositiveなminClosedAgeMsとtimeAuthorityIdを必須にする。未指定の日数を暗黙補完しない |
+| archiveRequired | 初期候補はtrue。full原本の可読性・閉包・保管完了を確認したarchive receiptがないsessionを解放しない |
+| tombstoneRetention | authority-decommissionまで保持。session identityを忘れる操作を通常compactionに含めない |
+| holds | 独立したhold registryのissuer・revision・対象集合digestを必須化。hold不能／状態不明は保持継続 |
+| rootCaps／maintenanceReserve／migrationPeakCaps | .3のroot別・全体の上限と保守予約。未設定の世代移行はunsupported |
+| approvedFormats／migrationProfileDigest | source／targetのschema・認証方式・検証器・storage semanticsを明示承認。旧形式readerによる新形式採用を禁止 |
+
+既定manualでは、closedになっただけでは解放候補にならない。operatorの明示releaseとarchive証拠がそろうまでfullを保持する。時間ベースのpolicyを選ぶ場合も、期限は候補条件に限り、hold・archive・参照閉包・plan認可を省略しない。raw保持を解除する認可と、OS隔離や本番profileを承認する認可は別である。
+
+#### 9.64.3 計数と保守用予約
+
+現A2のhard capは1 transaction 64 MiB／4,096 logical records、store root 256 MiB／4,096 entries／256 commits、file 8 MiB・chunk 1 MiBである。checkpoint rootも現在のIOでは256 MiB／4,096 entries、checkpoint chainはgenesisを含め257件までであり、storeの256 MiBに内包されているとは数えない。初期設計の「1 session 256 MiB」をこの2 rootの実装上限と混同しない。
+
+将来のquota managerは少なくとも次のvectorを別に持つ。safe integer・非負・overflow検査を必須とし、field間の単位を混ぜない。
+
+| vector | 課金対象 |
+| --- | --- |
+| logicalSnapshotBytes／logicalRecords | session manifest・index・全保持session・metadata・ledger・terminal・result。JSONは実canonical bytes、未完了uploadを含むraw metadataは実受信bytes。重複record参照もlogical bytesに数える |
+| storeBytes／storeEntries／storeCommits | 全final・temp・未参照blob・journal.meta・commit。容量はfileのlogical length、entryはdirectory名ごと。hardlink pairも2名・各sizeとして保守的に課金する |
+| checkpointBytes／checkpointEntries／checkpointRecords | 独立checkpointのgenesis・全revision・temp・保守control record。store側と別計数 |
+| pending／reservedFuture | 未完了writeの残り、受理済みsessionの将来保存、closure／restart／切替の予約。重複して同じ空きを予約しない |
+| migrationPeakBytes／migrationPeakEntries | source・target両世代、双方のcheckpoint、temp、control record、削除待ちrootの同時存在。旧rootを先に削除した仮想空きを使わない |
+
+保守control recordは承認した新形式・provision済み領域へ置き、現v1 checkpoint rootへ未知entryを追加しない。新領域のbytes／entriesも全体・移行ピークの上限へ含める。
+
+実媒体のfree spaceは追加の可用性確認であり、他processの書込みを予約した証拠ではない。sparse file・圧縮・同一inodeを理由にhard capを割り引かず、物理空きとpolicy課金を区別する。sourceとtargetでdedupして見せず、コピー先は別に課金する。予期せぬtemp・増えたentryも予約と照合し、上限を超えたrootの認証不正をGCで隠さない。
+
+通常受付の初期候補は、store hard capの最後の8 commits・64 MiB・1,024 entries、およびsnapshot hard capの16 MiB・1,024 recordsを保守用に取り置く（通常目安はrevision 248、store 192 MiB／3,072 entries、snapshot 48 MiB／3,072 records）。これらは最低予約の候補値であり、すべてのA1上限を同時利用できる保証ではない。承認済みpolicyへ固定し、実装・性能実証前に現在の定数へ適用しない。
+
+各sessionの予約は将来の最大scope・upload raw bytes・event／operation回数・field幅等を宣言するversioned admission requestとauthority側上限計算から求める。申告は上限として強制し、少ない申告で実使用を迂回させない。bytesだけでなくcommit／entry／recordを予約する。現A2では各operationがsnapshot／commitを作るため、raw metadataだけの予約で十分とはしない。宣言していない将来操作は予約拡張が通るまで受理しない。
+
+受理条件は各vectorで`committed + pending + futureReservations + maintenanceReservation <= hardCap`。同じ予約は、pendingからcommittedへの移動時に一度だけ振り替える。writer専有下でpreflight→予約のdurable保存→writeの順にし、write・ackの後で不足を発見しない。新sessionと通常upload等に取り置きを貸し出さない。metadataが個別上限内でもclosure後のlogical snapshotが64 MiBを超える、または新terminal等でrecords／entriesが超えるなら受付を拒否する。
+
+保守予約は現在の全scopeを閉じる最大形、open uploadのcancel、slot／index／terminal、restart、必要な切替controlの実serialized sizeと追加chunk数を計算した上で、上記最低値より大きければ引き上げる。未知のfuture fieldはschema最大幅で評価する。計算方法をprofileへ固定し、予約だけでhard capを超える場合はbeginから拒否する。基礎schemaの余裕だけで「必ず閉じられる」と主張しない。繰返しcrashや無制限のrestartにも8 commitsで足りるとはせず、残りを消費したら受付を閉じる。
+
+#### 9.64.4 full／release-pending／retiredと最低証拠
+
+| 状態 | 残すもの・許す応答 |
+| --- | --- |
+| full | session／scope manifest、全metadata・ledger・terminal、action予約、必要なoperation結果・認証commit／index／checkpointとの対応を保持。current性の判定は別であり、古い成功をfreshにしない |
+| release-pending | fullを維持したまま、plan・hold・archive・時刻証拠を固定。承認待ち・移行途中ではbytesを消さず、削減見積りを空きへ算入しない |
+| retired | 新rootのtyped tombstoneとaudit／archiveへの認証済みrefだけで表す。raw closureなしのverified／成功receiptは返さず、history-pruned等の明示unavailableとする。更新要求はnot_currentとして拒否 |
+
+解放対象はsession単位にする。current／live session、非terminal scope、open upload、未確定local tail、未解決read pin／grantがあれば解放しない。初回の移行方式は受付停止・in-flight完了・全session失効を保存するoffline方式とし、activeな共有bytesを動かすonline GCは別設計にする。draftでもclosed／upload cancelledが保存されていれば対象になり得る。committedでcurrentなsessionは対象にせず、失効保存を先に行う。
+
+最低tombstoneは、authorityId・source storeEpoch、`sessionKeyDigest=H(authorityId,sourceEpoch,sessionId)`、nonce／graph／export／execution／core等のbindingDigest、scope／witness集合digest、action予約集合digest、元のclosed validity／revision・terminal集合digest、sourceHead、retentionPolicyDigest、releasePlanDigest、archiveReceiptRef、releaseAuthorizationRef、holdBarrierRef、時間policy時のtimeEvidenceRef、retired理由・世代を持つ。namespace全体を閉じるため、個々のoperationを無制限に列挙せず、そのsessionへの更新をすべて拒否する。raw actor・capability・使用可能なpermitを含めない。tombstoneは認証された新base・checkpointから解決できなければならず、自己hashだけの否認表として使わない。参照先のpolicy／plan本体・認可receipt・hold／時刻証拠・archive receipt・source→targetの認証された遷移証拠も最低control閉包として保持し、参照digestだけを残して証拠を消さない。
+
+新形式のtombstone namespaceは最大4,096 sessionを初期候補上限とし、serialized bytes・logical records・storage上限も同時に検査する。上限後に古いidentityを自動で忘れない。namespaceを恒久retireする独立認可とreader設定移行が成立しない間は停止する。無限の履歴を有限容量で保持できる設計とはしない。
+
+#### 9.64.5 再試行と監査
+
+currentな受付中sessionのoperation結果・一回消費済みaction予約・request digestは削らない。同じ完全キーは同じrequestだけをhistoricalに再送し、二度目のlaunch許可にしない。request違いはreplay_conflict等の不正として拒否する。保持期限の到来だけでこのdedup境界を消さない。
+
+closed sessionがretiredになった後は、元のauthority／source epoch／session／nonceを含む完全キーでtombstoneを照合する。古いoperation-resultがないことを未実行や新規受付と解釈せず、history-prunedまたはsession-unavailableを返す。operationIdやwitnessIdだけの全store検索、現世代への付替え、archiveからのlive reply復元を禁止する。新actorのbeginは新sessionを発行する既存契約を維持する。
+
+archiveRequired=trueの場合、外部または別承認領域へ、sourceを独立に検証できるmanifest・全commit／checkpoint・必要な全blob・snapshotと対応表をclosed setで保管する。単なるlatest JSONやexport成功表示、file path／URLをreceiptにしない。receiptは承認issuer、authority／epoch／sourceHead、保存schema・inventory digest／size、archive identity、復元検証結果・保持責任を認証する。archive領域の容量と保護policyも別途必要で、移したbytesを消失したbytesと同一視しない。
+
+本節のraw解放はactive storeからのlogical unlinkであり、secure eraseではない。archive／backup／filesystem snapshotへ残るcopyもpolicyへ明示する。archive検証はaudit-onlyで、そこから現行authority・Task事実・現在のprofile承認を復活させない。old journalをそのまま保存する初期方式では混在commitの他session bytesもarchiveに残ることを明示し、個別データの完全抹消が必要なら本方式をunsupportedとする。
+
+#### 9.64.6 時刻とhold
+
+session deadline用の単調clockと、retentionのclosed ageは別物である。file mtime、producer timestamp、再起動後のnow=0から経過日数を推定しない。時間policyでは承認time authorityの観測値／誤差範囲、保存済みclosed時点証拠、rollback防止high-waterとそのepochを必須とし、「現在の下限時刻－closed時刻の上限」がminClosedAgeMs以上の場合だけ候補とする。逆行・大幅jump・時刻原点変更・receipt不能では保持継続し、過去の未証明closed時刻を今から遡って補完しない。manual explicit-releaseには日付によるage成立を表明しない。
+
+holdはsessionだけでなく関連archive・元世代の証拠へ解決し、理由の詳細を公開metadataへ漏らさずhold集合の認証digestを保存する。hold registry取得不能、未知revision、計画後のhold追加では削除planを失効させる。保守専有・受付停止中に新holdを黙って捨てたり、未適用のholdへ成功ackを返したりしない。
+
+削除認可の最終CASとhold登録は同じ独立control順序で直列化し、CAS前に成立したholdは削除を禁止する。物理削除開始後のhold要求はtoo-late等を明示し、既に消したrawを保持済みと報告しない。新holdを反映できる順序保証が未成立なら削除はunsupportedとする。単なる「削除前に一度holdを読む」方式で競合を解決しない。
+
+#### 9.64.7 planの入出力と認可
+
+将来の内部APIを`planRetention(input) -> RetentionPlan`、`authorizeRetention(planDigest, expectedControlRevision)`、`executeAuthorizedPlan(planRef)`に分ける。plan作成は読取・見積りのみで、承認・削除を兼ねない。operatorの認可をbuild要求や自動空き容量回復から推定しない。
+
+inputにはauthority／source epoch／完全なexpectedHead、policy digest／revision、candidate session集合、archiveReceiptRef集合、hold revision／集合digest、必要ならtime evidence、target profile／schemaとroot identity、migrationPeakCapsを必須とする。任意pathを入力して削除しない。rootはoperatorがprovisionしたopaque identityで解決し、既存のpath・inode・専有検証を適用する。
+
+planはsource全認証結果、候補ごとのeligible／blocked理由、保持／retire session集合とdigest、全保持参照閉包、共有chunkごとのkeep／drop、tombstone集合とdigest、source／target／control各budget、ピーク値、回収可能量、認可期限・control revisionを含む。planDigestは自己fieldを除いたcanonical bodyをhashする。generation・session・ref配列の順序はschemaで固定し、orderに意味のあるledger／occurrenceは並べ替えない。
+
+回収量はlogicalDroppableBytesとeventualReclaimableUniqueBytesを区別する。後者は、全保持commit／base／full session・hold・archive要件・read pinのmarkを統合してから算出し、共有chunkを一度だけ数える。元commitがまだ全blobを要求する間、単にlatestに見えないblobを回収可としない。旧rootを残す移行中のimmediateReclaimableBytesは0とする。
+
+認可はplanDigest・sourceHead・policy／hold／time evidence・target identity・予算へ束縛し、独立control CASとreadbackで確定する。どれかが変われば再planする。認可receiptは新しい実行権限や一般的なfile削除権限ではなく、この有限planにだけ有効である。
+
+#### 9.64.8 compactionへ渡す採用条件
+
+次段階のcompactionは、現v1 chainをin-placeで短縮せず、新形式の新rootを作る。source headから、保持raw閉包・typed tombstone・archive ref・policy／認可を束縛する新baseを作り、独立checkpointにsource→targetの認証済み世代遷移をCASする。sourceRevisionを0へ戻して同じepochで再formatしない。reader／callerが独立設定で承認したtarget形式と世代だけを選び、未知形式はunsupportedとする。新genesisのself hashやlocalの「最新directory」を世代選択の根拠にしない。
+
+切替前のcrashではsourceを保持し、targetの存在だけで採用しない。独立checkpointがtarget採用を確定した後は、sourceへfallbackしない。target同期・再検証、旧instanceの世代停止、削除認可・hold最終CASが完了するまで旧rootを削除しない。切替途中・GC途中の再起動も、独立controlの現在状態から再開し、mtimeやdirectory名で成功を推測しない。
+
+source／targetのstoreとcheckpoint、および保守control領域を一つの固定順序で専有し、受付・read pin・保守controlの更新をdrainすることが移行の前提である。現OwnedJournalDiskの2 root lockだけを世代間の排他へ拡大解釈しない。取得不能・新しいpin／hold等との順序が未成立なら移行しない。
+
+target構築／削除待ちを含む全rootがmigrationPeakCapsに収まる必要がある。active rootの空きを作るために先に原本を消す、archiveの同一copyを独立証拠へ二重計数する、sourceとtargetを同じdirectoryにする、認証不正をcompactionで上書きする方式は禁止する。切替protocolの具体的なschema・phase・witness・native故障実証は次の設計・実装で具体化し、本節だけで移行実装済みと数えない。
+
+#### 9.64.9 上限時の動作と再開条件
+
+将来のproposal reasonは以下のとおり。既存wireのenum／例外へ実装済みとは扱わず、通常の容量不足と確認済み不正を分離する。
+
+| 状態 | 拒否・維持する動作 |
+| --- | --- |
+| normal budget不足／保守予約への侵入 | capacity_admission_denied。新operationを適用する前に拒否し、既存sessionの予約を維持 |
+| 保守予約不足・実disk full／sync失敗 | maintenance_capacity_unavailable。新受付を閉じ、書込み開始後はkernel停止・再認証。保守ackを偽装しない |
+| hold／archive／時刻証拠不足 | retention_blocked。保持継続。容量不足をoverride理由にしない |
+| sourceHead／policy／hold／targetの変更 | retention_plan_stale。無変更で拒否し再plan |
+| 認証・閉包・checkpoint不正 | retention_integrity_invalid。隔離状態を保持し、不要扱いで削除しない |
+| 未承認schema／移行profile／独立controlなし | retention_unsupported。本番admissionを開かない |
+| 保持終了済みnamespaceへの履歴要求 | history_pruned／session-unavailable。実行済みを未実行へ変換しない |
+
+将来の通常受付は通常目安に届く前から予約総量で止める。保守slotも尽きるまで停止とrestartを繰り返して上限を回避しない。現在のv1 storeが既にhard fullなら、予約は後付けできず、本節で救済を保証しない。raw削除でslotを捻出するのではなく、現在rootを検証可能なまま停止し、承認済みの別root・ピーク予算・archive／独立checkpointの世代遷移を用意する。sourceへ保守recordを追記できない場合のoffline移行は、別途承認したprotocolが成立するまでunsupportedとする。
+
+再開は、採用世代の完全検証、失効・tombstoneとcontrolのdurable確認、旧世代の再使用拒否、新予約台帳の復旧・二重予約なし、root／peak上限内、保守余力の再確保、writer専有の全条件がそろった後だけ許す。新sessionを発行し、旧actor・capability・lease・raw replyを復元しない。
+
+#### 9.64.10 回帰条件（RC01〜RC28、すべて未実装）
+
+| ID | 条件・期待結果 |
+| --- | --- |
+| RC01 | project内policy・旧policy revision・承認なしの緩和を拒否。既定manualではclosedだけで削除しない |
+| RC02 | bytes／entries／records／commitsと2 rootの計数を独立に検査。overflow・負値・単位交換を拒否 |
+| RC03 | revision 248／249、通常bytes／entry／record境界の前後と、予約総量の境界を確認。保守予約を通常操作へ貸さない |
+| RC04 | 最大field幅・多数scope・複数sessionのclosure／cancel／restart後の実serializationを上界計算へ照合。不足ならbeginから拒否 |
+| RC05 | 同時予約・retry・途中crashでpending／reserved／committedの二重課金・未課金・二重解放を拒否 |
+| RC06 | 予約申告より多いupload／event／operation・metadataだけを予約したsessionを拒否。snapshot＋commit overheadを含める |
+| RC07 | temp・orphan・nlink=2・checkpoint genesis・全revisionを課金。元rootを削除した仮想空きでtargetを作らない |
+| RC08 | live/current session、非terminal scope、open upload、未確定tail・read pin／grantがある候補は解放不可 |
+| RC09 | closed draft・restarted・expired・revoked等の候補で、close理由を上書きせずfull→pending→retiredを確認 |
+| RC10 | 共有chunkは保持側が1つでもあれば残す。全保持commitとbaseをmarkし、latestだけの参照数で削除しない |
+| RC11 | retained sessionのcore／seal／ledger／terminal／予約／結果と認証閉包を一部削ったplanを拒否 |
+| RC12 | 同じdigestの異なるsession用途、異なるauthority／epoch／scopeのref交換、dangling refを拒否 |
+| RC13 | archiveが単なるpath／自己hash／latest JSON／閉包欠落なら拒否。承認issuer・原本検証とreceipt対応を確認 |
+| RC14 | age境界を時刻誤差の両端で確認。mtime・producer時刻・再起動now=0・時計逆行／jumpで候補化しない |
+| RC15 | manual releaseではageを偽装せず、archive／hold／operator認可を依然要求する |
+| RC16 | plan後・最終CAS前のhold追加・registry不能は削除禁止。CAS後のtoo-late要求を保持成功と報告しない |
+| RC17 | exact-keyのretryは二重実行せず、別requestを拒否。retired namespaceは欠落を新規実行と扱わない |
+| RC18 | 別nonce／epochへの付替え、witnessId単体検索、archiveや旧ackによるcurrent性の復活を拒否 |
+| RC19 | tombstoneのbinding／元head／policy／archive ref改変・欠落を拒否。4,096件やbyte上限後はidentityを忘れず停止 |
+| RC20 | plan作成は無変更。sourceHead・policy・hold・target・予算の変更後は認可を再利用しない |
+| RC21 | candidate選択・共有chunk見積りの再現性を確認。ledger／occurrence順をdigest都合で変更しない |
+| RC22 | source／target／checkpoint／control／tempの同時ピークを確認。source先消しや超過状態で切替しない |
+| RC23 | 切替前・独立CAS前後・削除認可前後・GC中で停止し、source保持／target固定・idempotent再開を確認 |
+| RC24 | 古い正当なroot／control／backupの再送を独立anchorで拒否。target採用後のsource fallbackを禁止 |
+| RC25 | hard fullのv1は無変更で停止。reserve残量を超えるrestart連打・unsupported offline移行で勝手に再formatしない |
+| RC26 | 受付再開は全条件確認後だけ。旧actor／capability／leaseを拒否し、新sessionの予約が過去の枠と衝突しない |
+| RC27 | 実disk full／保存・fsync失敗・専有喪失ではackなし。quarantine対象をGCで消して成功へ変更しない |
+| RC28 | logical unlink後もarchive／backup等のcopyを残存と報告し、secure erase・本番診断採用・実隔離成立と表明しない |
+
+RCは実装・native故障注入の条件であり、文書整形テストの成功で成立したことにはしない。実装時にはclock／hold registry／archive／checkpointを独立に故障させ、両processと再起動を含む検証記録を追加する。今回の文書変更で本番backend・policy承認・診断採用を有効化しない。
+
+保存容量・履歴保持契約の文書検証: 公開文書command例と既存A1–A2／disk owner／restartの計123テスト成功。§9.64の10小節とRC01〜RC28の欠落・重複なし、diff整形検査成功を確認した。RC28件は未実装の条件であり、新しいquota／retention／compactionの実装・native実証は0。既存のnative対照は再実行したが、新契約の成立証明へ数えない。

@@ -2328,3 +2328,13 @@ A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全�
 - 次は容量／retention・compaction／checkpoint世代移行と上限後の再開、差分snapshot／incremental検証・性能比較。実行lease・既配達許可の取消し、Bの隔離／認証IPC、C以降の実broker／Task／G3／G4・本番採用は残る。
 
 保存運用第1段の検証結果: 新規23件成功。型検査・build成功。全体101 files／3,685 tests成功、21 files／1,415 tests skipped。実別processの競合拒否と、ownerのafter-publish SIGKILL後の専有再取得・認証復旧が成功。既存restartのSIGKILLも再実行した。diff整形検査成功、distにauthority／journal fixtureが含まれないことを確認。macOS arm64／Node 26.12.1のみの参照実証で、本番backend・profile・診断採用は無効のまま。
+
+
+### 2026-11-02: 保存容量・履歴保持の契約設計
+
+- §9.64へ独立retention policy、既定manual／explicit-release、archive／hold／時刻証拠、full→release-pending→retiredと最低tombstoneを追加。closedやmtimeだけで削除せず、現v1 chainから直接blobを抜かない。
+- 2 root・temp・予約・移行ピークを別計数し、通常admissionと保守予約を分離。最後の8 commits／64 MiB／1,024 entries等は候補値に限定し、将来closureの実size・追加record上界が不足するsessionはbeginから拒否する契約にした。
+- retryの一回性、history-prunedの明示、archiveからのcurrent性復活禁止、独立holdの削除CASとの直列化、time originをまたぐage判定、planの入出力・認可とcompactionへ渡す条件、hard full時の停止・再開条件を定義。
+- RC01〜RC28は未実装の回帰条件。今回は設計のみ。次は認証付きcompaction／checkpoint世代移行の具体schema・phase・保存／crash復旧、その後の実装・native実証。quota／削除／archive／保持期限・移行を有効化していない。性能改善・B／C以降の本番採用も残る。
+
+保存容量・履歴保持契約の文書検証: 公開文書command例と既存A1–A2／disk owner／restartの計123テスト成功。§9.64の10小節とRC01〜RC28の欠落・重複なし、diff整形検査成功を確認した。RC28件は未実装の条件であり、新しいquota／retention／compactionの実装・native実証は0。既存のnative対照は再実行したが、新契約の成立証明へ数えない。
