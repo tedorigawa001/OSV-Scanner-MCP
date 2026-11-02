@@ -7,7 +7,7 @@ def sha={File f->MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex(
 def state=[actionCalls:0]
 def executionId=System.getProperty('osv.offer.executionId')
 def compile=tasks.register('compileOfferDriver',JavaCompile){t->
- t.source(files('BtaOwnedDriver.java','BtaOfferProbe.java'));t.classpath=files(p.runtime.collect{file(it.artifact)})
+ t.source(files('BtaOwnedDriver.java','BtaOfferProbe.java','BtaOfferStorage.java'));t.classpath=files(p.runtime.collect{file(it.artifact)})
  t.sourceCompatibility='21';t.targetCompatibility='21';t.destinationDirectory.set(layout.buildDirectory.dir('driver-classes'));t.options.release.set(21);t.options.compilerArgs.add('-proc:none')
 }
 tasks.register('offerProof',JavaExec){t->

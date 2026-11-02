@@ -1,7 +1,7 @@
 import {it,expect} from 'vitest';
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
-import {offerSources,offerVerificationSources,verifyOfferCase} from '../fixtures/btaOfferProof.mjs';
+import {offerSources,offerVerificationSources,verifyOfferCase,storageCases,storagePhase} from '../fixtures/btaOfferProof.mjs';
 import {assertNoAbsolutePaths} from '../manual/kgpRecordPaths.mjs';
 import {readOwnedOffer,offerLimitations,classifyOfferExecution} from '../fixtures/btaOfferContract.mjs';
 const unavailable=()=>({schema:'osv-mcp.gradle-owned-offer-v1',executionId:'unit-execution',graphId:'graph',exportId:'export',project:':',invocation:'one',stage:'consumer',slot:'snapshot',profileId:'test',producerState:'unavailable',plannedCaptures:0,limitations:[...offerLimitations],naturalContentBinding:false,phases:[],unavailableReason:'execution_unsupported',blockedBeforePhase:'registration',noRead:true});
@@ -129,7 +129,7 @@ it('rejects a claimed snapshot size over the per-file budget before calling a re
 
 const published=()=>JSON.parse(readFileSync(new URL('../../../docs/validation/gradle-bta-offer-contract-2026-11-02.json',import.meta.url),'utf8'));
 it('replays the native envelopes and gates with their original implementation fingerprints',()=>{
- const d=published();expect(d.schema).toBe('osv-mcp.bta-offer-contract-experiment-v6');expect(d.preReviews.map((p:any)=>p.schema)).toEqual(['osv-mcp.bta-offer-contract-experiment-v1','osv-mcp.bta-offer-contract-experiment-v2','osv-mcp.bta-offer-contract-experiment-v3','osv-mcp.bta-offer-contract-experiment-v4','osv-mcp.bta-offer-contract-experiment-v5']);expect(d.preReviews.map((p:any)=>p.committedIn??null)).toEqual([null,'a6d5409','d1f8557',null,'c555f4f']);expect(d.scope.readerIntegrityRejections).toBe(0);assertNoAbsolutePaths(d);
+ const d=published();expect(d.schema).toBe('osv-mcp.bta-offer-contract-experiment-v8');expect(d.preReviews.map((p:any)=>p.schema)).toEqual(['osv-mcp.bta-offer-contract-experiment-v1','osv-mcp.bta-offer-contract-experiment-v2','osv-mcp.bta-offer-contract-experiment-v3','osv-mcp.bta-offer-contract-experiment-v4','osv-mcp.bta-offer-contract-experiment-v5','osv-mcp.bta-offer-contract-experiment-v6','osv-mcp.bta-offer-contract-experiment-v7']);expect(d.preReviews.map((p:any)=>p.committedIn??null)).toEqual([null,'a6d5409','d1f8557',null,'c555f4f','63e8a62',null]);expect(d.scope.readerIntegrityRejections).toBe(0);assertNoAbsolutePaths(d);
  expect(Object.keys(d.sourcesSha256)).toEqual(offerSources);expect(Object.keys(d.verificationSourcesSha256)).toEqual(offerVerificationSources);
  for(const group of ['sourcesSha256','verificationSourcesSha256'])for(const [p,h]of Object.entries(d[group]))expect(createHash('sha256').update(readFileSync(new URL('../../../'+p,import.meta.url))).digest('hex'),p).toBe(h);
  const scope:Record<string,number>={};for(const c of d.cases){expect(c.sourceHashes).toEqual(d.sourcesSha256);for(const [k,v]of Object.entries(verifyOfferCase(c)))scope[k]=(scope[k]??0)+v;}
@@ -244,3 +244,53 @@ it('adopts whatever witness the caller supplies: authenticity rests on the calle
  const e=complete();e.executionId='old';const forged={executionId:'old',actionCalls:1,didWork:true,skipped:false,noSource:false,failed:false,skipMessage:null};
  expect(readOwnedOffer(e,{...settings(),executionId:'old',executionWitness:forged},()=>bytes).importStatus).toBe('accepted');
 });
+
+it('requires storage boundary checks in the published native proof',()=>{
+ const c=published().cases[0];delete c.report.storageChecks;expect(()=>verifyOfferCase(c)).toThrow('bta_offer_record_invalid');
+});
+
+for(const [name,reason]of Object.entries(storageCases))it('replays native storage refusal: '+name,()=>{
+ const c=published().cases[0],e=c.report.envelopes.find((e:any)=>e.invocation===name),last=c.report.storageChecks.filter((e:any)=>e.invocation===name).at(-1);
+ expect(e.failurePhase).toBe(storagePhase(name));expect(e.failureReason).toBe(reason);expect(last.reason).toBe(reason);expect(last.callsAfter).toBe(last.callsBefore);
+ if(storagePhase(name)!=='capture')expect(e.phases.some((p:any)=>p.phase==='call')).toBe(false);
+ expect(verifyOfferCase(c).storageBoundaryRejections).toBe(29);
+});
+const storageFaults:Record<string,(c:any)=>void>={
+ 'empty storage audit':c=>c.report.storageChecks=[],
+ 'empty storage seals':c=>c.report.storageSeals=[],
+ 'seal root key changed':c=>c.report.storageSeals[0].view.staging.ancestors.at(-1).key='key-999999',
+ 'seal digest changed':c=>c.report.storageSeals[0].view.evidence.entries[0].sha256='0'.repeat(64),
+ 'refusal turned into success':c=>c.report.storageChecks.find((x:any)=>x.invocation==='staging-file-symlink'&&x.reason).reason=null,
+ 'unsafe file content read':c=>c.report.storageChecks.find((x:any)=>x.invocation==='evidence-file-symlink'&&x.reason).fileReads=1,
+ 'new call during refusal':c=>c.report.storageChecks.find((x:any)=>x.invocation==='staging-root-replaced'&&x.reason).callsAfter++,
+ 'capture-before guard removed':c=>{const i=c.report.storageChecks.findIndex((x:any)=>x.invocation==='capture-after-change'&&x.phase==='capture'&&x.point==='before');c.report.storageChecks.splice(i,1);},
+ 'write failure lost':c=>{c.report.storageChecks.find((x:any)=>x.invocation==='storage-failed').errorKind=null;},
+ 'unsafe observation disguised with selfhash':c=>{
+  const row=c.report.storageChecks.find((x:any)=>x.invocation==='staging-file-symlink'&&x.reason);row.observed.staging.entries[0].kind='file';row.observedSha256=createHash('sha256').update(JSON.stringify(row.observed)).digest('hex');
+ },
+ 'budget violation removed with selfhash':c=>{
+  const row=c.report.storageChecks.find((x:any)=>x.invocation==='staging-file-budget'&&x.reason);for(const root of Object.values(row.observed) as any[])for(const f of root.entries)f.size=0;row.observedSha256=createHash('sha256').update(JSON.stringify(row.observed)).digest('hex');
+ },
+};
+for(const [name,fault]of Object.entries(storageFaults))it('rejects storage record mutation: '+name,()=>{const c=published().cases[0];fault(c);expect(()=>verifyOfferCase(c)).toThrow();});
+
+it('requires evidence that write guards prevented outside writes',()=>{const c=published().cases[0];delete c.report.storageWriteProbes;expect(()=>verifyOfferCase(c)).toThrow();});
+it('requires enumeration counts for storage checks',()=>{const c=published().cases[0];for(const row of c.report.storageChecks)delete row.enumerations;expect(()=>verifyOfferCase(c)).toThrow();});
+
+for(const name of ['staging-before-write-symlink','evidence-before-write-symlink','parent-before-write-symlink'])it('replays write-before-symlink refusal with zero outside writes: '+name,()=>{
+ const c=published().cases[0],p=c.report.storageWriteProbes.find((p:any)=>p.invocation===name);
+ expect(p).toMatchObject({writeAttempts:0,writtenBytes:0,fileReads:0});expect(p.before).toEqual(p.after);expect(verifyOfferCase(c).prewriteSymlinkRefusals).toBe(3);
+});
+for(const name of ['staging-many-entries','evidence-many-entries'])it('stops at the seventeenth entry in a 202-file directory: '+name,()=>{
+ const c=published().cases[0],row=c.report.storageChecks.filter((p:any)=>p.invocation===name).at(-1);expect(row.enumerations.at(-1)).toMatchObject({count:17,maxEntries:16});expect(row.fileReads).toBe(0);expect(verifyOfferCase(c).boundedEnumerationRefusals).toBe(2);
+});
+const guardFaults:Record<string,(c:any)=>void>={
+ 'outside file created':c=>c.report.storageWriteProbes[0].after.push({path:'library.snapshot',size:1,sha256:'0'.repeat(64)}),
+ 'write attempted before refusal':c=>c.report.storageWriteProbes[1].writeAttempts=1,
+ 'written bytes before refusal':c=>c.report.storageWriteProbes[2].writtenBytes=1,
+ 'uncounted source read':c=>c.report.storageWriteProbes[0].fileReads=1,
+ 'enumeration exceeded bound':c=>c.report.storageChecks.find((r:any)=>r.invocation==='staging-many-entries'&&r.reason).enumerations[0].count=202,
+ 'enumeration witness dropped':c=>delete c.report.storageChecks[0].enumerations,
+ 'small directory masquerades as large fixture':c=>c.report.storageEntryProbes[0].createdEntries=1,
+};
+for(const [name,fault]of Object.entries(guardFaults))it('rejects write guard / enumeration witness mutation: '+name,()=>{const c=published().cases[0];fault(c);expect(()=>verifyOfferCase(c)).toThrow();});

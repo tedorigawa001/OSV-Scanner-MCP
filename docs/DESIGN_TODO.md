@@ -2093,3 +2093,17 @@ contract v3／graph v3／adapter v5で、policy別の承認toolchain／loader pr
 - [設計書§9.43](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#943-c555f4fレビュー修正実行gateの理由と公開ic記録2026-11-02)へ、実行witnessの真正性が呼出側依存であることを明記。未実行を`owned_offer_action_not_executed`、実行済みでのID不一致を`claim_mismatch`とし、§9.37.5の表へ追加。未実行の戻り値も共通形にした。
 - IC記録のfileKeyをrun内tokenへ置換し、icChecksの基準複写を除去（1.49MB→1.13MB）。sameIcContentsの順序依存を解消。
 - 両DSL・両版を再実行して各版42テスト、件数は§9.42と同じ。記録v6、静的126テスト。本番採用・自然消費receipt0を維持。
+
+
+### 2026-11-02: staging・保存証拠の境界native実証
+
+- [設計書§9.44](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#944-staging保存証拠の境界検証とcapture前後の改変拒否2026-11-02)へ、staging／evidenceのancestor・root・file実体、flat inventory、size／digestと容量のseal・前後検査を追加。最初のledgerを固定しrepeatへ継承。
+- 両側のsymlink・同bytes置換・未記録file・容量超過、実保存write失敗、capture処理前後の改変をnativeで拒否。追加20 case、両版各82テスト。保存領域拒否96件、最終12 build・BTA呼出し60回・正常終了56回、公開記録v7・静的158テスト。
+- 公開証拠はledger一式と成功時のdigest、拒否時の必要metadataに限定。新規検証器で欠落・改変・自己hash更新を含む対照を拒否。自然消費receipt・本番採用0、全writer排除や全observer計測は未成立。次は完全な構築・入力manifest／汎用静的取込の契約と実証。
+
+
+### 2026-11-02: 保存境界レビュー修正（write前gate・bounded列挙）
+
+- [設計書§9.45](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#945-保存境界レビュー修正書込前symlink拒否と列挙上限2026-11-02)へ、source読取前と各write直前の両保存先・祖先検証を追加。root／共通祖先symlinkの12件で保存write試行・保存byte・領域外の保存書込0を確認。
+- source listingの計数とlimitをsortより前へ移動。202-file directoryの8件で17 entry（上限16＋1）に停止し、全listingの上限も検証。
+- 両版各96テスト、静的177テスト。最終12 build・BTA呼出し60回、保存領域拒否116。公開記録v8へ更新し旧未コミットv7は参考要約へ。内部no-opはunknown、自然消費receipt・本番採用0を維持。

@@ -14,7 +14,7 @@ const list=(x,p,nonempty=true)=>{if(!Array.isArray(x)||(nonempty&&!x.length)||x.
 const pathOK=p=>str(p)&&!p.includes(String.fromCharCode(0))&&!p.includes('\\')&&!p.startsWith('/')&&p.split('/').every(x=>x&&x!=='.'&&x!=='..')&&!p.includes(':');
 const files=x=>list(x,f=>{keys(f,['path','size','sha256']);return pathOK(f.path)&&Number.isSafeInteger(f.size)&&f.size>=0&&digest(f.sha256);},false);
 // Producer-recorded failure reasons and the phases where each can legitimately be recorded.
-const reasonPhases={compile_failed:['call'],storage_failed:['generation','seal','postcheck','capture'],budget_exceeded:offerPhases,extra_evaluation:offerPhases,binding_mismatch:['binding','precheck'],configuration_unregistered:['precheck'],configuration_reused:['precheck'],ic_state_mismatch:['precheck'],content_mismatch:['precheck','postcheck','capture'],stale:['precheck','postcheck','capture'],path_invalid:['seal','precheck','postcheck','capture']};
+const reasonPhases={compile_failed:['call'],storage_failed:['generation','seal','postcheck','capture'],budget_exceeded:offerPhases,extra_evaluation:offerPhases,binding_mismatch:['binding','precheck'],configuration_unregistered:['precheck'],configuration_reused:['precheck'],ic_state_mismatch:['precheck'],storage_identity_mismatch:['precheck','postcheck','capture'],storage_inventory_mismatch:['seal','precheck','postcheck','capture'],content_mismatch:['precheck','postcheck','capture'],stale:['precheck','postcheck','capture'],path_invalid:['seal','precheck','postcheck','capture']};
 // Content claims the reader re-confirms after the trust gate; identity claims rest on the broker.
 const reverified=['stale','content_mismatch'];
 export const maxPlannedCaptures=8;

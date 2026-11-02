@@ -2,14 +2,25 @@
 import {readOwnedOffer,validateOwnedOffer,offerJdkProfile,classifyOfferExecution} from './btaOfferContract.mjs';
 import {btaDriverProfiles} from './gradleBtaDriverRuntime.mjs';
 import {hash} from './gradleBtaDriverProof.mjs';
-export const offerSources=['src/test/fixtures/BtaOwnedDriver.java','src/test/fixtures/BtaOfferProbe.java','src/test/fixtures/gradle-bta-offer.gradle','src/test/fixtures/btaOfferContract.mjs','src/test/gradle/btaOffer.integration.test.ts','src/test/fixtures/gradleBtaDriverRuntime.mjs','src/test/fixtures/gradleSnapshotOwnerExpected.mjs'];
-export const offerVerificationSources=['src/test/fixtures/btaOfferContract.d.mts','src/test/fixtures/btaOfferProof.mjs','src/test/fixtures/btaOfferProof.d.mts','src/test/gradle/btaOffer.test.ts','src/test/manual/gradleBtaOfferResults.mjs'];
+import {verifyStorageAudit} from './btaOfferStorageProof.mjs';
+export const offerSources=['src/test/fixtures/BtaOwnedDriver.java','src/test/fixtures/BtaOfferProbe.java','src/test/fixtures/gradle-bta-offer.gradle','src/test/fixtures/btaOfferContract.mjs','src/test/gradle/btaOffer.integration.test.ts','src/test/fixtures/gradleBtaDriverRuntime.mjs','src/test/fixtures/gradleSnapshotOwnerExpected.mjs','src/test/fixtures/BtaOfferStorage.java'];
+export const offerVerificationSources=['src/test/fixtures/btaOfferContract.d.mts','src/test/fixtures/btaOfferProof.mjs','src/test/fixtures/btaOfferProof.d.mts','src/test/gradle/btaOffer.test.ts','src/test/manual/gradleBtaOfferResults.mjs','src/test/fixtures/btaOfferStorageProof.mjs'];
 const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const fail=()=>{throw Error('bta_offer_record_invalid');};
 // Published IC identities are run-local tokens, never device/inode values.
 const fileKeyToken=/^key-[1-9][0-9]*$/;
-const modes=['completed','unchanged','ic-delete-seed','ic-delete','ic-modify-seed','ic-modify','ic-reset-seed','ic-reset','storage-failed','call-failed','post-failed','capture-failed','foreign-config','foreign-project','foreign-parameter','foreign-paths','stale-precheck','source-changed','unsupported'];
+export const storageCases={
+ 'staging-file-symlink':'path_invalid','staging-root-symlink':'path_invalid','staging-file-replaced':'storage_identity_mismatch','staging-root-replaced':'storage_identity_mismatch','staging-extra-file':'storage_inventory_mismatch','staging-file-budget':'budget_exceeded',
+ 'evidence-file-symlink':'path_invalid','evidence-root-symlink':'path_invalid','evidence-file-replaced':'storage_identity_mismatch','evidence-root-replaced':'storage_identity_mismatch','evidence-extra-file':'storage_inventory_mismatch','evidence-file-budget':'budget_exceeded',
+ 'staging-before-write-symlink':'path_invalid','evidence-before-write-symlink':'path_invalid','parent-before-write-symlink':'path_invalid','staging-many-entries':'budget_exceeded','evidence-many-entries':'budget_exceeded',
+ 'storage-total-budget':'budget_exceeded','storage-entry-budget':'budget_exceeded',
+ 'capture-before-change':'stale','capture-after-change':'stale','capture-evidence-before':'stale','capture-evidence-after':'stale','capture-path-after':'storage_identity_mismatch','capture-extra-after':'storage_inventory_mismatch',
+};
+export const storagePhase=name=>name.startsWith('capture-')?'capture':name.includes('before-write')||name==='storage-total-budget'||name==='storage-entry-budget'?'seal':'precheck';
+const priorModes=['completed','unchanged','ic-delete-seed','ic-delete','ic-modify-seed','ic-modify','ic-reset-seed','ic-reset','storage-failed','call-failed','post-failed','capture-failed','foreign-config','foreign-project','foreign-parameter','foreign-paths','stale-precheck','source-changed'];
+const modes=[...priorModes,...Object.keys(storageCases),'unsupported'];
 const expectedCases={
+ ...Object.fromEntries(Object.entries(storageCases).map(([name,reason])=>[name,{state:'failed',phase:storagePhase(name),reason}])),
  completed:{state:'completed'},
  unchanged:{state:'completed'},
  'ic-delete-seed':{state:'completed'},'ic-modify-seed':{state:'completed'},'ic-reset-seed':{state:'completed'},
@@ -27,18 +38,19 @@ const expectedCases={
  unsupported:{state:'unavailable',reason:'execution_unsupported',blockedBeforePhase:'registration'},
 };
 const repeatSeeds={unchanged:'completed','ic-delete':'ic-delete-seed','ic-modify':'ic-modify-seed','ic-reset':'ic-reset-seed'};
-const planned={completed:1,'capture-failed':1};
+const planned={completed:1,'capture-failed':1,...Object.fromEntries(Object.keys(storageCases).filter(x=>x.startsWith('capture-')).map(x=>[x,1]))};
 // Producer-recorded refusals are accepted as producer_failed; only content claims are re-read (4 snapshot files + source).
 const decision=(e,importStatus,fileReads)=>({producerState:e.producerState,importStatus,reason:null,producerReason:e.failureReason??null,fileReads,naturalReady:false,naturalContentBinding:false,consumptionStatus:'offered-inputs-only',executionEvidence:'bta-call-only',compilerWorkStatus:'unknown'});
 export function verifyOfferCase(c){
  const profile=btaDriverProfiles[c.gradleVersion];if(!profile||!['Groovy','Kotlin'].includes(c.dsl)||!eq(Object.keys(c.sourceHashes),offerSources))fail();
- const registration={producerSha256:hash(c.sourceHashes[offerSources[0]]+c.sourceHashes[offerSources[1]]),runtimeSha256:hash(JSON.stringify(profile.runtime)),profileSha256:hash(JSON.stringify({version:c.gradleVersion,java:offerJdkProfile.java.sha256,strategy:'in-process'}))};
+ const registration={producerSha256:hash(c.sourceHashes[offerSources[0]]+c.sourceHashes[offerSources[1]]+c.sourceHashes['src/test/fixtures/BtaOfferStorage.java']),runtimeSha256:hash(JSON.stringify(profile.runtime)),profileSha256:hash(JSON.stringify({version:c.gradleVersion,java:offerJdkProfile.java.sha256,strategy:'in-process'}))};
  if(!eq(c.registration,registration))fail();
  const r=c.report,g=c.gradle;
- if(r.schema!=='osv-mcp.bta-offer-probe-v5'||r.actualCompilerVersion!==profile.kotlinVersion||r.javaSha256!==offerJdkProfile.java.sha256||r.naturalContentBinding!==false||r.productionAdopted!==false||g.gradleVersion!==c.gradleVersion||g.javaSha256!==offerJdkProfile.java.sha256||g.javacSha256!==offerJdkProfile.javac.sha256||g.maxWorkers!==1||g.parallel!==false)fail();
+ if(!Array.isArray(r.storageSeals)||!Array.isArray(r.storageChecks))fail();
+ if(r.schema!=='osv-mcp.bta-offer-probe-v7'||r.actualCompilerVersion!==profile.kotlinVersion||r.javaSha256!==offerJdkProfile.java.sha256||r.naturalContentBinding!==false||r.productionAdopted!==false||g.gradleVersion!==c.gradleVersion||g.javaSha256!==offerJdkProfile.java.sha256||g.javacSha256!==offerJdkProfile.javac.sha256||g.maxWorkers!==1||g.parallel!==false)fail();
  if(!eq(r.envelopes.map(e=>e.invocation),modes)||!eq(c.decisions.map(e=>e.invocation),modes))fail();
  if(!eq(r.rejections.map(e=>e.mode),['duplicate-begin','reentry','reuse','phase-after-completion','failed-reuse','late-registration'])||r.rejections.some(e=>!Number.isInteger(e.callsBefore)||e.callsBefore!==e.callsAfter))fail();
- const classes=['BtaOfferProbe$Broker.class','BtaOfferProbe$Handle.class','BtaOfferProbe$Rejected.class','BtaOfferProbe.class','BtaOwnedDriver$Binding.class','BtaOwnedDriver$ConfigurationRejected.class','BtaOwnedDriver.class'];
+ const classes=['BtaOfferProbe$Broker.class','BtaOfferProbe$Handle.class','BtaOfferProbe$Rejected.class','BtaOfferProbe.class','BtaOfferStorage$Failure.class','BtaOfferStorage.class','BtaOwnedDriver$Binding.class','BtaOwnedDriver$ConfigurationRejected.class','BtaOwnedDriver.class'];
  if(!eq(r.driverClasses.map(x=>x.path),classes)||r.driverClasses.some(x=>!/^[a-f0-9]{64}$/.test(x.sha256)||x.size<=0))fail();
  // Native records describe the library call and each generated snapshot once, not once per offer.
  const lib=r.libraryCompilation,generation=r.snapshotGeneration;
@@ -46,7 +58,7 @@ export function verifyOfferCase(c){
  const impl=profile.runtime.find(x=>x.coordinate.startsWith('org.jetbrains.kotlin:kotlin-build-tools-impl:'));
  const stdlib=profile.runtime.find(x=>x.coordinate.startsWith('org.jetbrains.kotlin:kotlin-stdlib:'));
  if(generation?.generatorSha256!==impl.sha256||!eq(generation.snapshots?.map(x=>[x.id,x.inputSha256]),[['library.snapshot',lib.jarSha256],['stdlib.snapshot',stdlib.sha256]]))fail();
- const scope={gradleBuilds:0,unchangedRepeatCalls:0,skippedExecutions:0,cacheRestorations:0,blockedSuccessAdoptions:0,icStateRejections:0,btaCalls:1,successfulBtaCalls:Number(lib.result==='COMPILATION_SUCCESS'),generatedSnapshots:generation.snapshots.length,completedOffers:0,failedOffers:0,unavailableOffers:0,handleRejections:0,producerRecordedRejections:0,reverifiedContentFailures:0,readerIntegrityRejections:0,naturalReceipts:0,productionAdoptions:0};
+ const scope={gradleBuilds:0,unchangedRepeatCalls:0,skippedExecutions:0,cacheRestorations:0,blockedSuccessAdoptions:0,icStateRejections:0,storageBoundaryRejections:0,btaCalls:1,successfulBtaCalls:Number(lib.result==='COMPILATION_SUCCESS'),generatedSnapshots:generation.snapshots.length,completedOffers:0,failedOffers:0,unavailableOffers:0,handleRejections:0,producerRecordedRejections:0,reverifiedContentFailures:0,readerIntegrityRejections:0,naturalReceipts:0,productionAdoptions:0};
  let exportId;const cumulativeCalls={};
  for(let i=0;i<modes.length;i++){
   const e=r.envelopes[i],d=c.decisions[i],expectedCase=expectedCases[e.invocation];
@@ -122,5 +134,6 @@ export function verifyOfferCase(c){
   else {if(!eq(execution.adoption,{producerState:'completed',importStatus:'unavailable',reason:'owned_offer_action_not_executed',producerReason:null,fileReads:0,naturalReady:false,naturalContentBinding:false,consumptionStatus:'offered-inputs-only',executionEvidence:'not-called',compilerWorkStatus:'unknown'})||result.reason!=='owned_offer_action_not_executed'||execution.adoptionFileReads!==0)fail();scope.blockedSuccessAdoptions++;if(result.btaTaskActionExecuted||result.importStatus!=='unavailable'||w.skipMessage!==(execution.mode==='cache'?'FROM-CACHE':'SKIPPED'))fail();if(execution.mode==='cache')scope.cacheRestorations++;else scope.skippedExecutions++;}
   scope.gradleBuilds++;
  }
+ Object.assign(scope,verifyStorageAudit(r,repeatSeeds));
  return scope;
 }

@@ -2171,3 +2171,88 @@ probe／native matrixはv4、[公開検証記録](validation/gradle-bta-offer-co
 両DSL・Gradle 8.11.1／9.2.1で各版42テスト成功。件数は§9.42と同じ（12 build、BTA呼出し36回・正常終了32回、completed 20／failed 52／unavailable 4、IC状態拒否12、未実行buildでの採用拒否8、reader graph拒否0）。probe／native matrixはv5、検証記録はexperiment-v6とし、v5はc555f4fのcommit済み原本として要約を`preReviews`へ残した。静的／公開記録再生は126テスト成功。修正前のreaderとv5記録では126件中7件が失敗することを先に確認した。
 
 bta-call-only／compilerWorkStatus=unknown、自然消費receipt・本番採用0、§9.38〜9.42の未実施範囲は変わらない。
+
+
+### 9.44 staging・保存証拠の境界検証とcapture前後の改変拒否（2026-11-02）
+
+次工程1として、test-onlyのBtaOfferStorage.javaを追加し、producerのstagingとevidenceを独立した保護領域として検証する。既存のhelper・実行gate・IC内容束縛・producer記録拒否の分類は維持する。本番adapterや汎用の静的filesystem readerの実装ではない。
+
+#### 保存・seal・検査の契約
+
+生成された非空snapshotの具体列から保存する名前・size／digestを固定し、CREATE_NEWでstagingとevidenceへ書き込む。上書き・再baseline化は許可しない。保存成功後のsealで、project rootから各保存rootまでの全lexical ancestor、root本体、全direct entryの種類と実体をNOFOLLOW_LINKSで検査する。領域はsnapshot 2 fileだけのflat inventoryとし、未記録fileを許可しない。親directory・root・fileのidentityはnative内で比較し、公開記録ではrun-local key-Nだけを保持する。
+
+seal以降のprecheck／postcheck／captureは同じledgerへ照合する。repeatは親seedのledgerを継承し、現在のfileからledgerを作り直さない。directory／fileのsymlink、非regular entry、名前一覧の不一致、祖先・root・fileの実体変更、容量超過を内容読取より前に拒否し、実体が同じ場合だけ安全なbounded readでsize／digestを照合する。内容読取後にも祖先・file identityを再確認する。
+
+標準上限は1 file 32 MiB、領域合計128 MiB、1 root 16 entry。保存時はsourceのsizeと累積書込量を検査してから開き、検査時も属性値で上限を確認してから内容を読む。負例用の閉じたprofileではtotal上限1 KiB、entry上限1を別に用いる。これらを本番の承認profileとは扱わない。
+
+保存途中の例外はsealのfailedへ不可逆に遷移させる。storage-failedは正常な保存処理のevidence書込先へdirectoryを先置きし、実CREATE_NEWのFileAlreadyExistsExceptionを検出する対照へ置き換えた。保存成功後の無関係な重複書込で失敗を代用しない。未完成の保存領域からbindingやBTA callへ進まない。実証した保存I/O故障はこの衝突であり、実disk-fullや全種類のI/O故障を発生させたという意味ではない。
+
+#### native負例
+
+| 対照 | 操作・拒否 |
+| --- | --- |
+| staging／evidenceのfile symlink | 元fileを保護領域外の同project内へ移動し、同じbytesへ向くlinkを作成。path_invalid、内容読取0 |
+| staging／evidenceのroot symlink | rootを退避してlinkへ差替え。path_invalid、内容読取0 |
+| staging／evidenceのfile置換 | 同じbytesの新fileをatomic moveで差替え。storage_identity_mismatch、内容読取0 |
+| staging／evidenceのroot置換 | rootを退避し、同内容の新directory／fileを作成。storage_identity_mismatch、内容読取0 |
+| staging／evidenceの未記録file | unregistered.txtを追加。storage_inventory_mismatch、内容読取0 |
+| staging／evidenceのfile容量超過 | sparse fileを32 MiB＋1 byteへ拡張。budget_exceeded、内容読取0 |
+| 合計容量・entry超過 | 実snapshotが1 KiBのtotal上限を超える保存、2 entryが上限1を超えるseal。budget_exceededとしてBTA前に拒否 |
+| capture前の内容改変 | stagingまたはevidenceを1 byte変更し、capture開始後の検査でstale |
+| capture処理後の内容改変 | 最初のcapture検査の後にstagingまたはevidenceを変更し、capture成功前の後検査でstale |
+| capture処理後の置換・未記録file | 同bytesのfile置換またはfile追加を行い、後検査でidentity／inventory拒否 |
+
+上表の追加20 caseを各DSL／版で実行する。captureは予定1回をbegin→前検査→処理後の後検査→successとして扱い、後検査が失敗すればcaptureのfailureだけを記録してcompletedにしない。capture-failed等の既存内容改変対照も同じ検査経路へ移行した。単にcapture後へfailure flagを追加したものではなく、実file操作と元ledgerへの再照合で拒否する。
+
+producer側のpath_invalid／storage_identity_mismatch／storage_inventory_mismatch／budget_exceeded／storage_failedは、正しいphaseで記録されたproducer_failedとして受理する。staleは既存契約どおり信頼gate後にreaderが内容不一致を再確認する。producerの拒否と、readerが表明の矛盾を検出してgraphを拒否する場合を混同しない。
+
+#### 証拠・回帰・再検証結果
+
+storageSealsは最初のledgerを一度だけ保存し、storageChecksはphase・前後のcall counter・理由・読取数・上限・観測digestを持つ。成功時はledgerのdigestとの一致を検証し、観測全体の複写を保存しない。拒否時は原因の検証に必要な観測metadataを保持する。書込失敗には実error種別・完了書込量・試行sizeも記録する。新しい公開検証器btaOfferStorageProof.mjsは、sealと生成descriptorの対応、全検査の順序、captureの前後、理由に対応する実体／inventory／容量／内容の不一致を検証する。
+
+Groovy／Kotlin × Gradle 8.11.1／9.2.1の最終sourceで各版82テスト成功。12 build（seed／SKIPPED／FROM-CACHE各4）、実BTA呼出し60回（library 4、consumer 56）・正常終了56回、snapshot生成8個。captureの拒否対照にも実BTAの先行成功を要求し、precheck・sealでの拒否はcall eventなしとする。completed 20／failed 132／producer unavailable 4である。
+
+保存領域の拒否は96件（新規20 case×4組＝80、実保存失敗4、既存のpostcheck／capture／precheckの内容改変12）。IC状態拒否12、未実行buildでの成功envelope採用拒否8、handle拒否24、producer記録拒否124、readerによる内容拒否再確認32、reader graph拒否0。前節との累積ではなく、現在のmatrixから検証済み証拠を集計した値である。
+
+静的／公開記録再生158テスト成功。ledger／audit欠落、基準digestやidentityの変更、拒否の成功化、unsafe fileの読取、拒否中の追加BTA call、capture前検査の削除を拒否する。symlinkをregular fileへ偽装、容量違反を消去し観測の自己hashも更新する対照も拒否する。変更前には必須storage auditの欠落を検出できないことを先に確認した。
+
+probe／native matrixはv6、[検証記録](validation/gradle-bta-offer-contract-2026-11-02.json)はexperiment-v7へ更新。旧commit済みv6はhash・観測時点・scope・commit付き要約をpreReviewsへ残した。再現方法は§9.38と同じで、追加Java helperも同じJavaCompileから構築する。runtime／JDK／class inventory・sourceの一致をnativeと集約で検証する。公開記録にsnapshotやlocal cacheのbytesは含めず、metadata再生をnativeのread再実行とは扱わない。
+
+今回保証するのは、閉じたproducer経路の保存・検査時点と、capture処理前後の観測である。全writer排除、区間内の変更と復元、compilerが自然消費したbytes、terminal completed後のあらゆる競合を保証しない。汎用の静的path／storage manifest取込、全observerの追加評価計測、本番profile承認・本番採用は別工程に残す。内部no-opはunknown、自然消費receipt・本番採用0を維持する。
+
+最終確認（§9.44）: 通常全体2,574テスト成功・native opt-in等1,267件skip。typecheck・build・差分検査も成功。
+
+
+### 9.45 保存境界レビュー修正・書込前symlink拒否と列挙上限（2026-11-02）
+
+§9.44のwriteは保存先の祖先／root検証より先に書き込み、rootViewはsort後にlimitを適用していた。レビュー時の一時コピーでは、project外を指す保存root symlink経由でfileを作成し、その後のsealで初めてpath_invalidとなった。また、maxEntries=16でも200 entryを全件列挙してから拒否していた。両問題を修正し、現在sourceで両DSL・両Gradle版を再実行した。
+
+#### 書込前の両保存先gate
+
+writeの最初に、staging・evidence両方がproject配下の正規化済みlexical pathであることと、project rootから各保存rootまでの全componentがNOFOLLOW_LINKSでdirectoryであることを確認する。一方のrootが不正な場合に、他方へ先に部分保存しない。source snapshotの読取より前に両保存先を検証し、最初のdirectory実体を保持する。各file書込の直前と保存処理終了時にも、両保存先と最初の実体の一致を確認する。最終fileはCREATE_NEW／WRITE／NOFOLLOW_LINKSで開く。
+
+新規native対照はstaging-before-write-symlink、evidence-before-write-symlink、parent-before-write-symlinkの3種。project外に専用directoryと既知のsentinelを用意し、空の保存rootまたは共通祖先をそのdirectoryへのsymlinkにして、実際のwrite入口を呼ぶ。いずれもsealのwriteでpath_invalidとなり、snapshot sourceの読取0、保存write試行0、保存byte 0で拒否する。領域外の相対file inventory／size／digestが前後で同じことも独立に確認する。
+
+領域外directoryとsentinelの作成は故障準備であり、上記0件は検証対象のproducer保存処理の書込を指す。故障用directoryとlinkは観測後に元へ戻し、テストが作った領域外directoryを削除する。絶対pathは公開証拠に含めない。先行symlinkの拒否を実証したもので、検証とopenの間に任意writerが祖先を入れ替える競合を完全に排除する保証ではない。
+
+#### sortより前の列挙予算
+
+rootViewはdirectory streamのsource側で受け取ったentryを計数し、最初のmaxEntries＋1件だけを保持する。上限超過ならそこでbudget_exceededとし、sort・entry属性検査・内容読取へ進まない。上限内の場合だけ、最大maxEntries件をsortして従来のinventory／実体／内容検証を行う。
+
+各listingにrole・実列挙数・上限を保存し、全storageChecksでcount≦maxEntries＋1を要求する。成功する検査では内容読取前後の各root listingも照合する。これはJava directory streamから検査が受け取るentry数であり、filesystem providerやOS内部のbuffer／syscall数を計測したものではない。
+
+staging-many-entries／evidence-many-entriesは、通常の2 snapshotに200 fileを実追加した202-file directoryを使う。maxEntries=16に対して17件で停止し、内容読取0でprecheckのbudget_exceededとなる。故障準備・Gradleのcache出力走査をこのlistingの計測へ含めない。上限1の既存entry-budget対照も2件で止まる。
+
+#### 検証結果・記録
+
+Groovy／Kotlin × Gradle 8.11.1／9.2.1で各版96テスト成功。書込前symlink拒否は12件で、保存処理の領域外write 0。202-file directoryの列挙上限拒否は8件、各17件で停止した。全listingも上限＋1以内であることを検証した。BTA前に止める新規5 caseのため、BTA実行回数は前節と同じである。
+
+最終matrixは12 build、BTA呼出し60回・正常終了56回、snapshot生成8個、completed 20／failed 152／producer unavailable 4、保存領域拒否116件。IC状態拒否12、未実行buildの成功envelope採用拒否8、handle拒否24、producer記録拒否144、内容拒否のreader再確認32、reader graph拒否0。前節との累積ではない。
+
+probe／native matrixはv7、[検証記録](validation/gradle-bta-offer-contract-2026-11-02.json)はexperiment-v8へ更新した。旧未コミットv7はhash・観測時点・scopeを持つ参考要約としてpreReviewsへ残す。native source／実class／runtime／親child JDKを照合し、現在sourceの最終matrixだけを収録する。再現方法は§9.38と同じ。
+
+静的／公開記録再生177テスト成功。新規probe・列挙counterの欠落を修正前に見逃すことを先に確認し、領域外file追加、拒否前のwrite試行・保存byte・source読取、列挙202件への変更、counter削除、故障fixture数の偽装を回帰対照に追加した。write前の拒否も必須の観測metadataとphaseへ結び付け、単に後段でseal失敗となった場合を同じ成功対照として扱わない。
+
+内部no-opはunknown、自然消費receipt・本番採用0を維持する。全writer排除、汎用の構築／入力manifestと静的path取込、全observerの追加評価計測は別工程である。
+
+最終確認（§9.45）: 通常全体2,593テスト成功・native opt-in等1,281件skip。typecheck・build・差分検査も成功。

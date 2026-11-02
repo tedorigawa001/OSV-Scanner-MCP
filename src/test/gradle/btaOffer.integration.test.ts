@@ -8,7 +8,7 @@ import {btaDriverProfiles} from '../fixtures/gradleBtaDriverRuntime.mjs';
 import {offerJdkProfile as ownerJdkProfile} from '../fixtures/btaOfferContract.mjs';
 import {hash} from '../fixtures/gradleBtaDriverProof.mjs';
 import {readOwnedOffer,classifyOfferExecution} from '../fixtures/btaOfferContract.mjs';
-import {offerSources as sources,verifyOfferCase} from '../fixtures/btaOfferProof.mjs';
+import {offerSources as sources,verifyOfferCase,storageCases,storagePhase} from '../fixtures/btaOfferProof.mjs';
 const repo=fileURLToPath(new URL('../../../',import.meta.url)),binary=process.env.OSV_MCP_TEST_GRADLE;
 const roots:string[]=[],cases:any[]=[];const digest=async(p:string)=>hash(await readFile(p));
 afterAll(async()=>{for(const root of roots)await rm(root,{recursive:true,force:true});},120000);
@@ -20,10 +20,10 @@ for(const dsl of ['Groovy','Kotlin'])describe.skipIf(!binary)(`BTA owner envelop
   const runtime=await Promise.all(profile.runtime.map(async e=>{const artifact=await realpath(path.join(process.env.GRADLE_USER_HOME!,e.relativePath));expect(await digest(artifact)).toBe(e.sha256);return {...e,artifact};}));
   const root=await realpath(await mkdtemp(path.join(os.tmpdir(),'osv-bta-offer-')));roots.push(root);
   const sourceHashes=Object.fromEntries(await Promise.all(sources.map(async f=>[f,await digest(path.join(repo,f))])));
-  const registration={producerSha256:hash(sourceHashes[sources[0]!]!+sourceHashes[sources[1]!]!),runtimeSha256:hash(JSON.stringify(profile.runtime)),profileSha256:hash(JSON.stringify({version,java:ownerJdkProfile.java.sha256,strategy:'in-process'}))};
+  const registration={producerSha256:hash(sourceHashes[sources[0]!]!+sourceHashes[sources[1]!]!+sourceHashes['src/test/fixtures/BtaOfferStorage.java']!),runtimeSha256:hash(JSON.stringify(profile.runtime)),profileSha256:hash(JSON.stringify({version,java:ownerJdkProfile.java.sha256,strategy:'in-process'}))};
   const exportId=crypto.randomUUID(),profileId='test-owned-'+version,settings:any={trust:true,profiles:{[profileId]:{registration,strategy:'in-process'}},graphId:'graph',exportId};
   const ext=dsl==='Kotlin'?'.gradle.kts':'.gradle';
-  const files:Record<string,string>={['settings'+ext]:'rootProject.name="bta-offer-proof"\nbuildCache { local { directory = file("local-cache") } }\n',['build'+ext]:dsl==='Kotlin'?'apply(from="offer.gradle")\n':"apply from: 'offer.gradle'\n",'BtaOwnedDriver.java':await readFile(path.join(repo,sources[0]!),'utf8'),'BtaOfferProbe.java':await readFile(path.join(repo,sources[1]!),'utf8'),'offer.gradle':await readFile(path.join(repo,sources[2]!),'utf8')};
+  const files:Record<string,string>={['settings'+ext]:'rootProject.name="bta-offer-proof"\nbuildCache { local { directory = file("local-cache") } }\n',['build'+ext]:dsl==='Kotlin'?'apply(from="offer.gradle")\n':"apply from: 'offer.gradle'\n",'BtaOwnedDriver.java':await readFile(path.join(repo,sources[0]!),'utf8'),'BtaOfferProbe.java':await readFile(path.join(repo,sources[1]!),'utf8'),'BtaOfferStorage.java':await readFile(path.join(repo,'src/test/fixtures/BtaOfferStorage.java'),'utf8'),'offer.gradle':await readFile(path.join(repo,sources[2]!),'utf8')};
   const fixtureFiles=[...Object.keys(files),'runtime-profile.json'];files['runtime-profile.json']=JSON.stringify({runtime,stdlib:runtime.find(e=>e.coordinate.startsWith('org.jetbrains.kotlin:kotlin-stdlib:'))!.artifact,exportId,profileId,registration,fixtureFiles});
   for(const [f,b]of Object.entries(files))await writeFile(path.join(root,f),b);
   const fixtureHashes=Object.fromEntries(await Promise.all(fixtureFiles.map(async f=>[f,await digest(path.join(root,f))])));
@@ -60,7 +60,7 @@ for(const dsl of ['Groovy','Kotlin'])describe.skipIf(!binary)(`BTA owner envelop
   await runBuild('cache');
   expect(executionEvidence.map(x=>x.witness.skipMessage)).toEqual([null,'SKIPPED','FROM-CACHE']);
   record={gradleVersion:version,dsl,sourceHashes,registration,report,gradle,decisions,executionEvidence};verifyOfferCase(record);cases.push(record);
-  if(process.env.OSV_MCP_BTA_OFFER_OUTPUT)await writeFile(process.env.OSV_MCP_BTA_OFFER_OUTPUT,JSON.stringify({schema:'osv-mcp.bta-offer-matrix-v5',cases},null,2)+'\n');
+  if(process.env.OSV_MCP_BTA_OFFER_OUTPUT)await writeFile(process.env.OSV_MCP_BTA_OFFER_OUTPUT,JSON.stringify({schema:'osv-mcp.bta-offer-matrix-v7',cases},null,2)+'\n');
  },300000);
  it('completes a real bound BTA call as offered-only, not compiler-work or natural receipt',()=>expect(decisions.find(d=>d.invocation==='completed').trusted).toMatchObject({importStatus:'accepted',fileReads:4,compilerWorkStatus:'unknown',naturalReady:false}));
  for(const name of ['storage-failed','call-failed'])it('keeps a legitimate failed prefix without requiring later evidence: '+name,()=>expect(decisions.find(d=>d.invocation===name).trusted).toMatchObject({importStatus:'producer_failed',fileReads:0}));
@@ -81,5 +81,18 @@ for(const dsl of ['Groovy','Kotlin'])describe.skipIf(!binary)(`BTA owner envelop
   expect(check.matched).toBe(false);expect(check).not.toHaveProperty('baseline');expect(JSON.stringify(check.beforeCall)).not.toMatch(/dev=|ino=/);expect(check.callsAfterCheck).toBe(check.callsBefore);expect(e.failurePhase).toBe('precheck');expect(e.failureReason).toBe('ic_state_mismatch');expect(e.phases.some((x:any)=>x.phase==='call')).toBe(false);
   expect(decisions.find(d=>d.invocation===name).trusted).toMatchObject({importStatus:'producer_failed',fileReads:0,producerReason:'ic_state_mismatch'});
  });
- it('reports only its bounded native scope',()=>expect(record.report).toMatchObject({btaConsumerCalls:8,libraryCalls:1,generatedSnapshots:2,naturalContentBinding:false,productionAdopted:false}));
+ for(const [name,reason]of Object.entries(storageCases))it('refuses a real storage boundary fault: '+name,()=>{
+  const e=record.report.envelopes.find((x:any)=>x.invocation===name),check=record.report.storageChecks.filter((x:any)=>x.invocation===name).at(-1);
+  expect(e.producerState).toBe('failed');expect(e.failurePhase).toBe(storagePhase(name));expect(e.failureReason).toBe(reason);expect(check.reason).toBe(reason);expect(check.callsBefore).toBe(check.callsAfter);
+  if(storagePhase(name)!=='capture')expect(e.phases.some((x:any)=>x.phase==='call')).toBe(false);
+  expect(decisions.find(d=>d.invocation===name).trusted.importStatus).toBe('producer_failed');
+ });
+ it('rejects pre-write root/ancestor symlinks without creating any outside file',()=>{
+  expect(record.report.storageWriteProbes).toHaveLength(3);for(const p of record.report.storageWriteProbes){expect(p.before).toEqual(p.after);expect(p).toMatchObject({writeAttempts:0,writtenBytes:0,fileReads:0});}
+ });
+ it('enumerates at most maxEntries plus one, even with 202 files',()=>{
+  expect(record.report.storageEntryProbes).toHaveLength(2);for(const p of record.report.storageEntryProbes){expect(p.createdEntries).toBe(200);const row=record.report.storageChecks.filter((r:any)=>r.invocation===p.invocation).at(-1);expect(row.enumerations.at(-1).count).toBe(17);expect(row.fileReads).toBe(0);}
+  for(const row of record.report.storageChecks)for(const scan of row.enumerations)expect(scan.count).toBeLessThanOrEqual(scan.maxEntries+1);
+ });
+ it('reports only its bounded native scope',()=>expect(record.report).toMatchObject({btaConsumerCalls:14,libraryCalls:1,generatedSnapshots:2,naturalContentBinding:false,productionAdopted:false}));
 });

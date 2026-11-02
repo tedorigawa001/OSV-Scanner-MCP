@@ -13,13 +13,13 @@ public final class BtaOfferProbe {
  static final class Rejected extends RuntimeException {Rejected(String reason){super(reason);}}
  private static final class Handle {
   final Broker owner;final String name;final List<Object> phases=new ArrayList<>();final Map<String,Object> envelope;
-  Map<String,Object> icBaseline;int next=0;boolean used=false,failed=false,active=false;String sourceHash;JvmCompilationConfiguration configuration;
+  BtaOfferStorage storage;Map<String,Object> icBaseline;int next=0;boolean used=false,failed=false,active=false;String sourceHash;JvmCompilationConfiguration configuration;
   ClasspathSnapshotBasedIncrementalCompilationApproachParameters parameter;CompilationService service;ProjectId project;
   List<Path> snapshots;List<Map<String,Object>> descriptors;Path source,out,ic;List<String> args;
-  Handle(Broker owner,String name){this.owner=owner;this.name=name;envelope=m("schema","osv-mcp.gradle-owned-offer-v1","executionId",System.getenv("OSV_BTA_OFFER_EXECUTION_ID"),"graphId","graph","exportId",owner.exportId,"project",":","invocation",name,"stage","consumer","slot","snapshot","profileId",owner.profileId,"producerState","pending","plannedCaptures",name.equals("completed")||name.equals("capture-failed")?1:0,"limitations",LIMITS,"naturalContentBinding",false,"phases",phases);}
+  Handle(Broker owner,String name){this.owner=owner;this.name=name;envelope=m("schema","osv-mcp.gradle-owned-offer-v1","executionId",System.getenv("OSV_BTA_OFFER_EXECUTION_ID"),"graphId","graph","exportId",owner.exportId,"project",":","invocation",name,"stage","consumer","slot","snapshot","profileId",owner.profileId,"producerState","pending","plannedCaptures",name.equals("completed")||name.startsWith("capture-")?1:0,"limitations",LIMITS,"naturalContentBinding",false,"phases",phases);}
  }
  private static final class Broker {
-  final Set<String> names=new HashSet<>();final Map<String,Handle> handles=new HashMap<>();final String exportId,profileId;boolean closed=false;int calls=0;final List<Object> audit=new ArrayList<>(),icChecks=new ArrayList<>();
+  final Set<String> names=new HashSet<>();final Map<String,Handle> handles=new HashMap<>();final String exportId,profileId;boolean closed=false;int calls=0;final List<Object> audit=new ArrayList<>(),icChecks=new ArrayList<>(),storageChecks=new ArrayList<>(),storageSeals=new ArrayList<>(),storageWriteProbes=new ArrayList<>(),storageEntryProbes=new ArrayList<>();
   Broker(String exportId,String profileId){this.exportId=exportId;this.profileId=profileId;}
   Handle begin(String name){if(closed)throw new Rejected("registration_closed");if(!names.add(name))throw new Rejected("duplicate_begin");var h=new Handle(this,name);handles.put(name,h);return h;}
   void start(Handle h,String phase){if(h.owner!=this||h.failed||h.active||h.next>=PHASES.size()||!PHASES.get(h.next).equals(phase))throw new Rejected("phase_invalid");h.active=true;h.phases.add(m("phase",phase,"outcome","begin"));}
@@ -42,7 +42,8 @@ public final class BtaOfferProbe {
     icChecks.add(m("invocation",h.name,"seedInvocation",parent.name,"beforeCall",current,"matched",matched,"callsBefore",calls,"callsAfterCheck",calls));
     if(!matched){failure(h,"precheck","ic_state_mismatch");return;}
    }
-   if(!h.sourceHash.equals(BtaOwnedDriver.hashFile(h.source))||!check(h)){failure(h,"precheck","stale");return;}
+   if(!h.sourceHash.equals(BtaOwnedDriver.hashFile(h.source))){failure(h,"precheck","stale");return;}
+   String refused=h.storage.check(h.name,"precheck","checkpoint",calls);if(refused!=null){failure(h,"precheck",refused);return;}
    success(h,"precheck",m("matched",true));h.used=true;start(h,"call");
    if(h.name.equals("completed"))expectReject(audit,"reentry",()->{try{consume(h,service,project,actual,parameter);}catch(Rejected e){throw e;}catch(Exception e){throw new RuntimeException(e);}},"configuration_reused",this);
    calls++;
@@ -52,20 +53,19 @@ public final class BtaOfferProbe {
    if(result!=CompilationResult.COMPILATION_SUCCESS){failure(h,"call","compile_failed");callError(h,"result",result.toString());return;}
    success(h,"call",m("result",result.toString(),"configurationId",h.name+"-config","parameterId",h.name+"-parameter","executionEvidence","bta-call-only","compilerWorkStatus","unknown","outputs",BtaOwnedDriver.tree(h.out)));
    start(h,"postcheck");if(h.name.equals("post-failed"))BtaOwnedDriver.flip(h.snapshots.get(0));
-   if(!check(h)){failure(h,"postcheck","stale");return;}success(h,"postcheck",m("matched",true));
+   refused=h.storage.check(h.name,"postcheck","checkpoint",calls);if(refused!=null){failure(h,"postcheck",refused);return;}success(h,"postcheck",m("matched",true));
    // postchecked is interim; completed is written only after every planned capture.
    for(int i=0;i<((Number)h.envelope.get("plannedCaptures")).intValue();i++){
     start(h,"capture");if(h.name.equals("capture-failed"))BtaOwnedDriver.flip(h.snapshots.get(0));
-    if(!check(h)){failure(h,"capture","stale");return;}success(h,"capture",m("matched",true));
+    h.storage.inject(h.name,"capture-before");
+    refused=h.storage.check(h.name,"capture","before",calls);if(refused!=null){failure(h,"capture",refused);return;}
+    h.storage.inject(h.name,"capture-after");
+    refused=h.storage.check(h.name,"capture","after",calls);if(refused!=null){failure(h,"capture",refused);return;}success(h,"capture",m("matched",true));
    }
    if(REPEAT_SEEDS.containsValue(h.name))h.icBaseline=icSnapshot(h.ic);
    h.envelope.put("producerState","completed");
   }
   @SuppressWarnings("unchecked") void callError(Handle h,String kind,String detail){var event=(Map<String,Object>)h.phases.get(h.phases.size()-1);var data=(Map<String,Object>)event.get("evidence");data.put("errorKind",kind);data.put("detail",detail);}
-  boolean check(Handle h)throws Exception{
-   for(var f:h.descriptors){for(String k:List.of("baselinePath","path")){Path p=BtaOwnedDriver.root.resolve((String)f.get(k));byte[] b=BtaOwnedDriver.safeBytes(p,p.getParent());if(b.length!=((Number)f.get("size")).longValue()||!BtaOwnedDriver.hash(b).equals(f.get("sha256")))return false;}}
-   return true;
-  }
  }
  // File identities are compared natively but published only as run-local tokens.
  static final Map<String,String> fileKeyTokens=new HashMap<>();
@@ -103,7 +103,7 @@ public final class BtaOfferProbe {
   Path template=build.resolve("template");Files.createDirectories(template);List<Map<String,Object>> generated=new ArrayList<>();
   for(Path input:List.of(jar,stdlib)){String id=input.equals(jar)?"library.snapshot":"stdlib.snapshot";var snapshot=service.calculateClasspathSnapshot(input.toFile(),ClassSnapshotGranularity.CLASS_MEMBER_LEVEL);Path out=template.resolve(id);snapshot.saveSnapshot(out.toFile());generated.add(m("id",id,"size",Files.size(out),"sha256",BtaOwnedDriver.hashFile(out),"inputSha256",BtaOwnedDriver.hashFile(input)));}
   var broker=new Broker(exportId,profileId);var negative=broker.audit;var envelopes=new ArrayList<Object>();Map<String,Object> unchangedEvidence=null;var projects=new HashMap<String,ProjectId>();
-  List<String> modes=List.of("completed","unchanged","ic-delete-seed","ic-delete","ic-modify-seed","ic-modify","ic-reset-seed","ic-reset","storage-failed","call-failed","post-failed","capture-failed","foreign-config","foreign-project","foreign-parameter","foreign-paths","stale-precheck","source-changed");
+  List<String> modes=new ArrayList<>(List.of("completed","unchanged","ic-delete-seed","ic-delete","ic-modify-seed","ic-modify","ic-reset-seed","ic-reset","storage-failed","call-failed","post-failed","capture-failed","foreign-config","foreign-project","foreign-parameter","foreign-paths","stale-precheck","source-changed"));modes.addAll(BtaOfferStorage.CASES.keySet());
   for(String mode:modes)broker.begin(mode);
   expectReject(negative,"duplicate-begin",()->broker.begin("completed"),"duplicate_begin",broker);broker.closed=true;
   for(String mode:modes){
@@ -111,10 +111,16 @@ public final class BtaOfferProbe {
    broker.start(h,"generation");broker.success(h,"generation",m("librarySha256",BtaOwnedDriver.hashFile(jar),"generatorSha256",BtaOwnedDriver.hashFile(Path.of(service.getClass().getProtectionDomain().getCodeSource().getLocation().toURI())),"snapshots",generated));
    Path work=build.resolve(REPEAT_SEEDS.getOrDefault(mode,mode));Files.createDirectories(work);Path stage=work.resolve("staging"),saved=work.resolve("evidence"),ic=work.resolve("ic"),out=work.resolve("classes");for(Path d:List.of(stage,saved,ic,out))Files.createDirectories(d);
    broker.start(h,"seal");h.descriptors=new ArrayList<>();List<Path> snapshots=new ArrayList<>();
-   for(var f:generated){String id=(String)f.get("id");Path p=stage.resolve(id),baseline=saved.resolve(id);if(!REPEAT_SEEDS.containsKey(mode)){Files.copy(template.resolve(id),p);Files.copy(p,baseline);}snapshots.add(p);h.descriptors.add(m("id",id,"path",root.relativize(p).toString(),"baselinePath",root.relativize(baseline).toString(),"size",f.get("size"),"sha256",f.get("sha256")));}
-   if(mode.equals("storage-failed")){
-    try{Files.writeString(saved.resolve("library.snapshot"),"fault",StandardOpenOption.CREATE_NEW);throw new AssertionError("write should fail");}catch(FileAlreadyExistsException expected){broker.failure(h,"seal","storage_failed");}envelopes.add(h.envelope);continue;
+   for(var f:generated){String id=(String)f.get("id");Path p=stage.resolve(id),baseline=saved.resolve(id);snapshots.add(p);h.descriptors.add(m("id",id,"path",root.relativize(p).toString(),"baselinePath",root.relativize(baseline).toString(),"size",f.get("size"),"sha256",f.get("sha256")));}
+   h.storage=REPEAT_SEEDS.containsKey(mode)?broker.handles.get(REPEAT_SEEDS.get(mode)).storage:new BtaOfferStorage(mode,stage,saved,h.descriptors,broker.storageChecks);
+   String storageReason=null;
+   if(!REPEAT_SEEDS.containsKey(mode)){
+    h.storage.prepareWriteProbe();storageReason=h.storage.write(template,mode,broker.calls);
+    var writeProbe=h.storage.finishWriteProbe();if(writeProbe!=null)broker.storageWriteProbes.add(writeProbe);
+    if(storageReason==null)storageReason=h.storage.check(mode,"seal","checkpoint",broker.calls);
+    if(storageReason==null)broker.storageSeals.add(m("invocation",mode,"view",h.storage.sealedView));
    }
+   if(storageReason!=null){broker.failure(h,"seal",storageReason);envelopes.add(h.envelope);continue;}
    broker.success(h,"seal",m("files",h.descriptors));Path source=work.resolve("Consumer.kt");if(!REPEAT_SEEDS.containsKey(mode))Files.writeString(source,mode.equals("call-failed")?"not valid kotlin @@@":BtaOwnedDriver.consumer("v2"));ProjectId project=projects.computeIfAbsent(REPEAT_SEEDS.getOrDefault(mode,mode),key->new ProjectId.ProjectUUID(UUID.randomUUID()));
    try{
     broker.bind(h,service,project,snapshots,source,out,ic,BtaOwnedDriver.arguments(out,jar+File.pathSeparator+stdlib,"offerConsumer"));
@@ -124,7 +130,7 @@ public final class BtaOfferProbe {
     var suppliedProject=mode.equals("foreign-project")?new ProjectId.ProjectUUID(UUID.randomUUID()):project;
     var reversed=new ArrayList<>(h.parameter.getNewClasspathSnapshotFiles());Collections.reverse(reversed);
     var suppliedParameter=mode.equals("foreign-parameter")?new ClasspathSnapshotBasedIncrementalCompilationApproachParameters(h.parameter.getNewClasspathSnapshotFiles(),ic.resolve("other.bin").toFile()):mode.equals("foreign-paths")?new ClasspathSnapshotBasedIncrementalCompilationApproachParameters(reversed,h.parameter.getShrunkClasspathSnapshot()):h.parameter;
-    injectIcFault(mode,ic);
+    injectIcFault(mode,ic);h.storage.inject(mode,"precheck");if(h.storage.injectedEntries>0)broker.storageEntryProbes.add(m("invocation",mode,"createdEntries",h.storage.injectedEntries,"originalEntries",h.descriptors.size()));
     var beforeOutputs=BtaOwnedDriver.tree(out);int beforeCalls=broker.calls;
     broker.consume(h,service,suppliedProject,supplied,suppliedParameter);
     if(mode.equals("unchanged")){
@@ -141,6 +147,6 @@ public final class BtaOfferProbe {
   for(String seed:REPEAT_SEEDS.values())service.finishProjectCompilation(projects.get(seed));
   broker.closed=true;expectReject(negative,"late-registration",()->broker.begin("late"),"registration_closed",broker);
   envelopes.add(m("schema","osv-mcp.gradle-owned-offer-v1","executionId",System.getenv("OSV_BTA_OFFER_EXECUTION_ID"),"graphId","graph","exportId",exportId,"project",":","invocation","unsupported","stage","consumer","slot","snapshot","profileId",profileId,"producerState","unavailable","plannedCaptures",0,"limitations",LIMITS,"naturalContentBinding",false,"phases",List.of(),"unavailableReason","execution_unsupported","blockedBeforePhase","registration","noRead",true));
-  Files.writeString(root.resolve("offer-report.json"),BtaOwnedDriver.json(m("schema","osv-mcp.bta-offer-probe-v5","executionId",System.getenv("OSV_BTA_OFFER_EXECUTION_ID"),"icChecks",broker.icChecks,"icBaselines",REPEAT_SEEDS.values().stream().sorted().map(name->m("invocation",name,"snapshot",broker.handles.get(name).icBaseline)).toList(),"unchangedEvidence",unchangedEvidence,"envelopes",envelopes,"rejections",negative,"btaConsumerCalls",broker.calls,"libraryCalls",1,"libraryCompilation",m("result",result.toString(),"sourceSha256",BtaOwnedDriver.hashFile(lib),"jarSha256",BtaOwnedDriver.hashFile(jar),"outputs",BtaOwnedDriver.tree(libOut)),"snapshotGeneration",m("generatorSha256",BtaOwnedDriver.hashFile(Path.of(service.getClass().getProtectionDomain().getCodeSource().getLocation().toURI())),"snapshots",generated),"generatedSnapshots",generated.size(),"actualCompilerVersion",service.getCompilerVersion(),"javaSha256",BtaOwnedDriver.hashFile(Path.of(System.getProperty("java.home"),"bin/java")),"driverClasses",BtaOwnedDriver.tree(root.resolve("build/driver-classes")),"naturalContentBinding",false,"productionAdopted",false)));
+  Files.writeString(root.resolve("offer-report.json"),BtaOwnedDriver.json(m("schema","osv-mcp.bta-offer-probe-v7","storageWriteProbes",broker.storageWriteProbes,"storageEntryProbes",broker.storageEntryProbes,"storageSeals",broker.storageSeals,"storageChecks",broker.storageChecks,"executionId",System.getenv("OSV_BTA_OFFER_EXECUTION_ID"),"icChecks",broker.icChecks,"icBaselines",REPEAT_SEEDS.values().stream().sorted().map(name->m("invocation",name,"snapshot",broker.handles.get(name).icBaseline)).toList(),"unchangedEvidence",unchangedEvidence,"envelopes",envelopes,"rejections",negative,"btaConsumerCalls",broker.calls,"libraryCalls",1,"libraryCompilation",m("result",result.toString(),"sourceSha256",BtaOwnedDriver.hashFile(lib),"jarSha256",BtaOwnedDriver.hashFile(jar),"outputs",BtaOwnedDriver.tree(libOut)),"snapshotGeneration",m("generatorSha256",BtaOwnedDriver.hashFile(Path.of(service.getClass().getProtectionDomain().getCodeSource().getLocation().toURI())),"snapshots",generated),"generatedSnapshots",generated.size(),"actualCompilerVersion",service.getCompilerVersion(),"javaSha256",BtaOwnedDriver.hashFile(Path.of(System.getProperty("java.home"),"bin/java")),"driverClasses",BtaOwnedDriver.tree(root.resolve("build/driver-classes")),"naturalContentBinding",false,"productionAdopted",false)));
  }
 }
