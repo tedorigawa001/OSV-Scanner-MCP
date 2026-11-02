@@ -2338,3 +2338,18 @@ A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全�
 - RC01〜RC28は未実装の回帰条件。今回は設計のみ。次は認証付きcompaction／checkpoint世代移行の具体schema・phase・保存／crash復旧、その後の実装・native実証。quota／削除／archive／保持期限・移行を有効化していない。性能改善・B／C以降の本番採用も残る。
 
 保存容量・履歴保持契約の文書検証: 公開文書command例と既存A1–A2／disk owner／restartの計123テスト成功。§9.64の10小節とRC01〜RC28の欠落・重複なし、diff整形検査成功を確認した。RC28件は未実装の条件であり、新しいquota／retention／compactionの実装・native実証は0。既存のnative対照は再実行したが、新契約の成立証明へ数えない。
+
+
+### 2026-11-02: 7b2e418レビュー修正（移行開始予約とtombstoneの数え方）
+
+- [設計書§9.65](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#965-7b2e418レビュー修正移行開始予約とtombstoneの数え方2026-11-02)へ、保守予約をrestartで使えない移行開始予約と残りのrestart予約へ分け、restart連打で移行が始められなくなる経路を閉じた。sourceへ書くのは受付停止・失効だけで保守controlは別領域と統一し、RC25を拡充。retired sessionはsnapshotからtombstoneへ移し、256／4,096の上限を別に数えると明記。設計のみ。
+
+
+### 2026-11-02: 認証付きcompaction・checkpoint世代移行の具体設計
+
+- §9.66へ独立LineageRegistry、5 root／役割、strict control schema、source freezeからtarget構築・検証・選択・GC・finalizationまでのphase別必須証拠を追加。sourceへは移行開始予約による停止・全session失効だけを追記する。
+- digest依存をintent→plan→release認可→tombstone core→base→ready→activation→GC→retire receipt→finalizationの順に分離し、未来の認可／headをbaseへ入れる循環を避けた。最低tombstoneはcoreと外側receipt・control閉包の合成として完成する。
+- source選択中とtarget選択後を独立CASで分離し、後者のsource fallbackを禁止。holdの最終barrier、有限inventory／write-ahead GC batch、部分削除・CAS reply紛失を含むcrash復旧表、再開条件を具体化。
+- MC01〜MC36は未実装の回帰条件。M0 schema／閉包、M1 registry状態機械、M2 freeze／base／ready、M3 native切替／GC、M4実backend接続の順で実装する。今回は設計のみで、compaction・移行・削除・独立registry・本番採用を有効化していない。
+
+世代移行契約の文書検証: 公開文書command例と既存A1–A2／disk owner／restartの計123テスト成功。§9.66の11小節とMC01〜MC36の欠落・重複なし、diff整形検査成功を確認した。MC36件およびM0〜M4は未実装で、新規v2 schema／registry／compaction／GCの実装・native実証・本番採用は0。既存native対照の再実行を新protocolの成立証明へ数えない。

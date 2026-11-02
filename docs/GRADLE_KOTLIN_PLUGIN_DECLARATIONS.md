@@ -3574,6 +3574,8 @@ RootedJournalIO.recoverPublishedは低水準の検証callbackを必要とするf
 
 保守予約は現在の全scopeを閉じる最大形、open uploadのcancel、slot／index／terminal、restart、必要な切替controlの実serialized sizeと追加chunk数を計算した上で、上記最低値より大きければ引き上げる。未知のfuture fieldはschema最大幅で評価する。計算方法をprofileへ固定し、予約だけでhard capを超える場合はbeginから拒否する。基礎schemaの余裕だけで「必ず閉じられる」と主張しない。繰返しcrashや無制限のrestartにも8 commitsで足りるとはせず、残りを消費したら受付を閉じる。
 
+保守予約はさらに二つに分ける（§9.65）。**移行開始予約**は、offline移行を始めるためにsourceへ追記する最小のcommit（受付停止と全session失効の記録、§9.64.4）に必要なcommit・bytes・entries・recordsで、restartや通常のclosureからは使えない。**restart予約**は保守予約からこれを除いた残りで、§9.62のrestartが失効commitに使う。restart予約が尽きたらrestartを拒否して停止し、移行開始予約は保持したまま残す。これにより、crashとrestartを繰り返しても、新rootへの移行を始める余地が失われない。移行開始予約の計算方法も承認profileへ固定する。
+
 #### 9.64.4 full／release-pending／retiredと最低証拠
 
 | 状態 | 残すもの・許す応答 |
@@ -3582,11 +3584,11 @@ RootedJournalIO.recoverPublishedは低水準の検証callbackを必要とするf
 | release-pending | fullを維持したまま、plan・hold・archive・時刻証拠を固定。承認待ち・移行途中ではbytesを消さず、削減見積りを空きへ算入しない |
 | retired | 新rootのtyped tombstoneとaudit／archiveへの認証済みrefだけで表す。raw closureなしのverified／成功receiptは返さず、history-pruned等の明示unavailableとする。更新要求はnot_currentとして拒否 |
 
-解放対象はsession単位にする。current／live session、非terminal scope、open upload、未確定local tail、未解決read pin／grantがあれば解放しない。初回の移行方式は受付停止・in-flight完了・全session失効を保存するoffline方式とし、activeな共有bytesを動かすonline GCは別設計にする。draftでもclosed／upload cancelledが保存されていれば対象になり得る。committedでcurrentなsessionは対象にせず、失効保存を先に行う。
+解放対象はsession単位にする。current／live session、非terminal scope、open upload、未確定local tail、未解決read pin／grantがあれば解放しない。初回の移行方式は受付停止・in-flight完了・全session失効を保存するoffline方式とし（sourceへ追記するのはこの停止・失効の記録だけで、§9.64.3の移行開始予約を使う。tombstone・plan・認可・世代遷移などの保守control recordは新形式の別領域へ置く）、activeな共有bytesを動かすonline GCは別設計にする。draftでもclosed／upload cancelledが保存されていれば対象になり得る。committedでcurrentなsessionは対象にせず、失効保存を先に行う。
 
 最低tombstoneは、authorityId・source storeEpoch、`sessionKeyDigest=H(authorityId,sourceEpoch,sessionId)`、nonce／graph／export／execution／core等のbindingDigest、scope／witness集合digest、action予約集合digest、元のclosed validity／revision・terminal集合digest、sourceHead、retentionPolicyDigest、releasePlanDigest、archiveReceiptRef、releaseAuthorizationRef、holdBarrierRef、時間policy時のtimeEvidenceRef、retired理由・世代を持つ。namespace全体を閉じるため、個々のoperationを無制限に列挙せず、そのsessionへの更新をすべて拒否する。raw actor・capability・使用可能なpermitを含めない。tombstoneは認証された新base・checkpointから解決できなければならず、自己hashだけの否認表として使わない。参照先のpolicy／plan本体・認可receipt・hold／時刻証拠・archive receipt・source→targetの認証された遷移証拠も最低control閉包として保持し、参照digestだけを残して証拠を消さない。
 
-新形式のtombstone namespaceは最大4,096 sessionを初期候補上限とし、serialized bytes・logical records・storage上限も同時に検査する。上限後に古いidentityを自動で忘れない。namespaceを恒久retireする独立認可とreader設定移行が成立しない間は停止する。無限の履歴を有限容量で保持できる設計とはしない。
+新形式では、retiredにしたsessionをsnapshotのsession一覧から外してtombstone namespaceへ移す。現行snapshot（§9.62）の256 session上限は保持中（full／release-pending）のsessionに対する上限であり、tombstoneの上限とは別に数える。tombstone namespaceは最大4,096 sessionを初期候補上限とし、serialized bytes・logical records・storage上限も同時に検査する。上限後に古いidentityを自動で忘れない。namespaceを恒久retireする独立認可とreader設定移行が成立しない間は停止する。無限の履歴を有限容量で保持できる設計とはしない。
 
 #### 9.64.5 再試行と監査
 
@@ -3604,7 +3606,7 @@ session deadline用の単調clockと、retentionのclosed ageは別物である�
 
 holdはsessionだけでなく関連archive・元世代の証拠へ解決し、理由の詳細を公開metadataへ漏らさずhold集合の認証digestを保存する。hold registry取得不能、未知revision、計画後のhold追加では削除planを失効させる。保守専有・受付停止中に新holdを黙って捨てたり、未適用のholdへ成功ackを返したりしない。
 
-削除認可の最終CASとhold登録は同じ独立control順序で直列化し、CAS前に成立したholdは削除を禁止する。物理削除開始後のhold要求はtoo-late等を明示し、既に消したrawを保持済みと報告しない。新holdを反映できる順序保証が未成立なら削除はunsupportedとする。単なる「削除前に一度holdを読む」方式で競合を解決しない。
+削除認可の最終CASとhold登録は同じ独立control順序で直列化し、CAS前に成立したholdは削除を禁止する。物理削除開始後のhold要求はtoo-late等を明示し、既に消したrawを保持済みと報告しない。新holdを反映できる順序保証が未成立なら削除はunsupportedとする。単なる「削除前に一度holdを読む」方式で競合を解決しない。§9.66では最終barrier CASを有限削除operationの受理・不可逆開始の線形化点とし、その後・最初のunlink前の要求にもtoo-lateを明示する。物理unlink時刻とは区別する。
 
 #### 9.64.7 planの入出力と認可
 
@@ -3642,7 +3644,7 @@ target構築／削除待ちを含む全rootがmigrationPeakCapsに収まる必�
 | 未承認schema／移行profile／独立controlなし | retention_unsupported。本番admissionを開かない |
 | 保持終了済みnamespaceへの履歴要求 | history_pruned／session-unavailable。実行済みを未実行へ変換しない |
 
-将来の通常受付は通常目安に届く前から予約総量で止める。保守slotも尽きるまで停止とrestartを繰り返して上限を回避しない。現在のv1 storeが既にhard fullなら、予約は後付けできず、本節で救済を保証しない。raw削除でslotを捻出するのではなく、現在rootを検証可能なまま停止し、承認済みの別root・ピーク予算・archive／独立checkpointの世代遷移を用意する。sourceへ保守recordを追記できない場合のoffline移行は、別途承認したprotocolが成立するまでunsupportedとする。
+将来の通常受付は通常目安に届く前から予約総量で止める。保守slotも尽きるまで停止とrestartを繰り返して上限を回避しない。現在のv1 storeが既にhard fullなら、予約は後付けできず、本節で救済を保証しない。raw削除でslotを捻出するのではなく、現在rootを検証可能なまま停止し、承認済みの別root・ピーク予算・archive／独立checkpointの世代遷移を用意する。sourceへ移行開始の記録（受付停止・全session失効）を追記できない場合のoffline移行は、別途承認したprotocolが成立するまでunsupportedとする。§9.64.3の移行開始予約は、restartで使い切れないようにしてこの追記の余地を確保するためのものである。
 
 再開は、採用世代の完全検証、失効・tombstoneとcontrolのdurable確認、旧世代の再使用拒否、新予約台帳の復旧・二重予約なし、root／peak上限内、保守余力の再確保、writer専有の全条件がそろった後だけ許す。新sessionを発行し、旧actor・capability・lease・raw replyを復元しない。
 
@@ -3674,7 +3676,7 @@ target構築／削除待ちを含む全rootがmigrationPeakCapsに収まる必�
 | RC22 | source／target／checkpoint／control／tempの同時ピークを確認。source先消しや超過状態で切替しない |
 | RC23 | 切替前・独立CAS前後・削除認可前後・GC中で停止し、source保持／target固定・idempotent再開を確認 |
 | RC24 | 古い正当なroot／control／backupの再送を独立anchorで拒否。target採用後のsource fallbackを禁止 |
-| RC25 | hard fullのv1は無変更で停止。reserve残量を超えるrestart連打・unsupported offline移行で勝手に再formatしない |
+| RC25 | hard fullのv1は無変更で停止。reserve残量を超えるrestart連打・unsupported offline移行で勝手に再formatしない。restart予約を使い切るまでrestartを繰り返しても移行開始予約は残り、offline移行の開始記録を追記できること。restart予約の枯渇後はrestartを拒否すること |
 | RC26 | 受付再開は全条件確認後だけ。旧actor／capability／leaseを拒否し、新sessionの予約が過去の枠と衝突しない |
 | RC27 | 実disk full／保存・fsync失敗・専有喪失ではackなし。quarantine対象をGCで消して成功へ変更しない |
 | RC28 | logical unlink後もarchive／backup等のcopyを残存と報告し、secure erase・本番診断採用・実隔離成立と表明しない |
@@ -3682,3 +3684,216 @@ target構築／削除待ちを含む全rootがmigrationPeakCapsに収まる必�
 RCは実装・native故障注入の条件であり、文書整形テストの成功で成立したことにはしない。実装時にはclock／hold registry／archive／checkpointを独立に故障させ、両processと再起動を含む検証記録を追加する。今回の文書変更で本番backend・policy承認・診断採用を有効化しない。
 
 保存容量・履歴保持契約の文書検証: 公開文書command例と既存A1–A2／disk owner／restartの計123テスト成功。§9.64の10小節とRC01〜RC28の欠落・重複なし、diff整形検査成功を確認した。RC28件は未実装の条件であり、新しいquota／retention／compactionの実装・native実証は0。既存のnative対照は再実行したが、新契約の成立証明へ数えない。
+
+
+### 9.65 7b2e418レビュー修正・移行開始予約とtombstoneの数え方（2026-11-02）
+
+§9.64の設計を文書だけで直した。実装・native実行・本番採用は0件のままである。
+
+- 修正前は、§9.62のrestartも保守予約（最後の8 commits）を使える一方で、§9.64.4の最初の移行方式はsourceへ受付停止・全session失効の記録を追記する必要があった。crashとrestartを繰り返して保守予約を使い切ったstoreは、新rootへの移行も始められず回復できなかった。保守予約を、restartでは使えない**移行開始予約**と、残りの**restart予約**に分けた（§9.64.3）。restart予約が尽きればrestartを拒否して停止し、移行開始予約は残す。
+- 移行でsourceへ書くのは受付停止・全session失効の記録だけで、tombstone・plan・認可・世代遷移などの保守control recordは新形式の別領域へ置くことを、§9.64.4と§9.64.9で揃えた。RC25に、restart予約の枯渇後も移行開始記録を追記できることの対照を加えた。
+- 新形式ではretiredにしたsessionをsnapshotのsession一覧からtombstone namespaceへ移し、現行snapshotの256 session上限（保持中のsession）とtombstoneの4,096 session上限を別に数えることを明記した。
+
+
+### 9.66 認証付きcompaction・checkpoint世代移行の具体契約（設計、2026-11-02）
+
+§9.64と§9.65を受け、最初の移行をoffline方式に限定する。sourceへ追記するのは、専用の移行開始予約を使う受付停止・全session失効の1 transactionだけとする。plan・認可・target・世代選択・削除進捗は別の承認済み領域へ保存する。本節はschema／protocol／回帰条件の設計であり、v2 reader・移行・削除・registryを実装した記録ではない。
+
+#### 9.66.1 主体・root・独立anchor
+
+- sourceStore／sourceCheckpoint、targetStore／targetCheckpoint、maintenanceControlの5 rootをoperatorが別のopaque identityでprovisionする。同一root・包含・aliasを拒否し、固定canonical順に全専有を取得する。archiveは別の承認issuerの責任で保存し、そのreceiptを入力とする。現OwnedJournalDiskの2 root専有だけで5 rootを専有したと扱わない。
+- MaintenanceCoordinatorは受付停止・全phaseの順序を所有する。SourceAuthorityはsource freezeだけ、Compactorはtarget候補構築だけ、MigrationVerifierはsourceとtargetの対応検証だけ、GcExecutorは認可済み有限inventoryの削除だけを担う。新しい一般file操作・code実行・owned source読取権限を与えない。
+- 独立のLineageRegistryを最終的な世代選択の根拠とする。authorityId／lineageId、単調controlRevision、activeGeneration／storeEpoch／rootPairId／format、phase・migrationId、承認profile、holdの順序を保持し、線形化可能なdurable CAS・readback・rollback防止を要求する。clientは独立設定でissuerとlineageをpinし、fresh challengeを束縛した現在値を取得する。source／target／controlと一緒に巻き戻せるsigned fileやhash chainだけではこの条件を満たさない。
+- maintenanceControlはimmutableな証拠・progressの置場であり、そこに最大revisionのrecordがあることだけで採用しない。registryの現在値が参照するrecordだけが確定状態である。独立registryが未接続／未実証なら移行unsupportedを維持する。
+- sourceの初回enrollmentもoperatorが認可し、実authority／source epoch／root pair／source checkpoint issuerを登録する。任意の自己署名sourceをgenesisとして自動登録しない。targetはsourceと異なる新epochとgeneration+1を使い、sourceのlocal revisionを同epochの0へ戻さない。sourceFormatは承認済みv1／v2のstrict unionとし、各parser／freeze形式／移入表をprofileへ固定する。v2をsourceにする次回移行も、この承認と既存tombstone・controlの持越し検証なしには行わない。
+
+通常SourceAuthorityの2 root lockを保持したまま、別descriptorで5 rootを再取得しない。freeze-requestedを確認したSourceAuthorityが受付を閉じて全要求・pinをdrainし、IO ownerをcloseしてから、MaintenanceCoordinatorが5 rootを固定順で取得する。この間に停止してもregistry gateは閉じたままで、通常startup／restartは再開せずmaintenance側だけが進める。旧kernelのIO存続検査とregistry gateを必須とし、cacheだけの返答を許さない。
+
+対象authorityには、各要求の開始・ack／snapshot適用の直前にregistry gateとroot所有権を確認するmigration対応profileを必須とする。旧readerや旧processのmemory cacheを運用上停止できない、read pin／grantをdrainできない場合はfreezeを完了させない。advisory lockを無視したwriterや、既配達の実launch許可の外部強制失効を、今回のprotocolだけで保証しない。
+
+#### 9.66.2 共通encoding・schemaと上限
+
+すべてstrict schema・canonical UTF-8 JSON、safe integer、固定domainの認証envelopeを使う。認証bodyへrecordType／schemaVersion／authorityId／lineageId／migrationIdまたはfreezeIdを含め、keyIdとroleを承認issuerへ照合する。既存testのHMACを実隔離の証明とせず、鍵をrecordへ入れない。refは`{role,id,sha256,byteLength}`のstrict objectとし、digestは参照先envelopeの実bytesに対して計算する。自身のdigestをbodyへ入れない。path／URLをrefとして解決しない。
+
+初期候補の上限は、control 1 record 1 MiB、1 migrationのcontrol閉包64 MiB／1,024 records、inventory page 64 entries、source inventory合計8,192 entries、GC batch 64 entries。個別record・aggregate・root／移行ピークの小さい方を同時に適用する。source側各rootの4,096 entriesやtargetのhard capは引き上げない。transitive control閉包・過去から持越す証拠・archive検証metadata・tempも課金する。新規recordだけ64 MiB以下ならよいとはしない。
+
+| record | 必須binding・主要fieldと用途 |
+| --- | --- |
+| MigrationStartAuthorization v1 | issuer／purpose=start-only、migrationId／freezeId、expected registry revision、sourceBeforeHead、5 root identity、policy／profile digest、移行開始予約、失効対象集合、認可期限。削除やtarget採用は認可しない |
+| FreezeRequestedReceipt v1 | registry CASの結果、startAuthorizationRef、source active identity、受付停止gate、freezeId。sourceのfreeze transactionがこのreceiptを参照する |
+| SourceFreezeResult v1 | source v1ではsnapshotのoperation-result、source v2ではmaintenance record内のmaintenance=migration-freeze、freezeId、sourceBeforeHead、freezeRequestedReceiptRef、失効対象／結果digest。sourceFreezeHeadはcommit後に外側で求める |
+| SourceFreezeAbsentWitness v1 | freezeId、drain gate、完全検証済み現在headと全source履歴で該当freezeが未commitである検証結果。freeze前abort専用で、結果不明やtail未復旧を不在と扱わない |
+| SourceInventoryRoot／Page v1 | sourceFreezeHeadと両root identity、page順序・件数・合計size、各entryのroot role／限定相対名／size／digest／file identity／nlink。source freeze後の正確な有限inventory |
+| RetirementIntent v1 | session namespace、元binding／scope／予約／terminal digest、sourceFreezeHead、policy・hold snapshot・必要なtime evidence・archive receipt。planや最終認可のdigestは含めない |
+| RetentionPlan v1 | 5 root identity、sourceFreezeHead／inventoryRef、keep／retire集合、retirementIntent refs、retained materialの期待digest／対応表、予算・ピーク、deterministic transform profile、policy／hold／time／archive refs。target base digestはまだ持たない |
+| ReleaseAuthorization v1 | purpose=retention-transform、planRef／digest、sourceFreezeHead、target epoch／generation／root pair、policy／hold／archive／time、期限。許可する出力はplanと固定transformから導けるものだけ。最終採用・物理削除は認可しない |
+| TombstoneCore v1 | intentRef、planRef、releaseAuthorizationRef。retired予定namespaceの不変core。未来のGC barrierやactivation receiptを参照しない |
+| CompactedBase v1 | authority／lineage／target epoch／generation、sourceFreezeHead、retained closed namespace root、tombstoneCore集合root、importMapRef、controlClosureRoot、budget復元証拠、transform／release認可ref。manifestや自身のdigestを参照しない |
+| TargetReadyWitness v1 | verifier issuer／profile、plan・release認可・sourceFreezeHead、base／manifest digest、target genesis head／local checkpoint、全inventory・対応表・closed状態・持越しtombstone・予算の再検証結果とstorage sync証拠 |
+| ActivationAuthorization v1 | purpose=select-target、readyWitnessRef、実target base／manifest／genesis／checkpoint、registry expected revision、policy／hold／time／archiveの現在証拠、期限。targetをbyte単位で固定する |
+| GcAuthorization／GcBarrierReceipt v1 | purpose=delete-source、選択済みtarget・activation receipt、sourceFreezeHead／完全inventory、削除scope・batch順・新hold revision、control expected revision。barrier receiptは最終hold CASの確定結果 |
+| GcBatchPrepared／Done v1 | migration／barrier／batchId、前progress digest、正確な対象ref／file identity、既に完了したprefix、結果・directory sync証拠。retryは同じbatch digestに限る |
+| GcCompletionReceipt v1 | barrierRef、全batch完了root、source残存inventoryとroot identity、archive保持とlogical unlinkの範囲。target baseとactivationを束縛し、future target commitを参照しない |
+| RetireReceipt v1 | tombstoneCore digest、immutable targetBase digest、activation receipt、GC barrier／completion ref。最低tombstone証拠の後半を解決する |
+| TargetFinalization v1 | target local commit内のmaintenance record。retireReceipt集合・GC完了・失効／新boot・予算台帳を参照。commit後のheadをregistry完了CASへ渡す |
+
+GCしていないrawを回収済みとするreceiptを作らない。archiveを残すことはGcCompletionReceiptへ明示する。必要なcontrol閉包が1 recordに入らなければ、ページ化したtyped refのrootを使い、循環・orphan・重複・欠落を検査する。持越すcontrol履歴やtombstoneが上限を超えれば、旧証拠を黙って消さず停止する。独立registry自身の有限容量とrollback保護もprofileの前提であり、そのstoreのcompactionを再帰的に成立済みとはしない。
+
+#### 9.66.3 digest依存とtombstoneの完成
+
+以下の順でbody・認証envelope・refを確定する。各矢印は後続から先行へ参照できることを示し、逆向きの参照は作らない。
+
+```mermaid
+flowchart LR
+  F[freeze head] --> I[intent]
+  I --> P[plan]
+  P --> R[release authorization]
+  R --> T[tombstone core]
+  T --> B[target base]
+  B --> W[ready witness]
+  W --> A[activation authorization]
+  A --> C[registry cutover]
+  C --> G[GC barrier and completion]
+  G --> E[retire receipt]
+  E --> L[target finalization commit]
+  L --> D[registry complete]
+```
+
+ReleaseAuthorizationはmaterialの期待値と固定transformを認可し、その認可refを含むbaseのdigestを自分へ要求しない。baseを作った後、独立verifierがplan＋release認可から期待出力を再計算し、過不足なく一致する実baseをReadyWitnessへ固定する。ActivationAuthorizationがこの実digestを承認する。作成後にkeyId・profile・配列順・timestampを変えて別baseを正規化しない。ambient timestamp・任意path・環境値をbaseへ混ぜない。
+
+§9.64の「最低tombstone」は論理的な完成形であり、最初から不変baseの一つのobjectへ全未来receiptを入れる意味ではない。v2では`TombstoneCore + RetireReceipt + 両者が参照するcontrol閉包`を完成形とする。candidate baseにはcoreだけを置き、retireReceiptは外側へ後から保存する。receiptはimmutableなbase digestを参照し、receiptを入れたfuture target headを自分へ参照させない。target finalization commitがそのreceiptを取り込み、最後のregistry CASが実commit headをpinする。この分離でplan／base／activation／GCの循環hashを避ける。
+
+最終receiptがないcoreを「retired完了」「原本削除済み」と扱わない。候補・選択後保守中は通常admissionを閉じ、control phaseに応じたmaintenance unavailableだけを返す。最低証拠のdigestだけをbaseへ残して、外側の実bytesを消してはならない。
+
+#### 9.66.4 target v2形式と世代選択
+
+新manifestは`osv-mcp.gradle-owned-journal-v2`とし、authorityId／lineageId／generation／新storeEpoch／keyId、baseRef、target provision ref、local format／limitsを持つ。baseはmanifestを参照しない。manifest認証envelopeのdigestが確定した後、`H(domain=journal-v2-genesis,authorityId,lineageId,generation,storeEpoch,manifestDigest,baseDigest)`をlocal revision 0のheadとし、target専用key／domainのlocal checkpointへ固定する。source checkpointの認証bytesをtargetのgenesisへコピーしない。
+
+v2 commitはepoch／generation、positive local revision、previousHead、operation／request／result、record indexを認証する。genesis以降のcontinuityとlocal checkpoint CASを要求し、outer registryの世代選択を省略する代用品にはしない。v1 readerはv2をunsupportedとして拒否し、別schemaをv1のrecordが少ないstoreと解釈しない。
+
+baseのfull側はsource namespaceを保持したclosed audit stateとraw閉包、retire側はsource epochを保持したtombstoneCore集合とする。importMapは各source namespace／recordをretained・retiredのどちらか一方へ全単射で対応させ、欠落・二重分類・scopeの混在を拒否する。sourceから持越す既存tombstoneも必須で、target epochを発行するたび4,096のnamespace枠を0へ戻さない。256の保持session枠とtombstone枠は別計数し、両方と全体byte／record上限を検査する。
+
+旧commitの一部blobを欠かしたものを新rootの通常commitにしない。source全検証、原本archive、transformの再検証と独立controlの採用証拠に基づく新baseを信頼境界とする。source削除後のstartupではその承認済みbase・control閉包・現在の独立registry・local checkpointから検証できる必要があり、削除済みsourceの再parseやproducerからの再取得を必須にして復旧不能にしない。過去原本の再監査はarchive用verifierへ分け、live採用へ戻さない。
+
+#### 9.66.5 phaseと必須証拠・禁止操作
+
+registry stateはphaseごとのstrict unionとし、必須refを曖昧なoptional fieldにしない。phase変更はexpected revision／previous receipt digest／migrationId付きのdurable CASとreadbackによる。CAS replyを失ったらfresh challengeで現在値を読み、同じintentの確定結果だけをhistoricalに再送する。別intent・別targetを同じIDで再試行しない。
+
+| phase | current selection／必須証拠 | 許可・禁止 |
+| --- | --- | --- |
+| serving-source | 登録済みsource、通常local checkpoint issuer、保守余力 | sourceの通常受付のみ。candidate選択や削除は禁止 |
+| freeze-requested | startAuthorization・freezeRequestedReceipt・sourceBeforeHead・5 rootと予約 | 新規受付／read grantを止め、in-flightをdrain。まだsource session失効済みとは言わない |
+| frozen | sourceFreezeHead・freeze result・drain証拠・完全source inventory | sourceは監査用に固定。sourceへの以後のappend、通常restart／live再開は禁止 |
+| prepared | frozen証拠＋plan・policy／hold／time／archive＋release認可 | target構築を許可。source削除・target servingは禁止 |
+| ready | prepared証拠＋完全target inventory・ReadyWitness・target local checkpoint | activation認可を取得できる。target存在だけでは採用しない |
+| selected-target | 上記＋ActivationAuthorization・cutover CAS receipt、active identity=target | sourceへ戻らない。新targetも通常受付は閉じたまま。GC plan／hold再確認のみ |
+| deleting-source | 選択証拠＋GcAuthorization・GcBarrierReceipt・progress root | 認可済み有限batchだけ実行。旧sourceを開いて通常authorityにしない |
+| gc-complete | 全batch完了＋残存inventory・GcCompletionReceipt | RetireReceipt作成・target finalizationだけを許可。まだ新sessionを発行しない |
+| completed | 実target finalization head・local checkpoint・retire receipts・復旧予算・registry完了receipt | 検証済みtargetだけ通常受付可。以後のlocal headはこのhead以上でcontinuityを保つ |
+| aborted-before-select | CASでsource選択維持＋理由。未freezeならAbsentWitness、freeze済みならfrozen evidenceを必須とするstrict union。候補は非採用で保持 | sourceの旧actorは復元しない。通常受付にはsource側の保守予約再確保・新boot等が別に必要 |
+
+selected-target以後にaborted-before-selectへ戻さない。制約不明・新hold・保存障害では確定済みphaseで停止し、認可を更新して同じtargetについて再開する。初回方式ではGC完了・finalization・完了CASまで通常受付を開かない。hold等によりGCできなければtarget選択済みでも停止が続く可用性上の制約を明示する。sourceを選び直して可用性を優先しない。
+
+#### 9.66.6 source freeze・予約と再試行
+
+start認可を独立controlへ保存しfreeze-requestedをCASした後、source側をdrain・closeして5 rootの専有を取得し、gate／drain証拠を確認する。進行中operationを通常のdurable ack境界で終えるか、結果不明ならA2の一つのtail復旧を先に完了する。start認可に固定したsourceBeforeHeadと異なるheadに進んでいた場合はstaleとする。A2でtailを解決し未freezeのAbsentWitnessを確認してpre-select abortを確定し、新migrationId／freezeIdと新認可で安定headを使う。同じfreeze requestのbodyを差し替えず、変化を無視してfreezeしない。
+
+sourceでは一つの予約済みtransactionで全current sessionをrestartedとして失効し、open uploadをcancel、全scopeをterminal／revokedにし、SourceFreezeResultをoperation-resultへ収録する。既にclosedなvalidity・成功terminal・ledger・raw metadataは保持する。freeze headはcommitとsource checkpointが完了してからcontrolのfrozenへ保存する。tombstone／plan／認可／世代遷移はsourceに追記しない。
+
+freezeIdをdurableに一回化する。同じfreeze requestでackを失っても、source resultのrequest digest・参照control・失効集合を照合して既存headを回収し、もう一度全sessionを失効してrevision・予約を消費しない。restart予約の枯渇後も移行開始予約だけは使用可能とする。sourceの真のhard fullや閉包不正、freezeの予約不成立は無変更で停止し、任意削除で1 slotを作らない。
+
+pre-select abort後もsourceはfrozenのままでよい。同じ実sourceFreezeHeadを使う再planは、元freezeId／receiptを保持して新しいmigration認可へ束縛し直し、sourceを再freezeしない。sourceを通常受付へ戻す場合は、旧actorを捨てる新boot、現checkpoint・registryの照合、通常・restart・次の移行開始予約の再確保を必須にする。余力不足ならfrozenを維持し、restart連打で枠を回復したことにしない。abortしたcandidate rootは非採用のまま保存・課金し、初回protocolでは自動削除しない。材料やbaseの変更が必要なら新target identityと新plan・認可を使い、既存immutable targetを書き換えない。候補の廃棄protocolは別設計までunsupportedとする。
+
+#### 9.66.7 target構築・検証・cutoverの保存順序
+
+1. sourceを全認証してinventoryを固定し、archiveの原本閉包・可読性・保持receiptを確認する。old full sessionと全tombstoneを分類し、retirement intentsとplanをcontrolへfile／directory syncしてからrelease認可を確定する。
+2. 新規・空のtarget pairに、保持material／tombstone cores／必要controlを構築する。共有chunkは全保持rootからmarkしてからcopyし、論理的に省略するnamespaceはintentへ対応させる。candidate rootをactive rootとして登録せず、sourceの消去予定量を作業領域に算入しない。
+3. 各recordをtemp→file fsync→非置換publish→directory fsyncで保存し、最後にbase／manifest／target local genesis checkpointを確定する。base／inventoryの認証閉包とsource対応を別の承認verifierが再検証し、ReadyWitnessをcontrolへdurable保存する。timestampや「build succeeded」だけのReadyは不可。
+4. policy・hold・archive・必要時刻・認可期限を現在のcontrolへ再照合する。変化していればactivationを許さず再planする。実baseを固定したActivationAuthorizationを保存し、独立registryをexpected ready stateからselected-targetへCASする。target選択の線形化点はこのCASであり、そのreadbackまでsourceを削除しない。
+5. GC認可・最終hold barrierとbatch処理を行い、GcCompletionReceipt・RetireReceiptを保存する。targetでfinalization commitとlocal checkpointを同期し、最後にregistryをcompletedへCASする。この順序によりRetireReceiptはfuture headを参照せず、completed receiptだけが最終headを固定する。
+6. completedをfreshに取得し、base／finalization／現在local checkpoint・独立control・予約台帳・writer専有を再照合した新kernelだけ受付を再開する。完了後はcoordinatorが5 rootをcloseし、通常TargetAuthorityがtarget pairを取得し直してfresh registry／local checkpointを検証する。取得前の受付や、旧source ownerへのdescriptor使い回しをしない。actor・session・nonceを新発行する。old source／target candidate／archive由来の実行許可を復元しない。
+
+local checkpointとglobal selectionは別物である。target genesisのlocal checkpointが保存済みでもcutover前は非採用、cutover後にtargetが壊れればsource fallbackせず停止する。通常再開後のtarget local commitsはfinalization head以上のchainとして独立local checkpointへCASし、source epochのcheckpointをcurrentとして使わない。completedは現世代のidle状態でもあり、次の移行ではこのactive targetをsourceとして新migrationIdでfreeze-requestedへ進む。旧migrationのphaseや操作IDを上書きしない。
+
+#### 9.66.8 hold・GC barrier・有限batch
+
+logical retirementの認可と、source原本の物理unlinkは別段階にする。GcAuthorization作成時に全保持義務と新holdを再確認し、hold登録と同じ独立control順序で最終barrierをCASする。barrier前に確定したholdは削除を禁止する。barrier CASを有限削除operationの受理・不可逆開始の線形化点とし、実際の最初のunlinkとの間も、新holdへ保持成功ackを返さずtoo-lateを明示する。これは物理unlinkの発生時刻そのものとは区別する。
+
+GC対象はsource inventoryにある特定のroot role・相対名・inode／device・mode／nlink=1・size／digestへ限定する。wildcard、再帰削除、読めないentryの無視、source外の削除を許さない。認可後の未知entry・path／root交換・内容変更は停止理由となり、不正dataを削除して成功にしない。sourceの未publish temp／未参照blobも、元inventoryとarchiveに明示収録したものだけを対象にする。
+
+各batchは最大64 entriesで、順序を固定する（data／temp、commit・manifest、source local checkpointの順とし、正確な順序をplanへ固定）。GcBatchPreparedをcontrolへ保存してregistry progress CAS／readbackした後にだけunlinkする。entry直前のidentity・size／digestを再検証し、batchのdirectory fsync後にDoneを保存・CASする。current batchの失敗で次のbatchへ進まない。
+
+unlink後・Done前に停止した場合、認証済みPreparedに含まれるentryだけは「既に不在」を完了候補として再確認・directory syncできる。Preparedのないentryの不在、別inode、順序外batchを既削除として隠さない。再試行は同じbatchId／body digestだけに許す。新processのexecutorは新しい限定resume認可を取得し、古いactorや期限切れの実行capabilityを復元しない。
+
+削除中のsourceは意図して部分的になるため、通常のAuthorityJournal.openで全sourceを再parseして復旧しない。独立controlのbarrier／Prepared／Doneと固定source inventory、archive receipt、選択済みtargetから、存在すべき残りと認可済み不在を照合する。sourceは二度とservingにしない。selected-target後のhold／policy変更で元の保持条件を満たせなくなった場合、GCと通常受付を停止する。同じbaseの保持／retire分類を許す現在の認可が再成立するまで進めず、単なるGC認可の更新で分類を変えない。最後に残存inventoryを確認し、root directoryも同期してGcCompletionReceiptを確定する。初回方式ではroot自体をrmdir・再formatせず、空rootのidentityをretired rootとして独立registryに保持する。control・archive・targetのcopyは削除対象ではない。
+
+#### 9.66.9 crash復旧の選択表
+
+| 観測された独立control | 復旧時の選択・処理 |
+| --- | --- |
+| registry応答不能・認証不正・未知phase | 通常受付も削除も停止。local最大timestamp／directory／自己署名の多数決を使わない |
+| freeze-requested、source未commit | sourceをA2復旧・照合し、同freezeIdを予約から実行。sourceBeforeHead違いなら再認可 |
+| source freeze commit済み、frozen CAS前 | local commit＋checkpoint＋FreezeResultを照合しcontrolへ回収。二重失効しない |
+| frozen／prepared、部分target | sourceを保持し通常受付なし。候補の正確なinventory・認可・予算を検証して同planを再開。不正targetを消して成功にしない |
+| ready、cutover CAS reply不明 | fresh registry照会でsource選択かtarget選択かを確定。未確認なら停止。別targetを再選択しない |
+| selected-target、GC barrier前 | targetのみ選択済みとして保持し、hold・認可を再取得。sourceは残すがfallbackしない |
+| deleting-source、Prepared前 | 未認可entryをunlinkしない。現progressと残存inventoryを照合して次Preparedを作る |
+| deleting-source、Prepared後／Done前 | 認可済み不在だけを扱い、directory syncして同batchを完了。別bodyへの差替えを拒否 |
+| gc-complete、target finalization前後 | GC／retire receiptsとtarget local checkpointを照合し、一つのfinalizationを回収・確定。receiptを二重発行しない |
+| completed CAS reply不明 | fresh registryの確定target／finalizationを取得してから新boot。sourceへ戻さない |
+| 旧root／古いcontrol／古い正当なbackup | 独立registryのcurrent generation・revisionと不一致なら拒否。retired rootを空storeとして再登録しない |
+
+進捗のretryは既存の認証済み結果を返すだけなら追加commitを消費しない。control record・予算が尽きるほどの繰返し故障には無限再開を約束せず停止する。保守control自体の世代移行・長期compactionは別の承認契約が必要である。
+
+#### 9.66.10 拒否分類・実装順と採用条件
+
+将来reasonは、migration_gate_unavailable（registry／認可不能）、migration_integrity_invalid（認証・閉包・source／target不正）、migration_plan_stale（head／hold／policy／予算変更）、migration_capacity_unavailable、migration_owner_busy／owner_lost、migration_profile_unsupported、migration_gc_scope_invalid（未認可path・不正な不在）、migration_retired_namespaceへ分ける。既存wireへ実装済みとはしない。transport不能を確認済み改変へ誤分類せず、改変をreceipt-missingへ格下げしない。
+
+実装はM0=新schema・canonical digest／閉包とfixture回帰、M1=独立registryとphase／idempotent CASの参照contract、M2=freeze予約・plan／base／ready構築、M3=所有diskでのcutover／GC／crash対照、M4=実隔離backend・reader／caller／broker接続の順とする。M0〜M3のtest key・mock registryをM4の独立認証と数えない。
+
+本番採用には、5 root専有・source gate／drain・実行許可の失効、独立registryとhold順序・archive原本検証、target verifier／storage semanticsの承認、全phaseのdurable故障実証、新旧readerの拒否とstartup gateへの接続を必須にする。B／C・G3／G4未成立の現状で、移行の設計やnative fsyncだけを本番witness／declared_inの完全性に昇格させない。
+
+#### 9.66.11 回帰条件（MC01〜MC36、すべて未実装）
+
+| ID | 条件・期待結果 |
+| --- | --- |
+| MC01 | 未登録source／project由来registry／未承認format・key・issuerを拒否し、rootの自己登録をしない |
+| MC02 | fresh challenge・expected revision・lineage違い、古い正当なregistry receipt再送を拒否。取得不能では両世代停止 |
+| MC03 | 5 rootの同一・包含・alias・部分lock取得・root交換・lock無視writer対照を扱い、未成立profileはunsupported |
+| MC04 | sourceの受付／ack gate・read pin／grantをdrainできなければfreeze完了不可。旧cacheだけでackしない |
+| MC05 | restart予約枯渇後も移行開始予約が残り、sourceへ1 transactionだけ追記可能。hard fullで勝手にGCしない |
+| MC06 | sourceBeforeHeadの途中変化・tail復旧・freezeId交換を拒否し、ack紛失後は同freeze結果を回収して二重失効しない |
+| MC07 | source snapshotの失効／cancelと既存validity・成功terminal保持を確認。保守controlをv1 rootへ追加しない |
+| MC08 | pre-select abort後の再planは元freeze証拠を再使用し、新たなsource commitを無制限に消費しない |
+| MC09 | full／retireの欠落・二重分類・source namespace交換・既存tombstone消失を拒否。256／4,096を別計数 |
+| MC10 | 共有chunkの保持、全参照閉包・原本archiveを検査。latestだけをmarkしたplanを拒否 |
+| MC11 | intent→plan→release→core→base→ready→activation→GC→receipt→finalizationの順を検査し、逆向き／循環refを拒否 |
+| MC12 | release認可が最終baseを自己参照しないことと、ready／activationで実baseの過不足・bytes交換を拒否することを確認 |
+| MC13 | coreだけでretired完了とせず、RetireReceiptとcontrol閉包の欠落・自己hash更新・role交換を拒否 |
+| MC14 | target新規空root・新epoch・generation+1・target key/domain・genesis計算を確認。同epoch revision resetを拒否 |
+| MC15 | v1 readerがv2をunsupportedとし、少ないrecordや未初期化storeへ誤解釈しない |
+| MC16 | retained stateはclosed audit-only。archive／旧actor／capability／action ack／leaseをcurrentに戻さない |
+| MC17 | control record／aggregate／page／entry／ピーク上限を検査。sourceを先消しした仮想空きや持越し証拠の未課金を拒否 |
+| MC18 | TargetReadyのfile／directory sync・inventory・verifier profileの必須証拠欠落を拒否。target存在だけで採用しない |
+| MC19 | release後・activation前のpolicy／hold／archive／時刻・期限変更はstale。新認可なく切替しない |
+| MC20 | cutover CAS直前・確定後reply紛失を故障させ、fresh registryで一つのtargetを選択。source fallbackなし |
+| MC21 | selected-target後の破損・hold追加・GC不能で通常受付を開かず、sourceを復活させない |
+| MC22 | GC barrier前に確定したholdは削除禁止。barrier後・最初のunlink前のholdへ保持成功ackを返さない |
+| MC23 | target選択・同一plan・現在holdに結ばないGC認可、期限切れや旧actorのresumeを拒否 |
+| MC24 | 固定inventory外・wildcard・再帰path・symlink／hardlink・inode／size／digest／root交換を削除せず停止 |
+| MC25 | Prepared保存／registry確定前のunlinkを0にする。別batch IDや順序外・body差替えを拒否 |
+| MC26 | 各entry unlink後・directory sync前・Done前に停止し、Prepared内の不在だけをidempotentに完了 |
+| MC27 | Prepared外の欠落を既GC扱いしない。残存fileの改変・未知entryを消して成功にしない |
+| MC28 | 部分削除sourceの復旧はcontrol／inventoryから行い、通常source openの失敗を空store・fallbackへ変換しない |
+| MC29 | GC完了・RetireReceipt・target finalization・local checkpoint・completed CASの各境界で停止し、future head循環・二重確定なしで復旧 |
+| MC30 | completed前のadmissionを0にし、再開後local headがfinalization以上でcontinuityを持つことを確認 |
+| MC31 | source／control／targetの古い正当なbackup、空になったretired rootへのcreate／再enrollmentを拒否 |
+| MC32 | 署名は正しいがphase別必須refが欠落／禁止refが存在するrecord、未知phaseの遷移を拒否 |
+| MC33 | 同じoperation／CAS／batch retryは同結果を返し、request違いを拒否。IDだけで権限を再発行しない |
+| MC34 | 真のdisk full・file／directory sync失敗・CAS保存失敗・owner喪失で保守ackなし。認証不正を削除して復旧しない |
+| MC35 | 1 MiB／64 MiB／1,024 control records・64件page／batch境界と故障反復で、上限を超える前に停止することを確認 |
+| MC36 | archive・backup残存とlogical unlinkを報告し、secure erase・実隔離・自然消費receipt・本番診断採用を表明しない |
+
+RC01〜RC28も引き続き必要とする。MCは新規schema・registry・native故障実証の未実装条件であり、既存テストの再実行や文書検査で成立済みとしない。
+
+世代移行契約の文書検証: 公開文書command例と既存A1–A2／disk owner／restartの計123テスト成功。§9.66の11小節とMC01〜MC36の欠落・重複なし、diff整形検査成功を確認した。MC36件およびM0〜M4は未実装で、新規v2 schema／registry／compaction／GCの実装・native実証・本番採用は0。既存native対照の再実行を新protocolの成立証明へ数えない。
