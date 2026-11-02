@@ -4325,6 +4325,8 @@ writerはservice発行のlive fenceに束縛し、stale writer／旧boot／旧na
 
 serviceのclockとreaderのclockの値を直接比較しない。grantの期限はproviderが自身のmonotonic clockで判定し、readerは承認transportの最大round-trip／local elapsed上限も別に適用する。message内の自己申告timestampだけで有効期間を延長しない。read grant候補の最長5秒・pending 64件／peer、challengeは256 bitsを初期設計値とし、実装・負荷試験・profile承認前に現在の定数へ適用しない。
 
+1つのgrantで検証できるsuffixの上限（追加commit数・追加payload bytes・追加inventory entries）もprofileへ固定する（§9.75）。grant発行時にcachedPrefixから現在headまでのsuffixがこの上限を超えると分かる場合、providerは陽性grantを出さず、readerは最初からfull modeを選ぶ。上限はgrantの期限内に検証を終えられる値として性能実証で決め、5秒を超える検証を前提にgrantを延長しない。
+
 #### 9.74.5 final gate・失効・barrier
 
 read pinは`active → completing → decision-recorded → delivering → released`とし、各中間状態から`cancelling → cancelled/expired`へ進める。decision-recordedは結果を記録しただけでpinは存続し、delivering後の引渡し・releaseまで解放しない。release後の同use結果は監査用のhistorical recordでありliveなgrantではない。新grantの発行、Complete受理、revoke／freeze／cutover開始は同じ線形化順序へ置く。draining開始後は新grantを拒否し、Completeより先に失効が確定したgrantを成功にしない。
@@ -4344,7 +4346,8 @@ registryのfreeze／cutover／GCは新規readを閉じ、既存pinのCompleteま
 | `provider_unsupported`／`profile_unapproved` | fast pathの入口を開かない。通常のfull検証が独立に許可される構成だけ、初めからfull modeを使う |
 | `proof_miss`／通常eviction | 同じliveなgate／pinの下で有界full検証し、成功した証拠だけcache候補へ。bytesや未知entriesを省略しない |
 | `receipt_invalid`／`challenge_replayed`／`binding_mismatch`／`inventory_mismatch`／`content_mismatch` | 要求を拒否・候補破棄・同bootのfast pathを停止。不正をmissへ格下げしてfull再読取で成功へ見せない |
-| `grant_expired`／`grant_revoked`／`generation_changed`／`owner_closed` | 旧cacheの利用を拒否しpinを取消。新しいboot／世代と独立gateを確立するまで旧proofから応答しない |
+| `grant_expired`（自然な期限切れ） | 今回のuseを不成功とし、未完了candidateとpinを取消。同じprovider boot・namespace generation・fence・registry revisionのままなら、full検証済みのprefix proofは失効させず、新しいchallengeとgrantで取り直せる。期限切れを改ざんやincidentとして扱わない（§9.75） |
+| `grant_revoked`／`generation_changed`／`owner_closed` | 旧cacheの利用を拒否しpinを取消。新しいboot／世代と独立gateを確立するまで旧proofから応答しない |
 | `checkpoint_unavailable`／`rollback_detected`／`sync_incomplete`／`tail_unknown` | ack・Complete成功なし。既存のfail-stop／明示recoveryを要求し、cacheで可視なheadをdurableにしない |
 | `provider_unavailable`／`control_unavailable` | 存続・現在性を証明できない。cacheがあっても拒否。失敗したgrantの途中でproviderを迂回してfull modeへ降りない |
 | `cache_budget_exceeded` | 既存budget内へevictできればmiss処理。無理なら停止。保持・削除認可・durable予約をcacheから再生成しない |
@@ -4381,7 +4384,7 @@ profile／policy／parser／key世代変更、provider restart、root交換、re
 | IP12 | stale writer、同名bytes置換、sealed directoryへの追加を拒否。新headは新view／fenceで公開 |
 | IP13 | pin中にwriterを待機させ、Complete／取消まで選択headを変えない。並行reader／writerの順序を記録 |
 | IP14 | freeze／cutover／GCのregistry barrierとAcquire／Completeの競合を順序付け、失効後の新grant・成功なし |
-| IP15 | suffix検証途中・最後のawait後のexpiry／revoke／owner closeで成功を返さない |
+| IP15 | suffix検証途中・最後のawait後のexpiry／revoke／owner closeで成功を返さない。自然な期限切れでは同じboot・世代・fenceのprefix proofを保持して新grantで取り直せ、revoke・世代変更・owner closeでは旧proofを使わないこと |
 | IP16 | Complete応答紛失・同useの再送は結果照会だけ。同じgrantから二重use・launch権限を作らない |
 | IP17 | Complete／releaseの別peer／boot／useIdを拒否し、他のpinを解放しない |
 | IP18 | client切断／停止／deadlineで取消を確定し、古いprocess再開後のComplete・ack／publishを拒否 |
@@ -4389,7 +4392,7 @@ profile／policy／parser／key世代変更、provider restart、root交換、re
 | IP20 | cache hitでもcheckpointをfresh取得・全認証／再同期。公開後sync失敗・再open／retryのackを拒否 |
 | IP21 | checkpoint rollback／head交換／unknown CASをcached headで隠さずfail-stop |
 | IP22 | 認証不正・byte改変をmissとしてfullへfallbackしない。provider／control unavailable時もcache応答0 |
-| IP23 | 正常eviction／通常missでは同じlive gateでfull検証し、未検証candidateをcurrent cacheへpublishしない |
+| IP23 | 正常eviction／通常missでは同じlive gateでfull検証し、未検証candidateをcurrent cacheへpublishしない。suffixがgrantあたりの上限を超える場合は陽性grantを出さずfull modeを選び、期限切れと取り直しを繰り返さないこと |
 | IP24 | payload／entry／node／key／pending／pageの上限と上限＋1を検査し、有界evictionか停止。proofなしhitなし |
 | IP25 | 入力／返却Buffer改変・偽handle・別boot handleでprivate proofを変更できない |
 | IP26 | policy／profile／parser／key／registry phase変更、restart／freeze／GCで旧candidate・proofを失効 |
@@ -4399,3 +4402,16 @@ profile／policy／parser／key世代変更、provider restart、root交換、re
 IPは採用前に実装・実証する条件であり、今回の文書検証で成立済みとはしない。PO3/P0のrecord-level static replayや既存の全読取検証にも、provider receiptによるread省略を追加していない。
 
 PO4/Q0の文書検証: 公開command例と既存A1–A2／disk／restart／v2 auditの計182テスト成功。§9.74の8小節とIP01〜IP28の欠落・重複なし、diff整形検査成功を確認した。IP28件とQ1以降は未実装で、今回の新規provider・原本read省略・認証IPC・native隔離・性能測定・本番採用は0。既存native対照の再実行をprovider成立の証拠には数えない。
+
+
+### 9.75 3e9ee00レビュー修正・grantの自然な期限切れとsuffix上限（2026-11-03）
+
+§9.74.6の表は、grantの自然な期限切れ（`grant_expired`）を、`grant_revoked`・`generation_changed`・`owner_closed`と同じ行で扱い、新しいboot／世代と独立gateを確立するまで旧proofから応答しないとしていた。grantの期限は候補値で最長5秒（§9.74.4）であり、大きなsuffixの検証は改ざんがなくても期限を超える。この扱いでは、同じboot・世代のまま正しいprefix proofまで使えなくなり、suffixの検証が常に期限を超えるstoreではfast pathもfull modeも進めなくなりうる。
+
+文書だけで次のように直した。実装・native実行・本番採用は0件のままである。
+
+- 自然な期限切れは失効・世代変更と分けた（§9.74.6）。同じprovider boot・namespace generation・fence・registry revisionのままなら、full検証済みのprefix proofを保持し、新しいchallengeとgrantで取り直せる。今回のuseと未完了candidateは不成功として破棄する。
+- 1つのgrantで検証できるsuffixの上限（追加commit数・payload bytes・inventory entries）をprofileへ固定することにした（§9.74.4）。上限を超えるsuffixには陽性grantを出さず、readerは最初からfull modeを選ぶ。grantを延長して長い検証を続けない。
+- IP15・IP23へ、この区別と上限超過時の扱いの対照を加えた。
+
+あわせて、PO2の比較記録を照合する静的テスト（`gradleOwnedStorePo2.test.ts`）を直した。§9.71.4の表を読む範囲が文書の末尾までになっていたため、3e9ee00で§9.74に表が加わった時点で行数が合わなくなり、失敗していた。読む範囲を§9.71の終わり（次の`###`見出し）までに区切り、表の値を1つ変えると失敗することも確認した。

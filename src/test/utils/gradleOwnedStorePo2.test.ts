@@ -11,7 +11,7 @@ it('keeps the PO1 reference and complete PO2 comparison samples',()=>{
  }
 });
 it('retains IO and sync while avoiding unchanged snapshot and metadata work',()=>{
- const design=readFileSync('docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md','utf8'),section=design.slice(design.indexOf('#### 9.71.4'));
+ const design=readFileSync('docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md','utf8'),start=design.indexOf('#### 9.71.4'),section=design.slice(start,design.indexOf('\n### ',start));
  const table=section.split('\n').filter(l=>l.startsWith('| ')&&!l.startsWith('| workload')&&!l.startsWith('| ---'));expect(table).toHaveLength(r.rows.length);
  for(const [i,line]of table.entries()){const cells=line.split('|').slice(1,-1).map(c=>c.trim()),row=r.rows[i];expect(cells.slice(1)).toEqual([row.storage,row.operation,row.before.elapsedMs.median.toFixed(2),row.after.elapsedMs.median.toFixed(2),row.speedupBeforeOverAfter.toFixed(2)]);}
  const normalize=(c:any)=>({...c,store:{...c.store,assertOpenCalls:0},checkpoint:{...c.checkpoint,assertOpenCalls:0}});

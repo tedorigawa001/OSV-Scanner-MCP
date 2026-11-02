@@ -2424,3 +2424,8 @@ PO3/P0の検証結果: 新規71回帰成功（24 delta prefix比較と実A1 snap
 - 次はQ1のstrict schema／fresh challenge・pin状態機械・publish gateのmemory contract実証。その後Q2の隔離service／認証IPC／native、Q3の実cache・suffix比較、Q4の独立profile／authority・PO3／M0接続。今回は設計のみで、原本read省略・provider・承認profile・本番採用を有効化していない。
 
 PO4/Q0の文書検証: 公開command例と既存A1–A2／disk／restart／v2 auditの計182テスト成功。§9.74の8小節とIP01〜IP28の欠落・重複なし、diff整形検査成功を確認した。IP28件とQ1以降は未実装で、今回の新規provider・原本read省略・認証IPC・native隔離・性能測定・本番採用は0。既存native対照の再実行をprovider成立の証拠には数えない。
+
+
+### 2026-11-03: 3e9ee00レビュー修正（grantの自然な期限切れとsuffix上限）
+
+- [設計書§9.75](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#975-3e9ee00レビュー修正grantの自然な期限切れとsuffix上限2026-11-03)へ、grantの自然な期限切れを失効・世代変更と分けて同じboot・世代のprefix proofを保持し取り直せるようにし、grantあたりのsuffix上限を超える場合は最初からfull modeを選ぶことを記録。IP15／IP23を拡充。設計のみ。あわせて、後続節の表を拾って3e9ee00以降失敗していたPO2記録照合テストの読取範囲を§9.71内へ区切った。
