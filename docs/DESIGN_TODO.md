@@ -2313,3 +2313,12 @@ A1–A2接続の検証結果: 新規23件成功。型検査・build成功。全�
 - 次はwriter排他／lease・容量管理／retention／compaction・limits移行・publish中断の隔離復旧。Bの実隔離／認証IPC／checkpoint保護、CのTask観測と実broker／permit、G3／G4・本番採用・各環境のnative／実接続も残る。今回の世代照合は実process停止や既に配達済みの実行許可を取り消すbackendの実証ではない。
 
 再起動処理の検証結果: 新規27件成功。型検査・build成功。全体100 files／3,661 tests成功、21 files／1,415 tests skipped。既存A2のSIGKILL 3ケースと、新規のrestart失効commit直後の実SIGKILL 1ケースを再実行した。diff整形検査成功、distにauthority／journal／snapshot fixtureが含まれないことを確認。実行環境はmacOS arm64／Node v26.12.1。本番backend・profile・診断採用は無効のまま。
+
+### 2026-11-02: 保存運用第1段（writer排他・publish中断の認証復旧）
+
+- §9.63へ2 rootを専有するOwnedJournalDiskを追加。nonblocking flockをdescriptor終了まで保持し、両root取得前は保存しない。別adapterのputも同じlockへ従い、競合writerを拒否。transaction／IO実行中のcloseを拒否する。
+- 同じroot内のtemp＋finalの正確なnlink=2 pairのみ、全A2認証後にbytes／inodeを再照合してtempを除去・fsyncする。認証不正・曖昧なlink・未知file・同期失敗では受付を開かず、不正dataを削除して成功へ見せない。
+- 新規23回帰。実別processの排他と、ownerをcommit publish直後にSIGKILLしてからの専有再取得・認証復旧を含む。A1 restartとの実ファイル接続も確認。macOS arm64／Node 26.12.1のみの参照実証であり、本番backendは無効。
+- 次は容量／retention・compaction／checkpoint世代移行と上限後の再開、差分snapshot／incremental検証・性能比較。実行lease・既配達許可の取消し、Bの隔離／認証IPC、C以降の実broker／Task／G3／G4・本番採用は残る。
+
+保存運用第1段の検証結果: 新規23件成功。型検査・build成功。全体101 files／3,685 tests成功、21 files／1,415 tests skipped。実別processの競合拒否と、ownerのafter-publish SIGKILL後の専有再取得・認証復旧が成功。既存restartのSIGKILLも再実行した。diff整形検査成功、distにauthority／journal fixtureが含まれないことを確認。macOS arm64／Node 26.12.1のみの参照実証で、本番backend・profile・診断採用は無効のまま。

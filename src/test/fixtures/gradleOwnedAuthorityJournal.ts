@@ -11,7 +11,7 @@ export interface JournalRecord {id:string;role:JournalRole;bytes:Buffer}
 export interface JournalIdentity {authorityId:string;storeEpoch:string;keyId:string}
 export interface JournalHead {authorityId:string;storeEpoch:string;revision:number;headDigest:string}
 /** put resolves only after durable publication; equal existing bytes must be re-synced. */
-export interface JournalIO {list(limit:number):Promise<{name:string;size:number}[]>;read(name:string,maxBytes:number):Promise<Buffer>;put(name:string,bytes:Buffer):Promise<void>}
+export interface JournalIO {assertOpen?():void;list(limit:number):Promise<{name:string;size:number}[]>;read(name:string,maxBytes:number):Promise<Buffer>;put(name:string,bytes:Buffer):Promise<void>}
 export interface JournalCheckpoint {read():Promise<JournalHead>;advance(expected:JournalHead,next:JournalHead):Promise<void>}
 export class AuthorityJournalError extends Error {constructor(reason:string){super('authority_journal_'+reason);}}
 export function journalAssert(ok:unknown,reason:string):asserts ok {if(!ok)throw new AuthorityJournalError(reason);}
@@ -105,7 +105,8 @@ export class AuthorityJournal {
  }
  async lookupOperation(operationId:string):Promise<JournalReceipt|undefined>{return this.#exclusive(async()=>{await this.#recover();const c=this.#commits.find(c=>c.body.operationId===operationId);return c?this.#receipt(c):undefined;});}
  async readLatest():Promise<JournalRecord[]>{return this.#exclusive(async()=>{await this.#recover();return this.#commits.at(-1)?.body.records.map(r=>({id:r.id,role:r.role,bytes:Buffer.concat(r.chunks.map(c=>this.#blobs.get(c.sha256)!))}))??[];});}
- get head():JournalHead{return copyHead(this.#head);}
+ get head():JournalHead{this.#io.assertOpen?.();return copyHead(this.#head);}
+ get busy():boolean{return this.#busy;}
  get backendEligible():false{return false;}
 }
 /** Fault-injection fixtures, not persistence/authentication implementations. */

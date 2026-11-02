@@ -3477,3 +3477,39 @@ actorのWeakMap、capability、live ack cache、実行許可、旧clockの原点
 実行profileはmacOS arm64／Node 26.12.1。障害matrixとcheckpoint再同期失敗は例外注入であり、実電源断・媒体故障の実証ではない。Linux／x64、実隔離・認証IPC、旧processの外部強制停止、Gradle／BTA native・OSV実接続・本番profile承認・診断採用は今回0。単一writer・test fixtureという前提と、本番backend無効を維持する。
 
 再起動処理の検証結果: 新規27件成功。型検査・build成功。全体100 files／3,661 tests成功、21 files／1,415 tests skipped。既存A2のSIGKILL 3ケースと、新規のrestart失効commit直後の実SIGKILL 1ケースを再実行した。diff整形検査成功、distにauthority／journal／snapshot fixtureが含まれないことを確認。実行環境はmacOS arm64／Node v26.12.1。本番backend・profile・診断採用は無効のまま。
+
+### 9.63 保存運用の第1段: writer排他とpublish中断の認証復旧（参照実装、2026-11-02）
+
+容量管理・compaction・性能改善に先立ち、`src/test/fixtures/gradleOwnedJournalDisk.ts`へ`OwnedJournalDisk`を追加した。storeとcheckpointの専有、A2認証、publish途中のpair整理をまとめたdisk ownerである。A1–A2やrestartへはそのjournalを渡す。通常起動のbackendや公開packageには接続しない。
+
+#### 専有と終了
+
+RootedJournalIOのexclusive openは、rootのheld descriptorへnonblockingのflock exclusiveを取得し、descriptorのcloseまで保持する。storeとcheckpointは別root・非包含を必須とし、canonical path順で両方取得する。二つ目が失敗すれば一つ目を解放し、format・認証・復旧の失敗でも取得済みdescriptorを閉じる。両方を取得する前に保存処理へ進まない。advisory lockであり、従うwriter同士の排他だけを保証する。基礎APIの意味は[Apple flock manual](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/flock.2.html)と[Linux man-pages](https://man7.org/linux/man-pages/man2/flock.2.html)を参照した。
+
+従来のRootedJournalIOもput全体で一時的に同じlockを取得するため、disk ownerが専有しているrootへ別adapterから書き込めない。専有owner自身は同じheld descriptorを使い、処理の途中でunlockしない。低水準のoperation単位lockだけを、journal全transactionの専有と数えない。実行中のjournal／file操作・復旧がある間はOwnedJournalDisk.closeをbusyで拒否し、完了後だけ両descriptorを閉じる。close後のjournal操作は閉じたIOにより拒否される。head参照もIOの存続を確認するため、journal commit完了後・A1 kernel返答前にownerがcloseされた場合、保存済みheadのcacheだけでackを返さない。
+
+PID・mtime・壁時計の期限によるstale lock削除・強制取得を行わない。止まったownerもdescriptorが開いている間は専有し、SIGKILL／終了後はkernelによるdescriptor解放を経て次のownerが取得する。この機構は時間制限付きの実行lease、既配達のlaunch許可の取消し、独立principalによる保護ではない。advisory lockを無視した同じUIDの書込み、管理者による両rootの交換、NFS等の別filesystem semanticsへの保証は含めない。
+
+#### publish途中のpairだけを認証後に整理
+
+open時は両rootの専有下で、各directoryを上限+1件まで列挙し、regular file・mode・device・inventory名・容量を確認する。nlink=2を一律許可せず、同一dev／inodeを指す「pending temp名1個＋final名1個」が同じroot内にあり、実nlinkも2の場合だけ、復旧中の候補として扱う。領域外alias、3個以上のlink、final名同士、symlink、未知entry、上限超過は拒否する。
+
+候補を読める範囲でA2のmanifest・全blob・commit chain・index・独立checkpointを認証する。checkpointの再同期と必要な一つのtail commitの前進も従来の契約どおり行う。全認証が成功した後だけ、認証に使ったfinal bytesのdigestを再照合し、両名のinode／nlinkを再確認してfile fsync、temp名のみunlink、root directory fsyncを行う。認証後からunlink直前の内容改変も拒否する。両rootの整理・同期が成功するまでdisk ownerを返さず、受付／ackへ進めない。
+
+失敗時に認証不正のfileや未知entryを削除・移動して成功へ見せない。rootを開けない状態として保持し、外部診断へ回す。整理中の停止で一部tempだけ消えた場合も、次の起動では残ったpairを再認証し、nlink=1のfinalを含むrootを再同期してから返す。temp削除後のdirectory同期失敗ではackを返さず、同期可能になるまで再openを拒否する。
+
+未publishのnlink=1 tempは内容をterminalへ採用せず、そのまま容量に数える。未参照blobも従来どおりdigest検証・課金する。commit／checkpoint／manifestの再初期化や不正な履歴の切捨て、orphanの自動削除は行わない。初期作成のcheckpointだけが残ってmanifestがない等の不完全bootstrapもfail closedとし、既存rootを空と見なして再formatしない。retention／compaction・運用上の隔離移行は次段階である。
+
+RootedJournalIO.recoverPublishedは低水準の検証callbackを必要とするfixture用機構であり、単独で認証を行うAPIではない。OwnedJournalDiskがA2の完全な検証callbackを固定して呼ぶ経路を今回の採用範囲とする。2 root／別test keyを独立権限と数えず、通常のread-only診断やjournal内データを本番の実行witnessへ昇格させない。
+
+#### 回帰と実証範囲
+
+新規23件。別descriptor／別adapterの書込み拒否、2 root専有・部分取得失敗後の解放、重複／包含root、保存待ち中のclose拒否、commit後のowner終了によるA1 ack拒否、manifest／blob／commit／checkpointの有効pair復旧、不正pairの無変更拒否、別checkpointが不正な場合の整理拒否、外部hardlink・symlink・未知entry・複数final・3 links、root交換、認証後改変、directory同期失敗後の再open、未publish tempの保持、A1 restart接続を確認する。最初の排他回帰は未実装時に競合openの誤成功で失敗し、close拒否の回帰も修正前に失敗することを確認した。
+
+別Node processから、専有中のdisk owner取得と低水準putの両方がwriter_busyで拒否され、inventoryが変化しないことを確認した。別の子processではowner取得完了を待って競合を拒否し、commitのafter-publish（temp unlink前）に実SIGKILLする。親が専有を取得し直してnlink=2を認証・整理し、同じoperationのrevision=1のreceiptを取得する。子process用のmoduleは実ソースから型除去し、Nodeの型除去APIがない環境ではこの2 native process対照をskipする。
+
+実行profileはmacOS arm64／Node 26.12.1・hostの一時directory上のみ。Linux／x64・別filesystemは未検証。例外注入を実媒体のfsync障害・電源断と数えない。OS隔離／認証IPC、Task観測、時間制限付きleaseと実行許可、Gradle／BTA native・OSV実接続、本番profile／診断採用は未実施のまま。
+
+次は容量・保持期間の契約、authenticatedなcompaction／checkpoint世代移行、上限到達後の再開方法、その後に差分snapshot・incremental検証と性能比較を進める。今回の排他とpair整理で容量上限を広げたり、既存historyを削除したりしない。
+
+保存運用第1段の検証結果: 新規23件成功。型検査・build成功。全体101 files／3,685 tests成功、21 files／1,415 tests skipped。実別processの競合拒否と、ownerのafter-publish SIGKILL後の専有再取得・認証復旧が成功。既存restartのSIGKILLも再実行した。diff整形検査成功、distにauthority／journal fixtureが含まれないことを確認。macOS arm64／Node 26.12.1のみの参照実証で、本番backend・profile・診断採用は無効のまま。
