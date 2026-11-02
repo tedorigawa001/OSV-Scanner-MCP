@@ -2411,6 +2411,11 @@ PO2の最終検証: 新規24回帰と比較記録の静的照合2件、opt-in比
 PO3/P0の検証結果: 新規71回帰成功（24 delta prefix比較と実A1 snapshotのaudit対照を含む）。全体107 files／3,807 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにv2／authority／journal・test fixtureが含まれないことを確認した。既存native保存・SIGKILL・checkpoint／owner・期限境界も全体で再実行したが、v2 native保存や独立registryの成立証明へ数えない。新規の本番backend・profile・診断採用、移行・GC、Gradle／BTA／OSV実接続は0。
 
 
+### 2026-11-03: 2ec7f7bレビュー修正（v2 audit modeの履歴検査）
+
+- [設計書§9.73](GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md#973-2ec7f7bレビュー修正audit-modeの履歴検査2026-11-03)へ、audit modeで全stateをdecodeして前後を比較し、freeze済みupload・bind後のsession固定値・closed session・ledgerの追記のみ・scope terminalの不変性を`journal_v2_history_mutation`で拒否する変更を記録。§9.72.3／9.72.4の保証範囲を更新。回帰5件、nativeの再実行なし。
+
+
 ### 2026-11-03: PO4/Q0・immutable provider／prefix proof契約の具体設計
 
 - §9.74へ独立providerの主体・Enrollment・SealedSnapshot／inventory／Acquire／Completeの入出力、fresh challenge・reader boot／peer・prefix／root bindingを追加。現flock／hash名やmemory Mapを不変性の証明としない。

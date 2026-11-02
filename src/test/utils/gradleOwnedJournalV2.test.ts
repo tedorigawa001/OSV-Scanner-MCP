@@ -138,3 +138,64 @@ it('keeps record-level consistency separate from authority snapshot semantics',(
  const rs=records(),first=sealV2Commit(full(rs),keyId,key),input={binding,baseRef,keyId,key,approvedBaseDigest:ownedSha256(first),checkpoint:{revision:1,commitDigest:ownedSha256(first)},commits:[first],payloads:rs.map(r=>r.bytes)};
  expect(replayV2(input).backendEligible).toBe(false);expect(()=>replayV2({...input,auditAuthoritySnapshot:true})).toThrow(/journal_v2_/);
 });
+
+// History-level audit: each state decodes on its own, but the sequence must evolve monotonically.
+async function a1States(){
+ const identity={authorityId:binding.authorityId,storeEpoch:ownedSha256('v1-history'),keyId:'source'},journal=await AuthorityJournal.create({...identity,key:Buffer.alloc(32,4),io:new MemoryJournalIO(),checkpoint:new MemoryCheckpoint(journalGenesis(identity))}),f=ownedPolicyFixture();
+ const config={authorityId:identity.authorityId,journal,now:()=>0,limits:{chunkBytes:1024},policy:{settings:parseOwnedSettings('owned-bta-offered-inputs-v1',f.claim.profileDigest),registry:createOwnedRegistry(f.raw)}};
+ const model=new OwnedAuthorityContract(config),caller=model.principal('caller'),scope={project:'main::',context:'runtime',invocation:'invocation'};let seq=0;
+ const states:Record<string,V2Record[]>={};
+ const snap=async(name:string,j=journal)=>{states[name]=(await j.readLatest()).map(r=>({key:{role:r.role,id:r.id},bytes:Buffer.from(r.bytes)}));};
+ const call=(actor:object,p:any,m=model)=>m.dispatchDurable(actor,{schema:'osv-mcp.gradle-owned-authority-operation-v1',schemaVersion:1,operationId:'h-'+(++seq),...p});
+ const s=await call(caller,{operation:'begin',expectedRevision:0,consumerId:'consumer',scanRunId:'scan',projectRootId:'root',settingsDigest:ownedSha256('settings'),scopeRequestsDigest:ownedDigest([scope])});await snap('draft');
+ const bytes=Buffer.from(canonicalOwnedJson(graphFixture()));let ref:any;
+ for(let ordinal=0;ordinal<Math.ceil(bytes.length/1024);ordinal++){const part=bytes.subarray(ordinal*1024,(ordinal+1)*1024);ref=(await call(caller,{operation:'put-metadata-chunk',sessionId:s.sessionId,uploadId:s.coreUploadId,purpose:'core',expectedRevision:ordinal,totalBytes:bytes.length,totalSha256:ownedSha256(bytes),ordinal,chunkSha256:ownedSha256(part),base64:part.toString('base64')})).ref;}
+ await snap('frozen');
+ const bound=await call(caller,{operation:'bind-core',sessionId:s.sessionId,expectedRevision:1,coreMetadataRef:ref,coreGraphDigest:ownedSha256(bytes),rootRegistryDigest:ownedSha256('root'),scopes:[{...scope,taskId:'task',actionId:'action',brokerInstanceId:'broker',plannedCaptures:1,...f.claim}]});
+ await call(caller,{operation:'activate',sessionId:s.sessionId,expectedRevision:bound.revision,expectedCurrentRevision:0});let r=await call(caller,{operation:'register-scope',sessionId:s.sessionId,scope,expectedRevision:0});
+ const broker=model.principal('broker',s.sessionId,scope),observer=model.principal('observer',s.sessionId,scope);
+ r=await call(broker,{operation:'append-event',sessionId:s.sessionId,scope,expectedRevision:r.revision,sequence:r.sequence+1,previousDigest:r.ledgerHead,event:{kind:'action-start',capability:r.capability}});await snap('started');
+ await call(observer,{operation:'append-event',sessionId:s.sessionId,scope,expectedRevision:r.revision,sequence:r.sequence+1,previousDigest:r.ledgerHead,event:{kind:'execution-observation',lookup:{status:'unavailable',reason:'receipt-missing'},leases:[]}});await snap('observed');
+ // A separate draft-only authority gives a closed session after restart without any scope terminal.
+ const id2={...identity,storeEpoch:ownedSha256('v1-restart')},j2=await AuthorityJournal.create({...id2,key:Buffer.alloc(32,5),io:new MemoryJournalIO(),checkpoint:new MemoryCheckpoint(journalGenesis(id2))});
+ const m2=new OwnedAuthorityContract({...config,journal:j2}),c2=m2.principal('caller');
+ await call(c2,{operation:'begin',expectedRevision:0,consumerId:'consumer',scanRunId:'scan',projectRootId:'root',settingsDigest:ownedSha256('settings'),scopeRequestsDigest:ownedDigest([scope])},m2);await snap('open-draft',j2);
+ await OwnedAuthorityContract.restart({...config,journal:j2});await snap('restarted-draft',j2);
+ return states;
+}
+function auditHistory(list:V2Record[][]){
+ const commits:Buffer[]=[],payloads=new Map<string,Buffer>();let previous=v2Genesis(binding,baseRef),root=previous;
+ for(const [i,rs]of list.entries()){const body:any=full(rs,i+1,previous,root);commits.push(sealV2Commit(body,keyId,key));previous=ownedSha256(commits.at(-1)!);root=body.toStateRoot;for(const r of rs)payloads.set(ownedSha256(r.bytes),r.bytes);}
+ return replayV2({binding,baseRef,keyId,key,approvedBaseDigest:ownedSha256(commits[0]!),checkpoint:{revision:commits.length,commitDigest:previous},commits,payloads:[...payloads.values()],auditAuthoritySnapshot:true});
+}
+// Self-consistent single state whose frozen core bytes differ (same length, new digest everywhere it is bound).
+function forgeFrozenCore(rs:V2Record[]):V2Record[]{
+ const json=(r:V2Record)=>JSON.parse(r.bytes.toString('utf8')),index=json(rs.find(r=>r.key.role==='session-index')!),upload=index.sessions[0].uploads.find((u:any)=>u.purpose==='core'&&u.state==='frozen');
+ const meta=rs.find(r=>r.key.role==='metadata-snapshot'&&r.key.id===upload.records[0])!,core=json(meta);core.lockfiles[0].sha256=ownedSha256('forged');
+ const bytes=Buffer.from(canonicalOwnedJson(core));expect(bytes.length).toBe(meta.bytes.length);const digest=ownedSha256(bytes);
+ upload.digest=digest;upload.ref.rawSha256=digest;
+ const out=rs.map(r=>r===meta?{key:r.key,bytes}:r);
+ index.records=out.filter(r=>r.key.role!=='session-index'&&r.key.role!=='operation-result').map(r=>({id:r.key.id,role:r.key.role,size:r.bytes.length,sha256:ownedSha256(r.bytes)}));
+ return out.map(r=>r.key.role==='session-index'?{key:r.key,bytes:Buffer.from(canonicalOwnedJson(index))}:r);
+}
+it('accepts a monotonic real A1 history under the per-state history audit',async()=>{
+ const s=await a1States();expect(auditHistory([s.draft!,s.frozen!,s.started!,s.observed!]).authorityAudit).toBeDefined();
+});
+it('rejects a frozen core replaced later in history although each state decodes on its own',async()=>{
+ const s=await a1States(),forged=forgeFrozenCore(s.frozen!);
+ expect(auditHistory([forged]).authorityAudit).toBeDefined();
+ expect(()=>auditHistory([s.frozen!,forged])).toThrow('journal_v2_history_mutation');
+});
+it('rejects a ledger that loses an already recorded event',async()=>{
+ const s=await a1States();expect(()=>auditHistory([s.observed!,s.started!])).toThrow('journal_v2_history_mutation');
+});
+it('rejects a closed session returned to an open state',async()=>{
+ const s=await a1States();expect(auditHistory([s['open-draft']!,s['restarted-draft']!]).authorityAudit).toBeDefined();
+ expect(()=>auditHistory([s['restarted-draft']!,s['open-draft']!])).toThrow('journal_v2_history_mutation');
+});
+it('leaves record-level replay without the audit flag unaffected by authority history rules',async()=>{
+ const s=await a1States(),forged=forgeFrozenCore(s.frozen!);const commits=[s.frozen!,forged];
+ const out:Buffer[]=[];let previous=v2Genesis(binding,baseRef),root=previous;const payloads=new Map<string,Buffer>();
+ for(const [i,rs]of commits.entries()){const body:any=full(rs,i+1,previous,root);out.push(sealV2Commit(body,keyId,key));previous=ownedSha256(out.at(-1)!);root=body.toStateRoot;for(const r of rs)payloads.set(ownedSha256(r.bytes),r.bytes);}
+ expect(replayV2({binding,baseRef,keyId,key,approvedBaseDigest:ownedSha256(out[0]!),checkpoint:{revision:2,commitDigest:previous},commits:out,payloads:[...payloads.values()]}).authorityAudit).toBeUndefined();
+});

@@ -2,7 +2,7 @@
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {z} from 'zod';
 import {canonicalOwnedJson,ownedDigest,ownedSha256,parseOwnedJson,OwnedManifestError} from '../../utils/gradleOwnedJson.js';
-import {decodeAuthoritySnapshot} from './gradleOwnedAuthoritySnapshot.js';
+import {decodeAuthoritySnapshot,type DecodedSnapshot} from './gradleOwnedAuthoritySnapshot.js';
 import {journalRoles} from './gradleOwnedAuthorityJournal.js';
 export const V2_LIMITS=Object.freeze({records:4096,changes:4096,commits:256,payloads:8192,logicalBytes:64*1024*1024,storeBytes:256*1024*1024,envelopeBytes:8*1024*1024,historyBytes:64*1024*1024});
 export class JournalV2Error extends Error{constructor(reason:string){super('journal_v2_'+reason);}}
@@ -81,7 +81,7 @@ function replay(input:V2ReplayInput){
  let historyBytes=0;const commits=input.commits.map(b=>{check(Buffer.isBuffer(b)&&b.length<=V2_LIMITS.envelopeBytes,'budget_exceeded');historyBytes+=b.length;check(historyBytes<=V2_LIMITS.historyBytes,'budget_exceeded');return Buffer.from(b);});
  const blobs=new Map<string,Buffer>();let suppliedBytes=0;
  for(const b of input.payloads){check(Buffer.isBuffer(b),'payload_invalid');suppliedBytes+=b.length;check(b.length<=V2_LIMITS.logicalBytes&&suppliedBytes+historyBytes<=V2_LIMITS.storeBytes,'budget_exceeded');const bytes=Buffer.from(b),digest=ownedSha256(bytes);blobs.set(digest,bytes);}
- check(ownedSha256(commits[0]!)===baseDigest,'base_unapproved');let previousCommit=v2Genesis(binding,baseRef),stateRoot=previousCommit,state:Descriptor[]=[];const used=new Set<string>(),operations=new Set<string>(),states:ReturnType<typeof summarize>[]=[];
+ check(ownedSha256(commits[0]!)===baseDigest,'base_unapproved');let previousCommit=v2Genesis(binding,baseRef),stateRoot=previousCommit,state:Descriptor[]=[];const used=new Set<string>(),operations=new Set<string>(),states:ReturnType<typeof summarize>[]=[];let audited:DecodedSnapshot|undefined;
  for(const [index,bytes]of commits.entries()){
   const body=open(bytes,keyId,key);check(same(Object.fromEntries(Object.keys(binding).map(k=>[k,body[k as keyof V2Binding]])),binding)&&same(body.baseRef,baseRef),'binding_mismatch');
   check(body.revision===index+1&&body.previousCommit===previousCommit&&body.fromStateRoot===stateRoot,'chain_invalid');check(!operations.has(body.operation.id),'operation_replayed');operations.add(body.operation.id);
@@ -89,11 +89,13 @@ function replay(input:V2ReplayInput){
   for(const r of next){const b=blobs.get(r.ref.sha256);check(b&&b.length===r.ref.byteLength,'payload_missing');used.add(r.ref.sha256);}
   check(same(body.usage,summary.usage)&&same(Object.fromEntries(Object.keys(summary.roots).map(k=>[k,body[k as keyof typeof summary.roots]])),summary.roots),'state_root_mismatch');
   check(same(body.operation.resultRef,next.find(r=>r.key.role==='operation-result')!.ref),'result_mismatch');
+  // In audit mode every intermediate state must decode and evolve monotonically from the previous one.
+  if(input.auditAuthoritySnapshot){const decoded=auditAuthority(next.map(r=>({key:r.key,bytes:blobs.get(r.ref.sha256)!})),binding.authorityId);if(audited)checkHistory(audited,decoded);audited=decoded;}
   state=next;stateRoot=body.toStateRoot;previousCommit=ownedSha256(bytes);states.push(summary);
  }
  check(checkpoint.revision===commits.length&&checkpoint.commitDigest===previousCommit,'checkpoint_mismatch');check([...blobs.keys()].every(k=>used.has(k)),'orphan_payload');
  const materialized=state.map(r=>({key:{...r.key},bytes:Buffer.from(blobs.get(r.ref.sha256)!)}));
- const authorityAudit=input.auditAuthoritySnapshot?auditAuthority(materialized,binding.authorityId):undefined;
+ const authorityAudit=audited;
  return {format:'v2-flat-contract' as const,backendEligible:false as const,diagnosticEligible:false as const,controlClosureVerified:false as const,revision:commits.length,commitDigest:previousCommit,stateRoot,records:materialized,...(authorityAudit?{authorityAudit}:{}),states,retainedPayloads:[...used].sort(),physicalDeletionAuthorized:false as const,storageUsage:{historyBytes,retainedPayloadBytes:[...blobs.values()].reduce((n,b)=>n+b.length,0),totalBytes:historyBytes+[...blobs.values()].reduce((n,b)=>n+b.length,0),payloads:blobs.size}};
 }
 
@@ -104,4 +106,22 @@ function auditAuthority(records:V2Record[],authorityId:string){
  const ix=take('session-index','root'),index=z.object({records:z.array(z.object({id,role:z.enum(journalRoles),size:natural,sha256:hash}).strict()).max(V2_LIMITS.records)}).passthrough().parse(parseOwnedJson(ix.bytes.toString('utf8'),V2_LIMITS.logicalBytes));
  const ordered=[...index.records.map(r=>take(r.role,r.id)),ix,take('operation-result','root')];check(ordered.length===records.length,'authority_audit_invalid');
  try{return decodeAuthoritySnapshot(ordered,authorityId);}catch{throw new JournalV2Error('authority_audit_invalid');}
+}
+
+/** Authority-level history rules that record roles cannot express: frozen metadata, bound session fields,
+ * append-only ledgers, retained terminals and closed sessions never change once established. */
+function checkHistory(before:DecodedSnapshot,after:DecodedSnapshot):void{
+ const fail=()=>{throw new JournalV2Error('history_mutation');};
+ for(const old of before.sessions){
+  const next=after.sessions.find(s=>s.manifest.id===old.manifest.id);if(!next)fail();
+  const a=old.manifest,b=next!.manifest;
+  if(a.manifestDigest!==undefined&&!same({coreRef:a.coreRef,coreDigest:a.coreDigest,rootDigest:a.rootDigest,manifestDigest:a.manifestDigest,plans:a.plans},{coreRef:b.coreRef,coreDigest:b.coreDigest,rootDigest:b.rootDigest,manifestDigest:b.manifestDigest,plans:b.plans}))fail();
+  if(a.lifecycle==='closed'&&(b.lifecycle!=='closed'||b.validity!==a.validity))fail();
+  for(const u of old.uploads)if(u.info.state==='frozen'){const v=next!.uploads.find(x=>x.info.id===u.info.id);if(!v||v.info.state!=='frozen'||!same(v.info.ref,u.info.ref)||v.text!==u.text)fail();}
+  for(const sc of old.scopes){
+   const nx=next!.scopes.find(x=>same(x.info.scope,sc.info.scope));if(!nx)fail();
+   if(nx!.events.length<sc.events.length||sc.events.some((e,i)=>nx!.events[i]!==e))fail();
+   if(sc.info.terminal&&!same(nx!.info.terminal,sc.info.terminal))fail();
+  }
+ }
 }

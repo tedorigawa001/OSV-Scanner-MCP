@@ -4240,7 +4240,7 @@ persistent shard／tree、membership proof、O(D)でのroot更新はまだ実装
 
 deltaのaddはkey不在、replace／removeはそのkeyのexactなexpectedOldRefを要求する。changeはkey順・一意とし、同一keyへの複数操作を拒否する。新しいmapを作ってからroot・usage・operation result refを再計算し、bodyへ一致しない候補は返さない。最終headと外側checkpointが一致するまで最終結果を返さない。古いhead・truncate・別lineage／generationの履歴を現在の成功結果にしない。
 
-現段階ではremoveをmetadata-snapshotと旧empty ledgerに限定する。terminal／action reservation／tombstone／retire receipt／control object／maintenance recordの削除、およびそれらの異なるrefへの置換を拒否する。この制限は後続fullへの切替でも迂回できない。metadataの論理removeも、過去commitが参照する実bytesの廃棄を許可しない。実sessionのretirementを有効にするにはM0以降のintent・認可・tombstone/control閉包が別途必要である。
+metadata-snapshotは受信中chunkの置換・removeのためrecord-levelでは保護しない。freeze済みの中身の不変性は、record roleではなくsession-indexのupload状態に基づき、audit modeの履歴検査が担う（§9.73）。audit flagなしのreplayはこの保証を持たない。現段階ではremoveをmetadata-snapshotと旧empty ledgerに限定する。terminal／action reservation／tombstone／retire receipt／control object／maintenance recordの削除、およびそれらの異なるrefへの置換を拒否する。この制限は後続fullへの切替でも迂回できない。metadataの論理removeも、過去commitが参照する実bytesの廃棄を許可しない。実sessionのretirementを有効にするにはM0以降のintent・認可・tombstone/control閉包が別途必要である。
 
 payloadをprivate BufferへcopyしてSHA-256／sizeを照合し、全履歴の必要refを満たすこと、入力に無関係なpayloadがないことを確認する。返却bytesも別copyにする。過去payloadの欠落は、現在full snapshotに不要でも拒否する。入力の重複payloadもaggregate入力budgetへ計上し、unique storage bytesとは区別する。全payloadは呼出し側が渡すbytesだけを使い、refから外部へ取得しない。
 
@@ -4248,7 +4248,7 @@ payloadをprivate BufferへcopyしてSHA-256／sizeを照合し、全履歴の�
 
 #### 9.72.4 A1とのaudit対照と回帰
 
-`auditAuthoritySnapshot:true`は、認証・materialize後のrecordから既存session-index内のrecord順を復元し、既存のstrict `decodeAuthoritySnapshot`へ渡す。これによりv1 full snapshotと同じ宣言順・ledger順・binding・raw metadata・session／scope状態をauditする。新しいactor／capability／実行許可を復元する処理ではない。通常のrecord-level整合性だけではauthority snapshotの意味・policyを保証しないことを負例でも固定した。
+`auditAuthoritySnapshot:true`は、認証・materialize後のrecordから既存session-index内のrecord順を復元し、既存のstrict `decodeAuthoritySnapshot`へ渡す。これによりv1 full snapshotと同じ宣言順・ledger順・binding・raw metadata・session／scope状態をauditする。auditは最終stateだけでなく、全commitの各stateに対して行い、前後のstateを比較する（§9.73）。freeze済みuploadのref・bytes、bind後のsessionの`coreRef`／`coreDigest`／`rootDigest`／`manifestDigest`／plans、ledgerのevent列（追記のみ）、scope terminal、closedのsessionのlifecycle／validityが変わらず、sessionが消えないことを要求し、違反を`journal_v2_history_mutation`で拒否する。新しいactor／capability／実行許可を復元する処理ではない。通常のrecord-level整合性だけではauthority snapshotの意味・policyを保証しないことを負例でも固定した。
 
 回帰ではsignatureが正しい不正bodyも作り、from／to／parent／revision／authority／lineage／epoch／generation／profile／base pin、namespace／index／budget／usage、旧digest／size、重複・順序・add-existing／replace-absent、result ref／operation再使用を拒否する。unknown field・混在mode・v1・未対応layout／role・JSON pointer・必須record／payload欠落・改変・孤立payload・MAC・非canonical／不正UTF-8・初回deltaも対象とする。
 
@@ -4257,6 +4257,21 @@ payloadをprivate BufferへcopyしてSHA-256／sizeを照合し、全履歴の�
 最初にmodule未実装による失敗、次にdelta未対応による失敗を確認してから実装した。新規Gradle／BTA／OSV実接続、v2 native保存・crash復旧、性能比較はこのP0では実施しない。後続P1でのdurable保存と採用前gateの成立が必要である。
 
 PO3/P0の検証結果: 新規71回帰成功（24 delta prefix比較と実A1 snapshotのaudit対照を含む）。全体107 files／3,807 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにv2／authority／journal・test fixtureが含まれないことを確認した。既存native保存・SIGKILL・checkpoint／owner・期限境界も全体で再実行したが、v2 native保存や独立registryの成立証明へ数えない。新規の本番backend・profile・診断採用、移行・GC、Gradle／BTA／OSV実接続は0。
+
+
+### 9.73 2ec7f7bレビュー修正・audit modeの履歴検査（2026-11-03）
+
+修正前の`auditAuthoritySnapshot`は最終stateだけを既存decoderへ渡していた。`metadata-snapshot`はrecord roleとして保護されないため、manifestを揃えて途中のcommitでfreeze済みcoreの中身を差し替えた履歴でも、最終stateが整っていれば受理された。terminal等はroleで保護している一方、freeze済みの中身（§9.68.5で「frozen bytesを後から別内容へ交換しない」とした不変データ）を守っていない非対称だった。
+
+audit modeでは全commitの各stateをdecodeし、直前のstateと比べるようにした。session単位で次を要求し、違反は`journal_v2_history_mutation`とする。
+
+- sessionが消えないこと（retirementはM0以降の認可を経るまで未対応）
+- bind後の`coreRef`／`coreDigest`／`rootDigest`／`manifestDigest`／plansが変わらないこと
+- closedのsessionのlifecycleとvalidityが変わらないこと
+- freeze済みuploadが、同じid・ref・bytesのまま残ること
+- scopeのledger event列が前のstateを先頭に持つこと（追記のみ）、既存のscope terminalが変わらないこと
+
+既存の実A1履歴（freeze、bind、activate、register、action予約、observation、seal、retry、expiry、restartを含む）は、全stateのauditでも受理される。回帰を5件加えた。単独では整合するfreeze済みcoreの差し替えstateを履歴の途中に置いた場合、記録済みeventを失うledger、restartでclosedになったsessionを開いた状態へ戻した場合を拒否する。audit flagなしのreplayには、この履歴規則を適用しないことも固定した。修正前の実装では、追加5件のうち負例3件が失敗することを先に確認した。stateごとにdecodeするため、audit modeの費用は履歴の長さに比例して増える。
 
 
 ### 9.74 PO4/Q0・immutable providerとcross-request prefix proofの取得契約（設計、2026-11-03）
