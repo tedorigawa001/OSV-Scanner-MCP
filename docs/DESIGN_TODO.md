@@ -2499,3 +2499,22 @@ Q2/B設計レビュー修正の検証結果: 公開command例・既存Q2/A nativ
 - 設計のみ。実装・配備・native実行は0。
 
 920bf01レビュー修正の検証結果: §9.79の10小節・QB01〜QB32の一意性・追記箇所を確認。全体110 files／4,030 tests成功、24 files／1,418 tests skipped。diff整形検査成功。
+
+
+### 2026-11-03: Q2/B1a・配備manifest／preflight診断／静的検証runner
+
+- 追加レビュー修正は既存commit 7588213に記録済みで、重複commitせず着手。§9.80とtest fixtureへ独立manifest pin／canonical schema・artifact全ref／bytes閉包を追加。固定principal／root／endpoint／execution plan・資源上限を照合し、native採用には接続しない。
+- manager launch inventoryとcontroller diagnosticを別Ed25519鍵・roleで検証。run／case／manifest／launch digest、listener cookie／custodian／PassCredentials・bootstrap、phase別観測と完全event列、独立case期待値を照合する。exec数・verified数は検証済み記録から導出する。
+- 新規119回帰と実テスト結果からの記録docs/validation/gradle-q2b-b1a-static-2026-11-03.jsonを追加。禁止read eventの検査を外した故障対照で回帰が失敗し、復元後に成功することを確認。
+- 次はB1bの固定launcher／unit／manager gate／VM fixture、その後B1cの実別UID攻撃・外側controller実証。今回はsynthetic data-only contractで、process・FD・filesystem・account・systemd操作／native隔離実証は0。QB native条件・B2／B3・Q3／Q4・本番採用は未完了。
+
+B1aの検証結果: 新規119回帰成功。全体111 files／4,149 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。保存記録の119 case名／status・source SHA-256、§9.80の6小節を照合し、distにB1a fixture／Python test harnessが含まれないことを確認した。trace検査除去の故障対照でsecret-read回帰が失敗し、復元後の検証も成功。新規Q2/B native隔離・OS配備・grant／原本read省略・profile／本番採用は0。
+
+
+### 2026-11-03: B1aレビュー修正・listener GID／全principal資格の完全性
+
+- §9.80.7とlistener schemaにownerGidを追加し、manager inventoryはendpoint.groupGid、各phaseのFD観測はmanager inventoryへ照合する。root custodian GIDとleaf GIDを分離し、欠落・不一致を拒否する。
+- 全6 principalの観測UID/GIDを必須real／effective／saved三つ組へ変更し、全要素を独立manifestへ照合する。field／要素の欠落・旧scalar形式・root等の不一致を拒否する。
+- 新規57件・B1a合計176件。旧不完全記録が修正前に受理されるREDを確認し、全phaseの不一致／欠落と再署名・socket世代／boot／launch digest・参照更新後の拒否を検証。検証JSONを現sourceと実テスト結果で更新する。native隔離・配備・本番採用は引き続き未成立。
+
+B1aレビュー修正の検証結果: 新規57件・B1a合計176回帰成功。全体111 files／4,206 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。現sourceでのtrace検査除去RED／復元GREENも再確認した。検証JSONの176 case名／status・実装／回帰／canonical utilityのSHA-256一致、distにB1a fixtureが含まれないことを確認した。正しい再署名と実際に変更したlaunch digest・参照更新後でも不一致／欠落を拒否する。Q2/Bの新規native隔離・配備・採用flag変更は0。

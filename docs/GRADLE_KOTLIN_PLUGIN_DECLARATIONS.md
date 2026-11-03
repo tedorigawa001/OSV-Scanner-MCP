@@ -4774,3 +4774,71 @@ Q2/B設計レビュー修正の検証結果: 公開command例・既存Q2/A nativ
 これらによりQB09／QB10（SO_PASSCREDの時点・資格なしdataの拒否）とQB17（PassCredentials未設定listener・ready前queued dataの拒否）の条件を追加した。設計のみの修正で、unit／launcher／FD gate／QB回帰の実装・配備・新規native実行は0。既存Q2/Aはprovider自身がbindする同UID診断のままで、本節の時点条件を満たしたとは主張しない。
 
 920bf01レビュー修正の検証結果: §9.79.1〜10の10小節、QB01〜QB32の一意性、QB09／QB10／QB17への追記、§9.79.6の理由分類の明確化を確認。全体110 files／4,030 tests成功、24 files／1,418 tests skipped。diff整形検査成功。文書のみの変更である。
+
+
+### 9.80 PO4/Q2/B1a・配備manifest／preflight診断／検証runnerの静的contract（2026-11-03）
+
+#### 9.80.1 範囲と独立pin
+
+`src/test/fixtures/gradleOwnedDeployment.ts`に、§9.79.1〜10を受けた最初のdata-only実装を追加した。exportは`verifyDeploymentManifest`、`verifyB1aDiagnostic`、`verifyB1aSuite`と各入力の型である。exec・socket・file操作・root／account配備・OS資格の取得は行わない。入力はsynthetic fixtureで、実Linuxのunit／launcher／隔離成立を証明していない。すべての返却値でnativeIsolationVerified／profileApproved／backendEligible=false、originalReadsSkipped=0を固定する。
+
+manifestは独立呼出し側が固定するexpectedDigestへ照合する。署名付きrecord本文からmanifestの承認pinを追加しない。正しいschema／ref／byte hashであっても、その記録を現在の配備やnative隔離の採用許可にしない。検証済みmanifestの内部状態をcopyし、private WeakMapに登録したfrozen handleだけを後段で受け付ける。wire digestや同じfieldのobjectからhandleを作れず、呼出し元の元manifest／artifact変更も内部状態を書き換えない。
+
+#### 9.80.2 配備manifestとartifact閉包
+
+`osv-mcp.q2b.deployment.v1`はstrict canonical JSON／scope=b1a-static-onlyで、platform実版・image／instance／policy、manager／controller UID、6つの独立principal、root／endpoint、固定execution plan、artifact refsと資源上限を持つ。provider／reader／build／writer／checkpoint／registryは正の相異なるUIDとGID、補助groupなしを初期profileとし、overflow UID/GID=65534は拒否する。manager／controllerは信頼側のroot UIDで、実processが分離していたことはここでは主張しない。
+
+launcher／Python runtime／entrypoint／crypto／service unitとreader／upload／publish unitの8必須artifact roleを一意にし、追加dependencyは限定数だけ許す。root-owned regular／nlink=1／writer=rootだけの記述と、独立image下の絶対pathを要求する。渡された全artifact bytesのsize／SHA-256を全refsへ照合し、欠落・重複・orphan・余分なpath・未知field・別digestを拒否する。これは**供給されたinventoryに対する閉包**であり、scriptのimport探索、全OS依存の発見、unit本文の意味解析、実filesystemのmode／所有者検査ではない。B1b以降でeffective設定・実closureとの対応を実証する必要がある。
+
+executionは固定launcher argv、Pythonの`[runtime,-I,entrypoint]`、root-owned imageのcwd、固定credential directory、shellなし／環境継承なし／FD storeなしへ限定する。provider／checkpoint／registry／controller evidenceの4 rootsは固定path・owner・0700・directory・親writer=root・newPrivateを要求し、device/inodeを一意にする。3 endpointはroot-owned pathname socket・0660・actorのprimary GID・directory writer=root・Accept=no／PassCredentials=yesで、provider bind fallbackと非協調restartを許さない。
+
+#### 9.80.3 署名付きlaunch inventoryとdiagnostic
+
+managerとcontrollerは別のEd25519 public key／keyId pinで検証する。envelopeは`osv-mcp.q2b.evidence.v1`、issuer roleとbodyを含むcanonical bytesへ署名し、未知issuer／role差替え／同じ鍵での両role・private verification key・signature変更・非canonical base64を拒否する。秘密鍵や新しいverification pinをwireから取り込まない。fixtureの鍵はテストで生成したもので、独立service／承認registryによる信頼の証拠ではない。
+
+manager bodyの`osv-mcp.q2b.launch.v1`はmanifestDigest・runId・caseId・pid・socketGeneration・providerBoot・bootstrap FDと3 listener inventoryを持つ。listenerはfd／role／path／uint64 cookie、custodian UID/GID、leaf owner UID/GID／mode／directory writers、domain／type／listening／PassCredentials状態、pathnameとdescriptorの別inodeを固定する。role・fd・cookie・pathname identityの重複を拒否し、root custodianをprovider UIDへ置換しない。listener FDは3〜5とbootstrap FD=6の初期配置に限定するが、roleの順序は仮定しない。launch envelopeそのもののdigestも、独立case expectationへ固定する。bootstrap digestはdiagnosticからこのlaunch envelope bytesを参照し、launch自身の中へ自身のhashを入れる循環を作らない。
+
+controller bodyの`osv-mcp.q2b.diagnostic.v1`はmode=synthetic-static、manifest／launch digest・run／case、各phaseの観測値、event列、claimed結果を持つ。全phaseでplatform、4 rootの所有／mode／identity／履歴記述、6 principalすべてのreal/effective/saved UID/GID・group・capability／admin route、provider実行identityの同三つ組、image／closure digest・PID、固定argv／cwd／環境、継承FD集合を照合する。root／platform／権限の変化を、manifest記述が正しいからという理由で黙認しない。環境はLANG／LC_ALL／CREDENTIALS_DIRECTORY／LISTEN_PID／FDS／FDNAMESの閉じた集合で、未知・重複・欠落・値差替えを拒否する。初期profileはLISTEN_PIDFDID等の追加変数を未対応とし、有効化には別の明示schema拡張を必要とする。
+
+#### 9.80.4 phase・event・case期待値の照合
+
+manager → launcher → providerの順に観測値を検証する。各phaseはgate-beginとgate-pass／gate-rejectを持ち、launcher／providerのphaseへ入る直前に対応するexec eventを要求する。最初の不一致でrejectedとし、そのphaseより後の観測値／eventを許さない。claimed status／stage／reasonはこの導出結果と、別引数の独立case expectationの**両方**へ完全一致させる。acceptedへの変更、失敗理由の変更、phase欠落・入替え、別PID／UID、開始・gate・execの省略、拒否後のruntime起動、秘密／canonical内容読取・accept・注入コード実行eventを拒否する。自己申告のexec数やverifiedCases fieldはschemaに存在しない。
+
+manager拒否はlauncherExecCount=0／runtimeExecCount=0、launcher拒否は1／0、provider拒否は1／1として検証済みeventから計算する。acceptedは全preflightが静的に一致したという意味だけで1／1。secretReads／canonicalContentReads／injectedCodeExecutions=0は、受理したsynthetic event列に該当操作を許していないという記述であり、実OSで読取が0だった測定値ではない。providerで拒否した記録を「runtime exec前拒否」へ読み替えない。
+
+`verifyB1aSuite`は独立runIdとcase planを受け、全caseの一対一記録を要求する。欠落・重複・未知case・別run・空集合・署名不正・結果期待値の不一致はsuite全体を拒否する。validな拒否ケースもテストのverified件数へ算入するが、accepted／rejected件数は検証済み結果から別に算出する。recordやplanの到着順によって結果を変えない。これは固定case planを検証する参照runnerで、native attack processを起動するrunnerではない。
+
+#### 9.80.5 有界入力と拒否
+
+1 documentは256 KiB、artifactは1件4 MiB・合計16 MiB・最大128件、suiteは最大128 cases・launch＋diagnostic合計16 MiBを上限にする。canonical parserのdepth／node上限を維持し、SHAや署名検証の前に外側bytes予算を検査する。FD／環境／event列にも個別上限を設ける。path traversal・非canonical JSON・duplicate key・不正整数／uint64・未知field・unsupported scopeを拒否する。制限を超えた値を切り捨てて成功にしない。
+
+`q2b_`接頭辞のfixture内エラーとしてschema_invalid／canonical_invalid／budget_exceeded、manifest_pin_mismatch／launch_pin_mismatch、closure_invalid／principal_invalid／roots_invalid／endpoint_invalid／execution_invalid／fd_invalid、issuer_invalid／signature_invalid／binding_mismatch、event_invalid／evidence_incomplete／case_plan_invalid／case_expectation_mismatch等を区別する。本番の拒否schemaを今回変更したものではなく、nativeのEACCES／EPERM検出を実装したものでもない。
+
+#### 9.80.6 回帰・検証記録と次段階
+
+`src/test/utils/gradleOwnedDeployment.test.ts`に176回帰（当初119件＋レビュー修正57件）を追加。正常なsynthetic配備、pin／閉包、manifestを再hashした場合の矛盾、環境注入／argv／UID・group／rootの変化、listener／bootstrapの差替え、PassCredentials／custodian、署名／再署名された故障記録、phase・実行eventの欠落・禁止操作、case planと件数／到着順／容量境界を検証する。trace完全一致の検査を一時的に除去するとsecret-read回帰が失敗し、復元後に119件成功することも確認した。
+
+QB01〜QB19・QB30〜QB32のうち入力／対応付け／証拠の静的な部分を扱うが、QB native条件の完了件数とはしない。特にQB04の実unlink／rename拒否、QB08の実preload／exec観測、QB09／10の実SCM_CREDENTIALS、QB16のFD転送、QB17の実socket作成／stop・restart／queued接続、QB18の実credential保護は未実証である。QB20〜QB29の保存・pinも未実装。
+
+記録は`docs/validation/gradle-q2b-b1a-static-2026-11-03.json`。実Vitest結果から176件の名前・statusを取り込み、実装／回帰／canonical utilityのsource SHA-256と実行Node・platformを保存した。これは自己署名のnative approvalではなく、静的テストの再現用記録である。
+
+```sh
+npm test -- src/test/utils/gradleOwnedDeployment.test.ts
+```
+
+次はB1bのmanager側exec前gate・固定launcher・socket/service unitとVM fixtureを実装し、合成値を実OS観測値へ結ぶ。その後B1cで独立UIDの攻撃process／許可対照・外側controller記録を実行する。実配備ができない環境ではnative isolationはunsupported／未実施のままとする。B1aから本番reader・grant・cache fast pathへ接続する入口を新設していない。
+
+B1aの検証結果: 新規119回帰成功。全体111 files／4,149 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。保存記録の119 case名／status・source SHA-256、§9.80の6小節を照合し、distにB1a fixture／Python test harnessが含まれないことを確認した。trace検査除去の故障対照でsecret-read回帰が失敗し、復元後の検証も成功。新規Q2/B native隔離・OS配備・grant／原本read省略・profile／本番採用は0。
+
+
+#### 9.80.7 B1aレビュー修正・socket owner GIDと全principalの資格三つ組
+
+listener schemaに`ownerGid`を必須追加し、manager署名のlaunch inventoryと独立manifestのendpoint.groupGidを照合する。各phaseのcontroller観測FDも、同じownerGidを含むlaunch inventoryへ完全一致させる。socket leafのgroupとroot custodianのGIDは別の値であり、custodianGid=0をleafのownerGidへ流用しない。ownerGid欠落はschema_invalid、manager inventoryの期待GID不一致はlaunch_invalid、phase観測の不一致はfd_invalidの拒否結果となる。
+
+principalStateのUID／GIDをscalarから必須の`[real,effective,saved]`三つ組へ変更した。provider／reader／build／writer／checkpoint／registryの全6 roleについて、全要素がmanifestの固定UID／GIDと一致することを全phaseで要求する。providerの別identity観測も従来どおり三つ組で照合する。scalar・field欠落・要素欠落はschema_invalid、saved rootを含む要素の不一致はprincipal_invalidとする。noNewPrivilegesやcapability欄が安全でも、不完全な資格情報を代替として受理しない。manifestのUID／GIDは固定期待値としてscalarのままで、観測値だけを三つ組へ強化した。
+
+57回帰を追加してB1a合計176件。旧listener GID欠落・scalar principal記録を再署名した2ケースが修正前には受理され、期待する拒否テストが失敗することを確認した。修正後は、3 listener roleのmanager GID不一致／各phase観測の不一致・欠落、6 principal×UID/GID×real/effective/savedの不一致、全phaseでのfield欠落／scalar／各要素欠落を検証する。manager／controllerを正しく再署名し、socketGenerationとproviderBootを変更してlaunch digestが実際に変わったことをassertし、case expectation・diagnostic・bootstrap・listener世代の参照も更新した状態でなお拒否する。正しいroot custodian GIDと異なる正しいleaf owner GIDの陽性対照も含む。記録のbytes認証成功を内容の整合性の代わりにしない。
+
+これは静的fixtureのschema／証拠照合の修正であり、OS上のsetresuid／setresgidやsocket GID設定・アクセス拒否を新規実証したものではない。nativeIsolationVerified／profileApproved／backendEligible=false、originalReadsSkipped=0は変更しない。
+
+B1aレビュー修正の検証結果: 新規57件・B1a合計176回帰成功。全体111 files／4,206 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。現sourceでのtrace検査除去RED／復元GREENも再確認した。検証JSONの176 case名／status・実装／回帰／canonical utilityのSHA-256一致、distにB1a fixtureが含まれないことを確認した。正しい再署名と実際に変更したlaunch digest・参照更新後でも不一致／欠落を拒否する。Q2/Bの新規native隔離・配備・採用flag変更は0。

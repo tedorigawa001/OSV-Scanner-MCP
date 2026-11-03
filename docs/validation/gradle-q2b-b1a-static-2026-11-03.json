@@ -1,0 +1,790 @@
+{
+  "schema": "osv-mcp.q2b.b1a.validation.v1",
+  "date": "2026-11-03",
+  "scope": "synthetic static contract only",
+  "runtime": {
+    "node": "v26.12.1",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "sources": [
+    {
+      "path": "src/test/fixtures/gradleOwnedDeployment.ts",
+      "sha256": "e0cceb1f37aed23ab51f2cb578dd8614687e0f80cfcaab9bc78d2efba37f2453"
+    },
+    {
+      "path": "src/test/utils/gradleOwnedDeployment.test.ts",
+      "sha256": "1cace8fea47f89a244bd891ead73009281a195dd5bb1c156ea5e44763dec5005"
+    },
+    {
+      "path": "src/utils/gradleOwnedJson.ts",
+      "sha256": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e"
+    }
+  ],
+  "verifiedTests": 176,
+  "tests": [
+    {
+      "name": "verifies a closed, independently pinned synthetic deployment without granting native adoption",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: unknown field",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: wrong scope",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: same principal",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: supplementary group",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: overflow principal",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: shared gid",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: missing artifact role",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: writable executable",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: symlink executable",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: path traversal",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: runtime switch",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: shell",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: environment inheritance",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: wrong credential path",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: shared root identity",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: wrong checkpoint owner",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: provider endpoint directory write",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: passcred disabled",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: Accept=yes",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: wrong endpoint group",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: provider bind fallback",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: uncoordinated restart",
+      "status": "passed"
+    },
+    {
+      "name": "rejects deployment inconsistency even with a recomputed manifest pin: excess frame budget",
+      "status": "passed"
+    },
+    {
+      "name": "rejects missing, duplicate, unknown, changed and oversize artifact bytes",
+      "status": "passed"
+    },
+    {
+      "name": "rejects pin mismatch, duplicate JSON keys, noncanonical JSON and an oversized document",
+      "status": "passed"
+    },
+    {
+      "name": "binds manager launch inventory and controller observations to the independent manifest and case expectation",
+      "status": "passed"
+    },
+    {
+      "name": "derives rejection and exec counts from the manager gate transcript",
+      "status": "passed"
+    },
+    {
+      "name": "derives rejection and exec counts from the launcher gate transcript",
+      "status": "passed"
+    },
+    {
+      "name": "derives rejection and exec counts from the provider gate transcript",
+      "status": "passed"
+    },
+    {
+      "name": "rejects NODE_OPTIONS before launcher/runtime exec",
+      "status": "passed"
+    },
+    {
+      "name": "rejects NODE_PATH before launcher/runtime exec",
+      "status": "passed"
+    },
+    {
+      "name": "rejects PYTHONPATH before launcher/runtime exec",
+      "status": "passed"
+    },
+    {
+      "name": "rejects PYTHONHOME before launcher/runtime exec",
+      "status": "passed"
+    },
+    {
+      "name": "rejects LD_PRELOAD before launcher/runtime exec",
+      "status": "passed"
+    },
+    {
+      "name": "rejects LD_LIBRARY_PATH before launcher/runtime exec",
+      "status": "passed"
+    },
+    {
+      "name": "rejects PATH before launcher/runtime exec",
+      "status": "passed"
+    },
+    {
+      "name": "rejects HOME before launcher/runtime exec",
+      "status": "passed"
+    },
+    {
+      "name": "refuses extra argv as an execution configuration",
+      "status": "passed"
+    },
+    {
+      "name": "refuses launcher argv as an execution configuration",
+      "status": "passed"
+    },
+    {
+      "name": "refuses duplicate env as an execution configuration",
+      "status": "passed"
+    },
+    {
+      "name": "refuses wrong LISTEN_PID as an execution configuration",
+      "status": "passed"
+    },
+    {
+      "name": "refuses missing env as an execution configuration",
+      "status": "passed"
+    },
+    {
+      "name": "refuses wrong cwd as an execution configuration",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: missing before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: extra before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: duplicate before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: cookie before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: path before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: role before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: domain before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: nonlistener before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: PassCredentials before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: custodian before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: directory writers before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: bootstrap write before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: bootstrap digest before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects inherited FD mismatch: socket generation before accepting or reading secrets",
+      "status": "passed"
+    },
+    {
+      "name": "rejects unsafe preflight identity: saved uid",
+      "status": "passed"
+    },
+    {
+      "name": "rejects unsafe preflight identity: real gid",
+      "status": "passed"
+    },
+    {
+      "name": "rejects unsafe preflight identity: supplementary group",
+      "status": "passed"
+    },
+    {
+      "name": "rejects unsafe preflight identity: admin route",
+      "status": "passed"
+    },
+    {
+      "name": "rejects unsafe preflight identity: no new privileges",
+      "status": "passed"
+    },
+    {
+      "name": "does not trust a forged manifest handle or caller mutation of the original manifest and artifact objects",
+      "status": "passed"
+    },
+    {
+      "name": "allows descriptor/list order permutation without confusing roles and distinguishes pathname versus descriptor inodes",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: missing begin",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: missing gate",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: missing exec",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: event reorder",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: unobserved phase",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: secret read",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: canonical read",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: accept",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: injected code",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: wrong event actor",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: wrong event pid",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: claimed count",
+      "status": "passed"
+    },
+    {
+      "name": "rejects re-signed but incomplete or inconsistent controller evidence: native flag",
+      "status": "passed"
+    },
+    {
+      "name": "rejects execution moved after a manager gate failure and a rejected case relabeled as accepted",
+      "status": "passed"
+    },
+    {
+      "name": "rejects an accepted case when the independent case expectation requires rejection",
+      "status": "passed"
+    },
+    {
+      "name": "rejects altered signatures, issuer-role substitution, stale run binding, and a diagnostic signed by the manager",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a separately re-signed launch inventory with changed cookies unless its independent pin and observations agree",
+      "status": "passed"
+    },
+    {
+      "name": "rejects observed root custody drift instead of trusting only the pinned manifest",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete independent case plan and derives suite totals only from verified records",
+      "status": "passed"
+    },
+    {
+      "name": "rejects incomplete or unbounded suite evidence: missing record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects incomplete or unbounded suite evidence: duplicate record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects incomplete or unbounded suite evidence: unknown record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects incomplete or unbounded suite evidence: missing plan",
+      "status": "passed"
+    },
+    {
+      "name": "rejects incomplete or unbounded suite evidence: duplicate plan",
+      "status": "passed"
+    },
+    {
+      "name": "rejects incomplete or unbounded suite evidence: different run",
+      "status": "passed"
+    },
+    {
+      "name": "rejects incomplete or unbounded suite evidence: empty suite",
+      "status": "passed"
+    },
+    {
+      "name": "rejects incomplete or unbounded suite evidence: excess cases",
+      "status": "passed"
+    },
+    {
+      "name": "rejects incomplete or unbounded suite evidence: excess bytes",
+      "status": "passed"
+    },
+    {
+      "name": "derives the same suite result regardless of record arrival order",
+      "status": "passed"
+    },
+    {
+      "name": "rejects root preflight drift: root mode",
+      "status": "passed"
+    },
+    {
+      "name": "rejects root preflight drift: root ancestor write",
+      "status": "passed"
+    },
+    {
+      "name": "rejects root preflight drift: symlink root",
+      "status": "passed"
+    },
+    {
+      "name": "rejects root preflight drift: root inode",
+      "status": "passed"
+    },
+    {
+      "name": "rejects root preflight drift: unknown root history",
+      "status": "passed"
+    },
+    {
+      "name": "rejects observed principal inventory: build elevated",
+      "status": "passed"
+    },
+    {
+      "name": "rejects observed principal inventory: reader admin",
+      "status": "passed"
+    },
+    {
+      "name": "rejects observed principal inventory: principal alias",
+      "status": "passed"
+    },
+    {
+      "name": "rejects observed principal inventory: principal omitted",
+      "status": "passed"
+    },
+    {
+      "name": "binds the diagnostic to the pinned execution context: pid",
+      "status": "passed"
+    },
+    {
+      "name": "binds the diagnostic to the pinned execution context: image",
+      "status": "passed"
+    },
+    {
+      "name": "binds the diagnostic to the pinned execution context: runtime version",
+      "status": "passed"
+    },
+    {
+      "name": "binds the diagnostic to the pinned execution context: closure",
+      "status": "passed"
+    },
+    {
+      "name": "accepts legitimate kernel/version strings while keeping them exact in the independent pin",
+      "status": "passed"
+    },
+    {
+      "name": "rejects invalid manager inventory even if re-signed and its independent digest is updated: duplicate cookie",
+      "status": "passed"
+    },
+    {
+      "name": "rejects invalid manager inventory even if re-signed and its independent digest is updated: duplicate role",
+      "status": "passed"
+    },
+    {
+      "name": "rejects invalid manager inventory even if re-signed and its independent digest is updated: PassCredentials off",
+      "status": "passed"
+    },
+    {
+      "name": "rejects invalid manager inventory even if re-signed and its independent digest is updated: wrong custodian",
+      "status": "passed"
+    },
+    {
+      "name": "rejects invalid manager inventory even if re-signed and its independent digest is updated: wrong socket type",
+      "status": "passed"
+    },
+    {
+      "name": "rejects invalid manager inventory even if re-signed and its independent digest is updated: connected socket",
+      "status": "passed"
+    },
+    {
+      "name": "rejects invalid manager inventory even if re-signed and its independent digest is updated: cookie outside uint64",
+      "status": "passed"
+    },
+    {
+      "name": "rejects observations relabeled as native or unsigned control evidence",
+      "status": "passed"
+    },
+    {
+      "name": "enforces aggregate artifact bytes even when every individual ref and digest is correct",
+      "status": "passed"
+    },
+    {
+      "name": "rejects same-key issuer roles, wrong-key signatures and private verification pins",
+      "status": "passed"
+    },
+    {
+      "name": "rejects duplicate keys, alternate encodings and nested unbounded evidence before authentication",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a re-signed legacy launch that omits the listener owner GID",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a freshly signed diagnostic with only scalar principal UID/GID values",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a wrong reader socket owner GID even after manager/controller re-signing and all launch digest updates",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a wrong upload socket owner GID even after manager/controller re-signing and all launch digest updates",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a wrong publish socket owner GID even after manager/controller re-signing and all launch digest updates",
+      "status": "passed"
+    },
+    {
+      "name": "checks the observed reader socket GID in every preflight phase",
+      "status": "passed"
+    },
+    {
+      "name": "checks the observed upload socket GID in every preflight phase",
+      "status": "passed"
+    },
+    {
+      "name": "checks the observed publish socket GID in every preflight phase",
+      "status": "passed"
+    },
+    {
+      "name": "rejects provider real uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects provider effective uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects provider saved uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects provider real gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects provider effective gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects provider saved gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects reader real uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects reader effective uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects reader saved uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects reader real gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects reader effective gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects reader saved gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects build real uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects build effective uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects build saved uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects build real gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects build effective gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects build saved gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects writer real uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects writer effective uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects writer saved uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects writer real gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects writer effective gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects writer saved gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects checkpoint real uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects checkpoint effective uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects checkpoint saved uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects checkpoint real gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects checkpoint effective gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects checkpoint saved gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects registry real uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects registry effective uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects registry saved uid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects registry real gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects registry effective gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "rejects registry saved gid mismatch in each phase with a freshly signed controller record",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved uid for provider, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved gid for provider, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved uid for reader, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved gid for reader, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved uid for build, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved gid for build, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved uid for writer, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved gid for writer, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved uid for checkpoint, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved gid for checkpoint, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved uid for registry, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "requires the complete real/effective/saved gid for registry, not scalar/short/missing evidence",
+      "status": "passed"
+    },
+    {
+      "name": "does not equate socket owner GID with the root listener custodian GID",
+      "status": "passed"
+    }
+  ],
+  "mutationControl": {
+    "change": "remove exact event transcript check",
+    "regression": "secret-read evidence",
+    "mutantFailedAsExpected": true,
+    "restoredSuitePassed": true
+  },
+  "nativeIsolationVerified": false,
+  "profileApproved": false,
+  "backendEligible": false,
+  "originalReadsSkipped": 0,
+  "nativeQ2bTrials": 0,
+  "limitations": [
+    "No process, FD, filesystem, account or systemd isolation was exercised by the B1a verifier.",
+    "Artifact closure is exact only against the supplied synthetic inventory; runtime imports and effective unit settings are not discovered.",
+    "Fixture manager/controller signing keys and independent expectations are test inputs, not independently approved native service credentials."
+  ],
+  "reviewRegressions": {
+    "addedTests": 57,
+    "totalTests": 176,
+    "preFixLegacyOmissionTestsFailedAsExpected": 2,
+    "listenerRoles": [
+      "reader",
+      "upload",
+      "publish"
+    ],
+    "principalRoles": [
+      "provider",
+      "reader",
+      "build",
+      "writer",
+      "checkpoint",
+      "registry"
+    ],
+    "credentialComponents": [
+      "real",
+      "effective",
+      "saved"
+    ],
+    "stages": [
+      "manager",
+      "launcher",
+      "provider"
+    ],
+    "managerAndControllerResigned": true,
+    "launchDigestChangedAndReferencesUpdated": true,
+    "nativeTrials": 0
+  },
+  "verification": {
+    "newTestsPassed": 57,
+    "b1aTestsPassed": 176,
+    "fullSuiteTestsPassed": 4206,
+    "fullSuiteTestsSkipped": 1418,
+    "testFilesPassed": 111,
+    "testFilesSkipped": 24,
+    "typecheck": "passed",
+    "build": "passed",
+    "diffCheck": "passed",
+    "testFixtureInProductionBuild": false
+  }
+}
