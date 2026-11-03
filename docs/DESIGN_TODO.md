@@ -2720,3 +2720,17 @@ C2初回予約レビュー修正の最終検証: C2回帰29件成功。全体は
 - 期限切れ再試行テストの素の`toThrow()`を正確な理由に改め、回帰を追加（C2計32件）。
 
 7aa8512レビュー修正の検証結果: C2回帰32件、全体4,712 tests成功（1,418 skipped）。型検査・build成功。
+
+### C3接続契約・実装手順の具体化（設計）
+
+- §9.91にprocess別の所有root／鍵／role、固定launcher・manager作成listener／sealed bootstrap、読取前gate・全fragment認証を具体化。
+- C2のcontext／namespace／source／authority proof／use保存を認証APIへ対応付けた。WeakMap handleをwireへ渡さず、brokerのfull検証とlive authority・結果bytes照合を必須とする。
+- 同一要求retry・期限／失効・保存／ACK・mirror順序、authority失効とhandoffの予約protocol、独立Anchorとrun前pin固定を明記。
+- 実装順はC3a strict schema／runner→C3b process別service／adapter→C3c固定VM配備→C3d native故障検証→C4独立採用審査。**次はC3a**。
+- CN01〜CN40は新規の未実装回帰条件。今回の変更は設計のみで、新規配備・native実行・schema実装は0。採用flag false・originalReadsSkipped=0、長期運用向けGC／compactionの残課題を維持。
+
+C3設計の検証結果: §9.91.1〜9の9小節とCN01〜CN40の順序・一意性・欠落なし、末尾への配置を確認。既存current control／C2 bridge／deployment／native storage記録検証の4 files・418 tests成功（35.67秒）。diff整形検査成功。今回の変更は文書のみで、CN回帰の実装・新service配備・native実行・採用flag変更は0。次はC3aのstrict schema／permission／静的検証runner。
+
+C3設計レビュー修正: §9.91.10へcandidate-genesis／candidate-advance／selectedの証拠strict unionを追加し、採用前issuer readと採用済みreader readを分離。root manager／controllerと権限降下後processのprincipal・取得phase別権限条件を具体化。CN02／CN12／CN13を正常対照・混用拒否・phase偽装／残存権限拒否へ更新。文書のみで、C3a schema実装・新規native実行は未着手。
+
+C3設計レビュー修正の検証結果: §9.91.1〜10の10小節・CN01〜CN40の一意性と順序、mode／phase別条件の配置を確認。既存current control／C2 bridge／deployment／native storage記録検証の4 files・418 tests成功（36.15秒）。diff整形検査成功。文書のみの変更で、CN02／CN12／CN13を含む新schema・回帰実装・native実証は未実施。
