@@ -126,17 +126,21 @@ function verify(input:MigrationBundleInput){
   check(archive.originalClosureDigest===get(plan.archiveRef).originalClosureDigest,'link_invalid');
  }
  function ancestorRefs(roots:MigrationRef[]){const seen=new Set<string>(),pending=[...roots];while(pending.length){const r=pending.pop()!,key=name(r);if(seen.has(key))continue;seen.add(key);pending.push(...records.get(key)!.refs);}return [...seen].map(k=>records.get(k)!.ref).sort((a,b)=>name(a)<name(b)?-1:1);}
+ // Registry revisions are only checked for static monotonicity across phases; currentness is M1.
+ const freezeRequestOf=(inv:MigrationRef)=>get(get(get(get(inv).freezeRef).resultRef).requestRef);
  const preparedKeys=new Set<string>(),doneKeys=new Set<string>();
  for(const node of records.values()){
   const b=node.body;
   if('validFrom'in b)check(b.validFrom<b.validUntil,'window_invalid');
   if(b.recordType==='freeze-requested'){const a=get(b.startAuthorizationRef);check(b.previousRevision===a.expectedRevision&&b.revision===b.previousRevision+1,'revision_invalid');}
   if(b.recordType==='source-freeze-result'){const start=get(get(b.requestRef).startAuthorizationRef);check(same(b.invalidatedSessions,start.invalidatedSessions),'namespace_invalid');}
+  if(b.recordType==='freeze-absent')check(same(b.head,binding.source.beforeHead),'revision_invalid');
   if(b.recordType==='source-freeze-witness')check(b.head.revision===binding.source.beforeHead.revision+1&&b.head.headDigest!==binding.source.beforeHead.headDigest,'revision_invalid');
   if(b.recordType==='inventory-page')check(b.entries.length<=limits.pageEntries,'budget_exceeded');
   if(b.recordType==='inventory-root'){
    const pages=b.pages.map((r:MigrationRef)=>get(r)),entries=pages.flatMap((p:any)=>p.entries);check(pages.every((p:any,i:number)=>p.ordinal===i&&same(p.freezeRef,b.freezeRef)),'inventory_invalid');
    check(entries.length<=limits.entries&&entries.length===b.entryCount&&entries.reduce((n:number,e:any)=>n+e.size,0)===b.byteLength&&ordered(entries.map(entryKey)),'inventory_invalid');
+   check(new Set(entries.map((e:any)=>canonicalOwnedJson([e.fileIdentity.device,e.fileIdentity.inode]))).size===entries.length,'inventory_invalid');
    check(ordered(b.namespaces.map(nsKey))&&b.namespaces.every((ns:any)=>ns.originEpoch===binding.source.storeEpoch),'namespace_invalid');
    const invalidated=get(get(b.freezeRef).resultRef).invalidatedSessions;check(invalidated.every((ns:any)=>b.namespaces.some((n:any)=>nsKey(n)===nsKey(ns))),'namespace_invalid');
    for(const rootRole of ['source-store','source-checkpoint'])check(entries.filter((e:any)=>e.rootRole===rootRole).length<=4096&&entries.filter((e:any)=>e.rootRole===rootRole).reduce((n:number,e:any)=>n+e.size,0)<=256*1024*1024,'budget_exceeded');
@@ -155,7 +159,7 @@ function verify(input:MigrationBundleInput){
    for(const r of [b.policyRef,b.holdRef,b.archiveRef])matchesInventory(get(r),b.inventoryRef);check(same(get(b.timeRef).freezeRef,get(b.inventoryRef).freezeRef),'link_invalid');
    check(!get(b.holdRef).held.some((h:any)=>b.retire.some((r:any)=>nsKey(h)===nsKey(r))),'hold_invalid');
    const count=b.keep.reduce((n:number,k:any)=>n+inventoryNamespace(b.inventoryRef).find(s=>nsKey(s)===nsKey(k))!.recordCount,0)+b.retire.length;
-   check(b.budget.keptSessions===b.keep.length&&b.budget.tombstones===b.retire.length&&b.budget.records===count&&b.budget.controlBytes>=totalBytes,'budget_invalid');
+   check(b.budget.keptSessions===b.keep.length&&b.budget.tombstones===b.retire.length&&b.budget.records===count&&b.budget.controlBytes>=ancestorRefs(node.refs).reduce((n,r)=>n+r.byteLength,0)+node.bytes.length,'budget_invalid');
   }
   if(b.recordType==='tombstone-core'){const p=get(b.planRef);check(same(get(b.releaseRef).planRef,b.planRef)&&p.intentRefs.some((r:MigrationRef)=>same(r,b.intentRef)),'link_invalid');}
   if(b.recordType==='import-map'){
@@ -176,13 +180,13 @@ function verify(input:MigrationBundleInput){
    const base=get(b.baseRef),cp=get(b.checkpointRef);check(same(base.releaseRef,b.releaseRef)&&same(get(b.releaseRef).planRef,b.planRef)&&same(cp.baseRef,b.baseRef)&&cp.manifestDigest===b.manifestDigest&&same(cp.syncRef,b.syncRef),'ready_invalid');
   }
   if(b.recordType==='activation-authorization'){const ready=get(b.readyRef);checkEvidence(get(ready.planRef),b);}
-  if(b.recordType==='activation-receipt'){const a=get(b.authorizationRef);check(b.previousRevision===a.expectedRevision&&b.revision===b.previousRevision+1,'revision_invalid');}
+  if(b.recordType==='activation-receipt'){const a=get(b.authorizationRef),request=freezeRequestOf(get(get(a.readyRef).planRef).inventoryRef);check(b.previousRevision===a.expectedRevision&&b.revision===b.previousRevision+1&&b.previousRevision>=request.revision,'revision_invalid');}
   if(b.recordType==='gc-batch-plan')check(b.entries.length<=limits.batchEntries,'budget_exceeded');
   if(b.recordType==='gc-authorization'){
    const ready=get(get(get(b.activationRef).authorizationRef).readyRef),p=get(b.planRef);check(same(ready.planRef,b.planRef)&&same(p.inventoryRef,b.inventoryRef),'link_invalid');matchesInventory(get(b.holdRef),b.inventoryRef);check(get(b.holdRef).revision>=get(p.holdRef).revision&&!get(b.holdRef).held.some((h:any)=>p.retire.some((r:any)=>nsKey(r)===nsKey(h))),'hold_invalid');
    const batches=b.batchRefs.map((r:MigrationRef)=>get(r));check(batches.every((batch:any,i:number)=>batch.ordinal===i&&same(batch.inventoryRef,b.inventoryRef)),'gc_scope_invalid');const actual=batches.flatMap((batch:any)=>batch.entries),expected=sortedGc(inventoryEntries(b.inventoryRef));check(same(actual,expected),'gc_scope_invalid');
   }
-  if(b.recordType==='gc-barrier'){const a=get(b.authorizationRef);check(same(b.holdRef,a.holdRef)&&b.previousRevision===a.expectedRevision&&b.revision===b.previousRevision+1,'revision_invalid');}
+  if(b.recordType==='gc-barrier'){const a=get(b.authorizationRef);check(same(b.holdRef,a.holdRef)&&b.previousRevision===a.expectedRevision&&b.revision===b.previousRevision+1&&b.previousRevision>=get(a.activationRef).revision,'revision_invalid');}
   if(b.recordType==='gc-batch-prepared'){
    const batchKey=ownedDigest({barrier:b.barrierRef,index:b.batchIndex});check(!preparedKeys.has(batchKey),'gc_progress_invalid');preparedKeys.add(batchKey);
    check(b.entries.length<=limits.batchEntries,'budget_exceeded');

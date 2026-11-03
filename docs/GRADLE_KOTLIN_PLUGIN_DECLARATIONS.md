@@ -4549,6 +4549,19 @@ M0/Bで過去control／tombstone持越しのorigin・issuer・参照閉包を実
 
 M0/Aの検証結果: 新規97回帰成功。8,192-entryの合成inventory／128 inventory pages／128 batch plans・Doneを含め、全体109 files／4,007 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。34 control typesと§9.77の6小節を確認し、distにmigration／authority／provider fixtureが含まれないことを確認した。既存のnative保存・SIGKILL等の再実行をM0の実移行／削除・独立registry・target artifact／同期の証明へ数えない。今回の新規file操作・GC・current admission・本番採用は0。
 
+#### 9.77.7 af6d00dレビュー修正・abort head／revision順序／file identity／plan予算
+
+署名・byte refが正しくても受理されていた4つの関係を追加検査した。いずれも静的な局所整合性であり、registryの現在性・実file identity・実bytes計数を確認したものではない。
+
+- unfrozenのfreeze-absentは`head`がbindingの`source.beforeHead`と完全一致する場合だけ受理する。freeze witness（beforeHead+1）と対称にし、freezeなしと主張しながらsourceが別headへ進んだ証拠を拒否する。
+- registry revisionをphase間で単調にする。activation receiptのpreviousRevisionはplanのinventoryが指すfreeze requestのrevision以上、GC barrierのpreviousRevisionはactivation receiptのrevision以上とする。従来はcompletion receiptだけがbarrier以上を要求していた。CAS・fresh challengeはM1に残る。
+- inventory内の(device, inode)を一意にする。`nlink=1`を主張する2つの名前が同じfile identityを名乗る場合を`inventory_invalid`で拒否し、GC対象とsizeの二重計上を防ぐ。
+- retention planの`budget.controlBytes`をbundle全体ではなく、baseと同じくplanの祖先閉包＋plan自身のbytesで判定する。同じplanがselectorのphase（preparedかcompletedか）によって有効・無効を変えない。bundle全体の上限は`closureBytes`が担う。
+
+回帰5件を追加した：beforeHeadと異なるabsence head、freeze request以前のactivation、activation以前のGC barrier、同一file identityの重複、prepared／completedで同じplan予算が同じ判定になること（および祖先未満の予算の拒否）。修正前はabsence head・2つのrevision順序・identity重複を受理し、plan予算は同じ値でpreparedを受理しcompletedを拒否することを確認した。
+
+af6d00dレビュー修正の検証結果: migration回帰102件成功（新規5件）。全体109 files／4,012 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにmigration fixtureが含まれないことを確認した。実移行・削除・独立registry・current admission・本番採用の追加は0。
+
 
 ### 9.78 PO4/Q2/A・native認証IPCとsame-UID否定対照（2026-11-03）
 

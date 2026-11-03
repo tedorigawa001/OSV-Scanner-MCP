@@ -194,3 +194,23 @@ for(const fault of ['restart-validity','symlink','hardlink','outside-name'] as c
 it('represents an 8192-entry synthetic inventory through bounded pages and batch plan refs',()=>{
  const f=completeFixture('completed',undefined,false,true),result=verifyMigrationBundle({binding,issuers,selection:f.selection,objects:f.objects});expect(result.records.filter(r=>r.ref.role==='inventory-page')).toHaveLength(128);expect(result.records.filter(r=>r.ref.role==='gc-batch-plan')).toHaveLength(128);expect(result.records.filter(r=>r.ref.role==='gc-batch-done')).toHaveLength(128);expect(Math.max(...f.objects.map(b=>b.length))).toBeLessThan(1024*1024);expect(result.sourceTransformVerified).toBe(false);expect(result.storageDurabilityVerified).toBe(false);
 },90000);
+
+it('binds unfrozen abort evidence to the exact pre-freeze source head',()=>{
+ const f=fixture(),absent=f.add('freeze-absent','absence',{requestRef:f.requested,head:{revision:binding.source.beforeHead.revision+1,headDigest:h('advanced')},drained:true,historyVerified:true,absent:true},'migration-verifier');
+ expect(()=>verifyMigrationBundle({binding,issuers,objects:f.objects,selection:{phase:'aborted-before-select',evidence:{state:'unfrozen',absenceRef:absent}}})).toThrow('revision_invalid');
+});
+for(const [label,change]of [
+ ['activation before the freeze request',(b:any)=>{if(b.recordType==='activation-authorization')b.expectedRevision=0;if(b.recordType==='activation-receipt'){b.previousRevision=0;b.revision=1;}}],
+ ['GC barrier before the activation',(b:any)=>{if(b.recordType==='gc-authorization')b.expectedRevision=0;if(b.recordType==='gc-barrier'){b.previousRevision=0;b.revision=1;}}],
+] as const)it('rejects a registry revision ordered '+label,()=>{
+ const f=completeFixture('completed',change);expect(()=>verifyMigrationBundle({binding,issuers,selection:f.selection,objects:f.objects})).toThrow('revision_invalid');
+});
+it('rejects two inventory entries claiming one nlink=1 file identity',()=>{
+ const f=completeFixture('completed',b=>{if(['inventory-page','gc-batch-plan','gc-batch-prepared'].includes(b.recordType)){const s=b.entries.find((e:any)=>e.rootRole==='source-store'),c=b.entries.find((e:any)=>e.rootRole==='source-checkpoint');if(s&&c)c.fileIdentity={...s.fileIdentity};}});
+ expect(()=>verifyMigrationBundle({binding,issuers,selection:f.selection,objects:f.objects})).toThrow('inventory_invalid');
+});
+it('judges the plan control budget by its ancestors, not by the selected phase',()=>{
+ const total=(phase:string)=>completeFixture(phase).objects.reduce((n,b)=>n+b.length,0),mid=Math.floor((total('prepared')+total('completed'))/2);
+ for(const phase of ['prepared','completed']){const f=completeFixture(phase,b=>{if(b.budget)b.budget.controlBytes=mid;});expect(verifyMigrationBundle({binding,issuers,selection:f.selection,objects:f.objects}).phase).toBe(phase);}
+ const low=completeFixture('prepared',b=>{if(b.budget)b.budget.controlBytes=1;});expect(()=>verifyMigrationBundle({binding,issuers,selection:low.selection,objects:low.objects})).toThrow('budget_invalid');
+});

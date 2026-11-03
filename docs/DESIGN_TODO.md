@@ -2450,6 +2450,13 @@ PO4/Q1の検証結果: 新規98回帰成功。全体108 files／3,910 tests成�
 
 M0/Aの検証結果: 新規97回帰成功。8,192-entryの合成inventory／128 inventory pages／128 batch plans・Doneを含め、全体109 files／4,007 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。34 control typesと§9.77の6小節を確認し、distにmigration／authority／provider fixtureが含まれないことを確認した。既存のnative保存・SIGKILL等の再実行をM0の実移行／削除・独立registry・target artifact／同期の証明へ数えない。今回の新規file操作・GC・current admission・本番採用は0。
 
+### 2026-11-03: af6d00dレビュー修正・M0/Aの関係検査
+
+- §9.77.7へ、unfrozen abortのhead＝beforeHead、activation≥freeze request／GC barrier≥activationのregistry revision順序、inventoryの(device, inode)一意性、plan control予算の祖先閉包計数を追加。selector phaseで同じplanの判定が変わらない。
+- 新規5件。registryの現在性・実file identity・実bytesの検証ではない。M0/B以降の残りは変更なし。
+
+af6d00dレビュー修正の検証結果: migration回帰102件成功（新規5件）。全体109 files／4,012 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにmigration fixtureが含まれないことを確認した。
+
 
 ### 2026-11-03: PO4/Q2/A・native認証IPCの限定実証
 
