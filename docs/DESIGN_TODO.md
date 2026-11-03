@@ -2805,3 +2805,13 @@ C3b-0コミット前の依存更新互換確認: 既存のkoffi 3.3.5／MCP SDK 
 
 
 b6bb2f8レビュー修正の検証結果: 対象245件、全体5,182 tests成功（1,418 skipped）。型検査・build成功。
+
+
+### C3b-1：認証session runtime・二者child-process対照（2026-11-04）
+
+- §9.95に独立鍵ownerのSessionClient／SessionServer、pending・nonce・sequence・atomic予約、期限・失効・容量、応答紛失後の同boot新session回復を追加。今回はread-only `recovery.GetRecoveryStatus`だけをdispatchする。
+- 単体29件と別process suite 4件を追加。child各1個の秘密鍵、公開鍵のみの交換、4 transcript・4 dispatch・3回復・7要求を照合。旧hello／旧結果の拒否、失効・期限によるdispatch 0を確認する。
+- 診断cacheは同bootのメモリ内限定。durable ledger・保存ACK・原本読取・native隔離・本番採用は未成立、全採用flag false／originalReadsSkipped 0を維持。
+- 次はC3b-2：OwnedStore／stage ledger／Anchorの実接続。C3b-3原本transfer、C3b-4 authority、C3b-5 C2業務経路、その後C3c／C3d／C4が残る。
+
+C3b-1の最終検証: 新規2 files／33 tests成功（単体29件・別process suite 4件）。全体129 files／5,215 tests成功、24 files／1,418 tests skipped（233.43秒）。型検査・build成功。内側署名検査を除去すると署名改変の回帰が失敗し、検査を復元した。production runtimeにtest fixture import／鍵生成処理がないことを確認。source閉包14 filesを検証記録と照合する。新規の別UID隔離・本番採用は0。

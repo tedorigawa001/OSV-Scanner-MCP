@@ -1,0 +1,77 @@
+{
+  "schema": "osv-mcp.q2.c3b1.validation.v1",
+  "date": "2026-11-04",
+  "scope": "diagnostic-session-only",
+  "sourceSha256": {
+    "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
+    "package.json": "5a0ff34ffcd644bbefaa713dcd8e65782b719bc01be52cd8f26672bcc123ec9b",
+    "src/test/fixtures/c3b_session_child.mjs": "f240d8b49614de13e0f9f06dee82c4343081d2cd63167013cabc36e44f5f19bb",
+    "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
+    "src/test/utils/gradleOwnedSessionProcess.test.ts": "7a6909b9636fc4ed125275e17456b359dafedd2b46c651dbb7196a4b9aeb674c",
+    "src/test/utils/gradleOwnedSessionRuntime.test.ts": "5c95d957ab767bfbc6eba2eb4f34f7e9fb85ea41b8ef78dda4a248b6ebda2ac1",
+    "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
+    "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/utils/gradleOwnedServiceOwners.ts": "81bbe25ff0c3e165f044c0599902d421b43669d044aa11cca42954236e269e7b",
+    "src/utils/gradleOwnedServiceSession.ts": "12f8a408dfa36eb7d711c6f04f750351fbf739b78cb8159cfd7e8e3d90dd8ba0",
+    "src/utils/gradleOwnedSessionRuntime.ts": "486da85654558f1863b0d5dd7fb5ea06ad7dd5f847a413e820602fe5fca4d710",
+    "tsconfig.build.json": "49e7f5e2be44cc034bf5ef401064bf3b1588070e80aacfe1e1c8dde541c3117f",
+    "tsconfig.json": "7375ac5d334f50eed3d766799fd016e068f1998639c7b02ba201db280a1583c3"
+  },
+  "processObservations": [
+    {
+      "case": "two-process-status",
+      "processes": 2,
+      "keySlotsPerProcess": 1,
+      "verifiedTranscripts": 4,
+      "dispatches": 4,
+      "recoveries": 3,
+      "bootRequests": 7,
+      "replayedHelloRejected": true,
+      "lateOldReplyRejected": true,
+      "privateMaterialExported": false
+    },
+    {
+      "case": "revoked",
+      "dispatches": 0,
+      "replies": 0
+    },
+    {
+      "case": "deadline",
+      "dispatches": 0
+    }
+  ],
+  "nativeIsolationVerified": false,
+  "independentRegistryVerified": false,
+  "profileApproved": false,
+  "backendEligible": false,
+  "originalReadsSkipped": 0,
+  "verification": {
+    "unitTests": 29,
+    "processSuiteTests": 4,
+    "fullSuite": {
+      "command": "npm test -- --maxWorkers=1",
+      "passedFiles": 129,
+      "skippedFiles": 24,
+      "passedTests": 5215,
+      "skippedTests": 1418,
+      "durationSeconds": 233.43
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "mutationControl": {
+      "change": "disable inner recovery signature verification",
+      "selectedTest": "inner-signature",
+      "expectedFailureObserved": true,
+      "restored": true
+    },
+    "productionTestImports": false
+  },
+  "limitations": [
+    "Only read-only recovery.GetRecoveryStatus dispatch is enabled.",
+    "Diagnostic completion cache is bounded and in-memory, not a durable business ledger.",
+    "Peer identity evidence is synthetic; separate UID/kernel credential isolation is not established.",
+    "No OwnedStore, live pin, original source, authority, BTA, OSV or ACK path was exercised.",
+    "Process traces are checked using exchanged public keys; validation JSON is a local reproducibility record, not independent native attestation."
+  ]
+}

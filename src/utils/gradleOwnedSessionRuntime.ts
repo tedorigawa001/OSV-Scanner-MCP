@@ -1,0 +1,134 @@
+/** C3b-1 bounded authenticated sessions. Only read-only diagnostic recovery status is dispatched.
+ * No OwnedStore, live pin, kernel peer observation, durable business ledger or admission. */
+import {createPublicKey,randomBytes,sign,verify,type KeyObject} from 'node:crypto';
+import {z} from 'zod';
+import {cid,chash,cn,parsed,need,decodeCurrent,CurrentControlError} from './gradleOwnedCurrentSchema.js';
+import {currentLineageSchema} from './gradleOwnedCurrentAuxiliary.js';
+import {validateCredentialRegistry,publicCredentialKey,type CredentialRegistry,type ServiceIdentity} from './gradleOwnedServiceOwners.js';
+import {authEnvelopeSchema,authMessageSchema,validateSessionTranscript,inspectStaticSession,validateChallengeExchange,validateChannelFrame,recoveryReportSchema,recoveryReplySchema,ServiceContextFloor,type StaticSession} from './gradleOwnedServiceSession.js';
+import {canonicalOwnedJson,ownedDigest,ownedSha256} from './gradleOwnedJson.js';
+
+const fresh=()=>randomBytes(32).toString('hex'),same=(a:unknown,b:unknown)=>canonicalOwnedJson(a)===canonicalOwnedJson(b);
+const flags={scope:'diagnostic-session-only' as const,nativeIsolationVerified:false,independentRegistryVerified:false,profileApproved:false,backendEligible:false,originalReadsSkipped:0};
+type Pins=Parameters<typeof validateCredentialRegistry>[1];
+type Credential=CredentialRegistry['credentials'][number];
+type Message=z.infer<typeof authMessageSchema>;
+export interface SessionEnvironment {now:()=>number;assertOpen:()=>void;credentialCurrent:(identity:ServiceIdentity)=>boolean}
+export interface SessionEndpointConfig {registry:unknown;pins:Pins;credentialId:string;privateKey:KeyObject;lineage:unknown;environment:SessionEnvironment;
+ limits?:{sessions?:number;peerSessions?:number;requests?:number;operations?:number};recoveryBudget?:{handshakeMs:number;remainingWorkMs:number}}
+const limitsSchema=z.object({sessions:cn.positive().max(64),peerSessions:cn.positive().max(16),requests:cn.positive().max(256),operations:cn.positive().max(64)}).strict();
+function publicBytes(k:KeyObject){return k.export({type:'spki',format:'der'}).toString('base64');}
+class Endpoint {
+ readonly registry:CredentialRegistry;readonly credential:Credential;readonly lineage:z.infer<typeof currentLineageSchema>;readonly limits:z.infer<typeof limitsSchema>;
+ protected readonly config:SessionEndpointConfig;closed=false;lastTime=-1;
+ constructor(config:SessionEndpointConfig,direction:'request'|'reply'){
+  config.environment.assertOpen();this.registry=validateCredentialRegistry(config.registry,config.pins);this.lineage=parsed(currentLineageSchema,config.lineage);this.config={...config,pins:{...config.pins},environment:{...config.environment}};
+  const c=this.registry.credentials.find(c=>c.identity.credentialId===config.credentialId);need(c&&c.direction===direction,'peer_mismatch');this.credential=c;
+  need(config.privateKey.type==='private'&&config.privateKey.asymmetricKeyType==='ed25519'&&publicBytes(createPublicKey(config.privateKey))===c.spki,'peer_mismatch');
+  need(this.lineage.enrollmentDigest===this.registry.enrollmentDigest&&this.lineage.profileDigest===this.registry.profileDigest,'binding_mismatch');
+  this.limits=parsed(limitsSchema,{sessions:64,peerSessions:16,requests:256,operations:64,...config.limits});this.gate();
+ }
+ now(){const n=this.config.environment.now();need(Number.isSafeInteger(n)&&n>=0&&n>=this.lastTime,'clock_invalid');this.lastTime=n;return n;}
+ gate(peer?:Credential){need(!this.closed,'owner_closed');this.config.environment.assertOpen();need(this.config.environment.credentialCurrent(this.credential.identity)&&(!peer||this.config.environment.credentialCurrent(peer.identity)),'permission_denied');return this.now();}
+ sign(body:Message){this.gate();const b=parsed(authMessageSchema,body),direction=this.credential.direction;need((b as any)[direction==='request'?'clientCredentialId':'serverCredentialId']===this.credential.identity.credentialId,'peer_mismatch');
+  need(direction==='request'?['client-hello','client-proof','challenge-request','channel'].includes(b.kind):['server-hello','ready','challenge','channel'].includes(b.kind),'permission_denied');
+  return this.signed('osv-mcp.q2.c3b.auth.v1',b);
+ }
+ signed(schema:string,body:unknown){const direction=this.credential.direction,keyId=this.credential.keyId;const signature=sign(null,Buffer.from(canonicalOwnedJson({domain:schema,direction,keyId,body})),this.config.privateKey).toString('base64');const bytes=Buffer.from(canonicalOwnedJson({schema,direction,keyId,...(schema==='osv-mcp.q2.c3b.auth.v1'?{}:{keyEpoch:this.credential.identity.keyEpoch}),body,signature}));need(bytes.length<=16384,'budget_exceeded');return bytes;}
+ verifyAuth(bytes:Buffer,c:Credential){this.gate(c);const e=parsed(authEnvelopeSchema,decodeCurrent(bytes));need(e.direction===c.direction&&e.keyId===c.keyId,'peer_mismatch');const sig=Buffer.from(e.signature,'base64');need(sig.toString('base64')===e.signature&&verify(null,Buffer.from(canonicalOwnedJson({domain:e.schema,direction:e.direction,keyId:e.keyId,body:e.body})),publicCredentialKey(c),sig),'signature_invalid');return e.body;}
+ verifyRecovery(bytes:Buffer,c:Credential){this.gate(c);const schema=z.object({schema:z.literal('osv-mcp.q2.c3b.recovery.envelope.v1'),direction:z.enum(['request','reply']),keyId:cid,keyEpoch:cn.positive(),body:z.unknown(),signature:z.string().regex(/^[A-Za-z0-9+/]{86}==$/)}).strict();const e=parsed(schema,decodeCurrent(bytes,8192));need(e.direction===c.direction&&e.keyId===c.keyId&&e.keyEpoch===c.identity.keyEpoch,'peer_mismatch');const sig=Buffer.from(e.signature,'base64');need(sig.toString('base64')===e.signature&&verify(null,Buffer.from(canonicalOwnedJson({domain:e.schema,direction:e.direction,keyId:e.keyId,body:e.body})),publicCredentialKey(c),sig),'signature_invalid');return c.direction==='request'?parsed(recoveryReportSchema,e.body):parsed(recoveryReplySchema,e.body);}
+ permit(c:Credential){need(c.permissions.some(p=>p.api==='recovery.GetRecoveryStatus'&&p.purpose==='recovery'&&same(p.lineage,this.lineage)&&(p.delegateInstance===null||p.delegateInstance===this.credential.identity.instanceId)),'permission_denied');}
+ get diagnostics(){return {...flags};}
+}
+const api='recovery.GetRecoveryStatus';
+export type PeerChannel=Readonly<{kind:'c3b-peer-channel'}>;
+type Challenge={value:string;request:Buffer;reply:Buffer;origin:string;expires:number;ttlMs:number;used:boolean};
+type ServerChannel={handle:PeerChannel;peer:Credential;phase:'hello'|'proof'|'ready'|'closed';created:number;hello?:Buffer;offer?:Buffer;offerBody?:any;codec?:StaticSession;facts?:any;receiveSequence:number;sendSequence:number;business:number;challenge?:Challenge;working:boolean};
+export interface SessionPacket {wire:Buffer;inner?:Buffer}
+type Completion={digest:string;promise:Promise<unknown>;phase:'pending'|'complete'|'failed';value?:unknown};
+export class SessionServer extends Endpoint {
+ readonly #channels=new WeakMap<PeerChannel,ServerChannel>();readonly #active=new Set<ServerChannel>();readonly #hellos=new Map<string,Set<string>>();readonly #requests=new Map<string,number>();readonly #completed=new Map<string,Completion>();
+ #dispatches=0;#replies=0;#challenges=0;
+ constructor(config:SessionEndpointConfig,readonly status:()=>Promise<unknown>){super(config,'reply');need(this.credential.identity.role==='lineage-registry','permission_denied');}
+ #close(s:ServerChannel){s.phase='closed';s.challenge=undefined;if(!s.working)this.#active.delete(s);}
+ #check(s:ServerChannel){const now=this.gate(s.peer);need(s.phase!=='closed','session_closed');if(now-s.created>=30000){this.#close(s);need(false,'session_expired');}return now;}
+ #sweep(){const now=this.gate();for(const s of this.#active)if(now-s.created>=30000)this.#close(s);}
+ /** Called by the root transport adapter, not decoded from a peer-supplied frame. */
+ openPeer(credentialId:string,evidence:unknown){this.#sweep();const e=parsed(z.object({mode:z.literal('synthetic-local-process'),credentialId:cid,instanceId:cid,boot:chash}).strict(),evidence),peer=this.registry.credentials.find(c=>c.identity.credentialId===credentialId);need(peer&&peer.direction==='request'&&e.credentialId===credentialId&&e.instanceId===peer.identity.instanceId&&e.boot===peer.identity.boot,'peer_mismatch');this.gate(peer);this.permit(peer);
+  need(this.#active.size<this.limits.sessions&&[...this.#active].filter(s=>s.peer.identity.credentialId===credentialId).length<this.limits.peerSessions,'capacity_exhausted');const handle=Object.freeze({kind:'c3b-peer-channel' as const}),state:ServerChannel={handle,peer,phase:'hello',created:this.now(),receiveSequence:0,sendSequence:0,business:0,working:false};this.#channels.set(handle,state);this.#active.add(state);return handle;
+ }
+ closePeer(handle:PeerChannel){const s=this.#channels.get(handle);need(s,'peer_mismatch');this.#close(s);}
+ async receive(handle:PeerChannel,packet:SessionPacket):Promise<SessionPacket>{const s=this.#channels.get(handle);need(s,'peer_mismatch');let reserved=false,launched=false;try{
+  const now=this.#check(s);need(Buffer.isBuffer(packet.wire)&&packet.wire.length<=16384&&(!packet.inner||(Buffer.isBuffer(packet.inner)&&packet.inner.length<=8192)),'budget_exceeded');const m=this.verifyAuth(packet.wire,s.peer);this.permit(s.peer);
+  if(s.phase==='hello'){
+   need(m.kind==='client-hello'&&!packet.inner,'schema_invalid');const server=this.credential.identity,peer=s.peer.identity;const base={clientCredentialId:peer.credentialId,serverCredentialId:server.credentialId,deploymentDigest:this.registry.deploymentDigest,enrollmentDigest:this.registry.enrollmentDigest,profileDigest:this.registry.profileDigest,registryDigest:this.config.pins.registryDigest,endpointId:this.credential.endpointId,clientBoot:peer.boot,serverBoot:server.boot,clientKeyEpoch:peer.keyEpoch,serverKeyEpoch:server.keyEpoch};for(const [k,v]of Object.entries(base))need((m as any)[k]===v,'binding_mismatch');
+   const seen=this.#hellos.get(peer.credentialId)??new Set<string>();need(!seen.has(m.clientNonce),'challenge_replayed');need(seen.size<256,'capacity_exhausted');seen.add(m.clientNonce);this.#hellos.set(peer.credentialId,seen);
+   s.hello=Buffer.from(packet.wire);s.offerBody={...base,kind:'server-hello',clientNonce:m.clientNonce,serverNonce:fresh(),sessionId:fresh(),clientHelloDigest:ownedSha256(s.hello),lifetimeMs:30000};s.offer=this.sign(s.offerBody);s.phase='proof';return {wire:Buffer.from(s.offer)};
+  }
+  if(s.phase==='proof'){
+   need(m.kind==='client-proof'&&!packet.inner,'schema_invalid');const o=s.offerBody;const transcriptDigest=ownedDigest({domain:'osv-mcp.q2.c3b.transcript.v1',clientHello:ownedSha256(s.hello!),serverHello:ownedSha256(s.offer!)});const {clientHelloDigest,lifetimeMs,...fields}=o;const ready=this.sign({...fields,kind:'ready',transcriptDigest,clientProofDigest:ownedSha256(packet.wire)});
+   s.codec=validateSessionTranscript([s.hello!,s.offer!,packet.wire,ready],this.registry,this.config.pins,{clientCredentialId:s.peer.identity.credentialId,serverCredentialId:this.credential.identity.credentialId,endpointId:this.credential.endpointId});s.facts=inspectStaticSession(s.codec);s.phase='ready';return {wire:ready};
+  }
+  need(s.phase==='ready','session_closed');const facts=s.facts;for(const [k,v]of Object.entries({...facts.base,clientNonce:facts.clientNonce,serverNonce:facts.serverNonce,sessionId:facts.sessionId,transcriptDigest:facts.transcriptDigest}))need((m as any)[k]===v,'binding_mismatch');
+  need((m.kind==='challenge-request'||m.kind==='channel')&&m.sequence===s.receiveSequence+1,'sequence_invalid');
+  if(m.kind==='challenge-request'){
+   need(!packet.inner&&!s.working&&(!s.challenge||s.challenge.used||now>=s.challenge.expires),'busy');need(m.api===api,'permission_denied');const n=this.#requests.get(s.peer.identity.credentialId)??0;need(n<this.limits.requests&&s.business<256,'capacity_exhausted');
+   this.#requests.set(s.peer.identity.credentialId,n+1);s.business++;s.receiveSequence=m.sequence;const challenge=fresh(),reply=this.sign({...m,kind:'challenge',sequence:++s.sendSequence,challenge});s.challenge={value:challenge,request:Buffer.from(packet.wire),reply,origin:m.originDigest,expires:Math.min(now+m.ttlMs,s.created+30000),ttlMs:m.ttlMs,used:false};this.#challenges++;return {wire:reply};
+  }
+  const pending=s.challenge;need(pending&&!pending.used&&pending.value===m.challenge&&pending.origin===m.originDigest&&pending.ttlMs===m.ttlMs,'challenge_replayed');need(now<pending.expires,'request_expired');need(!s.working,'busy');need(packet.inner,'schema_invalid');
+  validateChannelFrame(packet.wire,packet.inner,s.codec!,{direction:'request',sequence:s.receiveSequence+1,challenge:pending.value,api,originDigest:pending.origin,ttlMs:m.ttlMs,purpose:'recovery',lineage:this.lineage});
+  const request:any=this.verifyRecovery(packet.inner,s.peer);need(request.api==='GetRecoveryStatus'&&same(request.lineage,this.lineage)&&request.instanceId===this.credential.identity.instanceId,'permission_denied');
+  // No await occurs between checking the challenge and reserving/consuming it.
+  pending.used=true;s.receiveSequence=m.sequence;s.working=true;reserved=true;
+  const key=ownedDigest({domain:'c3b1-diagnostic-key',peer:s.peer.identity,origin:pending.origin}),digest=ownedDigest({api,request,server:this.credential.identity});let completion=this.#completed.get(key);
+  if(completion)need(completion.digest===digest,'idempotency_conflict');else{
+   need(this.#completed.size<this.limits.operations,'capacity_exhausted');let resolve!:(v:unknown)=>void,reject!:(e:unknown)=>void;const promise=new Promise((a,b)=>{resolve=a;reject=b;});completion={digest,promise,phase:'pending'};this.#completed.set(key,completion);const entry=completion;
+   void (async()=>{try{this.#check(s);this.permit(s.peer);this.#dispatches++;const states=await this.status();this.gate(s.peer);need(this.now()<pending.expires,'request_expired');const body=parsed(recoveryReplySchema,{schema:'osv-mcp.q2.c3b.recovery.reply.v1',api:'GetRecoveryStatus',lineage:this.lineage,recoveryRun:request.recoveryRun,instanceId:request.instanceId,states,liveGrant:false});entry.phase='complete';entry.value=body;resolve(body);}catch(e){entry.phase='failed';reject(e);}})();
+  }
+  const finish=completion.promise.then(body=>{this.#check(s);this.permit(s.peer);need(this.now()<pending.expires,'request_expired');const inner=this.signed('osv-mcp.q2.c3b.recovery.envelope.v1',body),wire=this.sign({...m,kind:'channel',sequence:++s.sendSequence,innerWireDigest:ownedSha256(inner)});this.#replies++;return {wire,inner};}).finally(()=>{s.working=false;if(s.phase==='closed')this.#active.delete(s);});
+  launched=true;return await deadline(finish,Math.max(0,pending.expires-this.now()),()=>this.#close(s));
+ }catch(e){if(reserved&&!launched)s.working=false;this.#close(s);throw e;}}
+ override get diagnostics(){return {...flags,activeChannels:this.#active.size,issuedChallenges:this.#challenges,dispatches:this.#dispatches,replies:this.#replies,retainedOperations:this.#completed.size,bootRequests:Object.fromEntries(this.#requests)};}
+ close(){this.closed=true;for(const s of this.#active)this.#close(s);}
+}
+function deadline<T>(promise:Promise<T>,ms:number,expire:()=>void){let timer:ReturnType<typeof setTimeout>;const timeout=new Promise<never>((_,reject)=>{timer=setTimeout(()=>{expire();reject(new CurrentControlError('request_expired'));},Math.max(0,ms));});return Promise.race([promise,timeout]).finally(()=>clearTimeout(timer));}
+export interface SessionTransport {open:()=>Promise<void>;exchange:(packet:SessionPacket)=>Promise<SessionPacket>;close:()=>void}
+export class SessionBootQuota {
+ #used=0;readonly identity:ServiceIdentity;
+ constructor(identity:ServiceIdentity,readonly limit=256){this.identity=structuredClone(identity);need(Number.isSafeInteger(limit)&&limit>0&&limit<=256,'configuration_invalid');}
+ take(identity:ServiceIdentity){need(same(identity,this.identity),'peer_mismatch');need(this.#used<this.limit,'capacity_exhausted');this.#used++;}
+ get used(){return this.#used;}
+}
+export type SessionOperation=Readonly<{kind:'c3b-status-operation'}>;
+type Operation={origin:string;inner:Buffer;started:number;expires:number;recoveries:number;state:'new'|'pending'|'complete'|'unknown';request:any};
+export class SessionClient extends Endpoint {
+ readonly #server:Credential;readonly #operations=new WeakMap<SessionOperation,Operation>();readonly #pending=new Set<SessionOperation>();#codec?:StaticSession;#facts?:any;#receiveSequence=0;#sendSequence=0;#created=0;#busy=false;#rejections=0;#lastRejection:string|null=null;#recovered=0;
+ readonly #quota:SessionBootQuota;readonly #floor:ServiceContextFloor;readonly #recovery:{handshakeMs:number;remainingWorkMs:number};
+ constructor(config:SessionEndpointConfig,readonly serverCredentialId:string,readonly transport:SessionTransport,quota:SessionBootQuota,contextFloor:ServiceContextFloor){super(config,'request');const server=this.registry.credentials.find(c=>c.identity.credentialId===serverCredentialId);need(server?.direction==='reply'&&server.identity.role==='lineage-registry','peer_mismatch');this.#server=server;this.#recovery=parsed(z.object({handshakeMs:cn.positive().max(4500),remainingWorkMs:cn.positive().max(4500)}).strict(),config.recoveryBudget??{handshakeMs:500,remainingWorkMs:100});need(this.#recovery.handshakeMs+this.#recovery.remainingWorkMs<5000,'budget_exceeded');this.#quota=quota;this.#floor=contextFloor;need(same(quota.identity,this.credential.identity),'peer_mismatch');}
+ #drop(){this.transport.close();this.#codec=undefined;this.#facts=undefined;this.#sendSequence=0;this.#receiveSequence=0;}
+ async #await<T>(work:()=>Promise<T>,expires:number){this.gate(this.#server);need(this.now()<expires,'request_expired');const v=await deadline(work(),expires-this.now(),()=>this.#drop());this.gate(this.#server);need(this.now()<expires,'request_expired');return v;}
+ async #connect(expires:number){this.gate(this.#server);if(this.#codec&&this.now()-this.#created<30000)return;this.#drop();await this.#await(()=>this.transport.open(),expires);
+  const peer=this.credential.identity,server=this.#server.identity,base={clientCredentialId:peer.credentialId,serverCredentialId:server.credentialId,deploymentDigest:this.registry.deploymentDigest,enrollmentDigest:this.registry.enrollmentDigest,profileDigest:this.registry.profileDigest,registryDigest:this.config.pins.registryDigest,endpointId:this.#server.endpointId,clientBoot:peer.boot,serverBoot:server.boot,clientKeyEpoch:peer.keyEpoch,serverKeyEpoch:server.keyEpoch},clientNonce=fresh(),hello=this.sign({...base,kind:'client-hello',clientNonce});
+  const offered=await this.#await(()=>this.transport.exchange({wire:hello}),expires),offer=this.verifyAuth(offered.wire,this.#server);need(offer.kind==='server-hello'&&!offered.inner,'schema_invalid');for(const [k,v]of Object.entries({...base,clientNonce,clientHelloDigest:ownedSha256(hello)}))need((offer as any)[k]===v,'binding_mismatch');
+  const transcriptDigest=ownedDigest({domain:'osv-mcp.q2.c3b.transcript.v1',clientHello:ownedSha256(hello),serverHello:ownedSha256(offered.wire)}),{clientHelloDigest,lifetimeMs,...session}=offer;
+  const proof=this.sign({...session,kind:'client-proof',transcriptDigest}),ready=await this.#await(()=>this.transport.exchange({wire:proof}),expires);
+  need(!ready.inner,'schema_invalid');this.#codec=validateSessionTranscript([hello,offered.wire,proof,ready.wire],this.registry,this.config.pins,{clientCredentialId:peer.credentialId,serverCredentialId:server.credentialId,endpointId:this.#server.endpointId});this.#facts=inspectStaticSession(this.#codec);this.#created=this.now();this.#receiveSequence=0;this.#sendSequence=0;
+ }
+ async connect(){need(!this.#busy,'busy');this.#busy=true;try{await this.#connect(this.now()+5000);}catch(e){this.#drop();throw e;}finally{this.#busy=false;}}
+ prepareStatus(recoveryRun:string){this.gate(this.#server);parsed(chash,recoveryRun);need(this.#pending.size<this.limits.operations,'capacity_exhausted');const request=parsed(recoveryReportSchema,{schema:'osv-mcp.q2.c3b.recovery.body.v1',api:'GetRecoveryStatus',lineage:this.lineage,recoveryRun,instanceId:this.#server.identity.instanceId});const inner=this.signed('osv-mcp.q2.c3b.recovery.envelope.v1',request),started=this.now(),handle=Object.freeze({kind:'c3b-status-operation' as const});this.#operations.set(handle,{origin:ownedDigest({domain:'c3b1-diagnostic-intent',id:fresh(),client:this.credential.identity,server:this.#server.identity,request}),inner,request,started,expires:started+5000,recoveries:0,state:'new'});this.#pending.add(handle);return handle;}
+ async execute(handle:SessionOperation){this.gate(this.#server);const op=this.#operations.get(handle);need(op&&this.#pending.has(handle)&&op.state==='new','binding_mismatch');need(!this.#busy,'busy');this.#busy=true;
+  try{for(;;){try{need(this.now()<op.expires,'request_expired');await this.#connect(op.recoveries?Math.min(op.expires,this.now()+this.#recovery.handshakeMs):op.expires);this.#quota.take(this.credential.identity);const facts=this.#facts,{base,clientNonce,serverNonce,sessionId,transcriptDigest}=facts,common={...base,clientNonce,serverNonce,sessionId,transcriptDigest};
+     const challengeRequest=this.sign({...common,kind:'challenge-request',sequence:++this.#sendSequence,requestId:fresh(),api,originDigest:op.origin,ttlMs:Math.min(5000,op.expires-this.now())}),requestBody:any=parsed(authEnvelopeSchema,decodeCurrent(challengeRequest)).body;
+     op.state='pending';const reply=await this.#await(()=>this.transport.exchange({wire:challengeRequest}),op.expires);
+     need(!reply.inner,'schema_invalid');const expected={requestId:requestBody.requestId,api,originDigest:op.origin,requestSequence:this.#sendSequence,replySequence:this.#receiveSequence+1,ttlMs:requestBody.ttlMs,purpose:'recovery',lineage:this.lineage};const issued=validateChallengeExchange(challengeRequest,reply.wire,this.#codec!,expected);this.#receiveSequence++;
+     const wire=this.sign({...common,kind:'channel',sequence:++this.#sendSequence,challenge:issued.challenge,api,originDigest:op.origin,innerWireDigest:ownedSha256(op.inner),ttlMs:requestBody.ttlMs}),result=await this.#await(()=>this.transport.exchange({wire,inner:Buffer.from(op.inner)}),op.expires);
+     need(result.inner,'schema_invalid');validateChannelFrame(result.wire,result.inner,this.#codec!,{direction:'reply',sequence:this.#receiveSequence+1,challenge:issued.challenge,api,originDigest:op.origin,ttlMs:requestBody.ttlMs,purpose:'recovery',lineage:this.lineage});const body:any=this.verifyRecovery(result.inner,this.#server);
+     need(body.api==='GetRecoveryStatus'&&same(body.lineage,this.lineage)&&body.recoveryRun===op.request.recoveryRun&&body.instanceId===op.request.instanceId,'binding_mismatch');this.gate(this.#server);need(this.now()<op.expires,'request_expired');this.#receiveSequence++;op.state='complete';this.#pending.delete(handle);return structuredClone(body);
+    }catch(e){this.#rejections++;this.#lastRejection=e instanceof CurrentControlError?e.reason:'transport_unavailable';const localRefusal=op.state==='new'&&e instanceof CurrentControlError&&['capacity_exhausted','permission_denied','configuration_invalid','budget_exceeded'].includes(e.reason);op.state='unknown';this.#drop();if(localRefusal){this.#pending.delete(handle);throw e;}if(this.closed||op.recoveries>=1||this.now()+this.#recovery.handshakeMs+this.#recovery.remainingWorkMs>=op.expires)throw e;this.gate(this.#server);op.recoveries++;this.#recovered++;}}
+  }finally{this.#busy=false;}}
+ disconnect(){need(!this.#busy,'busy');this.#drop();}
+ observeContext(value:unknown){return this.#floor.observe(value);}
+ contextFloor(){return this.#floor.snapshot();}
+ override get diagnostics(){return {...flags,pending:this.#pending.size,bootRequests:this.#quota.used,sessionId:this.#facts?.sessionId??null,rejections:this.#rejections,lastRejection:this.#lastRejection,recoveries:this.#recovered};}
+ close(){this.closed=true;this.#drop();}
+}

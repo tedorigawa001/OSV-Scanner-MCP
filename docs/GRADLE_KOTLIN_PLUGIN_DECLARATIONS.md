@@ -6220,3 +6220,30 @@ readが検証するのは選択されたcheckpointのsourceだけである（§9
 回帰6件を追加し、旧ID定数の1件を外した（対象4 files計245件）。修正前のsourceでは、新規・形状変更の12件がすべて失敗することを確認した。
 
 b6bb2f8レビュー修正の最終検証: 対象4 files／245 tests成功。全体は`npx vitest run --maxWorkers=2`で127 files／5,182 tests成功、24 files／1,418 tests skipped。型検査・build成功。新規native実行・本番採用は0。
+
+
+### 9.95 C3b-1：独立鍵ownerの認証session runtime（2026-11-04）
+
+`gradleOwnedSessionRuntime.ts`にSessionClient／SessionServerを追加した。今回のdispatch対象はread-onlyの`recovery.GetRecoveryStatus`に限定する。OwnedStore・issuer・registryの実業務、原本取得・authority確認・ACKへの接続はまだ行わない。
+
+#### 9.95.1 登録・認証・予約
+
+各endpointは自roleの秘密鍵1個、独立pinで照合した公開credential registry、現在のowner／credentialを照合するcallbackを受け取る。root transport adapterが渡すpeer handleをWeakMapで保持し、wireのJSONからhandleは作らない。今回のpeer証拠は明示的にsynthetic-local-processとし、kernelのpeer credentialとは区別する。
+
+両boot／key epoch／registry digest／endpoint／nonceを署名transcriptへ束縛する。client helloのnonceはsession終了後も同boot内で保持し、再送を拒否する。方向別sequenceは欠番を許さない。challengeのorigin・API・TTL・inner digestと内側署名、lineage・対象instanceを検査してから、最初のawaitより前にchallenge使用済み・sequence・処理中を予約する。期限・owner終了・credential失効をawaitの後にも検査する。
+
+sessionは30秒、操作は元の開始から5秒、wireは16 KiB、innerは8 KiB。最大64 session、peer別16 session、boot別256要求／hello、64 pending operationを上限とする。処理timeout／切断後も未完了callbackが残る間はserver側の容量枠を解放しない。時計巻戻しと上限超過も拒否する。
+
+#### 9.95.2 応答紛失と実証の境界
+
+応答を失ったclientは旧channelを終了し、同boot内で新nonce・新transcript・sequence 0のsessionへ接続する。自動回復は1回までで、元のorigin・署名済みinner・期限・boot要求数と注入されたcontext floorを保持する。handshakeと残工程の予算が期限内に収まらなければ再接続しない。unknownになったhandleの手動再使用でこの上限を迂回できない。
+
+serverのstatus結果cacheは、同bootのpeer identity＋originと要求digestで照合する、容量制限付きのメモリ内診断cacheである。並行要求のcoalesceと応答紛失時のstatus再dispatch抑止を確認する。これはC3b-2のdurable業務ledgerではなく、再起動後のexactly-onceや保存完了後のACKを保証しない。clientの終了は、独立したserverの進行を取り消す保証でもない。
+
+#### 9.95.3 回帰・別process対照
+
+単体29件は基本認証、署名・identity・TTL・origin・sequence・対象instance・lineageの改変、並行再送、容量、期限、時計、失効、応答紛失、unknown handleとquota継続を検査する。別process suite 4件は、childが各自で秘密鍵を1個生成し、親が公開鍵と署名済みpacketだけを中継する構成を検査する。通常status、challenge応答紛失、結果応答紛失、旧結果注入に対して4 transcript・4 dispatch・3回復・7 boot要求を観測した。別途失効と期限到達でstatus dispatch 0を確認する。正常終了は両childのexit 0まで確認する。
+
+検証記録は`validation/gradle-independent-currentness-c3b1-2026-11-04.json`へ保存する。別UID・kernel資格情報・systemd VMの隔離、独立保存service／registry、live pin、native本番採用は未成立。全採用flagはfalse、originalReadsSkippedは0。次はC3b-2のOwnedStore／stage ledger／Anchor、その後C3b-3原本transfer・C3b-4 authority・C3b-5 C2業務経路への接続を行う。
+
+C3b-1の最終検証: 新規2 files／33 tests成功（単体29件・別process suite 4件）。全体129 files／5,215 tests成功、24 files／1,418 tests skipped（233.43秒）。型検査・build成功。内側署名検査を除去すると署名改変の回帰が失敗し、検査を復元した。production runtimeにtest fixture import／鍵生成処理がないことを確認。source閉包14 filesを検証記録と照合する。新規の別UID隔離・本番採用は0。
