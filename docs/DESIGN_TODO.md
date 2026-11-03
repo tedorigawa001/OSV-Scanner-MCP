@@ -2754,3 +2754,11 @@ C3aの検証結果: 新規2 files／165 tests成功。全体は`npm test -- --ma
 C3aレビュー修正: AuxiliaryPinに署名identity全体と方向を必須化し、request peer／reply serverへ照合。role／instance／boot別のendpoint全inventoryからlistenerDigestを再計算してphase／bootstrapへ束縛。回帰19件を追加（合計184件）、うち11件の修正前失敗を確認。旧pinと旧listener digestを拒否し、正規更新は許可。実証範囲は静的contractのみを維持。
 
 C3aレビュー修正の最終検証: 対象2 files／184 tests成功。全体は`npm test -- --maxWorkers=1`で123 files／4,896 tests成功、24 files／1,418 tests skipped（255.12秒）。型検査・build・diff整形検査成功。source fingerprint一致と、test runner／秘密署名処理がproduction distへ混入していないことを確認。新規native実行・本番採用は0。
+
+### 2026-11-03: e4577c0レビュー修正・ReadContextの観測化とCN41／CN42
+
+- ReadContextのreplyがrequestの全bindingとの完全一致を要求していたため、新しいselection・失効・再起動を観測できず、初回readも組み立てられなかった。requestはlineage 6項目だけを束縛し、変化する値を観測して、任意のfloorで巻戻しを拒否するよう改めた（§9.92.5）。
+- C3aの終了条件（§9.91.8）に残っていたAbandonEnrollmentの静的contractと読取時間予算profileを実装し、runnerがCN41／CN42を受理するようにした。
+- 回帰41件を追加（C3a計225件）。runtime検査（失効確認・durable保存・実測）はC3b／C3dに残る。
+
+e4577c0レビュー修正の検証結果: 対象225件、全体4,937 tests成功（1,418 skipped）。型検査・build成功。

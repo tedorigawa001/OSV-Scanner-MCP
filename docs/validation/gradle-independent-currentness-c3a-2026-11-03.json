@@ -2,17 +2,17 @@
   "schema": "osv-mcp.q2.c3a.validation.v1",
   "date": "2026-11-03",
   "scope": "synthetic-static-contract-only",
-  "tests": 184,
+  "tests": 225,
   "command": "npx vitest run src/test/utils/gradleOwnedCurrentAuxiliary.test.ts src/test/utils/gradleOwnedCurrentDeployment.test.ts",
   "sourceSha256": {
     "package.json": "bbb5c5fde9e96539da7395e928f91d9fa34372213260063059877a5b1c000f18",
     "package-lock.json": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285",
-    "src/utils/gradleOwnedCurrentAuxiliary.ts": "0bc6bff0877b6b6168f092421e50fc1bb6f06d6a6ba700f1d3091db1df90320a",
+    "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
-    "src/test/fixtures/gradleOwnedCurrentDeployment.ts": "d4d379847c1344e4ecd9bd7e3ce06182de15db80448cda8004edfec8d6d708de",
-    "src/test/utils/gradleOwnedCurrentAuxiliary.test.ts": "8b875f86dad599ab3131dbd8620ed0662f00643eeba17db2535a1d3a7bd00c04",
-    "src/test/utils/gradleOwnedCurrentDeployment.test.ts": "05b08fa21d0500f4b0906ad2a61eea067796ac2cd6f21c044f055b2d1937e954"
+    "src/test/fixtures/gradleOwnedCurrentDeployment.ts": "499d0e11421196f5676c24696d8843e25aa6fc9c450e1a8af25285038500bdcf",
+    "src/test/utils/gradleOwnedCurrentAuxiliary.test.ts": "8c9b2f06a53db66bc7365afb0c6df01a5aa421642513643fc2388f5dd8de0768",
+    "src/test/utils/gradleOwnedCurrentDeployment.test.ts": "9fe4052dae1366b6216cef1508c4420a340561b7a8d1f7eadd1e5c3436791d5c"
   },
   "staticScenario": {
     "scope": "synthetic-static-only",
@@ -37,7 +37,7 @@
     "Deployment evidence is synthetic; required-precondition labels are not protected native OS events",
     "Service credential-set digest remains an independently supplied opaque Enrollment reference, not a decoded service key registry",
     "No multi-frame transfer assembler, full authority verifier, persistence or changed default reader",
-    "CN01–CN40 native conditions are unimplemented; existing C0/C1/C2 tests do not establish them"
+    "CN01–CN42 native conditions are unimplemented; existing C0/C1/C2 tests do not establish them"
   ],
   "verification": {
     "targeted": {
@@ -124,5 +124,44 @@
       "An empty inventory is identity-bound for clients without listeners",
       "Updating inventory requires a new matching phase / bootstrap digest; an unchanged deployment profile does not authorize a stale digest"
     ]
+  },
+  "contextAndCompletionReviewFix": {
+    "baseCommit": "e4577c0",
+    "contextContract": [
+      "ReadContext requests bind only the six grant-pinned lineage fields; a full mutable binding is rejected",
+      "The reply binding is observed: selection, revocation epoch, registry incarnation and provider boot may advance",
+      "The reply must keep the requested lineage fields and the existing exact Anchor record/revision pairing",
+      "An optional caller floor rejects a control revision, selection revision or revocation epoch older than last observed",
+      "All other auxiliary APIs still require the full current binding"
+    ],
+    "completionContract": [
+      "AbandonEnrollment (operator to registry, enrollment.abandon) binds one exact provision, the original BeginEnrollment operation/request digest and registry incarnation, with a provision-mode binding",
+      "Its reply binds the same provision, a retired registry record and the uninitialized phase; expiry and undecided-activation checks remain registry runtime work (C3b)",
+      "Read budget profile fixes every read phase, margin of at least 10% of the lease, total plus margin within the 5 s lease and closure within the C0 limit",
+      "Declared transfer and verify phases must cover the profile closure at the declared minimum rates; an over-budget closure is refused before any pin",
+      "The static runner accepts CN41/CN42 case conditions and rejects undefined CN43"
+    ],
+    "regressionTestsAdded": 41,
+    "beforeFix": {
+      "tests": 38,
+      "failed": 38,
+      "note": "includes fixture-shape failures of existing ReadContext role/acceptance cases and the fingerprint sync test"
+    },
+    "afterFix": {
+      "targeted": {
+        "filesPassed": 2,
+        "testsPassed": 225
+      },
+      "fullSuite": {
+        "command": "npx vitest run --maxWorkers=2",
+        "filesPassed": 123,
+        "filesSkipped": 24,
+        "testsPassed": 4937,
+        "testsSkipped": 1418
+      },
+      "typecheck": "passed",
+      "build": "passed",
+      "privateSigningInPublishedAuxiliaryModule": false
+    }
   }
 }

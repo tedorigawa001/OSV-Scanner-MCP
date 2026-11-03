@@ -77,3 +77,5 @@ it('hashes the exact owned inventory in canonical order and includes every endpo
   expect(c3ListenerDigest(subject,[changed])).not.toBe(c3ListenerDigest(subject,[e]));
  }
 });
+it.each(['CN41','CN42'])('records the genesis-abandon and read-budget condition %s',condition=>{const f=fixture();f.m.cases[0].condition=condition;expect(verifyC3StaticRun(f.build().input()).conditions).toContain(condition);});
+it('rejects an undefined CN43 case condition',()=>{const f=fixture();f.m.cases[0].condition='CN43';expect(()=>verifyC3StaticRun(f.build().input())).toThrow('schema_invalid');});

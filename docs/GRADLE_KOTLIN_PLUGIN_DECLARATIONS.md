@@ -5926,3 +5926,19 @@ inode／deviceはdeploymentごとに変わり得るためprofile digestからは
 追加19回帰。修正前はrequest／replyのcredential・instance・boot・key epoch交換8件と、旧listenerDigestに対するinode／device／FD交換3件がすべて失敗（不正内容を受理）することを確認し、修正後に拒否する。さらにroleの交換、pin方向・旧pin形式、正しいinventory更新の正常対照、canonical順と各endpoint fieldのdigest反映を検査する。初回の検証・検査除去対照はvalidationのpreReviewVerification／preReviewMutationsへ保持する。
 
 C3aレビュー修正の最終検証: 対象2 files／184 tests成功。全体は`npm test -- --maxWorkers=1`で123 files／4,896 tests成功、24 files／1,418 tests skipped（255.12秒）。型検査・build・diff整形検査成功。source fingerprint一致と、test runner／秘密署名処理がproduction distへ混入していないことを確認。新規native実行・本番採用は0。
+
+#### 9.92.5 e4577c0レビュー修正：ReadContextの観測化・CN41／CN42の静的contract
+
+**ReadContext。** 修正前は、ReadContextのreplyにrequestの`currentBindingSchema`全体との完全一致を要求していた。このbindingにはselected pair・selectionRevision・revocationEpoch・registryIncarnation・providerBootなど変化する値が含まれる。そのためclientは既知のcontextを確認できるだけで、公開・失効・registry再起動の後は以後のreadがすべて`binding_mismatch`になった。初回readではbindingを組み立てられなかった。§9.91.5でC2の`context()`をReadContextへ対応付けているので、このままではC2を接続できない。
+
+ReadContextのrequestは、grantが固定するlineage 6項目（authorityId／lineageId／generation／storeEpoch／enrollmentDigest／profileDigest）だけを束縛する。全bindingの送信はschema違反とし、他の追加APIは従来どおり全bindingを要求する。replyはこの6項目の一致とAnchor record／revisionの対応を照合し、変化する値は観測結果として返す。payloadの`floor`（前回観測したcontrolRevision・selectionRevision・revocationEpoch、初回はnull）を下回るreplyは巻戻しとして拒否する。観測したcontextはpin取得の代わりにならない（§9.91.5）。
+
+**AbandonEnrollment（CN41の静的部分）。** §9.91.11の提案APIを、operator→registry・`enrollment.abandon`として追加した。requestは、exact provision ref・元BeginEnrollmentのoperation ID／request digest・registryIncarnationと、provision modeのbindingへ束縛する。grantはpurpose `enrollment`・target=同provision・snapshot／operationBindingなしに限る。replyは同provision・retired record・`uninitialized` phaseを束縛する。provisionの失効確認、ActivateEnrollment済み・結果不明の拒否、旧fenceの以後の拒否、durable保存はregistryのruntime検査で、C3bに残る。
+
+**読取時間予算（CN42の静的部分）。** `osv-mcp.q2.c3a.read-budget.v1` profileを追加した。context・pin・checkpoint・transfer・verify・handoff・delivery・use・ackの9工程それぞれの上限を必須とする。leaseはC0の5秒に固定し、余裕はleaseの10%以上、工程合計＋余裕はlease以下、closureはC0の上限以下とする。transfer／verifyの上限は、宣言した最低処理速度でclosure全体を処理できる値でなければならない。上限を超えるclosureはpin取得・原本IOの前に`budget_exceeded`で拒否し、pin延長で継続しない。実測値による裏付けはC3dのnative記録で行う。
+
+static runnerのcase条件はCN01〜CN42を受理し、未定義のCN43を拒否する。
+
+回帰41件を追加（対象2 files計225件）。ReadContextの前進受理・初回read・lineage交換・floor、AbandonEnrollmentの束縛と改変拒否、予算profileの各違反、CN41／CN42の記録を検査する。修正前のsourceでは、新規・形状変更の対象38件がすべて失敗することを確認した。
+
+e4577c0レビュー修正の最終検証: 対象2 files／225 tests成功。全体は`npx vitest run --maxWorkers=2`で123 files／4,937 tests成功、24 files／1,418 tests skipped。型検査・build成功。公開auxiliary moduleに秘密署名処理が入っていないことを確認。新規native実行・本番採用は0。
