@@ -2473,3 +2473,22 @@ PO4/Q2/Aの検証結果: 新規16件（実socketの15 nativeケース＋保存�
 - push後にCI（ubuntu）でLinux分岐の初実行を確認し、結果を§9.78へ記録する。失敗時はLinux側の扱いを判断する。
 
 b62e339レビュー修正の検証結果: native回帰18件成功（新規2件）。全体110 files／4,030 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにtest fixtureがないことを確認した。
+
+
+### 2026-11-03: PO4/Q2/B・独立principalの配備／起動／権限分離の具体設計
+
+- §9.79へ専用Linux VM／system serviceを基準候補としたprincipal／権限表、root／endpoint／実行closureの配備条件、起動順・canonical内容読取前gate・非置換socket公開・停止／再起動条件を追加。実版／image／実UID／補助group／capabilityを固定し、同UID・既存FD漏洩・管理権限迂回を拒否する。
+- provider署名鍵とclient credentialを分離し、両端kernel UID pin、role・boot・要求／応答binding、FD転送拒否・絶対deadline・quotaを具体化。独立controllerの証拠と許可対照を必要とし、自己申告・未実行・tool欠落を陽性へ数えない。
+- QB01〜QB32の未実装回帰条件とB1（配備／IPC隔離）・B2（保存／fence）・B3（pin／handoff）の到達点を分離。macOS／Linux未実証配置はunsupported、B1単独でgrant・原本read省略・profile／本番採用を開かない。
+- 次はB1aの配備manifest／preflight診断schema・runner静的contract、その後B1bのunit／固定launcher／VM fixture、B1cの別UID native攻撃対照。今回は設計のみでaccount作成・service配備・新規native隔離実行は0。既存Q2/Aの実証範囲は拡張しない。
+
+Q2/B設計の検証結果: 公開command例・既存Q2/A native・Q1 memory contractの関連117件成功。§9.79の8小節とQB01〜QB32の欠落／重複なしを確認し、diff整形検査成功。今回の変更は文書のみで、QB回帰の実装・独立UIDでの実行・配備・保存／pin実装・採用flag変更は0。既存Q2/Aの再実行をQ2/B隔離成立の証拠へ数えない。
+
+
+### 2026-11-03: Q2/B設計レビュー修正・exec前gate／manager-owned listener
+
+- §9.79.9と既存§9.79.3〜7を更新。managerが最初のlauncher／runtimeのexec前に環境を許可リストから構築し、fixed argv／closureを確認する。provider内の注入検出は二次確認で、preload前の保護と数えない。QB08へ注入コード実行0・秘密／canonical内容読取0、stage別exec数と無防備fixture対照を追加。
+- directoryの名前別ACLという前提を撤回し、root-owned socket unitでmanagerが3 roleのlistenerを事前作成。providerへdirectory writeを与えず、保護されたlaunch inventoryと実socket情報／cookieで検証したFDだけを継承させる。QB04へ任意名作成／隣接leaf削除、QB17へFD差替え／不足／余分／非listener・旧socket回収／世代変更の条件を追加。
+- manager listenerのSO_PEERCREDとproviderのSCM_CREDENTIALSを別pinとして両端認証へ束縛し、QB09／QB10も整合。今回も設計のみで、unit／launcher／FD gate／QB回帰実装・配備・新規native実行は0。
+
+Q2/B設計レビュー修正の検証結果: 公開command例・既存Q2/A native・Q1 memory contractの関連117件成功。§9.79.1〜9の9小節、QB01〜QB32の一意性、QB04／QB08／QB17と両端credential条件の追記、旧filename別ACL前提の撤回を確認。diff整形検査成功。文書のみの変更であり、QB回帰は未実装、Q2/B配備・native隔離の新規実証・採用flag変更は0。

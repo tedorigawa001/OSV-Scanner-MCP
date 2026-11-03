@@ -4618,3 +4618,144 @@ client側の検証を強めた。いずれも同UIDの診断protocol内の修正
 nativeケースを2つ追加した：期待UIDを実UID+1としたclientがhello前に拒否するwrong-provider、provider側の故障注入で連番1の認証済み応答を連番2へ返すresponse-replay。いずれも修正前のclientでは受理される構成である。保存記録は17ケースで再生成し、既存15ケースの結果は変わらないことを確認した。wrong-providerは5回連続で再実行した。
 
 b62e339レビュー修正の検証結果: native回帰18件成功（17 nativeケース＋保存記録source照合1件、新規2件）。全体110 files／4,030 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにnative／prefix／migrationのtest fixtureがないことを確認した。Linux分岐の実行証拠は引き続きなく、CIのubuntu実行で初めて確認される。独立principal・durable seal・writer fence・Q1接続・本番採用の追加は0。
+
+
+### 9.79 PO4/Q2/B・独立principal providerの配備・起動・権限分離契約（設計、2026-11-03）
+
+#### 9.79.1 対象と到達点
+
+Q2/Aと§9.78.5のclient pin／応答照合を前提に、Q2/Bのnative隔離実証を実行可能にする配備契約を定める。今回は設計のみで、OS account作成・service配備・新規native実行を行わない。Q2/Aの同UID診断を設定変更だけで採用可能にせず、別domain・別実装closure・別evidenceを必要とする。
+
+基準環境候補は専用の使い捨てLinux VM内のsystem-level serviceとlocal filesystem。kernel／distribution／systemd／filesystem／mount options／runtimeの実版・image digestを実証時に固定する。user service、同UID child、同UID containerやrootless user namespaceだけの配置は陽性基準にしない。macOSは既存のQ2/A対象のままで、launchd・ACL・process制御を含む同等の別profileを実証するまでBはunsupportedとする。Linux分岐が存在することやCIがUbuntuであること自体もBの証拠ではない。
+
+B1は権限分離・起動・認証transportと攻撃対照、B2はdurable seal／inventory／generation／writer fence、B3はQ1のpin／handoff・restart復旧への接続とする。B1単独ではgrant／原本read省略を実装しない。B3まで成功しても独立registryのcurrent admission・Q3/Q4が未成立ならbackendEligible／profileApprovedはfalseのまま。
+
+#### 9.79.2 脅威境界とprincipal
+
+敵対側はbuildと通常reader／brokerを完全に制御し、任意の利用者コード、同じprincipalの別process、知っているpath、取得済みtoken、合法なreader接続を使える。PIDやUIDを本文で自己申告した値は信頼しない。kernel・system manager・配備operator・固定したprovider実装とその依存closure・独立registry／checkpoint issuerは信頼側とする。host rootやhypervisorの侵害まで防ぐ主張はしない。trusted operatorによるbackup復元・mount交換・版更新も通常運転中の無通知変更を禁止し、drain／revoke・新boot・再検証を必要とする。
+
+| 主体 | 許す権限 | 禁止する権限 |
+| --- | --- | --- |
+| 配備operator／system manager | root所有unit・実行image・独立設定・credentialを配備し、承認した固定serviceを起動／停止 | project指定command・path・環境・callbackを特権で実行。敵対側へのsudo／unit編集／service再設定権限委譲 |
+| provider専用固定UID/GID | 自身のprivate candidate／sealed rootsとservice memory・署名鍵、限定IPCでのpublish管理 | root／host capability、任意project実行、registry／checkpoint issuer鍵やそのcanonical storeの書換 |
+| reader専用固定UID/GID | 許可reader endpoint、公開verification key／独立peer pin、copyされた有界応答 | provider root／鍵／管理endpoint、writer権限、providerのdebug／signal／FD取得 |
+| build専用固定UID/GID | 検証用workspaceと入力upload endpointのみ | provider／readerの秘密、sealed領域、reader／publish／管理roleへの昇格 |
+| authority writer用固定UID/GID | 許可された論理appendを限定publish endpointへ要求 | canonical rootへのdirect write・任意file path指定。provider fenceなしのpublish |
+| checkpoint issuer／registry | 各自のroot・鍵・世代／current性の管理 | providerのreceiptを自らの同期／current性確認の代替とすること |
+| 独立test controller | 事前定義fixtureの配備、故障注入、各UIDの観測・外側記録 | project入力をhost commandへ渡すこと。controllerのrootで行う操作を敵対UIDの成功／拒否として計数 |
+
+UID／GIDは例示の名前ではなく実数値・補助group集合まで記録し、reader／build／writer／providerは相異なる固定UIDとする。自動UID再割当ては初期profileでは不可。敵対側にroot相当group、sudo／polkit経由service操作、container daemon socket、user namespaceのhost UID alias、CAP_DAC_OVERRIDE／DAC_READ_SEARCH／SYS_PTRACE／SYS_ADMIN等がないことを確認する。欠落・権限の判定不能・実UID重複なら起動gateを閉じる。
+
+#### 9.79.3 roots・endpoint・実行closureの配備
+
+| 領域（候補の固定path） | owner／利用 | 必須条件 |
+| --- | --- | --- |
+| `/opt/osv-q2b/<image-id>` | root所有の固定program／runtime／依存closure | project外、祖先を含め敵対UIDとproviderから書換不可。script・interpreter・native library・module検索先・loader・unit／設定をdigest inventoryへ含める |
+| `/var/lib/osv-q2b/provider/<instance>` | provider UID、0700、fileは原則0600 | 新規private root、canonical parentも保護。symlink・未知ACL・外部hardlink・別mount alias・共有書込groupなし。candidateとsealedを分離し両方をquota計数 |
+| `/etc/osv-q2b/` とmanager credential source | root所有 | Enrollment候補・UID/role pin・root ID／mount pin・版／policy・公鍵を独立配備。projectは選択／上書き不可。鍵bytesをargv／env／logへ出さない |
+| `/run/osv-q2b/` | root管理の固定ancestor | reader／upload／publish endpointを分ける。managerだけがsocket leafを事前作成する。provider／reader／build／writerには全ancestorのdirectory writeを与えず、providerへは検証済みlistener FDだけを渡す。名前別の作成制約をPOSIX ACLへ要求しない |
+| checkpoint／registryのcanonical roots | それぞれ別UID | providerにwrite accessを与えない。必要なcheckpoint bytesはissuer認証済みの限定read APIから取得したsealed copyで、canonical同期の代替にしない |
+
+socket接続用group／ACLはroot所有socket leafのconnect／ancestor traverseだけに使い、directory writeやprovider data領域のgroupへ流用しない。providerはbind／listen／unlink／renameを実装せず、managerがroleごとに事前作成したlistenerをacceptする。providerへのlistener FD継承は固定manager起動時だけの例外で、通常IPCのSCM_RIGHTS受領とは分離する。管理endpointは初期B1では無効にし、必要な操作は固定system-manager経由のstop／startだけにする。通常writerはsealed rootをmount／openせず、限定bytes uploadとexpected head／generation／live fenceを持つpublish要求だけを使う。readerへ生FD・root FD・writable mmap・shared memoryを返さない。
+
+新rootはoperatorが敵対processより先に作成し、既存の書込FD／mmap／hardlinkを渡していない配備履歴を記録する。chmod／UID変更で既存FDが失効するとは扱わない。過去のFD漏洩や所有者履歴が不明なら同じrootを採用せず、停止・新instance rootへの完全検証付き再構築を要求する。既存canonical rootを同UID実験からそのまま転用しない。reader／buildから見えないmount namespaceだけを唯一の保護とせず、host側の実DAC／ACLとalias・既存handleも検証する。
+
+#### 9.79.4 起動手順とread前gate
+
+1. operatorは専用VMのimageと固定service accountを配備し、providerを停止した状態でroot／祖先／mount／ACL／補助group／外側revision pinをinventory化する。reader／buildには事前配備の検証runnerだけを起動する権限を与え、host管理資格を渡さない。
+2. system managerはroot所有の固定unit／absolute executableだけを起動する。User／Group／SupplementaryGroupsを固定し、空のCapabilityBoundingSet／AmbientCapabilities、NoNewPrivileges、RestrictSUIDSGID、ProtectSystem=strict＋必要rootだけのReadWritePaths、ProtectHome、PrivateTmp／PrivateDevices、ProtectKernelTunables／ProtectKernelModules／ProtectControlGroups、RestrictAddressFamilies=AF_UNIX、LimitCORE=0、固定UMaskを候補とする。対応kernelと実設定を確認し、directiveの綴りやsecurity scoreだけで成立としない。最初のlauncher／runtimeをexecする前に、managerが§9.79.9の環境・argv許可リストと固定closureを検証する。provider内部の検査をpreload防止の根拠にしない。providerだけでなく敵対runnerの権限上限も固定する。
+3. managerが保護したcredential供給（LoadCredential等の採用方式をprofileへ固定）を使う。providerの署名用秘密と各clientの認証用credentialを分離する。敵対readerが持つ共有MAC鍵からprovider署名を偽造できる構成はBへ採用しない。署名方式・crypto実装と版をclosureへ固定し、Q2/Aの単一共有鍵を流用しない。
+4. providerは起動時に実／実効／保存UID/GIDが固定値で一致すること、補助group、capability／namespace、managerが配備した設定digest・root ID／mount・実行closure、credential供給元、§9.79.9の期待listener FD／非秘密bootstrapを含む許可FD inventoryを検査する。不明FD・特にcanonical領域への継承write FD／socket・project stdin等の注入を拒否する。PYTHONPATH／NODE_OPTIONS等はmanagerのexec前gateが既に除去／拒否したことを二次確認するだけで、provider起動後の検出を「注入コード実行前」と扱わない。失敗時はcanonical bytes／credential秘密の読取やendpoint受付へ進まず、非秘密の拒否理由だけを返す。検査用のroot stat／OS設定取得は許し、`canonicalContentReads=0`と区別して数える。
+5. preflight成功後だけ固定credentialを読み、protected rootをdescriptor-relative／nofollowでopenしてidentityを再照合する。B1では診断用の新しい空fixtureだけを扱う。B2以降は完全inventory・journal／checkpoint認証・rollback照合・file／directory再同期を完了するまでreadyを返さない。visible markerだけではreadyにしない。
+6. managerは§9.79.9に従ってroot所有の固定endpointを事前作成し、そのlistener FDを固定serviceへ継承させる。providerはFD inventory照合とpreflight／必要な復旧が成功してからacceptを開始し、fresh bootを発行する。managerの公開済みsocketへ接続できることとreadyを分ける。readerは独立設定のlistener custodian UID、実送信provider UID、公開鍵・domain／closure／instanceを別々に照合し、fresh challengeに署名されたreadinessを得てから診断要求へ進む。stdoutのready行やprovider自己申告だけを証拠にしない。
+7. shutdown／更新は新規受付を閉じ、既存pinの完了・強制失効とwriter fence更新を確定してから停止する。SIGKILL後は新boot＋完全復旧で再開する。旧FD／接続／boot／tokenは新instanceの許可にならない。B1の通信再起動試験をB2/B3の保存復旧成立へ読み替えない。
+
+読取前gateは実装closureを信頼したfail-closed検査であり、任意コードが任意booleanを返してよいAPIにはしない。system-managerやrootから受け取る任意command／任意path実行helperを新設しない。ここで定めたunit／launcherは未実装で、上記は配備runbookの契約である。今回host設定を変更する手順の実行許可を求めるものではない。
+
+#### 9.79.5 認証IPCとrole境界
+
+B専用domain／schemaでserver署名鍵とclient別認証credentialを用い、双方のkernel peer credentialと独立pin、manager listenerのcustodian資格と実送信provider資格（§9.79.9）、instance／boot／role／protocol／profile digest、両側fresh nonceをhandshakeへ束縛する。client側のlistener custodian UIDと受信時provider UID・server署名の照合はclient credential送信前、clientのUID／許可role照合はcredential秘密へのアクセス・操作受付前に行う。署名・field集合・challenge・要求digest・応答sequence／use IDをすべて検証する。拒否をmissや別roleでの自動retryへ変換しない。
+
+LinuxのSO_PEERCREDは接続時のpeer資格として扱い、PID文字列を現在の実行artifact証明にしない。接続済みFDを別UIDへ渡してもSO_PEERCREDだけでは送信主体の変更を検出できないため、BのLinux transportはSO_PASSCRED／recvmsgで受信fragmentごとのkernel SCM_CREDENTIALSを取得し、handshakeにpinした実送信主体のUID/GIDと両端で照合する方式を必須候補とする。manager listener由来のSO_PEERCREDをproviderの実送信資格と同一視しない。全fragmentでのcredential検証・分割frameとの対応が実証できなければunsupportedとする。credential欠落・control data切詰め（MSG_CTRUNC）も拒否し、実／実効／保存UID/GIDを同じ固定値にして両credential方式の資格の違いを曖昧にしない。初期profileはhost固定UIDの専用service間に限定する。SCM_RIGHTSのFD受領／送信は不要として拒否し、受信FDはエラー経路で必ず閉じる。侵害readerが同UIDでproxy送信することや自身のUID／credentialを同UIDの別processへ渡すことは同じ敵対principalであり、識別できると主張しない。readerの正規read権限は残り、writer／管理権限を得ないことを検証する。Task実行証拠とは別責任とする。
+
+単一frame4096bytesの初期候補、接続ごとの絶対monotonic deadline、総bytes／要求数／pending／peer quotaを設定し、1byteずつ期限を更新して無期限に保持できないようにする。正しいMACがあってもreaderはinspect／将来のread操作だけ、buildはuploadだけ、writerはfence付きpublishだけに限定する。管理roleや任意path・callback・追加credential・新providerの登録を本文から許可しない。providerのfilesystemをread-onlyにする設定だけではUnix socketへの接続制限にならないため、endpoint permissionと両端の認証・role検査を独立に実証する。
+
+#### 9.79.6 証拠・失敗・採用の判定
+
+独立controllerはrunId、image／source／依存／unit／設定／credential方式のdigest、kernel／systemd／filesystem／mount、実UID／GID／group／capability／namespace、各processのboot／PID／開始順、exec直前の検証済みargv／環境の非秘密値・許可リストdigest／runtimeExecCount、listenerのrole別FD inventory・socketGeneration／kernel cookie／custodianと送信UID、root／ancestor／socketのidentity・ACL、各攻撃の実行UID・syscall結果／errno・対象identity・前後digest、許可対照、全検査件数を保存する。秘密bytesは保存せずcredential ID／key epochだけを記録する。期待値は攻撃対象providerの自己申告と独立にcontrollerが固定し、証拠の保存先は敵対UID／providerから書換不可とする。source hashだけの自己申告を独立承認にしない。
+
+攻撃ごとに同等の許可領域で同じ操作が成功する対照を実行し、ENOSYS・ENOENT・tool欠落・攻撃process未起動を「隔離による拒否」へ数えない。標的の存続・identityをcontrollerが確認し、敵対側でEACCES／EPERM等の期待拒否と前後不変性を確認する。意図的な既存FD注入は無害fixtureで行い、OSがwriteを許す負例＋起動gateの拒否を要求する。単なるchmod後のwrite拒否を期待しない。
+
+配備前提不足は`provider_unsupported`、closure／独立pin不一致は`binding_mismatch`、認証不正は`receipt_invalid`／再送は`challenge_replayed`、未知entry／root交換は`inventory_mismatch`、内容変更は`content_mismatch`、復旧／同期不完了は`sync_incomplete`、証拠欠落は`evidence_incomplete`として診断記録する。後者はB検証runnerの分類で本番schemaを今回拡張しない。攻撃による変更成功は隔離失敗としてrun全体を不採用にし、後から元へ戻して合格にしない。制限による未実行／blocked／skipも陽性件数へ加算しない。
+
+B1の独立隔離合格、B2の保存合格、B3のpin協調合格を別flag・別必要証拠とする。初期B1 runnerは診断専用で採用flagを出さない。独立registryが未実装なら外側fixture pinであることを明記し、現在性・rollback保護の本番成立を主張しない。B1合格だけでdurable／grant／read省略を有効にする条件は作らない。
+
+#### 9.79.7 native回帰条件（QB01〜QB32、未実装）
+
+| ID | 必須の操作と合否 |
+| --- | --- |
+| QB01 | 新規VM・別実UID／GID・補助group・capability・固定closureをcontroller／kernel両方で記録し、正常配置だけB1診断を開始 |
+| QB02 | 同UID、root相当group、sudo／管理socket、host UID alias、残留capabilityの各配置をcanonical内容読取前にunsupported。項目欠落も拒否 |
+| QB03 | reader／buildによる鍵・root・sealed fileのdirect open／write／truncate／chmod／chownを拒否。許可fixtureで同syscall成功を対照 |
+| QB04 | file／root／祖先／endpointのrename・unlink・同名再作成、交換競合を拒否。provider／reader／build／writerから保護directory内の任意名作成・隣接role leafの削除も拒否し、期待inventory／identity／内容を保持する。同syscallの許可directory対照を必須とし、providerへdirectory writeを与えない |
+| QB05 | symlink／hardlink／mount aliasによる迂回を敵対UIDから試す。作成拒否、または起動gateで非採用とし、未知nlink／ACLも拒否 |
+| QB06 | 一時rootのwrite FD／directory FD／writable mmapを起動前に意図的に漏洩し、chmodだけでは書ける負例を確認。継承FD検出と履歴不明rootのgate拒否・新root必須を確認 |
+| QB07 | reader／buildからproviderのsignal・ptrace／process memory・proc FD取得を試し、利用可能な全手段で拒否。未対応手段を実証済みと数えない |
+| QB08 | projectからunit／実行file／runtime／library／設定／credential sourceを変更不可。NODE_OPTIONSの--require／--import、PYTHONPATH／PYTHONHOME、LD_PRELOAD／LD_LIBRARY_PATH、未知env、-e／-c／追加argv／shell展開／別entry pointをmanagerのexec前gateで拒否しruntimeExecCount=0・注入コード実行0・秘密／canonical内容読取0。親環境からの注入はruntime／launcherへ渡らないことを確認し、許可設定の起動成功と、無防備な隔離fixtureではpreloadがgateより先にmarkerを書ける負例も対照 |
+| QB09 | 正しいprovider／reader／build／writerを各実UIDで起動し、独立pinと両端の受信時credentialを照合する。clientのSO_PEERCREDはmanager custodian、SCM_CREDENTIALSはprovider UIDとして別々に検証する陽性対照 |
+| QB10 | 鍵が正しくても異なるcustodian UID／実送信provider UID／client UIDをそれぞれ拒否。manager listenerの正常root UIDをprovider UID不一致と誤判定しない陽性対照と、clientのhello／秘密送信0、serverの操作受付0を観測 |
+| QB11 | reader credentialでprovider署名の偽造を試して拒否。旧共有HMAC方式・未承認crypto closureも採用不可 |
+| QB12 | reader／buildの正当接続でpublish／管理／任意path／callback／role変更を試し、MACが正しくても拒否 |
+| QB13 | 同接続のrequest／response再送・順序差替え、別reader／role／接続への転用を拒否。正しい連番対照も必要 |
+| QB14 | 実serviceをstop／SIGKILL・restartし、旧bootのhello／token／要求／遅延応答を拒否。新bootも独立pin検証を要求 |
+| QB15 | 重複key／未知field／不正整数／oversize／途中EOFとslow-dripを拒否。絶対deadline内終了と有界read／allocationを計測 |
+| QB16 | ancillary FDの注入・接続FD転送を試し、FD受領拒否／closeと別principalのrole拒否を確認。リークしない |
+| QB17 | manager事前作成・role別listener受渡しの陽性と、FD欠落／余分／重複／role入替／名前だけ一致／wrong cookie／別path／別domain／connected socket／非listener／偽LISTEN_*を拒否する負例を実行。2重起動・残存socket・leaf／ancestor交換では無条件unlinkもprovider自身のbind fallbackもなし。managerの停止・identity照合・再作成条件とproviderのdirectory writeなしを確認。runtime exec前とaccept前の拒否境界、old listener／backlog／接続の再使用拒否も観測 |
+| QB18 | bootstrap／credential欠落・wrong owner／期限・key epoch変更・manager供給元不明を拒否。argv／env／log／coreに秘密bytesがないことを確認 |
+| QB19 | reader／buildからcheckpoint／registry canonical rootsへのwriteとprovider経由の代理writeを拒否し、issuer同期責任を保つ |
+| QB20 | B2: 未知file／symlink／hardlink／未完了temp／tailを完全inventory検査で拒否。上限+1で列挙を停止し陽性sealなし |
+| QB21 | B2: seal中のfile変更・entry追加／削除・root交換を拒否しquarantined。同世代をopenへ戻さず新snapshotでのみ回復 |
+| QB22 | B2: file／directory sync・marker公開／readbackの各障害で陽性sealなし。公開後sync失敗の再open／再試行も再同期完了まで拒否 |
+| QB23 | B2: sealed viewへのdirect write拒否と、旧boot／旧namespace／旧fence／別headの正規publish要求拒否を両方確認 |
+| QB24 | B2: restartでjournal／checkpoint／marker／外側pinを全検証・再同期。古いsnapshot／backup復元を検出し、current性をfixtureだけで主張しない |
+| QB25 | B3: live read pin中のpublishが待機し、未公開candidateをselected inventoryへ混ぜない。quotaを別に課金 |
+| QB26 | B3: completing／decision-recorded／deliveringの各停止点でpin保持を観測し、引渡し前のwriter／freeze／GC進行を拒否 |
+| QB27 | B3: release／disconnect／自然expiry／revoke／owner終了を区別し、再送・古いreleaseで別useを完了／取消しない |
+| QB28 | B3: Complete／revoke／freeze／cutoverを競合させ、記録した線形化順序と結果を照合。到着timestampだけで成功にしない |
+| QB29 | B3: 実registry不在／現在性不明／drain不成立で採用・GCを停止。fixture pinを独立registry成功へ読み替えない |
+| QB30 | stdoutのready偽装、自己申告UID／closure／件数、記録hashの更新だけでは合格せず、controller側の期待inventoryと実試行を照合 |
+| QB31 | 証拠file欠落・結果改変・別run／別imageの記録混入・未起動攻撃を拒否。verified件数は検証済みcaseから算出 |
+| QB32 | B1／B2／B3／Q3／Q4を独立に判定し、未完了stage・非実証platform・同UID fallbackでgrant／read省略／本番採用を有効化しない |
+
+#### 9.79.8 実装順と参照資料
+
+次の作業単位はB1aの独立配備manifest／preflight診断schema・runnerの静的contract、その後B1bのroot所有unit／固定launcherとVM用配備fixture、B1cのQB01〜QB19・QB30〜QB32 native実行と外側証拠検証とする。VM／別accountの配備ができない環境では静的検査まで進め、native隔離はunsupported／未実施と明記する。管理環境への実配備は別作業であり、今回その操作は行わない。B2／B3のQB20〜QB29は後続の保存・pin実装を伴い、B1のテスト件数へ先取りしない。
+
+OS候補の根拠は[systemd.execの公式設定仕様](https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html)（権限・read-only領域・credential供給の意味）と[Linux unix(7)](https://man7.org/linux/man-pages/man7/unix.7.html)（peer credentials／FD転送）、[systemd.socket](https://www.freedesktop.org/software/systemd/man/latest/systemd.socket.html)と[sd_listen_fds](https://www.freedesktop.org/software/systemd/man/latest/sd_listen_fds.html)（managerによるlistener作成・継承と再起動時の性質）。これらは配備候補の仕様参照であり、今回のnative合格証拠ではない。実採用ではlive最新版という名前ではなく、検証した実版と有効設定をmanifestへ固定する。
+
+Q2/B設計の検証結果: 公開command例・既存Q2/A native・Q1 memory contractの関連117件成功。§9.79の8小節とQB01〜QB32の欠落／重複なしを確認し、diff整形検査成功。今回の変更は文書のみで、QB回帰の実装・独立UIDでの実行・配備・保存／pin実装・採用flag変更は0。既存Q2/Aの再実行をQ2/B隔離成立の証拠へ数えない。
+
+
+#### 9.79.9 設計レビュー修正・exec前gateとmanager所有listener
+
+**環境・引数の制限責任。** 最初のexecより前のmanager側gate、固定launcherでの再検査、provider内部preflightを別段階にする。provider自身のNODE_OPTIONS／PYTHONPATH検査では、すでに実行されたpreloadを取り消せない。動的linkerへのLD_PRELOADもlauncherのmainより前に効き得るため、「launcher内で環境を消す」だけを保護にせず、managerが最初のlauncherをexecするときの環境から制限する。launcherはroot所有の固定artifactとし、そのloader・依存も配備closureに含める。
+
+managerが受理する起動入力は独立配備されたprofile ID／digestと固定instance IDだけで、任意command／path／argv／env mapを利用者から受け付けない。manager側の入力検証失敗は最初のlauncherもruntimeもexecせず、非秘密の拒否記録を残す。service起動はshellを使わず、profileに記録したabsolute launcher／runtime／entry pointと固定argvを使用する。-e／-c、--require／--import、追加のruntime switch・script argument、shellやunitの変数展開で決まるexecutable／引数を許可しない。診断case選択は固定runner側のenumで扱い、providerのargvへ自由入力として渡さない。
+
+managerは親processの環境を丸ごと継承せず、実際にexecへ渡す環境を空集合から構築する。初期の許可対象は固定LANG=C／LC_ALL=C、独立設定の固定credential directoryを指すCREDENTIALS_DIRECTORY、managerが実PID・本数・固定名から作るLISTEN_PID／LISTEN_FDS／LISTEN_FDNAMESと、検証版で必要ならLISTEN_PIDFDIDだけとする。PATH・HOME・作業directoryのmodule探索に依存せず、cwdはroot所有の固定directoryとする。INVOCATION_ID等の追加変数が実版で必要なら意味・生成元・型をmanifestへ列挙し、未列挙のままruntimeへ渡さない。親環境中のNODE_OPTIONS／NODE_PATH／PYTHONPATH／PYTHONHOME／LD_PRELOAD／LD_LIBRARY_PATH等は転送しない。独立設定やEnvironmentFile／PassEnvironment／drop-inからそれらを追加しようとする構成はexec前に拒否する。runtime固有のisolated startup（Python候補の-I等）も固定argvへ明記するが、managerの環境制限の代用にしない。
+
+固定launcherはこのexec前条件を満たす環境でのみ起動し、UID／capability／閉じたargv・環境・許可FDを再照合した後、同じPIDで固定runtimeへexecする。LISTEN_PIDはこのPIDと一致させ、exec以外のforkで別PIDへ渡す経路を作らない。managerの記録には実効環境の非秘密値／digest、argv、closure、拒否stageとlauncherExecCount／runtimeExecCountを残す。provider内部で検出した失敗をruntimeExecCount=0と記録しない。QB08では注入用fixture moduleのmarker・秘密canary読取と、controller側のexec観測を使い、単に最終exit statusが拒否だったことを成功条件にしない。環境が無防備ならpreloadが先行する対照は、秘密を持たない使い捨てfixtureだけで行う。
+
+**listenerの作成・受渡し。** managerはroot所有の固定socket unit（Accept=no）をreader／upload／publishの3 roleごとに配備し、root所有で敵対UIDもproviderもdirectory writeを持たない固定ancestor内にAF_UNIX／SOCK_STREAMのpathname listenerをbind／listenする。socket leafはroot所有のまま、role別のgroup／ACLでconnectだけを許す。providerはこの3 leafや隣接任意名を作成・unlink・renameできず、特定filenameだけの作成をPOSIX ACLに表現させない。unitを使った事前作成はpathname socketの可用性までであり、providerがreadyになる前にqueued接続を認可したことにはしない。
+
+managerは新socketGeneration、各roleの固定path／unit／kernel SO_COOKIE、pathnameのlstat identity／mode／ACL、listenerのtype／domain／listening状態を観測し、非秘密launch inventoryへ束縛する。SO_COOKIEを取得・照合できる実版を初期profileの前提とし、未対応をpath名一致だけへ降格しない。pathnameのfilesystem inodeとsocket FDのsockfs inodeは別の観測値として保存し、同じinodeであることを要求しない。launch inventoryはmanager保護の固定read-only bootstrap FDから渡し、そのFDの生成・ownership chainを配備記録へ結ぶ。wire本文やprojectが同じinventoryを供給しても採用しない。
+
+listenerはmanagerのexec時FD継承として渡し、stdinや通常IPCのSCM_RIGHTS経由では受け取らない。許可FD集合は0/1/2の固定入出力、3本のlistener、その非秘密bootstrap FDだけとし、canonical write FD・追加socket・FD storeの動的追加を許さない。manager／launcherがFD数・役割集合を検証し、providerも秘密／canonical内容読取・acceptより前に各FDのfstatによるsocket種別、SO_DOMAIN、SO_TYPE、SO_ACCEPTCONN、getsockname、kernel cookieと独立launch inventoryを再照合する。3本の順序は仮定せず実socket情報でroleへ一意に対応付ける。LISTEN_FDNAMESやFD番号だけでは認可せず、欠落・余分・重複・role差替え・非listenerは拒否する。manager／launcherで検出した不正はruntime execなし、providerで初めて検出した不正はaccept・秘密／canonical内容読取なしとstage別に記録する。検証済みlistenerはruntimeへの固定execに必要な間だけ継承可能とし、providerが受領・検証後にCLOEXECを設定する。未知FDを単に閉じて正常起動したことにはせず、run自体を不採用にする。
+
+**socket activation後の両端認証。** managerがlistenしたsocketのclient側SO_PEERCREDにはlisten時のmanager資格が返り得るため、それを期待provider UIDと比較しない。独立設定にlistenerCustodianUid/Gid（初期system managerはroot）とproviderSenderUid/Gidを別fieldで固定する。clientは接続時のSO_PEERCREDをcustodianへ照合し、credential送信前に受けるserver challengeの全fragmentをrecvmsg／SO_PASSCREDでproviderの実送信資格へ照合し、provider独自公開鍵の署名も検証する。署名bindingにはcustodian／senderの両資格、socketGeneration／role／instance／bootと両nonceを含める。server側はaccepted socketのSO_PEERCREDでclientの接続時資格を確認し、その後の全fragmentでもSCM_CREDENTIALSを同じclient pinへ照合する。root custodianの正しいlistener＋異なるsender、またはprovider署名が正しくても異なるcustodianは拒否する。managerの作成証拠をproviderの実行artifact証明へ読み替えない。
+
+**停止・再作成。** 初期Bの配備runbookはserviceと3 socket unitを協調停止／起動し、同じlistenerをservice-only restartで暗黙再使用する操作を採用経路にしない。先に新規受付を閉じ、B3ではpin／fenceを確定し、旧serviceの全子process・accepted接続とmanagerのlistener参照を閉じてから、managerだけが固定leafのidentityを照合して回収する。旧listenerの不在／参照閉鎖が確認できない場合や未知leaf・別inodeに置換された場合は停止してoperator対応とし、単にunlinkして継続しない。再開は新socketGeneration／cookie・provider bootを要求し、旧backlog・旧接続・旧要求を新しい許可に使わない。providerはlistenerへshutdownを呼ばず自身の参照をcloseするだけとし、manager参照の閉鎖はmanagerが担う。unitがsocketなしでserviceを単独起動した場合も、自前bindのfallbackを作らず起動拒否する。
+
+これらはQB08の実行前注入拒否、QB04の任意名作成／隣接leaf削除拒否、QB17の正当FD受渡し／差替え／再作成回帰を具体化した未実装条件である。manager-owned listenerの採用に合わせQB09／QB10のcustodianとsenderの陽性・負例も更新した。既存Q2/Aはprovider自身のbind方式のままで、B方式への変更や新規native成功を今回主張しない。
+
+Q2/B設計レビュー修正の検証結果: 公開command例・既存Q2/A native・Q1 memory contractの関連117件成功。§9.79.1〜9の9小節、QB01〜QB32の一意性、QB04／QB08／QB17と両端credential条件の追記、旧filename別ACL前提の撤回を確認。diff整形検査成功。文書のみの変更であり、QB回帰は未実装、Q2/B配備・native隔離の新規実証・採用flag変更は0。
