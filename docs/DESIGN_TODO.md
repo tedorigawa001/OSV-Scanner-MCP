@@ -2762,3 +2762,17 @@ C3aレビュー修正の最終検証: 対象2 files／184 tests成功。全体�
 - 回帰41件を追加（C3a計225件）。runtime検査（失効確認・durable保存・実測）はC3b／C3dに残る。
 
 e4577c0レビュー修正の検証結果: 対象225件、全体4,937 tests成功（1,418 skipped）。型検査・build成功。
+
+### C3b service分離・認証sessionの実装単位（設計）
+
+- §9.93へrole固有OwnerConfig／Signer／OwnedStore・公開credential registry・明示client portを具体化。C1全owner／全private key表とC0共有pending表を本番serviceへ持ち込まない。
+- server所有challenge／client私有pending reply、session／sequence／一回消費・durable operation retryの分離、runtime認可／live view／in-flight追跡を規定。
+- control-readyと復旧専用portにより起動の相互待ちを解消し、Anchorがissuer private rootを開かない責任分離を明記。AbandonEnrollment・5秒予算／request残枠・authority予約／ACKの接続も後続unitへ割当て。
+- 実装順はC3b-0 port／schema→1 session二者process→2 registry／単一role store→3 provider／issuer→4 authority失効／handoff→5 C2接続・use／ACK。**次はC3b-0**。
+- CB01〜CB44は設計条件・未実装。今回のservice配備・新規native実行・採用flag変更は0。C3c／C3d／C4と長期運用向けGC／compactionは残る。
+
+C3b実装単位設計の検証結果: §9.93.1〜10の10小節、C3b-0〜5の順序、CB01〜CB44の一意性・欠落なしと末尾配置を確認。既存C0 control／C2 bridge／C3a auxiliary・deploymentの4 files／399 tests成功（41.99秒）。diff整形検査成功。今回は設計書・TODOのみの変更で、CB回帰実装・新service／認証sessionの実装・配備・native実行・採用flag変更は0。
+
+C3b設計レビュー修正: §9.93.11で業務K／Dと保存stageのtransition key／digest・expectedHead・前stage receiptを分離。同じPrepareHandoffの2段階保存と、後続head前進後の旧stage再送を区別する。§9.93.12で応答紛失時の旧channel終了→同bootの新session→元業務要求retryを規定し、sequence欠番許容による回復を禁止。CB15／CB18／CB20／CB34／CB39を更新し、回復コスト・回数上限を予算へ課金。今回は設計のみ。
+
+C3b設計レビュー修正の検証結果: §9.93.1〜12の12小節、C3b-0〜5の順序、CB01〜CB44の一意性・欠落なしを確認。既存C0 control／C2 bridge／C3a auxiliary・deploymentの4 files／399 tests成功（47.38秒）。diff整形検査成功。文書のみの変更で、stage保存・session回復・追加回帰条件のruntime実装とnative実証は未実施。

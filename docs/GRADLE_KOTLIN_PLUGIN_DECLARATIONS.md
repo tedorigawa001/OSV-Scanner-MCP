@@ -5942,3 +5942,195 @@ static runnerのcase条件はCN01〜CN42を受理し、未定義のCN43を拒否
 回帰41件を追加（対象2 files計225件）。ReadContextの前進受理・初回read・lineage交換・floor、AbandonEnrollmentの束縛と改変拒否、予算profileの各違反、CN41／CN42の記録を検査する。修正前のsourceでは、新規・形状変更の対象38件がすべて失敗することを確認した。
 
 e4577c0レビュー修正の最終検証: 対象2 files／225 tests成功。全体は`npx vitest run --maxWorkers=2`で123 files／4,937 tests成功、24 files／1,418 tests skipped。型検査・build成功。公開auxiliary moduleに秘密署名処理が入っていないことを確認。新規native実行・本番採用は0。
+
+### 9.93 C3b：service分離・認証sessionの実装単位（設計）
+
+#### 9.93.1 対象・基準・成果の境界
+
+C3a追加修正commit `d34311a`（225回帰、§9.92.5）を基準とする。今回はissuer／registry／provider／authorityの所有分離、認証session、再送防止、live pin確認を実装単位と入出力・回帰条件まで具体化する設計であり、新service／session／native実証の実装ではない。C3aのstatic grant・署名確認をlive権限へ昇格させず、既定transport・採用flag・originalReadsSkipped=0を維持する。
+
+C3bの到達点は、別process・有界のローカルtransport／保存障害対照によって、全秘密鍵やmemory objectを共有しないservice境界を検証すること。別UIDのOS隔離・実listener FD観測・外部Anchorのrollback domain・5秒予算のnative性能成立はC3c／C3d／C4の別証拠とする。同UID child-process試験を「他rootへアクセス不能」の証拠に数えない。
+
+#### 9.93.2 現行実装から分離する責任
+
+`OwnedCurrentDisk.open`はissuer／registry／anchorの全rootとkeyを開き、全roleのserver private keyを受け取る。startはCurrentControlと全actorを生成し、Anchor CASもissuer／registryのimageを直接読む。CurrentControlのrequest／dispatch／acceptは同一instanceのpending challenge表に依存する。この構成をそのままchildで起動しただけではservice分離にならない。
+
+C3bでは以下の**提案port**へ分ける。名前は実装時の候補で、既存interfaceを変更済みとはしない。
+
+| owner／kernel | 私有状態・入力credential | 外向きport／出力 | 渡してはいけないもの |
+| --- | --- | --- | --- |
+| ProviderOwner | namespace root・seal／use ledger、provider server/client署名handle、当該rootのjournal鍵・source検証material | RegistryBindingClient、IssuerPrepareClient。exact candidate／selected bytes、seal／inventory、use receipt | issuer／registry／authorityのprivate key・root handle、採用を決めるlocal pointer |
+| IssuerOwner | issuer root・prepare／operation履歴、issuer server/client署名handle、登録source検証key | ProviderCheckpointSourceClient、RegistryBindingClient。同期保存済みPreparedCheckpoint／ReadWitness | providerのfilesystem handle、registry state object／採用権限 |
+| RegistryOwner | registry root・R／semantic result／pin／writer／barrier履歴、registry server/client署名handle | IssuerEvidenceClient、AnchorClient、登録serviceの公開boot情報。durable selection／grant／decision | 他ownerのprivate key、issuer／providerの直接IO、authority terminalの自己生成 |
+| AuthorityOwner | A1/A2 authority root・session／scope・予約／revoking・結果履歴、broker server/client署名handle | RegistryHandoffClient、ProviderUseClient、限定source transfer。full G0/G2検証後のgate／結果 | reader ACK鍵、registry採用権限、wireから渡されたWeakMap handle |
+| AnchorClient／別Anchor owner | registry側は公開pinと限定client鍵のみ。Anchor側は独立CAS履歴と自身の署名／保存鍵 | exact read／CAS／origin query | registry／issuer rootへのread権限、controllerの既知digestをfresh Anchorとするadapter |
+
+各ownerの生成入力はrole固有config、私有Signer handle、単一root pairのOwnedStore handle、公開credential registry、明示client portsだけにする。`Record<CurrentRole, privateKey>`・全actor生成factory・全owner配列をproduction kernelへ渡さない。Signerは登録domain／方向／roleの署名だけを許し、任意role署名のAPIを持たない。source MAC materialはservice認証鍵と区別し、配備範囲をprofileへ明記する（§9.91.2）。組立順は公開config／bootstrap検証→起動preflight成功→own key loader／own store open→owner生成とし、Signer／Storeを得るためにpreflight前の秘密key・業務root readを必要とする循環を作らない。C3b-0の承認handleはprocess内の私有値とし、JSONのapproved=trueでは生成できない。
+
+共有化するものはpure schema／canonical encoding／full replay／公開署名検証と、単一owner向けjournal primitive。C0/C1 fixtureは参照対照として保持し、本番serviceでfixture全体をimportしない。各ownerのstore／checkpoint root・key ID・storage instance・lock・lifecycleを固定し、別rootの自動探索や同名keyからの代行をしない。
+
+#### 9.93.3 保存port・boot・受付状態
+
+OwnedStoreの最低portを`assertOpen()`（同期・非IO）、`recover()`、`readCommitted(ref)`、`commitStageExact(StageCommitRequest)`、`close()`とする。業務operation keyと保存stageのtransition keyを分ける。同transition／digestは保存済みの元stage receiptを返し、後段stageは別のtransitionとして処理する。異なる内容での同transition再使用、前stage／期待head不一致を拒否する。詳細は§9.93.11に定義する。保存開始前の確定入力拒否と、write開始後の不明結果／同期障害を区別する。後者はfail-stop、全await後のowner／認可／期限再検査に失敗した応答は成功署名しない。close中のqueue・in-flightも追跡し、旧ownerの保留replyを新ownerから返さない。
+
+service lifecycleは`created → preflight → recovering → control-ready → operational`、停止側は`draining → closed`、故障は`blocked`。preflight前に鍵／業務rootを読まない。recoveringのmaintenance IOはroot-owned復旧処理として記録し、reader gateの成功に数えない。blockedは再接続や新challengeで解除せず、明示停止・再open／再検証を必要とする。
+
+復旧の相互待ちを避けるため、control-readyでは認証handshakeと**復旧専用portだけ**を許す。C3b-0で別domainのstrict schema・role表を先に定義する：ReportRecoveredは登録済みservice本人がsame boot／root／保存head／復旧outcomeをregistryへ報告し、GetRecoveryStatusはoperatorまたは登録participantが同復旧runの公開状態を照会する。いずれもsource read／pin／prepare／handoff／serving権限を発行しない。bootはmanagerの独立署名登録とoperator承認に一致するものだけを受け、報告の自己申告でpeer pinを更新しない。
+
+serviceのoperational（endpoint処理可能）と、lineageのserving（通常read可能）を別fieldにする。operationalへの移行はown-store復旧・承認boot／peer設定・必要な復旧報告の照合までで、lineageのbarrier完了を条件にして相互待ちを作らない。operationalでもlineageがdraining／frozenなら通常pin／handoffは拒否し、operatorのbarrier管理だけを許す。新規lineageはuninitializedのままoperatorのBeginEnrollmentを受け、provisioningでは限定fenceによるcandidate／issuer prepareとActivateEnrollmentだけを進める。初回genesisにResumeServingを要求せず、readはActivateEnrollmentのdurable成功後だけ許可する。
+
+起動順はAnchor準備→各ownerのprivate root認証→registryのAnchor／全R照合と旧handle失効保存→provider／issuer／authorityのown-store復旧報告→管理endpointのoperational化→既存barrierの停止／完了解決→旧servingの再開なら明示ResumeServingとする。issuerのown-store復旧報告に通常のserving pinを要求しない。provider／issuerの原本再検証に必要な復旧readは、operatorが同restart barrier・exact root／snapshot・対象boot・read-only用途へ委譲したmaintenance requestに限る。通常reader readと同じgrantを使わず、未解決effect／旧bootの失効を省略しない。
+
+#### 9.93.4 credential registryと認可の入出力
+
+公開credential registryは独立Deployment／Enrollment digestに束縛し、credential ID→role／instance／boot／key ID／key epoch／direction／公開key／endpoint／許可API・purpose・対象lineage・委譲先を引く閉じた表にする。受信bodyのroleやkey IDから未知keyを登録しない。C3a AuxiliaryPinの完全identity・方向の照合をこの表に接続し、request用client鍵とreply用server鍵を分ける。private keyのregistryではない。
+
+Authenticatorは`wire bytes + transport peer evidence + pinned deployment + current lifecycle`を受け、`AuthenticatedRequest`か正確な拒否を返す。AuthenticatedRequestはprocess内の私有handleで、実認証identity／direction・channel binding・origin operation digest・deadline・再送状態を含む。JSONの同shapeでは生成できない。kernelへ渡す直前にもcurrent credential epoch／Enrollment permissionを検査し、queue待ち中に取消された権限を使わない。
+
+C3aのpayloadDigest付きstatic grantは、live runtimeの認可判断を代行しない。RuntimeAuthorizerは独立Enrollment、認証identity、APIのstrict payload、registryの対象pin／fence／scope、必要な委譲を照合し、exact payload digestを自身で計算して検証portへ渡す。requestがstatic grantやpermission名を自己申告しても採用しない。許可済みpeerでもReadForCheckpoint／ReadSealedSource／RecordUse／ACKの権限を交換できない。
+
+#### 9.93.5 認証session・challenge・sequence
+
+C3b-0で新しい`osv-mcp.q2.c3b.auth.v1` domainのhandshake／channel frameをstrictに定義する。C0／current-auxの既存署名bodyを暗黙変更せず、inner wireのexact bytes digestを外側channel frameへ束縛する。両端署名、pin identity、endpoint／deployment／Enrollment／profile、両端boot、client nonce・server nonce・session ID、transcript digest、方向・sequence・期限を照合する。session IDはserverが256-bit乱数で生成する。raw timestampの異なるclock間比較はしない。
+
+SessionServerは自身のprocess内にchallenge・sequence・pending表を所有し、SessionClientは別の私有pending-reply表を持つ。同じmap、actor handle、秘密鍵を共有しない。C3b-1のlocal-process試験もこの条件を守る。transport peer evidenceは明示portから受け、試験のsynthetic peer evidenceとC3c/dのkernel-observed evidenceをタグで区別する。syntheticだけでnative flagを立てない。
+
+初期profileは1 channel内の業務requestを直列化し、同時に1件だけを未完了にする。複数peerは別channelとして扱う。channel内は方向別sequenceが厳密に1ずつ増加し、重複・飛び・逆行・counter overflowを拒否する。候補上限はsession寿命30秒／channel256業務要求、単一要求最大5秒、peer pending16／全体64。既存下位上限との最小値を使い、session作り直しでboot内上限やpin予算を再生成しない。これらは提案runtime定数でありC3aで実装済みの定数ではない。
+
+各業務requestにはserver発行のone-shot challengeを必要とする。clientはintent／operation ID・元payloadを先に固定し、session内でAPI／方向・origin request digestのchallengeを要求する。serverは認証identity・許可APIの入口と容量を確認してから、challengeをsession／両端boot／API／origin digestへ束縛して発行する。この段階で対象原本・operation内容は読まない。
+
+challengeは`issued → reserved → consumed`または`expired`で、完全frame・署名・canonical／static認可を検査後、dispatch前に有界表でatomicにreservedへ進める。同challenge／sequenceの並行requestは1件だけを受理する。dispatch後の確定拒否でもchallengeを使い回さない。challenge応答／業務応答の紛失・受信状態不明時は旧channelをabandonedにして閉じ、同じserver bootの新sessionで新challengeを得て同logical operationを照会／再試行する（§9.93.12）。同channelでsequenceを飛ばして回復しない。無効署名は業務予約を作らず、攻撃接続の入口容量を課金する。未完了challengeは絶対期限で失効し、pendingの解放と再送検出に必要なused情報を別管理する。live session内で古いchallengeをevictして再利用可能にしない。
+
+clientはexact request ID／wire digest／challenge／sequence／origin digestを登録し、宛先serverの署名・identity・channel transcriptと一致するreplyだけを一度acceptする。requestを送信済みでも未登録replyや別session replyを受理しない。session終了・service boot更新時は全未完了replyを無効化する。時計逆行・owner close・権限取消しを最後のawait後に検査する。
+
+#### 9.93.6 transport retryとdurable operationの分離
+
+transportのchallenge／sequenceはsession内の再送防止で、business operation ledgerは保存済み効果の二重適用防止である。operation keyはorigin credential／peer／boot・宛先／API・operation IDへ束縛し、canonical semantic digestに元binding／payloadを含める。fresh challenge／request ID／sequenceはsemantic digestから除く。auxiliaryとC0は別domainで照合し、異なるdigest関数を混用しない。
+
+同じK・同じdigestの並行retryは1つの実行予約へ集約し、後続transaction後も元applied revision／exact semantic resultで解決する。Kが同じでdigestが違えばconflict。確定拒否と結果不明を構造化したauthenticated outcomeで区別し、timeout・切断・不正replyは確定拒否にしない。C2のintent別有界表に合わせ、結果不明は元IDを保持、確定拒否は解放し、別intentを単一slotで止めない。後続の独立した呼出しは新IDの別要求として通常認可する。同じ呼出し内での自動新ID・期限延長は禁止。
+
+server再起動ではsession／challenge／private handleを復元せず、新bootで旧transport replyを拒否する。一方、durable ledgerは保持し、保存済み元operationを忘れない。旧boot originの結果は明示recovery-query permissionでhistoricalに照会できるが、新sessionへlive pin／writerを移さない。server bootもintentに含むauxiliary requestは、再起動先へ同じlive requestを無理に再署名せず、新context・新認可へ進む。QueryOperationや旧signed resultだけからlive handleを作らない。
+
+#### 9.93.7 live pin・in-flight・失効の境界
+
+CheckLiveBindingはregistryのその時点の観測であり、将来の任意IO／callbackを許すtokenではない。対象ごとのowner admission queueへoperationを登録してから、認証／認可→registryへexact pin／fence・目的・委譲先照会→owner／権限／deadline再検査→限定IO→再照会／最終検査の順で処理する。await中にqueue登録を外さず、close／drain後に旧replyで新たな処理を開始しない。pinの同一性はselectionRevision／incarnation／revocationEpoch・snapshot＋checkpoint・owner／boot／purposeで判定し、無関係なcontrolRevision前進では失効させない。
+
+providerはcandidate readならProvisionFence／WriterFenceとissuer委譲、selected readならsame snapshotのreader pinを確認する。issuerはprepare開始／原本転送／checkpoint保存・reply前、authorityはsource／current terminal確認とgate予約前、provider use保存はsame durable delivery／broker／use／resultで再検査する。原本のpathをclientから受けず、snapshot proofと完全inventoryで決めたentry／offsetだけを読む。registry不能・古いview・期限切れをissuer copy／local mirror／offline署名にfallbackしない。
+
+**競合時のIOと結果を区別する。** registryのBeginBarrier確定後に初めてlive照会へ到達した要求は、原本IO前に拒否しread0にする。一方、確定前に照会を通り既にin-flightになったIOについて、分散した「直前確認」だけでbarrier後の物理read0を主張しない。そのoperationをownerと必須participant集合に保持し、最終成功・handoffを拒否する。barrier完了／root再使用はそのoperationの完了またはmanagerの実停止fencingまで待つ。成功結果の決定はregistryのhandoff順序で行い、最後に確認した時刻で代用しない。自由callback・外部effectは初期profileでunsupportedとする。
+
+readの全工程はC3aのbudget profileと1 pinの固定期限内に置く。pin取得前にclosure bytesに加えて、raw4096 bytes chunk数・challenge／署名frame数・registry再照会・業務request数・保存回数の上限を計画し、boot／session残枠と工程時間・安全余裕を確認する。不足ならpin／原本IO前に拒否する。最大64 MiBを当然に5秒で扱えるとはしない。工程遅延時は部分結果を公開せず、pin延長・再取得による継続をしない。use／ACKの前に失効した場合も成功しない。
+
+#### 9.93.8 保存・公開・authorityの後続接続
+
+registryはissuerの署名PreparedCheckpoint／inventory／継続元を公開証拠で検査し、Rを自rootへ保存してからAnchorClientでexact CASする。Anchorはregistry署名Rのref／digest／revision／previousと自身のCAS履歴を検査し、issuer private rootを直接開かない。sourceの正当性はissuer／registryの責任、Anchorは独立した採用順序とrollback保護の責任とする。C1のAnchorが同processでissuer imageを読む実装をそのまま移植しない。保存・Anchor応答が不明なら元attemptと祖先履歴で解決し、別CASで成功を作らない。
+
+AbandonEnrollmentはoperator認可、元BeginEnrollment／exact provision・incarnation、失効と未採用・ActivateEnrollment結果不明なしをregistryで確認してから、旧fence retirementとuninitializedへの復帰を1 durable遷移へ置く。issuerの旧preparedは採用不能のまま保持する。再送は同結果、TTLだけでの自動復帰はしない。
+
+authorityは§9.91.6の予約／revokingをown journalへ保存し、失効の外部確定点をregistry BeginBarrierへ結ぶ。gate生成と原本full検証をreaderの自己申告に委ねない。brokerがRecordUseを送ってproviderのdurable receiptを取得し、same result bytes／deliveryを確認したconsumerだけがACKする。これらのservice間schema・結果不明の回復と排他はC3b-4／5で実装し、それ以前のstageを全handoff成立と呼ばない。
+
+#### 9.93.9 実装順・成果物・終了条件
+
+| 単位 | 実装する入出力・成果物 | 終了条件・依存 |
+| --- | --- | --- |
+| C3b-0 | role固有OwnerConfig／Signer／OwnedStore／公開credential registry、auth/channel／recovery port／authenticated outcome、stage receipt／transition key、session回復回数のstrict schema、frame・request予算計画 | CBの静的部分を先に回帰実装。全role private key入力やraw JSON handleを拒否。実通信・隔離成立は0 |
+| C3b-1 | SessionServer／SessionClient、challenge／sequence／pending管理、明示transport adapter、私有AuthenticatedRequest | 独立した2 childで署名・資格adapter・再送／期限／closeを対照。業務storeはまだ開かず、禁止dispatch0を確認 |
+| C3b-2 | 単一roleのstore／署名ownerとRegistryKernel／AnchorClientを抽出。復旧状態機械・durable ledger・ReadContext／pin／writer／AbandonEnrollmentを接続 | 他ownerのkey／IOを渡さず、Anchor port mockと実local child adapterを区別。C1対照・再起動失効・元CAS retryを保持。provider／authority成立は未主張 |
+| C3b-3 | ProviderOwner／IssuerOwner、candidate seal／prepare、full inventory／chunk assembler、exact selected read、registry採用後mirror | genesis／advance双方の正常公開、原本改変・別namespace・保存故障・mirror修復。issuerへpath／root handleを渡さない |
+| C3b-4 | AuthorityOwnerのfull G0/G2・live terminal／gate予約／revoking、registry handoff／barrierとの連携 | 失効前後の決定順序、旧terminal残存、途中停止・unknown予約を回帰。read-only結果以外のeffectはunsupported |
+| C3b-5 | C2 client adapterへ接続、broker RecordUse・result転送・consumer ACK、全工程予算・shutdown／recovery | actor factory・全秘密鍵共有なしの複数child end-to-end、正常／応答紛失／保存障害対照。C3aとC2の既定経路は維持 |
+
+C3b-2のAnchor local childは独立rollback domainの証拠ではない。実backend適合はC3c／C3d／C4へ残す。各単位でsource fingerprint、対象／全体回帰、process数・実dispatch／IO・保存／応答順を検証記録へ保存し、memory mock／local child／native observedを別集計する。**次の着手点はC3b-0**。C3b全体を一度に実装済みとせず、実装途中はservice routeをroot applicationの明示注入だけに限定する。
+
+#### 9.93.10 回帰条件（CB01〜CB44、すべて設計条件・未実装）
+
+| ID | 条件・期待結果 |
+| --- | --- |
+| CB01 | role固有config以外の全private key表・全actor factory・他owner IOの注入をschema／組立段階で拒否 |
+| CB02 | 各processのSignerがown role／domain／方向だけを署名し、他role・任意body署名依頼を拒否 |
+| CB03 | issuer／registry／provider／authorityのroot pair・key／storage instance・lifecycleの交換と共有を拒否。native DAC未実証は明示 |
+| CB04 | preflight／承認前の鍵・業務root read0、復旧maintenance IOとreader IOを別集計 |
+| CB05 | issuer復旧にserving pinを要求せずcontrol-readyへ進め、復旧専用portから通常read／pin／grantを発行できない。endpoint operationalとlineage servingを区別し、新規genesisと旧servingのrestart双方が相互待ちなく進む |
+| CB06 | 未承認bootの復旧報告・自己申告key／endpoint更新を拒否。manager署名とoperator認可の欠落を検出 |
+| CB07 | pin identityとcredential registryのrole／instance／boot／key epoch／方向を両端照合し、別credentialの正当署名を拒否 |
+| CB08 | request供給static grant・permission自己申告・readerによるRecordUse／代理ACKをruntimeでも拒否 |
+| CB09 | server nonce／session IDがserver側で発行され、clientとpending map／actorを共有せず2 childで正常認証 |
+| CB10 | deployment／Enrollment／profile／endpoint／方向・両端bootが異なるhandshake／transcriptを再署名後も拒否 |
+| CB11 | inner wire bytesの交換、C0／auxiliary domain混用、別channel frameへのreply移植を拒否 |
+| CB12 | 業務dispatch前にone-shot challengeのAPI／origin digest／sessionを照合し、発行時の原本read0 |
+| CB13 | 同challenge／sequenceの並行2要求をatomicに一度だけreserveし、dispatchは最大1回 |
+| CB14 | sequence重複／飛び／逆行／overflowを両方向で拒否し、無期限sessionへ移行しない |
+| CB15 | 無効署名・partial frame・確定拒否・challenge応答／業務応答紛失を区別。受信状態不明の旧channelを閉じ、新sessionの正常回復と旧challenge拒否を確認。同channelのsequence飛ばし・旧frame再送で回復しない |
+| CB16 | session寿命・RPC絶対期限・slow-drip・再接続、peer16／全体64 pendingと上限＋1を検査 |
+| CB17 | session／boot内request・challenge used履歴をevictionで再利用可能にせず、上限で停止 |
+| CB18 | client未登録reply・別request／nonce／sequence・二度目acceptを拒否。新session確立後の旧reply遅延到着は新pendingを完了させず、同boot／元業務要求のfresh challenge retryだけ許可 |
+| CB19 | queue待ち中と各await後のcredential取消し・owner close・clock逆行で成功reply0 |
+| CB20 | 同K／digestの並行retryと後続transaction後の照会が元結果へ収束。同Kの異なる保存stageは進行し、同transitionの再送は旧receiptだけを返す。新session retryと旧channel in-flightの競合で二重業務適用0、別digestの同Kは拒否 |
+| CB21 | 確定拒否だけ保留を解放し、timeout／切断／不正replyは元IDを保持。別intentを阻まない |
+| CB22 | 後続の独立要求の新IDは通常認可し、同呼出し内の自動新ID／lease延長を拒否 |
+| CB23 | service再起動で旧session／challenge／raw replyを拒否し、durable origin ledgerを保持 |
+| CB24 | recovery-queryは明示許可でhistoricalだけ返し、旧bootのpin／writerを新sessionへ移さない |
+| CB25 | providerのcandidate genesis／advanceとselected readのfence／pin・issuer委譲をruntimeで分離 |
+| CB26 | live viewはselection／incarnation／revocation／exact pairを照合。無関係なcontrolRevision前進ではpinを失効させない |
+| CB27 | registry不能・期限切れ・旧viewではIO前拒否し、issuer copy／local mirrorへfallbackしない |
+| CB28 | barrier確定後にlive gateへ到達した要求は原本read0。確定前in-flight IOは追跡し、最終成功／handoffを拒否 |
+| CB29 | in-flight／unknown operationが残る間はConfirmFenced／barrier完了／root再使用を拒否し、TTLだけで消さない |
+| CB30 | full inventoryと各chunkのentry／範囲／順序／total／digest・same pinを照合し、partial／混入bytesからproofを作らない |
+| CB31 | 原本改変・未知entry・root／namespace交換・署名は正しい旧sealを拒否。正常full read対照あり |
+| CB32 | issuer prepareの保存／同期前に採用成功なし。registryは公開issuer証拠で照合し他rootへ直接readしない |
+| CB33 | Anchorは公開Rとexact CASを照合し、issuer private imageを要求しない。応答紛失と後続R後も二重CAS0 |
+| CB34 | 各stageのwrite／file sync／directory sync／readback／owner close後の成功署名0。stage receipt公開前後の停止／応答紛失を検査し、同transitionのexact内容・前stage receipt・期待headを束縛。後続head前進後の再送で旧imageを書き戻さない。入力拒否とfail-stopを区別 |
+| CB35 | registry復旧で全R／Anchor照合と旧handle失効保存前にserving0。元frozen／retiredは再開しない |
+| CB36 | AbandonEnrollmentは失効・元operation・未採用・結果不明なしを確認してdurable復帰。同ID結果一回、旧fence採用不可 |
+| CB37 | provider seal→issuer prepare→registry／Anchor採用→mirrorの順と、mirror失敗後のfresh repairを複数childで確認 |
+| CB38 | authority sourceが有効でもlive session／scope／terminal失効ならgate拒否。原本full検証をreader自己申告で代替しない |
+| CB39 | gate予約／revoking保存・registry BeginBarrierとhandoffの先後を照合。same業務Kでcompleting保存→decision-recorded保存が別stageとして完了し、stage間停止・並行retry・失効でpendingを成功へ誤昇格せずunknown予約を保持 |
+| CB40 | brokerのuse保存・結果bytes／delivery照合・consumer本人ACKの順を強制し、途中失敗・応答紛失で新規成功再配達0 |
+| CB41 | pin前にclosure・chunk／署名／challenge／再照会／request数と残枠を検査し、上限超過はpin／原本IO0 |
+| CB42 | 全工程の5秒予算・安全余裕・局所deadlineを検査。遅延／失効時の成功0、pin再取得による継続なし |
+| CB43 | shutdown／drain後の旧await再開・FD／session残存・不明effectを完了扱いにしない。local childとnative停止証拠を区別 |
+| CB44 | memory mock／local-process／nativeのscope・source receipt・検証件数を照合。未実施隔離／Anchor独立性／本番採用flagを拒否 |
+
+CBはCN01〜CN42・IC01〜IC51を実装単位へ落とした追加条件であり、既存225件をCB native成立件数へ振り替えない。各条件の静的／local-process／native部分を別に報告する。実装開始時はC3b-0のschema／port検証を先に置き、後続unitの条件は未実装として残す。
+
+C3b実装単位設計の検証結果: §9.93.1〜10の10小節、C3b-0〜5の順序、CB01〜CB44の一意性・欠落なしと末尾配置を確認。既存C0 control／C2 bridge／C3a auxiliary・deploymentの4 files／399 tests成功（41.99秒）。diff整形検査成功。今回は設計書・TODOのみの変更で、CB回帰実装・新service／認証sessionの実装・配備・native実行・採用flag変更は0。
+
+#### 9.93.11 レビュー修正：業務operationと保存stageの冪等性
+
+業務key `K`とsemantic digest `D`は§9.93.6のまま保持し、業務ledgerの状態をpending／committed／確定拒否等として追跡する。一方、単一業務要求内の保存はstage単位とし、`transitionKey=H(domain, ownerId, storageEpoch, K, stageId)`を使う。stageIdはAPIごとの閉じた遷移表の識別子で、chunk等の反復はschemaに束縛したordinalを含める。再送時に乱数や新ordinalを作って別保存へ逃がさない。
+
+StageCommitRequestの必須fieldはAPI・operationKey(K)・requestDigest(D)・stageId・transitionKey／transitionDigest・expectedHead・previousStageReceipt ref・nextImageとする。ownerId／storageEpochはown storeの固定configから取り、callerによる交換を許さない。`transitionDigest`はdomain・K／D・stageId・expectedHead（初期rootはnull）・previousStageReceipt ref（初段はnull）・nextImage digestへ束縛する。nextImageは業務状態payloadで、現在のStageRecord／StageReceiptをdigest対象へ埋め込まない。保存するStageRecordはowner／storage epoch・K／D・stageId・transition key／digest・前stage ref・expectedHead・nextImage digest・stage outcomeを持ち、自分を含むcommitのheadや自分のreceipt refを含めない。StageReceiptは、このStageRecord refと適用後のcommit headから**commit後に導出**する有界の保存証拠とする。receiptの安定refはcanonicalな保存事実へ結び、fresh transport署名と別domain／型にする。現在のcommitへ現在のreceiptを埋め戻す自己hash循環を作らない。業務の最終成功結果とも別型にし、同じ業務要求に対してpending stage receiptとfinal stage receiptの両方が存在できる。
+
+commitStageExactの判定順は次のとおり。
+
+1. owner・認可・要求形を検査し、同transition keyの保存済みreceiptを先に照会する。
+2. 同transitionがあればdigest・expectedHead・previousStageReceipt・nextImage digestの全一致を要求し、**元receiptを返すだけ**とする。現在headが後続stage／他operationで前進していても旧imageを再保存しない。異内容の同transitionはidempotency conflict。
+3. 未保存transitionなら、current committed headがexpectedHeadに一致し、previousStageReceiptがsame K／Dの直前許可stageで、stage遷移表に沿うことを確認する。後段を先に保存すること、別K／別ownerのreceipt転用を拒否する。
+4. nextImageとStageRecord／業務ledger更新を単一owner内の同じdurable commitへ収録する。同期・再読取したStageRecordと実commit headから同じsemantic StageReceiptを導出し、認証replyに束縛して返す。commit後・receipt返却前の停止も、復旧時は同transitionの検証済みStageRecord／commitから元receipt事実を再構成し、業務保存を再実行しない。write／同期障害後は未知結果としてfail-stopする。
+
+複数ownerをまたぐ処理を1つのローカルcommitと呼ばない。issuer prepare／registry R保存／Anchor CASにはそれぞれの保存証拠と前後関係を必要とする。Rの保存receiptだけをAnchor採用やlive selectionの証拠にしない。旧bootのstage receiptは内容・保存事実の履歴証拠であり、新bootのlive fence／実行許可を再発行しない。
+
+具体例としてPrepareHandoffは、同じK／Dで`handoff-completing`（pending、pinの保持・broker／use束縛）→`handoff-decision-recorded`（最終decision）の2stageへ分ける。後段は初段receiptと最新expectedHeadへ結び、途中のlive pin／失効確認を省略しない。初段保存後の停止では最終成功を返さず、registry復旧規則でpending／旧handle失効・barrierへ引き継ぐ。同stageの再送は重複適用せず、後段正常保存は初段の再送として抑制しない。CB20／CB34／CB39はこの正常対照、各stageの公開前後停止、並行retry、後続head前進後の旧stage再送を別caseにする。
+
+#### 9.93.12 レビュー修正：応答紛失後のchannel／sequence回復
+
+方向別の厳密sequenceは**同じsession内**の規約である。clientがserverの応答をacceptできたか不明な状態では、次の応答sequenceを推測しない。challenge応答または業務応答の紛失・truncated／不正reply・接続断・期限到達では、clientは旧channelをabandonedにして閉じ、旧sessionのpending replyを成功へ移せない状態にする。serverも切断したchannelの未使用challenge／sessionを無効化する。実行済み／in-flightの業務予約・durable ledger・不明holdはchannel終了だけでは削除しない。
+
+同じserver boot／credential epoch・承認endpointで、元operationの期限・pin残時間・回復回数／request枠に余裕がある場合だけ、新client nonce・新server nonce／session IDでhandshakeをやり直す。新channelの方向別sequenceは1から開始するが、boot内request count・元要求のlocal elapsed deadline・pinの期限はリセットしない。inner wireに独立したboot内sequenceがある場合も、そのcounterをchannel sequenceと混同して戻さない。
+
+新sessionでは同じK／D・元binding／payloadを維持し、新しいchallenge・request ID／transport sequenceで再試行する。業務要求の元IDを作り直さない。旧server bootが変わっていればこの回復経路を使わず、§9.93.6のhistorical recovery-query／新認可へ分岐する。初期profileの同一業務要求内でのsession回復は最大1回とし、C3b-0で閉じた上限に固定する。上限超過・予算不足では新sessionを繰り返さず結果不明を保持し、同呼出し内で新pinを取得しない。
+
+| 紛失点 | 旧sessionの扱い・新sessionでの処理 |
+| --- | --- |
+| challenge応答がclientへ未到着 | 旧channelを閉じ、未使用challengeを再利用しない。業務frame未送信ならdispatch0。新sessionで同intentのchallengeを取得 |
+| 業務応答が保存／署名後に未到着 | 旧channelを閉じ、元業務は結果不明。新sessionの同K／Dはdurable ledgerの元結果へ収束し、適用回数・元期限を増やさない |
+| 旧業務がまだ実行中 | 新sessionの同K／Dを同じ実行予約へ集約。旧channelのcloseを理由に新たな業務実行・保存stageを作らない |
+| 確定拒否のreplyが未到着 | clientは拒否と推測せず同K／Dで解決。認証済みの確定拒否を受けて初めてC2保留を解放する |
+| 旧replyが新session後に遅延到着 | session ID／transcript／pending request不一致で拒否。新pendingのsequenceを進めず、成功や二度目acceptにしない |
+| deadline／pinが既に失効 | 同呼出しの回復・live成功は不可。保存済み事実はhistoricalとしてのみ扱う |
+
+serverの古いreplyを新channelへ再送してsequenceを合わせたり、同channelで欠番を許したり、未受理の旧frameを再利用して回復しない。新sessionのreplyはfresh channelへ署名・束縛し直すが、業務semantic result ref／applied revisionは元のものを保持する。existing-live-confirmedが必要なAPIでは元grantのlive再確認を行い、historical結果をlive tokenへ変換しない。
+
+CB15／CB18／CB20では、challenge応答・保存済み業務応答・確定拒否replyの紛失、旧業務実行中の切断、新session後の旧reply遅延到着、回復前後の失効を実行可能条件にする。正常対照は余裕時間内の新session回復で、同channelへの欠番応答受理を正常としない。CB16／CB17／CB41／CB42のsession／boot上限・5秒予算にもhandshakeや再challengeの追加コストを課金する。
+
+C3b設計レビュー修正の検証結果: §9.93.1〜12の12小節、C3b-0〜5の順序、CB01〜CB44の一意性・欠落なしを確認。既存C0 control／C2 bridge／C3a auxiliary・deploymentの4 files／399 tests成功（47.38秒）。diff整形検査成功。文書のみの変更で、stage保存・session回復・追加回帰条件のruntime実装とnative実証は未実施。
