@@ -2544,3 +2544,10 @@ B1bの検証結果: 新規37 Vitest回帰とLinux起動30 controls、systemd 255
 - 修正前のstdio受理／領域外変更のREDと、修正後のcanary不変を確認。root file・pipe・peer差替え11件、path拒否／既存mode保持16件、別pinのentry witness対照1件を追加。guardを外した変異版もentry witnessで検出した。Linux native計58・通常B1bテスト計65件へ更新。VM boot／独立隔離・本番採用は未成立のまま。
 
 B1bレビュー修正の検証結果: 追加28 native controlsで計58件、通常B1bテストは追加28件で計65件成功。全体112 files／4,284 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。5 unitの構文再検証・同一static ELF hash、58 case閉包・source hash・§9.81の6小節、本番buildへのfixture非収録を確認した。修正前のstdio／親symlinkのREDと、launcher guard変異版をentry witnessで検出する対照も成功。既存の別変更は保持し、B1b追加件数へ算入しない。実VM boot／独立隔離／本番採用は未成立のまま。
+
+### 2026-11-03: 155fa89レビュー修正・B1a bootstrapの作成主体訂正
+
+- §9.80.9で、§9.80.8のbootstrap前提（launcher作成・provider所有・manager phase不在）をB1bの実装どおり「root managerが資格降下前に作るsealed read-only memfd、全phaseでFD 6にroot所有で存在」へ訂正。mechanismを`manager-memfd`とし、`launcher-memfd`／`open-file`を拒否。
+- B1a合計190件。bootstrap本文とlaunch digestの対応はB1c（§9.81.5）で統一する。
+
+155fa89レビュー修正の検証結果: B1a回帰190件成功。全体112 files／4,285 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。

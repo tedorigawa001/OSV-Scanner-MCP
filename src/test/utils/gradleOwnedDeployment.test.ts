@@ -19,7 +19,7 @@ function fixture() {
     execution: { launcher: image + '/launcher', runtime: image + '/runtime', entrypoint: image + '/entrypoint', cwd: image,
       launcherArgv: [image + '/launcher', '--profile', 'profile', '--instance', 'instance'], runtimeArgv: [image + '/runtime', '-I', image + '/entrypoint'],
       credentialDirectory: '/run/credentials/osv-q2b-instance.service',
-      bootstrap: { mechanism: 'launcher-memfd', fd: 6, sealed: true, readOnly: true }, shell: false, inheritEnvironment: false, dynamicFdStore: false },
+      bootstrap: { mechanism: 'manager-memfd', fd: 6, sealed: true, readOnly: true }, shell: false, inheritEnvironment: false, dynamicFdStore: false },
     roots: ['provider', 'checkpoint', 'registry', 'evidence'].map((role, i) => ({ role, path: '/var/lib/osv-q2b/' + role + '/instance', ownerUid: role === 'evidence' ? 0 : (principals as any)[role].uid, kind:'directory', mode: 448, ancestorWriters: [0], writers: [role === 'evidence' ? 0 : (principals as any)[role].uid], device: '1', inode: String(10 + i), newPrivate: true })),
     endpoints: ['reader', 'upload', 'publish'].map((role, i) => ({ role, path: '/run/osv-q2b/instance/' + role + '.sock', unitPath: image + '/' + role + '-unit', groupGid: 1202 + i, ownerUid: 0, mode: 432, directoryWriters: [0], accept: false, passCredentials: true, fileDescriptorName: role })),
     limits: { frameBytes: 4096, connectionMs: 2000, pending: 64, requests: 2 },
@@ -97,14 +97,14 @@ function runFixture() {
     environment: [{name:'LANG',value:'C'},{name:'LC_ALL',value:'C'},{name:'CREDENTIALS_DIRECTORY',value:m.execution.credentialDirectory},{name:'LISTEN_PID',value:'700'},{name:'LISTEN_FDS',value:'3'},{name:'LISTEN_FDNAMES',value:'reader:upload:publish'}],
     fds: [{ fd: 0, kind: 'stdio', target: 'null' }, { fd: 1, kind: 'stdio', target: 'controller-log' }, { fd: 2, kind: 'stdio', target: 'controller-log' },
       ...launch.listeners.map((x: any) => ({ ...x, kind:'listener', socketGeneration: launch.socketGeneration })),
-      {fd:6,kind:'bootstrap',ownerUid:1101,readOnly:true,sealed:true,launchDigest:h(launchBytes)}],
+      {fd:6,kind:'bootstrap',ownerUid:0,readOnly:true,sealed:true,launchDigest:h(launchBytes)}],
   };
   const events = [
     ['manager','gate-begin'],['manager','gate-pass'],['launcher','exec'],['launcher','gate-begin'],['launcher','gate-pass'],
     ['provider','exec'],['provider','gate-begin'],['provider','gate-pass'],
   ].map(([stage, kind], i) => ({ seq:i+1, stage, kind, pid:700, uid:stage==='manager'?0:1101 }));
   const diagnostic = { schema:'osv-mcp.q2b.diagnostic.v1', mode:'synthetic-static', runId:'run',caseId:'honest',manifestDigest:manifest.manifestDigest,launchDigest:h(launchBytes),
-    observations: ['manager','launcher','provider'].map(phase => { const o: any = {phase, ...structuredClone(observation)}; if (phase === 'manager') o.fds = o.fds.filter((x: any) => x.kind !== 'bootstrap'); return o; }), events,
+    observations: ['manager','launcher','provider'].map(phase => ({phase, ...structuredClone(observation)})), events,
     claimed: {status:'accepted',stage:'provider',reason:'preflight-accepted'},
   };
   const expectation = {runId:'run',caseId:'honest',launchDigest:h(launchBytes),status:'accepted',stage:'provider',reason:'preflight-accepted'};
@@ -406,10 +406,11 @@ it('does not equate socket owner GID with the root listener custodian GID',()=>{
 it.each([
   ['default unit FD name', (m: any) => { m.endpoints[0].fileDescriptorName = 'upload'; }],
   ['systemd OpenFile bootstrap', (m: any) => { m.execution.bootstrap.mechanism = 'open-file'; }],
+  ['launcher-created bootstrap', (m: any) => { m.execution.bootstrap.mechanism = 'launcher-memfd'; }],
   ['unsealed bootstrap', (m: any) => { m.execution.bootstrap.sealed = false; }],
   ['writable bootstrap', (m: any) => { m.execution.bootstrap.readOnly = false; }],
   ['bootstrap outside fd 6', (m: any) => { m.execution.bootstrap.fd = 7; }],
-])('pins the systemd FD names and the launcher memfd bootstrap in the manifest: %s', (_name, change) => {
+])('pins the systemd FD names and the manager memfd bootstrap in the manifest: %s', (_name, change) => {
   const f = fixture(); change(f.manifest); expect(() => verify(f)).toThrow(/q2b_(endpoint|execution|schema)_invalid/);
 });
 it.each([
@@ -420,13 +421,13 @@ it.each([
   const f = rejection('manager', mutate, 'execution_invalid');
   expect(verifyRun(f)).toMatchObject({ status: 'rejected', stage: 'manager', reason: 'execution_invalid', launcherExecCount: 0, runtimeExecCount: 0 });
 });
-it('rejects a bootstrap FD that already exists before the launcher creates it', () => {
-  const f = rejection('manager', o => o.fds.push({fd:6,kind:'bootstrap',ownerUid:1101,readOnly:true,sealed:true,launchDigest:h('premature-bootstrap')}), 'fd_invalid');
+it('rejects a manager phase that reaches the first launcher exec without the root-owned bootstrap', () => {
+  const f = rejection('manager', o => { o.fds = o.fds.filter((x: any) => x.kind !== 'bootstrap'); }, 'fd_invalid');
   expect(verifyRun(f)).toMatchObject({ status: 'rejected', stage: 'manager', reason: 'fd_invalid', launcherExecCount: 0 });
 });
 it.each([
   ['unsealed', (o: any) => { o.fds.find((x: any) => x.kind === 'bootstrap').sealed = false; }],
-  ['root-owned file instead of the launcher memfd', (o: any) => { o.fds.find((x: any) => x.kind === 'bootstrap').ownerUid = 0; }],
+  ['owned by the provider instead of the root manager', (o: any) => { o.fds.find((x: any) => x.kind === 'bootstrap').ownerUid = 1101; }],
   ['missing after the launcher', (o: any) => { o.fds = o.fds.filter((x: any) => x.kind !== 'bootstrap'); }],
 ])('rejects a launcher-phase bootstrap that is %s', (_name, mutate) => {
   expect(verifyRun(rejection('launcher', mutate, 'fd_invalid'))).toMatchObject({ status: 'rejected', stage: 'launcher', reason: 'fd_invalid', launcherExecCount: 1, runtimeExecCount: 0 });

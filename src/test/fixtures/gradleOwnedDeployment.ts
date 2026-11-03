@@ -31,8 +31,9 @@ const manifestSchema = z.object({
   artifacts: z.array(artifact).min(8).max(DEPLOYMENT_LIMITS.artifacts),
   execution: z.object({ launcher: path, runtime: path, entrypoint: path, cwd: path,
     launcherArgv: z.array(z.string().max(1024)).max(8), runtimeArgv: z.array(z.string().max(1024)).max(8), credentialDirectory: path,
-    // The fixed launcher creates the bootstrap as a sealed read-only memfd at fd 6; systemd passes only the 3 listeners.
-    bootstrap: z.object({ mechanism: z.literal('launcher-memfd'), fd: z.literal(6), sealed: z.literal(true), readOnly: z.literal(true) }).strict(),
+    // The root manager creates the bootstrap as a sealed read-only memfd at fd 6 before dropping credentials;
+    // systemd passes only the 3 listeners.
+    bootstrap: z.object({ mechanism: z.literal('manager-memfd'), fd: z.literal(6), sealed: z.literal(true), readOnly: z.literal(true) }).strict(),
     shell: z.literal(false), inheritEnvironment: z.literal(false), dynamicFdStore: z.literal(false) }).strict(),
   roots: z.array(z.object({ role: z.enum(['provider', 'checkpoint', 'registry', 'evidence']), path, ownerUid: uid,
     kind: z.literal('directory'), mode: z.literal(448), ancestorWriters: z.tuple([z.literal(0)]), writers: z.array(uid).length(1), device: decimal, inode: decimal, newPrivate: z.literal(true) }).strict()).length(4),
@@ -178,8 +179,8 @@ function evaluate(m:Manifest, l:Launch, launchDigest:string, o:Observation):z.in
   if(!same(sortEnv(o.environment),sortEnv(env))||!same(o.launcherArgv,m.execution.launcherArgv)||!same(o.runtimeArgv,m.execution.runtimeArgv)||o.cwd!==m.execution.cwd)return 'execution_invalid';
   const wanted=[{fd:0,kind:'stdio',target:'null'},{fd:1,kind:'stdio',target:'controller-log'},{fd:2,kind:'stdio',target:'controller-log'},
     ...l.listeners.map(x=>({...x,kind:'listener',socketGeneration:l.socketGeneration})),
-    // The memfd does not exist before the launcher; it is created by the launcher running as the provider UID.
-    ...(o.phase==='manager'?[]:[{fd:m.execution.bootstrap.fd,kind:'bootstrap',ownerUid:m.principals.provider.uid,readOnly:true,sealed:true,launchDigest}])];
+    // The manager phase is observed just before the first launcher exec, after the root-owned memfd exists.
+    {fd:m.execution.bootstrap.fd,kind:'bootstrap',ownerUid:0,readOnly:true,sealed:true,launchDigest}];
   const sortFd=(xs:{fd:number}[])=>[...xs].sort((a,b)=>a.fd-b.fd);
   if(!same(sortFd(o.fds),sortFd(wanted)))return 'fd_invalid';
   return undefined;

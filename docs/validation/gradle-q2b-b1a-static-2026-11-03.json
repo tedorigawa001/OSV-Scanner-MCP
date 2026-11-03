@@ -10,18 +10,18 @@
   "sources": [
     {
       "path": "src/test/fixtures/gradleOwnedDeployment.ts",
-      "sha256": "a82e32c1101d629dc67186c97ec84b1ae93eb6497fe3b2220812a73fdcb44b1c"
+      "sha256": "abcc969c4c8989b61da66bcc35d0c6a2b0d3beb690779baf912c4cd3d5157007"
     },
     {
       "path": "src/test/utils/gradleOwnedDeployment.test.ts",
-      "sha256": "b822a8314050c6b2ec9b0b913398b2e87795b42822f16a2f5668fdea943a1a58"
+      "sha256": "3fd3626a0f1ffb10ff98f752b9028252b8bb2c052c1d0b51404880ce713afc45"
     },
     {
       "path": "src/utils/gradleOwnedJson.ts",
       "sha256": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e"
     }
   ],
-  "verifiedTests": 189,
+  "verifiedTests": 190,
   "tests": [
     {
       "name": "verifies a closed, independently pinned synthetic deployment without granting native adoption",
@@ -728,23 +728,27 @@
       "status": "passed"
     },
     {
-      "name": "pins the systemd FD names and the launcher memfd bootstrap in the manifest: default unit FD name",
+      "name": "pins the systemd FD names and the manager memfd bootstrap in the manifest: default unit FD name",
       "status": "passed"
     },
     {
-      "name": "pins the systemd FD names and the launcher memfd bootstrap in the manifest: systemd OpenFile bootstrap",
+      "name": "pins the systemd FD names and the manager memfd bootstrap in the manifest: systemd OpenFile bootstrap",
       "status": "passed"
     },
     {
-      "name": "pins the systemd FD names and the launcher memfd bootstrap in the manifest: unsealed bootstrap",
+      "name": "pins the systemd FD names and the manager memfd bootstrap in the manifest: launcher-created bootstrap",
       "status": "passed"
     },
     {
-      "name": "pins the systemd FD names and the launcher memfd bootstrap in the manifest: writable bootstrap",
+      "name": "pins the systemd FD names and the manager memfd bootstrap in the manifest: unsealed bootstrap",
       "status": "passed"
     },
     {
-      "name": "pins the systemd FD names and the launcher memfd bootstrap in the manifest: bootstrap outside fd 6",
+      "name": "pins the systemd FD names and the manager memfd bootstrap in the manifest: writable bootstrap",
+      "status": "passed"
+    },
+    {
+      "name": "pins the systemd FD names and the manager memfd bootstrap in the manifest: bootstrap outside fd 6",
       "status": "passed"
     },
     {
@@ -760,7 +764,7 @@
       "status": "passed"
     },
     {
-      "name": "rejects a bootstrap FD that already exists before the launcher creates it",
+      "name": "rejects a manager phase that reaches the first launcher exec without the root-owned bootstrap",
       "status": "passed"
     },
     {
@@ -768,7 +772,7 @@
       "status": "passed"
     },
     {
-      "name": "rejects a launcher-phase bootstrap that is root-owned file instead of the launcher memfd",
+      "name": "rejects a launcher-phase bootstrap that is owned by the provider instead of the root manager",
       "status": "passed"
     },
     {
@@ -828,11 +832,11 @@
     "nativeTrials": 0
   },
   "verification": {
-    "newTestsPassed": 13,
-    "b1aTestsPassed": 189,
-    "fullSuiteTestsPassed": 4219,
+    "newTestsPassed": 14,
+    "b1aTestsPassed": 190,
+    "fullSuiteTestsPassed": 4285,
     "fullSuiteTestsSkipped": 1418,
-    "testFilesPassed": 111,
+    "testFilesPassed": 112,
     "testFilesSkipped": 24,
     "typecheck": "passed",
     "build": "passed",
@@ -840,11 +844,12 @@
     "testFixtureInProductionBuild": false
   },
   "fdLayoutReview": {
-    "addedTests": 13,
-    "totalTests": 189,
-    "bootstrapMechanism": "launcher-memfd",
+    "addedTests": 14,
+    "totalTests": 190,
+    "bootstrapMechanism": "manager-memfd",
     "bootstrapFd": 6,
-    "bootstrapAbsentAtManagerPhase": true,
+    "bootstrapOwnerUid": 0,
+    "bootstrapPresentAtAllPhases": true,
     "listenFds": 3,
     "listenFdNames": [
       "reader",
@@ -852,6 +857,7 @@
       "publish"
     ],
     "recordSyncTest": true,
+    "correctedIn": "9.80.9",
     "nativeTrials": 0
   }
 }

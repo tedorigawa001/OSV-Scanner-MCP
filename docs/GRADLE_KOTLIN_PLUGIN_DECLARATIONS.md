@@ -4847,7 +4847,7 @@ B1aレビュー修正の検証結果: 新規57件・B1a合計176回帰成功。�
 
 **FD配置の実現性。** 従来のB1aは`LISTEN_FDS=3`とその外側のbootstrap FD 6をmanager phaseから要求していたが、systemdの標準機構でその配置を作る方法を固定していなかった。`OpenFile=`で渡すFDは`LISTEN_FDS`／`LISTEN_FDNAMES`に数えられ、stdinはfd 0を`null`に固定しているため使えない。また`LISTEN_FDNAMES`の既定値はsocket unit名であり、role名を期待するにはunitの`FileDescriptorName=`が必要だが、unit本文は不透明bytesとしてしか照合していなかった。
 
-bootstrapは固定launcherが作るsealed read-only memfdとする。manifestの`execution.bootstrap`は`{mechanism:'launcher-memfd', fd:6, sealed:true, readOnly:true}`だけを受け付け、`OpenFile=`方式・未seal・書込可能・fd 6以外を拒否する。systemdが渡すのは3 listenerだけで、`LISTEN_FDS=3`、`LISTEN_FDNAMES`はfd順の各endpointの`fileDescriptorName`をつないだ値とする。manifestの各endpointに`fileDescriptorName`を必須で追加し、roleと一致させる（unitの`FileDescriptorName=`に対応する期待値）。bootstrap FDはmanager phaseには存在してはならず、launcher／provider phaseでは`ownerUid`＝provider UID・`sealed`・`readOnly`・launch digestの一致を要求する。memfdの所有者はlauncherを実行するprovider UIDであり、内容保護の根拠は所有者ではなくsealである。launcherが作るbootstrap recordの内容（§9.81のB1b fixture）とmanager署名のlaunch inventory digestの対応は、B1bで統一する。
+（この段落のbootstrap作成主体・所有者・存在時点は§9.80.9で訂正した。）bootstrapは固定launcherが作るsealed read-only memfdとする。manifestの`execution.bootstrap`は`{mechanism:'launcher-memfd', fd:6, sealed:true, readOnly:true}`だけを受け付け、`OpenFile=`方式・未seal・書込可能・fd 6以外を拒否する。systemdが渡すのは3 listenerだけで、`LISTEN_FDS=3`、`LISTEN_FDNAMES`はfd順の各endpointの`fileDescriptorName`をつないだ値とする。manifestの各endpointに`fileDescriptorName`を必須で追加し、roleと一致させる（unitの`FileDescriptorName=`に対応する期待値）。bootstrap FDはmanager phaseには存在してはならず、launcher／provider phaseでは`ownerUid`＝provider UID・`sealed`・`readOnly`・launch digestの一致を要求する。memfdの所有者はlauncherを実行するprovider UIDであり、内容保護の根拠は所有者ではなくsealである。launcherが作るbootstrap recordの内容（§9.81のB1b fixture）とmanager署名のlaunch inventory digestの対応は、B1bで統一する。
 
 **記録の自動照合。** 保存記録`docs/validation/gradle-q2b-b1a-static-2026-11-03.json`の3 sourceのSHA-256、`verifiedTests`と記録件数の一致、test名の一意性、全件passed、非採用flagを検査するVitest回帰を1件追加した。記録を更新しないままsourceを変更すると失敗する。記録は現source・実テスト結果から再生成した。
 
@@ -4856,6 +4856,19 @@ bootstrapは固定launcherが作るsealed read-only memfdとする。manifestの
 13回帰を追加しB1a合計189件：FD名・OpenFile方式・未seal・書込可能・fd 6以外のmanifest拒否5件、`LISTEN_FDS=4`・bootstrap入りFDNAMES・socket unit既定名のmanager拒否3件、記録照合1件、manager phaseに既にあるbootstrapの拒否1件、launcher phaseで未seal・root所有・欠落したbootstrapの拒否3件。いずれも静的fixtureの照合であり、memfd sealや実systemdのFD受渡しをOS上で実証したものではない。nativeIsolationVerified／profileApproved／backendEligible=false、originalReadsSkipped=0は変更しない。
 
 09ac3a8レビュー修正の検証結果: B1a回帰189件成功（新規13件）。全体111 files／4,219 tests成功、24 files／1,418 tests skipped（未commitの別作業B1b launcher testを除く）。型検査・build・diff整形検査成功。記録照合testで保存記録と現source・189 test名の一致を確認し、distにB1a fixtureが含まれないことを確認した。新規native隔離・配備・採用flag変更は0。
+
+
+#### 9.80.9 155fa89レビュー修正・bootstrap memfdの作成主体と存在時点の訂正
+
+§9.80.8はbootstrap memfdを固定launcherがprovider UIDで作るものとし、manager phaseには存在しないことを要求した。これは当時未commitだったB1bの`launcher.c`の読み違いで、実装と逆だった。B1b（§9.81.2）では、資格を落とす前の**root manager**がmemfdを作成・sealし、read-onlyで開き直してFD 6へ置いてから資格を落とし、最初のlauncher execへ進む。launcherはそのFDの所有者がroot（`st_uid==0`）であることを要求する。このままではB1bの実観測をB1aへ照合した場合、正しい起動を`fd_invalid`で拒否する。
+
+manifestの`execution.bootstrap.mechanism`を`manager-memfd`へ改め、`launcher-memfd`と`open-file`を拒否する。FD 6のbootstrapはmanager／launcher／providerの全phaseで必須とし、`ownerUid=0`・`sealed`・`readOnly`・launch digestの一致を要求する。manager phaseの観測は「資格適用後、最初のlauncher execの直前」（§9.80.8）であり、その時点でmemfdは既に存在する。`LISTEN_FDS=3`、endpointの`fileDescriptorName`による`LISTEN_FDNAMES`の照合、保存記録の自動照合はB1bと一致しているため維持する。
+
+bootstrap本文とB1aのlaunch digestの対応は未統一のままである。B1bのrecordはmagic／PID／UID・GID／cookies／乱数世代／provider root identity／runtime・entrypoint hashを持ち、manager署名launch inventoryのdigestを含まない。B1aの`launchDigest`は静的contract上の束縛であり、実bootstrapとの対応付けは§9.81.5のB1c（独立manager／controllerの承認keyと外側exec観測）で行う。
+
+回帰はB1a合計190件（§9.80.8から1件増）。manifestでの`launcher-memfd`拒否を追加し、manager phaseのbootstrap欠落を拒否する負例と、launcher phaseでprovider所有のbootstrapを拒否する負例へ置き換えた。陽性fixtureは全phaseでroot所有bootstrapを持つ。保存記録は現source・実テスト結果から再生成した。静的fixtureの訂正であり、nativeの実証範囲は変えない。
+
+155fa89レビュー修正の検証結果: B1a回帰190件成功。全体112 files／4,285 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。記録照合testで保存記録と現sourceの一致を確認し、distにfixtureが含まれないことを確認した。B1bのLinux起動fixtureとVitest 65件は変更していない。新規native隔離・配備・採用flag変更は0。
 
 
 ### 9.81 PO4/Q2/B1b・固定launcher／socket・service unit／VM配備fixture（2026-11-03）
