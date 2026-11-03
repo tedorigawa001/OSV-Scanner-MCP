@@ -46,7 +46,9 @@ export const vmCasePlan=Object.freeze(roles.flatMap(role=>[
 function need(condition:unknown,reason:string):asserts condition {if(!condition)throw new Error('q2b_vm_'+reason);}
 export function verifyVmControls(input:{record:Buffer;controllerKeyDigest:string;bundleDigest:string}) {
  need(Buffer.isBuffer(input.record)&&input.record.length<=512*1024,'budget');
- const r=schema.parse(parseOwnedJson(input.record.toString('utf8'),512*1024));
+ let raw:unknown;
+ try {raw=parseOwnedJson(input.record.toString('utf8'),512*1024);} catch {need(false,'schema');}
+ const parsed=schema.safeParse(raw);need(parsed.success,'schema');const r=parsed.data;
  const publicBytes=Buffer.from(r.publicKeyDer,'base64'),signature=Buffer.from(r.signature,'base64');
  need(publicBytes.toString('base64')===r.publicKeyDer&&signature.toString('base64')===r.signature&&signature.length===64,'encoding');
  need(createHash('sha256').update(publicBytes).digest('hex')===input.controllerKeyDigest&&r.publicKeySha256===input.controllerKeyDigest,'independent_key_pin');

@@ -2560,3 +2560,10 @@ B1bレビュー修正の検証結果: 追加28 native controlsで計58件、通�
 - **B1c全体は未完了。** 次は認証transport／両端kernel資格／FD転送対策、manager署名launchとbootstrap digest、外側exec phase観測・B1a bridge、queued接続・credential保護、coordinated restart／leak drain。QB01〜QB19／QB30〜QB32の完了へ先取りせず、B2／B3・Q3／Q4も残す。systemdBootVerifiedだけtrue、nativeIsolationVerified／profileApproved／backendEligible=false・originalReadsSkipped=0を維持する。
 
 B1c VM部分の検証結果: 新規26 Vitest回帰・実VM142 native controls成功。全体113 files／4,311 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。errno照合を外した故障版で再署名済みunexpected-errno回帰が失敗し、復元後に成功した。公開記録の独立pin／signature・配備inventory digest・実source hashを照合し、本番buildにVM fixture／verifierが含まれないことを確認した。VM外controller署名は収集記録の出自だけを表し、manager署名や完全なexec監査の代用ではない。
+
+### 2026-11-03: bce3aa6レビュー修正・B1c pinの独立性と拒否理由
+
+- §9.82.6へ、controller pinが記録と同じcommitで追加されリポジトリ上は同時差替えを防げないこと、以後はpinを別commit／リポジトリ外へ先に固定する運用を明記。
+- VM verifierのparse／schema失敗を`q2b_vm_schema`へ統一し、拒否回帰23件の期待値を完全一致の理由へ具体化。§9.82挿入でずれたB1b検証結果行を§9.81.6へ戻した。
+
+bce3aa6レビュー修正の検証結果: VM回帰26件成功。全体113 files／4,311 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。

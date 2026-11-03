@@ -4935,6 +4935,8 @@ native fixtureは最初のmkdir／chmod／chownより前に全3 path分岐をrea
 
 追加28 native controlsで合計58、通常Vitestは追加28件でB1b合計65件。標準FD canary不変・entrypoint witness・領域外の書込／mode変更0・拒否時のFD解放と、更新source／artifact hash・5 unitの再検証結果を保存した。今回もVM boot／B1c独立隔離／署名controller／grant・本番採用は未成立である。
 
+B1bレビュー修正の検証結果: 追加28 native controlsで計58件、通常B1bテストは追加28件で計65件成功。全体112 files／4,284 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。5 unitの構文再検証・同一static ELF hash、58 case閉包・source hash・§9.81の6小節、本番buildへのfixture非収録を確認した。修正前のstdio／親symlinkのREDと、launcher guard変異版をentry witnessで検出する対照も成功。既存の別変更は保持し、B1b追加件数へ算入しない。実VM boot／独立隔離／本番採用は未成立のまま。
+
 ### 9.82 Q2/B1cの最初の実VM検証：systemd起動・6 principalのDAC対照
 
 #### 9.82.1 採用範囲と未成立条件
@@ -4961,10 +4963,18 @@ SSHはrunごとに新しいclient／host keyを作り、固定host keyで接続�
 
 #### 9.82.4 回帰と保存記録
 
-公開観測は`docs/validation/gradle-q2b-b1c-vm-2026-11-03.json`、独立pinは同名`.pin`、配備inventoryは同名`.bundle.json`へ保存する。通常回帰は独立key／bundle pin、署名、完全case集合・独立期待値、全actor資格、provider／listener対応、別kernel、未成立scopeとsource hashを照合する。正しく再署名してもcase欠落／重複／未知case、actor・許可期待値・errno・saved UID／GID・group・capabilityの不正、PID／listener GID不一致、同kernel、制限事項の削除や採用flag昇格を拒否する。errno検査を除去した故障版で該当回帰が失敗し、復元後に成功することも確認した。
+公開観測は`docs/validation/gradle-q2b-b1c-vm-2026-11-03.json`、独立pinは同名`.pin`（リポジトリ上の独立性の限界は§9.82.6）、配備inventoryは同名`.bundle.json`へ保存する。通常回帰は独立key／bundle pin、署名、完全case集合・独立期待値、全actor資格、provider／listener対応、別kernel、未成立scopeとsource hashを照合する。正しく再署名してもcase欠落／重複／未知case、actor・許可期待値・errno・saved UID／GID・group・capabilityの不正、PID／listener GID不一致、同kernel、制限事項の削除や採用flag昇格を拒否する。errno検査を除去した故障版で該当回帰が失敗し、復元後に成功することも確認した。
 
 #### 9.82.5 B1cの残り
 
 次は認証transportと両端kernel資格・全frame credential／FD転送対策、独立manager署名launchとbootstrap digestの統一、外側exec phase観測とB1aへの正規bridge、queued接続・credential保護の負例、coordinated restart／leak drainを実装してnative再検証する。今回の署名記録にこれらの証拠はなく、完全なQB01〜QB19／QB30〜QB32を満たさない。B2／B3の保存／fence／pin、Q3／Q4も後続である。`systemdBootVerified=true`のみ新たに実証し、`nativeIsolationVerified`／`profileApproved`／`backendEligible=false`、`originalReadsSkipped=0`を維持する。
 
-B1bレビュー修正の検証結果: 追加28 native controlsで計58件、通常B1bテストは追加28件で計65件成功。全体112 files／4,284 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。5 unitの構文再検証・同一static ELF hash、58 case閉包・source hash・§9.81の6小節、本番buildへのfixture非収録を確認した。修正前のstdio／親symlinkのREDと、launcher guard変異版をentry witnessで検出する対照も成功。既存の別変更は保持し、B1b追加件数へ算入しない。実VM boot／独立隔離／本番採用は未成立のまま。
+#### 9.82.6 bce3aa6レビュー修正・pinの独立性の限界と拒否理由の固定
+
+**controller pinの独立性。** `.pin`はboot前にVM外で生成したcontroller公開鍵のSHA-256だが、署名記録`.json`と同じcommit（bce3aa6）で追加され、回帰も両方を同じリポジトリから読む。したがってリポジトリ上では、記録とpinを同時に差し替えれば回帰は通る。新しい鍵で再署名した記録も、そのpinを渡せば受理される。現在の独立性は「pinをboot前・VM外で作った」という作業手順だけに依存し、リポジトリの内容としては担保されていない。以後のnative記録では、pinを記録より前の別commit、またはリポジトリ外の独立した保管先に固定し、記録追加commitでpinを同時に変更しない運用とする。今回のpinをその条件を満たした独立承認とはみなさない。
+
+**拒否理由。** verifierのJSON parse／schema失敗をzodの生例外から`q2b_vm_schema`へ統一し、全拒否を`q2b_vm_`接頭辞の理由に揃えた。再署名した不正記録19件と独立key／bundle／signature 3件、未署名self-report 1件の期待値を`toThrow()`から完全一致の理由へ変えた。事前の確認で19件はすべて想定どおりの検査で拒否されており、別理由で偶然通っていたものはなかった：case欠落・effective capability・制限事項欠落・scope・3採用flagはschema、重複／未知caseはcase_closure、actor／許可期待値はcase_expectation、errnoはcase_result、saved UID／GID・補助groupはactor、provider PIDはprovider、listener GIDはlistener、同kernelはdistinct_guest_kernel、sourceはsource_closure。
+
+**文書配置。** bce3aa6は§9.82を§9.81.6の検証結果行より前へ挿入しており、B1bの検証結果が§9.82.5の末尾に置かれていた。その行を§9.81.6の末尾へ戻した。B1cの検証結果はDESIGN_TODOの2026-11-03「B1c最初の実VM検証」項にある。
+
+bce3aa6レビュー修正の検証結果: VM回帰26件成功（件数不変・期待理由を具体化）。全体113 files／4,311 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。保存記録・pin・bundleとsource hashは変更していない。native実行・採用flag変更は0。

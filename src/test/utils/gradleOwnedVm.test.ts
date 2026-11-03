@@ -24,7 +24,7 @@ it('builds a separate bounded VM diagnostic profile without changing B1b',()=>{
 });
 
 it('refuses an unsigned guest self-report as independently verified VM evidence',()=>{
- expect(()=>verifyVmControls({record:Buffer.from('{}'),controllerKeyDigest:'0'.repeat(64),bundleDigest:'0'.repeat(64)})).toThrow();
+ expect(()=>verifyVmControls({record:Buffer.from('{}'),controllerKeyDigest:'0'.repeat(64),bundleDigest:'0'.repeat(64)})).toThrow(/^q2b_vm_schema$/);
 });
 
 const recordUrl=new URL('../../../docs/validation/gradle-q2b-b1c-vm-2026-11-03.json',import.meta.url);
@@ -53,7 +53,7 @@ it('binds the saved VM run to the current collected source bytes and independent
 it.each(['key','bundle','signature'])('rejects an incorrect independent %s binding',fault=>{
  const changed=structuredClone(record);
  if(fault==='signature')changed.signature=Buffer.alloc(64).toString('base64');
- expect(()=>check(changed,fault==='key'?'0'.repeat(64):keyPin,fault==='bundle'?'0'.repeat(64):bundleDigest)).toThrow();
+ expect(()=>check(changed,fault==='key'?'0'.repeat(64):keyPin,fault==='bundle'?'0'.repeat(64):bundleDigest)).toThrow(fault==='key'?/^q2b_vm_independent_key_pin$/:fault==='bundle'?/^q2b_vm_independent_bundle_pin$/:/^q2b_vm_signature$/);
 });
 // Use a new authorized test key so structural failures cannot be attributed only
 // to an invalid signature. Production records are never re-signed or overwritten.
@@ -65,9 +65,11 @@ function resign(mutator:(value:typeof record)=>void){
  value.signature=sign(null,Buffer.from(canonicalOwnedJson(value.payload)),keys.privateKey).toString('base64');
  return {value,pin:value.publicKeySha256};
 }
-it.each(['missing-case','duplicate-case','unknown-case','wrong-actor','wrong-allow','unexpected-errno','saved-uid',
- 'saved-gid','supplementary-group','effective-capability','provider-pid','listener-gid','same-kernel',
- 'missing-limitation','scope','approve-isolation','approve-backend','skip-original-read','source-closure'])('rejects %s after valid re-signing',fault=>{
+it.each([['missing-case','schema'],['duplicate-case','case_closure'],['unknown-case','case_closure'],['wrong-actor','case_expectation'],
+ ['wrong-allow','case_expectation'],['unexpected-errno','case_result'],['saved-uid','actor'],['saved-gid','actor'],['supplementary-group','actor'],
+ ['effective-capability','schema'],['provider-pid','provider'],['listener-gid','listener'],['same-kernel','distinct_guest_kernel'],
+ ['missing-limitation','schema'],['scope','schema'],['approve-isolation','schema'],['approve-backend','schema'],['skip-original-read','schema'],
+ ['source-closure','source_closure']])('rejects %s after valid re-signing as q2b_vm_%s',(fault,reason)=>{
  const {value,pin}=resign(r=>{
   const o=r.payload.observation,c=o.cases[0];
   switch(fault){
@@ -92,5 +94,5 @@ it.each(['missing-case','duplicate-case','unknown-case','wrong-actor','wrong-all
    case 'source-closure':r.payload.sources[0]=r.payload.sources[1];break;
   }
  });
- expect(()=>check(value,pin)).toThrow();
+ expect(()=>check(value,pin)).toThrow(new RegExp('^q2b_vm_'+reason+'$'));
 });
