@@ -1,0 +1,192 @@
+{
+  "backendEligible": false,
+  "cases": [
+    {
+      "adoption": "provider_unsupported",
+      "case": "honest",
+      "checks": [
+        "separate-process",
+        "kernel-peer-credentials",
+        "mutual-authentication",
+        "authenticated-response",
+        "ordered-requests"
+      ],
+      "evidence": {
+        "providerUid": 501,
+        "readerUid": 501
+      },
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "wrong-key",
+      "checks": [
+        "wrong-key-rejected"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "wrong-role",
+      "checks": [
+        "wrong-role-rejected"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "replay",
+      "checks": [
+        "same-session-replay-rejected"
+      ],
+      "evidence": {
+        "providerUid": 501,
+        "readerUid": 501
+      },
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "stale-boot",
+      "checks": [
+        "new-process-boot",
+        "old-boot-request-rejected"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "wrong-operation",
+      "checks": [
+        "wrong-operation-rejected"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "bad-mac",
+      "checks": [
+        "bad-mac-rejected"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "oversized",
+      "checks": [
+        "oversized-rejected"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "truncated",
+      "checks": [
+        "truncated-rejected"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "noncanonical",
+      "checks": [
+        "noncanonical-rejected"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "server-impostor",
+      "checks": [
+        "untrusted-server-proof-rejected-before-request"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "same-uid-write",
+      "checks": [
+        "same-uid-secret-readable",
+        "same-uid-sealed-file-writable"
+      ],
+      "evidence": {
+        "attackerUid": 501
+      },
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "wrong-peer",
+      "checks": [
+        "kernel-uid-mismatch-rejected-before-handshake"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "stale-handshake",
+      "checks": [
+        "new-process-boot",
+        "old-handshake-rejected"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "handshake-timeout",
+      "checks": [
+        "handshake-timeout-rejected"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    }
+  ],
+  "isolationVerified": false,
+  "platform": "macOS-27.2-arm64-arm-64bit-Mach-O",
+  "profileApproved": false,
+  "python": "3.14.10",
+  "scope": "Q2/A diagnostic IPC only",
+  "sourceSha256": "48ede6f7f2d328ca0f8f524b88cee5da80588d5d3d2231bd3650aa82bceab755",
+  "verifiedCases": 15
+}

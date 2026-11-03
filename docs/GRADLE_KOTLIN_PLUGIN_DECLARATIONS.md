@@ -4548,3 +4548,48 @@ M0/Aは同一migration内のlocal control閉包に限定する。既存tombstone
 M0/Bで過去control／tombstone持越しのorigin・issuer・参照閉包を実装する。その後M1の独立LineageRegistry／phase／CAS参照contract、M2のfreeze予約・実source検証・plan／base／ready構築、M3の5 root専有・cutover／GC／crash対照、M4の隔離backend／reader接続へ進む。PO4/Q2の独立provider／認証IPC、v2 durable writerとcheckpointも引き続き必要である。今回のstatic成功から移行・削除・current admissionを有効化する入口は作っていない。合成inventoryの上限対照はcontrolの表現・閉包予算の検証であり、そのentry集合が実際のv1／v2 sourceとして有効だった実証ではない。
 
 M0/Aの検証結果: 新規97回帰成功。8,192-entryの合成inventory／128 inventory pages／128 batch plans・Doneを含め、全体109 files／4,007 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。34 control typesと§9.77の6小節を確認し、distにmigration／authority／provider fixtureが含まれないことを確認した。既存のnative保存・SIGKILL等の再実行をM0の実移行／削除・独立registry・target artifact／同期の証明へ数えない。今回の新規file操作・GC・current admission・本番採用は0。
+
+
+### 9.78 PO4/Q2/A・native認証IPCとsame-UID否定対照（2026-11-03）
+
+#### 9.78.1 今回の範囲と採用不可の判定
+
+`src/test/fixtures/gradleOwnedPrefixNative.py`と`src/test/utils/gradleOwnedPrefixNative.test.ts`に、実AF_UNIX socket・別provider process・kernel peer credentialsを使う限定実証を追加した。macOS 27.2 arm64／Python 3.14.10で再実行した。provider／reader／攻撃側はいずれもUID 501であり、独立principalの隔離は成立していない。test-onlyのdiagnostic protocolで、全結果を常に`provider_unsupported`とする。独立UIDなら採用する分岐は存在せず、Q1のgrant・本番readerへの接続もない。
+
+同UIDの別processが、0700の検証用root内の0600鍵fileを読み、0400の検証用fileをchmodして書き換えられる否定対照を実行した。攻撃processの実UID・PID・鍵長と書換後bytesを検証し、鍵bytes自体は記録しない。これは本番鍵へのアクセスではなく、一時fixtureだけへの操作である。別process、mode、認証IPCだけをimmutable providerの隔離成立と扱わない。LinuxのSO_PEERCRED分岐は用意したが、今回Linuxでの実行証拠はない。
+
+#### 9.78.2 通信・bootstrapの契約
+
+providerの鍵は実行ごとに生成した256bit値を匿名stdin pipeで渡す。argv・環境変数には渡さず、子processは`-I`・`close_fds=True`で起動する。これは同UIDからの鍵保護の証明ではない。socketは一時0700 directory内の0600 endpointで、macOSの`getpeereid`（Linux候補はSO_PEERCRED）を両端で取得する。providerはbootstrapの期待UIDとkernel値を照合してからchallengeを返す。wrong-peer負例は期待UIDを実UID+1とした照合試験であり、別UIDの攻撃processを起動した実証ではない。
+
+専用domain `osv-mcp.q2a.diagnostic-only.v1`、boot nonce、server challenge、client nonce、reader role、両端のUID/GIDをHMAC-SHA256へ束縛する。clientもserver proofを検証してから要求を送る。要求はboot・sequence・固定`inspect`操作とその認証値を検証し、responseも同じbindingで認証する。未知roleとgrant操作は拒否する。single-connection／最大2要求の有界診断で、汎用multi-reader serviceではない。4-byte length prefix・最大4096bytes・canonical JSONの再encode一致・exact field集合・2秒socket期限を使う。重複key・途中EOF・上限超過は正常な認証や採用へ進まない。
+
+`storageReads: 0`は、このprotocolがcanonical storage readerを持たず、inspectに保存層の読取経路がないことを示す。OS全file readの計測値ではなく、Python起動や否定対照のfixture読取は含めない。`originalReadsSkipped: 0`で、既存full検証を置き換えない。秘密値はJSON記録へ保存しない。
+
+#### 9.78.3 native回帰・再現
+
+| ケース | 実行した対照 |
+| --- | --- |
+| honest | 別PID、両端のkernel UID/GID、相互認証、連番1・2の認証response |
+| wrong-key／wrong-role／bad-mac | 不一致鍵、operatorへのrole変更、要求MAC改変を拒否 |
+| replay／stale-boot／stale-handshake | 同接続の再送、同じ鍵・endpointで実process再起動後の旧要求／旧helloを拒否 |
+| wrong-operation | 正しく署名されたgrant要求も拒否 |
+| oversized／truncated／noncanonical | 上限+1のheader、途中EOF、重複keyを拒否 |
+| server-impostor | provider側のproof故障注入を実client検証関数が要求送信前に拒否 |
+| wrong-peer／handshake-timeout | kernel UID照合不一致、実socket期限到達を拒否 |
+| same-uid-write | 別processからの検証用秘密読取・file書換を確認し、隔離不可を判定 |
+
+native 15ケースを実行し、別のVitest検査1件で保存記録の実行source SHA-256・重複しない15ケース・非採用flagを照合する。保存JSONの自己hashは独立署名や承認profileの証拠ではない。
+
+```sh
+python3 -I src/test/fixtures/gradleOwnedPrefixNative.py --all
+npm test -- src/test/utils/gradleOwnedPrefixNative.test.ts
+```
+
+記録は`docs/validation/gradle-prefix-native-ipc-2026-11-03.json`。直接実行時に実行環境の制限でbindがEPERMになったため、検証用一時socketの作成を許可した実行で記録した。失敗をskipや隔離成功へ変換していない。
+
+#### 9.78.4 Q2残件
+
+Q2全体は未完了。次は、管理者／独立service管理下で事前配備したprovider principal・root／鍵／IPC endpointを使い、build／reader／operatorの実principalを分けた環境で、direct open・rename・hardlink・既存FD・process操作を含む全書込経路の拒否を実証する。その上でdurable seal／完全inventory・generation／writer fence・pin drain／handoff・遅延response・restart後のfull再検証とcheckpoint同期へ進む。今回の再起動は通信bootの否定対照だけで、保存履歴の復旧ではない。独立registry、Q1のpin／delivery gateとの接続、Q3の実read省略／suffix比較、Q4の承認profile／本番採用も残る。Gradle/BTA/OSV実接続や性能改善を今回の成果に数えない。
+
+PO4/Q2/Aの検証結果: 新規16件（実socketの15 nativeケース＋保存記録source照合1件）、関連115件成功。全体110 files／4,028 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにnative／prefix／migrationのtest fixtureがないことを確認した。独立principalの隔離・durable seal・writer fence・保存復旧・Q1接続・実原本read省略・承認profile／本番採用は未成立であり、Q2全体の完了とはしない。

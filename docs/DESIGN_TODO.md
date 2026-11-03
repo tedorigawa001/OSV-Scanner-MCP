@@ -2449,3 +2449,13 @@ PO4/Q1の検証結果: 新規98回帰成功。全体108 files／3,910 tests成�
 - 次はM0/Bのcarried evidence／origin／issuer閉包、その後M1独立registryのphase／CAS、M2 freeze／plan／base／ready構築、M3 native cutover／GC・crash、M4実backend接続。v2 durable writer／checkpoint、PO4/Q2以降・本番採用も残る。
 
 M0/Aの検証結果: 新規97回帰成功。8,192-entryの合成inventory／128 inventory pages／128 batch plans・Doneを含め、全体109 files／4,007 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。34 control typesと§9.77の6小節を確認し、distにmigration／authority／provider fixtureが含まれないことを確認した。既存のnative保存・SIGKILL等の再実行をM0の実移行／削除・独立registry・target artifact／同期の証明へ数えない。今回の新規file操作・GC・current admission・本番採用は0。
+
+
+### 2026-11-03: PO4/Q2/A・native認証IPCの限定実証
+
+- §9.78に実AF_UNIX・別provider process・kernel peer UID/GID・匿名pipe bootstrap・nonce／boot／role／sequenceを束縛した認証IPCを追加。相互認証、再送・再起動前の要求／hello、権限変更・MAC・frame不正・UID不一致・実期限の拒否を検証する。
+- 同UIDの別processによる一時fixtureの鍵読取・読取専用fileのchmod／書換を否定対照で確認。現環境は独立principalではないため常にprovider_unsupported。Q1・本番readerには接続せず、grant・原本read省略・backend／profile採用は0。
+- 15 nativeケースとsource hash／保存記録の検査1件。記録はdocs/validation/gradle-prefix-native-ipc-2026-11-03.json。macOS 27.2 arm64／Python 3.14.10の実行証拠で、Linux対応分岐の実証ではない。
+- 次はQ2/Bの独立principalを事前配備した環境での全書込経路拒否、durable seal・inventory／generation／writer fence・pin drain／handoff／restart復旧。Q2全体、Q3・Q4・本番採用は未完了。
+
+PO4/Q2/Aの検証結果: 新規16件（実socketの15 nativeケース＋保存記録source照合1件）、関連115件成功。全体110 files／4,028 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにnative／prefix／migrationのtest fixtureがないことを確認した。独立principalの隔離・durable seal・writer fence・保存復旧・Q1接続・実原本read省略・承認profile／本番採用は未成立であり、Q2全体の完了とはしない。
