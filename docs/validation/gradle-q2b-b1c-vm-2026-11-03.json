@@ -1,0 +1,4704 @@
+{
+  "payload": {
+    "environment": {
+      "acceleration": "tcg",
+      "guestNetwork": "restricted-user-network-hostfwd-loopback-ssh-only",
+      "hostKeySha256": "595c7a482ea97d4e3b1634acca804a85dfbe8ca4df9d14d699441c0e192fc7e2",
+      "imageBytes": 224002048,
+      "imageSha256": "6e971c7935c62c8ea7796b085e4ea038e2301a067f8c853e154133f8df192c85",
+      "imageUrl": "https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-arm64.img",
+      "managerKeyProvisioned": false,
+      "outerKernel": "6.10.14-linuxkit",
+      "qemu": "QEMU emulator version 7.2.22 (Debian 1:7.2+dfsg-7+deb12u18+b3)"
+    },
+    "observation": {
+      "backendEligible": false,
+      "bootId": "5704f19a-e9fd-403f-b176-4e9efeee4e6f",
+      "bootstrapSha256": "0514c6c9cea9290c254f7f0642a772f9a2ae3ca11fda376d3778f8a7aa0f8670",
+      "bundleDigest": "688650aeab365fa7e3610fcbc4281a9263ee62dd376feb1e90652259ab18bf4c",
+      "cases": [
+        {
+          "actor": "provider",
+          "allowed": true,
+          "case": "provider-read-provider",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 978,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": true,
+          "case": "provider-write-open-provider",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 979,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-read-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 980,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-write-open-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 981,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-read-build",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 982,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-write-open-build",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 983,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-read-writer",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 984,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-write-open-writer",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 985,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-read-checkpoint",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 986,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-write-open-checkpoint",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 987,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-read-registry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 988,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-write-open-registry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 989,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-new-sibling",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 990,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-unlink-listener",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 991,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-chmod-listener",
+          "errno": 1,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 992,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-replace-entry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 993,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-replace-unit",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 994,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-evidence-read",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 995,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": true,
+          "case": "provider-provider-signal",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 996,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-connect-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 997,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-connect-upload",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 998,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "provider",
+          "allowed": false,
+          "case": "provider-connect-publish",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1201,
+              1201,
+              1201,
+              1201
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 999,
+            "tracerPid": 0,
+            "uid": [
+              1101,
+              1101,
+              1101,
+              1101
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-read-provider",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1000,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-write-open-provider",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1001,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": true,
+          "case": "reader-read-reader",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1002,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": true,
+          "case": "reader-write-open-reader",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1003,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-read-build",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1004,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-write-open-build",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1005,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-read-writer",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1006,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-write-open-writer",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1007,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-read-checkpoint",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1008,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-write-open-checkpoint",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1009,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-read-registry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1010,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-write-open-registry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1011,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-new-sibling",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1012,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-unlink-listener",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1013,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-chmod-listener",
+          "errno": 1,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1014,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-replace-entry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1015,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-replace-unit",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1016,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-evidence-read",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1017,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-provider-proc-fd",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1018,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-provider-proc-mem",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1019,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-provider-signal",
+          "errno": 1,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1020,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": true,
+          "case": "reader-connect-reader",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1021,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-connect-upload",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1022,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "reader",
+          "allowed": false,
+          "case": "reader-connect-publish",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1202,
+              1202,
+              1202,
+              1202
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1023,
+            "tracerPid": 0,
+            "uid": [
+              1102,
+              1102,
+              1102,
+              1102
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-read-provider",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1024,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-write-open-provider",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1025,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-read-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1026,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-write-open-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1027,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": true,
+          "case": "build-read-build",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1028,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": true,
+          "case": "build-write-open-build",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1029,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-read-writer",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1030,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-write-open-writer",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1031,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-read-checkpoint",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1032,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-write-open-checkpoint",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1033,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-read-registry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1034,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-write-open-registry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1035,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-new-sibling",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1036,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-unlink-listener",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1037,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-chmod-listener",
+          "errno": 1,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1038,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-replace-entry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1039,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-replace-unit",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1040,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-evidence-read",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1041,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-provider-proc-fd",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1042,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-provider-proc-mem",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1043,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-provider-signal",
+          "errno": 1,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1044,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-connect-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1045,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": true,
+          "case": "build-connect-upload",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1046,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "build",
+          "allowed": false,
+          "case": "build-connect-publish",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1203,
+              1203,
+              1203,
+              1203
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1047,
+            "tracerPid": 0,
+            "uid": [
+              1103,
+              1103,
+              1103,
+              1103
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-read-provider",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1048,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-write-open-provider",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1049,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-read-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1050,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-write-open-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1051,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-read-build",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1052,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-write-open-build",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1053,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": true,
+          "case": "writer-read-writer",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1054,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": true,
+          "case": "writer-write-open-writer",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1055,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-read-checkpoint",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1056,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-write-open-checkpoint",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1057,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-read-registry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1058,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-write-open-registry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1059,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-new-sibling",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1060,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-unlink-listener",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1061,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-chmod-listener",
+          "errno": 1,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1062,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-replace-entry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1063,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-replace-unit",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1064,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-evidence-read",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1065,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-provider-proc-fd",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1066,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-provider-proc-mem",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1067,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-provider-signal",
+          "errno": 1,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1068,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-connect-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1069,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": false,
+          "case": "writer-connect-upload",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1070,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "writer",
+          "allowed": true,
+          "case": "writer-connect-publish",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1204,
+              1204,
+              1204,
+              1204
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1071,
+            "tracerPid": 0,
+            "uid": [
+              1104,
+              1104,
+              1104,
+              1104
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-read-provider",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1072,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-write-open-provider",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1073,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-read-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1074,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-write-open-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1075,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-read-build",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1076,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-write-open-build",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1077,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-read-writer",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1078,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-write-open-writer",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1079,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": true,
+          "case": "checkpoint-read-checkpoint",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1080,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": true,
+          "case": "checkpoint-write-open-checkpoint",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1081,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-read-registry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1082,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-write-open-registry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1083,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-new-sibling",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1084,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-unlink-listener",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1085,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-chmod-listener",
+          "errno": 1,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1086,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-replace-entry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1087,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-replace-unit",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1088,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-evidence-read",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1089,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-provider-proc-fd",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1090,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-provider-proc-mem",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1091,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-provider-signal",
+          "errno": 1,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1092,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-connect-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1093,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-connect-upload",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1094,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "checkpoint",
+          "allowed": false,
+          "case": "checkpoint-connect-publish",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1205,
+              1205,
+              1205,
+              1205
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1095,
+            "tracerPid": 0,
+            "uid": [
+              1105,
+              1105,
+              1105,
+              1105
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-read-provider",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1096,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-write-open-provider",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1097,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-read-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1098,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-write-open-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1099,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-read-build",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1100,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-write-open-build",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1101,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-read-writer",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1102,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-write-open-writer",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1103,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-read-checkpoint",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1104,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-write-open-checkpoint",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1105,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": true,
+          "case": "registry-read-registry",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1106,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": true,
+          "case": "registry-write-open-registry",
+          "errno": 0,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1107,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-new-sibling",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1108,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-unlink-listener",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1109,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-chmod-listener",
+          "errno": 1,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1110,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-replace-entry",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1111,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-replace-unit",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1112,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-evidence-read",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1113,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-provider-proc-fd",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1114,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-provider-proc-mem",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1115,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-provider-signal",
+          "errno": 1,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1116,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-connect-reader",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1117,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-connect-upload",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1118,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        },
+        {
+          "actor": "registry",
+          "allowed": false,
+          "case": "registry-connect-publish",
+          "errno": 13,
+          "identity": {
+            "capabilities": {
+              "CapAmb": "0000000000000000",
+              "CapBnd": "0000000000000000",
+              "CapEff": "0000000000000000",
+              "CapInh": "0000000000000000",
+              "CapPrm": "0000000000000000"
+            },
+            "gid": [
+              1206,
+              1206,
+              1206,
+              1206
+            ],
+            "groups": [],
+            "noNewPrivileges": true,
+            "pid": 1119,
+            "tracerPid": 0,
+            "uid": [
+              1106,
+              1106,
+              1106,
+              1106
+            ]
+          },
+          "verified": true
+        }
+      ],
+      "kernel": "6.8.0-147-generic",
+      "nativeIsolationVerified": false,
+      "notEstablished": [
+        "authenticated transport",
+        "FD transfer protection",
+        "signed manager launch and bootstrap digest",
+        "external exec phase trace",
+        "B1a evidence bridge",
+        "complete QB01-QB19/QB30-QB32",
+        "coordinated restart and leak drain",
+        "B2/B3 persistence and pins",
+        "production adoption"
+      ],
+      "originalReadsSkipped": 0,
+      "pid1": "systemd",
+      "profileApproved": false,
+      "provider": {
+        "capabilities": {
+          "CapAmb": "0000000000000000",
+          "CapBnd": "0000000000000000",
+          "CapEff": "0000000000000000",
+          "CapInh": "0000000000000000",
+          "CapPrm": "0000000000000000"
+        },
+        "gid": [
+          1201,
+          1201,
+          1201,
+          1201
+        ],
+        "groups": [],
+        "noNewPrivileges": true,
+        "pid": 914,
+        "tracerPid": 0,
+        "uid": [
+          1101,
+          1101,
+          1101,
+          1101
+        ]
+      },
+      "schema": "osv-mcp.q2b.b1c.vm-controls.v1",
+      "scope": "vm-startup-and-dac-controls-only",
+      "startup": {
+        "accepts": 0,
+        "backendEligible": false,
+        "bootstrapReadOnly": true,
+        "bootstrapSeals": 15,
+        "capabilitiesEmpty": true,
+        "gid": [
+          1201,
+          1201,
+          1201
+        ],
+        "groups": [],
+        "listeners": [
+          {
+            "cookie": "1",
+            "fd": 3,
+            "ownerGid": 1202,
+            "ownerUid": 0,
+            "passCredentials": true,
+            "role": "reader"
+          },
+          {
+            "cookie": "2",
+            "fd": 4,
+            "ownerGid": 1203,
+            "ownerUid": 0,
+            "passCredentials": true,
+            "role": "upload"
+          },
+          {
+            "cookie": "3",
+            "fd": 5,
+            "ownerGid": 1204,
+            "ownerUid": 0,
+            "passCredentials": true,
+            "role": "publish"
+          }
+        ],
+        "nativeIsolationVerified": false,
+        "noNewPrivileges": true,
+        "originalReadsSkipped": 0,
+        "pid": 914,
+        "profileApproved": false,
+        "schema": "osv-mcp.q2b.b1c.startup-observation.v1",
+        "scope": "diagnostic-startup-only",
+        "secretReads": 0,
+        "socketGeneration": "9a5c90364679e829f954d7edc4dc560082f19f996997de1a765f3268ab9db00e",
+        "uid": [
+          1101,
+          1101,
+          1101
+        ]
+      },
+      "systemd": "systemd 255 (255.4-1ubuntu8.18)",
+      "systemdBootVerified": true,
+      "verifiedCases": 142
+    },
+    "schema": "osv-mcp.q2b.b1c.controller-observation.v1",
+    "sources": [
+      {
+        "path": "q2b/build_fixture.py",
+        "sha256": "ed1450b77e8a47966592ebbc5c00308446c653c5b8e0795fa6045f37ded1d2ed"
+      },
+      {
+        "path": "q2b/launcher.c",
+        "sha256": "4557194bdff378d9194d1dd582b318aaf5e56fb4e780f9f0f6fbcadb8adfd161"
+      },
+      {
+        "path": "q2b/native_probe.py",
+        "sha256": "ae8b1956827cc2fbad0eb514c901670f25192720cd6602b0d0ce7aa05180ffc6"
+      },
+      {
+        "path": "q2b/provider.py",
+        "sha256": "00a6b7d8079f358e642804da76af6a729bae933383030344068e84a3621963b0"
+      },
+      {
+        "path": "q2b_b1c/build_fixture.py",
+        "sha256": "3737247921c1679e8b76b85e1548e7bacfb7aec292dc0cd9b18ca3f5e08f0efe"
+      },
+      {
+        "path": "q2b_b1c/guest_deploy.py",
+        "sha256": "553f45e4616cf968daf801e93fbd46d12824bd0246f06aa65f30ceec42ffc9ee"
+      },
+      {
+        "path": "q2b_b1c/guest_probe.py",
+        "sha256": "efb2b8977ebc8af32d7696cfc9015cc1a36ef07e23ee51510858036c3ae7a918"
+      },
+      {
+        "path": "q2b_b1c/vm_runner.py",
+        "sha256": "35ffcfbe401e80605f4f206a8a81e91f365bce5c149c37e406c006782b8134cf"
+      }
+    ]
+  },
+  "publicKeyDer": "MCowBQYDK2VwAyEA3kq4fssdCDn0d2fGi+V+ncenb56kJYjtZ3Y7rduFn/s=",
+  "publicKeySha256": "feddd205c1c7da04d6fa14a545c59c3754438209e408fc49236c63cf3287cb3b",
+  "signature": "MoAyCoRItEGoTo+nTGSLIDPHJTnJrsynG6jg+qRgP7rvogX0VbPy+LCFEqwX92iGRgpccBDvXUs6SKGpPNa9CA=="
+}

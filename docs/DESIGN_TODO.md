@@ -2551,3 +2551,12 @@ B1bレビュー修正の検証結果: 追加28 native controlsで計58件、通�
 - B1a合計190件。bootstrap本文とlaunch digestの対応はB1c（§9.81.5）で統一する。
 
 155fa89レビュー修正の検証結果: B1a回帰190件成功。全体112 files／4,285 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。
+
+### 2026-11-03: B1c最初の実VM検証・systemd起動／6 principalのDAC対照
+
+- §9.82とtest-only q2b_b1c fixtureへ、固定imageのQEMU TCG boot、独立SSH host key、固定path配備・bundle pin検証、外側controllerと6 principalの攻撃／許可対照を追加。新規VMを一から作る再現runnerも実行し、Ubuntu kernel 6.8.0-147-generic／systemd 255.4の実serviceで確認した。外側tools containerのkernelは6.10.14-linuxkitであり、container内startupだけの結果ではない。
+- 実systemdとの差分としてメモリ監視環境変数の明示除去・8 MiB runtime上限・managerの3 capability明示をB1c診断variantだけへ追加。B1a／B1bは変更せず、最終providerの5 capability集合0・補助groupなし・UID/GID全値をcontroller側から照合する。
+- native142件（許可16／拒否126）、別保存のcontroller公開pin／bundle inventoryと署名記録を追加。canary read／write-open・socket操作・proc FD／mem・signal 0・role connectを検証する。これは完全なptrace／signal配送／認証の実証ではない。新規26回帰で署名・独立pin・case閉包・資格・期待値・未成立scopeを照合し、正しく再署名した不正記録も拒否する。
+- **B1c全体は未完了。** 次は認証transport／両端kernel資格／FD転送対策、manager署名launchとbootstrap digest、外側exec phase観測・B1a bridge、queued接続・credential保護、coordinated restart／leak drain。QB01〜QB19／QB30〜QB32の完了へ先取りせず、B2／B3・Q3／Q4も残す。systemdBootVerifiedだけtrue、nativeIsolationVerified／profileApproved／backendEligible=false・originalReadsSkipped=0を維持する。
+
+B1c VM部分の検証結果: 新規26 Vitest回帰・実VM142 native controls成功。全体113 files／4,311 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。errno照合を外した故障版で再署名済みunexpected-errno回帰が失敗し、復元後に成功した。公開記録の独立pin／signature・配備inventory digest・実source hashを照合し、本番buildにVM fixture／verifierが含まれないことを確認した。VM外controller署名は収集記録の出自だけを表し、manager署名や完全なexec監査の代用ではない。

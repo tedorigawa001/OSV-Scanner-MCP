@@ -4935,4 +4935,36 @@ native fixtureは最初のmkdir／chmod／chownより前に全3 path分岐をrea
 
 追加28 native controlsで合計58、通常Vitestは追加28件でB1b合計65件。標準FD canary不変・entrypoint witness・領域外の書込／mode変更0・拒否時のFD解放と、更新source／artifact hash・5 unitの再検証結果を保存した。今回もVM boot／B1c独立隔離／署名controller／grant・本番採用は未成立である。
 
+### 9.82 Q2/B1cの最初の実VM検証：systemd起動・6 principalのDAC対照
+
+#### 9.82.1 採用範囲と未成立条件
+
+`src/test/fixtures/q2b_b1c`と`gradleOwnedVm.ts`は、B1cのうち実systemd VMの起動と独立UIDによるアクセス制御を検証するtest-only fixtureである。**B1c全体の完了ではない。** 別kernel／systemd PID1のguestをQEMU TCGでbootし、既存containerでのB1b startup実証と分けて記録する。新規guestの起動から配備・攻撃／許可対照・VM外controllerの署名まで再現runnerを実行した。
+
+今回のproviderはpreflight後に待機するだけで、queued接続のaccept・service鍵読取・認証・grant発行をしない。実証はQB01／02／03／04／07／17の一部とQB32の非採用判定に関係するが、QB単位の完了件数にはしない。socket connect成功を両端認証とみなさず、signal 0を実signal配送、procアクセスを全ptrace攻撃の証拠とみなさない。B1aのsynthetic-staticへmodeを付け替える変換や本番reader接続も追加しない。
+
+#### 9.82.2 固定VM profileと読取前条件
+
+B1b sourceの固定anchorを検査して別のb1c image／state／unit名を生成し、親source SHA-256をbundleへ記録する。B1b source・保存証拠・4 MiB上限とB1a contractは変更しない。Ubuntuの実runtimeは7,845,048 bytesのため、この診断variantだけ8 MiB上限を明示した。完全なruntime依存閉包や承認profileを確立したという意味ではない。
+
+実systemd 255で注入されたMEMORY_PRESSURE_WATCH／MEMORY_PRESSURE_WRITEをserviceとprepareのunit双方で除去し、未知の環境変数を許可しない。空のAmbientCapabilitiesで起動した実serviceでは、bounding setにSETUIDが存在していてもeffective／permittedは0x140となりUID降下がEPERMで失敗した。対照unitでは同じbinaryが0x1c0を持つため、一般的なsystemdの仕様や単一原因までは断定しない。VM診断variantではroot managerへSETUID／SETGID／SETPCAPの3つだけ明示して起動し、最終providerのinheritable／permitted／effective／bounding／ambientがすべて0であることを外側から必須照合した。この変更を未検証のB1a承認条件へ暗黙に拡張しない。
+
+installerは専用guest marker・systemd PID1・非container、外部から指定したarchive digest、固定path集合、artifact digest／mode、既存target不在・root-owned非書込可能ancestorを検査してから配備する。任意path／command／overwrite／recursive cleanupの入口はない。通常のtestではVM／Dockerを起動せず、host accountやhost serviceを操作しない。再現runnerは独立検証済みimageを受け取り、download／guest package更新をしない。
+
+#### 9.82.3 外側controllerと142 native controls
+
+guestのroot controllerが、serviceの実PID／runtime executable／固定argv／FD 0〜6、root-created bootstrapのPID／UID・GID／artifact hashとsealを照合する。各actorは資格降下後にSIGSTOPし、controllerが`/proc/PID/status`からreal／effective／saved／filesystem UID・GID、補助groupなし、5 capability集合0、NNP、TracerPid=0を確認してから操作を許可する。provider self-reportだけでactor資格を採用しない。
+
+6 principal×6 private rootのread／write-openが72件、root-owned listener親の任意名作成・leaf unlink／chmod、entrypoint／unit write-open、controller evidence read、別UIDのprovider proc FD／mem、signal 0の権限検査が52件、3 role socketへのconnectが18件で計142件。provider自身のproc FD／memはdumpabilityの影響があるため許可対照に使わない。自分のrootへのread／write-openと正しいroleのconnectを同じactor・syscallで成功させ、拒否はEACCES／EPERMだけとする。ENOENT・未知errno・actor失敗・結果欠落を拒否と数えない。canary digestとprovider資格の事後不変も検査する。write-openの許可は内容の更新試行そのものではなく、書込用openの権限対照である。
+
+SSHはrunごとに新しいclient／host keyを作り、固定host keyで接続する。controller署名鍵はVM外に置き、公開pinをboot前に保存する。公開観測・environment／source hashをEd25519署名し、独立公開pinと配備bundle digestを要求する静的verifierで照合する。これは収集した観測の署名であり、全syscall／execの監査やmanager署名launchの代用ではない。公開pin・bundle inventoryを観測とは別に保存し、seed／秘密鍵は保存資料に含めない。
+
+#### 9.82.4 回帰と保存記録
+
+公開観測は`docs/validation/gradle-q2b-b1c-vm-2026-11-03.json`、独立pinは同名`.pin`、配備inventoryは同名`.bundle.json`へ保存する。通常回帰は独立key／bundle pin、署名、完全case集合・独立期待値、全actor資格、provider／listener対応、別kernel、未成立scopeとsource hashを照合する。正しく再署名してもcase欠落／重複／未知case、actor・許可期待値・errno・saved UID／GID・group・capabilityの不正、PID／listener GID不一致、同kernel、制限事項の削除や採用flag昇格を拒否する。errno検査を除去した故障版で該当回帰が失敗し、復元後に成功することも確認した。
+
+#### 9.82.5 B1cの残り
+
+次は認証transportと両端kernel資格・全frame credential／FD転送対策、独立manager署名launchとbootstrap digestの統一、外側exec phase観測とB1aへの正規bridge、queued接続・credential保護の負例、coordinated restart／leak drainを実装してnative再検証する。今回の署名記録にこれらの証拠はなく、完全なQB01〜QB19／QB30〜QB32を満たさない。B2／B3の保存／fence／pin、Q3／Q4も後続である。`systemdBootVerified=true`のみ新たに実証し、`nativeIsolationVerified`／`profileApproved`／`backendEligible=false`、`originalReadsSkipped=0`を維持する。
+
 B1bレビュー修正の検証結果: 追加28 native controlsで計58件、通常B1bテストは追加28件で計65件成功。全体112 files／4,284 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。5 unitの構文再検証・同一static ELF hash、58 case閉包・source hash・§9.81の6小節、本番buildへのfixture非収録を確認した。修正前のstdio／親symlinkのREDと、launcher guard変異版をentry witnessで検出する対照も成功。既存の別変更は保持し、B1b追加件数へ算入しない。実VM boot／独立隔離／本番採用は未成立のまま。

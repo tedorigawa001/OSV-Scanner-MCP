@@ -1,0 +1,108 @@
+{
+  "backendEligible": false,
+  "compiled": true,
+  "files": [
+    {
+      "mode": 420,
+      "path": "/etc/systemd/system/osv-q2b-b1c-publish.socket",
+      "sha256": "7d18ce2a9bbbac555458836f1b2078ef9adf7ba1d061dc4990461d72d368f574",
+      "size": 687
+    },
+    {
+      "mode": 420,
+      "path": "/etc/systemd/system/osv-q2b-b1c-reader.socket",
+      "sha256": "92fb1681d3672b455370fb9fca84670278cab90755c85e2cf5aee6fabbe75887",
+      "size": 683
+    },
+    {
+      "mode": 420,
+      "path": "/etc/systemd/system/osv-q2b-b1c-upload.socket",
+      "sha256": "1faa99b9f164f6405affe33bfd91888cc9c7a5c4cbe63faf4b0c841fc81742ed",
+      "size": 683
+    },
+    {
+      "mode": 420,
+      "path": "/etc/systemd/system/osv-q2b-b1c.service",
+      "sha256": "c1318e03701e01ff5053b76a21ef8890442763d4534440d33b0073558b0a6cb6",
+      "size": 1242
+    },
+    {
+      "mode": 420,
+      "path": "/etc/systemd/system/osv-q2b-b1c.target",
+      "sha256": "35a026a61923b856320bbf9e6019415b0be5ad88d5dde8cdd9339b3ffba5c06c",
+      "size": 239
+    },
+    {
+      "mode": 493,
+      "path": "/opt/osv-q2b/b1c/launcher",
+      "sha256": "9f70b245d225f55cf5f16661c9f1d3634721576f51a63eec1e0c17a630cd3d5e",
+      "size": 708376
+    },
+    {
+      "mode": 420,
+      "path": "/opt/osv-q2b/b1c/launcher.c",
+      "sha256": "46a9e86d9704e67dc1ec1435d1c5590c96b3d2dc36bee60c5fabc74c073baa8f",
+      "size": 14227
+    },
+    {
+      "mode": 420,
+      "path": "/opt/osv-q2b/b1c/policy.h",
+      "sha256": "316e8e1b93102b03214cb7040d9b50ddd3d2f5f6a7ac225543f0d80ca0cd90fd",
+      "size": 259
+    },
+    {
+      "mode": 420,
+      "path": "/opt/osv-q2b/b1c/provider.py",
+      "sha256": "4c7564f062cb518934d746c89da4c5d9cc8491f50a2c0ba307df07dc7223c665",
+      "size": 5873
+    },
+    {
+      "mode": 493,
+      "path": "/opt/osv-q2b/b1c/runtime",
+      "sha256": "c86f21d0da9290ece2d7d49a3f7ed52aed59cb029abdf0ea25c79634f6cbe960",
+      "size": 7845048
+    },
+    {
+      "mode": 420,
+      "path": "/usr/lib/sysusers.d/osv-q2b-b1c.conf",
+      "sha256": "cd748815a4b1d2bd8a0b9e0a3193ed103746031b396be8cfc33b29221977734f",
+      "size": 530
+    },
+    {
+      "mode": 420,
+      "path": "/usr/lib/tmpfiles.d/osv-q2b-b1c.conf",
+      "sha256": "b55f275a59eea59319071085aa74aa059486067420eb2aa3862f948e5b3ac88f",
+      "size": 198
+    }
+  ],
+  "nativeIsolationVerified": false,
+  "parentSources": [
+    {
+      "path": "build_fixture.py",
+      "sha256": "ed1450b77e8a47966592ebbc5c00308446c653c5b8e0795fa6045f37ded1d2ed"
+    },
+    {
+      "path": "launcher.c",
+      "sha256": "4557194bdff378d9194d1dd582b318aaf5e56fb4e780f9f0f6fbcadb8adfd161"
+    },
+    {
+      "path": "provider.py",
+      "sha256": "00a6b7d8079f358e642804da76af6a729bae933383030344068e84a3621963b0"
+    }
+  ],
+  "profileApproved": false,
+  "requirements": [
+    "dedicated disposable systemd>=255 Linux VM",
+    "root-owned complete rootfs ancestors",
+    "matching trusted Python base image/stdlib/shared libraries",
+    "coordinated service/socket teardown before restart"
+  ],
+  "runtimeSha256": "c86f21d0da9290ece2d7d49a3f7ed52aed59cb029abdf0ea25c79634f6cbe960",
+  "runtimeSource": "/work/b1c-reproduction/guest-python",
+  "schema": "osv-mcp.q2b.b1c.bundle.v1",
+  "scope": "b1c-vm-diagnostic-only",
+  "unimplemented": [
+    "B1c authenticated reader transport and independent signed controller evidence",
+    "B2/B3 sealing, fencing and pins"
+  ]
+}
