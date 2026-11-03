@@ -6244,6 +6244,20 @@ serverのstatus結果cacheは、同bootのpeer identity＋originと要求digest�
 
 単体29件は基本認証、署名・identity・TTL・origin・sequence・対象instance・lineageの改変、並行再送、容量、期限、時計、失効、応答紛失、unknown handleとquota継続を検査する。別process suite 4件は、childが各自で秘密鍵を1個生成し、親が公開鍵と署名済みpacketだけを中継する構成を検査する。通常status、challenge応答紛失、結果応答紛失、旧結果注入に対して4 transcript・4 dispatch・3回復・7 boot要求を観測した。別途失効と期限到達でstatus dispatch 0を確認する。正常終了は両childのexit 0まで確認する。
 
-検証記録は`validation/gradle-independent-currentness-c3b1-2026-11-04.json`へ保存する。別UID・kernel資格情報・systemd VMの隔離、独立保存service／registry、live pin、native本番採用は未成立。全採用flagはfalse、originalReadsSkippedは0。次はC3b-2のOwnedStore／stage ledger／Anchor、その後C3b-3原本transfer・C3b-4 authority・C3b-5 C2業務経路への接続を行う。
+検証記録は`docs/validation/gradle-independent-currentness-c3b1-2026-11-04.json`へ保存する。別UID・kernel資格情報・systemd VMの隔離、独立保存service／registry、live pin、native本番採用は未成立。全採用flagはfalse、originalReadsSkippedは0。次はC3b-2のOwnedStore／stage ledger／Anchor、その後C3b-3原本transfer・C3b-4 authority・C3b-5 C2業務経路への接続を行う。
 
 C3b-1の最終検証: 新規2 files／33 tests成功（単体29件・別process suite 4件）。全体129 files／5,215 tests成功、24 files／1,418 tests skipped（233.43秒）。型検査・build成功。内側署名検査を除去すると署名改変の回帰が失敗し、検査を復元した。production runtimeにtest fixture import／鍵生成処理がないことを確認。source閉包14 filesを検証記録と照合する。新規の別UID隔離・本番採用は0。
+
+#### 9.95.4 e69babbレビュー修正：操作枠の解放・診断cache・署名APIの閉鎖
+
+**clientの操作枠。** 修正前は、成功とローカル拒否のときだけ`#pending`から操作を外していた。期限切れ・`unknown`になったhandleは再実行できないのに枠だけが残るため、通信障害中に上限（既定64件）まで失敗すると、復旧後も`capacity_exhausted`で新しい操作を用意できなかった。実行したhandleは結果によらず枠から外し、一度も実行していないhandleも期限を過ぎれば次の`prepareStatus`で解放する。使用済みhandleの再実行は引き続き拒否する。
+
+**serverの診断cache。** 修正前は、失敗も完了も起動中ずっと保持していた。一時的な`status()`の失敗でも、回復した新sessionが同じ失敗を受け取り、65回目のstatusは`capacity_exhausted`になった。§9.95.1の「64 pending operation」とも異なっていた。失敗は保持せず、同じoriginの再試行で再びdispatchする。完了した回答は、最初のchallengeの期限を過ぎたら解放する。読取専用の診断なので、解放後に同じoriginが届いても再読取するだけで害はない。C3b-2のdurable業務ledgerには、この解放を持ち込まない（§9.93.13）。boot別256要求の上限は従来どおりで、到達すればendpointの再起動まで止まる。
+
+**署名API。** 修正前の`Endpoint.signed(schema, body)`はpublicで、schemaもbodyも検査せず、`config.privateKey`も実行時に取得できた。§9.93.2の「任意role署名のAPIを持たない」とCB02に反していた。秘密鍵をモジュール内のWeakMapへ移し、署名は検査済みのauth messageとrecovery bodyに限るモジュール内関数だけで行う。endpointには汎用の署名メソッドも秘密鍵のプロパティも置かない。`RoleSigner`／`ScopedSignIntent`への接続は、実業務を扱うC3b-2で行う。それまで秘密鍵はendpointと同じprocessのメモリにあり、OSによる隔離は別の証拠（C3c／C3d）である。
+
+**時間判定。** 回復の時間判定を`recoveryTimeFits`へまとめ、静的な`validateSessionRecovery`とruntimeが同じ定義を使う。ちょうど収まる場合は許可する。runtimeが`validateSessionRecovery`全体を呼ばないのは、回復の可否を決める時点で新sessionのnonce等がまだ存在しないためである。clientはsessionの寿命をtransport open前から数え、serverの寿命が切れる前に接続し直す。期限直前に回復1回分を消費することがなくなる。
+
+回帰11件を追加（単体40件、別process suite 4件）。修正前のsourceでは10件が失敗することを確認した（残る1件は修正前後で変わらない境界の対照）。別processの観測値は変わらない。
+
+e69babbレビュー修正の最終検証: 全体は`npx vitest run --maxWorkers=2`で129 files／5,226 tests成功、24 files／1,418 tests skipped。型検査・build成功。新規の別UID隔離・本番採用は0。

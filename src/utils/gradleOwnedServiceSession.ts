@@ -88,6 +88,8 @@ export class ServiceContextFloor {
   const next={controlRevision:v.controlRevision,selectionRevision:b.selectionRevision,revocationEpoch:b.revocationEpoch};if(this.#floor)for(const k of Object.keys(next) as (keyof typeof next)[])need(next[k]>=this.#floor[k],'rollback_detected');this.#floor=next;return this.snapshot();}
  snapshot(){return structuredClone(this.#floor);}
 }
+/** The one definition of whether a recovery still fits before its deadlines; an exact fit is allowed. */
+export function recoveryTimeFits(nowMs:number,handshakeMs:number,remainingWorkMs:number,...deadlinesMs:number[]){return nowMs+handshakeMs+remainingWorkMs<=Math.min(...deadlinesMs);}
 const recoveryState=z.object({clientCredentialId:cid,serverCredentialId:cid,sessionId:chash,clientNonce:chash,serverNonce:chash,transcriptDigest:chash,serverBoot:chash,keyEpoch:cn.positive(),clientBoot:chash,clientKeyEpoch:cn.positive(),deploymentDigest:chash,registryDigest:chash,endpointId:cid,operationKey:chash,requestDigest:chash,bindingDigest:chash,payloadDigest:chash,lineage:currentLineageSchema,floor:floorSchema.nullable(),operationStartedMs:cn,deadlineMs:cn,pinExpiresMs:cn,bootRequestsUsed:cn.max(256),recoveries:cn.max(1),status:z.enum(['abandoned','ready']),requestSequence:cn.positive(),replySequence:cn.positive()}).strict();
 export const sessionRecoverySchema=z.object({schema:z.literal('osv-mcp.q2.c3b.session-recovery.v1'),old:recoveryState,next:recoveryState,nowMs:cn,recoveryHandshakeMs:cn.positive().max(5000),remainingWorkMs:cn.max(5000)}).strict();
 export function validateSessionRecovery(value:unknown){const r=parsed(sessionRecoverySchema,value),a=r.old,b=r.next;
@@ -96,7 +98,7 @@ export function validateSessionRecovery(value:unknown){const r=parsed(sessionRec
  need(a.sessionId!==b.sessionId&&a.clientNonce!==b.clientNonce&&a.serverNonce!==b.serverNonce&&a.transcriptDigest!==b.transcriptDigest&&b.requestSequence===1&&b.replySequence===1&&b.bootRequestsUsed>a.bootRequestsUsed,'binding_mismatch');
  need(r.nowMs>=a.operationStartedMs&&r.nowMs<a.deadlineMs&&r.nowMs<a.pinExpiresMs&&a.deadlineMs-a.operationStartedMs<=5000&&a.pinExpiresMs-a.operationStartedMs<=5000,'request_expired');
  // A recovery must leave time for its handshake and the rest of the planned read before either deadline.
- need(r.nowMs+r.recoveryHandshakeMs+r.remainingWorkMs<=Math.min(a.deadlineMs,a.pinExpiresMs),'request_expired');
+ need(recoveryTimeFits(r.nowMs,r.recoveryHandshakeMs,r.remainingWorkMs,a.deadlineMs,a.pinExpiresMs),'request_expired');
  if(a.floor){need(b.floor,'rollback_detected');for(const k of Object.keys(a.floor) as (keyof NonNullable<typeof a.floor>)[])need(b.floor[k]>=a.floor[k],'rollback_detected');}
  return {operationKey:a.operationKey,requestDigest:a.requestDigest,floor:structuredClone(b.floor),scope:'static-contract-only' as const,backendEligible:false,originalReadsSkipped:0};
 }

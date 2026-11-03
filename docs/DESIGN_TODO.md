@@ -2815,3 +2815,12 @@ b6bb2f8レビュー修正の検証結果: 対象245件、全体5,182 tests成功
 - 次はC3b-2：OwnedStore／stage ledger／Anchorの実接続。C3b-3原本transfer、C3b-4 authority、C3b-5 C2業務経路、その後C3c／C3d／C4が残る。
 
 C3b-1の最終検証: 新規2 files／33 tests成功（単体29件・別process suite 4件）。全体129 files／5,215 tests成功、24 files／1,418 tests skipped（233.43秒）。型検査・build成功。内側署名検査を除去すると署名改変の回帰が失敗し、検査を復元した。production runtimeにtest fixture import／鍵生成処理がないことを確認。source閉包14 filesを検証記録と照合する。新規の別UID隔離・本番採用は0。
+
+### 2026-11-04: e69babbレビュー修正・session runtimeの枠解放と署名API
+
+- 実行後のhandleが`#pending`に残り、失敗が上限に達するとclientが再起動まで使えなくなる問題を修正した。期限切れの未実行handleも解放する（§9.95.4）。
+- serverの診断cacheが失敗と完了を起動中ずっと保持していた問題を修正した。失敗は保持せず、完了は最初のchallengeの期限後に解放する。C3b-2のdurable ledgerには持ち込まない。
+- 公開の汎用署名`signed`／`sign`と`config.privateKey`を廃止し、署名を検査付きのモジュール内関数に限定した。RoleSignerへの接続はC3b-2に残る。
+- 回復の時間判定を`recoveryTimeFits`へ統一し、clientのsession寿命をtransport open前から数える。記録のパスを修正した。
+
+e69babbレビュー修正の検証結果: 単体40件・別process 4件、全体5,226 tests成功（1,418 skipped）。型検査・build成功。
