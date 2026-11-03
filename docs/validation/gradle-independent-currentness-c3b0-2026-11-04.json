@@ -5,17 +5,18 @@
   "sourceSha256": {
     "package-lock.json": "7ca889f29792212298919fbf0405e9f7d119e39740b94fa86cee94831ed3b91b",
     "package.json": "bbb4b96e57ed719df1d39f5ad15bb8dee6921c120930814da3e0cbfad309263f",
-    "src/test/fixtures/gradleOwnedServiceContract.ts": "77d6980ea54c89f07b806af301add06f733cf6577f950c3c70af2a74467708d0",
-    "src/test/utils/gradleOwnedServiceBudget.test.ts": "de75aca0c89a9d2b439daefbcb1b6b4ad02ff03a1ae50709eac3be897b3d111a",
+    "src/test/fixtures/gradleOwnedCurrentBridgeFixture.ts": "21d8c5183cb4ef9aaab3fe76771d0a6e70e0ab8ef3cca76c4e680d360dc7ed03",
+    "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
+    "src/test/utils/gradleOwnedServiceBudget.test.ts": "1d08f7370f932584027ffbdcd4fc86520967844683ad2aa2e7fb16632b479651",
     "src/test/utils/gradleOwnedServiceOwners.test.ts": "a2a51b8fdcdf37509409e08e8ce6214eb98e35c0a10e01ac708323037397ea5c",
-    "src/test/utils/gradleOwnedServiceSession.test.ts": "547deea9eb0a8090ca1b0437e41df2bece592b733b5ea043b7129089b912932b",
+    "src/test/utils/gradleOwnedServiceSession.test.ts": "6b3285dc6a415af313f156fe048f738e55d658f5c98e504ebc205928720f1460",
     "src/test/utils/gradleOwnedServiceStages.test.ts": "2edf555838fbc5b514fdf3bfc3edac4754924e1ec9171b5d0f7829fe15695255",
     "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
-    "src/utils/gradleOwnedServiceBudget.ts": "118d3368a8af859017a825b7b9092f1aec13ba8c48be51c4256c33e9a9aa3b75",
+    "src/utils/gradleOwnedServiceBudget.ts": "3313605efd53a2a2d731f9437c9bbd85da7591ca4d535c73cfec2e8011c3a273",
     "src/utils/gradleOwnedServiceOwners.ts": "81bbe25ff0c3e165f044c0599902d421b43669d044aa11cca42954236e269e7b",
-    "src/utils/gradleOwnedServiceSession.ts": "96ccaf6dbe364cfcc5b0676b9cb3c19fdfb12fda12e3cf3cd1af89930381d3f5",
+    "src/utils/gradleOwnedServiceSession.ts": "12f8a408dfa36eb7d711c6f04f750351fbf739b78cb8159cfd7e8e3d90dd8ba0",
     "src/utils/gradleOwnedServiceStages.ts": "d42e360e05fe29a26c542b04ed68493b02f321c42e1f4e84515a27260ffc8933"
   },
   "nativeTrials": 0,
@@ -43,7 +44,7 @@
     "ownerAssemblyAdapterCalls": 0
   },
   "baseCommit": "2b40bc3",
-  "tests": 240,
+  "tests": 245,
   "command": "npx vitest run src/test/utils/gradleOwnedServiceOwners.test.ts src/test/utils/gradleOwnedServiceStages.test.ts src/test/utils/gradleOwnedServiceSession.test.ts src/test/utils/gradleOwnedServiceBudget.test.ts",
   "established": [
     "Five role-specific static OwnerConfig plans with disjoint root/key identifiers and independently pinned public credentials",
@@ -58,7 +59,7 @@
     "No nonce/challenge/sequence table, atomic reservation, replay-state mutation, real connection or two-child service pair is implemented",
     "Channel metadata validation binds canonical inner bytes/domain/API/lineage; complete inner payload validation and runtime authorization remain mandatory",
     "A validated stage receipt represents structurally consistent hypothetical facts, not observed durable storage or live authority",
-    "Budget schedule bounded-full-read-v1 is a static worst-case plan; binding the actual runtime call graph, reserving/consuming quotas and measuring throughput remain C3b-1/5 and C3d work",
+    "Budget schedule selected-source-read-v1 is a static worst-case plan; binding the actual runtime call graph, reserving/consuming quotas and measuring throughput remain C3b-1/5 and C3d work",
     "Context observations must already be accepted by the domain-specific authenticated client; the floor helper does not authenticate a raw observation",
     "No separate UID isolation, independent rollback domain, actual authority handoff, Task/BTA/OSV connection, read skipping or adoption"
   ],
@@ -97,14 +98,14 @@
     "chunks": 1,
     "requests": {
       "reader": 7,
-      "provider": 23,
-      "checkpoint-issuer": 27,
-      "authority-broker": 9,
+      "provider": 5,
+      "checkpoint-issuer": 4,
+      "authority-broker": 7,
       "lineage-registry": 11
     },
-    "frames": 388,
-    "signatureChecks": 776,
-    "wireBytes": 6356992,
+    "frames": 216,
+    "signatureChecks": 432,
+    "wireBytes": 3538944,
     "verificationBytes": 40960,
     "storageStages": 9,
     "plannedMsIncludingMarginAndRecovery": 3800
@@ -150,6 +151,52 @@
         "koffi": "3.3.5",
         "@modelcontextprotocol/sdk": "1.32.2"
       }
+    }
+  },
+  "previousExampleBudget": {
+    "closureBytes": 4096,
+    "chunks": 1,
+    "requests": {
+      "reader": 7,
+      "provider": 23,
+      "checkpoint-issuer": 27,
+      "authority-broker": 9,
+      "lineage-registry": 11
+    },
+    "frames": 388,
+    "signatureChecks": 776,
+    "wireBytes": 6356992,
+    "verificationBytes": 40960,
+    "storageStages": 9,
+    "plannedMsIncludingMarginAndRecovery": 3800
+  },
+  "budgetAndRecoveryReviewFix": {
+    "baseCommit": "b6bb2f8",
+    "rootCause": "bounded-full-read-v1 charged every chunk 20 provider and 24 issuer requests (all eight retained prepares) against the 256 per-actor request limit, so at most 40,960 bytes were admissible and the C2 end-to-end source (41,452 bytes) was refused",
+    "budgetContract": [
+      "Algorithm selected-source-read-v1 replaces bounded-full-read-v1; the old ID is rejected rather than reinterpreted",
+      "A read verifies only the selected source: per chunk reader 1, provider 2, checkpoint-issuer 1, authority-broker 1, lineage-registry 0, plus fixed and one reserved request per actor",
+      "The admissible closure is derived from the per-actor request limit: 126 chunks (516,096 bytes); one chunk more is refused",
+      "The C2 fixture source size is admitted under the plan"
+    ],
+    "recoveryContract": "Session recovery requires nowMs + recoveryHandshakeMs + remainingWorkMs to fit before both the operation deadline and the pin expiry",
+    "challengeContract": "Challenge exchange permission now matches API, purpose, lineage and delegate instance, as the channel frame already did",
+    "regressionTestsAdded": 6,
+    "regressionTestsRemoved": 1,
+    "beforeFix": {
+      "failingRelevantTests": 12
+    },
+    "afterFix": {
+      "targetedTestsPassed": 245,
+      "fullSuite": {
+        "command": "npx vitest run --maxWorkers=2",
+        "filesPassed": 127,
+        "filesSkipped": 24,
+        "testsPassed": 5182,
+        "testsSkipped": 1418
+      },
+      "typecheck": "passed",
+      "build": "passed"
     }
   }
 }

@@ -6204,3 +6204,19 @@ v1の9工程・余裕／速度条件に加え、wire bytes・signature検証・s
 C3b-0の最終検証: 新規4 files／240 tests成功。全体は`npm test -- --maxWorkers=1`で127 files／5,177 tests成功、24 files／1,418 tests skipped（242.60秒）。型検査・build・diff整形検査成功。4つの検査除去対照で各1件が失敗し、復元後に成功。14 source閉包fingerprintの一致と、test fixture／秘密署名処理がproduction distへ混入していないことを確認。新規native実行・本番採用は0。
 
 C3b-0コミット前の依存更新互換確認: 既存のkoffi 3.3.5／MCP SDK 1.32.2更新（9997f4eまで）を維持し、validationのpackage fingerprintを更新。対象240件、全体5,177件成功（1,418 skipped、並行数1、265.15秒）、型検査・build成功。更新前の検証結果・package fingerprintは履歴として記録内へ保持した。
+
+#### 9.94.6 b6bb2f8レビュー修正：選択sourceだけの予算計上・回復の残り時間・challengeの権限
+
+**予算計上。** 修正前の`bounded-full-read-v1`は、1 chunkごとにproviderへ20件、issuerへ24件（保持する8件のprepared source全体の検証）の業務要求を計上していた。これをrole別の要求上限`CURRENT_LIMITS.requests`（256件）と照合するため、受理できるclosureは最大40,960 bytes（10 chunk）だった。C2のend-to-end fixtureのsource（41,452 bytes）も予算の段階で拒否され、C3b-5の接続目標を満たせなかった。§9.94.4には、この上限が書かれていなかった。
+
+readが検証するのは選択されたcheckpointのsourceだけである（§9.91.6）。新しいalgorithm `selected-source-read-v1`は、1 chunkあたりreaderのReadSealedSource 1件、providerがreaderとbrokerへ応答する前のlive再確認2件、issuerのwitness用read 1件、brokerのsource read 1件を計上する（registryは0件）。固定分と、roleごとに1件の再試行予約を加える。計算手順が変わったので、旧IDは読み替えずに拒否する。`maxPreparedCheckpoints`は読取の費用に使わないので、v2 profileから外した。
+
+受理できるclosureは、role別の要求上限から導出する（`serviceReadClosureLimit`）。現在は126 chunk（516,096 bytes）で、1 chunk超えると拒否する。C2 fixtureのsourceはこの範囲で受理される。C0のclosure上限（64 MiB）とは依然として大きな差があり、これを広げるにはchunkを業務要求とは別に数えるtransfer設計（C3b-3）が必要である。4096 bytesの例は216 frames／432 signature checks／9 stagesになる。
+
+**session回復の残り時間。** 修正前の`validateSessionRecovery`は、現在時刻が元の期限より前であることしか確認していなかった。回復の要求に`recoveryHandshakeMs`と`remainingWorkMs`（残りの工程の予算）を加え、`nowMs＋recoveryHandshakeMs＋remainingWorkMs`が元の操作の期限とpinの期限の両方に収まる場合だけ回復を許す。
+
+**challengeの権限。** `validateChallengeExchange`はAPIだけでcredential permissionを照合していた。channel frameと同じく、purpose・lineage・委譲先instanceも照合する。
+
+回帰6件を追加し、旧ID定数の1件を外した（対象4 files計245件）。修正前のsourceでは、新規・形状変更の12件がすべて失敗することを確認した。
+
+b6bb2f8レビュー修正の最終検証: 対象4 files／245 tests成功。全体は`npx vitest run --maxWorkers=2`で127 files／5,182 tests成功、24 files／1,418 tests skipped。型検査・build成功。新規native実行・本番採用は0。

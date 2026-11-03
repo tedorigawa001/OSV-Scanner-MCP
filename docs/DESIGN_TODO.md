@@ -2796,3 +2796,12 @@ C3b設計レビュー修正の検証結果: §9.93.1〜12の12小節、C3b-0〜5
 C3b-0の最終検証: 新規4 files／240 tests成功。全体は`npm test -- --maxWorkers=1`で127 files／5,177 tests成功、24 files／1,418 tests skipped（242.60秒）。型検査・build・diff整形検査成功。4つの検査除去対照で各1件が失敗し、復元後に成功。14 source閉包fingerprintの一致と、test fixture／秘密署名処理がproduction distへ混入していないことを確認。新規native実行・本番採用は0。
 
 C3b-0コミット前の依存更新互換確認: 既存のkoffi 3.3.5／MCP SDK 1.32.2更新（9997f4eまで）を維持し、validationのpackage fingerprintを更新。対象240件、全体5,177件成功（1,418 skipped、並行数1、265.15秒）、型検査・build成功。更新前の検証結果・package fingerprintは履歴として記録内へ保持した。
+
+### 2026-11-04: b6bb2f8レビュー修正・C3b-0予算の過大計上
+
+- v2予算がchunkごとにissuerの8 prepared全体を計上していたため、受理できるclosureが最大40,960 bytesで、C2 fixtureのsource（41,452 bytes）も拒否されていた。選択sourceだけを計上する`selected-source-read-v1`に改め、上限をrole別要求上限から導出した（126 chunk、§9.94.6）。64 MiBまで広げるにはC3b-3のtransfer設計が必要。
+- session回復に、handshakeと残り工程の時間が両期限内に残ることの確認を加えた。challengeの権限照合にpurpose・lineage・委譲先を加えた。
+- 回帰6件を追加（C3b-0計245件）。
+
+
+b6bb2f8レビュー修正の検証結果: 対象245件、全体5,182 tests成功（1,418 skipped）。型検査・build成功。

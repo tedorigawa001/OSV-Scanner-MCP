@@ -55,11 +55,11 @@ export function validateChannelFrame(bytes:Buffer,inner:Buffer,handle:StaticSess
  return {api:m.api,innerWireDigest:m.innerWireDigest,scope:'static-contract-only' as const,backendEligible:false,originalReadsSkipped:0};
 }
 export function validateChallengeExchange(request:Buffer,reply:Buffer,handle:StaticSession,expected:unknown){
- const s=sessions.get(handle);need(s,'configuration_invalid');const x=parsed(z.object({requestId:chash,api:serviceAPISchema,originDigest:chash,requestSequence:cn.positive().max(512),replySequence:cn.positive().max(512),ttlMs:cn.positive().max(5000)}).strict(),expected);
+ const s=sessions.get(handle);need(s,'configuration_invalid');const x=parsed(z.object({requestId:chash,api:serviceAPISchema,originDigest:chash,requestSequence:cn.positive().max(512),replySequence:cn.positive().max(512),ttlMs:cn.positive().max(5000),purpose:z.enum(['read','publication','maintenance','checkpoint','handoff','enrollment','recovery']),lineage:currentLineageSchema}).strict(),expected);
  const a=authenticate(request,s.registry,'request',s.base.clientCredentialId),b=authenticate(reply,s.registry,'reply',s.base.serverCredentialId);need(a.kind==='challenge-request'&&b.kind==='challenge','schema_invalid');
  for(const m of [a,b])for(const [k,v]of Object.entries({...s.base,clientNonce:s.clientNonce,serverNonce:s.serverNonce,sessionId:s.sessionId,transcriptDigest:s.transcriptDigest,requestId:x.requestId,api:x.api,originDigest:x.originDigest,ttlMs:x.ttlMs}))need((m as any)[k]===v,'binding_mismatch');
  need(a.sequence===x.requestSequence&&b.sequence===x.replySequence,'binding_mismatch');const c=s.registry.credentials.find(c=>c.identity.credentialId===s.base.clientCredentialId)!,server=s.registry.credentials.find(c=>c.identity.credentialId===s.base.serverCredentialId)!;
- need(credentialAPIRoles(x.api).includes(c.identity.role)&&credentialDestination(x.api)===server.identity.role&&c.permissions.some(p=>p.api===x.api),'permission_denied');
+ need(credentialAPIRoles(x.api).includes(c.identity.role)&&credentialDestination(x.api)===server.identity.role&&c.permissions.some(p=>p.api===x.api&&p.purpose===x.purpose&&same(p.lineage,x.lineage)&&(p.delegateInstance===null||p.delegateInstance===server.identity.instanceId)),'permission_denied');
  return {challenge:b.challenge,scope:'static-contract-only' as const,backendEligible:false,originalReadsSkipped:0};
 }
 export const authenticatedOutcomeSchema=z.discriminatedUnion('kind',[
@@ -89,12 +89,14 @@ export class ServiceContextFloor {
  snapshot(){return structuredClone(this.#floor);}
 }
 const recoveryState=z.object({clientCredentialId:cid,serverCredentialId:cid,sessionId:chash,clientNonce:chash,serverNonce:chash,transcriptDigest:chash,serverBoot:chash,keyEpoch:cn.positive(),clientBoot:chash,clientKeyEpoch:cn.positive(),deploymentDigest:chash,registryDigest:chash,endpointId:cid,operationKey:chash,requestDigest:chash,bindingDigest:chash,payloadDigest:chash,lineage:currentLineageSchema,floor:floorSchema.nullable(),operationStartedMs:cn,deadlineMs:cn,pinExpiresMs:cn,bootRequestsUsed:cn.max(256),recoveries:cn.max(1),status:z.enum(['abandoned','ready']),requestSequence:cn.positive(),replySequence:cn.positive()}).strict();
-export const sessionRecoverySchema=z.object({schema:z.literal('osv-mcp.q2.c3b.session-recovery.v1'),old:recoveryState,next:recoveryState,nowMs:cn}).strict();
+export const sessionRecoverySchema=z.object({schema:z.literal('osv-mcp.q2.c3b.session-recovery.v1'),old:recoveryState,next:recoveryState,nowMs:cn,recoveryHandshakeMs:cn.positive().max(5000),remainingWorkMs:cn.max(5000)}).strict();
 export function validateSessionRecovery(value:unknown){const r=parsed(sessionRecoverySchema,value),a=r.old,b=r.next;
  need(a.status==='abandoned'&&b.status==='ready'&&a.recoveries===0&&b.recoveries===1,'recovery_required');
  for(const k of ['clientCredentialId','serverCredentialId','serverBoot','keyEpoch','clientBoot','clientKeyEpoch','deploymentDigest','registryDigest','endpointId','operationKey','requestDigest','bindingDigest','payloadDigest','operationStartedMs','deadlineMs','pinExpiresMs'] as const)need(a[k]===b[k],'binding_mismatch');need(same(a.lineage,b.lineage),'binding_mismatch');
  need(a.sessionId!==b.sessionId&&a.clientNonce!==b.clientNonce&&a.serverNonce!==b.serverNonce&&a.transcriptDigest!==b.transcriptDigest&&b.requestSequence===1&&b.replySequence===1&&b.bootRequestsUsed>a.bootRequestsUsed,'binding_mismatch');
  need(r.nowMs>=a.operationStartedMs&&r.nowMs<a.deadlineMs&&r.nowMs<a.pinExpiresMs&&a.deadlineMs-a.operationStartedMs<=5000&&a.pinExpiresMs-a.operationStartedMs<=5000,'request_expired');
+ // A recovery must leave time for its handshake and the rest of the planned read before either deadline.
+ need(r.nowMs+r.recoveryHandshakeMs+r.remainingWorkMs<=Math.min(a.deadlineMs,a.pinExpiresMs),'request_expired');
  if(a.floor){need(b.floor,'rollback_detected');for(const k of Object.keys(a.floor) as (keyof NonNullable<typeof a.floor>)[])need(b.floor[k]>=a.floor[k],'rollback_detected');}
  return {operationKey:a.operationKey,requestDigest:a.requestDigest,floor:structuredClone(b.floor),scope:'static-contract-only' as const,backendEligible:false,originalReadsSkipped:0};
 }
