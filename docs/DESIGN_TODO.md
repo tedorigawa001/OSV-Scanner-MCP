@@ -2734,3 +2734,11 @@ C3設計の検証結果: §9.91.1〜9の9小節とCN01〜CN40の順序・一意�
 C3設計レビュー修正: §9.91.10へcandidate-genesis／candidate-advance／selectedの証拠strict unionを追加し、採用前issuer readと採用済みreader readを分離。root manager／controllerと権限降下後processのprincipal・取得phase別権限条件を具体化。CN02／CN12／CN13を正常対照・混用拒否・phase偽装／残存権限拒否へ更新。文書のみで、C3a schema実装・新規native実行は未着手。
 
 C3設計レビュー修正の検証結果: §9.91.1〜10の10小節・CN01〜CN40の一意性と順序、mode／phase別条件の配置を確認。既存current control／C2 bridge／deployment／native storage記録検証の4 files・418 tests成功（36.15秒）。diff整形検査成功。文書のみの変更で、CN02／CN12／CN13を含む新schema・回帰実装・native実証は未実施。
+
+### 2026-11-03: 8a8e82fレビュー修正・C3とC2保留契約の整合
+
+- §9.91.1／§9.91.4／CN23を§9.90.6（8c6c567）の保留契約へ揃えた。intentごとの有界表、結果不明だけ保持、別intentは阻まない、確定拒否後は新ID。基準をC2 32回帰に更新した。
+- 失効したgenesis provisionが`provisioning`のまま残り、BeginEnrollmentが永久に`control_conflict`になる問題への対応として、提案API AbandonEnrollmentとCN41を§9.91.11に追加した。
+- 1 read pin（5秒）内の全工程について時間予算表とclosure上限をC3aで固定する条件と、CN42を追加した。C3aの終了条件にも反映した。
+
+8a8e82fレビュー修正の検証結果: §9.91.1〜11・CN01〜CN42の一意性と順序を確認。文書のみの変更で、提案APIとCN41／CN42の実装・native実証は未実施。

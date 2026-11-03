@@ -5685,7 +5685,7 @@ deliverReadの最初のlive確認はhandoff書込み前なので、その失敗�
 
 #### 9.91.1 成果・前提・非採用の維持
 
-C2完了commit `7aa8512`を基準に、§9.87.10のC3を次の実装単位へ分解する。本節は設計であり、新schema／service／VM配備／native検証を実装した証拠ではない。§9.84／9.86の旧診断IPC、単一snapshotとcontroller保存anchorを新current-controlへ昇格させない。C2の29回帰とfull原本検証を保持し、default transportを自動設置しない。`nativeIsolationVerified`／`independentRegistryVerified`／`profileApproved`／`backendEligible=false`、`originalReadsSkipped=0`を維持する。C3の各nativeケースが通ってもC4の独立承認は別判定である。
+C2完了commit `7aa8512`と保留予約のレビュー修正`8c6c567`（§9.90.6）を基準に、§9.87.10のC3を次の実装単位へ分解する。本節は設計であり、新schema／service／VM配備／native検証を実装した証拠ではない。§9.84／9.86の旧診断IPC、単一snapshotとcontroller保存anchorを新current-controlへ昇格させない。C2の32回帰とfull原本検証を保持し、default transportを自動設置しない。`nativeIsolationVerified`／`independentRegistryVerified`／`profileApproved`／`backendEligible=false`、`originalReadsSkipped=0`を維持する。C3の各nativeケースが通ってもC4の独立承認は別判定である。
 
 C3の初期実証はLinux systemd VM・1 authority／lineage・有界full mode・metadata結果の引渡しに限定する。任意Task／compiler launch、自然消費receipt、suffix-only read、物理GC／compaction、power-loss耐性は対象外。非対応OS・適合Anchorなし・隔離不可ならunsupportedで閉じ、同UID・memory serviceへの自動fallbackをしない。
 
@@ -5728,7 +5728,7 @@ strict canonical UTF-8・重複key／unknown field／非object／float／整数o
 
 C2の保留intent契約をwireへ保存する。同じlogical requestの再送ではoperation ID・元payload・元binding・original request digestを保持し、fresh transport nonce／sequenceだけを変える。serverは認証・認可を再検査し、後続transaction確定後も永続ledgerの元結果で解決する。API・role・peer／boot・payloadの変更はidempotency conflictで、QueryOperationをlive grant再発行へ使わない。BeginEnrollmentはhistorical結果に加えて元provisionのlive確認、ReserveWriter／AcquireReadPinはexisting-live-confirmedと元grant確認を要求する。期限切れ・失効・owner停止なら同IDの履歴確認までとし、新しい予約・期限を自動発行しない。
 
-clientはID／元requestを最初の送信前に有界の私有状態へ固定し、未知結果ではslotを保持して別intentへの差替えを拒否する。process再起動で旧credential／pinを復元せず、registry restart失効／barrierへ委ねる。transportの再試行回数・pending／byte上限と保存中断を課金する。途中で期限・権限・owner状態が変われば最後のawait後も成功を拒否する。
+clientはID／元requestを最初の送信前に、logical intentごとの有界の私有表（C2では8件）へ固定する。§9.90.6どおり、保留を残すのは結果不明（応答紛失・認証済みreplyの欠落）だけで、確定拒否・selection変更では解放する。同じintentのpayload／API／role／peer／boot変更は拒否するが、別intentは保留に阻まれない。表が満杯なら新規予約を送信前に拒否し、clientを止めない。process再起動で旧credential／pinを復元せず、registry restart失効／barrierへ委ねる。transportの再試行回数・pending／byte上限と保存中断を課金する。途中で期限・権限・owner状態が変われば最後のawait後も成功を拒否する。
 
 #### 9.91.5 context・namespace・原本転送の追加API
 
@@ -5776,7 +5776,7 @@ native caseは事前期待表にcase ID・対象API／phase・攻撃principal・
 
 | 段階 | 実装・検証単位 | 終了条件・先取りしないもの |
 | --- | --- | --- |
-| C3a | auxiliary strict schema／API permission、deployment bootstrap・context／namespace／transfer／result binding、署名検証runner・case期待表 | 下記CNの静的条件を回帰実装。既存C0／C1／C2互換。native／独立性はfalse |
+| C3a | auxiliary strict schema／API permission、deployment bootstrap・context／namespace／transfer／result binding、署名検証runner・case期待表、§9.91.11のAbandonEnrollment案と読取時間予算表 | 下記CN（CN41／CN42を含む）の静的条件を回帰実装。既存C0／C1／C2互換。native／独立性はfalse |
 | C3b | process別issuer／registry／provider／authority owner、署名endpoint、Anchor client、C2 adapter、authority失効とhandoffの予約protocol | local process／fault対照でdurable順序・grant・元要求retryを確認。actor factory／全private key共有なし。別UIDnative成立とはしない |
 | C3c | 固定unit／launcher／manager listener・sealed bootstrap・VM fixtureと外側controller、事前pin固定 | 全principalの資格・起動closure・実保存root／endpoint・正常接続を観測。未観測closure／Anchor独立性を自動承認しない |
 | C3d | 認証・FD転送・原本攻撃・保存障害・遅延／応答紛失・再起動／barrierのnative runとrecord verifier | 実行したcaseだけ証拠閉包で集計。失効／変更後の禁止操作0と正常対照。全条件と独立domainの未成立は個別表示 |
@@ -5810,7 +5810,7 @@ native caseは事前期待表にcase ID・対象API／phase・攻撃principal・
 | CN20 | BeginEnrollment応答紛失を同ID／元digestで再試行。historical＋live provision確認、追加予約・期限延長0 |
 | CN21 | ReserveWriter応答紛失を同要求で再試行。same fence／元期限／expected view、追加CAS0 |
 | CN22 | 通常read／mirrorのAcquireReadPin応答紛失を同要求で再試行し、same pin／期限・重複枠0 |
-| CN23 | 保留要求の別payload／API／role／peer／boot／file／scope置換、期限切れ後の新IDによる自動復活を拒否 |
+| CN23 | 同じintentの保留要求に対する別payload／API／role／peer／boot置換と、同じ呼出し内での新ID再発行・lease延長を拒否。別file／scopeのintentは保留に阻まれず進み、確定拒否後の後続呼出しは新IDの別要求として扱う（§9.90.6）。保留表の上限＋1は送信前拒否 |
 | CN24 | CAS応答紛失後に他transactionを挟んでも元applied revision／semantic resultを返し、二重publishしない |
 | CN25 | wire上の偽WeakMap handle・自己申告result digestだけではauthority gateを発行せず、brokerがfull G0/G2とlive authorityを確認 |
 | CN26 | session／scope／action-start／manifest／core／profile／consumer／result bytesの不一致を再署名後も拒否 |
@@ -5857,3 +5857,30 @@ candidateの解決→issuerのReadForCheckpoint→full認証／PreparedCheckpoin
 CN02の正常対照は限定maskのmanagerと全ゼロの非root各phaseを含める。負例は、managerで過剰capability・capability集合の欠落、launcherでmanager mask残存、runtimeのsaved UID/GIDだけ0、manager traceをruntime phaseへ移す変更、controller profile／実証拠の欠落を含み、controller再署名後も拒否する。rootであることだけを許可理由にせず、必要な特権を業務processへ残さない。
 
 C3設計レビュー修正の検証結果: §9.91.1〜10の10小節・CN01〜CN40の一意性と順序、mode／phase別条件の配置を確認。既存current control／C2 bridge／deployment／native storage記録検証の4 files・418 tests成功（36.15秒）。diff整形検査成功。文書のみの変更で、CN02／CN12／CN13を含む新schema・回帰実装・native実証は未実施。
+
+#### 9.91.11 設計レビュー修正：C2保留契約との整合・genesis再開・pin内の時間予算
+
+**C2保留契約。** §9.91.1／§9.91.4／CN23は、7aa8512時点の単一保留slot（別intentへの差替え拒否）を前提にしていた。これを§9.90.6の契約に揃える。すなわち、保留はlogical intentごとの有界表とし、結果不明だけを保持する。確定拒否とselection変更では解放し、別intentは阻まない。wire側でも単一slotを再導入しない。CN23の「自動復活の禁止」は、同じ呼出し内での新ID再発行とlease延長に限る。後続の独立した呼出しは、新IDの別要求として通常の認可を受ける。
+
+**genesis provisionの失効からの再開。** C0の`BeginEnrollment`は`uninitialized`でしか受理されない。provisionが失効しても状態は`provisioning`のまま残るため、後続のBeginEnrollmentは`control_conflict`になり、genesisを再開できない（§9.90.6）。C3aでは次の**提案API**を別versioned auxiliary bodyとして定義する。C0の22 APIは変更済みとしない。
+
+| 提案操作・caller→server | 条件・効果 |
+| --- | --- |
+| AbandonEnrollment：operator→registry | `enrollment.abandon`。exact provision ref・incarnation・元BeginEnrollmentのoperation ID／request digestへ束縛する。provisionが失効済み、またはlive確認で無効の場合だけ受理し、live provisionは`writer_stale`系で拒否する。ActivateEnrollment済み・決定待ち・結果不明のActivateEnrollmentがあれば拒否し、履歴照会へ回す。受理時はprovisionをretiredとしてdurableに保存し、旧fenceに結び付いたPrepareCheckpoint／ActivateEnrollmentを以後すべて拒否する。phaseを`uninitialized`へ戻すのは、この保存の後に限る。同ID再送は元結果を返す。新しいBeginEnrollmentは新IDの別要求とし、旧provisionの期限・枠を引き継がない |
+
+自動のTTL満了だけでphaseを戻さない。operatorの明示操作とdurable保存を必須とする。issuerに残る旧fence由来のprepared checkpointは採用不能のまま保持し、物理削除しない。
+
+**1 pin内の読取時間予算。** 読取の全工程は1つのread pinの下で行い、pinは延長しない。対象はReadCurrentCheckpoint、完全source転送、broker full検証、PrepareHandoff、DeliverResult、use保存、ACKである。C0のlease（5秒）・closure（64 MiB）・frame（16 KiB）では、最大closureの転送が署名frame約4,000個になる。この組合せが予算内に収まる根拠はまだない。C3aのprofileは次を事前に固定する。
+
+- 工程ごとの最大時間と合計。合計はleaseから安全余裕を引いた値以下とし、余裕の値もprofileに記録する。
+- 初期profileのclosure上限。予算を満たせる大きさへ下げてよい。C0の上限を超えて上げない。
+- 予算を満たせない入力は、受付前に`budget_exceeded`／unsupportedで閉じる。pin延長・再取得による継続・部分結果の公開をしない。
+
+nativeでは、最大closureの正常対照が実測時間と余裕付きで完了することを記録する。予算見積りだけを成立扱いにしない。
+
+| ID | 条件・期待結果 |
+| --- | --- |
+| CN41 | 失効provisionに対するAbandonEnrollmentの受理と新IDのBeginEnrollment成功を正常対照とする。次をすべて拒否する：live provisionの放棄、ActivateEnrollment済み・結果不明時の放棄、放棄後の旧fenceによるPrepareCheckpoint／ActivateEnrollment、operator以外の要求、TTLだけによる`uninitialized`復帰。同ID再送は元結果を返す |
+| CN42 | 工程別予算の合計がlease－余裕以下であることを静的に検査する。予算超過のclosure・上限＋1を受付前に拒否し、対象原本readを0にする。転送遅延でpinが失効すれば成功・use・ACKを0にし、pin延長・再取得による継続を拒否する。最大closureの正常対照は実測時間と余裕を記録する |
+
+設計レビュー修正（8a8e82f）の検証結果: §9.91.1〜11の11小節を確認した。CN01〜CN42の一意性と順序、CN23と§9.90.6の整合も確認した。文書のみの変更で、AbandonEnrollment・予算表・CN41／CN42の実装とnative実証は未実施。
