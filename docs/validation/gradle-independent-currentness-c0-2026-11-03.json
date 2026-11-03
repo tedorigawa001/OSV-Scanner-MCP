@@ -1,0 +1,147 @@
+{
+  "schema": "osv-mcp.q2.c0.validation.v1",
+  "date": "2026-11-03",
+  "scope": "cooperative-memory-contract-only",
+  "command": "npx vitest run src/test/utils/gradleOwnedCurrentControl.test.ts",
+  "tests": 138,
+  "sourceSha256": {
+    "src/test/fixtures/gradleOwnedCurrentSchema.ts": "361df41163c79da5b3e1cfaeb34a51147f2e137645708593317c8626b35b7214",
+    "src/test/fixtures/gradleOwnedCurrentControl.ts": "f02277dcac785367cf7bc87d40fd1e55653274193e965c74773e512797f91b62",
+    "src/test/fixtures/gradleOwnedCurrentSource.ts": "5bd9c9d4a9fa8fedd7f42f819b88ccf0ca969da94b74e064116b282f6ab205a3",
+    "src/test/fixtures/gradleOwnedCurrentScenario.ts": "5eb9626a4268b91a899df3e7ab84791b5a52cfd638dea30e0ab80ad81ca1f475",
+    "src/test/utils/gradleOwnedCurrentControl.test.ts": "2a9c50ef09ebe33517f4d789ea05b3912bd294de2edadaa0ed358b3a7eaf798d",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/test/fixtures/gradleOwnedJournalV2.ts": "ac47697774483edf8ee4319e63a74b52adcc5947f2b0556df2fc6db7d18986ef"
+  },
+  "scenario": {
+    "schema": "osv-mcp.q2.c0.scenario.v1",
+    "scope": "memory-contract-only",
+    "lostResponse": {
+      "resolutionMode": "existing-live-confirmed",
+      "appliedControlRevision": 5,
+      "currentControlRevision": 6,
+      "samePin": true,
+      "leaseExtended": false,
+      "additionalCAS": 0
+    },
+    "handoffPhases": [
+      "decision-recorded",
+      "delivering",
+      "released"
+    ],
+    "barrierPhase": "frozen",
+    "finalPhase": "serving",
+    "selectedSourceRevision": 2,
+    "selectionRevision": 2,
+    "metrics": {
+      "ownedSourceReads": 5,
+      "ownedSourceBytes": 12208,
+      "fullReplays": 4,
+      "checkpointSyncSteps": 3,
+      "registrySyncSteps": 19,
+      "anchorCAS": 19,
+      "resolutions": 20,
+      "commits": 19,
+      "retainedBytes": 498930,
+      "records": 19,
+      "objects": 37,
+      "prepares": 2,
+      "completedAPIs": [
+        "AcknowledgeDelivery",
+        "AcquireReadPin",
+        "ActivateEnrollment",
+        "BeginBarrier",
+        "BeginEnrollment",
+        "CancelWriter",
+        "CheckLiveBinding",
+        "ConfirmFenced",
+        "DeliverResult",
+        "FinishBarrier",
+        "PrepareCheckpoint",
+        "PrepareHandoff",
+        "PublishSelection",
+        "QueryOperation",
+        "ReadCurrentCheckpoint",
+        "ReadForCheckpoint",
+        "ReleaseReadPin",
+        "ReserveWriter",
+        "ResumeServing",
+        "anchor.cas",
+        "anchor.query-operation",
+        "anchor.read"
+      ],
+      "independentRegistryVerified": false,
+      "profileApproved": false,
+      "backendEligible": false,
+      "originalReadsSkipped": 0,
+      "nativeTrials": 0
+    }
+  },
+  "mutationControl": {
+    "mutation": "replace dispatch history verification with availability gate only",
+    "test": "rejects a legitimate older local state against the still-current Anchor",
+    "exitCode": 1,
+    "failure": "promise resolved instead of rejecting",
+    "restored": true
+  },
+  "evidence": {
+    "cryptography": "real Ed25519 request/reply/record signatures; synthetic opaque actor identities",
+    "checkpoint": "real bounded v2 source replay; preparation distinct from atomic selection",
+    "faults": "cooperative pause and injected failure at modeled sync/CAS/reply boundaries",
+    "retry": "same operation through verified canonical ancestors and latest ledger; applied/current separated",
+    "durability": "none: sync is a modeled transition; no filesystem or process restart"
+  },
+  "remainingEvidence": [
+    "C1 durable issuer/registry and independent ControlAnchor storage/recovery",
+    "C2 production TS/authority bridge and actual G0 business evidence",
+    "C3 separate UID authenticated IPC, kernel identities, FD and crash tests",
+    "C4 approved profile, runtime and rollback domain adoption review",
+    "v1 source import, full native IC01-IC51 coverage, retention/GC and quota restoration"
+  ],
+  "independentRegistryVerified": false,
+  "profileApproved": false,
+  "backendEligible": false,
+  "originalReadsSkipped": 0,
+  "nativeTrials": 0,
+  "reviewFixes": {
+    "permissionRecheck": {
+      "boundaries": [
+        "handoff-completing",
+        "anchor-before-cas",
+        "registry-before-reply"
+      ],
+      "beforeFix": "all three incorrectly returned applied",
+      "afterFix": "permission_denied; no decision before CAS; committed decision retained if revocation follows CAS"
+    },
+    "issuerCapacity": {
+      "budgets": [
+        "prepares",
+        "operations"
+      ],
+      "method": "reserve both slots before first await, transfer each slot to saved inventory, release remaining slots in finally",
+      "negativeControl": "removing reservation counts fails both concurrency tests",
+      "cancellation": "unused slot released before sync; saved prepare remains charged after sync"
+    },
+    "addedTests": 7,
+    "scope": "cooperative-memory-contract-only"
+  },
+  "verification": {
+    "targeted": {
+      "filesPassed": 1,
+      "testsPassed": 138
+    },
+    "fullSuite": {
+      "command": "npm test",
+      "filesPassed": 119,
+      "filesSkipped": 24,
+      "testsPassed": 4637,
+      "testsSkipped": 1418,
+      "status": "passed"
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "diffCheck": "passed",
+    "testFixturesInDist": false,
+    "nativeScope": "existing IPC regression only; new C0 native trials remain zero"
+  }
+}

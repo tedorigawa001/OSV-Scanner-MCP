@@ -2648,3 +2648,21 @@ bce3aa6レビュー修正の検証結果: VM回帰26件成功。全体113 files�
 - 5236ba8の`.bindings.json`も記録と同時commitで追加されたことを§9.86へ注記。5236ba8の本体は未レビュー。
 
 8d65e5bレビュー修正の検証結果: §9.87の12小節・22 API・IC01〜IC51を確認。全体118 files／4,499 tests成功、24 files／1,418 tests skipped。diff整形検査成功。文書のみ。
+
+
+### C0：strict schema・API認可・状態機械・故障schedule（2026-11-03）
+
+- §9.88へメモリ内contractの実装範囲を追記。19 service／registry＋3 Anchor API、実Ed25519署名・opaque actor認可、v2原本replay、prepare／atomic selection、pin／handoff／barrier、取消APIを追加。
+- CAS応答紛失後の後続transaction・並行retry、applied／current分離、同pinの期限延長／二重CAS防止、競合・pending／unknown、入口履歴確認と巻戻し拒否を回帰化。故障schedule・容量・独立reader時計を含む131テストと再現scenario・source fingerprintを記録。
+- C0のみ。sync・停止証拠・Anchorは協調メモリモデル。全IC01〜IC51のnative成立とはしない。次はC1のdurable issuer／registry・独立ControlAnchor保存と復旧。C2 production bridge、C3別UID IPC、C4承認も未完了。採用flagはすべてfalse、originalReadsSkipped=0。
+
+C0最終検証: 追加回帰131件成功。全体119 files／4,630 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功、test fixtureのdist混入なし。最初の制限環境では既存native socket試験17件がbind時のEPERMで失敗し、local socketを利用可能にした再実行で全体成功。新C0のnative実証は0。
+
+
+### C0レビュー修正：handoff認可・issuer並行容量（2026-11-03）
+
+- registry確定点・CAS直前・応答署名前でcaller権限を再検査。途中取消しで未確定decisionを採用せず、確定後は記録を保持したまま成功応答を拒否する。
+- issuerの未完了prepare／operation枠をawait前に予約。保存時に保持数へ移し、未使用分はfinallyで解放する。保存後のcancelを未保存扱いにして枠を過少計上しない。
+- 追加回帰7件・C0計138件、予約判定を外す失敗対照を追加。実証は引き続きメモリ内contract限定。次段階はC1のまま。
+
+C0レビュー修正の最終検証: 回帰138件、全体119 files／4,637 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。記録のscenario／source fingerprintを通常回帰で再照合した。新C0のnative実証0・採用flag false・originalReadsSkipped=0を維持。
