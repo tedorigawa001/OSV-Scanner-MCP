@@ -43,7 +43,7 @@ Packages with `dist.type: "path"` are local code: they are excluded before build
 
 ## Requirements
 
-- Node.js >= 20.19 (development: Node.js 26.12.1, as specified in `.node-version`)
+- Node.js >= 22.13 (development: Node.js 26.12.1, as specified in `.node-version`)
 - The [OSV-Scanner](https://google.github.io/osv-scanner/) binary — **no manual installation needed**. If it is not found, a pinned version is downloaded from the official GitHub Releases and verified against a SHA256 checksum embedded in the package before use (cached in `~/.cache/osv-scanner-mcp/`)
   - A manually installed binary (on `PATH` or set with `OSV_SCANNER_PATH`) is used first
   - Set `OSV_MCP_AUTO_DOWNLOAD=0` to disable the automatic download
@@ -169,7 +169,7 @@ npm run build
 
 ### Running with restricted permissions
 
-As an additional layer of defense, you can limit what the server can read and write with Node's permission model (`--permission`). This is optional and does not change the default way of starting the server. `--permission` is available in Node 22.13, 23.5, and later (Node 20's experimental `--experimental-permission` has not been tested). Since `npx` cannot pass Node flags, start the server with `node` directly:
+As an additional layer of defense, you can limit what the server can read and write with Node's permission model (`--permission`). This is optional and does not change the default way of starting the server. `--permission` is available in all supported Node versions (22.13 and later). Since `npx` cannot pass Node flags, start the server with `node` directly:
 
 ```json
 {

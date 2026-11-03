@@ -3,8 +3,8 @@
   "date": "2026-11-04",
   "scope": "static-contract-only",
   "sourceSha256": {
-    "package-lock.json": "7ca889f29792212298919fbf0405e9f7d119e39740b94fa86cee94831ed3b91b",
-    "package.json": "bbb4b96e57ed719df1d39f5ad15bb8dee6921c120930814da3e0cbfad309263f",
+    "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
+    "package.json": "5a0ff34ffcd644bbefaa713dcd8e65782b719bc01be52cd8f26672bcc123ec9b",
     "src/test/fixtures/gradleOwnedCurrentBridgeFixture.ts": "21d8c5183cb4ef9aaab3fe76771d0a6e70e0ab8ef3cca76c4e680d360dc7ed03",
     "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
     "src/test/utils/gradleOwnedServiceBudget.test.ts": "1d08f7370f932584027ffbdcd4fc86520967844683ad2aa2e7fb16632b479651",

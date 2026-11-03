@@ -39,7 +39,7 @@
     "url": "https://github.com/tedorigawa001/OSV-Scanner-MCP/issues"
   },
   "engines": {
-    "node": ">=20.19"
+    "node": ">=22.13"
   },
   "bin": {
     "osv-scanner-mcp": "dist/index.js"
