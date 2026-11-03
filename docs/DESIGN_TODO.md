@@ -2570,6 +2570,16 @@ B1c VM部分の検証結果: 新規26 Vitest回帰・実VM142 native controls成
 
 B2／B3 local contractの検証結果: 新規54回帰成功（53 domainケース＋保存記録照合1件）、実SIGKILL2ケースでchildの到達phase／bootを直接観測して復旧後の非再使用を照合した。全体114 files／4,365 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。実行結果に基づくcase閉包・29 sourceのSHA-256とlockfile hashを照合し、prod buildへのfixture非収録を確認した。VM／別UID service・B1c認証IPC・独立registry／source checkpoint issuerの新規実証、原本read省略・物理削除・本番採用は0。
 
+### 2026-11-03: B1c追加・認証IPC／manager署名・B1a native連携／再起動・FD回収
+
+- §9.84とq2b_b1ctの別fixtureを追加。新規systemd VMで別roleのEd25519・SO_PEERCRED／全fragmentのSCM_CREDENTIALS・絶対deadline／厳格frameを検証した。同UID転送を許可対照にし、別UIDへのFD転送・途中fragment変更、wrong custodian／実sender、ready前queued data・再送・malformed入力を拒否する。
+- root managerが実listener inventoryを署名し、232-byte sealed bootstrapへmanifest／signed launch digestを束縛。独立controllerがptrace／pidfd_getfdで3 phase・2 exec／bootを観測し、B1aの新native専用入口で照合する。旧synthetic contract・4 MiB上限・190回帰を維持し、native binaryはcontroller attestationとarchiveでの局所再読取なしを区別する。
+- 実SIGKILL・旧接続EOF・service-only restartのexit 78拒否を確認。旧listenerを持つ別reader processが存在する間は回収せず、既知FD参照終了・identity照合後だけ3 leafを回収する。新boot／cookieで旧proof・応答を拒否し、2つ目の正常起動・認証も確認した。Type=simpleの要求戻り値、未読stream切断のECONNRESET、inactive socket unitのunloadを誤判定しないよう実測で修正した。
+- 実VM28ケース・2 native launch binding・新規40回帰を追加。公開署名記録と独立pinはdocs/validation/gradle-q2b-b1ct-transport-2026-11-03.json／同名.bindings.json、再現手順はfixture READMEへ保存した。再署名・整合更新した改変の拒否と、bootstrap guard除去RED／復元GREENを確認した。
+- **残件**は全B1隔離攻撃・runtime closure承認／配備履歴、B2／B3の別UID native保存service接続、fresh source checkpoint issuer／独立registry／分散barrier・fencing、実VM保存故障／power-loss、Q3 read省略／性能・Q4採用。今回のFD走査は制御actorの有界snapshotであり、任意の並行FD移動／mmap／mount aliasの原子的drainではない。nativeIsolationVerified／profileApproved／backendEligible=false・originalReadsSkipped=0を維持する。
+
+B1ctの検証結果: 全体115 files／4,411 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。2署名主体・独立pin・16 sourceの不変receipt、実VM28ケース／診断操作13・成功client5、2つのboot／新cookieとFD回収を照合した。秘密鍵・seed・credential archiveは検証資料へ含めず、本番採用・原本read省略は0。
+
 ### 2026-11-03: bce3aa6レビュー修正・B1c pinの独立性と拒否理由
 
 - §9.82.6へ、controller pinが記録と同じcommitで追加されリポジトリ上は同時差替えを防げないこと、以後はpinを別commit／リポジトリ外へ先に固定する運用を明記。

@@ -150,7 +150,7 @@ function authenticated<T>(bytes:Buffer,role:'manager'|'controller',pin:B1aSigner
   check(verifySignature(null,Buffer.from(canonicalOwnedJson(unsigned)),pin.publicKey,Buffer.from(signature,'base64')),'signature_invalid');
   return schema.parse(e.body);
 }
-function verifyLaunch(m:Manifest, l:Launch, expected:B1aExpectation, manifestDigest:string) {
+function verifyLaunch(m:Omit<Manifest,'scope'>, l:Launch, expected:B1aExpectation, manifestDigest:string) {
   check(l.manifestDigest===manifestDigest&&l.runId===expected.runId&&l.caseId===expected.caseId,'binding_mismatch');
   unique(l.listeners.map(x=>x.fd),'launch_invalid');unique(l.listeners.map(x=>x.role),'launch_invalid');
   unique(l.listeners.map(x=>x.cookie),'launch_invalid');unique(l.listeners.map(x=>x.pathnameDevice+':'+x.pathnameInode),'launch_invalid');
@@ -249,4 +249,78 @@ export function verifyB1aSuite(input:{manifest:DeploymentHandle;manager:B1aSigne
       verifiedCases:results.length,acceptedCases:results.filter(x=>x.status==='accepted').length,rejectedCases:results.filter(x=>x.status==='rejected').length,
       results:Object.freeze(results),nativeIsolationVerified:false as const,profileApproved:false as const,backendEligible:false as const,originalReadsSkipped:0 as const});
   });
+}
+
+/** Separate native diagnostic path. Never relabels actual observations as synthetic-static.
+ * Artifact hashes are attested by the independently pinned controller, not locally
+ * re-read archive bytes. This proves launch binding, not complete native isolation. */
+const nativeManifestSchema=manifestSchema.extend({scope:z.literal('b1c-native-observed'),profileId:z.literal('b1ct'),instanceId:z.literal('b1ct'),imageId:z.literal('b1ct'),
+ artifacts:z.array(artifact.extend({byteLength:uint.positive().max(16*1024*1024)})).min(8).max(128)});
+const nativeFd=z.object({fd:uint.max(6),device:decimal,inode:decimal,ownerUid:uid,ownerGid:uid,mode:uint.max(511),flags:uint,
+ kind:z.enum(['null','journal','listener','bootstrap']),seals:uint.optional()}).strict();
+const capValue=z.string().regex(/^[a-f0-9]{16}$/);
+const nativePhase=z.object({phase:stage,pid:uint.positive(),uid:z.tuple([uid,uid,uid]),gid:z.tuple([uid,uid,uid]),groups:z.array(uid).max(16),
+ capabilities:z.object({CapInh:capValue,CapPrm:capValue,CapEff:capValue,CapBnd:capValue,CapAmb:capValue}).strict(),noNewPrivileges:z.boolean(),
+ executable:path,exeSha256:digest,argv:z.array(z.string().max(1024)).max(8),cwd:path,environment:z.record(z.string(),z.string().max(2048)),
+ fds:z.array(nativeFd).length(7),listeners:z.array(listener).length(3),bootstrapHex:z.string().regex(/^[a-f0-9]{464}$/)}).strict();
+const nativeDiagnostic=z.object({schema:z.literal('osv-mcp.q2b.native-launch-diagnostic.v1'),mode:z.literal('native-observed'),scope:z.literal('launch-binding-only'),
+ runId:id,caseId:id,manifestDigest:digest,launchDigest:digest,phases:z.array(nativePhase).length(3),
+ execs:z.array(z.object({sequence:uint.min(1).max(2),phase:z.enum(['launcher','provider']),pid:uint.positive(),path,sha256:digest}).strict()).length(2),
+ artifacts:z.array(z.object({path,sha256:digest,byteLength:uint.max(16*1024*1024),ownerUid:z.literal(0),mode:uint.max(511),nlink:z.literal(1)}).strict()).min(8).max(128)}).strict();
+export function verifyB1cNativeLaunchBinding(input:{manifest:Buffer;expectedManifestDigest:string;launch:Buffer;diagnostic:Buffer;
+ manager:B1aSignerPin;controller:B1aSignerPin;runId:string;caseId:string}){
+ return guarded(()=>{
+  const m=decode(input.manifest,nativeManifestSchema);check(ownedSha256(input.manifest)===input.expectedManifestDigest,'manifest_pin_mismatch');
+  check(input.manager.publicKey?.asymmetricKeyType==='ed25519'&&input.controller.publicKey?.asymmetricKeyType==='ed25519'&&
+   !input.manager.publicKey.export({type:'spki',format:'der'}).equals(input.controller.publicKey.export({type:'spki',format:'der'})),'issuer_invalid');
+  const launch=authenticated(input.launch,'manager',input.manager,launchSchema),d=authenticated(input.diagnostic,'controller',input.controller,nativeDiagnostic);
+  const launchDigest=ownedSha256(input.launch),expected={runId:input.runId,caseId:input.caseId,launchDigest,status:'accepted' as const,stage:'provider' as const,reason:'preflight-accepted' as const};
+  verifyLaunch(m,launch,expected,input.expectedManifestDigest);
+  check(d.runId===input.runId&&d.caseId===input.caseId&&d.manifestDigest===input.expectedManifestDigest&&d.launchDigest===launchDigest,'binding_mismatch');
+  unique(m.artifacts.map(a=>a.path),'closure_invalid');unique(d.artifacts.map(a=>a.path),'closure_invalid');
+  check(m.artifacts.length===d.artifacts.length&&m.artifacts.reduce((n,a)=>n+a.byteLength,0)<=64*1024*1024,'closure_invalid');
+  for(const role of artifactRoles)check(m.artifacts.filter(a=>a.role===role).length===1,'closure_invalid');
+  const image='/opt/osv-q2b/b1ct',byRole=(role:typeof artifactRoles[number])=>m.artifacts.find(a=>a.role===role)!;
+  for(const a of m.artifacts){const observed=d.artifacts.find(x=>x.path===a.path);check(a.path.startsWith(image+'/')&&observed&&observed.sha256===a.sha256&&observed.byteLength===a.byteLength&&!(observed.mode&0o022),'closure_invalid');}
+  check(byRole('launcher').path===image+'/launcher'&&byRole('runtime').path===image+'/runtime'&&byRole('entrypoint').path===image+'/provider.py'&&byRole('crypto').path===image+'/auth.py'&&
+   m.artifacts.some(a=>a.path===image+'/manager.pub'&&a.sha256===ownedSha256(input.manager.publicKey.export({type:'spki',format:'der'}))),'closure_invalid');
+  check(m.execution.launcher===byRole('launcher').path&&m.execution.runtime===byRole('runtime').path&&m.execution.entrypoint===byRole('entrypoint').path&&m.execution.cwd===image&&
+   same(m.execution.launcherArgv,[m.execution.launcher,'--profile','b1ct','--instance','b1ct'])&&same(m.execution.runtimeArgv,[m.execution.runtime,'-I',m.execution.entrypoint])&&
+   m.execution.credentialDirectory==='/run/credentials/osv-q2b-b1ct.service','execution_invalid');
+  unique(roles.map(r=>m.principals[r].uid),'principal_invalid');unique(roles.map(r=>m.principals[r].gid),'principal_invalid');
+  check(roles.every(r=>m.principals[r].supplementaryGroups.length===0)&&m.platform.os==='linux'&&m.platform.filesystem==='tmpfs'&&m.platform.mountOptions.includes('nodev')&&m.platform.mountOptions.includes('nosuid'),'configuration_invalid');
+  unique(m.roots.map(r=>r.role),'roots_invalid');const providerRoot=m.roots.find(r=>r.role==='provider')!;
+  unique(m.roots.map(r=>r.device+':'+r.inode),'roots_invalid');unique(m.platform.mountOptions,'configuration_invalid');
+  for(const root of m.roots){const owner=root.role==='evidence'?0:m.principals[root.role].uid;check(root.path==='/var/lib/osv-q2b/'+root.role+'/b1ct'&&root.ownerUid===owner&&same(root.writers,[owner]),'roots_invalid');}
+  unique(m.endpoints.map(e=>e.role),'endpoint_invalid');
+  for(const endpoint of m.endpoints){const actor=endpoint.role==='reader'?'reader':endpoint.role==='upload'?'build':'writer';
+   check(endpoint.path==='/run/osv-q2b/b1ct/'+endpoint.role+'.sock'&&endpoint.groupGid===m.principals[actor].gid&&endpoint.fileDescriptorName===endpoint.role&&
+    endpoint.unitPath===byRole((endpoint.role+'-unit') as typeof artifactRoles[number]).path,'endpoint_invalid');}
+  for(const [i,o]of d.phases.entries()){
+   const phaseName=(['manager','launcher','provider'] as const)[i]!;check(o.phase===phaseName&&o.pid===launch.pid&&o.groups.length===0&&o.noNewPrivileges,'principal_invalid');
+   const expectedUid=i===0?0:m.principals.provider.uid,expectedGid=i===0?0:m.principals.provider.gid;
+   check(same(o.uid,[expectedUid,expectedUid,expectedUid])&&same(o.gid,[expectedGid,expectedGid,expectedGid]),'principal_invalid');
+   check(Object.values(o.capabilities).every(value=>value===(i===0?'00000000000001c0':'0000000000000000')),'principal_invalid');
+   const exe=i===2?byRole('runtime'):byRole('launcher');check(o.executable===exe.path&&o.exeSha256===exe.sha256&&o.cwd===image&&same(o.argv,i===2?m.execution.runtimeArgv:m.execution.launcherArgv),'execution_invalid');
+   const env={LANG:'C',LC_ALL:'C',CREDENTIALS_DIRECTORY:m.execution.credentialDirectory,LISTEN_PID:String(launch.pid),LISTEN_FDS:'3',LISTEN_FDNAMES:'reader:upload:publish'};
+   // The manager has already normalized actual FDs, while LISTEN_FDNAMES still
+   // describes systemd's input order. Its next exec receives the fixed order.
+   const names=o.environment.LISTEN_FDNAMES?.split(':');
+   check(i===0?same(names?.slice().sort(),['publish','reader','upload']):o.environment.LISTEN_FDNAMES===env.LISTEN_FDNAMES,'execution_invalid');
+   check(Object.entries(env).every(([key,value])=>key==='LISTEN_FDNAMES'||o.environment[key]===value)&&Object.keys(o.environment).every(key=>Object.hasOwn(env,key)||i===0&&['INVOCATION_ID','JOURNAL_STREAM','SYSTEMD_EXEC_PID'].includes(key)),'execution_invalid');
+   check(same(o.listeners,launch.listeners),'fd_invalid');unique(o.fds.map(f=>f.fd),'fd_invalid');
+   for(let number=0;number<7;number++){const fd=o.fds.find(f=>f.fd===number);check(fd&&fd.kind===(number===0?'null':number<3?'journal':number<6?'listener':'bootstrap'),'fd_invalid');
+    check(fd.ownerUid===0&&fd.ownerGid===0,'fd_invalid');
+    if(number>=3&&number<6)check(fd.inode===launch.listeners.find(l=>l.fd===number)!.descriptorInode,'fd_invalid');
+    if(number===6)check(fd.ownerUid===0&&fd.ownerGid===0&&fd.mode===0o400&&(fd.flags&3)===0&&!(fd.flags&0x200000)&&fd.seals===15,'fd_invalid');}
+   const boot=Buffer.from(o.bootstrapHex,'hex');check(i===0||o.bootstrapHex===d.phases[0]!.bootstrapHex,'bootstrap_binding');
+   check(boot.readBigUInt64LE(0)===0x514232424f4f5431n&&boot.readBigUInt64LE(8)===BigInt(launch.pid)&&boot.readBigUInt64LE(16)===BigInt(m.principals.provider.uid)&&boot.readBigUInt64LE(24)===BigInt(m.principals.provider.gid),'bootstrap_binding');
+   for(const l of launch.listeners)check(boot.readBigUInt64LE(32+8*(l.fd-3))===BigInt(l.cookie),'bootstrap_binding');
+   check(boot.subarray(56,88).toString('hex')===launch.providerBoot&&launch.providerBoot===launch.socketGeneration&&boot.readBigUInt64LE(88)===BigInt(providerRoot.device)&&boot.readBigUInt64LE(96)===BigInt(providerRoot.inode)&&
+    boot.subarray(104,136).toString('hex')===byRole('runtime').sha256&&boot.subarray(136,168).toString('hex')===byRole('entrypoint').sha256&&boot.subarray(168,200).toString('hex')===input.expectedManifestDigest&&boot.subarray(200).toString('hex')===launchDigest,'bootstrap_binding');
+  }
+  for(const [i,e]of d.execs.entries()){const artifact=byRole(i===0?'launcher':'runtime');check(e.sequence===i+1&&e.phase===(i===0?'launcher':'provider')&&e.pid===launch.pid&&e.path===artifact.path&&e.sha256===artifact.sha256,'event_invalid');}
+  return Object.freeze({runId:input.runId,caseId:input.caseId,nativeLaunchBindingVerified:true as const,artifactHashesControllerAttested:true as const,
+   artifactBytesLocallyReverified:false as const,launcherExecCount:1 as const,runtimeExecCount:1 as const,nativeIsolationVerified:false as const,profileApproved:false as const,backendEligible:false as const,originalReadsSkipped:0 as const});
+ });
 }

@@ -10,7 +10,7 @@
   "sources": [
     {
       "path": "src/test/fixtures/gradleOwnedDeployment.ts",
-      "sha256": "abcc969c4c8989b61da66bcc35d0c6a2b0d3beb690779baf912c4cd3d5157007"
+      "sha256": "aee19c02c3a3c883ec8f981b10386ab7a86899b775fd17e4bdb181932ae16893"
     },
     {
       "path": "src/test/utils/gradleOwnedDeployment.test.ts",

@@ -5035,6 +5035,54 @@ QB20〜QB29の保存・協調条件をlocal contractで検証したが、独立U
 
 B2／B3 local contractの検証結果: 新規54回帰・実SIGKILL2ケース成功。childの実到達phase／bootを同期stdoutで観測し、新owner bootと区別した。全体114 files／4,365 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。保存記録の53 domainケース・29 source／lockfile hashを照合し、本番buildに新fixtureが含まれないことを確認した。今回のOS／Node実版は検証JSONに記録し、他platformや独立UID serviceへの拡張成立は主張しない。
 
+### 9.84 B1c追加実証：認証IPC・manager署名／B1a連携・再起動／FD回収
+
+#### 9.84.1 独立fixtureと実証範囲
+
+`src/test/fixtures/q2b_b1ct`は、新規systemd VMで3 roleの診断transportと署名付き起動・再起動を実証する別fixtureである。既存B1b／B1cのsource・署名記録を変更しない。B1aには`verifyB1cNativeLaunchBinding`という実観測専用入口を追加し、従来のsynthetic-staticへmodeを付け替えない。B2／B3のlocal contractを暗黙にnative serviceへ接続していない。
+
+実測は28 nativeケース、2つのmanager署名launch、6 phase観測、4 exec遷移である。全namespaceの隔離／runtime依存closureの独立承認、独立registry／issuer、分散barrier、durable service storageの成立とはしない。`nativeIsolationVerified`／`profileApproved`／`backendEligible=false`、`originalReadsSkipped=0`を維持する。data rootは実nosuid／nodev／noexecのtmpfsであり、B2保存耐久性の証拠に数えない。
+
+#### 9.84.2 manager署名・bootstrap・外側exec観測
+
+root managerは実listenerのrole／FD／cookie／path／inode／owner・group／SO_PASSCREDとmanifest digest、run／case、fresh bootをEd25519で署名する。OpenSSLをstatic linkし、config読込を無効にする。root-only manager keyとcontextは固定path・owner／mode／nlink／sizeを確認して読む。key FDを閉じraw key bufferを清掃してから非root execへ進み、秘密をargv／env／log／memfdへ入れない。managerからのexecで旧address spaceを置き換える。
+
+bootstrapは従来の168 bytesへmanifest digestと**正確な署名envelope bytes**のdigestを各32 bytes追加した232 bytesで、root-owned／read-only／4 seal・FD 6を維持する。自己hashは作らず、manifestが自己fileをartifact一覧へ入れる循環も作らない。公開manager keyはprivate keyと別に外側でpinし、公開pin・private/public対応も配備前に検証する。
+
+controllerはmanagerのseal後停止点へrootでptrace attachし、kernel資格・capability・NNP、実executable hash／argv／cwd／環境、FD実体／socket属性、実memfd bytesをpidfd_getfdで取得する。2つの実execとlauncher／providerのgate後停止を観測し、providerのservice鍵読取／accept前にdetachする。初回root manager exec自体はattach以前であり、この2回へ数えない。manager phaseにはsystemdの入力順LISTEN_FDNAMESが残るので、既知3 roleの閉じた置換だけを許す。実FDは既に正規化済みで、次のlauncher／runtime環境はreader:upload:publish固定である。
+
+#### 9.84.3 B1a native入口の契約
+
+native manifestは`scope=b1c-native-observed`、診断は`mode=native-observed`／`scope=launch-binding-only`とする。独立manager／controller key・manifest pin、manager署名とcontroller署名、artifact hashの実読取attestation、3 phaseの資格／FD／bootstrap、2 execのpath／hash／PIDを相互照合する。bootstrap内のPID／provider UID・GID／cookie／root identity／runtime・entrypoint hash／manifest digest／launch digestを省略しない。managerとcontrollerの同鍵、synthetic mode、別boot混入・不完全観測を拒否する。
+
+元のB1aの4 MiB／16 MiB上限は変更しない。別native metadata profileだけ16 MiB／artifact・64 MiB／closureとする。保存記録にbinary本体は含めず、`artifactHashesControllerAttested=true`と`artifactBytesLocallyReverified=false`を区別する。実OS imageが供給するcrypto／stdlib等の完全closure承認を、このartifact一覧だけで成立としない。新入口の結果も本番採用handleではない。
+
+#### 9.84.4 両端認証・fragment／FD・再送
+
+manager／provider／reader／upload／publishは別Ed25519 keyを使い、controller keyはVM外へ置く。clientはroot listenerのSO_PEERCREDと、各fragmentの実provider UID／GID／PIDを分離して照合する。serverは接続資格と各recvmsgのSCM_CREDENTIALSから実client UID／GIDを照合する。SO_PASSCREDはlisten／connect前から有効にし、pid 0／overflow資格・資格欠落・control切詰めを拒否する。[Linux unix(7)](https://man7.org/linux/man-pages/man7/unix.7.html)と[pidfd_getfd(2)](https://man7.org/linux/man-pages/man2/pidfd_getfd.2.html)の仕様を参照し、実資格の陽性／負例を別に実行した。
+
+challengeはmanifest／launch digest、instance／profile、provider boot、role／peer、server nonceへ束縛し、client proofがfresh client nonceを加える。要求／応答はsession／連番／exact request digestを束縛する。canonical JSON・重複key／float／不正整数／未知field、4096 bytes、接続全体の絶対2秒、2要求を検査する。SCM_RIGHTSは拒否し、エラー時も受領FDを閉じる。32 FDによるcontrol切詰めを含め、各通常ケース後のprovider FD数が7へ戻ることを確認した。global pending／peer quotaの負荷実証まで完了したという意味ではない。
+
+28ケースは、3 role正常・wrong role／server proof・request／proof／session／response再送、未知field／role昇格／重複key／非canonical／bool整数／oversize／EOF／slow-drip／FD注入、同UID転送control・別UIDへのFD転送／fragment途中変更、wrong custodian／実provider、ready前queued data、再起動後の旧proof／旧response・正常readerである。同UID転送は同principalとして正しく許可し、別UIDだけを拒否する。拒否は狙ったserver reason・必要な正常認証完了・proof送信境界・禁止操作0を要求し、無関係なtimeout／未起動を合格へ数えない。未読dataを残したUnix streamの切断はEOFまたはECONNRESETになり得るため、それだけで成功にせず保護されたserver拒否記録も照合する。診断操作は計13、client成功ケースは5であり、いずれも本番grant／canonical writeではない。
+
+#### 9.84.5 再起動・旧FDの回収
+
+実providerをSIGKILLし旧接続のEOFを確認する。serviceだけの再startでは旧launch fileを上書きせずmanagerがexit 78で拒否する。Type=simpleのstart戻り値をreadyにせず、実failed状態・終了code・旧署名bytes不変を待って照合する。停止でunloadされた正常socket unitへreset-failedを要求せず、failed serviceだけをresetする。
+
+固定service／socket unit停止後も、別reader UIDの制御fixtureが旧listener FDを持つ間は回収を進めない。root controllerが持つ旧client参照も観測し、既知参照を閉じ、holder終了後に有界の/proc FD走査で残存0を確認する。leafのdevice／inode／owner・group／modeと旧launch bytesを照合してから既知3 leafだけを回収し、新caseで起動する。新bootstrap／署名launch／cookieは旧世代と異なり、旧signed proof／responseは新接続で拒否する。
+
+この走査は**制御されたactorの既知socket／bootstrap FD参照**のsnapshot実証である。任意の並行FD移動・mmap・mount aliasを含む原子的global drainや、独立service間barrierの証明へ拡張しない。旧参照や走査不能が残る場合は無条件unlink／bind fallbackをしない。
+
+#### 9.84.6 保存記録・回帰・後続
+
+`docs/validation/gradle-q2b-b1ct-transport-2026-11-03.json`と別保存の`.bindings.json`へ、実VM結果・manager／controller署名・独立公開pin／manifest pin・16 sourceの不変receiptを保存する。controller pinはboot前、manager pinは配備前、manifest pinはtrace／accept前に外側へ保存する。private key／seed／credential archive／guest diskはexportしない。再現手順はfixture READMEへ記載した。
+
+通常回帰40件で、独立pin／署名と28ケース閉包・B1aの2 native bindingを検証し、正しいcontroller再署名・観測値の整合更新後もbootstrap／資格／exec／拒否理由／FD回収・scope／採用flagの不正を拒否する。bootstrapのmanifest照合を外した変異版で該当回帰が失敗し、復元後に成功することも確認した。B1a既存190件は保持してsource fingerprintを更新する。
+
+次は残るB1隔離攻撃・runtime依存closureの独立承認／配備履歴、B2／B3をこのtransportへ結ぶ別UID保存service、fresh checkpoint issuer／独立registry／分散fencing、実VM保存故障・power-loss条件、Q3／Q4である。今回の3機能の実証をB1全体や本番provider採用完了へ読み替えない。
+
+B1ctの検証結果: 実VM28ケース、2 native launch binding、通常回帰40件成功。全体115 files／4,411 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。manager／controller署名と独立pin、source receipt、boot／cookie更新・残存FD拒否を照合した。原本read省略・本番採用は0。
+
 #### 9.83.8 9bc56adレビュー修正・書込み前拒否の継続とuse ledger容量
 
 **書込み前の拒否。** `SealedPrefixStore`は、内部処理の失敗を種類によらずすべてfail-stop（`recovery_required`）にしていた。そのため、汚れたroot・再使用root・namespace／容量の上限・古いcandidate・use衝突といった、状態を変える前に分かる呼出し側の誤りでもproviderが停止し、汚れたrootや古いcandidateを渡すだけで停止させられた。A2 journalの書込み前拒否（6fbbaa0）と同じ種類の問題である。
