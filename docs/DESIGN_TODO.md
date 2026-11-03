@@ -2673,3 +2673,22 @@ C0レビュー修正の最終検証: 回帰138件、全体119 files／4,637 test
 - `request()`の組立不能な要求を`current_control_schema_invalid`／`budget_exceeded`へ揃え、§9.88の見出し階層を`###`／`####`へ直した。
 
 2812a54レビュー修正の検証結果: C0回帰142件成功（新規4件）。全体119 files／4,641 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。
+
+
+### C1：ローカル永続化・再起動復旧（2026-11-03）
+
+- §9.89、CurrentPersistence strict imageとOwnedCurrentDiskを追加。issuer／registry／Anchorの3 owner、6 root／6鍵とA2の認証journal・equal-put再同期・排他・公開途中復旧をC0確定点へ接続。
+- Anchor-selected Rの参照閉包・署名・source／prepare・保持容量を復元し、新incarnation／失効を保存してから受付を返す。旧actor／pin／writer・unknown effectの扱いと元frozenの維持を回帰化。
+- CAS前後とregistry commit公開直後の実SIGKILLを検証対象に追加。外部floor・同期障害／再同期拒否・巻戻し・schema・排他も検査する。C0の追加レビュー修正4件は保持する。
+- 診断用の同UID POSIX adapterで、外部Anchorの独立復元境界・native隔離・本番client採用は未成立。image 8 MiBの限定経路。次はC2 bridge、外部Anchor適合／C3配備とC4採用審査。採用flag false、originalReadsSkipped=0を維持。
+
+C1最終検証: C1回帰29件・C0回帰142件成功。全体120 files／4,670 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功、test fixtureのdist混入なし。実SIGKILL 3件（CAS前／CAS後／registry commit公開直後）を再実行し、通常回帰で観測・source fingerprintを照合した。Anchor floor・startup失効・C1 single-flightを外す対照は各対応回帰で失敗する。独立UID／rollback domain・電源断耐性・本番採用は未成立。
+
+
+### C1レビュー修正：保留応答のowner寿命・原本読取前再認可（2026-11-03）
+
+- ownerの同期assertOpenをcontrolのgate・認可・応答受理へ結合。IO外pause中にcloseした旧controlの応答、close前に署名した保留応答、保存障害後のlive応答を拒否する。storage IO中はcloseをbusyで拒否する。
+- persistence.verify後・execute直前・issuer検証／保存pause後に再認可する。権限取消し後の3 APIの原本read／bytes／replay増分0、issuer自身のpause後の読取拒否を回帰化。
+- 回帰8件を追加（C1計37件）。修正前の7件の失敗を確認。C0互換scenarioとC1 native 3観測の範囲を維持し、source fingerprintを更新する。
+
+C1レビュー修正の最終検証: 追加8件・C1計37件・C0計142件成功。全体120 files／4,678 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。実SIGKILL 3件とscenario／source fingerprintを通常回帰で再照合した。権限取消し3 APIの原本read／bytes／replay増分0と、終了／停止ownerの旧応答拒否を確認。ローカル協調adapterの実証範囲・採用flag false・originalReadsSkipped=0を維持。

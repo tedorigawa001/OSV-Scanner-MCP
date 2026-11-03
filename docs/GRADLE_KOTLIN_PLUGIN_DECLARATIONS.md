@@ -5558,3 +5558,51 @@ C0レビュー修正の最終検証: 回帰138件、全体119 files／4,637 test
 回帰4件を追加し、C0は142件になった：ActivateEnrollmentのtransaction内で容量に達した場合に、無変更・object数不変・provisioning維持でregistryを継続すること、AcquireReadPinの容量拒否がtransactionの前でも中でも同じ結果になること、record保存前の注入障害がfail-stopのままであること、組立不能な要求とframe上限超過の拒否理由。修正前のコードでは、前2件の容量拒否後の呼出しが`recovery_required`になり、要求組立が内部エラーを投げることをプローブで確認した。保存記録はsource fingerprintだけを更新し、scenarioは同一である。
 
 2812a54レビュー修正の検証結果: C0回帰142件成功（新規4件）。全体119 files／4,641 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。native実行・採用flag変更は0。
+
+
+### 9.89 C1：ローカル永続化・再起動復旧adapter（2026-11-03）
+
+#### 9.89.1 保存owner・適用範囲
+
+`gradleOwnedCurrentDisk.ts`はC0のCurrentPersistenceを実装するtest-only POSIX owner。issuer／registry／ControlAnchorをそれぞれ別A2 OwnedJournalDiskへ分け、各ownerにjournal root＋checkpoint rootと異なるHMAC鍵を与える（計6 root／6鍵）。rootの同一・親子関係と鍵の共用を拒否し、固定順の非blocking排他を全rootで保持する。既存A2の認証journal・immutable equal-put再同期・file／directory fsync・readback・公開済みtemp hardlinkの認証後修復を再利用する。Ed25519 server鍵は外部deployment入力であり、journal imageへ保存しない。issuerの原本検証用HMAC鍵とsource copyはissuer private rootに保存する。
+
+これは同UID・同ホストの協調adapterであり、root分割だけでは独立rollback domainにならない。ControlAnchorのexact CAS／fresh read interfaceとローカルadapterは実装したが、適合する外部Anchorの配備・認証・復元禁止の実証は未完了。anchorFloorはtrusted external入力で、保持したfloorより前へのAnchor巻戻しを拒否する。floorも全rootと一緒に巻き戻せる場合は検出を保証しない。初期floor=0のままで、全root同時復元を独立防止できたとはしない。
+
+#### 9.89.2 image・確定点・読取
+
+`gradleOwnedCurrentPersistence.ts`のstrict schemaで、registryの署名済みR／semantic object、issuerのsource／checkpoint prepare／operation ledger、Anchorのexpected→next／attempt履歴を保存する。typed ref・canonical digest・role・署名・identity・有界数／byteを検査する。秘密actor handle・client鍵・challenge／in-flight予約を復元しない。Rの採用は、issuer保存→registry保存→Anchor保存・再読取→C0 mirror更新の順。保存済みprepareとregistry-selected pairを混同せず、未採用Rの存在から採用成功を推測しない。
+
+C1のローカルcontrollerは一要求ずつ処理し、durable CAS中の重複dispatchはbusyで無変更拒否する。これにより未更新のmemory mirrorから、正当なAnchor前進をrollbackと誤判定してownerを停止しない。C0単体の並行モデルは維持し、本番clientのqueue／再試行接続はC2に残す。
+
+サービスごとのimageはwhole snapshot方式で8 MiB上限。C0全体の64 MiB上限を全件扱える実装ではない。A2の256 commit／4096 entry／256 MiB制限も適用し、容量不足・同期障害・結果不明は成功にしない。GC／compaction・incremental検証・read省略は実装しない。通常のdispatchでもfresh Anchorと3 ownerの全履歴認証・再同期を行い、原本replayを省略しない。provider serviceの実原本APIは未接続で、issuer rootの封じた原本copyを使うC1診断経路である。
+
+openはtrusted storage-ownerのmaintenance処理として全rootを認証・再同期する。startは承認／対応gateを先に確認し、それからimageを取得する。このmaintenance IOを本番readerの読取前gate成立へ読み替えない。本番client／認証IPCの接続はC2／C3。
+
+#### 9.89.3 復旧と失効
+
+startupは全rootを認証・再同期し、fresh Anchorが選んだexact Rをregistry imageから解決する。全保存R・objectの参照閉包、署名、source replay、prepared body、ledgerとidentityを検証し、byte／record／object／prepare／operationの保持数を再構成する。古いregistry／issuerと新しいAnchor・selected pairが一致しなければ受付を返さない。unknown tailは切り捨てず保持し、currentとして扱わない。
+
+状態復元後に新incarnation・revocation epoch・writer fence、旧pin／writerの取消しを新RとAnchorへ保存してからcontrolを返す。元servingはrestart barrierを経由し、FinishBarrier→ResumeServingだけで再開する。元frozen／retiredを自動再開しない。保存前に失敗した候補は未採用のまま保持し、保存後の応答紛失はAnchorの確定履歴から解決する。実行中は同じCAS attemptとsemantic resultを再利用し、後続Rがあってもpin／期限を増やさない。再openは新bootなので旧handle／raw replyをlive権限へ戻さない。
+
+unknown effectのhold／effect状態は失効後も保持し、TTLだけでは解放しない。既にdrainingだったbarrierの旧bootに対する未完了fencingも推測で完了させない。別process参加者の停止証拠・新boot登録・外部effectの完了はC2／C3の管理契約が必要で、C0のown-idle／manager helperをnative証拠とはしない。ownerごとにlive controllerは1つだけ。保存障害後は明示close／openと再同期が必要。
+
+#### 9.89.4 回帰・再現・残る証拠
+
+`gradleOwnedCurrentDisk.test.ts`で実ファイルのprepare／atomic selection、durable CAS後の後続transaction retry、旧actor／pin／writer失効、startup保存拒否、unknown effect保持、凍結維持、3 ownerの同期失敗・再同期失敗、改変・issuer／registry巻戻し・Anchor floor、root／鍵分離・排他・容量再構成・unknown tailを検査する。native childはリポジトリのTypeScript compilerで実sourceを一時領域へ構築し、CAS前・CAS後・registry commit公開直後でSIGKILLする。最後のケースは実際の公開途中hardlinkをA2経由で修復する。独立UID隔離・電源断／VM rebootの証拠ではない。
+
+回帰の再現commandは`npx vitest run src/test/utils/gradleOwnedCurrentDisk.test.ts`。記録再生成は`OSV_CURRENT_C1_REPORT=1 npx vitest run src/test/utils/gradleOwnedCurrentDisk.test.ts --silent=false`。通常実行でnative観測とsource fingerprintを保存記録へ照合する。Anchor floor検査またはstartup失効を外す対照で対応回帰が失敗することも確認する。
+
+検証記録は`docs/validation/gradle-independent-currentness-c1-2026-11-03.json`。C1ローカル保存経路までで、外部Anchorの適合・独立配備は未成立。C2本番TS／authority bridge、C3別UID IPC・停止／復帰・事前pin、C4承認profileとQ3b／Q4bの採用審査は残る。`independentRegistryVerified=false`、`profileApproved=false`、`backendEligible=false`、`originalReadsSkipped=0`を維持する。
+
+C1最終検証: C1回帰29件・C0回帰142件成功。全体120 files／4,670 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功、test fixtureのdist混入なし。実SIGKILL 3件（CAS前／CAS後／registry commit公開直後）を再実行し、通常回帰で観測・source fingerprintを照合した。Anchor floor・startup失効・C1 single-flightを外す対照は各対応回帰で失敗する。独立UID／rollback domain・電源断耐性・本番採用は未成立。
+
+
+#### 9.89.5 C1レビュー修正：owner終了・原本読取前の再認可（2026-11-03）
+
+CurrentPersistenceに同期・非IOのassertOpenを追加し、owner close後はowner_closed、保存障害で停止したownerはrecovery_requiredとする。controlのgate・認可・要求組立・応答受理にもこの寿命を結合する。storage IO中のcloseは従来どおりbusyで拒否する。IO外のpauseでcloseした場合はroot lockを解放できるが、その旧controlは再開しても成功応答を署名できず、既に署名済みの保留応答もacceptできない。新ownerが旧writer／pinを失効させた後に、古いmemory mirrorからreserved／appliedを返さない。
+
+dispatchはpersistence.verify後と、expire等のawaitを終えたexecute直前にcallerの現在権限を再確認する。issuer自身の検証pause・保存pauseの後にも再認可し、grant取消し後のsource read／replay／prepare保存へ進めない。最後の応答だけを拒否して、先に原本を読んでしまう経路を閉じる。
+
+回帰8件を追加。close＋別owner再open後のCheckLiveBinding／ReadForCheckpoint、close後の署名済み応答受理、保存障害後の保留live応答を拒否する。永続化検証中にReadForCheckpoint／PrepareCheckpoint／ReadCurrentCheckpointのpermissionを取消す3件では、ownedSourceReads・ownedSourceBytes・fullReplaysの各増分が0であることを検査する。issuer-before-verifyでの取消しもreplay前に拒否する。修正前に7件の誤成功／読取増分を確認した。実証はローカル協調ownerのままであり、別UID・外部Anchor・本番採用の成立を追加しない。
+
+C1レビュー修正の最終検証: 追加8件・C1計37件・C0計142件成功。全体120 files／4,678 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。実SIGKILL 3件とscenario／source fingerprintを通常回帰で再照合した。権限取消し3 APIの原本read／bytes／replay増分0と、終了／停止ownerの旧応答拒否を確認。ローカル協調adapterの実証範囲・採用flag false・originalReadsSkipped=0を維持。

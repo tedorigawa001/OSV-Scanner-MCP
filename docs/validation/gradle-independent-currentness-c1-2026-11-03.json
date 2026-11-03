@@ -1,0 +1,179 @@
+{
+  "schema": "osv-mcp.q2.c1.validation.v1",
+  "date": "2026-11-03",
+  "scope": "cooperative-local-posix-disk",
+  "command": "npx vitest run src/test/utils/gradleOwnedCurrentDisk.test.ts",
+  "tests": 37,
+  "sourceSha256": {
+    "package-lock.json": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285",
+    "package.json": "bbb5c5fde9e96539da7395e928f91d9fa34372213260063059877a5b1c000f18",
+    "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
+    "src/test/fixtures/gradleOwnedAuthorityJournal.ts": "df213ca2a6d6ce3dfd7822745ac78d1a91506d9141f6575f2470b2c73c72d4da",
+    "src/test/fixtures/gradleOwnedAuthoritySchema.ts": "108ec4f0965f325f75e6888a0a0e6e22cc40963665c37b1a0a000d07d78bc38d",
+    "src/test/fixtures/gradleOwnedAuthoritySnapshot.ts": "de0b0f241b0465c6ba76914c3f547e9984d39ee6c27271ad4dbd4e2a5c57cdf2",
+    "src/test/fixtures/gradleOwnedCurrentControl.ts": "75b5c9d31fc61e98db03c0ae815d64d0a894cc312394e729ee6a7f39e33b1011",
+    "src/test/fixtures/gradleOwnedCurrentDisk.ts": "cf83185e807499f82fbab2420d1393f7cafb6fae1a9cb2740d4e2c3ca1995e57",
+    "src/test/fixtures/gradleOwnedCurrentPersistence.ts": "5a6b7bda11fe0412a56e0491297a7f5f43f1b8b88d88832972eaff4cac59f28c",
+    "src/test/fixtures/gradleOwnedCurrentScenario.ts": "5eb9626a4268b91a899df3e7ab84791b5a52cfd638dea30e0ab80ad81ca1f475",
+    "src/test/fixtures/gradleOwnedCurrentSchema.ts": "361df41163c79da5b3e1cfaeb34a51147f2e137645708593317c8626b35b7214",
+    "src/test/fixtures/gradleOwnedCurrentSource.ts": "5bd9c9d4a9fa8fedd7f42f819b88ccf0ca969da94b74e064116b282f6ab205a3",
+    "src/test/fixtures/gradleOwnedJournalCheckpoint.ts": "3ca31e62fa5521d7352fc6f4a0528483444fcadce3351f53629e50198c251159",
+    "src/test/fixtures/gradleOwnedJournalDisk.ts": "cc16330bbbde29b2d52a6c14e90d9f83a9638894c8c7087662c21af9f83162d7",
+    "src/test/fixtures/gradleOwnedJournalFs.ts": "481389a0fc5ebd5eb234d7b0f25daef7f3e1898419c28dc379e2d628ce0002ef",
+    "src/test/fixtures/gradleOwnedJournalV2.ts": "ac47697774483edf8ee4319e63a74b52adcc5947f2b0556df2fc6db7d18986ef",
+    "src/test/utils/gradleOwnedCurrentDisk.test.ts": "39e4732bc0967ccbfa24e0fb3b1355f134a8eb2953a077a4cb802d62578d7ea7",
+    "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
+    "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
+    "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
+    "src/utils/gradleCatalogs.ts": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b",
+    "src/utils/gradleDeclarations.ts": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be",
+    "src/utils/gradleGraph.ts": "73a36886ed6c8be17b63e5581392cca6c5ba5efb0463e475f7ee3913ac888e81",
+    "src/utils/gradleJson.ts": "f7f3ef047d30a675cb55044072e8fb516dceeb822192777ea7b7444699c9dc9f",
+    "src/utils/gradleOrigins.ts": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884",
+    "src/utils/gradleOwnedExecution.ts": "360a8d5e61a7b115619077cb444f8a863f6d6d0459be9d17b87ae4c43f279fd4",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/utils/gradleOwnedSchema.ts": "44fa3f141b1931e3043bd4e876f93b46132f54e1c36aaf7f6d3c43f1c6ea734c",
+    "src/utils/gradlePluginJar.ts": "b180ee353104a11e1ddd1a091930bda1aaf8138fcf5a1df7d66370ef8c848ab9",
+    "src/utils/gradlePluginSnapshots.ts": "2c0ce15f1c90e6c11916d2a8107c2d1c761719543932a0aeef722cfeb4acf2c1",
+    "src/utils/gradlePlugins.ts": "582f72462c13927e7284e1c7ca70681f4e455e469596020cd4e8bc5e9ec637af",
+    "src/utils/openedFilePath.ts": "963ac04f6eb3744af00771feaaf054c08ca8b2dcc7d2846507525394d3fdff8f",
+    "src/utils/projectWalk.ts": "5ff06d6df2c601017928d26709d6f4bf3ea9d9ff6813e627cfec82d010d9e316",
+    "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054",
+    "tsconfig.json": "7375ac5d334f50eed3d766799fd016e068f1998639c7b02ba201db280a1583c3"
+  },
+  "scenario": {
+    "schema": "osv-mcp.q2.c1.scenario.v1",
+    "scope": "cooperative-local-disk",
+    "nativeObservations": [
+      {
+        "point": "before-anchor-cas",
+        "signal": "SIGKILL",
+        "anchorAdvance": 0,
+        "retainedPins": 0,
+        "restoredPhase": "draining",
+        "oldPinsActive": false
+      },
+      {
+        "point": "after-anchor-cas",
+        "signal": "SIGKILL",
+        "anchorAdvance": 1,
+        "retainedPins": 1,
+        "restoredPhase": "draining",
+        "oldPinsActive": false
+      },
+      {
+        "point": "registry-after-publish",
+        "signal": "SIGKILL",
+        "anchorAdvance": 0,
+        "retainedPins": 0,
+        "restoredPhase": "draining",
+        "oldPinsActive": false
+      }
+    ],
+    "independentRegistryVerified": false,
+    "profileApproved": false,
+    "backendEligible": false,
+    "originalReadsSkipped": 0
+  },
+  "localProcessKillTrials": 3,
+  "independentIsolationTrials": 0,
+  "mutations": [
+    {
+      "check": "external Anchor floor",
+      "test": "rejects a rolled-back Anchor store and checkpoint against a retained external floor",
+      "disabledCheckExitCode": 1,
+      "restored": true
+    },
+    {
+      "check": "durable startup invalidation",
+      "test": "reopens through a saved restart barrier and never restores old actors or pins",
+      "disabledCheckExitCode": 1,
+      "restored": true
+    },
+    {
+      "check": "single-flight local durable controller",
+      "test": "rejects overlap while durable CAS is outstanding without poisoning the owner",
+      "disabledCheckExitCode": 1,
+      "disabledOutcome": "legitimate advancement misclassified as rollback_detected",
+      "restored": true
+    }
+  ],
+  "evidence": {
+    "storage": "real POSIX rooted IO, fsync/readback, six exclusive roots, distinct owner keys, authenticated A2 journal/checkpoint",
+    "recovery": "full authenticated image/closure/source replay followed by persisted new incarnation and revocation before returning a controller",
+    "faults": "issuer, registry and Anchor publication sync failures; repeated reopen sync failure blocks startup",
+    "process": "actual separate Node process SIGKILL before CAS, after CAS and after registry commit publication",
+    "currentness": "exact Anchor CAS and ancestor attempt history; retained external floor rejects Anchor rollback",
+    "compatibility": "C0 memory scenario unchanged; 142 C0 regression tests passed"
+  },
+  "limitations": [
+    "Same UID and host; local Anchor is not an independent rollback domain",
+    "External floor and server-key deployment remain trusted; all roots plus floor rollback is not detected",
+    "Whole owner image capped at 8 MiB; A2 commit, file and byte caps also apply; no GC or read skipping",
+    "Provider original-source service and production TS/authority clients are not connected; issuer uses sealed source copies",
+    "Unknown effect and prior draining barrier fencing remain closed without valid completion/stop evidence",
+    "No separate UID authenticated IPC, VM reboot, power-loss certification or runtime/profile approval",
+    "Local C1 controller is single-flight and refuses overlap with busy; production client scheduling is deferred to C2"
+  ],
+  "independentRegistryVerified": false,
+  "profileApproved": false,
+  "backendEligible": false,
+  "originalReadsSkipped": 0,
+  "environment": {
+    "node": "v26.12.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "typescript": "7.0.2",
+    "runtimeApproved": false
+  },
+  "reviewFixes": {
+    "addedTests": 8,
+    "ownerLifecycle": {
+      "check": "synchronous owner assertOpen in admission, response signing and response acceptance; includes failed owner state",
+      "cases": [
+        "pending CheckLiveBinding after close and replacement",
+        "pending ReadForCheckpoint after close and replacement",
+        "held signed reply after close",
+        "pending live reply after storage failure"
+      ],
+      "physicalIO": "close remains busy while a storage operation is active; a control paused outside IO may close but cannot emit or accept a successful old response"
+    },
+    "readAuthorization": {
+      "checks": [
+        "after persistence.verify",
+        "at execute entry after expiration processing",
+        "after issuer-before-verify",
+        "after issuer-before-sync"
+      ],
+      "apis": [
+        "ReadForCheckpoint",
+        "PrepareCheckpoint",
+        "ReadCurrentCheckpoint"
+      ],
+      "assertions": [
+        "permission_denied",
+        "ownedSourceReads delta = 0",
+        "ownedSourceBytes delta = 0",
+        "fullReplays delta = 0"
+      ],
+      "issuerOwnPause": "permission revoked after issuer-before-verify is rejected before replay"
+    },
+    "redEvidence": "7 new tests failed before the fix: old replies succeeded or read/replay counters increased",
+    "scope": "cooperative-local-disk; no new independent isolation claim"
+  },
+  "verification": {
+    "c1TestsPassed": 37,
+    "c0TestsPassed": 142,
+    "fullSuite": {
+      "filesPassed": 120,
+      "filesSkipped": 24,
+      "testsPassed": 4678,
+      "testsSkipped": 1418,
+      "status": "passed"
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "diffCheck": "passed",
+    "testFixturesInDist": false
+  }
+}

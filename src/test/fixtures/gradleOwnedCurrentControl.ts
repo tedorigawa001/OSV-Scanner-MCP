@@ -1,6 +1,7 @@
 /** C0 cooperative memory contract. No filesystem, OS peers, independent Anchor or adoption. */
 import {generateKeyPairSync,randomBytes,sign,verify,type KeyObject} from 'node:crypto';
 import {canonicalOwnedJson,ownedDigest,ownedSha256} from '../../utils/gradleOwnedJson.js';
+import {durableRecordSchema,durableRegistrySchema,durableIssuerSchema,durableAnchorSchema,type CurrentPersistence,type DurableRegistry,type DurableIssuer,type DurableAnchor} from './gradleOwnedCurrentPersistence.js';
 import {replayV2,type V2ReplayInput} from './gradleOwnedJournalV2.js';
 import {CURRENT_LIMITS as L,CurrentControlError,need,parsed,cid,chash,cn,currentRefSchema,currentBindingSchema,currentHeadSchema,wireSchema,replySchema,responseValues,
  validateRequest,semanticDigest,operationKey,decodeCurrent,apiPolicy,currentRoles,registryAPIs,type CurrentRole,type CurrentAPI,type CurrentRequest,type CurrentRef,type CurrentBinding,type CurrentHead,type Destination} from './gradleOwnedCurrentSchema.js';
@@ -23,6 +24,7 @@ type FaultPoint='issuer-before-verify'|'issuer-before-sync'|'issuer-after-sync'|
 type Fault='fail'|'lose-response';
 export interface CurrentConfig{now:()=>number;readerNow?:()=>number;approvedBase:string;identity?:Partial<Pick<CurrentBinding,'authorityId'|'lineageId'|'rootPairId'|'storeRootId'|'checkpointRootId'|'storageInstanceId'|'profileDigest'|'policyDigest'|'parserDigest'|'schemaDigest'|'storeEpoch'|'generation'>>;
  business?:{operationBinding:string;manifestDigest:string;coreGraphDigest:string;sessionId:string;scopeId:string};
+ persistence?:CurrentPersistence;serverKeys?:Partial<Record<CurrentRole,{publicKey:KeyObject;privateKey:KeyObject}>>;
  limits?:Partial<Record<'pins'|'operations'|'prepares'|'records'|'objects'|'closure'|'pending'|'peerPending'|'requests',number>>;supported?:boolean;approved?:boolean;}
 const nonce=()=>randomBytes(32).toString('hex'),same=(a:unknown,b:unknown)=>canonicalOwnedJson(a,L.closure)===canonicalOwnedJson(b,L.closure),clone=<T>(v:T):T=>JSON.parse(canonicalOwnedJson(v,L.closure));
 const roleUID:Record<CurrentRole,number>={operator:0,manager:0,writer:1104,provider:1101,'checkpoint-issuer':1105,'lineage-registry':1106,'control-anchor':1107,'authority-broker':1108,reader:1102};
@@ -35,6 +37,7 @@ export class CurrentControl{
  #issuerReservations=new Map<string,{prepare:boolean;operation:boolean}>();
  #records=new Map<string,RecordEntry>();#anchor:{revision:number;ref:Ref|null}={revision:0,ref:null};#attempts=new Map<string,{digest:string;record:Ref}>();
  #state:State={phase:'uninitialized',selectionRevision:0,revocationEpoch:0,writerFence:0,incarnation:nonce(),selected:null,provision:null,writer:null,pins:{},barrier:null,operations:{}};
+ #persistentDispatching=false;
  #revision=0;#busy=false;#blocked=false;#issuerBlocked=false;#registryAvailable=true;#issuerAvailable=true;#anchorAvailable=true;#sourceBytes=0;#objectBytes=0;#recordBytes=0;#lastNow=0;#lastReader=0;
  #inFlight=new Map<string,string>();#busySubjects=new Map<string,number>();#effects=new Set<string>();
  #faults=new Map<FaultPoint,Fault>();#pauses=new Map<FaultPoint,{reached:()=>void;promise:Promise<void>}>();
@@ -46,7 +49,7 @@ export class CurrentControl{
   this.#identity={authorityId:'authority',lineageId:'lineage',rootPairId:'pair',storeRootId:'store',checkpointRootId:'checkpoint',storageInstanceId:'storage',generation:1,
    storeEpoch:ownedSha256('epoch'),profileDigest:ownedSha256('profile'),policyDigest:ownedSha256('policy'),parserDigest:ownedSha256('parser'),schemaDigest:ownedSha256('schema'),...config.identity};
   this.#business=clone(config.business??{operationBinding:ownedSha256('business'),manifestDigest:ownedSha256('fixture-manifest'),coreGraphDigest:ownedSha256('fixture-core'),sessionId:'session',scopeId:'scope'});
-  for(const role of currentRoles)this.#servers.set(role,generateKeyPairSync('ed25519'));
+  for(const role of currentRoles)this.#servers.set(role,config.serverKeys?.[role]??generateKeyPairSync('ed25519'));
   this.binding();
  }
  /** Root harness provisioning only, never an IPC enrollment API or observed OS identity. */
@@ -83,9 +86,10 @@ export class CurrentControl{
   need(b.schema==='osv-mcp.q2.c0.object.v1'&&b.objectRole===role&&same(b.body,o.body),'integrity_invalid');return clone(o.body);
  }
  #bytes(){return this.#sourceBytes+this.#objectBytes+this.#recordBytes;}
- #gate(){need(this.#config.supported!==false,'anchor_unsupported');need(this.#config.approved!==false,'profile_unapproved');need(this.#registryAvailable&&this.#roleActor('lineage-registry')?.alive!==false,'control_unavailable');need(!this.#blocked,'recovery_required');need(this.#anchorAvailable&&this.#roleActor('control-anchor')?.alive!==false,'anchor_unavailable');}
+ #gate(){this.#config.persistence?.assertOpen();need(this.#config.supported!==false,'anchor_unsupported');need(this.#config.approved!==false,'profile_unapproved');need(this.#registryAvailable&&this.#roleActor('lineage-registry')?.alive!==false,'control_unavailable');need(!this.#blocked,'recovery_required');need(this.#anchorAvailable&&this.#roleActor('control-anchor')?.alive!==false,'anchor_unavailable');}
  #issuerReady(){need(this.#issuerAvailable&&!this.#issuerBlocked&&this.#roleActor('checkpoint-issuer')?.alive!==false,'checkpoint_unavailable');}
  #authorize(a:Actor,r:CurrentRequest){
+  this.#config.persistence?.assertOpen();
   const p=apiPolicy[r.api],permission=r.api==='ConfirmFenced'&&a.role==='manager'?'barrier.confirm-managed':p.permission;
   need(p.roles.includes(a.role)&&a.permissions.has(permission),'permission_denied');need(r.destination===p.destination,'peer_mismatch');
   need(a.alive&&r.credentialId===a.id&&r.peerId===a.peerId&&r.peerBoot===a.boot&&r.role===a.role&&r.keyEpoch===a.epoch&&a.uid===roleUID[a.role]&&a.gid===(a.uid===0?0:a.uid+100),'peer_mismatch');
@@ -93,6 +97,7 @@ export class CurrentControl{
   need(r.binding.format==='v2','format_unsupported');need(r.binding.enrollmentDigest===ownedDigest(this.#identity)&&r.binding.checkpointIssuer==='checkpoint-issuer'&&r.binding.checkpointKeyEpoch===1,'binding_mismatch');
  }
  request(h:CurrentActor,api:CurrentAPI,payload:unknown,operationId='op-'+nonce(),binding=this.binding()):Buffer{
+  this.#config.persistence?.assertOpen();
   for(const [id,p]of this.#pending)if(this.#now()-p.started>=L.lease||this.#readerNow()-p.localStarted>=L.lease)this.#pending.delete(id);
   const a=this.#actor(h);need(a.requests<this.#limits.requests,'capacity_exhausted');need(this.#pending.size<this.#limits.pending&&[...this.#pending.values()].filter(p=>p.actor===a.id).length<this.#limits.peerPending,'capacity_exhausted');
   let copied:{binding:unknown;payload:unknown};try{copied={binding:clone(binding),payload:clone(payload)};}catch{throw new CurrentControlError('schema_invalid');}
@@ -107,6 +112,7 @@ export class CurrentControl{
  retry(h:CurrentActor,original:Buffer){const r=this.inspectRequest(original);return this.request(h,r.api,r.payload,r.operationId,r.binding);}
  async call(h:CurrentActor,api:CurrentAPI,payload:unknown,operationId?:string){const request=this.request(h,api,payload,operationId);return this.accept(h,request,await this.dispatch(h,request));}
  accept(h:CurrentActor,request:Buffer,response:Buffer):any{
+  this.#config.persistence?.assertOpen();
   const a=this.#actor(h),r=this.inspectRequest(request),pending=this.#pending.get(r.requestId);need(pending&&pending.actor===a.id&&!pending.accepted,'challenge_replayed');
   need(this.#now()-pending.started<L.lease&&this.#readerNow()-pending.localStarted<L.lease,'request_expired');
   const role=destRole[r.destination],body=parsed(replySchema,this.#verifyEnvelope(response,role,this.#servers.get(role)!.publicKey,'server-'+role,'reply',L.frame));
@@ -114,7 +120,10 @@ export class CurrentControl{
   parsed(responseValues[r.api],body.value);pending.accepted=true;this.#pending.delete(r.requestId);return clone(body);
  }
  async dispatch(h:CurrentActor,wire:Buffer):Promise<Buffer>{
-  const a=this.#actor(h),r=validateRequest(this.#verifyEnvelope(wire,a.role,a.client.publicKey,a.id,'request',L.frame));this.#authorize(a,r);this.#history();
+  if(!this.#config.persistence)return this.#dispatch(h,wire);need(!this.#persistentDispatching,'busy');this.#persistentDispatching=true;try{return await this.#dispatch(h,wire);}finally{this.#persistentDispatching=false;}
+ }
+ async #dispatch(h:CurrentActor,wire:Buffer):Promise<Buffer>{
+  const a=this.#actor(h),r=validateRequest(this.#verifyEnvelope(wire,a.role,a.client.publicKey,a.id,'request',L.frame));this.#authorize(a,r);await this.#config.persistence?.verify({revision:this.#anchor.revision,record:clone(this.#anchor.ref)});this.#authorize(a,r);this.#history();
   const p=this.#pending.get(r.requestId);need(p&&p.actor===a.id&&p.challenge===r.challenge&&p.sequence===r.sequence&&!p.used,'challenge_replayed');need(r.requestDigest===semanticDigest(r)&&p.intent===r.requestDigest,'binding_mismatch');p.used=true;
   need(this.#now()-p.started<L.lease&&this.#readerNow()-p.localStarted<L.lease,'request_expired');const key=operationKey(r),active=this.#inFlight.get(key);
   if(active){need(active===r.requestDigest,'idempotency_conflict');const existing=this.#state.operations[key]??this.#issuerOps.get(key);need(existing?.status==='committed','operation_pending');need(a.permissions.has('operation.query-own'),'permission_denied');return this.#reply(a,r,wire,await this.#resolve(r,key,existing,true));}
@@ -123,6 +132,7 @@ export class CurrentControl{
    await this.#expire();const existing=this.#state.operations[key]??this.#issuerOps.get(key);
    if(existing){need(a.permissions.has('operation.query-own'),'permission_denied');need(existing.digest===r.requestDigest&&existing.owner===a.id&&existing.api===r.api,'idempotency_conflict');return this.#reply(a,r,wire,await this.#resolve(r,key,existing,true));}
    need(same(r.binding,this.binding()),'binding_mismatch');const result=await this.#execute(a,r,key,p.started);await this.#point('registry-before-reply');
+   if(r.api==='ReadCurrentCheckpoint')await this.#config.persistence?.saveIssuer(this.#issuerImage());
    const committed=this.#state.operations[key]??this.#issuerOps.get(key);if(committed)return this.#reply(a,r,wire,await this.#resolve(r,key,committed,false));
    need(this.#now()-p.started<L.lease&&this.#readerNow()-p.localStarted<L.lease,'request_expired');this.#gate();
    const q=r.payload as any;if(r.api==='ReadCurrentCheckpoint'){this.#pin(q.pin);this.#issuerReady();}
@@ -141,7 +151,7 @@ export class CurrentControl{
  #recordAt(revision:number){return this.#history().find(e=>e.body.revision===revision);}
  #readRecord(e:RecordEntry):any{
   need(e.raw.length===e.ref.byteLength&&ownedSha256(e.raw)===e.ref.sha256,'integrity_invalid');const body=this.#verifyEnvelope(e.raw,'lineage-registry',this.#servers.get('lineage-registry')!.publicKey,'server-lineage-registry','reply');
-  need(body.schema==='osv-mcp.q2.c0.registry-record.v1'&&Number.isSafeInteger(body.revision)&&body.revision>0,'integrity_invalid');return body;
+  return parsed(durableRecordSchema,body);
  }
  #history(){
   this.#gate();const chain:{ref:Ref;body:any}[]=[];let ref=this.#anchor.ref,revision=this.#anchor.revision;const seen=new Set<string>(),results=new Set<string>();
@@ -199,8 +209,9 @@ export class CurrentControl{
    await this.#point('registry-before-record');const previous=clone(this.#anchor.ref),raw=this.#signed('lineage-registry',{schema:'osv-mcp.q2.c0.registry-record.v1',identity:this.#identity,revision,previous,state});
    need(raw.length<=L.record&&this.#bytes()+raw.length<=this.#limits.closure,'capacity_exhausted');const ref:Ref={role:'registry-record',id:ownedSha256(raw),sha256:ownedSha256(raw),byteLength:raw.length};
    written=true;this.#records.set(ref.id,{ref,raw:Buffer.from(raw),synced:false});this.#recordBytes+=raw.length;await this.#point('registry-after-record');this.#records.get(ref.id)!.synced=true;this.#metrics.registrySyncSteps++;await this.#point('registry-after-sync');await this.#point('anchor-before-cas');
+   if(this.#config.persistence){await this.#config.persistence.saveIssuer(this.#issuerImage());await this.#config.persistence.saveRegistry(this.#registryImage());}
    if(r)this.#authorize(this.#byId.get(r.credentialId)!,r);
-   const attempt=ownedDigest({registry:'registry',incarnation:state.incarnation,previous,next:ref});this.#adoptRecord(this.#records.get(ref.id)!,previous,attempt);committed=true;this.#busy=false;
+   const attempt=ownedDigest({registry:'registry',incarnation:state.incarnation,previous,next:ref});await this.#config.persistence?.cas({revision:revision-1,record:previous},{revision,record:ref},attempt);this.#adoptRecord(this.#records.get(ref.id)!,previous,attempt);committed=true;this.#busy=false;
    await this.#point('anchor-after-cas');return value;
   }catch(error){
    if(!committed){
@@ -232,17 +243,19 @@ export class CurrentControl{
   need(q.mode==='genesis'?this.#state.phase==='provisioning'&&q.fence.role==='provision':this.#state.phase==='serving'&&q.fence.role==='writer-fence','binding_mismatch');
   const reserved=[...this.#issuerReservations.values()];need(this.#prepares.size+reserved.filter(v=>v.prepare).length<this.#limits.prepares&&this.#issuerOps.size+reserved.filter(v=>v.operation).length<this.#limits.operations,'capacity_exhausted');const source=this.#source(q.snapshot);need(source.head.baseDigest===this.#config.approvedBase,'base_unapproved');this.#busySubjects.set('checkpoint-issuer',(this.#busySubjects.get('checkpoint-issuer')??0)+1);
   const reservation={prepare:true,operation:true};this.#issuerReservations.set(key,reservation);
-  try{await this.#point('issuer-before-verify');this.#fence(q.fence);this.#replay(source);
+  try{await this.#point('issuer-before-verify');this.#authorize(a,r);this.#fence(q.fence);this.#replay(source);
    if(q.mode==='advance'){const old=this.#source(this.#state.selected!.snapshot);need(source.head.revision>old.head.revision&&old.input.commits.every((b,i)=>source.input.commits[i]?.equals(b))&&old.input.payloads.every(b=>source.input.payloads.some(c=>c.equals(b))),'checkpoint_conflict');}
-   const body={snapshot:source.ref,head:source.head,fence:q.fence,previous:this.#state.selected?.checkpoint??null,mode:q.mode};await this.#point('issuer-before-sync');
+   const body={snapshot:source.ref,head:source.head,fence:q.fence,previous:this.#state.selected?.checkpoint??null,mode:q.mode};await this.#point('issuer-before-sync');this.#authorize(a,r);
    const ref=this.#put('checkpoint-prepare',body,'checkpoint-issuer');this.#prepares.set(ref.id,{...body,ref});reservation.prepare=false;this.#metrics.checkpointSyncSteps++;
    const value={checkpoint:ref,head:source.head},result=this.#put('semantic-result',{api:r.api,value},'checkpoint-issuer');this.#issuerOps.set(key,{digest:r.requestDigest,api:r.api,owner:a.id,status:'committed',applied:this.#anchor.revision,result,started,localStarted:this.#pending.get(r.requestId)!.localStarted,binding:clone(r.binding),fence:q.fence});reservation.operation=false;
+   await this.#config.persistence?.saveIssuer(this.#issuerImage());
    await this.#point('issuer-after-sync');this.#fence(q.fence);need(this.#now()-started<L.lease&&lease.expires>this.#now(),'request_expired');await this.#point('issuer-before-reply');this.#fence(q.fence);return value;
   }catch(e){if(e instanceof CurrentControlError&&e.reason.startsWith('injected_'))this.#issuerBlocked=true;throw e;}finally{this.#issuerReservations.delete(key);this.#busySubjects.set('checkpoint-issuer',(this.#busySubjects.get('checkpoint-issuer')??1)-1);}
  }
  #required(){const ids=new Set<string>();for(const role of ['provider','checkpoint-issuer','authority-broker'] as const){const a=this.#roleActor(role);if(a)ids.add(a.id);}for(const p of Object.values(this.#state.pins))if(p.hold||!['released','cancelled','expired'].includes(p.phase))ids.add(p.owner);if(this.#state.writer?.phase==='reserved')ids.add(this.#state.writer.owner);return [...ids].sort();}
  requiredParticipants(){return this.#required();}
  async #execute(a:Actor,r:CurrentRequest,key:string,started:number):Promise<any>{
+  this.#authorize(a,r);
   const q=r.payload as any,commit=(change:(s:State)=>any,status:Ledger['status']='committed')=>this.#commit(r,key,change,started,status);
   switch(r.api){
    case 'BeginEnrollment':{
@@ -309,7 +322,7 @@ export class CurrentControl{
    case 'anchor.read':this.#history();return {revision:this.#anchor.revision,record:this.#anchor.ref};
    case 'anchor.query-operation':{const e=this.#attempts.get(q.attemptId);return {attemptId:q.attemptId,status:e?'committed-historical':'unknown',record:e?.record??null};}
    case 'anchor.cas':{
-    need(this.#anchorAvailable,'anchor_unavailable');const e=this.#records.get(q.next.id);need(e&&same(e.ref,q.next)&&e.synced,'receipt_invalid');const body=this.#readRecord(e);this.#adoptRecord(e,q.expected,q.attemptId);return {revision:body.revision,record:e.ref};}
+    need(this.#anchorAvailable,'anchor_unavailable');const e=this.#records.get(q.next.id);need(e&&same(e.ref,q.next)&&e.synced,'receipt_invalid');const body=this.#readRecord(e);await this.#config.persistence?.cas({revision:body.revision-1,record:q.expected},{revision:body.revision,record:e.ref},q.attemptId);this.#adoptRecord(e,q.expected,q.attemptId);return {revision:body.revision,record:e.ref};}
   }
  }
  #validGate(ref:Ref,pin:Pin,useId:string){const g=this.#get(ref,'authority-gate');need(same(g.pin,pin.ref)&&g.useId===useId&&g.owner===pin.owner&&g.operationBinding===pin.operationBinding&&g.operationBinding===this.#business.operationBinding&&g.manifestDigest===this.#business.manifestDigest&&g.coreGraphDigest===this.#business.coreGraphDigest&&g.sessionId===this.#business.sessionId&&g.scopeId===this.#business.scopeId&&g.brokerBoot===this.#byId.get(g.broker)?.boot&&g.expires>this.#now()&&g.incarnation===pin.incarnation&&g.selection===pin.selectionRevision&&g.epoch===pin.revocationEpoch,'gate_invalid');return g;}
@@ -337,7 +350,7 @@ export class CurrentControl{
  /** Fault-schedule access only: an independent valid competing model transaction. */
  pendingRecords(h:CurrentActor){this.#operator(h);return [...this.#records.values()].filter(e=>!this.#attempts.has(ownedDigest({registry:'registry',incarnation:this.#readRecord(e).state.incarnation,previous:this.#readRecord(e).previous,next:e.ref}))).map(e=>{const b=this.#readRecord(e);return {next:clone(e.ref),expected:clone(b.previous),attemptId:ownedDigest({registry:'registry',incarnation:b.state.incarnation,previous:b.previous,next:e.ref}),synced:e.synced};});}
  compete(h:CurrentActor){
-  this.#operator(h);need(this.#busy&&this.#anchor.ref,'control_unavailable');const previous=clone(this.#anchor.ref),revision=this.#anchor.revision+1,raw=this.#signed('lineage-registry',{schema:'osv-mcp.q2.c0.registry-record.v1',identity:this.#identity,revision,previous,state:clone(this.#state),auditNonce:nonce()});
+  this.#operator(h);need(!this.#config.persistence,'unsupported_diagnostic');need(this.#busy&&this.#anchor.ref,'control_unavailable');const previous=clone(this.#anchor.ref),revision=this.#anchor.revision+1,raw=this.#signed('lineage-registry',{schema:'osv-mcp.q2.c0.registry-record.v1',identity:this.#identity,revision,previous,state:clone(this.#state),auditNonce:nonce()});
   need(this.#records.size<this.#limits.records&&this.#bytes()+raw.length<=this.#limits.closure,'capacity_exhausted');const ref:Ref={role:'registry-record',id:ownedSha256(raw),sha256:ownedSha256(raw),byteLength:raw.length},entry={ref,raw,synced:true};this.#records.set(ref.id,entry);this.#recordBytes+=raw.length;this.#adoptRecord(entry,previous,ownedDigest({registry:'registry',incarnation:this.#state.incarnation,previous,next:ref}));
  }
  availability(h:CurrentActor,target:'registry'|'issuer'|'anchor',available:boolean){this.#operator(h);if(target==='registry')this.#registryAvailable=available;else if(target==='issuer')this.#issuerAvailable=available;else this.#anchorAvailable=available;}
@@ -348,10 +361,34 @@ export class CurrentControl{
   else {const s=[...this.#sources.values()][0];need(s,'source_missing');s.input.payloads[0]!.fill(0);}
  }
  rollbackLocal(h:CurrentActor,revision:number){this.#operator(h);const e=this.#recordAt(revision);need(e,'control_conflict');this.#state=clone(e.body.state);}
- async restart(h:CurrentActor){this.#operator(h);need(!this.#busy,'busy');this.#blocked=false;this.#history();this.#issuerBlocked=false;const now=this.#now();
+ async restart(h:CurrentActor){this.#operator(h);need(!this.#persistentDispatching&&!this.#busy,'busy');this.#blocked=false;this.#history();this.#issuerBlocked=false;const now=this.#now();
   await this.#commit(null,null,s=>{s.incarnation=nonce();s.revocationEpoch++;s.writerFence++;if(s.writer)s.writer.phase='cancelled';if(s.provision)s.provision.phase='cancelled';
    if(s.phase==='serving'){const participants=this.#required(),ref=this.#put('barrier',{reason:'restart',participants,nonce:nonce()},'lineage-registry');s.phase='draining';s.barrier={ref,reason:'restart',participants,boots:Object.fromEntries(participants.map(id=>[id,this.#byId.get(id)!.boot])),confirmed:[],resume:true,completed:false};}
    for(const p of Object.values(s.pins))if(!['released','cancelled','expired'].includes(p.phase)){p.hold=p.hold||['decision-recorded','delivering'].includes(p.phase);p.phase='cancelling';}return {};},now);
+ }
+
+ #issuerObject(o:ObjectRecord){return ['snapshot','checkpoint-prepare','checkpoint-witness'].includes(o.ref.role)||o.role==='checkpoint-issuer'&&o.ref.role==='semantic-result';}
+ #registryImage():DurableRegistry{return parsed(durableRegistrySchema,{schema:'osv-mcp.q2.c1.registry.v1',identityDigest:ownedDigest(this.#identity),records:[...this.#records.values()].map(e=>({ref:e.ref,raw:e.raw.toString('base64')})),objects:[...this.#objects.values()].filter(o=>!this.#issuerObject(o)).map(o=>({ref:o.ref,raw:o.raw.toString('base64'),role:o.role}))});}
+ #issuerImage():DurableIssuer{return parsed(durableIssuerSchema,{schema:'osv-mcp.q2.c1.issuer.v1',identityDigest:ownedDigest(this.#identity),objects:[...this.#objects.values()].filter(o=>this.#issuerObject(o)).map(o=>({ref:o.ref,raw:o.raw.toString('base64'),role:o.role})),sources:[...this.#sources.values()].map(s=>{const {key,commits,payloads,...metadata}=s.input;return {ref:s.ref,metadata,key:key.toString('base64'),commits:commits.map(b=>b.toString('base64')),payloads:payloads.map(b=>b.toString('base64'))};}),prepares:[...this.#prepares.values()],operations:[...this.#issuerOps].map(([key,entry])=>({key,entry}))});}
+ /** Disk-owner startup only. Imported actors/keys/tokens are never restored. */
+ async restore(h:CurrentActor,registry:unknown,issuer:unknown,anchor:unknown){
+  this.#operator(h);need(this.#config.persistence&&this.#records.size===0&&this.#objects.size===0,'configuration_invalid');
+  const r=parsed(durableRegistrySchema,registry),i=parsed(durableIssuerSchema,issuer),a=parsed(durableAnchorSchema,anchor);
+  need(r.identityDigest===ownedDigest(this.#identity)&&i.identityDigest===r.identityDigest,'binding_mismatch');
+  const decode=(text:string)=>{const b=Buffer.from(text,'base64');need(b.toString('base64')===text,'schema_invalid');return b;};
+  for(const o of [...r.objects,...i.objects]){need(!this.#objects.has(o.ref.id),'integrity_invalid');const raw=decode(o.raw),body=this.#verifyEnvelope(raw,o.role,this.#servers.get(o.role)!.publicKey,'server-'+o.role,'reply');need(body.schema==='osv-mcp.q2.c0.object.v1'&&body.objectRole===o.ref.role,'integrity_invalid');this.#objects.set(o.ref.id,{ref:o.ref,raw,body:body.body,role:o.role});this.#objectBytes+=raw.length;this.#get(o.ref,o.ref.role);}
+  for(const e of r.records){need(!this.#records.has(e.ref.id),'integrity_invalid');const raw=decode(e.raw);const entry={ref:e.ref,raw,synced:true};this.#readRecord(entry);this.#records.set(e.ref.id,entry);this.#recordBytes+=raw.length;}
+  for(const saved of i.sources){need(!this.#sources.has(saved.ref.id),'integrity_invalid');const input={...saved.metadata,key:decode(saved.key),commits:saved.commits.map(decode),payloads:saved.payloads.map(decode)},proof=this.#get(saved.ref,'snapshot');need(input.key.length===32&&same(input.binding,{authorityId:this.#identity.authorityId,lineageId:this.#identity.lineageId,generation:this.#identity.generation,storeEpoch:this.#identity.storeEpoch,profileDigest:this.#identity.profileDigest}),'binding_mismatch');
+   const source={ref:saved.ref,input,head:parsed(currentHeadSchema,proof.head),inventory:ownedDigest({commits:input.commits.map(b=>ownedSha256(b)),payloads:input.payloads.map(b=>ownedSha256(b)).sort()})};need(source.inventory===proof.inventory,'integrity_invalid');this.#sources.set(saved.ref.id,source);this.#sourceBytes+=[...input.commits,...input.payloads].reduce((n,b)=>n+b.length,0);this.#replay(source);}
+  for(const p of i.prepares){need(!this.#prepares.has(p.ref.id),'integrity_invalid');const {ref,...body}=p;need(same(this.#get(ref,'checkpoint-prepare'),body),'integrity_invalid');this.#source(p.snapshot);this.#prepares.set(ref.id,p);}
+  for(const o of i.operations){need(!this.#issuerOps.has(o.key),'integrity_invalid');need(this.#get(o.entry.result,'semantic-result').api===o.entry.api&&o.entry.api==='PrepareCheckpoint','integrity_invalid');this.#issuerOps.set(o.key,o.entry);}
+  this.#anchor={revision:a.revision,ref:clone(a.record)};if(a.record){const e=this.#records.get(a.record.id);need(e&&same(e.ref,a.record),'integrity_invalid');this.#state=clone(this.#readRecord(e).state);}
+  need(this.#bytes()<=this.#limits.closure&&this.#objects.size<=this.#limits.objects&&this.#records.size<=this.#limits.records&&this.#prepares.size<=this.#limits.prepares&&this.#issuerOps.size<=this.#limits.operations&&Object.keys(this.#state.operations).length<=this.#limits.operations&&Object.keys(this.#state.pins).length<=L.retainedPins,'capacity_exhausted');
+  const validateRefs=(value:unknown):void=>{if(Array.isArray(value)){for(const v of value)validateRefs(v);return;}if(!value||typeof value!=='object')return;const o=value as Record<string,unknown>;if(['role','id','sha256','byteLength'].every(k=>Object.hasOwn(o,k))){const ref=parsed(currentRefSchema,o);if(ref.role==='registry-record'){const record=this.#records.get(ref.id);need(record&&same(record.ref,ref),'integrity_invalid');}else this.#get(ref,ref.role);return;}for(const v of Object.values(o))validateRefs(v);};
+  for(const e of this.#records.values())validateRefs(this.#readRecord(e));for(const o of this.#objects.values())validateRefs(o.body);
+  for(const e of this.#history()){this.#attempts.set(ownedDigest({registry:'registry',incarnation:e.body.state.incarnation,previous:e.body.previous,next:e.ref}),{digest:'restored',record:e.ref});}
+  if(this.#state.selected){this.#checkpoint(this.#state.selected.checkpoint);this.#source(this.#state.selected.snapshot);}await this.#config.persistence.verify({revision:this.#anchor.revision,record:clone(this.#anchor.ref)});
+  if(a.record)await this.restart(h);
  }
  view(){return clone({...this.#state,controlRevision:this.#anchor.revision,currentRecordRef:this.#anchor.ref,...flags});}
  get metrics(){return Object.freeze({...this.#metrics,retainedBytes:this.#bytes(),records:this.#records.size,objects:this.#objects.size,prepares:this.#prepares.size,completedAPIs:[...this.#completedAPIs].sort(),...flags,nativeTrials:0});}
