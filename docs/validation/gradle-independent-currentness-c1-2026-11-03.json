@@ -5,8 +5,8 @@
   "command": "npx vitest run src/test/utils/gradleOwnedCurrentDisk.test.ts",
   "tests": 37,
   "sourceSha256": {
-    "package-lock.json": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285",
-    "package.json": "bbb5c5fde9e96539da7395e928f91d9fa34372213260063059877a5b1c000f18",
+    "package-lock.json": "7ca889f29792212298919fbf0405e9f7d119e39740b94fa86cee94831ed3b91b",
+    "package.json": "bbb4b96e57ed719df1d39f5ad15bb8dee6921c120930814da3e0cbfad309263f",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/gradleOwnedAuthorityJournal.ts": "df213ca2a6d6ce3dfd7822745ac78d1a91506d9141f6575f2470b2c73c72d4da",
     "src/test/fixtures/gradleOwnedAuthoritySchema.ts": "e7642cdfb3cfa092f79edc163eb4e6ac0e0d5590bdb2553c13016bc500f52115",
