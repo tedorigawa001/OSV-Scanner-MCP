@@ -5203,7 +5203,7 @@ anchorは外側controllerが保存した既知の受領結果であり、独立f
 
 固定した最終sourceで、新規systemd VMから全24起動／72 phase／48 exec、署名付き保存response 31件（成功14件・拒否17件）、別UIDの直接操作拒否65件と自己領域の許可対照5件、旧boot要求の再送／不正bodyの負例各1件を確認した。8種類の保存障害とその後のunavailable／再起動拒否、3種類の改変後の復旧拒否を通過した。各bootと操作を57個のprotected eventへ対応付け、seal時8 file／5 directory sync、正常復旧時4 file／1 directory syncを照合した。
 
-公開recordは`docs/validation/gradle-q2b-native-storage-2026-11-03.json`、独立pinは同basenameの`.bindings.json`。recordは外側の整形JSONを許容し、内部の署名envelopeはcanonical bytesを必須とする。invalid UTF-8・duplicate key・署名内部の余白・自己申告採用fieldは拒否する。新規Vitest回帰54件（ローカルfilesystem 22ケースを別processで実行するテストを含む）が成功した。全体118 files／4,499 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功、native fixtureのdist混入なし。公開record照合後に専用コンテナを削除し、秘密鍵・seed・credential archive・guest diskを破棄した。
+公開recordは`docs/validation/gradle-q2b-native-storage-2026-11-03.json`、独立pinは同basenameの`.bindings.json`（記録と同じcommitで追加されたため、リポジトリ上の独立性は§9.82.6／§9.84.7と同じ限界を持つ。§9.87.12参照）。recordは外側の整形JSONを許容し、内部の署名envelopeはcanonical bytesを必須とする。invalid UTF-8・duplicate key・署名内部の余白・自己申告採用fieldは拒否する。新規Vitest回帰54件（ローカルfilesystem 22ケースを別processで実行するテストを含む）が成功した。全体118 files／4,499 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功、native fixtureのdist混入なし。公開record照合後に専用コンテナを削除し、秘密鍵・seed・credential archive・guest diskを破棄した。
 
 途中の開発runは正常停止後のunloaded unit処理、全体10分timeout、追加body型gateの修正前に打ち切り、陽性recordには使っていない。最終runの全体期限は30分で、IPCの2秒期限・child／boot個別期限・拒否条件は緩めていない。通常回帰はDocker／VMを起動しない。再現方法と対象範囲は`src/test/fixtures/q2b_storage/README.md`を参照する。
 
@@ -5237,7 +5237,7 @@ anchorは外側controllerが保存した既知の受領結果であり、独立f
 新しいcontrol IPCは既存B1ctのdiagnostic frameと別domain／profileにし、明示した両端認証と全fragmentのkernel資格、FD転送拒否、起動前gateを引き継ぐ。以下は実装前の候補値であり、既存2秒／4096 bytesの定数を変更したことにはしない。
 
 - strict canonical UTF-8 JSON、unknown field／duplicate key／float／不正UTF-8／body非objectを拒否。自然数はsafe integerで、counter overflowは停止して新epochをoperatorが承認する。時刻で巻戻しを隠さない。
-- envelope schema候補は`osv-mcp.q2.current-control.envelope.v1`、body schemaは`osv-mcp.q2.current-control.body.v1`とする。messageTypeは§9.87.4のAPIとそのreplyのclosed enum、service roleはoperator／manager／writer／provider／checkpoint-issuer／lineage-registry／control-anchor／authority-broker／readerとする。API表のauthority／brokerはauthority-broker、consumerは初期profileではreaderへ対応付け、writerとmanagerは独立roleとする。bodyへbinding、requestId／operationId、requestDigest／challenge／sequence、API別payloadを持たせ、送信元／宛先service・request/reply方向、issuer／key epochとEd25519署名をenvelopeへ束縛する。roleごとに別鍵とpinを使い、private keyやcredentialをpayload・argv・env・logへ出さない。
+- envelope schema候補は`osv-mcp.q2.current-control.envelope.v1`、body schemaは`osv-mcp.q2.current-control.body.v1`とする。messageTypeは§9.87.4のAPIとそのreplyのclosed enum（§9.87.6のAnchor APIは§9.87.12の別enum）、service roleはoperator／manager／writer／provider／checkpoint-issuer／lineage-registry／control-anchor／authority-broker／readerとする。API表のauthority／brokerはauthority-broker、consumerは初期profileではreaderへ対応付け、writerとmanagerは独立roleとする。bodyへbinding、requestId／operationId、requestDigest／challenge／sequence、API別payloadを持たせ、送信元／宛先service・request/reply方向、issuer／key epochとEd25519署名をenvelopeへ束縛する。roleごとに別鍵とpinを使い、private keyやcredentialをpayload・argv・env・logへ出さない。
 - id／keyIdはASCIIの`[A-Za-z0-9][A-Za-z0-9._:-]{0,127}`、digest／boot／challengeはlowercase hex 64桁、signatureはcanonical base64の64 bytesとする。sequenceは正のsafe integer、revision／fenceは非負で0を未初期化の用途に限定し、source generationは正とする。genesis用ProvisionBinding（selected=null）とServingBinding（selected refs必須）はstrict unionにし、nullable fieldを通常readへ持ち込まない。
 - 共通bindingはauthorityId／lineageId、format、generation／storeEpoch、storeRootId／checkpointRootId／rootPairId、storageInstanceId、provider boot／namespace generation／writer fence、registry incarnation／selectionRevision／revocationEpoch、checkpoint issuer／key epoch、Enrollment／schema／parser／policy／profile digest。registry応答はcurrent controlRevision／controlRecordRef、pinはcreatedControlRevisionも持つ（§9.87.7）。呼出元peer／boot、operationId／requestDigest、256-bit challenge・service別request sequenceも照合する。
 - refはrole／opaque id／実envelope bytesのSHA-256／byteLength。path／URLとして解決せず、自身のdigestをbodyへ含めない。相手のclock値をlocal clockと直接比較しない。registryがleaseを自身のmonotonic clockで判定し、readerも最後のawait後のlocal elapsed上限を確認する。
@@ -5375,7 +5375,7 @@ registryのpin状態は`active → completing → decision-recorded → deliveri
 
 ReserveWriterは既存pinなしを確認するtransactionで新規AcquireReadPinを閉じ、publish／明示cancel／expiryをdurableに解決するまで維持する。これによりread発行の連打で取得済みwriterを永久待機させない。期限切れwriterのcandidateを採用せず、予約の解放記録が確定した後だけread受付を再開する。
 
-readは、AcquireReadPin→issuer fresh checkpoint read→providerのsame pin grant→全検証・authority gate→PrepareHandoff→DeliverResult→AcknowledgeDeliveryの順。issuer／provider／authorityは署名tokenのoffline検証だけで進めず、各入口とeffect／成功応答直前にregistryへlive pin／fenceを確認する。5秒以内に処理できない要求は、最初から有界full modeまたは停止を選び、lease延長を繰り返して無期限pinを作らない。
+readは、AcquireReadPin→issuer fresh checkpoint read→providerのsame pin grant→全検証・authority gate→PrepareHandoff→DeliverResult→AcknowledgeDeliveryの順。issuer／provider／authorityは署名tokenのoffline検証だけで進めず、各入口とeffect／成功応答直前にregistryへlive pin／fenceを確認する。5秒以内に処理できない要求は、最初から有界full mode（§9.87.12で定義）または停止を選び、lease延長を繰り返して無期限pinを作らない。
 
 consumerへの結果は固定handoff brokerが送信し、registryはdeliveringと未完了effectを持つ間、pinとselected headを保持する。reader単独がprovider pinを解放してから別authorityへ非同期確認する方式は不採用。PrepareHandoffが保存済みでも新たなuse／launchを発行しない。同useの応答紛失retryは保存済みexact結果の照会で、raw responseやreceiptからlive handleを再生成しない。
 
@@ -5479,3 +5479,30 @@ ICは次の実装・実証の条件であり、文書構造の検査や既存回
 レビュー修正ではwriter／managerを独立roleへ加え、全APIとAnchor APIのcredential／Enrollment grant・委譲・方向・目的制約を明記した。CAS応答紛失後の正当な後続transactionは祖先証明と永続operation ledgerで解決し、元要求のsemantic resultと現在のlive権限を分離した。IC14／IC36／IC41を拡充し、IC45〜IC48を追加した。これらも設計条件であり、実装・native実証済みとはしない。
 
 レビュー修正後の文書検証で、11小節・IC01〜IC48の欠落／重複なし、全20 APIのrole／credential／Enrollment表、§9.85.5→§9.86→§9.87の配置を確認した。既存の公開command例・Q1 prefix・B2/B3 sealed store・disk checkpoint・migration contractの5 files／286テストが成功した。検証記録は`docs/validation/gradle-independent-currentness-design-2026-11-03.json`へ更新した。既存契約との整合確認を、新しいICの実装・native達成件数に数えない。
+
+#### 9.87.12 8d65e5bレビュー修正・明示取消API・full modeの定義・Anchor enum・pinの同時commit
+
+**明示取消API。** §9.87.7はwriter予約を「publish／明示cancel／expiry」で解決し、pinに`cancelling → cancelled`を置いていたが、取消のAPIと権限がなかった。検証に失敗したreaderや中断したwriterは期限（最大5秒）かbarrierを待つしかなく、その間writer公開・新規readを止め続けた。次の2 APIを加える（API合計22：registry 19、Anchor 3）。
+
+| API（宛先） | 呼出元・必須permission | 入力・出力・制約 |
+| --- | --- | --- |
+| CancelWriter（registry） | writer client：writer.cancel。ReserveWriterと同じcredential／peer／boot・同operationのsingle-use fenceだけ | fence ref・expected selectedとfresh challenge。未使用のfenceを`cancelled`へdurable遷移し、そのfenceを紐づけたissuer prepare／candidateを未採用のまま保持する。同じtransactionで新規read受付を再開する。PublishSelection確定後・barrier下・別callerからは不可。同operationの再送は同じ結果 |
+| ReleaseReadPin（registry） | reader client：pin.release。AcquireReadPinの元reader本人・同peer／bootだけ | pin ref・fresh challenge。`active`／`completing`のpinだけを`cancelling → cancelled`へdurable遷移する。`decision-recorded`以降は通常のDeliverResult／AcknowledgeDelivery、またはbarrierでのみ終える。他actor・broker・managerによる代理releaseは不可 |
+
+いずれもmutation前の権限・phase・旧revision拒否ではownerを停止しない。取消後のfence／pinは`cancelled`のhistorical記録として残り、同IDで再度有効化しない。cancelはeffectを取り消すAPIではなく、未開始の予約を解くだけである。
+
+**有界full mode。** registry current性を主張しない既存の全原本読取・全検証経路（§9.85までの全履歴replay）を指す。AcquireReadPinを取らず、selected snapshotを保護しない。そのため結果はdiagnostic／historicalとしてだけ返し、PrepareHandoff・DeliverResultへ進めず、live actionの根拠にしない。検証中にselectedが入れ替わってもそのまま完了しうるため、current性が必要な呼出元はpinの期限内に処理できなければ停止を選ぶ。full modeはpin期限を回避する経路として使わない。
+
+**Anchorのmessage type。** §9.87.3のclosed enumは§9.87.4のAPIとreplyに限る。Anchor APIは同じenvelope schemaを使うが、`anchor.read`／`anchor.cas`／`anchor.query-operation`とそのreplyだけからなる別のclosed enumとし、宛先roleはcontrol-anchor、呼出元roleはlineage-registryに限る。2つのenumの値は重複させず、一方の型名をもう一方のroleへ受理しない。
+
+**pinの同時commit。** 5236ba8でも`gradle-q2b-native-storage-2026-11-03.bindings.json`が記録と同じcommitで追加された。§9.82.6／§9.84.7の運用（pinを記録より前の別commit、またはリポジトリ外へ固定）を満たしていないため、§9.86の該当箇所に注記した。記録とpinは再生成できないため、この記録の独立性も同じ限界を持つ。§9.87.10のC3の規定どおり、次のnative記録から適用する。
+
+回帰条件を追加する（未実装）。
+
+| ID | 条件・期待結果 |
+| --- | --- |
+| IC49 | CancelWriterは元writerの未使用fenceだけを取消し、同transactionでread受付を再開する。publish後・別caller・barrier下の取消、取消済みfenceでのpublish、cancelをeffect取消として扱う実装を拒否 |
+| IC50 | ReleaseReadPinは元readerの`active`／`completing`だけを取消す。`decision-recorded`以降・代理release・取消済みpinの再有効化を拒否し、他のpinとwriter待機を正しく解く |
+| IC51 | full modeの結果をPrepareHandoff／DeliverResult・live actionへ使う経路、full modeでpin期限を回避する経路、Anchorのmessage typeをregistry APIのroleで（またはその逆で）受理する経路を拒否 |
+
+8d65e5bレビュー修正の検証結果: §9.87の12小節、API表とpermission表の22 API、IC01〜IC51の欠落／重複なしを確認した。全体118 files／4,499 tests成功、24 files／1,418 tests skipped。diff整形検査成功。文書のみの変更で、IC回帰の実装・native実行・採用flag変更は0。

@@ -2641,3 +2641,10 @@ bce3aa6レビュー修正の検証結果: VM回帰26件成功。全体113 files�
 - CAS応答紛失後に正当な後続Rが確定しても、完全な祖先chainとlatest operation ledgerで元commitを解決する。logical operationとAnchor attemptを区別し、semantic resultのapplied revisionとcurrent revisionを別fieldで返す。hash循環・新規Rによる二重実行・期限／use数の増加を防ぐ。
 - historical照会と元API retryによる同じ既存pin／fenceのlive確認を分離。IC14／IC36／IC41を更新し、認可・委譲・祖先証拠不備・conflict／unknownの分類をIC45〜IC48へ追加した。全48条件は未実装のまま。
 - 文書11小節・20 API・48条件の閉包と配置、既存5 files／286テスト成功を確認。検証JSONのsource fingerprintを更新し、新service実装・native試験・本番採用は追加していない。次は引き続きC0。
+
+### 2026-11-03: 8d65e5bレビュー修正・明示取消API・full mode・Anchor enum
+
+- §9.87.12へ、pin／writerの明示取消API（CancelWriter／ReleaseReadPin）と権限・phase制約、IC49〜IC51を追加。「有界full mode」をcurrent性を主張しない全検証経路として定義し、handoff・live actionへ使わないことを明記。Anchor APIのmessage typeを別のclosed enumに分離した。
+- 5236ba8の`.bindings.json`も記録と同時commitで追加されたことを§9.86へ注記。5236ba8の本体は未レビュー。
+
+8d65e5bレビュー修正の検証結果: §9.87の12小節・22 API・IC01〜IC51を確認。全体118 files／4,499 tests成功、24 files／1,418 tests skipped。diff整形検査成功。文書のみ。
