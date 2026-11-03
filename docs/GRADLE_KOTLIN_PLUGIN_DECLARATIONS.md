@@ -5149,6 +5149,16 @@ cache identityはbinding・base ref／承認base・signing key digest／key ID�
 
 **Q3／Q4全体は未完了。** Q3bでは完全inventory／live grant・pin・checkpoint実同期に接続したsuffix-only verifier、authority audit継続state、node／key bookkeepingのbudget、large history／scope・churn／失効／故障比較とnative性能を実証する必要がある。Q4bでは独立承認registry・runtime closure・current pin／barrierを実装し、B／C authorityとPO3／M0移行へ接続する。先行するQ2のnative storage service・全隔離経路・fresh issuer・実保存故障の未成立条件も残る。今回の診断cacheと拒否gateを本番最適化や採用完了に読み替えない。
 
+#### 9.85.5 9037db7レビュー修正・公開文書の個人環境command・文書配置・Q4aの拒否理由
+
+**公開文書の個人環境command。** §9.85.2の再現commandに、個人環境のcommand proxyの接頭辞が本文中のインラインコードとして入っていた。素の`npx vitest run …`と`env OSV_Q3Q4_REPORT=1 npx vitest run … --silent=false`へ戻した。既存の回帰（ef0c08f）は行頭がその接頭辞で始まる行だけを検出するため、本文中のインラインコードはすり抜けていた。READMEとdocs配下のMarkdownについて、インラインコードのspan内で接頭辞の後にcommandが続く場合と、docs配下のJSON記録の文字列が接頭辞＋空白で始まる場合も失敗するよう回帰を2件追加した。toolの名前だけを挙げる過去のreview記録の言及は引き続き許可する。修正前の文書で新しい回帰が該当1行だけを検出することを確認した。
+
+**文書配置。** 9037db7は§9.85を§9.84.6と、その検証結果行の間へ挿入しており、B1ctの検証結果行と§9.84.7が§9.85.4の後ろにあった。両方を§9.85の前へ戻した。bce3aa6・9bc56ad・095bbecに続き4回目である。新しい節はファイル末尾へ追加すること。
+
+**Q4aの拒否理由。** `inspectPrefixAdoption`のstrict schema失敗（自己申告の承認flag、pin設定への未知field）をzodの生例外から`prefix_adoption_schema`へ統一した。pin不一致4件・自己申告3件・blocker削除1件の期待値を`toThrow()`から完全一致の理由へ変えた。事前の確認で全件が想定どおりの検査で拒否されていた（manager／controller鍵は`q2b_transport_independent_key_pin`、manifest／runIdは`q2b_transport_independent_manifest_pin`、残りはschema）。`gradleOwnedPrefixAdoption.ts`は保存記録のsource fingerprintに含まれるため、記録を現sourceの出力から再生成した。変わったのは同fileのSHA-256だけで、比較値は同一である。
+
+9037db7レビュー修正の検証結果: Q3a／Q4a回帰31件・文書回帰3件成功（新規2件）。全体117 files／4,445 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。native実行・採用flag変更は0。
+
 ### 9.86 別UID保存serviceと認証IPCのnative接続（2026-11-03）
 
 #### 9.86.1 接続単位・信頼境界
@@ -5197,12 +5207,275 @@ anchorは外側controllerが保存した既知の受領結果であり、独立f
 
 途中の開発runは正常停止後のunloaded unit処理、全体10分timeout、追加body型gateの修正前に打ち切り、陽性recordには使っていない。最終runの全体期限は30分で、IPCの2秒期限・child／boot個別期限・拒否条件は緩めていない。通常回帰はDocker／VMを起動しない。再現方法と対象範囲は`src/test/fixtures/q2b_storage/README.md`を参照する。
 
-#### 9.85.5 9037db7レビュー修正・公開文書の個人環境command・文書配置・Q4aの拒否理由
+### 9.87 独立checkpoint issuer・registry current pin・失効／handoff／fencing契約（設計、2026-11-03）
 
-**公開文書の個人環境command。** §9.85.2の再現commandに、個人環境のcommand proxyの接頭辞が本文中のインラインコードとして入っていた。素の`npx vitest run …`と`env OSV_Q3Q4_REPORT=1 npx vitest run … --silent=false`へ戻した。既存の回帰（ef0c08f）は行頭がその接頭辞で始まる行だけを検出するため、本文中のインラインコードはすり抜けていた。READMEとdocs配下のMarkdownについて、インラインコードのspan内で接頭辞の後にcommandが続く場合と、docs配下のJSON記録の文字列が接頭辞＋空白で始まる場合も失敗するよう回帰を2件追加した。toolの名前だけを挙げる過去のreview記録の言及は引き続き許可する。修正前の文書で新しい回帰が該当1行だけを検出することを確認した。
+#### 9.87.1 対象・既存実装との境界
 
-**文書配置。** 9037db7は§9.85を§9.84.6と、その検証結果行の間へ挿入しており、B1ctの検証結果行と§9.84.7が§9.85.4の後ろにあった。両方を§9.85の前へ戻した。bce3aa6・9bc56ad・095bbecに続き4回目である。新しい節はファイル末尾へ追加すること。
+残課題2を、実装前の入出力・保存／失効・実装手順・回帰条件まで具体化する。今回の成果は設計だけで、新service／registry／issuerを実装・配備・native実証した記録ではない。
 
-**Q4aの拒否理由。** `inspectPrefixAdoption`のstrict schema失敗（自己申告の承認flag、pin設定への未知field）をzodの生例外から`prefix_adoption_schema`へ統一した。pin不一致4件・自己申告3件・blocker削除1件の期待値を`toThrow()`から完全一致の理由へ変えた。事前の確認で全件が想定どおりの検査で拒否されていた（manager／controller鍵は`q2b_transport_independent_key_pin`、manifest／runIdは`q2b_transport_independent_manifest_pin`、残りはschema）。`gradleOwnedPrefixAdoption.ts`は保存記録のsource fingerprintに含まれるため、記録を現sourceの出力から再生成した。変わったのは同fileのSHA-256だけで、比較値は同一である。
+`FileJournalCheckpoint`は別root／別keyでも同一processのIOであり、`PrefixAdmissionFixture`はメモリ内のadmissionである。§9.86のcontroller recovery anchorも、保存した既知のseal digestであってfresh source checkpoint issuerではない。これらを設定booleanだけで独立serviceへ昇格させない。既存の全原本読取・全checkpoint認証／再同期・本番拒否gateを維持する。
 
-9037db7レビュー修正の検証結果: Q3a／Q4a回帰31件・文書回帰3件成功（新規2件）。全体117 files／4,445 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。native実行・採用flag変更は0。
+本契約の初期範囲は、1 authority／lineageについて複数の不変candidateから1つのselected headを選び、同じselected snapshot／checkpoint／control revisionをread pinで保護する協調構成である。§9.86の単一snapshot wireの拡張とは分け、TS B2/B3の複数namespace／generation・Q1のpinと接続するadapterを必要とする。任意の既存processや外部Taskを時刻付きtokenだけで停止させる機構は含めない。
+
+#### 9.87.2 主体・独立設定・責任
+
+| 主体 | 所有・責任 | 代行できないもの |
+| --- | --- | --- |
+| operator／manager | root所有のEnrollment、service image／role／endpoint／public key／root pair pin、固定起動・停止と旧process fencing | project指定のpath／command／PIDを特権で実行、receiptからの自動enrollment |
+| provider | 不変candidate／sealed bytes、完全inventory、実保存・同期・root identity、限定publish/read API | issuer／registryの鍵・canonical rootへのwrite、local selected fileだけでの現在値決定 |
+| source checkpoint issuer | 自身の別UID・別root・別鍵、連続するprepared checkpointの認証・保存／再同期、selected checkpointのfresh read | providerのdurable自己申告だけをsource checkpointとすること、registryの採用／失効順序の決定 |
+| LineageRegistry | 独立UID・root・鍵、Enrollmentの選択、selected snapshot＋checkpoint、control revision、pin／writer fence／barrier／handoffの線形化 | source bytesやTask実行の正当性の代行、署名しただけでdurabilityを表明すること |
+| ControlAnchor | registry recordのexact revision／digestを別のrollback domainでdurable CAS・fresh readする | registry／issuerと同じ復元単位に置いたsigned fileを独立anchorと呼ぶこと |
+| authority／結果handoff broker | operation／session／scopeのcurrent性、予約済みeffectと結果引渡しをregistry fenceへ結ぶ | cached content proofからlive actionを発行、pin release後の非同期authority確認 |
+
+候補UIDはprovider 1101、issuer 1105、registry 1106とし、相異なるreal／effective／saved UID/GID・補助groupなし・capabilityなし・NNPを実証する。ControlAnchorのrollback domainはprovider／issuer／registryのbackup／restore集合から独立させる。単なる4つ目の同一復元対象directoryでは足りない。適合backendが未配備なら`anchor_unsupported`で停止する。
+
+独立設定はauthority／lineage、source format、generation／epoch、root pair・実root identity、storage instance、各serviceのimplementation closure／platform／boot epoch／issuer・key epoch、schema／parser／policy／profileとendpoint peerを固定する。初回genesisもoperatorの明示enrollmentを要求する。自己署名record・project config・現在値応答の未知keyから信頼対象を追加しない。nativeで別UIDを確認してもruntime closure承認・本番profile成立とはしない。
+
+#### 9.87.3 encoding・共通binding・上限
+
+新しいcontrol IPCは既存B1ctのdiagnostic frameと別domain／profileにし、明示した両端認証と全fragmentのkernel資格、FD転送拒否、起動前gateを引き継ぐ。以下は実装前の候補値であり、既存2秒／4096 bytesの定数を変更したことにはしない。
+
+- strict canonical UTF-8 JSON、unknown field／duplicate key／float／不正UTF-8／body非objectを拒否。自然数はsafe integerで、counter overflowは停止して新epochをoperatorが承認する。時刻で巻戻しを隠さない。
+- envelope schema候補は`osv-mcp.q2.current-control.envelope.v1`、body schemaは`osv-mcp.q2.current-control.body.v1`とする。messageTypeは§9.87.4のAPIとそのreplyのclosed enum、service roleはoperator／manager／writer／provider／checkpoint-issuer／lineage-registry／control-anchor／authority-broker／readerとする。API表のauthority／brokerはauthority-broker、consumerは初期profileではreaderへ対応付け、writerとmanagerは独立roleとする。bodyへbinding、requestId／operationId、requestDigest／challenge／sequence、API別payloadを持たせ、送信元／宛先service・request/reply方向、issuer／key epochとEd25519署名をenvelopeへ束縛する。roleごとに別鍵とpinを使い、private keyやcredentialをpayload・argv・env・logへ出さない。
+- id／keyIdはASCIIの`[A-Za-z0-9][A-Za-z0-9._:-]{0,127}`、digest／boot／challengeはlowercase hex 64桁、signatureはcanonical base64の64 bytesとする。sequenceは正のsafe integer、revision／fenceは非負で0を未初期化の用途に限定し、source generationは正とする。genesis用ProvisionBinding（selected=null）とServingBinding（selected refs必須）はstrict unionにし、nullable fieldを通常readへ持ち込まない。
+- 共通bindingはauthorityId／lineageId、format、generation／storeEpoch、storeRootId／checkpointRootId／rootPairId、storageInstanceId、provider boot／namespace generation／writer fence、registry incarnation／selectionRevision／revocationEpoch、checkpoint issuer／key epoch、Enrollment／schema／parser／policy／profile digest。registry応答はcurrent controlRevision／controlRecordRef、pinはcreatedControlRevisionも持つ（§9.87.7）。呼出元peer／boot、operationId／requestDigest、256-bit challenge・service別request sequenceも照合する。
+- refはrole／opaque id／実envelope bytesのSHA-256／byteLength。path／URLとして解決せず、自身のdigestをbodyへ含めない。相手のclock値をlocal clockと直接比較しない。registryがleaseを自身のmonotonic clockで判定し、readerも最後のawait後のlocal elapsed上限を確認する。
+- 初期候補は1 lineage、live read pins 16、exclusive writer 1、issuer pending prepares 8、完了operation ledger 64、peer別pending 16／全体64、boot内request 256、1 frame 16 KiB／metadata record 64 KiB／参照閉包64 MiB。単一RPCは1要求／最大5秒、read pinは最大5秒とし、無期限extendは不可。immutable recordはrefへ分離してframe内へ全ledgerを詰めない。既存store／journalの上限が小さければそちらを優先する。
+
+pending／candidate／journal record／ref index／request履歴／quarantineを別に課金する。TTL到達・restartで永続予約や完了operation ledgerを忘れて枠を再生成しない。初期実装でGC／rotationを実証するまでは上限で停止し、保守予約を使った承認済み移行を必要とする。
+
+#### 9.87.4 APIの入出力
+
+共通bindingは以下の全要求・応答へ必要なexact値を埋め込む。署名receiptの検証は内容証拠であり、live権限の取得は常に当該serviceへの新しい認証RPCを必要とする。
+
+| API／呼出元 | 入力の追加必須field | 出力・副作用 |
+| --- | --- | --- |
+| BeginEnrollment／operator→registry | root provision／承認Enrollment ref、登録済みregistryのexpected unenrolled lineage、genesis／baseの許可範囲 | provisioningのdurable予約とgenesis-only ProvisionFence ref。selectedはnull、通常受付なし |
+| ActivateEnrollment／operator→registry | same ProvisionFence、genesis snapshot／issuer PreparedCheckpoint ref、expected provisioning state | Anchor確定後の初回selected state。未知sourceの自動genesis作成なし |
+| ReserveWriter／writer→registry | expected selected head／selectionRevision、provider boot、operationId・candidate予約上限 | durableなsingle-use WriterFence ref。read pin／barrier存続中は待機または拒否し、取得成功と同時に新規read pinを閉じる |
+| PrepareCheckpoint／provider→issuer | mode=advanceのwriter ref／expected selected checkpoint、またはmode=genesisのProvisionFence／expected null selected。next exact head、provider seal／inventory ref・journal証拠、operationId | full認証・連続性検証・保存／同期後のPreparedCheckpoint ref。まだcurrentではない。modeの証拠を混用しない |
+| ReadForCheckpoint／issuer→provider | live writerまたはgenesis-only ProvisionFence、exact sealed candidate／source inventory ref、issuer peer／boot、fresh challenge・限定entry／offset | 同fence下で保護した有界原本bytes／page。完全inventoryからの限定読取だけで、path／任意ref fetch・一般reader権限を与えない |
+| PublishSelection／writer→registry | writer ref、expected current state、candidate snapshot／PreparedCheckpoint ref、全root／epoch／generation | selected snapshot＋checkpointを同じdurable CASで採用したSelectionReceipt。旧headへのCASは拒否 |
+| AcquireReadPin／reader→registry | exact Enrollment／selected identity・selectionRevision、reader peer／boot、operation binding・fresh challenge、希望上限 | live ReadPin refと固定selected snapshot／checkpoint／createdControlRevision。pending pin自体もdurable保存。writer予約中は発行しない |
+| ReadCurrentCheckpoint／同pinのreader・provider→issuer | live pin ref、selected checkpoint ref、fresh challenge | registryへpinを確認し、chain全認証・equal-put再同期後に返すCheckpointReadWitness。request／pin／head／issuer bootへ束縛 |
+| CheckLiveBinding／登録済みservice→registry | ownまたは明示委譲されたpin／writer／ProvisionFence ref、用途・期待binding、fresh challenge | latest Rにおけるexact対象のphase・選択view・期限・失効状態。許可された対象だけを返し、read／write権限の追加やlease延長をしない |
+| PrepareHandoff／authority-broker→registry | same pin／useId、candidate result ref／digest、current authority gate証拠、checkpoint witness ref | 永続decision-recorded。ここでpinを解放せず、まだ新たな実行許可を返さない |
+| DeliverResult／authority-broker→registry | same use／request digest、broker incarnation・consumer peer／boot、最終gate binding | registry順序の下でdeliveringへ進め、固定consumerへbounded responseを引き渡す。送信済み結果は同useの照会のみ |
+| AcknowledgeDelivery／同reader consumer→registry | same use／delivery digest、fresh challenge、確定したeffect／引渡し状態 | 受領とeffect条件の完了を保存してreleasedへ。受領だけで未完了effectを解放しない |
+| BeginBarrier／operator・authority-broker→registry | revoke／freeze／cutover／GC／restart／rotation、expected revision、対象generation・参加者集合 | drainingをdurable確定し新規pin／writerを閉じる。revocationEpoch／writer fenceを進める |
+| ConfirmFenced／固定participant・manager→registry | barrier ref、old boot／operation集合、releaseまたは停止／fencing証拠ref | participant別の完了記録。client指定PIDを殺す汎用APIにはしない |
+| FinishBarrier／operator→registry | same barrier、全participantのfencing／未完了effectなし | frozen／retiredへdurable CAS。未確認参加者・結果不明があれば進めない |
+| ResumeServing／operator→registry | restart／承認rotationの完了barrier、expected frozen state、同selected headの再検証／新boot証拠 | 再開が許可された旧serving lineageだけを新incarnationでservingへCAS。過去のrevoke／cutover／GCによる閉鎖は解除しない |
+| QueryOperation／元peer→各service | same operationId／requestDigest、fresh challenge、元binding | 保存済み結果またはpending／unknown。履歴結果をlive tokenへ復元しない |
+
+##### credentialとEnrollmentの共通判定
+
+credentialは`credentialId, role, principal, instanceId, boot, keyId, keyEpoch, direction`に対応する独立配備のEd25519鍵である。principalはchannelのkernel peer UID/GIDと、managerのboot証拠にあるUID/GID全成分・補助group・role別capability／NNP条件へ照合し、本文のrole／UID自己申告を信頼しない。SO_PEERCREDだけからsaved ID等を得たとは扱わない。request用control-client credentialと、宛先のcontrol-server credentialをEnrollmentで別方向にpinする。replyは宛先service roleのserver credentialで署名し、元request digest／nonce／認証peerへ束縛する。別APIの応答をrequest credentialとして受理しない。
+
+Enrollmentの各grantは`credentialId／role／principal／instanceId／keyEpoch／許可boot`、source authority／lineage／generation／root pair、宛先service／endpoint／API、purpose、対象instance・operationの範囲を明示する。以下のpermission名はclosed enumで、roleの一致だけでは権限を与えない。初期profileはdeny-by-defaultとし、未知API・省略permission・wildcard・自動role aliasを拒否する。operator鍵とmanager鍵を共用せず、writerにauthority-brokerのcredentialを持たせない。同じ管理者が配備しても、鍵の所持を全APIの管理権限へ拡張しない。
+
+##### APIごとの許可role・credential・Enrollment grant
+
+表の「role client」はそのrole専用control-client credentialを指す。署名・peer・Enrollment・用途をすべて検査してから対象pin／原本／metadataへアクセスする。公開設定と認証に必要なpinの読取は許すが、認可前のowned source／対象operationの内容読取は0とする。
+
+| API（宛先） | 許可するcaller role／credential | 必須Enrollment permissionと対象制約 |
+| --- | --- | --- |
+| BeginEnrollment（registry） | operator client | enrollment.begin：未enrollのexact lineage、root provision・genesis/base範囲。通常service keyからのbootstrap禁止 |
+| ActivateEnrollment（registry） | operator client | enrollment.activate：同provisioning予約・同ProvisionFence・許可されたgenesis。enrollment.beginだけでは不可 |
+| ReserveWriter（registry） | writer client | writer.reserve：同authority／lineage・provider instance／boot、selected view、operation・予約上限 |
+| PrepareCheckpoint（issuer） | provider client | checkpoint.prepare：同provider／issuer instanceとcandidate。mode=advanceはwriterが同operationのproviderへ委譲したprepare用途、mode=genesisはProvisionFenceのgenesis用途のみ |
+| ReadForCheckpoint（provider） | checkpoint-issuer client | source.read-for-checkpoint：同issuer／provider、exact candidate／source inventory、限定entry／offset。WriterFence／ProvisionFence上のissuer宛先も一致させる |
+| PublishSelection（registry） | writer client | writer.publish：ReserveWriterと同caller credential／peer／boot・同operationのsingle-use fence。provider代理での採用要求は不可 |
+| AcquireReadPin（registry） | reader client | pin.acquire：同source／viewとreader peer／boot・business operationの範囲 |
+| ReadCurrentCheckpoint（issuer） | readerまたはprovider client | checkpoint.read-current：同pinのreader本人、またはpinに列挙されたprovider instance／bootへのこのAPIだけの委譲。一般readerへの昇格なし |
+| CheckLiveBinding（registry） | provider／checkpoint-issuer／authority-broker client | binding.inspect：pin／fenceに記録された参加者・委譲先で、同source／operation・指定用途だけ。全pin一覧・他actorの状態読取は禁止 |
+| PrepareHandoff（registry） | authority-broker client | handoff.prepare：登録済みauthority boot／business scopeと同pin／use・authority gate。writer keyは受理しない |
+| DeliverResult（registry） | authority-broker client | handoff.deliver：同useに固定したbroker instance／bootとconsumer peer。prepareだけのgrantでは不可 |
+| AcknowledgeDelivery（registry） | reader client | handoff.ack：同useのconsumer本人・同peer／bootだけ。brokerやmanagerによる代理ACKは禁止 |
+| BeginBarrier（registry） | operatorまたはauthority-broker client | barrier.begin：operatorは明示されたreason集合、authority-brokerは自身のauthority／lineageのrevoke／freezeのみ。cutover／GC／restart／rotationはoperator限定 |
+| ConfirmFenced（registry） | provider／checkpoint-issuer／authority-broker／reader／writer client、またはmanager client | barrier.confirm-own：barrierに登録された自身のboot／operationのrelease・完了だけ。reader／writerの申告で別brokerのeffect予約や他serviceのphysical fencingを解決しない。managerはbarrier.confirm-managed：Enrollmentの管理対象instanceに限る実停止／fencing証拠だけで、他participantのbusiness完了やconsumer ACKを代行しない |
+| FinishBarrier（registry） | operator client | barrier.finish：同barrier／expected stateと、registryが要求した全participant・effect解決集合 |
+| ResumeServing（registry） | operator client | lineage.resume：同完了restart／承認rotation barrier、元serving・同selected identity。過去の閉鎖理由を上書きする権限なし |
+| QueryOperation（各service） | そのoperationの元caller role／元credentialのclient | operation.query-own：保存済みowner credential／peer／boot・宛先API・operationId／requestDigestと一致。queryだけのgrantから元操作を再実行せず、他actorの履歴を公開しない |
+| ReadAnchor（Anchor） | lineage-registry client | anchor.read：operatorが登録したexact anchorId／registryId／lineage。reader／providerの直接照会は不可 |
+| CASAnchor（Anchor） | lineage-registry client | anchor.cas：同registry incarnation・expected headとnext R。初回は別途operator署名のenrollment.begin認可refを要求し、registry credentialだけでbootstrapしない |
+| QueryAnchorOperation（Anchor） | lineage-registry client | anchor.query-own：同registryIdと保存済みorigin incarnation／operation／request。新bootのrecovery照会は登録済みregistryのrecovery-query用途に限定し、旧live tokenの復元は禁止 |
+
+参加者であること自体を他actorのroleへの昇格としない。provider／issuerのfence照会は、tokenに固定した`delegateRole／delegateInstance／delegateBoot／allowedAPIs／purpose`とEnrollment permissionの共通部分だけを許す。providerは委譲されたPrepareCheckpoint、issuerはReadForCheckpointに使えるだけで、writerのReserveWriter／PublishSelectionやreaderのACKを代行できない。BeginBarrierへ渡す参加者集合はcallerの希望値に過ぎず、registryはEnrollmentの必須serviceとlatest ledgerのpin／writer／effect参加者の和集合から必要集合を導出し、欠落した要求を拒否する。managerはopaqueな管理対象instanceを独立設定から解決し、client提供PID／pathを停止命令へ変換しない。
+
+APIごとのrole・state・用途を閉じたenumで制限する。権限・旧revision・schema・容量の拒否はmutation前に行い、既存ownerを停止しない。保存開始後の障害・認証済み履歴不整合・結果不明は受付を閉じ、明示recoveryへ進める。通常missへの格下げや同要求内のservice迂回fallbackをしない。
+
+authority gateは、登録済みauthority boot・session／scope・operation／use、manifest／coreGraphDigest、candidate result digest、same pin／selected state、実行予約と期限・世代を束縛する。authorityは検証済みcore／witnessからこれらを導出し、caller提供のoperationBinding hashだけを認可根拠にしない。registryは承認authority role／profileのgateを限定schemaで照合し、個別のGradle/BTA判定やraw metadata parsingを代行しない。business witnessの検証責任は既存G0〜G2のauthority側に残す。
+
+#### 9.87.5 checkpoint準備と採用の責任分離
+
+初回だけは、operatorのBeginEnrollmentでregistryをprovisioningへdurable遷移させ、selected=null／selectionRevision=0のままgenesis-only ProvisionFenceを発行する。issuerはこの予約とoperatorが許可したgenesis／baseを検証してgenesis prepareを保存する。ActivateEnrollmentがsnapshotとprepareを採用して初めてselectionRevision=1／servingとする。未enroll状態で通常ReserveWriterやcurrent checkpointを要求する循環を作らない。途中失敗・期限切れはprovisioning／quarantineのまま保持し、元operationの照会から通常writer／read pinを作らない。
+
+1. providerはselected namespaceを変更せず、別candidateへ完全journal／inventoryを構築してsealする。candidateはprovider boot／writer fence固有で、不変化後の同名writeを禁止する。並行candidateもquotaへ課金する。
+2. issuerはregistryへwriterのlive状態とexpected selected checkpointを確認する。provider receiptの署名だけでdurability／journal正当性を代行せず、承認されたsource formatの全原本・全chain・expected→nextの連続性を独立に検証する。初期方式は省略なし。
+3. issuerはPreparedCheckpoint recordとoperation予約を自身のrootへ保存し、file／directory fsync・readbackを完了する。refはcandidate snapshot・exact head・previous selected checkpoint・writer／provider bootに束縛する。同operationId・同requestのretryは同じref、異なるrequestは拒否。準備しただけのheadをreadCurrentで返さない。
+4. registryはexclusive writer・old selected state・live pinなし・全issuer／root／snapshot bindingを検査し、snapshot refとPreparedCheckpoint refを1つの選択transactionへ収める。issuerのprepareとregistry選択は異なる確定点であり、prepare receiptだけではwriter成功を返さない。
+5. registryの選択recordとAnchor CASが確定してから、issuerはそのselected refだけをcurrentとしてfresh readできる。issuer側の任意のfinal markerはcacheであり選択根拠ではない。registry採用後・issuer側の結果保存前に停止しても、旧checkpointへfallbackせず、selected prepareの再認証・再同期から復旧する。
+
+issuerは任意のdigestだけを「verified head」として受け取らない。原本を取得する限定API、parser・authority audit mode・履歴不変条件、provider pinの維持を実装profileへ固定する。v1／v2のhead形式はstrict unionとし、base/genesis・state rootが必要なformatで欠落を許さない。未対応formatはread前に拒否する。準備済みだが未採用のcheckpoint・candidateは保持対象であり、最新のlocal filenameをcurrentへ読み替えない。複数のprepareが同じselected predecessorを持つ場合も、issuer ledgerへoperation／writer／ref／未採用状態を記録して全inventoryを認証・再同期し、registryが選んだ1つだけをcurrentにする。最後の保存／再同期await後にwriterまたはread pin・要求期限を再確認し、失効したprepareは保存済みhistorical状態のまま成功応答を返さない。
+
+#### 9.87.6 registry保存・ControlAnchor・循環hash回避
+
+現在値の確定点は、独立ControlAnchorのdurable CASで選ばれたregistry transaction envelope `R`である。registryのメモリ値、最大revisionのfile、providerのlocal selected.jsonではない。
+
+| Anchor API | 入力 | 必須出力／制約 |
+| --- | --- | --- |
+| ReadAnchor | operator設定のanchorId／registryId／lineage、認証peer／boot、requestId・challenge・sequence | Anchor issuer／key epoch・boot、anchor revision、selected R refまたは未enroll、request digest／challenge。fresh署名応答で、同じrollback domainへの復元を許さない |
+| CASAnchor | same binding、expected anchor revision／exact R ref、next R ref／controlRevision、registry incarnation、operationId／requestDigest | durable確定した同値結果またはconflict。next revisionは+1だけ。初回null→provisioning Rはoperator Enrollmentを必要とし、通常registry要求でnullへ戻せない |
+| QueryAnchorOperation | same operationId／requestDigestとfresh challenge | committed ref／pending／unknown。期限切れ応答をlive pinへ変えず、異requestへの結果付替えなし |
+
+Anchor側もrequest／pending／operation履歴・byte／entryを有界化し、署名domain・認証registry role／Enrollmentとrefのrole／sizeを検査する。Rやsourceを呼出元指定pathからfetchしない。CAS応答が不明なら、呼出元は失敗したとも成功したとも推測せずfresh read／同operation照会で解決する。Anchorの初回pin・単調状態の保護と復元禁止は、さらに同じsigned fileを足して代替せず、実装を採用する外側の信頼前提として検証する。
+
+1. registryはexpected Anchor head／revisionをfresh取得し、immutable `R`へprevious R ref、next revision、operationId／requestDigest、新selected refs・pin／fence／barrier変更を収録する。Rは自身のdigestや自分を指すAnchor receiptを含めない。
+2. Rと参照閉包をregistry rootへ保存し、file／directory fsync・readbackを完了する。まだcurrentにしない。
+3. Anchorは登録済みregistryの認証要求に限り、expected exact headから`{revision+1, ref(R)}`へ線形化可能なdurable CASを行い、root／incarnation／request digestに束縛した応答を返す。Anchorは自身の保存責任を持ち、registryの`durable:true`で同期を省かない。
+4. registryはfresh readbackでAnchorのcurrent Rを確認し、Rの署名・閉包・lineage・previous linkを検証する。今回のRがcurrentそのものか、後述の条件を満たす採用済み祖先かを解決する。最後のawait後に要求期限・現在phase・bootを再確認してから応答する。local current pointerは再構築可能なcacheに限る。
+
+R保存前／同期失敗はAnchorを進めない。Rが見えても同期未完了ならequal bytesの再同期が成功するまで成功応答なし。Anchor CAS前のcrashではRを未採用候補として保持する。CAS後の応答紛失・結果不明は、current refとの不一致だけで失敗・rollbackとせず、以下の手順で解決する。
+
+##### 後続transactionが確定した場合の再試行解決
+
+logical operation key `K`は`{originRole, credentialId, peerId, peerBoot, destinationService, API, operationId}`とする。requestDigestはAPI・purpose・元のsemantic binding・引数を固定domainでhashした値で、transportのrequestId／challenge／sequence／署名と照会用fieldを除く。fresh nonceで照会しても元requestDigestを変えず、別requestを同Kに付け替えない。QueryOperation自身のrequest digestと、照会対象のoriginalRequestDigestは別fieldにする。
+
+registryはRの変更と同じtransactionで`K → {originalRequestDigest, state, appliedControlRevision, semanticResultRef, resultBinding}`を永続ledgerへ記録する。semantic resultは選択したpin／fence／head・固定期限等を持つimmutable objectで、wire応答のfresh challengeや、自分を収録するRのrefは持たない。applied R refは解決時に認証済み履歴のappliedControlRevisionから導出する。これによりledger→自R ref→ledgerのhash循環を避ける。
+
+Anchor側のCAS attempt keyはlogical Kと区別し、registry identity／incarnation・expected Anchor head／revision・next R refへ束縛する。同attemptのretry／照会は同じexpected／next Rを使い、結果不明の間に同Kから別Rを作って再CASしない。
+
+1. 同じcallerを再認証し、Enrollmentのoperation.query-ownと、照会対象の元API／用途・origin binding・originalRequestDigestを照合する。historical照会の許可は元操作を実行する許可と分け、live確認には後述の現在の元API permissionも要求する。QueryAnchorOperationはAnchorの保存済みattempt keyで行い、fresh ReadAnchorで現在head `C`も得る。元のsigned replyやcaller提供のapplied R refを現在値の根拠にしない。
+2. Cからprevious R refを辿り、既存の独立enrollment／履歴keyを使って全署名・revisionの+1連続性・lineage／incarnation遷移・参照閉包を有界に検証・再同期する。候補`R_i`について、Cと同一か、Cへ至る正当な祖先であることを証明する。未採用fileの存在、revision大小、Anchorの過去receiptだけでは祖先証明にしない。
+3. latest CのledgerでKを検索し、originalRequestDigest・appliedControlRevision・semanticResultRef／bytes・resultBindingが採用済みR_iの変更と一致することを確認する。R_iがcurrentでなくても、この一致ならそのoperationはcommittedである。二重advance・再実行・新しいpin／writer／useの発行をせず、同semantic resultを解決する。
+4. 応答はfresh challengeへ署名し、`originalRequestDigest, appliedControlRevision, appliedRecordRef, currentControlRevision, currentRecordRef, semanticResultRef, resolutionMode`を別々に返す。QueryOperation／QueryAnchorOperationはcommitted-historical／pending／unknownを返すだけでlive権限を返さない。standard APIの未完了retryでexisting-live-confirmedを返せるのはAcquireReadPin／ReserveWriterの元callerだけで、元の同じpin／fenceがlatest Cに存在し、未消費の許可phase・同selectionRevision／revocationEpoch／incarnation・boot／role／目的・元要求期限／固定leaseがすべて存続するときに限る。元API permissionを再検査し、ID・use数・期限を増やさない。最後のawait後も再確認する。
+5. expired／revoked／released／consumed、選択head／Enrollment／boot変更、旧要求期限超過なら、commitが有効な履歴でもcommitted-historicalだけを返す。PublishSelection／PrepareHandoff／DeliverResult等の確定済みeffectをretryでやり直さず、過去のraw replyから新しい実行許可を作らない。prepared checkpointの再照会も内容証拠に限り、current採用やwriter権限の復活とはしない。
+
+例：AのAcquireReadPinがR10で確定し応答だけ失われ、Bのpin取得がR11で確定した場合、R11→R10とlatest ledgerのK_Aを照合してAの結果を解決する。Aのpinが同view／同leaseでactiveなら、元APIのretryで同じ既存pinを確認できる。Bの取得・解放だけを理由にAを失効させず、R12でAのpinを再発行しない。Aがその間に失効していればR10の成功事実だけを返し、live pinへ戻さない。
+
+| fresh Cと候補R_iの関係 | 解決・拒否 |
+| --- | --- |
+| C=R_i、またはCがR_iの正当な子孫で、latest ledgerと結果が一致 | committedを解決。履歴結果と、元APIに限る既存live bindingの確認を上記条件で分離 |
+| Cがexpected predecessorから別transactionで正当に進み、R_iは未採用・Kなし | Anchorの確定conflictと完全な履歴で旧attemptが今後採用不能なことを確認してcontrol_conflict。rollback扱いでなく無変更拒否。新しい認可／operationなしにrebase・再実行しない |
+| 同Kが異request／異結果へ対応、Anchorのcommit receiptと正当な履歴が矛盾 | idempotency_conflict／integrity_invalidとして受付停止。別requestの結果を流用しない |
+| Cがまだexpected predecessor、attemptがpending／unknown | 未確定のまま成功なし。同じattemptを照会し、別RのCASを並行発行しない |
+| Anchor不能、chain欠落／fork／不正署名、ledger／result欠落、検証上限超過 | unavailable／integrity／capacityの該当分類で成功なし。推測・旧head fallback・新規実行による埋合せなし |
+
+GC未実装の初期段階では、未解決attemptとoperationのledger・必要な全R／semantic resultを保持し、ledgerや祖先証拠を消して再試行可能と扱わない。正当な子孫への進行と、不正fork・rollbackを区別する条件をC0のfault scheduleとC1の保存復旧の双方へ入れる。
+
+Anchorはprovider／issuer／registryと同じbackupへ含めない。初期provision時の独立root／revision pin、Anchor自体のrollback防止・restore手順・key rotationを外側の承認契約へ固定する。全rootと署名chainを一緒に戻せる構成、mtime、同じ署名key、controllerの自己申告だけではrollback検出を成立させない。独立性の実証前はregistryのdurable contractまでを診断扱いとし、採用gateを開かない。
+
+#### 9.87.7 read pin・handoff・結果の線形化
+
+registryのpin状態は`active → completing → decision-recorded → delivering → released`、取消側は`cancelling → cancelled/expired`。各遷移・operation ref・期限・参加者をdurableに保存し、same pinを別peer／boot／useへ移さない。pinはそのselected snapshot／checkpointだけを保護し、content proofと認可／current性の証拠を分離する。
+
+**transaction revisionと選択viewを区別する。** controlRevisionはpin追加・遷移・解放を含む全Rで増加する。selectionRevisionはselected snapshot／checkpointの採用変更でだけ増加し、incarnation／revocationEpochとともにlive pinを束縛する。pinのcreatedControlRevisionは発行元Rの出自で、latest controlRevisionとの同値を要求しない。他readerのpin追加・解放で健全なpinを失効させず、latest Rにそのexact pin／phaseが残り、同selectionRevision／incarnation／revocationEpochであることを毎回確認する。registryのAnchor CAS自体は常にexact latest Rへ直列化する。PublishSelectionはexpected selected identity／selectionRevisionとsingle-use writerを検査し、無関係な照会を旧pinやwriterの権限失効へ読み替えない。
+
+ReserveWriterは既存pinなしを確認するtransactionで新規AcquireReadPinを閉じ、publish／明示cancel／expiryをdurableに解決するまで維持する。これによりread発行の連打で取得済みwriterを永久待機させない。期限切れwriterのcandidateを採用せず、予約の解放記録が確定した後だけread受付を再開する。
+
+readは、AcquireReadPin→issuer fresh checkpoint read→providerのsame pin grant→全検証・authority gate→PrepareHandoff→DeliverResult→AcknowledgeDeliveryの順。issuer／provider／authorityは署名tokenのoffline検証だけで進めず、各入口とeffect／成功応答直前にregistryへlive pin／fenceを確認する。5秒以内に処理できない要求は、最初から有界full modeまたは停止を選び、lease延長を繰り返して無期限pinを作らない。
+
+consumerへの結果は固定handoff brokerが送信し、registryはdeliveringと未完了effectを持つ間、pinとselected headを保持する。reader単独がprovider pinを解放してから別authorityへ非同期確認する方式は不採用。PrepareHandoffが保存済みでも新たなuse／launchを発行しない。同useの応答紛失retryは保存済みexact結果の照会で、raw responseやreceiptからlive handleを再生成しない。
+
+**ネットワーク到着時刻と失効順序を同一視しない。** handoff確定より前のrevokeなら引渡しを拒否する。handoff確定後のpacketはrevoke後に到着しうるため、過去の引渡し事実を取消済みと書き換えたり、そのpacketを現在の実行許可と扱ったりしない。新たな外部effectが必要なら、executor自身が同じregistry順序の下でeffect予約・開始・完了を強制するprofileを要求する。確認後に自由な外部callbackを呼ぶ方式ではatomicityを保証できないためunsupportedとする。既に開始されたeffectは停止／完了を確認するまでbarrierを終えない。
+
+#### 9.87.8 revocation・writer fence・barrier
+
+BeginBarrierのdurable確定を、新規pin／writer／PrepareHandoff／選択CASの閉鎖点とする。registryはrevocationEpoch・writer fenceを増加させ、未確定useをcancelする。deliveringや確定済みeffect予約はhistorical／in-flightとして追跡し、解放済みと推測しない。各participantは同barrier・同旧bootに対する受付閉鎖／token拒否／未完了operation状態を返す。
+
+writer tokenはexact operation・expected selected head・provider boot・registry incarnation／fenceに単一使用で束縛する。古いwriterが復帰してcandidateを保存しても、registryの選択CASで拒否する。providerのlocal pointerは選択権限を持たず、旧processが書換できるmirrorからgrantやcurrent readを返さない。不変selected bytesを直接writeできる旧processが残る配置は、token検査だけでは安全にならずnative隔離条件を満たさない。
+
+barrier完了は、全participantの明示release／operation完了、または承認managerによる旧process／endpoint／handleのfencing確認後だけ許す。TTL到達・client timeout・ソケット切断だけでprocess停止やin-flight effectなしとは扱わない。不明な参加者・残存FD／mmap／alias・未完了effectがあればdrainingを維持し、移行・物理GC・root再使用を止める。各参加者が独立に「最後に問い合わせた」だけの構成を分散barrierと数えない。
+
+#### 9.87.9 再起動・旧boot・key rotation
+
+registryは受付を閉じた状態でAnchor fresh read→選択Rと全履歴・閉包の認証→原本再同期を行い、旧pin／writer／pending useを失効させる新incarnation・fenceをdurable保存する。old phase=servingならrestart barrierのdrainingへ進め、元phase・元Rを再開可否の根拠として保持する。元がprovisioning／frozen／retiredならその閉鎖を維持する。未解決effectはrecovery中のbarrierへ引継ぎ、停止／完了確認まで新規受付を閉じる。FinishBarrier後のResumeServingもoperator・exact旧stateと新boot／原本再検証を必要とし、単なる再起動成功でservingにしない。counterを0へ戻した新boot、旧signed receiptからのlive状態復元、単なる最大revision fileの採用は禁止する。
+
+issuer再起動はregistryのselected PreparedCheckpointと自rootを照合・再同期し、新issuer bootをregistryへ登録して旧boot応答を拒否する。provider再起動も新boot／storage root履歴・既知selected inventoryを検証し、旧processとhandleをfenceしてから新writer／read grantを受ける。source bytes・issuer store・registry recordのいずれかが失われた場合、他のreceiptだけで再生成して受付を開かない。
+
+key／policy／profile／runtime更新はoperatorがexpected old Enrollmentを指定するdurable遷移とし、同じdrain・fencing・新epochの手順を使う。旧keyで署名された内容を歴史証拠として保持する場合と、新key／bootにlive権限を発行する場合を分ける。自己申告の新公開鍵やproject設定で世代を進めない。
+
+#### 9.87.10 拒否分類・実装順
+
+| reason候補 | 動作 |
+| --- | --- |
+| issuer_unapproved／profile_unapproved／anchor_unsupported | 読取前gateを閉じる。issuer／registry／source IOを呼ぶ前に設定不備を拒否 |
+| schema_invalid／peer_mismatch／challenge_replayed／binding_mismatch | 要求拒否。認証済み内容の不整合はcandidate破棄・当該bootのfast path停止。通常missへ変換しない |
+| checkpoint_conflict／control_conflict／writer_stale | mutation前のCAS拒否。same operationの照会以外は新しい認可・予約でやり直す |
+| pin_expired／pin_revoked／owner_closed | live use失敗・取消。historical記録は現在権限として返さない |
+| pins_active／effects_pending／fencing_unconfirmed | writer公開／barrier完了を待機または拒否。期限だけで強制採用・削除しない |
+| checkpoint_unavailable／anchor_unavailable／sync_incomplete／rollback_detected／tail_unknown | 成功応答なし・受付停止。結果不明を旧stateやfull fallbackで隠さない |
+| capacity_exhausted | mutation前は無変更拒否、書込開始後の実容量障害はfail-stop。予約・historical identityを忘れない |
+
+実装順は次の依存順とする。小さい段階の完了を全体成立へ読み替えない。
+
+1. **C0：schema・状態機械・fault schedule。** service別key／peerを表すtest-only actor、PrepareCheckpointとregistry選択、pin／handoff／barrierの単一順序、exact拒否理由、決定点ごとの故障・競合を実行可能contractへ実装する。memory fixtureは独立serviceではない。
+2. **C1：保存・Anchor adapter。** issuerとregistryに別IO owner／key／rootを持たせ、既存A2の認証journal・equal-put再同期・排他・未知tail復旧を再使用する。Anchorのexact CAS／unknown outcome／rollback検出を接続する。適合Anchorなしのfixtureは診断限定。
+3. **C2：TS B2/B3・authority bridge。** 既存の直接FileJournalCheckpoint／PrefixAdmissionFixture依存を、明示したservice clientと原本検証adapterへ差し替える。selected snapshot＋checkpointの原子的採用、Q1 pin継続・authority予約／引渡しを試験する。先にself-reported currentnessの採用を開かない。
+4. **C3：別UID・認証IPC・native。** managerがissuer／registry／provider別endpoint・鍵・rootを配備し、全serviceのpreflightとprocess外controller、fresh challenge、FD転送・非干渉、停止／再開・保存故障・遅延responseを実証する。public pinは記録と同時差替えできないよう、run前に別commitまたは独立した運用保管先へ固定する。
+5. **C4：採用判定。** Anchorの独立rollback domain、runtime closure・配備履歴、実handoff／participant fencing・VM再boot／保存障害の証拠を独立registryの承認profileへ束縛する。その後に限りQ3b／Q4bへの接続を審査する。単にcontractやnativeケースが通っただけでは本番既定を変更しない。
+
+C2では単に同期呼出しをRPCへ置き換えない。現在の`SealedPrefixCoordinator.open`はstore読取後にadmissionを調べ、`publishSnapshot`はlocal store選択後にregistryを進める。新adapterは、読取前のEnrollment／live pin取得を先に行い、candidateの保存準備→issuer prepare→registryの一括選択→非権威的local mirror更新へ分ける。`SealedPrefixStore`もregistry-selected refでexact namespaceを取得する入口を必要とし、local selected pointerへのfallback・CAS前の旧namespace retirementを禁止する。registry採用後にmirror更新が失敗したら受付を閉じ、registry-selected namespaceから再構築する。`FileJournalCheckpoint.advance/read`のlocal latestをそのままremote currentとして使わず、prepareとreadCurrentを分けたclient contractを作る。
+
+#### 9.87.11 回帰条件（IC01〜IC48、すべて未実装）
+
+| ID | 条件・期待結果 |
+| --- | --- |
+| IC01 | 未承認Enrollment／issuer／profile／Anchor設定を、相手service・sourceの読取前に拒否。projectからの自動genesisなし |
+| IC02 | 非object body・unknown field・duplicate key・不正UTF-8・非canonical・float・整数overflowを正しいschema段階で拒否 |
+| IC03 | kernel peer／role key／boot／endpoint不一致・FD転送・途中fragmentのprincipal変更を拒否し、同principal許可対照を伴う |
+| IC04 | 同process／同UID／memory fixture・controller anchorを、独立issuer／registry／rollback domainの証拠としない |
+| IC05 | authority／lineage／format／epoch／generation／root pair／storage instance／各key世代の交換を、再署名後も拒否 |
+| IC06 | challenge／request sequence／requestDigest／reader bootの旧応答・再送を拒否。未完了same operation照会だけidempotent |
+| IC07 | issuerがsource原本・連続性／全checkpoint chainを検証せず、provider seal／digestだけから準備する経路を拒否 |
+| IC08 | issuerのwrite／file・directory sync／readback失敗・公開後同期失敗で陽性prepareなし。equal bytesの再同期成功までretryの成功なし |
+| IC09 | 未採用PreparedCheckpoint・未知local latest head・別writerのprepareをreadCurrentとして返さない |
+| IC10 | expected checkpoint違い・fork・欠落previous link・重複operationIdの異内容をmutation前に拒否 |
+| IC11 | issuer準備後・registry選択前の停止で旧selectedを維持し、candidate／preparedの予約と保持を忘れない |
+| IC12 | registry採用後・issuer応答保存前に停止しても、新selectedの再認証／再同期から復旧し旧headへfallbackしない |
+| IC13 | registry R保存・file／directory sync／readback各障害でAnchorを進めず、見えるfileだけで成功を返さない |
+| IC14 | R_iのCAS成功・応答紛失後、別operationのR_i+1以降を確定させてからretryする。fresh Anchorと完全な祖先chain・latest K ledgerで元commitを解決し、applied/current record refを分離して返す。二重advance・新Rによる同operationの再実行・異requestへの結果付替えなし |
+| IC15 | provider／issuer／registryの正当な旧backupをまとめて戻しても、独立Anchorとの不一致で拒否する |
+| IC16 | Anchorまで同じ復元domainへ置いた構成はunsupported。自己署名chain／mtime／controller booleanで合格にしない |
+| IC17 | R→previous／prepared refs→Anchor採用の閉包・循環・dangling ref・role／size違いを検査し、自身digestの循環を作らない |
+| IC18 | selected snapshotとcheckpointを別transactionで公開し、混在pairを一瞬でもlive read可能にする実装を拒否 |
+| IC19 | active pinの全phaseでwriter公開を拒否。candidate保存は別namespace／quotaで、selectedを変更しない |
+| IC20 | live pinなし・別peer／boot／useのissuer read／grant／Complete／delivery／releaseを拒否し、他のpinを解放しない |
+| IC21 | full/cache hitの両方でfresh issuer read・全認証／原本再同期を必須とし、provider durability receiptで省略しない |
+| IC22 | active／completing／decision-recorded／deliveringの各境界で期限到達・revokeを競合させ、最後のawait後にlive成功を返さない |
+| IC23 | PrepareHandoff保存だけでpin解放・新launch・新useを許さない。lost response retryは同useのhistorical照会に限定 |
+| IC24 | consumer受領ACKだけで未完了effectを解放しない。authority gate／予約／broker incarnationとsame useの結合を必須にする |
+| IC25 | handoff確定前のrevokeは送信を拒否。確定後の遅延packetはhistoricalとし、現在権限や未実行へ変換しない |
+| IC26 | pin解放後のauthority問い合わせ・任意callbackの後呼出しをatomic handoffとして採用しない |
+| IC27 | BeginBarrierとAcquire／ReserveWriter／PublishSelection／PrepareHandoffの競合を単一durable順序へ置く |
+| IC28 | timeout／TTL／切断だけではparticipant停止・effectなしと判定せず、fencing未確認中はbarrier／GC／root再使用を拒否 |
+| IC29 | 旧writerの遅延復帰・旧fence・旧expected head・別candidateへのtoken転用を全公開入口で拒否 |
+| IC30 | old providerのlocal pointer書換・正しい署名の旧mirrorからcurrent grant／readを返さない |
+| IC31 | registry再起動でAnchor／全Rを再検証・再同期し、新incarnation／失効を保存する前に受付を開かない |
+| IC32 | 再起動後の旧pin／actor／writer／pending use／raw replyをlive状態へ復元しない。unknown effectはbarrierを維持 |
+| IC33 | issuer／provider各再起動時の旧boot response、chain欠落・root交換・未同期・unknown tailを拒否 |
+| IC34 | key／policy／profile／runtime更新はdrain／fencing／operator認可後だけ。新keyの自己申告による世代更新なし |
+| IC35 | 各service／Anchor不能・途中切断・遅延responseで同要求のfull fallback／別service迂回／cache成功なし |
+| IC36 | 同K／同semantic requestの並行retryへ他operationの確定を挟んでも、元appliedControlRevision／semanticResultRef・予約／適用／解放は一回だけ。fresh transport nonceは許すが元requestDigestを変えず、異引数・別API・credential／peer／boot交換は拒否。結果不明のまま別CAS attemptを並行発行しない |
+| IC37 | pin／pending／prepared／完了ledger／record／byte上限と上限＋1、restart後の予約・quarantine計数を独立に確認 |
+| IC38 | 異なるclock原点・時計逆行・local elapsed超過を検査。nonce／bootを変えるretryで期限・hard capを回避しない |
+| IC39 | nativeで実UID／GID全成分・起動gate・別root／鍵・拒否／許可対照・保存障害・停止／復帰を観測し、pinをrun前に独立保管する |
+| IC40 | C0〜C4を別判定し、未実証段階・非対応platform・不明rollback domainでprofile／backend採用・原本read省略を有効化しない |
+| IC41 | AのAcquireReadPin応答を失い、Bのpin取得／解放で後続Rを確定させる。Aの未完了元API retryは、最新ledger／同selectionRevisionで既存の同pinを確認し、ID／use数／元期限を増やさない。Aがexpired／revoked／releasedまたは元要求期限超過ならhistoricalだけを返す。QueryOperation単独からlive handleを作らない |
+| IC42 | exclusive writer予約の成功と新read受付の閉鎖を同一transactionにし、read連打によるstarvation・期限切れcandidateの採用・解放前のread再開を拒否 |
+| IC43 | 初回provisioning→genesis prepare→activationを実行し、通常writer／current checkpointが先に必要な循環を作らない。genesis-only tokenのadvance／read転用、operator未承認baseの自己enrollmentを拒否 |
+| IC44 | issuerの原本読取はlive writer／ProvisionFence・exact sealed candidate・完全inventoryの範囲へ限定し、失効後のchunk取得・別source／offset上限・一般reader権限への昇格を拒否 |
+| IC45 | 全APIの許可role／client credential／宛先server credential／Enrollment permissionの正規対照を作る。正規writerのreserve／publishは成功し、reader／broker／providerのwriter alias、別方向・別API credential、permission欠落は認可前owned read 0・mutation 0で拒否 |
+| IC46 | managerは管理対象のfencingだけ、participantは自身の完了だけをconfirmできる。managerのenrollment／ACK／handoff代理、brokerのcutover／GC、callerが省略した必須participant集合、provider／issuerの委譲用途越境を拒否する |
+| IC47 | Cが正当な子孫でも、R_iの署名／previous link・latest K ledger・semantic result bytes／requestDigestを削除・交換すると成功なし。単なるrevision大小や旧Anchor receiptだけで祖先と認めず、検証上限・失効・再起動の境界も確認 |
+| IC48 | R_iの未採用と別transactionの正当な確定はcontrol_conflict、Anchor commit receiptとhistoryの矛盾はintegrity、pending／unknownは未確定に分類する。証拠不足／ledger欠落時に新規実行やrebaseで埋めず、historical照会とexisting-live-confirmedを取り違えない |
+
+IC31／IC32では再開側も検査し、restart前のservingをFinishBarrier→ResumeServingでのみ再開できること、元がfrozen／retiredまたはrevoke／cutover／GC閉鎖ならrestartで解除できないことを確認する。
+
+ICは次の実装・実証の条件であり、文書構造の検査や既存回帰の成功をIC成立件数に数えない。今回の新規issuer／registry／Anchor／native service実装・本番採用は0。次の着手点はC0のstrict schema・状態機械・故障scheduleである。
+
+レビュー修正ではwriter／managerを独立roleへ加え、全APIとAnchor APIのcredential／Enrollment grant・委譲・方向・目的制約を明記した。CAS応答紛失後の正当な後続transactionは祖先証明と永続operation ledgerで解決し、元要求のsemantic resultと現在のlive権限を分離した。IC14／IC36／IC41を拡充し、IC45〜IC48を追加した。これらも設計条件であり、実装・native実証済みとはしない。
+
+レビュー修正後の文書検証で、11小節・IC01〜IC48の欠落／重複なし、全20 APIのrole／credential／Enrollment表、§9.85.5→§9.86→§9.87の配置を確認した。既存の公開command例・Q1 prefix・B2/B3 sealed store・disk checkpoint・migration contractの5 files／286テストが成功した。検証記録は`docs/validation/gradle-independent-currentness-design-2026-11-03.json`へ更新した。既存契約との整合確認を、新しいICの実装・native達成件数に数えない。

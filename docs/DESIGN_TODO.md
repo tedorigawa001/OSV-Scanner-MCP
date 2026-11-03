@@ -2624,3 +2624,20 @@ bce3aa6レビュー修正の検証結果: VM回帰26件成功。全体113 files�
 - §9.85の挿入でずれたB1ct検証結果行と§9.84.7を§9.85の前へ戻した（4回目）。Q4aのschema拒否を`prefix_adoption_schema`へ統一し、拒否回帰の期待値を具体化。保存記録はsource fingerprintだけ更新。
 
 9037db7レビュー修正の検証結果: Q3a／Q4a回帰31件・文書回帰3件成功。全体117 files／4,445 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。
+
+### 独立checkpoint issuer・registry current pin・失効／handoff／fencingの設計（2026-11-03）
+
+- 残課題2を設計・実装手順・回帰条件から進める選択に沿い、§9.87の11小節を追加。今回は文書だけで、issuer／registry／Anchor実装・native配備・採用flag変更は0。
+- operatorのprovisioning→genesis prepare→activationを定義し、初回writer／checkpoint取得の循環を回避。issuerのprepareとregistryのselected snapshot＋checkpoint採用を分離し、独立ControlAnchorのdurable CAS／fresh readを現在値の確定点にした。同じ復元単位のsigned fileを独立rollback防止に数えない。
+- transactionのcontrolRevisionとselected viewのselectionRevisionを区別し、複数readerで健全なpinを失効させない。read pinの引渡しまでの保持、exclusive writer予約と新read閉鎖、revocation／barrier／participant fencing、遅延packetと確定済みeffect、restart後の明示ResumeServingを具体化した。
+- 既存coordinatorの読取前gate・local先行選択をそのままRPC化せず、candidate準備→issuer prepare→registry一括選択→非権威的local mirrorへ改めるC2手順を記載。C0 contract→C1保存／Anchor→C2 TS／authority bridge→C3別UID IPC native→C4採用審査の順とした。
+- IC01〜IC44はすべて未実装の回帰条件。文書構造・配置確認と既存5 files／286テスト成功を、新ICの成立やnative実証へ読み替えない。§9.85.5が§9.86の後ろへずれていた配置も戻し、新しい§9.87は末尾に追加した。
+- **次の着手点はC0**のstrict schema・状態機械・故障schedule。live独立service・適合Anchor・runtime承認・TS複数generation bridge・Q3b／Q4bは残る。backendEligible／profileApproved／independentRegistryVerified=false、originalReadsSkipped=0を維持する。
+
+### §9.87レビュー修正：API認可と後続transaction後のCAS再試行（2026-11-03）
+
+- writer／managerを独立roleへ追加し、全20 APIのclient／server credential・Enrollment permission・対象範囲・目的・委譲を具体化。writerとbroker、managerとoperatorの鍵／権限を混用せず、participant自己confirmとmanagerの管理対象fencingを区別する。
+- registryのCheckLiveBindingを明示し、tokenのoffline検証だけで参加者の権限を増やさない。barrierの必須参加者はEnrollmentと最新ledgerから導出し、callerの省略で完了させない。
+- CAS応答紛失後に正当な後続Rが確定しても、完全な祖先chainとlatest operation ledgerで元commitを解決する。logical operationとAnchor attemptを区別し、semantic resultのapplied revisionとcurrent revisionを別fieldで返す。hash循環・新規Rによる二重実行・期限／use数の増加を防ぐ。
+- historical照会と元API retryによる同じ既存pin／fenceのlive確認を分離。IC14／IC36／IC41を更新し、認可・委譲・祖先証拠不備・conflict／unknownの分類をIC45〜IC48へ追加した。全48条件は未実装のまま。
+- 文書11小節・20 API・48条件の閉包と配置、既存5 files／286テスト成功を確認。検証JSONのsource fingerprintを更新し、新service実装・native試験・本番採用は追加していない。次は引き続きC0。

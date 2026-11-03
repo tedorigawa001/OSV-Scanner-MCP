@@ -1,0 +1,138 @@
+{
+  "schema": "osv-mcp.independent-currentness.design-validation.v1",
+  "date": "2026-11-03",
+  "scope": "design-only",
+  "section": "9.87",
+  "documentChecks": {
+    "subsections": 11,
+    "conditionIds": [
+      "IC01",
+      "IC02",
+      "IC03",
+      "IC04",
+      "IC05",
+      "IC06",
+      "IC07",
+      "IC08",
+      "IC09",
+      "IC10",
+      "IC11",
+      "IC12",
+      "IC13",
+      "IC14",
+      "IC15",
+      "IC16",
+      "IC17",
+      "IC18",
+      "IC19",
+      "IC20",
+      "IC21",
+      "IC22",
+      "IC23",
+      "IC24",
+      "IC25",
+      "IC26",
+      "IC27",
+      "IC28",
+      "IC29",
+      "IC30",
+      "IC31",
+      "IC32",
+      "IC33",
+      "IC34",
+      "IC35",
+      "IC36",
+      "IC37",
+      "IC38",
+      "IC39",
+      "IC40",
+      "IC41",
+      "IC42",
+      "IC43",
+      "IC44",
+      "IC45",
+      "IC46",
+      "IC47",
+      "IC48"
+    ],
+    "conditionsUniqueAndComplete": true,
+    "sectionOrderCorrect": true,
+    "apiPermissionRows": 20,
+    "apisWithExplicitPermission": [
+      "BeginEnrollment",
+      "ActivateEnrollment",
+      "ReserveWriter",
+      "PrepareCheckpoint",
+      "ReadForCheckpoint",
+      "PublishSelection",
+      "AcquireReadPin",
+      "ReadCurrentCheckpoint",
+      "CheckLiveBinding",
+      "PrepareHandoff",
+      "DeliverResult",
+      "AcknowledgeDelivery",
+      "BeginBarrier",
+      "ConfirmFenced",
+      "FinishBarrier",
+      "ResumeServing",
+      "QueryOperation",
+      "ReadAnchor",
+      "CASAnchor",
+      "QueryAnchorOperation"
+    ]
+  },
+  "existingRegressionChecks": {
+    "testFiles": [
+      "src/test/docs/commandExamples.test.ts",
+      "src/test/utils/gradleOwnedPrefixContract.test.ts",
+      "src/test/utils/gradleOwnedSealedProvider.test.ts",
+      "src/test/utils/gradleOwnedJournalDisk.test.ts",
+      "src/test/utils/gradleOwnedMigration.test.ts"
+    ],
+    "passed": 286,
+    "failed": 0,
+    "publicCommandChecksAfterDocumentationUpdate": 3
+  },
+  "sources": [
+    {
+      "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+      "sha256": "9ce781ce9737998338226cba40b1e2962c13e99a17075972d09815486b0ebbcf"
+    },
+    {
+      "path": "docs/DESIGN_TODO.md",
+      "sha256": "a82707c69cce2d33c5b4e569d69baa2ff6ed08052186de96740df7ee6dfc9e8b"
+    }
+  ],
+  "stages": {
+    "C0": "planned",
+    "C1": "planned",
+    "C2": "planned",
+    "C3": "planned",
+    "C4": "planned"
+  },
+  "newRuntimeImplementations": 0,
+  "implementedNewRegressionConditions": 0,
+  "nativeTrials": 0,
+  "independentRegistryVerified": false,
+  "profileApproved": false,
+  "backendEligible": false,
+  "originalReadsSkipped": 0,
+  "reviewRevisions": {
+    "findingsAddressed": 2,
+    "updatedConditions": [
+      "IC14",
+      "IC36",
+      "IC41"
+    ],
+    "addedConditions": [
+      "IC45",
+      "IC46",
+      "IC47",
+      "IC48"
+    ],
+    "separateWriterAndManagerRoles": true,
+    "descendantCommitResolutionDesigned": true,
+    "logicalOperationAndAnchorAttemptSeparated": true,
+    "historicalAndExistingLiveConfirmationSeparated": true
+  }
+}
