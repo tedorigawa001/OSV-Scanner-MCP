@@ -2609,3 +2609,10 @@ bce3aa6レビュー修正の検証結果: VM回帰26件成功。全体113 files�
 - `auth.py`がEOFを`credential-missing`として拒否する点を既知の制約として記録（次の実VM実行で修正）。§9.83.8を§9.84の前へ戻した。
 
 095bbecレビュー修正の検証結果: transport回帰41件成功。全体115 files／4,412 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。
+
+### 2026-11-03: 9037db7レビュー修正・公開文書の個人環境commandと配置
+
+- §9.85.2の再現commandに混入していた個人環境のcommand proxy接頭辞を除き、インラインコード内の接頭辞付きcommandとdocs配下JSONの接頭辞付きcommandも検出する回帰を追加（既存回帰は行頭だけを検出していた）。
+- §9.85の挿入でずれたB1ct検証結果行と§9.84.7を§9.85の前へ戻した（4回目）。Q4aのschema拒否を`prefix_adoption_schema`へ統一し、拒否回帰の期待値を具体化。保存記録はsource fingerprintだけ更新。
+
+9037db7レビュー修正の検証結果: Q3a／Q4a回帰31件・文書回帰3件成功。全体117 files／4,445 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。

@@ -10,11 +10,12 @@ it('recognizes verified native transport without upgrading it to storage isolati
  const result=inspectPrefixAdoption(input());expect(result).toMatchObject({authenticatedTransportObserved:true,nativeLaunchBindingsVerified:2,restartFdDrainObserved:true,independentRegistryVerified:false,profileApproved:false,backendEligible:false,originalReadsSkipped:0});expect(result.blockers).toEqual(PREFIX_ADOPTION_BLOCKERS);expect(()=>requireProductionPrefixBackend(input())).toThrow('native_storage_isolation_unverified');
 });
 for(const field of ['managerKeyDigest','controllerKeyDigest','manifestDigest','runId'])it('requires independent pin '+field,()=>{
- const value=input();value.pins[field]=field==='runId'?'wrong-run':'1'.repeat(64);expect(()=>inspectPrefixAdoption(value)).toThrow();
+ const value=input();value.pins[field]=field==='runId'?'wrong-run':'1'.repeat(64);
+ expect(()=>inspectPrefixAdoption(value)).toThrow(field==='managerKeyDigest'||field==='controllerKeyDigest'?/^q2b_transport_independent_key_pin$/:/^q2b_transport_independent_manifest_pin$/);
 });
 for(const field of ['profileApproved','backendEligible','independentRegistryVerified'])it('rejects self asserted '+field,()=>{
- const value=input();Object.assign(value,{[field]:true});expect(()=>inspectPrefixAdoption(value)).toThrow();
+ const value=input();Object.assign(value,{[field]:true});expect(()=>inspectPrefixAdoption(value)).toThrow(/^prefix_adoption_schema$/);
 });
 it('does not accept caller-authored blocker removal or profile into pin settings',()=>{
- const value=input();value.pins.blockers=[];value.pins.profileApproved=true;expect(()=>inspectPrefixAdoption(value)).toThrow();
+ const value=input();value.pins.blockers=[];value.pins.profileApproved=true;expect(()=>inspectPrefixAdoption(value)).toThrow(/^prefix_adoption_schema$/);
 });

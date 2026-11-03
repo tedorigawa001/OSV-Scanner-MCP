@@ -5097,6 +5097,20 @@ challengeはmanifest／launch digest、instance／profile、provider boot、role
 
 次は残るB1隔離攻撃・runtime依存closureの独立承認／配備履歴、B2／B3をこのtransportへ結ぶ別UID保存service、fresh checkpoint issuer／独立registry／分散fencing、実VM保存故障・power-loss条件、Q3／Q4である。今回の3機能の実証をB1全体や本番provider採用完了へ読み替えない。
 
+B1ctの検証結果: 実VM28ケース、2 native launch binding、通常回帰40件成功。全体115 files／4,411 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。manager／controller署名と独立pin、source receipt、boot／cookie更新・残存FD拒否を照合した。原本read省略・本番採用は0。
+
+#### 9.84.7 095bbecレビュー修正・pinの同時commit・拒否理由・EOFの分類
+
+**pinの独立性。** `.bindings.json`（manager／controller公開鍵pin・manifest pin・runId）は、署名記録`.json`と同じcommit（095bbec）で追加された。§9.82.6で定めた「以後のnative記録では、pinを記録より前の別commit、またはリポジトリ外の独立した保管先に固定する」という運用を満たしていない。§9.84.6の「pinをboot前・配備前・trace前に外側へ保存した」は作業手順の記述であり、リポジトリ上では記録とpinを同時に差し替えれば回帰は通る。今回のpinも§9.82.6と同じ限界を持ち、独立承認とはみなさない。次のnative記録から、pinを先に別commitとして固定する。
+
+**拒否理由。** `verifyNativeTransportRun`のparse／schema失敗をzodの生例外から`q2b_transport_schema`へ統一し、B1a native入口の`q2b_`理由はそのまま通す。pin不一致3件・署名破損2件・未署名記録1件・正しく再署名した不正記録の期待値を`toThrow()`から完全一致の理由へ変えた。事前の確認では全件が想定どおりの検査で拒否されていた。ただし「manager署名の破損」は、launch bytesだけを書き換えるとcontroller署名済みのboot copyと食い違うため`q2b_transport_boot_binding`で拒否されており、manager署名の検証自体には到達していなかった。boot copyも同じbytesへ揃えてcontrollerで再署名する負例（`manager-signature`）を追加し、`q2b_signature_invalid`で拒否されることを確認した。
+
+**EOFの分類（既知の制約）。** `auth.py`の受信処理は、EOF（受信bytesが空）を資格確認の条件に含めているため、途中で切れたframeを`credential-missing`として拒否する。安全側の拒否だが、資格が実際に欠けた場合と区別できず、`truncated`ケースは`credential-missing`の理由で合格している。資格検査が後で壊れても`truncated`ケースでは検出できない。`auth.py`は署名記録のsource receipt（16 files）に含まれるため、修正すると記録のhashが一致しなくなり、記録の再生成には実VMでの再実行が必要になる。今回は既知の制約として記録し、次の実VM実行で、資格検査の前にEOFを別の理由で拒否し、verifierの対応表・記録を合わせて更新する。
+
+**文書配置。** 095bbecは§9.84を§9.83.8の前へ挿入しており、§9.83.8が§9.84.6の後ろにあった。§9.83.8を§9.84の前へ戻した。§9.82.6・§9.83.8に続き3回目である。
+
+095bbecレビュー修正の検証結果: transport回帰41件成功（新規1件・期待理由を具体化）。全体115 files／4,412 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。署名記録・pin・source receiptは変更していない。native実行・採用flag変更は0。
+
 ### 9.85 Q3a／Q4a・診断用byte cacheと採用拒否gate（2026-11-03）
 
 Q2の未完了条件を残したままread省略を実装せず、診断用cacheと採用gateから進めるという選択に沿う。実装は`src/test/fixtures/gradleOwnedPrefixCache.ts`と`gradleOwnedPrefixAdoption.ts`で、配布対象の本番reader・authority・migration入口には接続しない。
@@ -5121,7 +5135,7 @@ cache identityはbinding・base ref／承認base・signing key digest／key ID�
 
 この数値は、cacheから供給できる入力と追加入力を分類した**メモリfixtureの計数**である。prefixのbyte照合・payload hash・private copy・全履歴認証・full referenceの費用は依然として発生する。OS file read bytes・read削減・同期削減・性能改善の計測ではない。`nativeReadReductionObserved=false`、`checkpointSynchronizationObserved=false`、`originalReadsSkipped=0`を維持する。native VMの再実行もしていない。
 
-再現は`bdo npx vitest run src/test/utils/gradleOwnedPrefixCache.test.ts src/test/utils/gradleOwnedPrefixAdoption.test.ts`。比較recordの出力は`bdo proxy env OSV_Q3Q4_REPORT=1 npx vitest run src/test/utils/gradleOwnedPrefixCache.test.ts --silent=false`で得る。環境変数はrecord出力用で、採用を有効にしない。
+再現は`npx vitest run src/test/utils/gradleOwnedPrefixCache.test.ts src/test/utils/gradleOwnedPrefixAdoption.test.ts`。比較recordの出力は`env OSV_Q3Q4_REPORT=1 npx vitest run src/test/utils/gradleOwnedPrefixCache.test.ts --silent=false`で得る。環境変数はrecord出力用で、採用を有効にしない。
 
 #### 9.85.3 Q4aの採用拒否と信頼範囲
 
@@ -5135,16 +5149,12 @@ cache identityはbinding・base ref／承認base・signing key digest／key ID�
 
 **Q3／Q4全体は未完了。** Q3bでは完全inventory／live grant・pin・checkpoint実同期に接続したsuffix-only verifier、authority audit継続state、node／key bookkeepingのbudget、large history／scope・churn／失効／故障比較とnative性能を実証する必要がある。Q4bでは独立承認registry・runtime closure・current pin／barrierを実装し、B／C authorityとPO3／M0移行へ接続する。先行するQ2のnative storage service・全隔離経路・fresh issuer・実保存故障の未成立条件も残る。今回の診断cacheと拒否gateを本番最適化や採用完了に読み替えない。
 
-B1ctの検証結果: 実VM28ケース、2 native launch binding、通常回帰40件成功。全体115 files／4,411 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。manager／controller署名と独立pin、source receipt、boot／cookie更新・残存FD拒否を照合した。原本read省略・本番採用は0。
+#### 9.85.5 9037db7レビュー修正・公開文書の個人環境command・文書配置・Q4aの拒否理由
 
-#### 9.84.7 095bbecレビュー修正・pinの同時commit・拒否理由・EOFの分類
+**公開文書の個人環境command。** §9.85.2の再現commandに、個人環境のcommand proxyの接頭辞が本文中のインラインコードとして入っていた。素の`npx vitest run …`と`env OSV_Q3Q4_REPORT=1 npx vitest run … --silent=false`へ戻した。既存の回帰（ef0c08f）は行頭がその接頭辞で始まる行だけを検出するため、本文中のインラインコードはすり抜けていた。READMEとdocs配下のMarkdownについて、インラインコードのspan内で接頭辞の後にcommandが続く場合と、docs配下のJSON記録の文字列が接頭辞＋空白で始まる場合も失敗するよう回帰を2件追加した。toolの名前だけを挙げる過去のreview記録の言及は引き続き許可する。修正前の文書で新しい回帰が該当1行だけを検出することを確認した。
 
-**pinの独立性。** `.bindings.json`（manager／controller公開鍵pin・manifest pin・runId）は、署名記録`.json`と同じcommit（095bbec）で追加された。§9.82.6で定めた「以後のnative記録では、pinを記録より前の別commit、またはリポジトリ外の独立した保管先に固定する」という運用を満たしていない。§9.84.6の「pinをboot前・配備前・trace前に外側へ保存した」は作業手順の記述であり、リポジトリ上では記録とpinを同時に差し替えれば回帰は通る。今回のpinも§9.82.6と同じ限界を持ち、独立承認とはみなさない。次のnative記録から、pinを先に別commitとして固定する。
+**文書配置。** 9037db7は§9.85を§9.84.6と、その検証結果行の間へ挿入しており、B1ctの検証結果行と§9.84.7が§9.85.4の後ろにあった。両方を§9.85の前へ戻した。bce3aa6・9bc56ad・095bbecに続き4回目である。新しい節はファイル末尾へ追加すること。
 
-**拒否理由。** `verifyNativeTransportRun`のparse／schema失敗をzodの生例外から`q2b_transport_schema`へ統一し、B1a native入口の`q2b_`理由はそのまま通す。pin不一致3件・署名破損2件・未署名記録1件・正しく再署名した不正記録の期待値を`toThrow()`から完全一致の理由へ変えた。事前の確認では全件が想定どおりの検査で拒否されていた。ただし「manager署名の破損」は、launch bytesだけを書き換えるとcontroller署名済みのboot copyと食い違うため`q2b_transport_boot_binding`で拒否されており、manager署名の検証自体には到達していなかった。boot copyも同じbytesへ揃えてcontrollerで再署名する負例（`manager-signature`）を追加し、`q2b_signature_invalid`で拒否されることを確認した。
+**Q4aの拒否理由。** `inspectPrefixAdoption`のstrict schema失敗（自己申告の承認flag、pin設定への未知field）をzodの生例外から`prefix_adoption_schema`へ統一した。pin不一致4件・自己申告3件・blocker削除1件の期待値を`toThrow()`から完全一致の理由へ変えた。事前の確認で全件が想定どおりの検査で拒否されていた（manager／controller鍵は`q2b_transport_independent_key_pin`、manifest／runIdは`q2b_transport_independent_manifest_pin`、残りはschema）。`gradleOwnedPrefixAdoption.ts`は保存記録のsource fingerprintに含まれるため、記録を現sourceの出力から再生成した。変わったのは同fileのSHA-256だけで、比較値は同一である。
 
-**EOFの分類（既知の制約）。** `auth.py`の受信処理は、EOF（受信bytesが空）を資格確認の条件に含めているため、途中で切れたframeを`credential-missing`として拒否する。安全側の拒否だが、資格が実際に欠けた場合と区別できず、`truncated`ケースは`credential-missing`の理由で合格している。資格検査が後で壊れても`truncated`ケースでは検出できない。`auth.py`は署名記録のsource receipt（16 files）に含まれるため、修正すると記録のhashが一致しなくなり、記録の再生成には実VMでの再実行が必要になる。今回は既知の制約として記録し、次の実VM実行で、資格検査の前にEOFを別の理由で拒否し、verifierの対応表・記録を合わせて更新する。
-
-**文書配置。** 095bbecは§9.84を§9.83.8の前へ挿入しており、§9.83.8が§9.84.6の後ろにあった。§9.83.8を§9.84の前へ戻した。§9.82.6・§9.83.8に続き3回目である。
-
-095bbecレビュー修正の検証結果: transport回帰41件成功（新規1件・期待理由を具体化）。全体115 files／4,412 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。署名記録・pin・source receiptは変更していない。native実行・採用flag変更は0。
+9037db7レビュー修正の検証結果: Q3a／Q4a回帰31件・文書回帰3件成功（新規2件）。全体117 files／4,445 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。native実行・採用flag変更は0。

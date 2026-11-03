@@ -65,7 +65,7 @@
   },
   "sources": {
     "gradleOwnedPrefixCache.ts": "99d42d90346c7796f9a55e6289dab66556e2912f3caa73b7bd586a6f38879dba",
-    "gradleOwnedPrefixAdoption.ts": "7c9e23a5fc8b1a8ec619aca047652e4ff1ba1d7e5de1a90f8337eeb79b559684"
+    "gradleOwnedPrefixAdoption.ts": "54e8a2307c0ba90ccaea031f6de18ca9fcebe9899ee6a8bfd5fe4535c9eb6cbb"
   },
   "nativeRunPerformed": false,
   "productionAdoption": false,

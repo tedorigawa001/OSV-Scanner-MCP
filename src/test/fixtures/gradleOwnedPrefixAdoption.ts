@@ -14,7 +14,8 @@ export const PREFIX_ADOPTION_BLOCKERS=Object.freeze([
 export function inspectPrefixAdoption(input?:{record:Buffer;pins:Pins}){
  let transport:ReturnType<typeof verifyNativeTransportRun>|undefined;
  if(input){
-  const parsed=z.object({record:z.instanceof(Buffer),pins}).strict().parse(input);
+  // Unknown fields (self-asserted approvals, removed blockers) are a schema refusal, never a partial accept.
+  const result=z.object({record:z.instanceof(Buffer),pins}).strict().safeParse(input);if(!result.success)throw new Error('prefix_adoption_schema');const parsed=result.data;
   transport=verifyNativeTransportRun({...parsed.pins,record:parsed.record});
  }
  return Object.freeze({schema:'osv-mcp.q3q4.diagnostic-adoption.v1',
