@@ -2742,3 +2742,15 @@ C3設計レビュー修正の検証結果: §9.91.1〜10の10小節・CN01〜CN4
 - 1 read pin（5秒）内の全工程について時間予算表とclosure上限をC3aで固定する条件と、CN42を追加した。C3aの終了条件にも反映した。
 
 8a8e82fレビュー修正の検証結果: §9.91.1〜11・CN01〜CN42の一意性と順序を確認。文書のみの変更で、提案APIとCN41／CN42の実装・native実証は未実施。
+
+### C3a：追加API・phase別配備証拠の静的contract
+
+- §9.92に7追加APIのstrict request／reply・署名domain・static grant認可と、candidate-genesis／candidate-advance／selectedの証拠分離を実装した範囲を記載。
+- 独立manifest／profile pin、manager／controller署名、phase別資格・listener GID、循環しないbootstrap束縛とcase期待値照合のsynthetic runnerを追加。新規165回帰と2つの検査除去対照を実行。
+- 今回は静的contractのみ。nonce replay state・live pin・full転送／G0/G2・service別保存／ACK・独立AnchorはC3b、事前pinとVM配備はC3c、native故障検証はC3d。採用flag false・originalReadsSkipped=0を維持。
+
+C3aの検証結果: 新規2 files／165 tests成功。全体は`npm test -- --maxWorkers=1`で123 files／4,877 tests成功、24 files／1,418 tests skipped（240.68秒）。型検査・build・diff整形検査成功。検査除去対照はselected head 1件・残存capability 5件が失敗し、復元後に成功。source fingerprint一致とtest runner／秘密署名処理のdist不混入を確認。新規native実行・本番採用は0。
+
+C3aレビュー修正: AuxiliaryPinに署名identity全体と方向を必須化し、request peer／reply serverへ照合。role／instance／boot別のendpoint全inventoryからlistenerDigestを再計算してphase／bootstrapへ束縛。回帰19件を追加（合計184件）、うち11件の修正前失敗を確認。旧pinと旧listener digestを拒否し、正規更新は許可。実証範囲は静的contractのみを維持。
+
+C3aレビュー修正の最終検証: 対象2 files／184 tests成功。全体は`npm test -- --maxWorkers=1`で123 files／4,896 tests成功、24 files／1,418 tests skipped（255.12秒）。型検査・build・diff整形検査成功。source fingerprint一致と、test runner／秘密署名処理がproduction distへ混入していないことを確認。新規native実行・本番採用は0。

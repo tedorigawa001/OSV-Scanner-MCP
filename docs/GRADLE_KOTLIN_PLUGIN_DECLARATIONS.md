@@ -5884,3 +5884,45 @@ nativeでは、最大closureの正常対照が実測時間と余裕付きで完�
 | CN42 | 工程別予算の合計がlease－余裕以下であることを静的に検査する。予算超過のclosure・上限＋1を受付前に拒否し、対象原本readを0にする。転送遅延でpinが失効すれば成功・use・ACKを0にし、pin延長・再取得による継続を拒否する。最大closureの正常対照は実測時間と余裕を記録する |
 
 設計レビュー修正（8a8e82f）の検証結果: §9.91.1〜11の11小節を確認した。CN01〜CN42の一意性と順序、CN23と§9.90.6の整合も確認した。文書のみの変更で、AbandonEnrollment・予算表・CN41／CN42の実装とnative実証は未実施。
+
+### 9.92 C3a：追加API・配備証拠の静的contract（2026-11-03）
+
+#### 9.92.1 実装範囲
+
+`src/utils/gradleOwnedCurrentAuxiliary.ts`にC0と別domainのcurrent-aux request／reply／署名envelopeと7追加APIのstrict payloadを実装した。C0の22 API、既存schema／署名記録、C2の既定経路は変更しない。request／replyはcanonical UTF-8、Ed25519公開pin、方向・request wire digest／intent digest・challenge／sequence・role／instance／boot／deploymentを照合する。role・permission・purpose・target／snapshot・business operationの範囲と、呼出し元が独立に渡す**exact payload digest付きstatic grant**を照合する。このgrantをrequest bodyから自動取得しない。intent digestは同logical requestの再試行で保持するfieldと、fresh transportのrequest ID／nonce／sequenceを分離する。
+
+namespaceはcandidate-genesis／candidate-advance／selectedのstrict unionで、candidateに採用済み証拠を要求しない。genesisはprovision mode、advanceはexpected selection／previous checkpoint、selectedはexact selected snapshot／head／checkpointを照合する。candidate stagingはoperator-genesis／writer-advanceの組合せに限定し、通常read／mirrorへcandidateを渡すこと、readerによるRecordUseを拒否する。chunkは1 frameに収まる最大4096 raw bytesに限定し、base64の正規形・実bytes hash／範囲・entry／transferを照合する。大きい論理recordを扱うtransfer assemblerはC3b以降に残る。
+
+これはwireの**静的内容・署名・認可範囲**のcontractであり、nonce消費・service lifecycle・live pin／fence・peer kernel資格・完全inventoryからの実read・broker full G0/G2・保存／ACKのservice実装ではない。返されたtyped refをlive権限とみなさない。ReadForCheckpoint自体は既存C0のAPIで、今回の新経路はcandidate descriptorの静的解決までを検証する。
+
+#### 9.92.2 配備profile・bootstrap・runner
+
+`src/test/fixtures/gradleOwnedCurrentDeployment.ts`はsynthetic-static-onlyのrunnerで、独立入力のmanifest digest・profile digestとmanager／controller公開pinを要求する。profileはprincipal／phase別のUID/GID全成分・5 capability集合・NNP、実行形・環境・listenerのclient role／groupとEnrollment／key-set digestから再計算する。profile名やhashラベルだけで内容変更を通さない。managerはprovision／pre-drop、7非root roleはlauncher／runtime、controllerはobserveを順序・欠落・重複とともに照合する。非rootの権限残存・saved root ID・private root共有・未許可環境を拒否し、pre-drop managerの限定maskとcontroller固有の事前profileを区別する。
+
+listenerはserver instance／bootと接続client roleのGIDへ束縛する。複数clientは別listenerを列挙でき、endpoint inodeとserver内FDは一意とする。ownerUid／ownerGidはroot custodianのFD所有、groupGidはsocketへ接続できるclient側groupを表す。全fragmentの実kernel資格や実socket属性を、この静的metadataだけで成立済みとはしない。
+
+manifest／manager launchにはbootstrap自体のhashを含めず、launchを署名した後にbootstrapがexact manifest／launch bytesのdigest・run／role／instance／boot・Enrollment／key-set・root／listener／runtimeへ結ぶ。controller recordがそのbootstrap bytes／hash・read-only／4 seal／root所有とFD衝突なしを照合する。これによりmanifest→launch→bootstrap→recordの一方向参照とし、自己hash循環を作らない。manager／controller鍵は別とし、key-set digestを実公開pinとservice credential-set digestへ結ぶ。service credential-set本体は独立Enrollment参照であり、今回その全鍵registryを実装したとはしない。
+
+case期待値はmanifest pinへ結び、case ID／条件ID／順序／前提label／exact理由と拒否caseの禁止IO・write・deliveryが0であることを照合する。前提labelはsyntheticな値で、protected native eventの観測ではない。case件数は検証済みrecordから算出し、native mode／自己申告採用flag・case省略を拒否する。runnerとテスト用署名keyの生成はtest領域に置き、production distには入れない。
+
+#### 9.92.3 回帰・記録・残件
+
+初回は新規2 files・165回帰。レビュー修正で19件を追加し、現在は184回帰。追加APIの正常・role拒否、candidate／selected混用、署名・canonical wire・challenge／reply対応、chunk／result／use receipt交換、phase別権限、profile内容束縛、listener GID、bootstrapのself hashも更新した改変、controller再署名後のcase欠落／禁止IO／採用flagを検査する。selected head照合を外すと対応回帰、非root capabilityゼロ検査を外すと残存権限5回帰が失敗することを確認し、元sourceへ復元した。
+
+記録は`docs/validation/gradle-independent-currentness-c3a-2026-11-03.json`。通常回帰はnormalized static scopeとsource SHA-256を再照合する。記録のcase2件はsynthetic fixtureの正規／拒否対照で、165のunit回帰数やCN01〜CN40のnative成立件数と混同しない。CN02／CN12／CN13等の**静的部分**に対応するが、実issuerのcandidate read／採用や全roleのnative起動は未成立である。
+
+次はC3bのprocess別service／実dispatch・認証session／nonce replay state、runtimeで再検査するdelegation、full転送・authority予約／失効・use保存／ACK、適合Anchor接続。その後にC3cの事前pin／固定VM配備、C3dのnative故障検証を行う。今回の新規service配備・native実行・read省略・採用は0。nativeIsolationVerified／independentRegistryVerified／profileApproved／backendEligible=false、originalReadsSkipped=0を維持する。
+
+C3aの検証結果: 新規2 files／165 tests成功。全体は`npm test -- --maxWorkers=1`で123 files／4,877 tests成功、24 files／1,418 tests skipped（240.68秒）。型検査・build・diff整形検査成功。検査除去対照はselected head 1件・残存capability 5件が失敗し、復元後に成功。source fingerprint一致とtest runner／秘密署名処理のdist不混入を確認。新規native実行・本番採用は0。
+
+#### 9.92.4 C3aレビュー修正：署名identity・listener inventoryの束縛
+
+AuxiliaryPinは独立設定から得た公開key／key IDだけでなく、credential ID・role・instance ID・boot・key epochの完全なidentityとrequest／reply方向を必須にする。requestでは検証済みpeer、replyではserverをpinのidentityへ照合する。bodyとstatic grantのidentityを一致させるだけでは署名者の対応を満たさない。pinをbody／grantから自動作成せず、旧identityなしpinを拒否する。これは署名の出自の静的照合で、kernel peer観測やcredential lifecycleを実装したものではない。
+
+listenerDigestは`osv-mcp.q2.c3a.listener-inventory.v1` domain、role／instance ID／bootと、そのserverが所有するendpointの全fieldをcanonical順で並べたinventoryから算出する。destination・server／client role・instance／boot・root custodian所有・socket GID／mode・device／inode・FD・passcredを省略しない。全nonroot phaseのdigestをmanifestのendpoint一覧から再計算して確認し、bootstrap内の同じdigestへ照合する。listenerを持たないclientもidentityと空inventoryをhashし、他roleの空集合digestを流用しない。
+
+inode／deviceはdeploymentごとに変わり得るためprofile digestからは除くが、manifest／launch／bootstrapとlistener inventoryの一致は省略しない。endpointを変更してmanifest digestと署名を更新しても、旧listenerDigestなら拒否する。正しく再計算したdigestと新bootstrapなら、profileの条件を満たす範囲で受理できる。これは記録上の対応であり、実listener FDの観測・native隔離の証拠ではない。
+
+追加19回帰。修正前はrequest／replyのcredential・instance・boot・key epoch交換8件と、旧listenerDigestに対するinode／device／FD交換3件がすべて失敗（不正内容を受理）することを確認し、修正後に拒否する。さらにroleの交換、pin方向・旧pin形式、正しいinventory更新の正常対照、canonical順と各endpoint fieldのdigest反映を検査する。初回の検証・検査除去対照はvalidationのpreReviewVerification／preReviewMutationsへ保持する。
+
+C3aレビュー修正の最終検証: 対象2 files／184 tests成功。全体は`npm test -- --maxWorkers=1`で123 files／4,896 tests成功、24 files／1,418 tests skipped（255.12秒）。型検査・build・diff整形検査成功。source fingerprint一致と、test runner／秘密署名処理がproduction distへ混入していないことを確認。新規native実行・本番採用は0。

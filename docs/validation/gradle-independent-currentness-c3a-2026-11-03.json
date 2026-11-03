@@ -1,0 +1,128 @@
+{
+  "schema": "osv-mcp.q2.c3a.validation.v1",
+  "date": "2026-11-03",
+  "scope": "synthetic-static-contract-only",
+  "tests": 184,
+  "command": "npx vitest run src/test/utils/gradleOwnedCurrentAuxiliary.test.ts src/test/utils/gradleOwnedCurrentDeployment.test.ts",
+  "sourceSha256": {
+    "package.json": "bbb5c5fde9e96539da7395e928f91d9fa34372213260063059877a5b1c000f18",
+    "package-lock.json": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285",
+    "src/utils/gradleOwnedCurrentAuxiliary.ts": "0bc6bff0877b6b6168f092421e50fc1bb6f06d6a6ba700f1d3091db1df90320a",
+    "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/test/fixtures/gradleOwnedCurrentDeployment.ts": "d4d379847c1344e4ecd9bd7e3ce06182de15db80448cda8004edfec8d6d708de",
+    "src/test/utils/gradleOwnedCurrentAuxiliary.test.ts": "8b875f86dad599ab3131dbd8620ed0662f00643eeba17db2535a1d3a7bd00c04",
+    "src/test/utils/gradleOwnedCurrentDeployment.test.ts": "05b08fa21d0500f4b0906ad2a61eea067796ac2cd6f21c044f055b2d1937e954"
+  },
+  "staticScenario": {
+    "scope": "synthetic-static-only",
+    "casesVerified": 2,
+    "nativeTrials": 0,
+    "nativeIsolationVerified": false,
+    "independentRegistryVerified": false,
+    "profileApproved": false,
+    "backendEligible": false,
+    "originalReadsSkipped": 0
+  },
+  "established": [
+    "Separate auxiliary signature domain and seven strict request/reply payload schemas",
+    "Exact externally supplied static delegation scope, purpose, role and payload digest",
+    "Candidate genesis/advance vs selected namespace unions without circular adoption requirements",
+    "Pinned manager/controller signatures and phase/profile/bootstrap/case correspondence",
+    "Canonical chunk bytes and result/use receipt correspondence"
+  ],
+  "limitations": [
+    "No RPC server, sockets, peer credential observation, live pin or nonce replay state",
+    "No production service deployment, independent Anchor or authority handoff reservation protocol",
+    "Deployment evidence is synthetic; required-precondition labels are not protected native OS events",
+    "Service credential-set digest remains an independently supplied opaque Enrollment reference, not a decoded service key registry",
+    "No multi-frame transfer assembler, full authority verifier, persistence or changed default reader",
+    "CN01–CN40 native conditions are unimplemented; existing C0/C1/C2 tests do not establish them"
+  ],
+  "verification": {
+    "targeted": {
+      "filesPassed": 2,
+      "testsPassed": 184
+    },
+    "fullSuite": {
+      "command": "npm test -- --maxWorkers=1",
+      "filesPassed": 123,
+      "filesSkipped": 24,
+      "testsPassed": 4896,
+      "testsSkipped": 1418,
+      "durationSeconds": 255.12
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "diffCheck": "passed",
+    "fixtureRunnerInDist": false,
+    "privateSigningInPublishedAuxiliaryModule": false
+  },
+  "nativeTrials": 0,
+  "backendEligible": false,
+  "originalReadsSkipped": 0,
+  "baseCommit": "1bfee28",
+  "preReviewVerification": {
+    "targeted": {
+      "filesPassed": 2,
+      "testsPassed": 165
+    },
+    "fullSuite": {
+      "command": "npm test -- --maxWorkers=1",
+      "filesPassed": 123,
+      "filesSkipped": 24,
+      "testsPassed": 4877,
+      "testsSkipped": 1418,
+      "durationSeconds": 240.68
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "diffCheck": "passed",
+    "fixtureRunnerInDist": false,
+    "privateSigningInPublishedAuxiliaryModule": false
+  },
+  "preReviewMutations": [
+    {
+      "removed": "selected head equality",
+      "expected": "corresponding regression fails",
+      "restored": true,
+      "exitCode": 1,
+      "regressionsFailed": 1
+    },
+    {
+      "removed": "nonroot zero capability gate",
+      "expected": "residual capability regressions fail",
+      "restored": true,
+      "exitCode": 1,
+      "regressionsFailed": 5
+    }
+  ],
+  "reviewFix": {
+    "testsAdded": 19,
+    "red": {
+      "tests": 11,
+      "failed": 11,
+      "cases": [
+        "request credential / instance / boot / epoch binding",
+        "reply server credential / instance / boot / epoch binding",
+        "stale listener digest after inode / device / FD replacement"
+      ]
+    },
+    "greenFocused": {
+      "tests": 19,
+      "passed": 19
+    },
+    "signerContract": [
+      "Independent pin carries full identity and request/reply direction",
+      "Request peer and reply server must equal the pinned credential, role, instance, boot and key epoch",
+      "Matching body and grant never substitute for the independently pinned signer identity",
+      "Unbound legacy pin shapes are rejected"
+    ],
+    "listenerContract": [
+      "Domain-separated hash of role / instance / boot and the full canonical sorted server-owned endpoint inventory",
+      "Every nonroot phase must match the recomputed inventory hash before bootstrap comparison",
+      "An empty inventory is identity-bound for clients without listeners",
+      "Updating inventory requires a new matching phase / bootstrap digest; an unchanged deployment profile does not authorize a stale digest"
+    ]
+  }
+}
