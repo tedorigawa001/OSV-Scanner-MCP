@@ -72,6 +72,11 @@ def receive(sock):
     return value
 
 
+def require(ok, reason):
+    # Explicit checks keep verification active under python -O.
+    if not ok:
+        raise ValueError(reason)
+
 def strict(value, fields):
     if type(value) is not dict or set(value) != set(fields):
         raise ValueError("schema")
@@ -106,6 +111,7 @@ def provider(path):
                 if not hmac.compare_digest(hello["proof"], mac(key, binding)):
                     raise ValueError("authentication")
                 send(conn, {"proof": "0" * 64 if bootstrap["corruptServerProof"] else mac(key, {"server": binding})})
+                sent = None
                 for sequence in range(1, 3):
                     try:
                         request = receive(conn)
@@ -123,7 +129,10 @@ def provider(path):
                     # No storage/getter is reachable: diagnostic protocol has no grant operation.
                     result = {"adoption": "provider_unsupported", "storageReads": 0,
                               "originalReadsSkipped": 0, "peer": remote, "sequence": sequence}
-                    send(conn, {"body": result, "proof": mac(key, {"binding": binding, "result": result})})
+                    response = {"body": result, "proof": mac(key, {"binding": binding, "result": result})}
+                    # Fault injection: an authenticated earlier response returned for a later request.
+                    send(conn, sent if bootstrap["replayResponse"] and sent else response)
+                    sent = response
             except (ValueError, TypeError, KeyError, OSError):
                 try:
                     send(conn, {"error": "rejected"})
@@ -131,11 +140,11 @@ def provider(path):
                     pass
 
 
-def start(path, key, corrupt=False, expected_uid=None):
+def start(path, key, corrupt=False, expected_uid=None, replay_response=False):
     child = subprocess.Popen([sys.executable, "-I", str(Path(__file__).resolve()), "--provider", path],
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              close_fds=True)
-    child.stdin.write(canonical({"key": key.hex(), "corruptServerProof": corrupt,
+    child.stdin.write(canonical({"key": key.hex(), "corruptServerProof": corrupt, "replayResponse": replay_response,
                                 "expectedUid": os.geteuid() if expected_uid is None else expected_uid}) + b"\n")
     child.stdin.close()
     if not select.select([child.stdout], [], [], 5)[0]:
@@ -146,24 +155,31 @@ def start(path, key, corrupt=False, expected_uid=None):
         finish(child)
         raise RuntimeError("provider startup failed: " + child.stderr.read().decode())
     ready = json.loads(line)
-    assert ready["ready"] and ready["pid"] != os.getpid()
+    require(ready["ready"] is True and ready["pid"] != os.getpid(), "provider startup")
     return child
 
 
-def connect(path, key):
+def connect(path, key, expected_server_uid=None):
+    expected = os.geteuid() if expected_server_uid is None else expected_server_uid
     conn = socket.socket(socket.AF_UNIX)
-    conn.settimeout(3)
-    conn.connect(path)
-    context = receive(conn)
-    strict(context, ["domain", "boot", "nonce", "server", "client"])
-    assert context["domain"] == DOMAIN
-    assert context["server"] == peer(conn)
-    assert context["client"] == [os.geteuid(), os.getegid()]
-    binding = {"context": context, "role": "reader", "nonce": secrets.token_hex(32)}
-    send(conn, {"role": "reader", "nonce": binding["nonce"], "proof": mac(key, binding)})
-    if receive(conn) != {"proof": mac(key, {"server": binding})}:
+    try:
+        conn.settimeout(3)
+        conn.connect(path)
+        kernel = peer(conn)
+        context = receive(conn)
+        # The provider principal is pinned by the bootstrap, not by the server's self-report.
+        require(kernel[0] == expected, "server identity")
+        strict(context, ["domain", "boot", "nonce", "server", "client"])
+        require(context["domain"] == DOMAIN, "server context")
+        require(context["server"] == kernel and context["client"] == [os.geteuid(), os.getegid()], "server context")
+        binding = {"context": context, "role": "reader", "nonce": secrets.token_hex(32)}
+        send(conn, {"role": "reader", "nonce": binding["nonce"], "proof": mac(key, binding)})
+        proof = receive(conn)
+        strict(proof, ["proof"])
+        require(isinstance(proof["proof"], str) and hmac.compare_digest(proof["proof"], mac(key, {"server": binding})), "server authentication")
+    except BaseException:
         conn.close()
-        raise ValueError("server authentication")
+        raise
     return conn, binding
 
 
@@ -172,9 +188,13 @@ def request(binding, key, sequence=1):
     return {"body": body, "proof": mac(key, {"binding": binding, "body": body})}
 
 
-def checked_result(conn, binding, key):
+def checked_result(conn, binding, key, sequence):
     response = receive(conn)
-    assert response["proof"] == mac(key, {"binding": binding, "result": response["body"]})
+    strict(response, ["body", "proof"])
+    require(isinstance(response["proof"], str) and hmac.compare_digest(response["proof"], mac(key, {"binding": binding, "result": response["body"]})), "response authentication")
+    expected = {"adoption": "provider_unsupported", "storageReads": 0, "originalReadsSkipped": 0,
+                "peer": [os.geteuid(), os.getegid()], "sequence": sequence}
+    require(response["body"] == expected and type(response["body"]["sequence"]) is int, "response")
     return response["body"]
 
 
@@ -191,7 +211,8 @@ def run(case):
     with tempfile.TemporaryDirectory(prefix="q2a-", dir="/tmp") as root:
         path = root + "/ipc"
         child = start(path, key, corrupt=case == "server-impostor",
-                      expected_uid=os.geteuid() + 1 if case == "wrong-peer" else None)
+                      expected_uid=os.geteuid() + 1 if case == "wrong-peer" else None,
+                      replay_response=case == "response-replay")
         try:
             if case == "same-uid-write":
                 # Fixture-only negative control: chmod 0700/0600 cannot isolate the owner UID.
@@ -209,24 +230,33 @@ def run(case):
                     "t.write_bytes(b'changed'); print(json.dumps([os.geteuid(),os.getpid(),len(k)]))", str(owner)],
                     capture_output=True, check=True, timeout=3, close_fds=True)
                 attacker_uid, attacker_pid, key_bytes = json.loads(attack.stdout)
-                assert attacker_uid == os.geteuid() and attacker_pid not in [os.getpid(), child.pid]
-                assert key_bytes == 32 and target.read_bytes() == b"changed"
+                require(attacker_uid == os.geteuid() and attacker_pid not in [os.getpid(), child.pid], "attacker process")
+                require(key_bytes == 32 and target.read_bytes() == b"changed", "attacker write")
                 checks = ["same-uid-secret-readable", "same-uid-sealed-file-writable"]
                 evidence["attackerUid"] = attacker_uid
             elif case == "server-impostor":
                 try:
                     conn, _ = connect(path, key)
                 except ValueError as error:
-                    assert str(error) == "server authentication"
+                    require(str(error) == "server authentication", "server-impostor reason")
                 else:
                     conn.close()
                     raise AssertionError("accepted forged provider proof")
                 checks = ["untrusted-server-proof-rejected-before-request"]
+            elif case == "wrong-provider":
+                try:
+                    conn, _ = connect(path, key, expected_server_uid=os.geteuid() + 1)
+                except ValueError as error:
+                    require(str(error) == "server identity", "wrong-provider reason")
+                else:
+                    conn.close()
+                    raise AssertionError("accepted an unexpected provider principal")
+                checks = ["unexpected-provider-uid-rejected-before-hello"]
             elif case == "wrong-peer":
                 with socket.socket(socket.AF_UNIX) as conn:
                     conn.settimeout(3)
                     conn.connect(path)
-                    assert receive(conn) == {"error": "rejected"}
+                    require(receive(conn) == {"error": "rejected"}, "wrong-peer")
                 checks = ["kernel-uid-mismatch-rejected-before-handshake"]
             elif case in ["wrong-key", "wrong-role", "oversized", "truncated", "noncanonical", "handshake-timeout"]:
                 conn = socket.socket(socket.AF_UNIX)
@@ -249,7 +279,7 @@ def run(case):
                         binding = {"context": context, "role": role, "nonce": secrets.token_hex(32)}
                         proof_key = secrets.token_bytes(32) if case == "wrong-key" else key
                         send(conn, {"role": role, "nonce": binding["nonce"], "proof": mac(proof_key, binding)})
-                    assert receive(conn) == {"error": "rejected"}
+                    require(receive(conn) == {"error": "rejected"}, case)
                     checks = [case + "-rejected"]
             else:
                 conn, binding = connect(path, key)
@@ -267,16 +297,16 @@ def run(case):
                                 conn2.settimeout(3)
                                 conn2.connect(path)
                                 new_context = receive(conn2)
-                                assert new_context["boot"] != binding["context"]["boot"]
+                                require(new_context["boot"] != binding["context"]["boot"], "new boot")
                                 send(conn2, {"role": "reader", "nonce": binding["nonce"], "proof": mac(key, binding)})
-                                assert receive(conn2) == {"error": "rejected"}
+                                require(receive(conn2) == {"error": "rejected"}, case)
                             checks = ["new-process-boot", "old-handshake-rejected"]
                         else:
                             conn2, binding2 = connect(path, key)
                             with conn2:
-                                assert binding2["context"]["boot"] != binding["context"]["boot"]
+                                require(binding2["context"]["boot"] != binding["context"]["boot"], "new boot")
                                 send(conn2, old)
-                                assert receive(conn2) == {"error": "rejected"}
+                                require(receive(conn2) == {"error": "rejected"}, case)
                             checks = ["new-process-boot", "old-boot-request-rejected"]
                     elif case in ["bad-mac", "wrong-operation"]:
                         if case == "bad-mac":
@@ -285,18 +315,27 @@ def run(case):
                             first["body"]["operation"] = "grant"
                             first["proof"] = mac(key, {"binding": binding, "body": first["body"]})
                         send(conn, first)
-                        assert receive(conn) == {"error": "rejected"}
+                        require(receive(conn) == {"error": "rejected"}, case)
                         checks = [case + "-rejected"]
                     else:
                         send(conn, first)
-                        checked_result(conn, binding, key)
+                        checked_result(conn, binding, key, 1)
                         if case == "replay":
                             send(conn, first)
-                            assert receive(conn) == {"error": "rejected"}
+                            require(receive(conn) == {"error": "rejected"}, case)
                             checks = ["same-session-replay-rejected"]
+                        elif case == "response-replay":
+                            send(conn, request(binding, key, 2))
+                            try:
+                                checked_result(conn, binding, key, 2)
+                            except ValueError as error:
+                                require(str(error) == "response", "response-replay reason")
+                            else:
+                                raise AssertionError("accepted an earlier response for a later request")
+                            checks = ["earlier-response-rejected"]
                         elif case == "honest":
                             send(conn, request(binding, key, 2))
-                            checked_result(conn, binding, key)
+                            checked_result(conn, binding, key, 2)
                             checks = ["separate-process", "kernel-peer-credentials", "mutual-authentication",
                                       "authenticated-response", "ordered-requests"]
                         else:
@@ -304,7 +343,7 @@ def run(case):
                         evidence["providerUid"] = binding["context"]["server"][0]
                         evidence["readerUid"] = binding["context"]["client"][0]
             if case != "same-uid-write":
-                assert child.wait(timeout=5) == 0, child.stderr.read().decode()
+                require(child.wait(timeout=5) == 0, child.stderr.read().decode())
         finally:
             finish(child)
     return {"case": case, "checks": checks, "verified": True, "evidence": evidence,
@@ -312,7 +351,8 @@ def run(case):
 
 
 CASES = ["honest", "wrong-key", "wrong-role", "replay", "stale-boot", "wrong-operation",
-         "bad-mac", "oversized", "truncated", "noncanonical", "server-impostor", "same-uid-write", "wrong-peer", "stale-handshake", "handshake-timeout"]
+         "bad-mac", "oversized", "truncated", "noncanonical", "server-impostor", "same-uid-write", "wrong-peer", "stale-handshake", "handshake-timeout",
+         "wrong-provider", "response-replay"]
 
 if __name__ == "__main__":
     if sys.argv[1] == "--provider":

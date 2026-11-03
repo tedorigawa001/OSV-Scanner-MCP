@@ -22,7 +22,8 @@ describe.skipIf(!supported)('Q2/A native authenticated diagnostic transport', ()
     expect(result.originalReadsSkipped).toBe(0);
   });
   it.each(['wrong-key', 'wrong-role', 'replay', 'stale-boot', 'wrong-operation',
-    'bad-mac', 'oversized', 'truncated', 'noncanonical', 'server-impostor', 'same-uid-write', 'wrong-peer', 'stale-handshake', 'handshake-timeout'])
+    'bad-mac', 'oversized', 'truncated', 'noncanonical', 'server-impostor', 'same-uid-write', 'wrong-peer', 'stale-handshake', 'handshake-timeout',
+    'wrong-provider', 'response-replay'])
   ('rejects or exposes the native negative control: %s', (name) => {
     const result = run(name);
     expect(result.case).toBe(name);
@@ -33,11 +34,11 @@ describe.skipIf(!supported)('Q2/A native authenticated diagnostic transport', ()
   });
 });
 
-it('records the exact executed fixture source and fifteen distinct native cases without adoption', () => {
+it('records the exact executed fixture source and seventeen distinct native cases without adoption', () => {
   const record = JSON.parse(readFileSync(new URL('../../../docs/validation/gradle-prefix-native-ipc-2026-11-03.json', import.meta.url), 'utf8'));
   expect(record.sourceSha256).toBe(createHash('sha256').update(readFileSync(harness)).digest('hex'));
-  expect(record.verifiedCases).toBe(15);
-  expect(new Set(record.cases.map((entry: { case: string }) => entry.case)).size).toBe(15);
+  expect(record.verifiedCases).toBe(17);
+  expect(new Set(record.cases.map((entry: { case: string }) => entry.case)).size).toBe(17);
   expect(record.isolationVerified).toBe(false);
   expect(record.backendEligible).toBe(false);
   expect(record.profileApproved).toBe(false);

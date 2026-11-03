@@ -180,6 +180,31 @@
       "originalReadsSkipped": 0,
       "storageReads": 0,
       "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "wrong-provider",
+      "checks": [
+        "unexpected-provider-uid-rejected-before-hello"
+      ],
+      "evidence": {},
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
+    },
+    {
+      "adoption": "provider_unsupported",
+      "case": "response-replay",
+      "checks": [
+        "earlier-response-rejected"
+      ],
+      "evidence": {
+        "providerUid": 501,
+        "readerUid": 501
+      },
+      "originalReadsSkipped": 0,
+      "storageReads": 0,
+      "verified": true
     }
   ],
   "isolationVerified": false,
@@ -187,6 +212,6 @@
   "profileApproved": false,
   "python": "3.14.10",
   "scope": "Q2/A diagnostic IPC only",
-  "sourceSha256": "48ede6f7f2d328ca0f8f524b88cee5da80588d5d3d2231bd3650aa82bceab755",
-  "verifiedCases": 15
+  "sourceSha256": "4e7e3e45a58629e2ed5cc3508f2a70d5dfb28f92ab5b558e66c3739a7870a9ad",
+  "verifiedCases": 17
 }

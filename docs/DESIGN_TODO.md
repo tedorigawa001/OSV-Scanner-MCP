@@ -2466,3 +2466,10 @@ af6d00dレビュー修正の検証結果: migration回帰102件成功（新規5�
 - 次はQ2/Bの独立principalを事前配備した環境での全書込経路拒否、durable seal・inventory／generation／writer fence・pin drain／handoff／restart復旧。Q2全体、Q3・Q4・本番採用は未完了。
 
 PO4/Q2/Aの検証結果: 新規16件（実socketの15 nativeケース＋保存記録source照合1件）、関連115件成功。全体110 files／4,028 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにnative／prefix／migrationのtest fixtureがないことを確認した。独立principalの隔離・durable seal・writer fence・保存復旧・Q1接続・実原本read省略・承認profile／本番採用は未成立であり、Q2全体の完了とはしない。
+
+### 2026-11-03: b62e339レビュー修正・Q2/A clientのprovider pinと応答照合
+
+- §9.78.5へ、clientの期待provider UID照合（hello前）、応答本文・連番の完全照合、`compare_digest`、`assert`の明示的例外化を追加。nativeケースwrong-provider／response-replayを追加し、保存記録を17ケースで再生成。
+- push後にCI（ubuntu）でLinux分岐の初実行を確認し、結果を§9.78へ記録する。失敗時はLinux側の扱いを判断する。
+
+b62e339レビュー修正の検証結果: native回帰18件成功（新規2件）。全体110 files／4,030 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにtest fixtureがないことを確認した。

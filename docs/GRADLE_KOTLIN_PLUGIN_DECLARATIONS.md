@@ -4606,3 +4606,15 @@ npm test -- src/test/utils/gradleOwnedPrefixNative.test.ts
 Q2全体は未完了。次は、管理者／独立service管理下で事前配備したprovider principal・root／鍵／IPC endpointを使い、build／reader／operatorの実principalを分けた環境で、direct open・rename・hardlink・既存FD・process操作を含む全書込経路の拒否を実証する。その上でdurable seal／完全inventory・generation／writer fence・pin drain／handoff・遅延response・restart後のfull再検証とcheckpoint同期へ進む。今回の再起動は通信bootの否定対照だけで、保存履歴の復旧ではない。独立registry、Q1のpin／delivery gateとの接続、Q3の実read省略／suffix比較、Q4の承認profile／本番採用も残る。Gradle/BTA/OSV実接続や性能改善を今回の成果に数えない。
 
 PO4/Q2/Aの検証結果: 新規16件（実socketの15 nativeケース＋保存記録source照合1件）、関連115件成功。全体110 files／4,028 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにnative／prefix／migrationのtest fixtureがないことを確認した。独立principalの隔離・durable seal・writer fence・保存復旧・Q1接続・実原本read省略・承認profile／本番採用は未成立であり、Q2全体の完了とはしない。
+
+#### 9.78.5 b62e339レビュー修正・client側のprovider pin／応答照合
+
+client側の検証を強めた。いずれも同UIDの診断protocol内の修正であり、独立principalの隔離・採用条件を満たしたとはしない。
+
+- clientもbootstrapで与えた期待provider UIDをkernelのpeer UIDと照合し、一致しなければhelloを送らない。従来はserverの自己申告がkernel値と一致することだけを見ており、鍵を持つ任意UIDのserverを受け入れ得た。照合はcontextの受信後・hello送信前に行う。
+- 応答はMACに加え、本文が`adoption`／`storageReads`／`originalReadsSkipped`／`peer`と**要求した連番**に完全一致することを要求する。同じ接続内で前の応答を後の要求へ返す差替えを拒否する。server proof・応答proofの比較を`hmac.compare_digest`とし、exact field集合も検査する。
+- client／harness側の検証を`assert`から明示的な例外へ置き換え、`python3 -O`でも検査が無効にならないようにした。
+
+nativeケースを2つ追加した：期待UIDを実UID+1としたclientがhello前に拒否するwrong-provider、provider側の故障注入で連番1の認証済み応答を連番2へ返すresponse-replay。いずれも修正前のclientでは受理される構成である。保存記録は17ケースで再生成し、既存15ケースの結果は変わらないことを確認した。wrong-providerは5回連続で再実行した。
+
+b62e339レビュー修正の検証結果: native回帰18件成功（17 nativeケース＋保存記録source照合1件、新規2件）。全体110 files／4,030 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。distにnative／prefix／migrationのtest fixtureがないことを確認した。Linux分岐の実行証拠は引き続きなく、CIのubuntu実行で初めて確認される。独立principal・durable seal・writer fence・Q1接続・本番採用の追加は0。
