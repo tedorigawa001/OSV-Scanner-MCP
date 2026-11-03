@@ -2525,3 +2525,22 @@ B1aレビュー修正の検証結果: 新規57件・B1a合計176回帰成功。�
 - 新規13件・B1a合計189件。launcher作成のbootstrap recordとmanager署名launch digestの対応はB1bで統一する。
 
 09ac3a8レビュー修正の検証結果: B1a回帰189件成功（新規13件）。全体111 files／4,219 tests成功、24 files／1,418 tests skipped（未commitのB1b launcher testを除く）。型検査・build・diff整形検査成功。
+
+
+### 2026-11-03: Q2/B1b・固定launcher／unit／VM配備fixture
+
+- §9.81とsrc/test/fixtures/q2bへ、静的Linux manager／launcher、固定isolated Python、offline rootfs／unit／sysusers／tmpfiles生成、VM手順を追加。環境・argv・FD・root／artifact／ACLを検査し、read-only sealed memfd／cookieを束縛して同PIDで権限降下・runtime execする。providerは診断のみでaccept・鍵読取・grantなし。
+- root-owned listenerを3 roleのsocket unitで事前作成し、pre-bind guardが既存leafを削除せず拒否する。service／targetの停止と残存leafの扱いを明示し、任意path／commandの特権installerや自動cleanupを追加しない。
+- Linux一時containerで30 native startup controls（正常2／manager拒否25／prebind3）と、systemd 255.4で5 unitの構文・参照検証を実行。source／static ELF・runtime／image hashと結果をdocs/validation/gradle-q2b-b1b-startup-2026-11-03.jsonへ保存。通常Vitestは新規37件でDockerを起動せず、offline生成・記録を検証する。
+- 次はB1cの実systemd VM・全principalの攻撃／許可対照・認証transport・独立署名controller／B1a連携・lifecycle証拠。今回の結果は起動機構だけで、VM boot／native隔離／承認profile／本番採用は未成立。B2／B3・Q3／Q4も残る。
+
+B1bの検証結果: 新規37 Vitest回帰とLinux起動30 controls、systemd 255.4で5 unitの構文・参照検証が成功。全体112 files／4,251 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。記録の30 case閉包・source hash・同一static ELF hash・§9.81の5小節を照合し、distに新fixtureが含まれないことを確認した。実systemd VM boot・B1c独立隔離／署名controller・本番採用は未成立。別途進行中のB1a変更を保持し、その追加件数をB1b新規37件には算入していない。
+
+
+### 2026-11-03: B1bレビュー修正・標準FD／fixture祖先の安全性
+
+- §9.81.6へ標準FDの実体・mode・root peer／logging先の検査を追加。検証前はstderrにも書かずexit 78とし、runtimeの再検証も維持する。socket prepareのstreamもunitで明示した。
+- fixtureは全branchと最終targetをnofollowで検査してからrelative／exclusive mkdirし、既存親をchmodしない。dangling symlink・未知ACL・unsafe ancestorを拒否し、拒否時のdirectory FDも解放する。
+- 修正前のstdio受理／領域外変更のREDと、修正後のcanary不変を確認。root file・pipe・peer差替え11件、path拒否／既存mode保持16件、別pinのentry witness対照1件を追加。guardを外した変異版もentry witnessで検出した。Linux native計58・通常B1bテスト計65件へ更新。VM boot／独立隔離・本番採用は未成立のまま。
+
+B1bレビュー修正の検証結果: 追加28 native controlsで計58件、通常B1bテストは追加28件で計65件成功。全体112 files／4,284 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。5 unitの構文再検証・同一static ELF hash、58 case閉包・source hash・§9.81の6小節、本番buildへのfixture非収録を確認した。修正前のstdio／親symlinkのREDと、launcher guard変異版をentry witnessで検出する対照も成功。既存の別変更は保持し、B1b追加件数へ算入しない。実VM boot／独立隔離／本番採用は未成立のまま。

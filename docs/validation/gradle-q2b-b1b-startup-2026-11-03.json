@@ -1,0 +1,565 @@
+{
+  "backendEligible": false,
+  "cases": [
+    {
+      "case": "path-opt-symlink",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-opt-dangling",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-opt-regular",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-opt-writable",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-run-symlink",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-run-dangling",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-run-regular",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-run-writable",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-var-symlink",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-var-dangling",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-var-regular",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-var-writable",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-final-opt",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-final-run",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-final-var",
+      "outcome": "path-rejected-without-mutation",
+      "outsideModeChanges": 0,
+      "outsideWrites": 0,
+      "verified": true
+    },
+    {
+      "case": "path-existing-mode",
+      "outcome": "existing-parent-mode-preserved",
+      "verified": true
+    },
+    {
+      "case": "honest",
+      "observation": {
+        "accepts": 0,
+        "backendEligible": false,
+        "bootstrapReadOnly": true,
+        "bootstrapSeals": 15,
+        "capabilitiesEmpty": true,
+        "gid": [
+          1201,
+          1201,
+          1201
+        ],
+        "groups": [],
+        "listeners": [
+          {
+            "cookie": "20502",
+            "fd": 3,
+            "ownerGid": 1202,
+            "ownerUid": 0,
+            "passCredentials": true,
+            "role": "reader"
+          },
+          {
+            "cookie": "20503",
+            "fd": 4,
+            "ownerGid": 1203,
+            "ownerUid": 0,
+            "passCredentials": true,
+            "role": "upload"
+          },
+          {
+            "cookie": "20504",
+            "fd": 5,
+            "ownerGid": 1204,
+            "ownerUid": 0,
+            "passCredentials": true,
+            "role": "publish"
+          }
+        ],
+        "nativeIsolationVerified": false,
+        "noNewPrivileges": true,
+        "originalReadsSkipped": 0,
+        "pid": 20,
+        "profileApproved": false,
+        "schema": "osv-mcp.q2b.b1b.startup-observation.v1",
+        "scope": "diagnostic-startup-only",
+        "secretReads": 0,
+        "socketGeneration": "339d9fb3faf95a8b13e1c2ce8c33a3a3b0a252805e101fd822e5c92e63c6e59e",
+        "uid": [
+          1101,
+          1101,
+          1101
+        ]
+      },
+      "outcome": "startup-observed",
+      "verified": true
+    },
+    {
+      "case": "permuted",
+      "observation": {
+        "accepts": 0,
+        "backendEligible": false,
+        "bootstrapReadOnly": true,
+        "bootstrapSeals": 15,
+        "capabilitiesEmpty": true,
+        "gid": [
+          1201,
+          1201,
+          1201
+        ],
+        "groups": [],
+        "listeners": [
+          {
+            "cookie": "4106",
+            "fd": 3,
+            "ownerGid": 1202,
+            "ownerUid": 0,
+            "passCredentials": true,
+            "role": "reader"
+          },
+          {
+            "cookie": "4107",
+            "fd": 4,
+            "ownerGid": 1203,
+            "ownerUid": 0,
+            "passCredentials": true,
+            "role": "upload"
+          },
+          {
+            "cookie": "4108",
+            "fd": 5,
+            "ownerGid": 1204,
+            "ownerUid": 0,
+            "passCredentials": true,
+            "role": "publish"
+          }
+        ],
+        "nativeIsolationVerified": false,
+        "noNewPrivileges": true,
+        "originalReadsSkipped": 0,
+        "pid": 21,
+        "profileApproved": false,
+        "schema": "osv-mcp.q2b.b1b.startup-observation.v1",
+        "scope": "diagnostic-startup-only",
+        "secretReads": 0,
+        "socketGeneration": "b8a814acad1ecaaa3332b910ccf0a199f861620b7cc517ff5d5a91acb9c2afed",
+        "uid": [
+          1101,
+          1101,
+          1101
+        ]
+      },
+      "outcome": "startup-observed",
+      "verified": true
+    },
+    {
+      "case": "NODE_OPTIONS",
+      "outcome": "manager-rejected",
+      "reason": "environment",
+      "verified": true
+    },
+    {
+      "case": "PYTHONPATH",
+      "outcome": "manager-rejected",
+      "reason": "environment",
+      "verified": true
+    },
+    {
+      "case": "PYTHONHOME",
+      "outcome": "manager-rejected",
+      "reason": "environment",
+      "verified": true
+    },
+    {
+      "case": "LD_PRELOAD",
+      "outcome": "manager-rejected",
+      "reason": "environment",
+      "verified": true
+    },
+    {
+      "case": "LD_LIBRARY_PATH",
+      "outcome": "manager-rejected",
+      "reason": "environment",
+      "verified": true
+    },
+    {
+      "case": "PATH",
+      "outcome": "manager-rejected",
+      "reason": "environment",
+      "verified": true
+    },
+    {
+      "case": "wrong-argv",
+      "outcome": "manager-rejected",
+      "reason": "arguments",
+      "verified": true
+    },
+    {
+      "case": "wrong-pid",
+      "outcome": "manager-rejected",
+      "reason": "activation_environment",
+      "verified": true
+    },
+    {
+      "case": "wrong-count",
+      "outcome": "manager-rejected",
+      "reason": "activation_environment",
+      "verified": true
+    },
+    {
+      "case": "wrong-names",
+      "outcome": "manager-rejected",
+      "reason": "listener_names",
+      "verified": true
+    },
+    {
+      "case": "missing-fd",
+      "outcome": "manager-rejected",
+      "reason": "missing_fd",
+      "verified": true
+    },
+    {
+      "case": "extra-fd",
+      "outcome": "manager-rejected",
+      "reason": "unexpected_fd",
+      "verified": true
+    },
+    {
+      "case": "no-passcred",
+      "outcome": "manager-rejected",
+      "reason": "listener_options",
+      "verified": true
+    },
+    {
+      "case": "wrong-group",
+      "outcome": "manager-rejected",
+      "reason": "listener_owner",
+      "verified": true
+    },
+    {
+      "case": "nonlistener",
+      "outcome": "manager-rejected",
+      "reason": "listener_kind",
+      "verified": true
+    },
+    {
+      "case": "duplicate-listener",
+      "outcome": "manager-rejected",
+      "reason": "duplicate_listener",
+      "verified": true
+    },
+    {
+      "case": "writable-entry",
+      "outcome": "manager-rejected",
+      "reason": "artifact_metadata",
+      "verified": true
+    },
+    {
+      "case": "symlink-entry",
+      "outcome": "manager-rejected",
+      "reason": "artifact_metadata",
+      "verified": true
+    },
+    {
+      "case": "changed-entry",
+      "outcome": "manager-rejected",
+      "reason": "artifact_digest",
+      "verified": true
+    },
+    {
+      "case": "changed-runtime",
+      "outcome": "manager-rejected",
+      "reason": "artifact_digest",
+      "verified": true
+    },
+    {
+      "case": "writable-ancestor",
+      "outcome": "manager-rejected",
+      "reason": "ancestor_custody",
+      "verified": true
+    },
+    {
+      "case": "wrong-root-mode",
+      "outcome": "manager-rejected",
+      "reason": "root_custody",
+      "verified": true
+    },
+    {
+      "case": "wrong-root-owner",
+      "outcome": "manager-rejected",
+      "reason": "root_custody",
+      "verified": true
+    },
+    {
+      "case": "image-acl",
+      "outcome": "manager-rejected",
+      "reason": "unexpected_acl",
+      "verified": true
+    },
+    {
+      "case": "socket-acl",
+      "outcome": "manager-rejected",
+      "reason": "unexpected_acl",
+      "verified": true
+    },
+    {
+      "case": "stdin-file",
+      "outcome": "stdio-rejected-silently",
+      "protectedCanaryUnchanged": true,
+      "runtimeEntrypointExecutions": 0,
+      "verified": true
+    },
+    {
+      "case": "stdout-file",
+      "outcome": "stdio-rejected-silently",
+      "protectedCanaryUnchanged": true,
+      "runtimeEntrypointExecutions": 0,
+      "verified": true
+    },
+    {
+      "case": "stderr-file",
+      "outcome": "stdio-rejected-silently",
+      "protectedCanaryUnchanged": true,
+      "runtimeEntrypointExecutions": 0,
+      "verified": true
+    },
+    {
+      "case": "stdin-null-rw",
+      "outcome": "stdio-rejected-silently",
+      "protectedCanaryUnchanged": true,
+      "runtimeEntrypointExecutions": 0,
+      "verified": true
+    },
+    {
+      "case": "stdin-pipe",
+      "outcome": "stdio-rejected-silently",
+      "protectedCanaryUnchanged": true,
+      "runtimeEntrypointExecutions": 0,
+      "verified": true
+    },
+    {
+      "case": "stdout-pipe",
+      "outcome": "stdio-rejected-silently",
+      "protectedCanaryUnchanged": true,
+      "runtimeEntrypointExecutions": 0,
+      "verified": true
+    },
+    {
+      "case": "stderr-pipe",
+      "outcome": "stdio-rejected-silently",
+      "protectedCanaryUnchanged": true,
+      "runtimeEntrypointExecutions": 0,
+      "verified": true
+    },
+    {
+      "case": "stdout-named-peer",
+      "outcome": "stdio-rejected-silently",
+      "protectedCanaryUnchanged": true,
+      "runtimeEntrypointExecutions": 0,
+      "verified": true
+    },
+    {
+      "case": "stderr-named-peer",
+      "outcome": "stdio-rejected-silently",
+      "protectedCanaryUnchanged": true,
+      "runtimeEntrypointExecutions": 0,
+      "verified": true
+    },
+    {
+      "case": "stdout-untrusted-peer",
+      "outcome": "stdio-rejected-silently",
+      "protectedCanaryUnchanged": true,
+      "runtimeEntrypointExecutions": 0,
+      "verified": true
+    },
+    {
+      "case": "stderr-untrusted-peer",
+      "outcome": "stdio-rejected-silently",
+      "protectedCanaryUnchanged": true,
+      "runtimeEntrypointExecutions": 0,
+      "verified": true
+    },
+    {
+      "case": "stdio-witness-control",
+      "outcome": "entrypoint-witness-observed",
+      "runtimeEntrypointExecutions": 1,
+      "verified": true
+    },
+    {
+      "case": "prepare-reader",
+      "outcome": "absent-accepted-existing-rejected",
+      "verified": true
+    },
+    {
+      "case": "prepare-upload",
+      "outcome": "absent-accepted-existing-rejected",
+      "verified": true
+    },
+    {
+      "case": "prepare-publish",
+      "outcome": "absent-accepted-existing-rejected",
+      "verified": true
+    }
+  ],
+  "images": {
+    "nativeStartup": "sha256:a8cf203c684b61fd2676ec5a17159cf68ed38ad471481e1f4ebc4679825250bd",
+    "unitSyntax": "sha256:3e1c98126c919e08f2a14906645d63c849612d776f6425c46938c7c9602c5b6c"
+  },
+  "kernel": "6.10.14-linuxkit",
+  "launcherSha256": "9e72033bf2a0b81c227ebc041c04b45347e5b902e4c2e286a2cb866951bf7117",
+  "launcherStaticElf": true,
+  "limitations": [
+    "No systemd VM boot or independent B1c isolation evidence.",
+    "Raw startup observations are not B1a signed controller records.",
+    "Python shared libraries and stdlib are a trusted base requirement, not a discovered closure.",
+    "Authenticated reader protocol, lifecycle controller, credentials, B2/B3 pins and grants are not enabled."
+  ],
+  "nativeIsolationVerified": false,
+  "originalReadsSkipped": 0,
+  "profileApproved": false,
+  "python": "3.14.10",
+  "reviewFixValidation": {
+    "descriptorLeakOnRefusal": false,
+    "entryWitnessPositiveControls": 1,
+    "existingParentModePreserved": true,
+    "launcherGuardRemovalFailedWitnessRegression": true,
+    "newControls": 28,
+    "outsideModeChanges": 0,
+    "outsidePathWrites": 0,
+    "pathControls": 16,
+    "preFixOutsideMutationRegressionFailed": true,
+    "preFixStdioRegressionFailed": true,
+    "priorControls": 30,
+    "protectedStdioCanaryUnchanged": true,
+    "stdioControls": 11,
+    "totalControls": 58
+  },
+  "runtimeSha256": "85834d78c1ed923a446aaa684d8784b747bc0cf43b046fac3305e2e8f9e061ff",
+  "schema": "osv-mcp.q2b.b1b.native-startup-validation.v1",
+  "scope": "container startup mechanics, not VM isolation",
+  "sources": [
+    {
+      "path": "README.md",
+      "sha256": "667b0571179372b28c32875f4171c75dc38fe6fce27f69f7d94f34e1a2b44546"
+    },
+    {
+      "path": "build_fixture.py",
+      "sha256": "ed1450b77e8a47966592ebbc5c00308446c653c5b8e0795fa6045f37ded1d2ed"
+    },
+    {
+      "path": "launcher.c",
+      "sha256": "4557194bdff378d9194d1dd582b318aaf5e56fb4e780f9f0f6fbcadb8adfd161"
+    },
+    {
+      "path": "native_probe.py",
+      "sha256": "ae8b1956827cc2fbad0eb514c901670f25192720cd6602b0d0ce7aa05180ffc6"
+    },
+    {
+      "path": "provider.py",
+      "sha256": "00a6b7d8079f358e642804da76af6a729bae933383030344068e84a3621963b0"
+    }
+  ],
+  "stdioWitnessArtifacts": {
+    "launcher": "d82ffeecd68c77329c9b2f723916c845057c488bba2c33e1d40c4772aa7b0ba7",
+    "provider.py": "e9c0eb283c18607d30bc075dd7492c9088e1c5361036a70d50ae42ecaead3fbf"
+  },
+  "systemdBootVerified": false,
+  "unitSyntaxValidation": {
+    "exitCode": 0,
+    "stderr": "",
+    "stdout": "",
+    "unitCount": 5,
+    "version": "systemd 255 (255.4-1ubuntu8.18)"
+  },
+  "validationDate": "2026-11-03",
+  "verification": {
+    "b1bVitestTestsPassed": 65,
+    "build": "passed",
+    "diffCheck": "passed",
+    "fixtureIncludedInProductionBuild": false,
+    "fullSuiteTestsPassed": 4284,
+    "fullSuiteTestsSkipped": 1418,
+    "nativeStartupControls": 58,
+    "newVitestRegressionTestsPassed": 28,
+    "testFilesPassed": 112,
+    "testFilesSkipped": 24,
+    "typecheck": "passed",
+    "unitsSyntaxVerified": 5
+  },
+  "verifiedCases": 58
+}

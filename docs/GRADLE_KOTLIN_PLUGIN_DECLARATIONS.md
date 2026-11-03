@@ -4856,3 +4856,70 @@ bootstrapは固定launcherが作るsealed read-only memfdとする。manifestの
 13回帰を追加しB1a合計189件：FD名・OpenFile方式・未seal・書込可能・fd 6以外のmanifest拒否5件、`LISTEN_FDS=4`・bootstrap入りFDNAMES・socket unit既定名のmanager拒否3件、記録照合1件、manager phaseに既にあるbootstrapの拒否1件、launcher phaseで未seal・root所有・欠落したbootstrapの拒否3件。いずれも静的fixtureの照合であり、memfd sealや実systemdのFD受渡しをOS上で実証したものではない。nativeIsolationVerified／profileApproved／backendEligible=false、originalReadsSkipped=0は変更しない。
 
 09ac3a8レビュー修正の検証結果: B1a回帰189件成功（新規13件）。全体111 files／4,219 tests成功、24 files／1,418 tests skipped（未commitの別作業B1b launcher testを除く）。型検査・build・diff整形検査成功。記録照合testで保存記録と現source・189 test名の一致を確認し、distにB1a fixtureが含まれないことを確認した。新規native隔離・配備・採用flag変更は0。
+
+
+### 9.81 PO4/Q2/B1b・固定launcher／socket・service unit／VM配備fixture（2026-11-03）
+
+#### 9.81.1 実装と非採用の境界
+
+`src/test/fixtures/q2b/`へ`build_fixture.py`、静的Linux ELFの`launcher.c`、固定isolated Pythonの`provider.py`、`native_probe.py`とVM手順のREADMEを追加した。builderは新規の空destinationへrootfs tree・unit／sysusers／tmpfiles設定・固定policy header・byte inventoryを生成し、Linuxの`--compile`時だけruntime copyと静的launcherを構築する。ホストへaccountやunitを適用せず、serviceも起動しない。macOS上のcompileなし生成は配備可能なLinux bundleとは扱わない。
+
+B1bの実装は**診断用の起動経路**である。providerは接続をacceptせず、service秘密・canonical内容を読まず、grantを発行しない。startup observationはB1aのsynthetic diagnosticや署名付きcontroller evidenceとは別schemaで、同じ記録へ偽装して流用しない。全結果のnativeIsolationVerified／profileApproved／backendEligibleはfalse、originalReadsSkipped=0を維持する。B1cの認証transport・完全な別principal attack／allow対照、B2/B3の保存・fence・pin、Q3/Q4は未完了である。
+
+#### 9.81.2 root managerから固定runtimeへの起動
+
+初期固定profile／instanceはb1b、imageは`/opt/osv-q2b/b1b`、providerの全UID=1101／全GID=1201、6 actorの固定UID=1101〜1106／primary GID=1201〜1206である。managerはsystemdが用意した3 listener以外のFDを受け付けない。argvを固定列へ照合し、環境はLANG／LC_ALL／CREDENTIALS_DIRECTORY／LISTEN_PID／FDS／FDNAMESだけを次段へ渡す。managerからの既知の非秘密metadata変数だけは入力で許して破棄する。未知・重複・PID／本数／名前・credential directoryの差替えは拒否し、PATHやprojectからの環境をruntimeへ継承しない。unit側にも固定Environment／UnsetEnvironment・shellなしのabsolute ExecStartを置く。
+
+launcherを`-static`で構築し、readelfでINTERP segmentがないことを確認した。これによりmanager／launcher自身へのLD_PRELOADをruntime後の検査へ任せない。runtime／entrypointはroot-owned regular／nlink=1・他者writeなし・未知ACLなし・4 MiB以内を検査し、編込SHA-256へ全bytes照合する。image／socket／rootの祖先もroot所有・他者writeなし・symlinkなし・未知ACLなしを要求する。完全なPython stdlib／shared libraryの依存発見やVM image全体の承認はこのhashの責任に含めず、独立にpinしたtrusted baseを配備前提とする。
+
+managerはlistenerを実pathから一意なroleへ対応付け、入力FD順序を仮定せず3〜5へ正規化する。root所有のmemfdへmagic／PID／UID・GID／cookies／乱数世代／provider root device・inode／runtime・entrypoint hashを固定し、WRITE／GROW／SHRINK／SEALの全sealを設定する。同じmemfdをread-onlyで開き直してFD6へ渡し、writer descriptorを残さない。bootstrap自身のhashを本文へ入れる循環は作らない。
+
+初期serviceはroot managerの権限降下に必要なSETUID／SETGID／SETPCAPだけを持つ。managerはcapability bounding setを空にし、補助groupを空にして全real/effective/saved UID/GIDを固定値へ下げ、残るcapability setを空にし、NoNewPrivilegesを維持する。その後**同じPID**で固定launcher、続いて固定runtimeの`-I`／固定entrypointへexecする。launcherは環境・FD・root・artifact hashとbootstrap owner／seal／read-only／PID／cookieを再検証する。runtimeも独立に再取得した資格・capability／NoNewPrivileges・bootstrap／listeners／hashを照合し、継承FDをCLOEXECへ設定して診断結果だけを出力する。CREDENTIALS_DIRECTORYは固定参照のみで、今回そこへservice鍵を配備・読取していない。stdlibやartifact読取をOS全file read=0と扱わない。
+
+#### 9.81.3 socket／service unitとVM手順
+
+builderはreader／upload／publishの3 socket unit、diagnostic oneshot service、協調targetの計5 unitを生成する。socket leafはroot-owned／0660、connect groupは1202／1203／1204、directoryはroot-owned／0755、Accept=no／PassCredentials=yesとする。providerへdirectory writeを与えない。serviceはNoNewPrivileges、capability制限、ProtectSystem／Home／kernel／device／cgroup制限、AF_UNIX限定、core無効、Restart=no／FD storeなしを指定する。root manager段階にだけ前述の3 capabilitiesが必要であり、provider段階の空bounding setとは区別する。
+
+各socketのExecStartPreで同じ静的launcherの`--prepare <固定role>`を実行する。root資格・閉じた環境／FD・保護された祖先・leaf不在を確認し、残存socketや未知fileを自動unlinkしない。RemoveOnStop=noのため、stop後のleaf回収には別のcontroller／operatorによる旧process・全listener参照の閉鎖とidentity照合が必要となる。証拠不明なら停止し、単に削除してrestartを通さない。providerのbind fallbackやlauncherへの任意command／path指定は存在しない。
+
+VM手順はfixtureのREADMEへ記録した。専用・新規のsystemd>=255 Linux VM、重複のないUID/GID・path、独立に検証したbundle／image、同じPython base／stdlib／shared library、root-owned closureを前提とし、rootfsの一般特権installerは作らない。sysusers／tmpfiles・daemon reload／unit verify／target startと明示stopはoperatorがVM内で行う別作業である。今回それらの実VM適用やbootは実施していない。自動cleanup／service-only restartも採用経路へ追加しない。
+
+#### 9.81.4 Linux起動回帰とunit検証
+
+ネットワークなし・読取専用source mountの一時Linux containerで、静的buildと58 native startup controls（当初30件＋レビュー修正28件）を実行した。controllerはfault setupにCHOWN/FOWNER、子のroot managerはSETUID/SETGID/SETPCAPのみを使い、前者の権限をmanager exec前に除去する。privileged container・Docker socketのcontainer内公開・hostの配備領域へのwrite・mount操作を使用していない。container内でのUID差と起動機構の確認を、独立VM principalの隔離成立へ読み替えない。
+
+| 対象 | 実行した確認 |
+| --- | --- |
+| 正常／FD順序変更の2件 | 実child PIDとruntime PID一致、UID/GID各三つ組・補助group空、全capability空、NoNewPrivileges、3 owner GID／cookie、read-only sealed bootstrap |
+| manager拒否25件 | NODE_OPTIONS／PYTHONPATH／PYTHONHOME／LD_PRELOAD／LD_LIBRARY_PATH／PATH、追加argv、PID／本数／名前差替え、FD不足／余分／非listener／duplicate、PassCredentialsなし／GID違い、entry write／symlink／内容変更・runtime変更、祖先write・root mode／owner、image／socketの未知ACL |
+| pre-bind guard 3件 | roleごとにleaf不在を受理し、既存の未知leafは拒否してbytesを変更しない |
+| 標準FD拒否11件 | stdin／stdout／stderrのregular file、stdinのread-write null／pipe、出力pipe・未知のnamed peer・非root peerを拒否。root所有canary不変、runtime-entry witnessなし |
+| fixture path 16件 | 3系統の親symlink／dangling／regular／writableと最終dangling targetを変更前に拒否し、領域外内容／mode不変。既存の有効親modeを保持する陽性対照を含む |
+| entry witness対照1件 | stdioが正常なら、別pinのテストentrypointが先頭のprivate witnessを書き込むことを確認 |
+
+別の既存Linux imageにあるsystemd 255.4で、生成5 unitの`systemd-analyze verify`も実行し、exit=0／stderr空を確認した。ExecStartの検査へ使った静的ELFはnative suiteで実行したものと同じSHA-256である。これは構文・参照とexecutable存在の検査であり、systemd起動・sandboxの実効性・socket activationの実動作を証明したものではない。
+
+記録は`docs/validation/gradle-q2b-b1b-startup-2026-11-03.json`。Linux kernel／Python実版、使用した2 image ID、static ELF／runtime hash、実source hash、case別結果、unit verifier実版・結果を保存した。通常Vitestにはoffline生成6件・native記録58件・source／case閉包／非採用flag照合1件の計65件を追加し、Dockerを通常テストから自動起動しない。B1a側の追加レビュー変更は別途存在するため、この65件へ算入しない。
+
+#### 9.81.5 残る実証と責任
+
+B1cでは実systemd VMでunitのeffective設定・起動前環境／argv・3 listener生成／SO_PASSCREDの時点・queued接続・両端のkernel資格、全6 actorの実資格・権限／攻撃対照を確認する必要がある。B1bのraw observationをB1aへ渡すには、独立manager／controllerの承認key・完全な配備manifest／principal inventory・phase別の外側exec観測と署名を必要とし、今回のunsigned記録へmodeだけ付け替えるadapterを作らない。旧listenerの回収／drain・再起動証拠も後続である。
+
+同UID否定対照や静的contractは維持し、B1bの起動成功からreader認可、Task実行、authority current性、durable seal、grant／cache read省略を導かない。nativeIsolationVerified／systemdBootVerified／profileApproved／backendEligibleは引き続きfalseである。今回の実装はtest fixtureで、本番packageへの採用を変更していない。
+
+B1bの検証結果: 新規37 Vitest回帰とLinux起動30 controls、systemd 255.4で5 unitの構文・参照検証が成功。全体112 files／4,251 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。記録の30 case閉包・source hash・同一static ELF hash・§9.81の5小節を照合し、distに新fixtureが含まれないことを確認した。実systemd VM boot・B1c独立隔離／署名controller・本番採用は未成立。別途進行中のB1a変更を保持し、その追加件数をB1b新規37件には算入していない。
+
+
+#### 9.81.6 B1bレビュー修正・標準FDのcustodyとfixture配備境界
+
+標準FDは番号だけで許可せず、manager／launcherの最初に実体を検査する。FD0はread-onlyでO_PATHではない/dev/nullのcharacter device、FD1/2はwrite可能なAF_UNIX／SOCK_STREAMで、kernel peer UID/GID=0を必要とする。出力先は`/run/systemd/journal/stdout`のnamed接続、またはrootの親controller PIDに対応するunnamed socketだけに限定する。regular file／pipe／別address／非root peerは拒否する。runtimeも同じ条件を独立に検査する。serviceに加えsocket unitのprepare helperにもnull input／journal outputを明示した。実systemdのjournal接続はB1cで検証する必要があり、root-parent socketpairの成功をVM bootへ読み替えない。
+
+全標準streamの検証前は拒否診断も書かず、exit 78だけで終了する。不正なstderrへエラーを書いてroot所有fileを変更する経路を残さない。root-only canary FDを0／1／2へ差し替えた場合、内容は不変のまま、runtime entrypointへ進まないことを検証した。通常のproviderは遅い段階でも独立に拒否できるため、それだけでlauncherのgate成功と数えず、先頭でprivate witnessを書く別pinのテストentrypointを構築した。正常stdioではwitness=1、不正stdioでは0を要求する。launcher側guardだけを除去した一時変異版では、runtime側の拒否は残っていてもwitnessが発生して回帰が失敗した。witness用launcher／entrypoint hashは通常版とは別に記録し、通常VM配備へこのテスト版を混ぜない。これはentrypoint到達の対照であり、独立controllerのkernel exec履歴を実装したものではない。
+
+native fixtureは最初のmkdir／chmod／chownより前に全3 path分岐をread-onlyで検証する。祖先はdirectory FD＋O_NOFOLLOWで開き、root所有・非writable・traverse・未知ACLなし・device/inode／mode等のidentityを検査する。最終targetはfollow_symlinks=Falseで調べ、dangling symlinkも既存targetとして拒否する。全分岐の検証後、検証済みancestor FDへ束縛したrelativeなexclusive mkdirだけを使い、EEXISTを再利用許可にしない。modeを補正するのはこのrunが新規作成したdirectoryだけで、既存parentを一律chmodしない。途中失敗のdirectory FDも解放する。
+
+回帰では/opt・/run・/var/lib各系統の親symlink／dangling／regular／writable、3つの最終dangling targetを注入し、既存の内容／mode、他分岐と領域外のcanaryが不変であることを確認する。正常な既存親mode=0751を保持して新規領域を作れる陽性対照も実行した。fault setupやcleanupは、初めからproject basesが不在である専用disposable fixtureだけに限定し、既存配備を修復・削除してテストを通さない。root fixtureが親symlinkの先を0755へ変更・bundle作成していた修正前のREDも確認した。
+
+追加28 native controlsで合計58、通常Vitestは追加28件でB1b合計65件。標準FD canary不変・entrypoint witness・領域外の書込／mode変更0・拒否時のFD解放と、更新source／artifact hash・5 unitの再検証結果を保存した。今回もVM boot／B1c独立隔離／署名controller／grant・本番採用は未成立である。
+
+B1bレビュー修正の検証結果: 追加28 native controlsで計58件、通常B1bテストは追加28件で計65件成功。全体112 files／4,284 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。5 unitの構文再検証・同一static ELF hash、58 case閉包・source hash・§9.81の6小節、本番buildへのfixture非収録を確認した。修正前のstdio／親symlinkのREDと、launcher guard変異版をentry witnessで検出する対照も成功。既存の別変更は保持し、B1b追加件数へ算入しない。実VM boot／独立隔離／本番採用は未成立のまま。
