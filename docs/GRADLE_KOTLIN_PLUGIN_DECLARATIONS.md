@@ -5508,23 +5508,23 @@ ICは次の実装・実証の条件であり、文書構造の検査や既存回
 8d65e5bレビュー修正の検証結果: §9.87の12小節、API表とpermission表の22 API、IC01〜IC51の欠落／重複なしを確認した。全体118 files／4,499 tests成功、24 files／1,418 tests skipped。diff整形検査成功。文書のみの変更で、IC回帰の実装・native実行・採用flag変更は0。
 
 
-## 9.88 C0：独立currentnessのメモリ内contract（2026-11-03）
+### 9.88 C0：独立currentnessのメモリ内contract（2026-11-03）
 
 §9.87の最初の実装段階。`gradleOwnedCurrentSchema.ts`は19 registry/service APIと3 Anchor APIのstrict request／reply、canonical JSON、duplicate key／不正UTF-8／unknown field／整数・frame制限を定義する。`gradleOwnedCurrentControl.ts`はEnrollment権限、状態機械、checkpoint準備、registry選択、pin／handoff／barrier、operation ledgerとAnchor CASのモデルを実装する。すべてtest fixtureで、本番reader・配備unitには接続しない。
 
-### 9.88.1 信頼境界と準備・採用
+#### 9.88.1 信頼境界と準備・採用
 
 各opaque actorに独立Ed25519 client鍵、宛先roleにserver鍵を発行し、role／permission／credential／synthetic UID・GID／boot／binding／challengeを検査してからowned sourceを読む。actor発行、source登録、fault schedule、manager停止証拠、business gateはroot harnessの信頼入力であり、kernel peer、実process停止、実G0 authority witnessの観測ではない。
 
 operator provisioning→issuer genesis prepare→activationにより初回循環を避ける。provider原本はprivate copyへ封じ、issuerが既存v2 replayで認証・連続性を検証する。prepareだけではselectedを変えず、snapshot＋checkpointを単一registry transactionで選択する。v1は読取前unsupported。未承認baseはissuer原本読取前に拒否する。現在値の情報源はモデルAnchorで、local viewは診断用copyとする。
 
-### 9.88.2 pin・handoff・barrierと再試行
+#### 9.88.2 pin・handoff・barrierと再試行
 
 writer予約で新readを閉鎖し、active／completing／decision-recorded／deliveringを保持する。CancelWriter／ReleaseReadPinは所有者と許可phaseを限定する。ACKだけでは未完了effectを解放しない。barrier参加者はEnrollmentとledgerから導出し、自己confirmとmanager管理対象confirmを分離する。restartは全履歴確認→新incarnation／失効をモデルcommitし、明示ResumeServingまで開かない。expiryだけを停止証拠にしない。
 
 semantic resultをRとは別objectにしてhash循環を避ける。CAS後の応答紛失は、freshなモデルAnchorと全祖先R・latest ledger・元requestDigestで解決する。後続Rが確定しても元applied refとcurrent refを分ける。期限内の元AcquireReadPin／ReserveWriterだけ同一handleをexisting-live-confirmedで返し、ID・期限・CAS数を増やさない。QueryOperationはhistorical／pending／unknownでありlive権限を作らない。競合未採用Rはcontrol_conflictで、新expectedへの自動rebaseや再実行をしない。
 
-### 9.88.3 回帰と実証範囲
+#### 9.88.3 回帰と実証範囲
 
 `gradleOwnedCurrentControl.test.ts`の138件で、22 APIの正規対照・role／grant拒否、strict wire、source改変、prepare／selection分離、pin保持、取消、effectとfencing、期限／時計逆行、ledger／result改変・local巻戻し、各モデル故障境界、CAS後の後続transactionと並行retry、容量拒否を確認した。再現scenarioは全22 APIを通し、lost replyのapplied revision 5／current revision 6、same pin、期限延長なし、追加CAS 0を記録する。入口履歴検証を外すmutationで巻戻し試験が失敗することも確認し、復元した。
 
@@ -5537,7 +5537,7 @@ syncはboolean遷移、restartは同一process内の状態遷移であり、fsyn
 C0最終検証: 追加回帰131件成功。全体119 files／4,630 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功、test fixtureのdist混入なし。最初の制限環境では既存native socket試験17件がbind時のEPERMで失敗し、local socketを利用可能にした再実行で全体成功。新C0のnative実証は0。
 
 
-### 9.88.4 C0レビュー修正：認可の再検査・issuer容量予約（2026-11-03）
+#### 9.88.4 C0レビュー修正：認可の再検査・issuer容量予約（2026-11-03）
 
 handoff-completing後、registry transaction開始時・CAS直前、成功応答を署名する直前に現在のcaller／grantを再照合する。brokerのhandoff.prepareを途中取消しした場合はpermission_deniedとし、CAS前ならdecision-recordedへ進めない。CAS後・応答前の取消しは成功応答を拒否するが、既に確定したdecision／effect保持を消さない。保存済み候補のCAS前拒否は従来の保存開始後fail-stop境界を維持する。
 
@@ -5546,3 +5546,15 @@ issuerはprepares／operationsの保持数と未完了予約数の和を、最�
 回帰7件：handoff処理中／CAS直前／応答直前の権限取消し、異なるsnapshotの並行prepareによるprepare／operation上限、保存前cancelの予約解放、保存後cancelの保持課金。修正前の権限取消し3件は誤成功を再現。予約数を容量判定から外す対照で並行2件が失敗し、修正復元後に成功することを確認した。C0のみで、native隔離・実保存・独立Anchorの成立を追加しない。
 
 C0レビュー修正の最終検証: 回帰138件、全体119 files／4,637 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。記録のscenario／source fingerprintを通常回帰で再照合した。新C0のnative実証0・採用flag false・originalReadsSkipped=0を維持。
+
+#### 9.88.5 2812a54レビュー修正・書込み前の容量拒否・要求組立のエラー・見出し階層
+
+**書込み前の容量拒否。** `#commit`はtransaction内でsemantic-result objectを保存しており、そこで`capacity_exhausted`になると、registry recordを1件も書いていないのに受付を停止（`recovery_required`）していた。同じ容量不足でも、`AcquireReadPin`のread-pin objectのように`#commit`より前で当たれば停止せず、上限の位置で停止の有無が変わった。§9.87.10の「mutation前の容量不足は無変更拒否」と矛盾する。`#commit`は、registry recordの保存より前に起きた容量拒否では受付を止めず、そのtransactionで作ったsemantic-result objectも取り除く。semantic-resultの枠はtransaction開始前にも確認する。registry recordの保存後の失敗と、record保存前でも注入した保存境界の障害（`registry-before-record`等）は従来どおりfail-stopのままである。§9.88.3の「metadata容量不足は保守的fail-stop」は、record保存後の容量障害に限る意味へ改める。
+
+**要求組立のエラー。** `request()`はcanonical化できないpayload（`undefined`を含むもの等）で内部の`owned_manifest_schema_invalid`をそのまま投げていた。`current_control_schema_invalid`へ揃え、frame上限超過は`current_control_budget_exceeded`とした。
+
+**見出し階層。** §9.88は`## 9.88`／`### 9.88.x`になっていた。他の節に合わせて`### 9.88`／`#### 9.88.x`へ直した。
+
+回帰4件を追加し、C0は142件になった：ActivateEnrollmentのtransaction内で容量に達した場合に、無変更・object数不変・provisioning維持でregistryを継続すること、AcquireReadPinの容量拒否がtransactionの前でも中でも同じ結果になること、record保存前の注入障害がfail-stopのままであること、組立不能な要求とframe上限超過の拒否理由。修正前のコードでは、前2件の容量拒否後の呼出しが`recovery_required`になり、要求組立が内部エラーを投げることをプローブで確認した。保存記録はsource fingerprintだけを更新し、scenarioは同一である。
+
+2812a54レビュー修正の検証結果: C0回帰142件成功（新規4件）。全体119 files／4,641 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。native実行・採用flag変更は0。

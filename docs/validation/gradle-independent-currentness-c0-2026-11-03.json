@@ -6,10 +6,10 @@
   "tests": 138,
   "sourceSha256": {
     "src/test/fixtures/gradleOwnedCurrentSchema.ts": "361df41163c79da5b3e1cfaeb34a51147f2e137645708593317c8626b35b7214",
-    "src/test/fixtures/gradleOwnedCurrentControl.ts": "f02277dcac785367cf7bc87d40fd1e55653274193e965c74773e512797f91b62",
+    "src/test/fixtures/gradleOwnedCurrentControl.ts": "bd9d01bb111077ec6a0879b13d9be618a2293ba6644433b0ea89a100864fe1d6",
     "src/test/fixtures/gradleOwnedCurrentSource.ts": "5bd9c9d4a9fa8fedd7f42f819b88ccf0ca969da94b74e064116b282f6ab205a3",
     "src/test/fixtures/gradleOwnedCurrentScenario.ts": "5eb9626a4268b91a899df3e7ab84791b5a52cfd638dea30e0ab80ad81ca1f475",
-    "src/test/utils/gradleOwnedCurrentControl.test.ts": "2a9c50ef09ebe33517f4d789ea05b3912bd294de2edadaa0ed358b3a7eaf798d",
+    "src/test/utils/gradleOwnedCurrentControl.test.ts": "aa9c049caacbc7cad9b620ae99904f6efba5147ae70e1d6f7053c51d7678b540",
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
     "src/test/fixtures/gradleOwnedJournalV2.ts": "ac47697774483edf8ee4319e63a74b52adcc5947f2b0556df2fc6db7d18986ef"
   },

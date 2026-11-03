@@ -95,9 +95,11 @@ export class CurrentControl{
  request(h:CurrentActor,api:CurrentAPI,payload:unknown,operationId='op-'+nonce(),binding=this.binding()):Buffer{
   for(const [id,p]of this.#pending)if(this.#now()-p.started>=L.lease||this.#readerNow()-p.localStarted>=L.lease)this.#pending.delete(id);
   const a=this.#actor(h);need(a.requests<this.#limits.requests,'capacity_exhausted');need(this.#pending.size<this.#limits.pending&&[...this.#pending.values()].filter(p=>p.actor===a.id).length<this.#limits.peerPending,'capacity_exhausted');
+  let copied:{binding:unknown;payload:unknown};try{copied={binding:clone(binding),payload:clone(payload)};}catch{throw new CurrentControlError('schema_invalid');}
+  need(Object.hasOwn(apiPolicy,api),'schema_invalid');
   const body:any={schema:'osv-mcp.q2.current-control.body.v1',api,direction:'request',destination:apiPolicy[api].destination,credentialId:a.id,role:a.role,peerId:a.peerId,peerBoot:a.boot,keyEpoch:a.epoch,
-   requestId:nonce(),challenge:nonce(),sequence:++a.sequence,operationId,binding:clone(binding),payload:clone(payload)};body.requestDigest=semanticDigest(body);a.requests++;
-  const raw=this.#rawEnvelope(body,a.role,a.id,a.client.privateKey,'request');this.#pending.set(body.requestId,{actor:a.id,challenge:body.challenge,sequence:body.sequence,intent:body.requestDigest,started:this.#now(),localStarted:this.#readerNow(),used:false,accepted:false});return raw;
+   requestId:nonce(),challenge:nonce(),sequence:++a.sequence,operationId,...copied};body.requestDigest=semanticDigest(body);a.requests++;
+  let raw:Buffer;try{raw=this.#rawEnvelope(body,a.role,a.id,a.client.privateKey,'request');}catch(e){if(e instanceof CurrentControlError)throw e;throw new CurrentControlError(e instanceof Error&&e.message.includes('budget_exceeded')?'budget_exceeded':'schema_invalid');}this.#pending.set(body.requestId,{actor:a.id,challenge:body.challenge,sequence:body.sequence,intent:body.requestDigest,started:this.#now(),localStarted:this.#readerNow(),used:false,accepted:false});return raw;
  }
  /** Negative-wire test helper: client can sign arbitrary input, but cannot mint another role. */
  signMalformed(h:CurrentActor,body:unknown){const a=this.#actor(h);return this.#rawEnvelope(body,a.role,a.id,a.client.privateKey,'request');}
@@ -188,17 +190,26 @@ export class CurrentControl{
  }
  async #commit(r:CurrentRequest|null,key:string|null,change:(state:State)=>any,started:number,status:Ledger['status']='committed'){
   if(r)this.#authorize(this.#byId.get(r.credentialId)!,r);this.#gate();need(!this.#busy,'busy');need(this.#records.size<this.#limits.records,'capacity_exhausted');if(key)need(Object.keys(this.#state.operations).length<this.#limits.operations||!!this.#state.operations[key],'capacity_exhausted');
-  this.#busy=true;let committed=false;
+  if(r&&key)need(this.#objects.size<this.#limits.objects,'capacity_exhausted');
+  // Capacity refusals before the registry record is written leave the owner usable; storage-boundary failures stay fail-stop.
+  this.#busy=true;let committed=false,written=false,semanticId:string|null=null;
   try{
    const state=clone(this.#state),value=change(state),revision=this.#anchor.revision+1;need(Number.isSafeInteger(revision),'capacity_exhausted');
-   if(r&&key){const result=this.#put('semantic-result',{api:r.api,value:parsed(responseValues[r.api],value)},'lineage-registry');state.operations[key]={digest:r.requestDigest,api:r.api,owner:r.credentialId,status,applied:revision,result,started,localStarted:this.#pending.get(r.requestId)!.localStarted,binding:clone(r.binding)};}
+   if(r&&key){const objects=this.#objects.size,result=this.#put('semantic-result',{api:r.api,value:parsed(responseValues[r.api],value)},'lineage-registry');if(this.#objects.size>objects)semanticId=result.id;state.operations[key]={digest:r.requestDigest,api:r.api,owner:r.credentialId,status,applied:revision,result,started,localStarted:this.#pending.get(r.requestId)!.localStarted,binding:clone(r.binding)};}
    await this.#point('registry-before-record');const previous=clone(this.#anchor.ref),raw=this.#signed('lineage-registry',{schema:'osv-mcp.q2.c0.registry-record.v1',identity:this.#identity,revision,previous,state});
    need(raw.length<=L.record&&this.#bytes()+raw.length<=this.#limits.closure,'capacity_exhausted');const ref:Ref={role:'registry-record',id:ownedSha256(raw),sha256:ownedSha256(raw),byteLength:raw.length};
-   this.#records.set(ref.id,{ref,raw:Buffer.from(raw),synced:false});this.#recordBytes+=raw.length;await this.#point('registry-after-record');this.#records.get(ref.id)!.synced=true;this.#metrics.registrySyncSteps++;await this.#point('registry-after-sync');await this.#point('anchor-before-cas');
+   written=true;this.#records.set(ref.id,{ref,raw:Buffer.from(raw),synced:false});this.#recordBytes+=raw.length;await this.#point('registry-after-record');this.#records.get(ref.id)!.synced=true;this.#metrics.registrySyncSteps++;await this.#point('registry-after-sync');await this.#point('anchor-before-cas');
    if(r)this.#authorize(this.#byId.get(r.credentialId)!,r);
    const attempt=ownedDigest({registry:'registry',incarnation:state.incarnation,previous,next:ref});this.#adoptRecord(this.#records.get(ref.id)!,previous,attempt);committed=true;this.#busy=false;
    await this.#point('anchor-after-cas');return value;
-  }catch(error){if(!committed){if(error instanceof CurrentControlError&&error.reason==='control_conflict')this.#history();else this.#blocked=true;}throw error;}finally{this.#busy=false;}
+  }catch(error){
+   if(!committed){
+    if(error instanceof CurrentControlError&&error.reason==='control_conflict')this.#history();
+    else if(!written&&error instanceof CurrentControlError&&error.reason==='capacity_exhausted'){if(semanticId){this.#objectBytes-=this.#objects.get(semanticId)!.raw.length;this.#objects.delete(semanticId);}}
+    else this.#blocked=true;
+   }
+   throw error;
+  }finally{this.#busy=false;}
  }
  async #expire(){
   const now=this.#now(),expired=Object.values(this.#state.pins).filter(p=>now>=p.expires&&['active','completing','decision-recorded','delivering'].includes(p.phase));const writer=this.#state.writer;

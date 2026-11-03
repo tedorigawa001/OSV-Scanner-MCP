@@ -264,3 +264,28 @@ it('keeps saved prepare capacity charged after cancellation following sync',asyn
  const pending=c.call(a.provider,'PrepareCheckpoint',{mode:'advance',fence,snapshot});await pause.reached;await c.call(a.writer,'CancelWriter',{fence});pause.resume();await expect(pending).rejects.toThrow('writer_stale');expect(c.metrics.prepares).toBe(2);
  const fresh=(await c.call(a.writer,'ReserveWriter',{expectedSelection:1})).value.fence;await expect(c.call(a.provider,'PrepareCheckpoint',{mode:'advance',fence:fresh,snapshot})).rejects.toThrow('capacity_exhausted');expect(c.view().selected!.head.revision).toBe(1);
 });
+
+it('refuses an object-capacity limit reached inside a registry transaction without stopping the registry',async()=>{
+ // objects=5 fails ActivateEnrollment's semantic result inside the commit, before any record is written.
+ const f=setup({limits:{objects:5}}),{c,actors:a,source}=f,snapshot=c.registerSource(a.provider,source),provision=(await c.call(a.operator,'BeginEnrollment',{approvedBase:source.approvedBaseDigest})).value.provision;
+ const checkpoint=(await c.call(a.provider,'PrepareCheckpoint',{mode:'genesis',fence:provision,snapshot})).value.checkpoint,objects=c.metrics.objects,revision=c.view().controlRevision;
+ await expect(c.call(a.operator,'ActivateEnrollment',{provision,checkpoint})).rejects.toThrow('capacity_exhausted');
+ expect(c.metrics.objects).toBe(objects);expect(c.view().controlRevision).toBe(revision);expect(c.view().phase).toBe('provisioning');
+ await expect(c.call(a['lineage-registry'],'anchor.read',{})).resolves.toBeTruthy();
+});
+it('treats a pin capacity refusal the same whether it is hit before or inside the commit',async()=>{
+ for(const objects of [6,7]){
+  const f=setup({limits:{objects}});await enroll(f);const revision=f.c.view().controlRevision;
+  await expect(pin(f)).rejects.toThrow('capacity_exhausted');expect(f.c.view().controlRevision).toBe(revision);
+  await expect(f.c.call(f.actors['lineage-registry'],'anchor.read',{})).resolves.toBeTruthy();
+ }
+});
+it('keeps storage-boundary failures fail-stop even when they happen before the record write',async()=>{
+ const f=setup();await enroll(f);f.c.schedule(f.actors.operator,'registry-before-record','fail');
+ await expect(pin(f)).rejects.toThrow('injected_registry-before-record');await expect(pin(f)).rejects.toThrow('recovery_required');
+});
+it('reports a request that cannot be encoded as a contract schema refusal',()=>{
+ const f=setup();
+ expect(()=>f.c.request(f.actors.reader,'AcquireReadPin',{operationBinding:undefined})).toThrow(/^current_control_schema_invalid$/);
+ expect(()=>f.c.request(f.actors.reader,'AcquireReadPin',{operationBinding:'x'.repeat(20000)})).toThrow(/^current_control_budget_exceeded$/);
+});

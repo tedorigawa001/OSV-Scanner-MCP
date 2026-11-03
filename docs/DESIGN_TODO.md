@@ -2666,3 +2666,10 @@ C0最終検証: 追加回帰131件成功。全体119 files／4,630 tests成功�
 - 追加回帰7件・C0計138件、予約判定を外す失敗対照を追加。実証は引き続きメモリ内contract限定。次段階はC1のまま。
 
 C0レビュー修正の最終検証: 回帰138件、全体119 files／4,637 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。記録のscenario／source fingerprintを通常回帰で再照合した。新C0のnative実証0・採用flag false・originalReadsSkipped=0を維持。
+
+### 2026-11-03: 2812a54レビュー修正・C0の書込み前容量拒否
+
+- §9.88.5へ、registry record保存前の容量拒否ではregistryを停止しないよう`#commit`を修正（作成したsemantic-result objectも除去）。保存境界の注入障害とrecord保存後の失敗はfail-stopのまま。
+- `request()`の組立不能な要求を`current_control_schema_invalid`／`budget_exceeded`へ揃え、§9.88の見出し階層を`###`／`####`へ直した。
+
+2812a54レビュー修正の検証結果: C0回帰142件成功（新規4件）。全体119 files／4,641 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。
