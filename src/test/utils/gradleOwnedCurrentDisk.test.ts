@@ -4,7 +4,7 @@ import path from 'node:path';import os from 'node:os';import {generateKeyPairSyn
 import {OwnedCurrentDisk,type CurrentDiskOptions} from '../fixtures/gradleOwnedCurrentDisk.js';
 import {currentRoles,type CurrentRole} from '../fixtures/gradleOwnedCurrentSchema.js';
 import {currentSource,extendCurrentSource} from '../fixtures/gradleOwnedCurrentSource.js';
-import {ownedSha256 as hash} from '../../utils/gradleOwnedJson.js';
+import {ownedSha256 as hash,ownedDigest} from '../../utils/gradleOwnedJson.js';
 const roots:string[]=[],owners:OwnedCurrentDisk[]=[];const nativeObservations:{point:string;signal:string;anchorAdvance:number;retainedPins:number;restoredPhase:string;oldPinsActive:boolean}[]=[];
 afterEach(async()=>{for(const d of owners.splice(0))d.close();for(const root of roots.splice(0))await rm(root,{recursive:true,force:true});});
 async function fixture(){const root=await realpath(await mkdtemp(path.join(os.tmpdir(),'current-c1-')));roots.push(root);let key=1;const services={} as CurrentDiskOptions['owners'];
@@ -122,6 +122,22 @@ it('rechecks permission before issuer replay after its own verification pause',a
 });
 it('rejects a pending live response once the storage owner has failed',async()=>{
  const f=await fixture();let armed=false;const o=f.options.owners.anchor;f.options.owners.anchor={...o,store:{...o.store,fault:phase=>{if(armed&&phase==='before-directory-sync')throw Error('storage-offline');}}};const d=await open(f,'create'),{c,a}=await enrolled(d),fence=(await c.call(a.writer,'ReserveWriter',{expectedSelection:1})).value.fence,pause=c.pause(a.operator,'registry-before-reply'),pending=c.call(a.provider,'CheckLiveBinding',{target:fence,purpose:'checkpoint'});await pause.reached;armed=true;await expect(d.readAnchor()).rejects.toThrow('storage-offline');pause.resume();await expect(pending).rejects.toThrow('recovery_required');
+});
+it('keeps the disk owner usable after caller-input Anchor CAS refusals that wrote nothing',async()=>{
+ const f=await fixture(),d=await open(f,'create'),{c,a}=await enrolled(d),anchor=await d.readAnchor(),cur=c.view().currentRecordRef!,unknown={role:'registry-record' as const,id:hash('unknown'),sha256:hash('unknown'),byteLength:1};
+ await expect(d.cas(anchor,{revision:anchor.revision+1,record:cur},hash('attempt'))).rejects.toThrow(/^current_control_binding_mismatch$/);
+ await expect(d.cas(anchor,{revision:anchor.revision+1,record:unknown},hash('attempt'))).rejects.toThrow(/^current_control_receipt_invalid$/);
+ await expect(d.cas({revision:0,record:null},{revision:1,record:cur},hash('stale'))).rejects.toThrow(/^current_control_control_conflict$/);
+ expect(await d.readAnchor()).toEqual(anchor);await expect(c.call(a['lineage-registry'],'anchor.read',{})).resolves.toBeTruthy();
+ await expect(c.call(a.reader,'AcquireReadPin',{operationBinding:hash('business')})).resolves.toBeTruthy();
+});
+it('refuses reuse of a committed Anchor attempt for a different transition without stopping the owner',async()=>{
+ const f=await fixture(),d=await open(f,'create'),{c,a}=await enrolled(d),before=await d.readAnchor();
+ await c.call(a.reader,'AcquireReadPin',{operationBinding:hash('business')});const after=await d.readAnchor();
+ const attempt=ownedDigest({registry:'registry',incarnation:c.view().incarnation,previous:before.record,next:after.record});
+ await expect(d.cas(before,after,attempt)).resolves.toBeUndefined();
+ await expect(d.cas(before,{revision:after.revision,record:before.record!},attempt)).rejects.toThrow(/^current_control_idempotency_conflict$/);
+ expect(await d.readAnchor()).toEqual(after);await expect(c.call(a['lineage-registry'],'anchor.read',{})).resolves.toBeTruthy();
 });
 it('reproduces the C1 native outcomes and validates recorded source fingerprints',async()=>{
  const scenario={schema:'osv-mcp.q2.c1.scenario.v1',scope:'cooperative-local-disk',nativeObservations,independentRegistryVerified:false,profileApproved:false,backendEligible:false,originalReadsSkipped:0};expect(nativeObservations).toHaveLength(3);

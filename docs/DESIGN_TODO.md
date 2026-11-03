@@ -2692,3 +2692,10 @@ C1最終検証: C1回帰29件・C0回帰142件成功。全体120 files／4,670 t
 - 回帰8件を追加（C1計37件）。修正前の7件の失敗を確認。C0互換scenarioとC1 native 3観測の範囲を維持し、source fingerprintを更新する。
 
 C1レビュー修正の最終検証: 追加8件・C1計37件・C0計142件成功。全体120 files／4,678 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。実SIGKILL 3件とscenario／source fingerprintを通常回帰で再照合した。権限取消し3 APIの原本read／bytes／replay増分0と、終了／停止ownerの旧応答拒否を確認。ローカル協調adapterの実証範囲・採用flag false・originalReadsSkipped=0を維持。
+
+### 2026-11-03: 762be6eレビュー修正・C1保存層の書込み前拒否
+
+- §9.89.6へ、Anchor image保存前の呼出し側入力による`cas`拒否（binding_mismatch／receipt_invalid／idempotency_conflict）ではdisk ownerを停止しないよう修正。保存済みimageの整合性・署名の不一致と保存後の失敗はfail-stopのまま。
+- registry record・Anchor履歴・A2 commitの256件上限から、生涯の状態遷移が約256回（read換算で数十回）に限られることを明記。GC／compactionはC2以降。
+
+762be6eレビュー修正の検証結果: C1回帰39件・C0回帰142件成功。全体120 files／4,680 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。

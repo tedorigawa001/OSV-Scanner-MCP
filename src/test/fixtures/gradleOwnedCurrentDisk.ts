@@ -4,7 +4,7 @@ import {verify,type KeyObject} from 'node:crypto';
 import {z} from 'zod';
 import {OwnedJournalDisk,type OwnedJournalDiskOptions} from './gradleOwnedJournalDisk.js';
 import {CurrentControl,type CurrentConfig,type CurrentActor} from './gradleOwnedCurrentControl.js';
-import {currentRoles,chash,parsed,need,wireSchema,decodeCurrent,CURRENT_LIMITS,type CurrentRole} from './gradleOwnedCurrentSchema.js';
+import {currentRoles,chash,parsed,need,wireSchema,decodeCurrent,CURRENT_LIMITS,CurrentControlError,type CurrentRole} from './gradleOwnedCurrentSchema.js';
 import {durableRegistrySchema,durableIssuerSchema,durableRecordSchema,durableAnchorSchema,type DurableRegistry,type DurableIssuer,type DurableAnchor,type CurrentPersistence} from './gradleOwnedCurrentPersistence.js';
 import {canonicalOwnedJson,ownedDigest,ownedSha256} from '../../utils/gradleOwnedJson.js';
 const MAX=8*1024*1024,same=(a:unknown,b:unknown)=>canonicalOwnedJson(a,MAX)===canonicalOwnedJson(b,MAX);
@@ -20,6 +20,9 @@ export interface CurrentDiskOptions {
 }
 export class OwnedCurrentDisk implements CurrentPersistence {
  readonly #options:CurrentDiskOptions;readonly #owners:Record<Owner,OwnedJournalDisk>;#queue:Promise<unknown>=Promise.resolve();#blocked=false;#closed=false;#pending=0;#started=false;
+ // Caller-input refusals raised before the Anchor image is written leave the owner usable.
+ readonly #refusals=new WeakSet<object>();
+ #refuse(ok:unknown,reason:string):asserts ok{if(!ok){const error=new CurrentControlError(reason);this.#refusals.add(error);throw error;}}
  private constructor(o:CurrentDiskOptions,owners:Record<Owner,OwnedJournalDisk>){this.#options=o;this.#owners=owners;}
  static async open(input:CurrentDiskOptions){
   parsed(durableAnchorSchema,input.anchorFloor);const all=Object.values(input.owners),roots=all.flatMap(o=>[path.resolve(o.store.root),path.resolve(o.checkpoint.root)]),keys=all.flatMap(o=>[o.key,o.checkpointKey]);
@@ -31,7 +34,7 @@ export class OwnedCurrentDisk implements CurrentPersistence {
   try{for(const role of ['anchor','issuer','registry'] as const)owners[role]=await OwnedJournalDisk.open({...o.owners[role],mode:o.mode});const disk=new OwnedCurrentDisk(o,owners);await disk.#run(async()=>{await disk.#load('issuer');await disk.#load('registry');await disk.#anchor();});return disk;}catch(e){for(const d of Object.values(owners).reverse())d.close();throw e;}
  }
  async #run<T>(work:()=>Promise<T>):Promise<T>{
-  need(!this.#closed,'owner_closed');this.#pending++;const task=this.#queue.then(async()=>{need(!this.#blocked,'recovery_required');try{return await work();}catch(e){if(!(e instanceof Error&&e.message==='current_control_control_conflict'))this.#blocked=true;throw e;}});this.#queue=task.catch(()=>{});try{return await task;}finally{this.#pending--;}
+  need(!this.#closed,'owner_closed');this.#pending++;const task=this.#queue.then(async()=>{need(!this.#blocked,'recovery_required');try{return await work();}catch(e){if(!(e instanceof Error&&(e.message==='current_control_control_conflict'||this.#refusals.has(e))))this.#blocked=true;throw e;}});this.#queue=task.catch(()=>{});try{return await task;}finally{this.#pending--;}
  }
  async #load(role:Owner):Promise<unknown|undefined>{
   await this.#owners[role].revalidate();const rows=await this.#owners[role].journal.readLatest();if(rows.length===0)return undefined;
@@ -55,11 +58,13 @@ export class OwnedCurrentDisk implements CurrentPersistence {
  cas(expected:DurableAnchor,next:DurableAnchor,attemptId:string){
   const previous=parsed(durableAnchorSchema,expected),after=parsed(durableAnchorSchema,next),attempt=parsed(chash,attemptId);
   return this.#run(async()=>{
-   const {image,current}=await this.#anchor(),prior=image.entries.find(e=>e.attempt===attempt);if(prior){need(same(prior.expected,previous)&&same(prior.next,after),'integrity_invalid');return;}
-   need(same(current,previous),'control_conflict');need(after.revision===previous.revision+1&&after.record,'binding_mismatch');const registry=parsed(durableRegistrySchema,await this.#load('registry')),r=registry.records.find(e=>same(e.ref,after.record));need(r,'receipt_invalid');
+   const {image,current}=await this.#anchor(),prior=image.entries.find(e=>e.attempt===attempt);if(prior){this.#refuse(same(prior.expected,previous)&&same(prior.next,after),'idempotency_conflict');return;}
+   need(same(current,previous),'control_conflict');this.#refuse(after.revision===previous.revision+1&&after.record,'binding_mismatch');const registry=parsed(durableRegistrySchema,await this.#load('registry')),r=registry.records.find(e=>same(e.ref,after.record));this.#refuse(r,'receipt_invalid');
    const raw=Buffer.from(r.raw,'base64');need(raw.length===r.ref.byteLength&&ownedSha256(raw)===r.ref.sha256,'integrity_invalid');const envelope=parsed(wireSchema,decodeCurrent(raw,CURRENT_LIMITS.record)),{signature,...unsigned}=envelope;
    need(envelope.role==='lineage-registry'&&envelope.keyId==='server-lineage-registry'&&envelope.direction==='reply'&&envelope.keyEpoch===1&&verify(null,Buffer.from(canonicalOwnedJson(unsigned,CURRENT_LIMITS.record)),this.#options.serverKeys['lineage-registry'].publicKey,Buffer.from(signature,'base64')),'signature_invalid');
-   const body=parsed(durableRecordSchema,envelope.body);need(body.revision===after.revision&&same(body.previous,previous.record)&&registry.identityDigest===ownedDigest(body.identity)&&attempt===ownedDigest({registry:'registry',incarnation:body.state.incarnation,previous:body.previous,next:after.record}),'binding_mismatch');
+   const body=parsed(durableRecordSchema,envelope.body);need(registry.identityDigest===ownedDigest(body.identity),'integrity_invalid');
+   // The stored record is authentic; a mismatch with the caller's revision/previous/attempt claim is the caller's error.
+   this.#refuse(body.revision===after.revision&&same(body.previous,previous.record)&&attempt===ownedDigest({registry:'registry',incarnation:body.state.incarnation,previous:body.previous,next:after.record}),'binding_mismatch');
    const issuer=parsed(durableIssuerSchema,await this.#load('issuer'));need(issuer.identityDigest===registry.identityDigest,'binding_mismatch');await this.#options.fault?.('before-anchor-cas');
    await this.#save('anchor',{schema:'osv-mcp.q2.c1.anchor.v1',entries:[...image.entries,{attempt,expected:previous,next:after}]});need(same((await this.#anchor()).current,after),'integrity_invalid');await this.#options.fault?.('after-anchor-cas');
   });

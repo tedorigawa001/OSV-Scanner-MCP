@@ -5574,7 +5574,7 @@ C0レビュー修正の最終検証: 回帰138件、全体119 files／4,637 test
 
 C1のローカルcontrollerは一要求ずつ処理し、durable CAS中の重複dispatchはbusyで無変更拒否する。これにより未更新のmemory mirrorから、正当なAnchor前進をrollbackと誤判定してownerを停止しない。C0単体の並行モデルは維持し、本番clientのqueue／再試行接続はC2に残す。
 
-サービスごとのimageはwhole snapshot方式で8 MiB上限。C0全体の64 MiB上限を全件扱える実装ではない。A2の256 commit／4096 entry／256 MiB制限も適用し、容量不足・同期障害・結果不明は成功にしない。GC／compaction・incremental検証・read省略は実装しない。通常のdispatchでもfresh Anchorと3 ownerの全履歴認証・再同期を行い、原本replayを省略しない。provider serviceの実原本APIは未接続で、issuer rootの封じた原本copyを使うC1診断経路である。
+サービスごとのimageはwhole snapshot方式で8 MiB上限（生涯の状態遷移数の上限は§9.89.6）。C0全体の64 MiB上限を全件扱える実装ではない。A2の256 commit／4096 entry／256 MiB制限も適用し、容量不足・同期障害・結果不明は成功にしない。GC／compaction・incremental検証・read省略は実装しない。通常のdispatchでもfresh Anchorと3 ownerの全履歴認証・再同期を行い、原本replayを省略しない。provider serviceの実原本APIは未接続で、issuer rootの封じた原本copyを使うC1診断経路である。
 
 openはtrusted storage-ownerのmaintenance処理として全rootを認証・再同期する。startは承認／対応gateを先に確認し、それからimageを取得する。このmaintenance IOを本番readerの読取前gate成立へ読み替えない。本番client／認証IPCの接続はC2／C3。
 
@@ -5606,3 +5606,13 @@ dispatchはpersistence.verify後と、expire等のawaitを終えたexecute直前
 回帰8件を追加。close＋別owner再open後のCheckLiveBinding／ReadForCheckpoint、close後の署名済み応答受理、保存障害後の保留live応答を拒否する。永続化検証中にReadForCheckpoint／PrepareCheckpoint／ReadCurrentCheckpointのpermissionを取消す3件では、ownedSourceReads・ownedSourceBytes・fullReplaysの各増分が0であることを検査する。issuer-before-verifyでの取消しもreplay前に拒否する。修正前に7件の誤成功／読取増分を確認した。実証はローカル協調ownerのままであり、別UID・外部Anchor・本番採用の成立を追加しない。
 
 C1レビュー修正の最終検証: 追加8件・C1計37件・C0計142件成功。全体120 files／4,678 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。実SIGKILL 3件とscenario／source fingerprintを通常回帰で再照合した。権限取消し3 APIの原本read／bytes／replay増分0と、終了／停止ownerの旧応答拒否を確認。ローカル協調adapterの実証範囲・採用flag false・originalReadsSkipped=0を維持。
+
+#### 9.89.6 762be6eレビュー修正・保存層の書込み前拒否と生涯の遷移上限
+
+**保存層の書込み前拒否。** `OwnedCurrentDisk`の直列化処理は、`control_conflict`以外の全例外でownerを停止していた。そのため、Anchor imageを保存する前に呼出し側の入力で拒否される`cas`（記録と一致しないrevision、registry imageにない記録、保存済み記録とattempt／previousの不一致、確定済みattemptの別遷移への再使用）でも、以後の`readAnchor`とcontrolの全APIが`recovery_required`になった。B2（a672419）・C0（a2b661a）と同じ種類の問題である。Anchor imageを保存する前の、呼出し側の入力による拒否を停止させないよう変えた。それぞれ`binding_mismatch`／`receipt_invalid`／`idempotency_conflict`を返す。保存済みimageの整合性・署名・identityの不一致、保存処理と保存後の失敗は従来どおりfail-stopのままである。確定済みattemptの別遷移への再使用は、従来の`integrity_invalid`から`idempotency_conflict`へ改めた。
+
+**生涯の状態遷移の上限。** GC／compactionは未実装であり、registry record・Anchor履歴・A2 commitはいずれも256件が上限である。pinの取得・解放・期限切れ、writer予約・公開、barrier、再起動のたびにregistryのrevisionが1つ進むため、1 lineageが生涯に扱える状態遷移は約256回、read換算では数十回である。上限に達した後は、書込み前の容量不足として無変更で拒否する（§9.88.5）。長期運用にはC2以降でGC／compactionと承認済み移行が必要であり、現在の上限内での診断用途に限る。
+
+回帰2件を追加し、C1は39件になった：呼出し側入力の`cas`拒否3種のあともAnchorが不変でcontrolが継続すること、確定済みattemptを別遷移へ再使用した場合の`idempotency_conflict`と継続。修正前のコードで両件が失敗することを確認した。保存記録はsource fingerprintだけを更新し、native観測のscenarioは同一である。
+
+762be6eレビュー修正の検証結果: C1回帰39件・C0回帰142件成功。全体120 files／4,680 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。実SIGKILL 3件を再実行してscenarioを再照合した。native隔離・採用flagの変更は0。
