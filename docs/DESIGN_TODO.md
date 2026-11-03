@@ -2776,3 +2776,11 @@ C3b実装単位設計の検証結果: §9.93.1〜10の10小節、C3b-0〜5の順
 C3b設計レビュー修正: §9.93.11で業務K／Dと保存stageのtransition key／digest・expectedHead・前stage receiptを分離。同じPrepareHandoffの2段階保存と、後続head前進後の旧stage再送を区別する。§9.93.12で応答紛失時の旧channel終了→同bootの新session→元業務要求retryを規定し、sequence欠番許容による回復を禁止。CB15／CB18／CB20／CB34／CB39を更新し、回復コスト・回数上限を予算へ課金。今回は設計のみ。
 
 C3b設計レビュー修正の検証結果: §9.93.1〜12の12小節、C3b-0〜5の順序、CB01〜CB44の一意性・欠落なしを確認。既存C0 control／C2 bridge／C3a auxiliary・deploymentの4 files／399 tests成功（47.38秒）。diff整形検査成功。文書のみの変更で、stage保存・session回復・追加回帰条件のruntime実装とnative実証は未実施。
+
+### 2026-11-04: 153a867レビュー修正・stage再送の解決順とcontext floor
+
+- §9.93.11の保存stageは`transitionDigest`に`expectedHead`／`nextImage`を含むため、head前進後の再送を現在状態から組み立て直すと`idempotency conflict`になり、元結果へ収束しなかった。業務ledgerをK／Dで先に引いて保存済みreceiptを返し、StageCommitRequestは未保存stageでだけ組み立てる解決順を§9.93.13に定め、CB45を追加した。
+- ReadContextの`floor`（§9.92.5）を、新session回復・server boot変更・incarnation変更の後も保持する条件とCB46を追加した。
+- C3b-0の予算計画を、C3a `read-budget.v1`を拡張する新version（v2）として定義することを明記した。
+
+153a867レビュー修正の検証結果: §9.93.1〜13・CB01〜CB46の一意性と順序を確認。文書のみの変更。

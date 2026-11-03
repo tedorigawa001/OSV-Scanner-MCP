@@ -6033,7 +6033,7 @@ authorityは§9.91.6の予約／revokingをown journalへ保存し、失効の�
 
 | 単位 | 実装する入出力・成果物 | 終了条件・依存 |
 | --- | --- | --- |
-| C3b-0 | role固有OwnerConfig／Signer／OwnedStore／公開credential registry、auth/channel／recovery port／authenticated outcome、stage receipt／transition key、session回復回数のstrict schema、frame・request予算計画 | CBの静的部分を先に回帰実装。全role private key入力やraw JSON handleを拒否。実通信・隔離成立は0 |
+| C3b-0 | role固有OwnerConfig／Signer／OwnedStore／公開credential registry、auth/channel／recovery port／authenticated outcome、stage receipt／transition key、session回復回数のstrict schema、frame・request予算計画（C3a `read-budget.v1`を拡張する新version、§9.93.13） | CBの静的部分を先に回帰実装。全role private key入力やraw JSON handleを拒否。実通信・隔離成立は0 |
 | C3b-1 | SessionServer／SessionClient、challenge／sequence／pending管理、明示transport adapter、私有AuthenticatedRequest | 独立した2 childで署名・資格adapter・再送／期限／closeを対照。業務storeはまだ開かず、禁止dispatch0を確認 |
 | C3b-2 | 単一roleのstore／署名ownerとRegistryKernel／AnchorClientを抽出。復旧状態機械・durable ledger・ReadContext／pin／writer／AbandonEnrollmentを接続 | 他ownerのkey／IOを渡さず、Anchor port mockと実local child adapterを区別。C1対照・再起動失効・元CAS retryを保持。provider／authority成立は未主張 |
 | C3b-3 | ProviderOwner／IssuerOwner、candidate seal／prepare、full inventory／chunk assembler、exact selected read、registry採用後mirror | genesis／advance双方の正常公開、原本改変・別namespace・保存故障・mirror修復。issuerへpath／root handleを渡さない |
@@ -6134,3 +6134,27 @@ serverの古いreplyを新channelへ再送してsequenceを合わせたり、同
 CB15／CB18／CB20では、challenge応答・保存済み業務応答・確定拒否replyの紛失、旧業務実行中の切断、新session後の旧reply遅延到着、回復前後の失効を実行可能条件にする。正常対照は余裕時間内の新session回復で、同channelへの欠番応答受理を正常としない。CB16／CB17／CB41／CB42のsession／boot上限・5秒予算にもhandshakeや再challengeの追加コストを課金する。
 
 C3b設計レビュー修正の検証結果: §9.93.1〜12の12小節、C3b-0〜5の順序、CB01〜CB44の一意性・欠落なしを確認。既存C0 control／C2 bridge／C3a auxiliary・deploymentの4 files／399 tests成功（47.38秒）。diff整形検査成功。文書のみの変更で、stage保存・session回復・追加回帰条件のruntime実装とnative実証は未実施。
+
+#### 9.93.13 レビュー修正：stage再送の解決順・context floorの保持・予算profileの版
+
+**stage再送はledgerで解決する。** §9.93.11の`transitionDigest`は`expectedHead`と`nextImage` digestを含む。業務要求の再送が後続stage／他operationによるhead前進の後に届いた場合を考える。kernelが現在headと現在状態からStageCommitRequestを組み立て直すと、同じtransition keyで内容が異なり、手順2の`idempotency conflict`になる。これでは元結果へ収束しない。次の解決順を必須とする。
+
+1. 認証・認可・要求形の検査後、業務ledgerをK／Dで引く。同Kで異なるDならconflict。
+2. 同K／Dの保存済みstageがあれば、その検証済みStageRecordとcommitから元receipt／元結果を返す。新しいStageCommitRequestは組み立てない。in-flightなら同じ実行予約へ集約する。
+3. StageCommitRequestを組み立てるのは、そのstageが未保存のときだけとする。`expectedHead`はその時点のcommitted headで、初回適用の前提条件である。保存後は記録の一部として固定し、再送の同一性判定に現在headを使わない。
+4. §9.93.11手順2の全一致検査は、未保存と判断した後の競合（同じtransitionを並行に組み立てた2要求など）でだけ働く。先に保存した側のreceiptを返し、異内容ならconflictとする。
+
+後続stage（例：`handoff-decision-recorded`）は、初段の保存済みreceiptと、その時点の最新headを`expectedHead`にして新しく組み立てる。初段の再送として抑制しない（§9.93.11）。
+
+**context floorを回復経路でも保持する。** C3aのReadContext（§9.92.5）は変化する値を観測し、`floor`で巻戻しを拒否する。clientは観測したcontrolRevision・selectionRevision・revocationEpochの最大値を、bridgeの寿命の間保持する。§9.93.12の新session回復、server boot変更後の新認可、registry incarnation変更の後も`floor`をnullへ戻さない。incarnation／providerBootの変更は受理するが、revision系の後退は拒否する。restart後の正当な状態でrevision系が後退することはない（durable ledger・Anchor floor、§9.91.7）ので、後退はrollbackとして扱う。process再起動後のclientはfloorを持たないため、Anchorとregistryの全R照合（§9.93.3）に依存する。process外へfloorを永続化することはこのprofileでは主張しない。
+
+**予算profileの版。** C3aの`osv-mcp.q2.c3a.read-budget.v1`は9工程・余裕・closure・最低処理速度だけを持つ。C3b-0では、raw chunk数・challenge／署名frame数・registry再照会・業務request数・保存stage数・session回復1回分のhandshake／再challengeを加えた新versionのprofile（候補`osv-mcp.q2.c3b.read-budget.v2`）を定義する。v1の検査（合計＋余裕≦lease、closure・速度）はv2でも同じ値で満たすことを要求する。v1をv2として読み替えたり、v2の追加項目を省略してv1で代用したりしない。
+
+| ID | 条件・期待結果 |
+| --- | --- |
+| CB45 | 同K／Dの再送を、head前進後・後続stage保存後・owner再起動後のそれぞれで元receipt／元結果へ収束させる。現在headから組み立て直したStageCommitRequestによるconflict、旧imageの再保存、後続stageの抑制を0とする。並行に組み立てた同transitionは1件だけ保存し、異内容はconflictとする |
+| CB46 | ReadContextのfloorを、新session回復・server boot変更・incarnation変更の後も保持する。revision系が後退したreplyを拒否し、incarnation／boot変更とrevision前進は受理する。回復時にfloorをnullへ戻す実装を拒否する |
+
+CB45・CB46を加え、回帰条件はCB01〜CB46となる（§9.93.10の表はCB44まで、追加分は本小節）。
+
+153a867レビュー修正の検証結果: §9.93.1〜13の13小節、CB01〜CB46の一意性・順序を確認。文書のみの変更で、ledger解決順・floor保持・v2予算profileとCB45／CB46の実装・native実証は未実施。
