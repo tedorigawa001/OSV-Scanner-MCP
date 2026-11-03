@@ -1,3 +1,4 @@
+import type {OwnedCurrentBridge} from './gradleOwnedCurrentBridge.js';
 import {unsupportedOwnedCaller} from './gradleOwnedExecution.js';
 import {startupOwnedPolicy,type OwnedPolicy} from './gradleOwnedPolicy.js';
 import {parseGradleExport, InvalidGradleWrapper, LegacyGradleMetadataTooLarge, type OwnedManifestStatus} from "./gradleOwnedManifest.js";
@@ -47,14 +48,18 @@ export class GradleGraphCache {
   private readonly catalogTrust: CatalogTrust;
   private readonly catalogTrustInvalid: boolean;
   private readonly pluginReader:GradlePluginReader;
-  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), trustSetting: DeclarationTrust | DeclarationTrustConfig = startupDeclarationTrust(), private readonly declarationBudget: GradleBudget = createGradleBudget(), catalogSetting: CatalogTrust | CatalogTrustConfig = startupCatalogTrust(), private readonly pluginSettings:PluginSettings=startupPluginSettings(), private readonly ownedPolicy:OwnedPolicy=startupOwnedPolicy(), private readonly ownedCaller:unknown=unsupportedOwnedCaller) {
+  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), trustSetting: DeclarationTrust | DeclarationTrustConfig = startupDeclarationTrust(), private readonly declarationBudget: GradleBudget = createGradleBudget(), catalogSetting: CatalogTrust | CatalogTrustConfig = startupCatalogTrust(), private readonly pluginSettings:PluginSettings=startupPluginSettings(), private readonly ownedPolicy:OwnedPolicy=startupOwnedPolicy(), private readonly ownedCaller:unknown=unsupportedOwnedCaller, private readonly currentBridge?:OwnedCurrentBridge) {
     const setting = typeof trustSetting === "object" ? trustSetting : { trust: trustSetting, invalid: false };
     this.trust = setting.trust; this.trustInvalid = setting.invalid;
     const catalog = typeof catalogSetting === "object" ? catalogSetting : { trust: catalogSetting, invalid: false };
     this.catalogTrust = catalog.trust; this.catalogTrustInvalid = catalog.invalid;this.pluginReader=new GradlePluginReader(pluginSettings,this.pluginBudget);
   }
 
-  private document(file: string) {
+  private document(file: string):Promise<{graph?:GradleGraph;owned?:OwnedManifestStatus;refreshOwnedExecution?:()=>OwnedManifestStatus;reason?:string}> {
+    // An explicitly injected application client owns source selection. No companion fallback or
+    // cached authority caller may outlive its registry pin.
+    if(this.currentBridge)return this.currentBridge.readDocument(file,this.budget,this.ownedPolicy)
+      .catch(()=>({reason:'owned_current_unavailable'}));
     let pending = this.documents.get(file);
     if(pending)return pending.then(result=>result.refreshOwnedExecution?{...result,owned:result.refreshOwnedExecution()}:result);
     if (!pending) {

@@ -2699,3 +2699,17 @@ C1レビュー修正の最終検証: 追加8件・C1計37件・C0計142件成功
 - registry record・Anchor履歴・A2 commitの256件上限から、生涯の状態遷移が約256回（read換算で数十回）に限られることを明記。GC／compactionはC2以降。
 
 762be6eレビュー修正の検証結果: C1回帰39件・C0回帰142件成功。全体120 files／4,680 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。
+
+
+### C2：本番用client・Gradle readerの明示接続（2026-11-03）
+
+- §9.90へclient／provider／authority境界を追加。共有schema・full v2 replay・authority snapshot decoderをutilsへ移し、fixture側は互換re-export。本番moduleにprincipal発行を入れない。
+- 実GradleGraphCacheへroot applicationによるbridge注入経路を追加。fresh pin・issuer検証・原本namespace全検証からG0/G2・live authority照会・handoff・use保存・consumer ACKへ接続。注入経路でcompanion／cached callerへfallbackしない。
+- registry採用をlocal mirror更新より先にし、registry modeのlegacy select／readSelectedを拒否。C1保存ownerとの接続、CAS再試行、mirror修復、失効／改変拒否をC2回帰21件と3つの失敗対照で検査する。
+- C3の独立wire認証・別UID／外部Anchor配備、C4承認と長期運用向けGC／compactionは残る。transportは自動配備せず既定readerを維持。採用flag false・originalReadsSkipped=0のまま。
+
+最終検証: C2回帰21件、C0回帰142件成功。全体は`npm test -- --maxWorkers=1`で121 files／4,701 tests成功、24 files／1,418 tests skipped（235.00秒）。初回の既定並行実行は既存C1復旧試験1件が30秒でtimeoutし、単独再実行は15.93秒で成功。試験内容・timeoutは変更せず全体を再検証した。型検査・build・diff整形検査成功。本番配布moduleにfixture import／principal発行がないことも確認。
+
+C2レビュー修正: 初回予約の送信前にintent／要求ID／payloadを保持し、BeginEnrollment・ReserveWriter・AcquireReadPin（通常read／mirror）の応答紛失を同一要求で再試行する。元grantのlive確認、期限切れ時の新規予約拒否、保留intent差替え拒否を8件追加（合計29件）。別UID認証IPC・本番承認等の未成立範囲は維持。
+
+C2初回予約レビュー修正の最終検証: C2回帰29件成功。全体は`npm test -- --maxWorkers=1`で121 files／4,709 tests成功、24 files／1,418 tests skipped（243.48秒）。型検査・build・diff整形検査成功。元の全体検証結果はvalidationのpreReviewVerificationとして保持する。

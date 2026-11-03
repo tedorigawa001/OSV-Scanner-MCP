@@ -4,7 +4,7 @@ import {canonicalOwnedJson,ownedDigest,ownedSha256} from '../../utils/gradleOwne
 import {durableRecordSchema,durableRegistrySchema,durableIssuerSchema,durableAnchorSchema,type CurrentPersistence,type DurableRegistry,type DurableIssuer,type DurableAnchor} from './gradleOwnedCurrentPersistence.js';
 import {replayV2,type V2ReplayInput} from './gradleOwnedJournalV2.js';
 import {CURRENT_LIMITS as L,CurrentControlError,need,parsed,cid,chash,cn,currentRefSchema,currentBindingSchema,currentHeadSchema,wireSchema,replySchema,responseValues,
- validateRequest,semanticDigest,operationKey,decodeCurrent,apiPolicy,currentRoles,registryAPIs,type CurrentRole,type CurrentAPI,type CurrentRequest,type CurrentRef,type CurrentBinding,type CurrentHead,type Destination} from './gradleOwnedCurrentSchema.js';
+ validateRequest,semanticDigest,operationKey,decodeCurrent,apiPolicy,currentRoles,registryAPIs,currentNamespaceSchema,type CurrentRole,type CurrentAPI,type CurrentRequest,type CurrentRef,type CurrentBinding,type CurrentHead,type Destination} from './gradleOwnedCurrentSchema.js';
 export type CurrentActor=Readonly<{kind:'c0-actor'}>;
 type Ref=CurrentRef;
 type Actor={id:string;role:CurrentRole;peerId:string;boot:string;epoch:number;uid:number;gid:number;client:{publicKey:KeyObject;privateKey:KeyObject};permissions:Set<string>;managedTargets:Set<string>;sequence:number;requests:number;alive:boolean};
@@ -227,14 +227,16 @@ export class CurrentControl{
   if(!expired.length&&!(writer?.phase==='reserved'&&now>=writer.expires))return;
   await this.#commit(null,null,s=>{for(const p of expired){const q=s.pins[p.ref.id]!;q.hold=q.hold||['decision-recorded','delivering'].includes(q.phase);q.phase='expired';}if(s.writer?.phase==='reserved'&&now>=s.writer.expires)s.writer.phase='expired';return {};},now);
  }
- registerSource(h:CurrentActor,supplied:V2ReplayInput):Ref{
+ registerSource(h:CurrentActor,supplied:V2ReplayInput,namespace?:unknown):Ref{
   const a=this.#actor(h);need(a.role==='provider'&&a.alive&&a.id===this.#roleActor('provider')?.id,'permission_denied');need(Buffer.isBuffer(supplied.key)&&supplied.key.length===32,'configuration_invalid');
   const size=supplied.commits.reduce((n,b)=>n+b.length,0)+supplied.payloads.reduce((n,b)=>n+b.length,0);need(size<=L.closure&&this.#bytes()+size<=this.#limits.closure,'capacity_exhausted');
   const {key,commits,payloads,...metadata}=supplied,input={...clone(metadata),key:Buffer.from(key),commits:commits.map(b=>Buffer.from(b)),payloads:payloads.map(b=>Buffer.from(b))};
   const replay=replayV2(input);need(same(input.binding,{authorityId:this.#identity.authorityId,lineageId:this.#identity.lineageId,generation:this.#identity.generation,storeEpoch:this.#identity.storeEpoch,profileDigest:this.#identity.profileDigest}),'binding_mismatch');
   const head=parsed(currentHeadSchema,{format:'v2',revision:replay.revision,commitDigest:replay.commitDigest,stateRoot:replay.stateRoot,baseDigest:input.approvedBaseDigest}),inventory=ownedDigest({commits:input.commits.map(b=>ownedSha256(b)),payloads:input.payloads.map(b=>ownedSha256(b)).sort()});
-  const ref=this.#put('snapshot',{head,inventory,provider:a.id,providerBoot:a.boot,binding:this.#identity},'provider');if(!this.#sources.has(ref.id)){need(this.#bytes()+size<=this.#limits.closure,'capacity_exhausted');this.#sources.set(ref.id,{ref,input,head,inventory});this.#sourceBytes+=size;}return clone(ref);
+  const ref=this.#put('snapshot',{head,inventory,provider:a.id,providerBoot:a.boot,binding:this.#identity,...(namespace===undefined?{}:{namespace:parsed(currentNamespaceSchema,namespace)})},'provider');if(!this.#sources.has(ref.id)){need(this.#bytes()+size<=this.#limits.closure,'capacity_exhausted');this.#sources.set(ref.id,{ref,input,head,inventory});this.#sourceBytes+=size;}return clone(ref);
  }
+ /** Trusted provider adapter only; no raw source is read and no caller principal is minted. */
+ sourceNamespace(h:CurrentActor,snapshot:Ref,pin:Ref){this.#gate();const a=this.#actor(h);need(a.alive&&a.role==='provider'&&a.id===this.#roleActor('provider')?.id,'permission_denied');const live=this.#pin(pin);need(same(live.snapshot,snapshot),'binding_mismatch');return parsed(currentNamespaceSchema,this.#get(snapshot,'snapshot').namespace);}
  #source(ref:Ref){need(this.#roleActor('provider')?.alive,'provider_unavailable');const proof=this.#get(ref,'snapshot'),source=this.#sources.get(ref.id);need(source&&proof.provider===this.#roleActor('provider')!.id&&same(source.head,proof.head)&&source.inventory===proof.inventory,'receipt_invalid');return source;}
  #replay(source:Source){this.#metrics.ownedSourceReads++;this.#metrics.ownedSourceBytes+=source.input.commits.reduce((n,b)=>n+b.length,0)+source.input.payloads.reduce((n,b)=>n+b.length,0);try{const r=replayV2(source.input);this.#metrics.fullReplays++;need(same(source.head,{format:'v2',revision:r.revision,commitDigest:r.commitDigest,stateRoot:r.stateRoot,baseDigest:source.input.approvedBaseDigest}),'integrity_invalid');return r;}catch{this.#issuerBlocked=true;throw new CurrentControlError('integrity_invalid');}}
  #checkpoint(ref:Ref){this.#get(ref,'checkpoint-prepare');const p=this.#prepares.get(ref.id);need(p&&same(p.ref,ref),'receipt_invalid');return p;}

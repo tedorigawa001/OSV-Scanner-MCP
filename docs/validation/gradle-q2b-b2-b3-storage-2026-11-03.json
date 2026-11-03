@@ -18,11 +18,11 @@
     },
     {
       "path": "src/test/fixtures/gradleOwnedAuthoritySchema.ts",
-      "sha256": "108ec4f0965f325f75e6888a0a0e6e22cc40963665c37b1a0a000d07d78bc38d"
+      "sha256": "e7642cdfb3cfa092f79edc163eb4e6ac0e0d5590bdb2553c13016bc500f52115"
     },
     {
       "path": "src/test/fixtures/gradleOwnedAuthoritySnapshot.ts",
-      "sha256": "de0b0f241b0465c6ba76914c3f547e9984d39ee6c27271ad4dbd4e2a5c57cdf2"
+      "sha256": "d1b9ee07a9f2173ca57b30cbd6e8e89057c8cd3fd1b148a3f07e03a2ab8c4ba9"
     },
     {
       "path": "src/test/fixtures/gradleOwnedJournalCheckpoint.ts",
@@ -38,7 +38,7 @@
     },
     {
       "path": "src/test/fixtures/gradleOwnedJournalV2.ts",
-      "sha256": "ac47697774483edf8ee4319e63a74b52adcc5947f2b0556df2fc6db7d18986ef"
+      "sha256": "e4860481e0dacd227d42ff65cb56e8b80fc521492ccb2375a73622a3b2293af2"
     },
     {
       "path": "src/test/fixtures/gradleOwnedPrefixContract.ts",
@@ -50,7 +50,7 @@
     },
     {
       "path": "src/test/fixtures/gradleOwnedSealedProvider.ts",
-      "sha256": "66d51a70fba04a2adc908ef82457081791423e872dc7a7ab30a2d51768b93c54"
+      "sha256": "838f77afce58af4aae65125f4fc92f4ab17d78b21bf9898d45f768bf8a31e187"
     },
     {
       "path": "src/test/utils/gradleOwnedSealedProvider.test.ts",
@@ -89,8 +89,20 @@
       "sha256": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884"
     },
     {
+      "path": "src/utils/gradleOwnedAuthoritySchema.ts",
+      "sha256": "893449dd0f388cdc0434de47624f269aa12c678df67e63d1bb195fb18dbe52e2"
+    },
+    {
+      "path": "src/utils/gradleOwnedAuthoritySnapshot.ts",
+      "sha256": "694e88c771dff66e88b151e098172ffc0a04610bfcb62c56b79ef5f4b52c754e"
+    },
+    {
       "path": "src/utils/gradleOwnedExecution.ts",
       "sha256": "360a8d5e61a7b115619077cb444f8a863f6d6d0459be9d17b87ae4c43f279fd4"
+    },
+    {
+      "path": "src/utils/gradleOwnedJournalV2.ts",
+      "sha256": "5f78e8a9cb127fe8d0f25942668e360727e13057559ee046db0ed14f06b49253"
     },
     {
       "path": "src/utils/gradleOwnedJson.ts",
@@ -399,5 +411,10 @@
     "Q3 source read omission and performance",
     "Q4 approved production profile",
     "fresh source-authority checkpoint and final authority gate"
-  ]
+  ],
+  "c2Compatibility": {
+    "change": "shared validator extraction and opt-in registry selection mode",
+    "legacySelectionModeUnchanged": true,
+    "admissionChanged": false
+  }
 }

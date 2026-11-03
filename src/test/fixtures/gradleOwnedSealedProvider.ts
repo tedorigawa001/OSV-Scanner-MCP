@@ -28,7 +28,7 @@ const ledger=z.object({schema:z.literal('osv-mcp.q2b.namespace-ledger.v1'),conte
  namespaces:z.array(reservation).max(SEALED_LIMITS.namespaces)}).strict();
 type Ledger=z.infer<typeof ledger>;
 export type SealedCandidate=Readonly<{kind:'sealed-namespace-candidate'}>;
-export interface SealedStoreOptions {control:OwnedJournalDisk;contextDigest:string;sealKeyId:string;sealKey:Buffer;sourceKey:Buffer;
+export interface SealedStoreOptions {selectionMode?:'local'|'registry';namespaceIOs?:readonly RootedJournalIO[];control:OwnedJournalDisk;contextDigest:string;sealKeyId:string;sealKey:Buffer;sourceKey:Buffer;
  limits?:{retainedBytes?:number;namespaces?:number;uses?:number};
  selectedIO?:RootedJournalIO;fault?:(phase:'after-reservation'|'after-inventory'|'after-marker'|'before-select'|'after-selection')=>void|Promise<void>}
 const same=(a:unknown,b:unknown)=>canonicalOwnedJson(a)===canonicalOwnedJson(b),fresh=()=>randomBytes(32).toString('hex');
@@ -63,9 +63,11 @@ export class SealedPrefixStore{
   else p.#state=p.#decodeLedger(rows);
   // Reservation and capacity survive process death. Never re-open an unfinished generation.
   const next=structuredClone(p.#state);let dirty=false;
-  for(const ns of next.namespaces)if(ns.phase==='sealing'||ns.phase==='sealed'&&ns.namespaceId!==next.selected){ns.phase='quarantined';dirty=true;}
+  for(const ns of next.namespaces)if(ns.phase==='sealing'||p.#config.selectionMode!=='registry'&&ns.phase==='sealed'&&ns.namespaceId!==next.selected){ns.phase='quarantined';dirty=true;}
   if(dirty)await p.#save(next);
-  if(p.#state.selected){need(p.#config.selectedIO instanceof RootedJournalIO&&p.#config.selectedIO.ownsWriterLock,'selected_root_missing');p.#ios.set(p.#state.selected,p.#config.selectedIO);await p.#verify(p.#state.selected,true);p.#metrics.recoveries++;}
+  if(p.#config.selectionMode==='registry'){
+   for(const io of p.#config.namespaceIOs??[]){need(io.ownsWriterLock,'root_invalid');const identity=io.rootIdentity(),ns=p.#state.namespaces.find(n=>same(n.root,identity));need(ns&&!p.#ios.has(ns.namespaceId),'root_invalid');p.#ios.set(ns.namespaceId,io);}
+  }else if(p.#state.selected){need(p.#config.selectedIO instanceof RootedJournalIO&&p.#config.selectedIO.ownsWriterLock,'selected_root_missing');p.#ios.set(p.#state.selected,p.#config.selectedIO);await p.#verify(p.#state.selected,true);p.#metrics.recoveries++;}
   return p;
  }
  #decodeLedger(rows:JournalRecord[]):Ledger{
@@ -86,7 +88,8 @@ export class SealedPrefixStore{
   this.#wrote=true;const parsed=ledger.parse(state),expectedHead=this.#config.control.journal.head;
   await this.#config.control.journal.commit({operationId:'namespace-'+fresh(),requestDigest:ownedDigest(parsed),records:records(parsed),expectedHead});this.#state=parsed;
  }
- async #run<T>(work:()=>Promise<T>):Promise<T>{need(!this.#closed,'owner_closed');need(!this.#blocked,'recovery_required');need(!this.#busy,'busy');this.#busy=true;this.#wrote=false;try{return await work();}catch(e){if(!(e instanceof Object&&this.#refusals.has(e)))this.#blocked=true;throw e;}finally{this.#busy=false;}}
+ assertOpen(){need(!this.#closed,'owner_closed');need(!this.#blocked,'recovery_required');}
+ async #run<T>(work:()=>Promise<T>):Promise<T>{this.assertOpen();need(!this.#busy,'busy');this.#busy=true;this.#wrote=false;try{return await work();}catch(e){if(!(e instanceof Object&&this.#refusals.has(e)))this.#blocked=true;throw e;}finally{this.#busy=false;}}
  #sourceContext(input:Pick<V2ReplayInput,'binding'|'approvedBaseDigest'>){need(ownedDigest({binding:input.binding,base:input.approvedBaseDigest})===this.#config.contextDigest,'binding_mismatch');}
  async #inventory(io:RootedJournalIO,entries:Marker['inventory'],withMarker:boolean){
   const files=await io.list(SEALED_LIMITS.entries);need(files.length<=SEALED_LIMITS.entries,'budget_exceeded');
@@ -136,6 +139,7 @@ export class SealedPrefixStore{
   return {input,marker:body,markerDigest:ns.markerDigest,backendEligible:false as const,originalReadsSkipped:0 as const};
  }
  async select(handle:SealedCandidate){
+  need(this.#config.selectionMode!=='registry','registry_selection_required');
   const candidate=this.#candidates.get(handle);need(candidate?.boot===this.#boot,'fence_invalid');
   return this.#run(async()=>{
    // Caller-level checks use read-only verification so a stale candidate is refused before any write.
@@ -148,7 +152,15 @@ export class SealedPrefixStore{
    return {namespaceId:candidate.id,markerDigest:next.markerDigest,generation:next.marker.generation,fence:next.marker.fence,head:structuredClone(next.marker.head),backendEligible:false as const};
   });
  }
- async readSelected(){return this.#run(async()=>{await this.#load();this.#refuse(this.#state.selected,'snapshot_missing');return this.#verify(this.#state.selected,true);});}
+ async readSelected(){need(this.#config.selectionMode!=='registry','registry_selection_required');return this.#run(async()=>{await this.#load();this.#refuse(this.#state.selected,'snapshot_missing');return this.#verify(this.#state.selected,true);});}
+
+ /** Registry mode never resolves a local selected pointer or retires the predecessor. */
+ async readExact(markerDigest:string){hash.parse(markerDigest);return this.#run(async()=>{await this.#load();const ns=this.#state.namespaces.find(n=>n.markerDigest===markerDigest&&n.phase==='sealed');this.#refuse(ns,'snapshot_unavailable');return this.#verify(ns.namespaceId,true);});}
+ async readCandidate(handle:SealedCandidate){const candidate=this.#candidates.get(handle);need(candidate?.boot===this.#boot,'fence_invalid');return this.#run(async()=>{await this.#load();return this.#verify(candidate.id,true);});}
+ async mirrorExact(markerDigest:string,assertCurrent:()=>Promise<void>){
+  need(this.#config.selectionMode==='registry','registry_selection_required');hash.parse(markerDigest);return this.#run(async()=>{await assertCurrent();await this.#load();const ns=this.#state.namespaces.find(n=>n.markerDigest===markerDigest&&n.phase==='sealed');this.#refuse(ns,'snapshot_unavailable');await this.#verify(ns.namespaceId,true);await this.#config.fault?.('before-select');await assertCurrent();
+   if(this.#state.selected!==ns.namespaceId){const state=structuredClone(this.#state);state.selected=ns.namespaceId;await this.#save(state);this.#metrics.selections++;}await this.#config.fault?.('after-selection');await assertCurrent();});
+ }
  describeCandidate(handle:SealedCandidate){const data=this.#candidates.get(handle);need(data?.boot===this.#boot,'fence_invalid');const ns=this.#state.namespaces.find(n=>n.namespaceId===data.id);need(ns?.phase==='sealed'&&ns.markerDigest,'snapshot_unavailable');return Object.freeze({markerDigest:ns.markerDigest,generation:ns.generation,fence:ns.fence});}
  async recordUse(value:Ledger['uses'][number]){const use=ledger.shape.uses.element.parse(value);return this.#run(async()=>{await this.#load();const old=this.#state.uses.find(u=>u.grantId===use.grantId||u.useId===use.useId);if(old){this.#refuse(same(old,use),'use_conflict');return;}this.#refuse(this.#state.uses.length<this.#limits.uses,'uses_exhausted');const next=structuredClone(this.#state);next.uses.push(use);await this.#save(next);});}
  /** Whether a Complete for grantId can be recorded: an idempotent retry, or capacity left in the ledger. */

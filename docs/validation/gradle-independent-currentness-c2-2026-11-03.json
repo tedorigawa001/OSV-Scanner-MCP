@@ -1,0 +1,220 @@
+{
+  "schema": "osv-mcp.q2.c2.validation.v1",
+  "date": "2026-11-03",
+  "scope": "published-client-and-reader-injection-with-local-fixture-services",
+  "command": "npx vitest run src/test/utils/gradleOwnedCurrentBridge.test.ts",
+  "tests": 29,
+  "sourceSha256": {
+    "package-lock.json": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285",
+    "package.json": "bbb5c5fde9e96539da7395e928f91d9fa34372213260063059877a5b1c000f18",
+    "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
+    "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
+    "src/test/fixtures/gradleOwnedAuthority.ts": "6bed67749ddd6142b1025e24eedb656a448545078bfb2b81e996b340ad320655",
+    "src/test/fixtures/gradleOwnedAuthorityJournal.ts": "df213ca2a6d6ce3dfd7822745ac78d1a91506d9141f6575f2470b2c73c72d4da",
+    "src/test/fixtures/gradleOwnedAuthoritySchema.ts": "e7642cdfb3cfa092f79edc163eb4e6ac0e0d5590bdb2553c13016bc500f52115",
+    "src/test/fixtures/gradleOwnedAuthoritySnapshot.ts": "d1b9ee07a9f2173ca57b30cbd6e8e89057c8cd3fd1b148a3f07e03a2ab8c4ba9",
+    "src/test/fixtures/gradleOwnedCurrentBridgeFixture.ts": "21d8c5183cb4ef9aaab3fe76771d0a6e70e0ab8ef3cca76c4e680d360dc7ed03",
+    "src/test/fixtures/gradleOwnedCurrentControl.ts": "fb2df51df0210d77b011636e6c0678fa646032ccd99c9542d4a55fefb49110d3",
+    "src/test/fixtures/gradleOwnedCurrentDisk.ts": "02ea73cc8cfbed563c1cbc933a6b79c43c99cc51912a224aa31a3895675aeb2e",
+    "src/test/fixtures/gradleOwnedCurrentPersistence.ts": "5a6b7bda11fe0412a56e0491297a7f5f43f1b8b88d88832972eaff4cac59f28c",
+    "src/test/fixtures/gradleOwnedCurrentSchema.ts": "d5b3761261a93ed0834346f64ee2d39c3f1e163fa62e4e6e09d95fbb84046f62",
+    "src/test/fixtures/gradleOwnedCurrentSource.ts": "5bd9c9d4a9fa8fedd7f42f819b88ccf0ca969da94b74e064116b282f6ab205a3",
+    "src/test/fixtures/gradleOwnedExecutionFixture.ts": "047ebf4a3eab650430e916cc7ad63b2403c49cb71c42d05a7866c152f4b0ae6b",
+    "src/test/fixtures/gradleOwnedFixture.ts": "eca87a67c8ef3073ab778cb7ed60f01e272501e3722db11b60d166593c5618d6",
+    "src/test/fixtures/gradleOwnedJournalCheckpoint.ts": "3ca31e62fa5521d7352fc6f4a0528483444fcadce3351f53629e50198c251159",
+    "src/test/fixtures/gradleOwnedJournalDisk.ts": "cc16330bbbde29b2d52a6c14e90d9f83a9638894c8c7087662c21af9f83162d7",
+    "src/test/fixtures/gradleOwnedJournalFs.ts": "481389a0fc5ebd5eb234d7b0f25daef7f3e1898419c28dc379e2d628ce0002ef",
+    "src/test/fixtures/gradleOwnedJournalV2.ts": "e4860481e0dacd227d42ff65cb56e8b80fc521492ccb2375a73622a3b2293af2",
+    "src/test/fixtures/gradleOwnedPolicyFixture.ts": "42ab32aedc435e92b5dee75863da7778f66c8131648546ba4a6e791b84b31c81",
+    "src/test/fixtures/gradleOwnedSealedProvider.ts": "838f77afce58af4aae65125f4fc92f4ab17d78b21bf9898d45f768bf8a31e187",
+    "src/test/utils/gradleOwnedCurrentBridge.test.ts": "cd241cac202ca5ea5845e9207846820a035baba3f105e9236e97553dd2957d43",
+    "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
+    "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
+    "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
+    "src/utils/gradleCatalogs.ts": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b",
+    "src/utils/gradleDeclarations.ts": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be",
+    "src/utils/gradleExportJson.ts": "0fea68255a7dbabe559f1ee35bfcc156a565519c63ca16bb92614e1c866422fe",
+    "src/utils/gradleGraph.ts": "73a36886ed6c8be17b63e5581392cca6c5ba5efb0463e475f7ee3913ac888e81",
+    "src/utils/gradleGraphCache.ts": "4ebf09d1b70e02389cd9d52cfd8a21a3315d9872a6ee26a9b48b7a1bc4e3a7db",
+    "src/utils/gradleJson.ts": "f7f3ef047d30a675cb55044072e8fb516dceeb822192777ea7b7444699c9dc9f",
+    "src/utils/gradleOrigins.ts": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884",
+    "src/utils/gradleOwnedAuthoritySchema.ts": "893449dd0f388cdc0434de47624f269aa12c678df67e63d1bb195fb18dbe52e2",
+    "src/utils/gradleOwnedAuthoritySnapshot.ts": "694e88c771dff66e88b151e098172ffc0a04610bfcb62c56b79ef5f4b52c754e",
+    "src/utils/gradleOwnedCurrentBridge.ts": "f1748a5b8439d8fd052fbc815c51f8db4f8d502b170292fdf2ef7b7633c203de",
+    "src/utils/gradleOwnedCurrentClient.ts": "40b7977162caf938a104873f1642ac969faf7d8f156bcf20afc1fb0e8053e779",
+    "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+    "src/utils/gradleOwnedExecution.ts": "360a8d5e61a7b115619077cb444f8a863f6d6d0459be9d17b87ae4c43f279fd4",
+    "src/utils/gradleOwnedJournalV2.ts": "5f78e8a9cb127fe8d0f25942668e360727e13057559ee046db0ed14f06b49253",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/utils/gradleOwnedManifest.ts": "3886c2ba26e50cb888fd8b5e7513c1ac1e0e152e0b29111de4224ebd07846e9b",
+    "src/utils/gradleOwnedPolicy.ts": "2ace3536b349b4b2368c5a01bb1979864bd7377aa218134f4f197b6259892bf2",
+    "src/utils/gradleOwnedSchema.ts": "44fa3f141b1931e3043bd4e876f93b46132f54e1c36aaf7f6d3c43f1c6ea734c",
+    "src/utils/gradlePluginJar.ts": "b180ee353104a11e1ddd1a091930bda1aaf8138fcf5a1df7d66370ef8c848ab9",
+    "src/utils/gradlePluginSnapshots.ts": "2c0ce15f1c90e6c11916d2a8107c2d1c761719543932a0aeef722cfeb4acf2c1",
+    "src/utils/gradlePlugins.ts": "582f72462c13927e7284e1c7ca70681f4e455e469596020cd4e8bc5e9ec637af",
+    "src/utils/openedFilePath.ts": "963ac04f6eb3744af00771feaaf054c08ca8b2dcc7d2846507525394d3fdff8f",
+    "src/utils/projectWalk.ts": "5ff06d6df2c601017928d26709d6f4bf3ea9d9ff6813e627cfec82d010d9e316",
+    "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054",
+    "tsconfig.build.json": "49e7f5e2be44cc034bf5ef401064bf3b1588070e80aacfe1e1c8dde541c3117f",
+    "tsconfig.json": "7375ac5d334f50eed3d766799fd016e068f1998639c7b02ba201db280a1583c3"
+  },
+  "scenario": {
+    "schema": "osv-mcp.q2.c2.scenario.v1",
+    "scope": "application-client-with-local-service-fixtures",
+    "observations": {
+      "read": {
+        "executionWitness": "verified",
+        "importStatus": "unavailable",
+        "useRecords": 1,
+        "releasedPins": 1,
+        "handoffBeforeDelivery": true,
+        "deliveryBeforeAck": true,
+        "originalReadsSkipped": 0
+      },
+      "graphCache": {
+        "relation": "direct",
+        "executionWitness": "verified",
+        "freshNamespaceVerification": true,
+        "noCompanionFallback": true
+      },
+      "publicationRetry": {
+        "selectionRevision": 2,
+        "noSecondSelection": true
+      },
+      "durable": {
+        "selectedHead": 1,
+        "consumerUses": 1,
+        "ownerCloseReadDelta": 0,
+        "backendEligible": false
+      }
+    },
+    "backendEligible": false,
+    "profileApproved": false,
+    "independentRegistryVerified": false,
+    "originalReadsSkipped": 0
+  },
+  "mutations": [
+    {
+      "disabled": "registry-mode legacy select refusal",
+      "test": "refuses legacy local-first select even when a valid staged candidate exists",
+      "exitCode": 1,
+      "failure": "promise resolved instead of rejecting",
+      "restored": true
+    },
+    {
+      "disabled": "GradleGraphCache current reader route",
+      "test": "feeds the actual GradleGraphCache through a fresh service read with no companion fallback or cached caller",
+      "exitCode": 1,
+      "failure": "executionWitness was undefined instead of verified",
+      "restored": true
+    },
+    {
+      "disabled": "live A1 authority terminal lookup in the endpoint adapter",
+      "test": "rechecks the live authority kernel even when the registry-selected source still contains a valid terminal",
+      "exitCode": 1,
+      "failure": "delivery resolved after authority revocation",
+      "restored": true
+    }
+  ],
+  "established": [
+    "Shared strict schemas, full v2 replay and authority snapshot decoder are published utils without fixture principal provisioning",
+    "Actual GradleGraphCache document path accepts an explicitly application-injected bridge; no companion fallback or cached caller on that path",
+    "Fresh registry pin and issuer read precede exact namespace full read; source key, base, head, G0, G2, session/scope/profile and action-start evidence are checked",
+    "Authority endpoint rechecks the live A1 terminal; registry handoff and delivery precede durable provider use recording and consumer ACK",
+    "C1 POSIX owner is connected to a physical B2 namespace and the published bridge in an end-to-end test",
+    "Lost PublishSelection response resolves the same selection; mirror failure does not retire old source and can be repaired from registry state"
+  ],
+  "limitations": [
+    "No default production transport is installed; GradleGraphCache injection is application-owned, never decoded from project metadata",
+    "Semantic transport/authentication boundary is trusted; fixture endpoint uses C0 signed request/response validation; independent context/bootstrap and namespace-description wire authentication remain C3 work",
+    "Authority reference endpoint uses the A1/A2 reference kernel with memory journal; independent authority deployment is not established",
+    "No separate UID/IPC/runtime approval, real BTA execution, power-loss certificate or external independent Anchor admission",
+    "Namespaces and C1 history remain bounded and retained; no physical GC/compaction, long-lived unlimited service, prefix read omission or Q4 adoption",
+    "Existing un-injected Gradle reader remains unchanged; G3 returns capability_unsupported and all adoption flags stay closed"
+  ],
+  "independentRegistryVerified": false,
+  "profileApproved": false,
+  "backendEligible": false,
+  "originalReadsSkipped": 0,
+  "newNativeIsolationTrials": 0,
+  "verification": {
+    "targetedTestsPassed": 29,
+    "fullSuite": {
+      "command": "npm test -- --maxWorkers=1",
+      "filesPassed": 121,
+      "filesSkipped": 24,
+      "testsPassed": 4709,
+      "testsSkipped": 1418,
+      "durationSeconds": 243.48
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "diffCheck": "passed",
+    "publishedModulesFixturePrincipalImports": false
+  },
+  "initialReservationReviewFix": {
+    "rootCause": "Initial reservations generated a fresh operation ID on every call and had no retained intent after a lost reply",
+    "contract": [
+      "Save operation ID, role, API, original payload and logical intent before dispatch",
+      "Retry the same request; refuse replacement by another intent while unresolved",
+      "BeginEnrollment historical result must pass live fence validation; pin/writer historical-only results are refused",
+      "Never allocate a replacement or extend a lease after expiry; ambiguous state is retained until explicit recovery",
+      "Pending intent is in-memory for the bridge lifetime; no cross-restart credential or lease restoration"
+    ],
+    "regressionTestsAdded": 8,
+    "beforeFix": {
+      "tests": 4,
+      "failed": 4,
+      "cases": [
+        "BeginEnrollment lost reply",
+        "ReserveWriter lost reply",
+        "AcquireReadPin read lost reply",
+        "AcquireReadPin mirror lost reply"
+      ]
+    },
+    "afterFixFocused": {
+      "tests": 8,
+      "passed": 8
+    },
+    "fullVerification": {
+      "targetedTestsPassed": 29,
+      "fullSuite": {
+        "command": "npm test -- --maxWorkers=1",
+        "filesPassed": 121,
+        "filesSkipped": 24,
+        "testsPassed": 4709,
+        "testsSkipped": 1418,
+        "durationSeconds": 243.48
+      },
+      "typecheck": "passed",
+      "build": "passed",
+      "diffCheck": "passed",
+      "publishedModulesFixturePrincipalImports": false
+    }
+  },
+  "preReviewVerification": {
+    "targetedTestsPassed": 21,
+    "c0TestsPassed": 142,
+    "fullSuite": {
+      "command": "npm test -- --maxWorkers=1",
+      "filesPassed": 121,
+      "filesSkipped": 24,
+      "testsPassed": 4701,
+      "testsSkipped": 1418,
+      "durationSeconds": 235.0
+    },
+    "initialDefaultConcurrencyAttempt": {
+      "testsPassed": 4700,
+      "testsFailed": 1,
+      "testsSkipped": 1418,
+      "failure": "Existing C1 restart-barrier disk recovery test exceeded its 30-second timeout",
+      "isolatedRetry": "passed",
+      "isolatedDurationSeconds": 15.93,
+      "testOrTimeoutChanged": false
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "diffCheck": "passed",
+    "publishedModulesFixturePrincipalImports": false
+  }
+}

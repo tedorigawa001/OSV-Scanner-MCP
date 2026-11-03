@@ -5,14 +5,35 @@
   "command": "npx vitest run src/test/utils/gradleOwnedCurrentControl.test.ts",
   "tests": 138,
   "sourceSha256": {
-    "src/test/fixtures/gradleOwnedCurrentSchema.ts": "361df41163c79da5b3e1cfaeb34a51147f2e137645708593317c8626b35b7214",
-    "src/test/fixtures/gradleOwnedCurrentControl.ts": "75b5c9d31fc61e98db03c0ae815d64d0a894cc312394e729ee6a7f39e33b1011",
-    "src/test/fixtures/gradleOwnedCurrentSource.ts": "5bd9c9d4a9fa8fedd7f42f819b88ccf0ca969da94b74e064116b282f6ab205a3",
+    "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
+    "src/test/fixtures/gradleOwnedCurrentControl.ts": "fb2df51df0210d77b011636e6c0678fa646032ccd99c9542d4a55fefb49110d3",
+    "src/test/fixtures/gradleOwnedCurrentPersistence.ts": "5a6b7bda11fe0412a56e0491297a7f5f43f1b8b88d88832972eaff4cac59f28c",
     "src/test/fixtures/gradleOwnedCurrentScenario.ts": "5eb9626a4268b91a899df3e7ab84791b5a52cfd638dea30e0ab80ad81ca1f475",
+    "src/test/fixtures/gradleOwnedCurrentSchema.ts": "d5b3761261a93ed0834346f64ee2d39c3f1e163fa62e4e6e09d95fbb84046f62",
+    "src/test/fixtures/gradleOwnedCurrentSource.ts": "5bd9c9d4a9fa8fedd7f42f819b88ccf0ca969da94b74e064116b282f6ab205a3",
+    "src/test/fixtures/gradleOwnedJournalV2.ts": "e4860481e0dacd227d42ff65cb56e8b80fc521492ccb2375a73622a3b2293af2",
     "src/test/utils/gradleOwnedCurrentControl.test.ts": "aa9c049caacbc7cad9b620ae99904f6efba5147ae70e1d6f7053c51d7678b540",
+    "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
+    "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
+    "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
+    "src/utils/gradleCatalogs.ts": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b",
+    "src/utils/gradleDeclarations.ts": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be",
+    "src/utils/gradleGraph.ts": "73a36886ed6c8be17b63e5581392cca6c5ba5efb0463e475f7ee3913ac888e81",
+    "src/utils/gradleJson.ts": "f7f3ef047d30a675cb55044072e8fb516dceeb822192777ea7b7444699c9dc9f",
+    "src/utils/gradleOrigins.ts": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884",
+    "src/utils/gradleOwnedAuthoritySchema.ts": "893449dd0f388cdc0434de47624f269aa12c678df67e63d1bb195fb18dbe52e2",
+    "src/utils/gradleOwnedAuthoritySnapshot.ts": "694e88c771dff66e88b151e098172ffc0a04610bfcb62c56b79ef5f4b52c754e",
+    "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+    "src/utils/gradleOwnedExecution.ts": "360a8d5e61a7b115619077cb444f8a863f6d6d0459be9d17b87ae4c43f279fd4",
+    "src/utils/gradleOwnedJournalV2.ts": "5f78e8a9cb127fe8d0f25942668e360727e13057559ee046db0ed14f06b49253",
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
-    "src/test/fixtures/gradleOwnedJournalV2.ts": "ac47697774483edf8ee4319e63a74b52adcc5947f2b0556df2fc6db7d18986ef",
-    "src/test/fixtures/gradleOwnedCurrentPersistence.ts": "5a6b7bda11fe0412a56e0491297a7f5f43f1b8b88d88832972eaff4cac59f28c"
+    "src/utils/gradleOwnedSchema.ts": "44fa3f141b1931e3043bd4e876f93b46132f54e1c36aaf7f6d3c43f1c6ea734c",
+    "src/utils/gradlePluginJar.ts": "b180ee353104a11e1ddd1a091930bda1aaf8138fcf5a1df7d66370ef8c848ab9",
+    "src/utils/gradlePluginSnapshots.ts": "2c0ce15f1c90e6c11916d2a8107c2d1c761719543932a0aeef722cfeb4acf2c1",
+    "src/utils/gradlePlugins.ts": "582f72462c13927e7284e1c7ca70681f4e455e469596020cd4e8bc5e9ec637af",
+    "src/utils/openedFilePath.ts": "963ac04f6eb3744af00771feaaf054c08ca8b2dcc7d2846507525394d3fdff8f",
+    "src/utils/projectWalk.ts": "5ff06d6df2c601017928d26709d6f4bf3ea9d9ff6813e627cfec82d010d9e316",
+    "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054"
   },
   "scenario": {
     "schema": "osv-mcp.q2.c0.scenario.v1",
@@ -149,5 +170,10 @@
     "stage": "C1 persistence integration with existing capacity review fixes",
     "testsPassed": 142,
     "scenarioUnchanged": true
+  },
+  "sharedValidatorCompatibility": {
+    "stage": "C2",
+    "change": "pure schemas, v2 full replay and authority snapshot decoding moved into published utils; fixture paths remain re-exports",
+    "admissionChanged": false
   }
 }

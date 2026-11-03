@@ -5616,3 +5616,48 @@ C1レビュー修正の最終検証: 追加8件・C1計37件・C0計142件成功
 回帰2件を追加し、C1は39件になった：呼出し側入力の`cas`拒否3種のあともAnchorが不変でcontrolが継続すること、確定済みattemptを別遷移へ再使用した場合の`idempotency_conflict`と継続。修正前のコードで両件が失敗することを確認した。保存記録はsource fingerprintだけを更新し、native観測のscenarioは同一である。
 
 762be6eレビュー修正の検証結果: C1回帰39件・C0回帰142件成功。全体120 files／4,680 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。実SIGKILL 3件を再実行してscenarioを再照合した。native隔離・採用flagの変更は0。
+
+
+### 9.90 C2：本番用client・Gradle readerへの明示接続（2026-11-03）
+
+#### 9.90.1 実装境界
+
+`gradleOwnedCurrentClient.ts`と`gradleOwnedCurrentBridge.ts`をsrc/utilsへ追加した。共有currentness schema・v2全履歴replay・authority snapshot decoder／schemaも同所へ移し、fixture旧pathは互換re-exportとした。本番moduleにprincipal()・test kernel・fixture IPCをimportしない。データcodecを公開したことをbackend採用としない。
+
+clientはroot applicationが注入するOwnedCurrentTransportのsemantic response／API role／payload／resolutionModeを検査する。transport自体のpeer認証・署名検証・same operation retry bindingは注入endpointの責任で、試験endpointは既存C0のrequest／dispatch／acceptを使う。context/bootstrapとnamespace descriptorの独立wire認可を含むC3 transportは未配備。プロジェクトJSON・環境変数・pathからこのclientを自動構築しない。
+
+実GradleGraphCacheの第9引数に明示bridgeを注入できる。注入時はcompanionを読まずservice経路でdocumentを取得し、失敗しても通常companionや旧cached callerへfallbackしない。documentごとに新しいpin・原本読取・全検証を行い、pin解放後にrefreshOwnedExecution closureを再利用しない。未注入時の既存経路とunsupportedOwnedCallerの既定値は維持する。
+
+#### 9.90.2 準備・採用・非権威的mirror
+
+beginPublicationがoperator ProvisionFenceまたはwriter予約を取得し、providerは別namespaceをsealする。snapshot proofにnamespaceId／markerDigest／root／generation／fenceを収録してC0署名・C1保存・registry-selected refへ結ぶ。issuer PrepareCheckpoint→ActivateEnrollment／PublishSelectionの順で、snapshot＋checkpointを一括採用する。logical operationごとにprepare／publish IDを保持し、応答紛失後のPublishSelectionは同じsemantic resultをhistoricalとして解決し、新しいselection CASを行わない。
+
+採用後はsame selected pairのread pinを別途取得し、local mirrorだけを更新する。SealedPrefixStoreのregistry modeではreadSelected／legacy selectを拒否する。readExactはregistry snapshotに束縛されたexact markerだけを検証し、再openでもsealedな未選択namespaceを勝手にquarantine／retireしない。managerが渡したnamespace IOをroot identityへ照合してから使う。mirror失敗時は受付を閉じ、再openしたproviderと新bridgeのrepairMirrorがregistry-selected refから再構築する。旧namespaceはCAS前後とも物理削除・retireしない。保持枠の解放は承認済みGCに残す。
+
+#### 9.90.3 read・authority・consumer ACK
+
+root-owned scope／profileの許可をsource IO前に確認し、AcquireReadPin→issuer fresh checkpoint→provider exact namespaceの全inventory／再同期→full v2 replayの順とする。issuerに残るcopyをprovider原本の代替にしない。source key digest・approved base・root context・selected headを照合し、authority snapshot全履歴、action-start予約、同session／scope／consumer／scan／root／manifest／core／profileを検証する。
+
+検証済みsourceのcore＋projectionを実G0 parserへ渡し、同じscopeのwitness／leaseをG2で再照合する。CurrentAuthorityVerifierが私有WeakMapのopaque proofを発行し、任意hash・plain objectをauthority gateにしない。試験authority endpointはこのproofに加えて、実A1 reference kernelのfresh lookupで同terminalがまだcurrentであることを確認する。sourceに古い有効terminalが残っていても、live authority失効ならhandoffを拒否する。これはmemory journalを使うreference endpointであり、独立authority serviceの認証実証ではない。
+
+PrepareHandoff→DeliverResult→providerのdurable use記録→consumer AcknowledgeDeliveryまでpinを保持し、その後にimmutable documentを返す。期限・owner終了・原本変更・保存失敗では成功結果を公開しない。handoff／deliveryのhistorical retryを新しいlive deliveryへ変換しない。closeや不明な結果を理由に保留decisionを自動解放せず、必要な期限解決／barrierに残す。read-only metadata handoffであり、外部compiler launch等の自由callbackは実装しない。
+
+#### 9.90.4 検証・未成立範囲
+
+C2回帰21件。実GradleGraphCacheのrelation判定・繰返しfresh read・companion非fallback、C1保存owner＋物理namespace＋G0/G2の接続、pin保持とACK、CAS応答紛失、mirror障害／修復、未採用snapshot・改変原本・異session／profile・失効authority・期限切れ・owner closeを確認する。legacy local-first拒否／実reader注入／live authority再照会を外す3対照で、対応回帰が失敗することを確認した。
+
+記録は`docs/validation/gradle-independent-currentness-c2-2026-11-03.json`。再現commandは`npx vitest run src/test/utils/gradleOwnedCurrentBridge.test.ts`、再生成は`OSV_CURRENT_C2_REPORT=1 npx vitest run src/test/utils/gradleOwnedCurrentBridge.test.ts --silent=false`。B2/B3・C0・C1記録はshared moduleへの分離に伴うsource閉包を更新し、元のnative観測／admission範囲は変えない。
+
+既定transport・別UID認証IPC・独立Anchor・runtime承認は未成立。C1のimage 8 MiB・生涯256遷移等の制限、B2のnamespace／use保持上限も残る。compaction／移行・C3配備・C4採用審査を省略しない。G2対応は検証できてもG3のcapability_unsupportedを維持し、backendEligible／profileApproved／independentRegistryVerifiedはfalse、originalReadsSkipped=0である。
+
+最終検証: C2回帰21件、C0回帰142件成功。全体は`npm test -- --maxWorkers=1`で121 files／4,701 tests成功、24 files／1,418 tests skipped（235.00秒）。初回の既定並行実行は既存C1復旧試験1件が30秒でtimeoutし、単独再実行は15.93秒で成功。試験内容・timeoutは変更せず全体を再検証した。型検査・build・diff整形検査成功。本番配布moduleにfixture import／principal発行がないことも確認。
+
+#### 9.90.5 初回予約の応答紛失からの復帰（C2レビュー修正）
+
+bridgeはBeginEnrollment／ReserveWriter／AcquireReadPinの送信前に、logical intent・role・API・operation ID・元payloadを私有の保留slotへ保存する。初回公開／writer予約、通常読取pin、mirror用pinの応答を失っても同一要求を再送する。保留中は別file／scope／selected pair／用途で要求を置換しない。transportは元request digestを保持する契約を引き続き担う。
+
+BeginEnrollmentのcommitted-historical応答だけからprovisionを採用せず、providerのCheckLiveBindingで元fenceを確認してからhandleを発行する。writer／pinはexisting-live-confirmedと元grantのlive確認を必須とする。期限切れ・失効時は新しいIDで予約を取り直さず、期限や枠を増やさない。保留slotはbridge寿命内の再試行用であり、再起動後のactor／credential復元や期限回復を意味しない。close／不明な結果に対する明示recoveryの境界も維持する。
+
+回帰を8件追加（C2合計29件）。BeginEnrollment・ReserveWriter・読取pin・mirror pinの応答紛失4件は修正前に全件失敗することを確認し、修正後に同一ID／payload、予約／pinの同一性、期限延長なし、後続公開／ACKの成功を確認した。3種の期限切れ再試行と、保留読取を別fileで置換する試みも拒否する。
+
+C2初回予約レビュー修正の最終検証: C2回帰29件成功。全体は`npm test -- --maxWorkers=1`で121 files／4,709 tests成功、24 files／1,418 tests skipped（243.48秒）。型検査・build・diff整形検査成功。元の全体検証結果はvalidationのpreReviewVerificationとして保持する。
