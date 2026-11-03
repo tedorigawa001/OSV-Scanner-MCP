@@ -2824,3 +2824,16 @@ C3b-1の最終検証: 新規2 files／33 tests成功（単体29件・別process 
 - 回復の時間判定を`recoveryTimeFits`へ統一し、clientのsession寿命をtransport open前から数える。記録のパスを修正した。
 
 e69babbレビュー修正の検証結果: 単体40件・別process 4件、全体5,226 tests成功（1,418 skipped）。型検査・build成功。
+
+
+### C3b-2：own-role保存・署名／registry・Anchorの接続（2026-11-04）
+
+- §9.96に単一ownerのStageStore／RoleSigner、RegistryOwner／AnchorOwner／AnchorClientとstrictな公開R・command・状態schemaを追加。C1 primitiveを本番向けに切り出し、既存fixtureは比較対照として維持する。
+- 認証sessionの私有受付handle、durable stage／業務ledger、公開Rの保存→exact CAS→adoption、応答紛失後の元attempt解決、起動時の全履歴照合→旧grant失効保存→受付開始に対応する。
+- ReadContext、pin／writer、genesis／advance、AbandonEnrollment、協調drain証拠を注入したbarrier／freezeの回帰を追加。issuer full検証・実participant drainの成立とは分ける。
+- registry／Anchor別childでown鍵・own rootだけを渡し、応答紛失・実SIGKILL・保存障害・再起動後のhistorical結果を検証する。native隔離・本番採用は未成立、全採用flag false／originalReadsSkipped 0を維持する。
+- 次はC3b-3のprovider／issuer・原本transfer／mirror。その後C3b-4 authority、C3b-5 C2／RecordUse／ACK／shutdown、C3c／C3d／C4、Q3b／Q4b、長期運用GC／compactionが残る。
+
+C3b-2の追加境界検査: ReadContextのfloorをclientで自動観測し、server boot変更後も保持する。original deadline・回復枠・unknown状態をboot quotaへ束縛し、別handleによる再生成を拒否する。検査除去対照はledger優先1件・Anchor応答鮮度1件・業務予算2件で期待どおり失敗し、復元した。
+
+C3b-2の最終検証: 新規3 files／51 tests（StageStore 19件・RegistryOwner 28件・別process suite 4件）。全体は`npm test -- --maxWorkers=1`で132 files／5,277 tests成功、24 files／1,418 tests skipped（359.64秒）。型検査・build・diff整形検査成功。3種類の検査除去対照で計4件が期待どおり失敗し、検査を復元して全体を再確認した。56 source閉包とC3b-0／1の互換receiptを照合し、production distにtest fixture／全actor factory／鍵生成がないことを確認。全採用flag false、originalReadsSkipped=0。

@@ -6261,3 +6261,62 @@ C3b-1の最終検証: 新規2 files／33 tests成功（単体29件・別process 
 回帰11件を追加（単体40件、別process suite 4件）。修正前のsourceでは10件が失敗することを確認した（残る1件は修正前後で変わらない境界の対照）。別processの観測値は変わらない。
 
 e69babbレビュー修正の最終検証: 全体は`npx vitest run --maxWorkers=2`で129 files／5,226 tests成功、24 files／1,418 tests skipped。型検査・build成功。新規の別UID隔離・本番採用は0。
+
+
+### 9.96 C3b-2：単一role保存・registry／Anchor接続（2026-11-04）
+
+#### 9.96.1 実装範囲と所有境界
+
+`gradleOwnedStageStore.ts`・`gradleOwnedRoleSigner.ts`・`gradleOwnedRegistryOwner.ts`・`gradleOwnedAnchorOwner.ts`とstrictな`gradleOwnedRegistrySchema.ts`を追加した。ownerの生成には私有OwnerPlan、単一root pairのOwnedStore、own-role Signer、公開credential registryと明示client portだけを渡す。registryは公開issuer証拠を受け取るportとAnchorClientを持ち、Anchorは署名済み公開Rだけを検証する。issuer／registryのfilesystemや全roleの秘密鍵表をAnchorへ渡さない。既存C0／C1の全actor生成・全owner保存fixtureは本番moduleへimportしない。
+
+C1の単一owner向けjournal・POSIX root固定IO・checkpoint・disk primitiveを`gradleOwnedStoreJournal/Fs/Checkpoint/Disk.ts`へ切り出した。既存fixtureは比較対照として変更せず残す。新primitiveには履歴の実commit headとrecordsを再検証して返すreadHistoryを加え、memory fault fixtureを本番へ含めない。これは協調的なローカルPOSIX保存実装であり、別UID隔離・電源断耐性の認証・独立rollback domainの成立は意味しない。
+
+RoleSignerはown credentialのEd25519鍵をclosure内に保持し、OwnerPlanが発行したopaqueなScopedSignIntentを検査する。domain・方向・API・identity・strict body、公開keyとの対応を確認し、他role・任意body署名・偽handleを拒否する。公開の汎用署名APIや全private key表は追加しない。初期C3b-1 sessionの外側署名も同roleのown credentialを使い、root applicationが明示的に組み立てる。
+
+#### 9.96.2 durable stageとledger優先の解決
+
+StageStoreはown store／checkpoint rootのdevice・inode、owner／storage epoch・key IDを固定する。独立入力のpreflightを鍵・業務rootのopen前に行う。履歴全体のjournal認証、checkpoint同期、完全inventory、stage順序・expected head・直前receipt・image digestを検査し、各StageReceiptを実commit headから再構成する。current receiptをcurrent imageへ埋め戻さない。
+
+同transitionのexact再送は元receiptだけを返し、後続head前進後も旧imageを書き戻さない。異内容の同transitionはconflict。未保存stageだけが現在headから構築できる。入力の形・head・stage拒否をwrite前に行い、write開始後の失敗・同期／readback失敗は結果不明としてfail-stopする。clientの診断cacheをdurable ledgerへ流用せず、完了済み業務結果は期限で削除しない。初期上限は64 stageで、長期運用のGC／compactionは未実装である。
+
+registryの各Rにはlineage・owner／storage epoch・revision・previous・attempt ID・状態・業務K／D・元result／applied revisionを署名する。Rと業務ledgerを同じown-store stageへ保存してからexact Anchor CASする。ActivateEnrollment／PublishSelectionでは、selection-recorded→Anchor採用→selection-adoptedの2stageを使う。以後の業務要求は保存履歴とAnchorを再検証し、K／Dを先に引く。元resultの解決に現在のbindingからStageCommitRequestを組み立て直さない。
+
+#### 9.96.3 Anchor portと応答紛失
+
+AnchorOwnerは公開registry署名Rのref／digest／lineage／owner／epoch・revision／previous／attemptを照合し、own-storeへCAS履歴を同期保存してから応答する。同attemptの再送は後続transaction確定後も元の適用headへ収束し、異内容への再使用を拒否する。registry／issuer private rootのreadはない。
+
+AnchorClientはown registry request鍵と独立にpinしたAnchor公開credentialだけを使う。各port要求に256-bit request IDを発行し、署名replyをexact request digestへ束縛する。正しい署名の過去read応答も、新しい要求へは受理しない。transport request IDは業務CASのsemantic digestから除外する。保存済みCASの応答が紛失したときは元attemptをqueryし、元Rの採用を確認する。別attemptや現在headを使う別CASで成功を作らない。
+
+このAnchor portは署名・identity・要求digestを照合する有界の明示portで、local child adapterとmockを別に検証する。manager承認・kernel peer資格・独立rollback domainを備えた外部Anchor backendの適合証明ではない。Anchor自身のrollbackに対しては、呼出し元が独立に渡すretained minimumを検査し、同hostにあるfloorだけで独立性を主張しない。
+
+#### 9.96.4 session受付と業務API
+
+C3b-1の既定は診断statusのままとし、business API一覧とpurposeをroot applicationが注入したときだけ業務経路を有効にする。SessionServerは内側署名・API／purpose・lineageを確認し、challengeを消費してから私有AuthenticatedSessionCallを発行する。handleはpeer／serverの完全identity、inner wire digest、API、server側の絶対期限と現在のsession状態へ束縛する。registryはraw wireだけや同shapeのJSONを受付証拠とせず、最初と各await後・限定IO前・成功署名前に再検査する。
+
+接続APIはReadContext、BeginEnrollment／ActivateEnrollment、ReserveWriter／PublishSelection、AcquireReadPin／CheckLiveBinding、CancelWriter／ReleaseReadPin、QueryOperation、AbandonEnrollmentとbarrier管理。owner business envelopeはC3b独自domainであり、C0/C3aの既存wireを暗黙変更しない。C2の既定client routeへの対応付けはC3b-5に残る。PreparedCheckpointは署名・公開ref・fence・genesis／advance・previous・baseを照合する。issuerのfull source検証・保存serviceはC3b-3で接続する。
+
+ReadContextを受理したSessionClientはcontext floorを自動更新する。root adapterはserver boot変更後も同じfloorとboot quotaを保持する。業務要求のoriginal deadline・回復回数・unknown状態もboot共通の有界表へ束縛し、同じ署名済みinnerを別handleへ渡して期限や回復枠を作り直せない。回復を尽くしたunknown要求は、明示的なQueryOperation／新認可へ進む。
+
+pin／writer／provisionの再送では元ref・期限を保持する。有効なsame-boot grantだけをexisting-live-confirmedとし、消費／取消し／失効後はcommitted-historicalとlive=falseを返す。AbandonEnrollmentは元BeginEnrollmentのID／digest・exact provision・現在incarnation、失効／取消し、未採用の状態を照合してからdurableにuninitializedへ戻す。未知の採用状態を推測して破棄しない。
+
+#### 9.96.5 起動復旧・失効・barrier
+
+registry起動はown-storeの全stage／全Rを公開署名で再検証し、Anchorとの連鎖・retained minimumを照合する。record保存後・Anchor前に停止したときは元R／元attemptだけを解決し、採用済み2段階transactionの未保存の後段を完了する。その後、新bootに対応するincarnation・revocation epoch・writer fenceの更新、全旧provision／writer／pinの取消しを保存・Anchor採用してから通常受付を許す。同bootの再openはboot_reusedとして拒否する。
+
+旧servingはrestart barrier付きdrainingとなり、通常pin発行を拒否する。元frozen／retiredを自動で再開しない。旧peer bootのcredentialは新公開registryと一致しないため拒否し、過去のledger結果をlive権限へ変換しない。
+
+barrierのparticipant集合は独立公開registryから求める。ConfirmFencedには明示されたproof取得portを必要とし、初期profileでは各participantが署名したexact barrier／subject／boot・inFlight=0／effects=0のcooperative-only証拠だけを照合する。全participantの照合前にFinishBarrierできない。freezeのbarrierはResumeServingできない。C1との状態遷移対照にはこの注入証拠を使うが、実service全体の排出・managerによる実停止・外部effectのfencing成立はC3b-4／C3dに残す。proof port未接続時は拒否する。
+
+#### 9.96.6 検証と成立範囲
+
+単一roleの実disk回帰はstage exact再送・二段階保存・容量／head拒否・排他・preflight・blob／commit／checkpoint改変・未記録file／symlink、own-role署名を検査する。registry回帰は元結果解決、genesis／advance、pin／writer・AbandonEnrollment、C1対照、barrier／freeze、再起動失効、保存障害、署名済み古いAnchor応答・巻戻し拒否を検査する。ledger優先の解決を除去すると元BeginEnrollment再送の回帰、Anchorのrequest digest照合を除去すると旧read応答の回帰が失敗することを確認した。boot共通の業務予算照合を除去すると、期限更新とunknown要求のhandle再生成の2回帰が失敗する。すべて検査を復元した。
+
+local-process suiteではregistryとAnchorの2 childが各自のrequest／reply鍵2個とown store／checkpoint鍵だけを保持する。親は公開configと署名済みpacketを中継し、active ownerの秘密鍵を受け取らない。保存後のCAS／業務応答紛失・新session回復・実process終了後の再起動、registry保存後のSIGKILL・元CAS解決・失効保存、実ディスク上の保存phaseへの故障注入を観測する。SIGKILL後の元BeginEnrollmentもappliedRevision=1のhistoricalへ収束し、失効保存後のrevision=2から追加CASしない。childの鍵再loadは公開OwnerPlan preflight後とし、fixtureの初回provisioningは通常service受付と区別する。private rootのDAC隔離を証明する構成ではない。
+
+記録は`docs/validation/gradle-independent-currentness-c3b2-2026-11-04.json`。source receiptには新module、テスト・child、比較用C1 primitive／scenario、package／compiler設定の閉包を含む。C3b-0／1の以前のsource receiptを保持し、共有pure contract・session拡張後の互換検証用receiptを更新する。provider／issuerの本番source転送、authority full G0/G2・live terminal、実delivery／use／ACK、別UID／VM・全native隔離・外部Anchorの独立性・本番採用は未成立。全採用flag false、originalReadsSkipped=0を維持する。
+
+#### 9.96.7 次の実装
+
+次はC3b-3のProviderOwner／IssuerOwner・candidate seal／prepare・full inventory／chunk assembler・exact selected read・採用後mirrorを接続する。C3b-4のauthority・実行予約／失効・実participant drain、C3b-5のC2 client／authenticated outcomeの対応付け／RecordUse／consumer ACK・全工程予算／shutdown、C3c固定配備・C3d native故障検証・C4採用審査、Q3b／Q4bと長期運用GC／compactionは残る。
+
+C3b-2の最終検証: 新規3 files／51 tests（StageStore 19件・RegistryOwner 28件・別process suite 4件）。全体は`npm test -- --maxWorkers=1`で132 files／5,277 tests成功、24 files／1,418 tests skipped（359.64秒）。型検査・build・diff整形検査成功。3種類の検査除去対照で計4件が期待どおり失敗し、検査を復元して全体を再確認した。56 source閉包とC3b-0／1の互換receiptを照合し、production distにtest fixture／全actor factory／鍵生成がないことを確認。全採用flag false、originalReadsSkipped=0。

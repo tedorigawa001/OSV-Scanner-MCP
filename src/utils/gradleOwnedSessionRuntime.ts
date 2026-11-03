@@ -1,5 +1,5 @@
-/** C3b-1 bounded authenticated sessions. Only read-only diagnostic recovery status is dispatched.
- * No OwnedStore, live pin, kernel peer observation, durable business ledger or admission. */
+/** Bounded authenticated sessions. Diagnostic status is the default; C3b-2 business dispatch is explicit.
+ * No default service registration, kernel peer observation, native isolation or backend admission. */
 import {createPublicKey,randomBytes,sign,verify,type KeyObject} from 'node:crypto';
 import {z} from 'zod';
 import {cid,chash,cn,parsed,need,decodeCurrent,CurrentControlError} from './gradleOwnedCurrentSchema.js';
@@ -7,6 +7,7 @@ import {currentLineageSchema} from './gradleOwnedCurrentAuxiliary.js';
 import {validateCredentialRegistry,publicCredentialKey,type CredentialRegistry,type ServiceIdentity} from './gradleOwnedServiceOwners.js';
 import {authEnvelopeSchema,authMessageSchema,validateSessionTranscript,inspectStaticSession,validateChallengeExchange,validateChannelFrame,recoveryReportSchema,recoveryReplySchema,recoveryTimeFits,ServiceContextFloor,type StaticSession} from './gradleOwnedServiceSession.js';
 import {canonicalOwnedJson,ownedDigest,ownedSha256} from './gradleOwnedJson.js';
+import {verifyOwnerValue} from './gradleOwnedRoleSigner.js';
 
 const fresh=()=>randomBytes(32).toString('hex'),same=(a:unknown,b:unknown)=>canonicalOwnedJson(a)===canonicalOwnedJson(b);
 const flags={scope:'diagnostic-session-only' as const,nativeIsolationVerified:false,independentRegistryVerified:false,profileApproved:false,backendEligible:false,originalReadsSkipped:0};
@@ -15,7 +16,10 @@ type Credential=CredentialRegistry['credentials'][number];
 type Message=z.infer<typeof authMessageSchema>;
 export interface SessionEnvironment {now:()=>number;assertOpen:()=>void;credentialCurrent:(identity:ServiceIdentity)=>boolean}
 export interface SessionEndpointConfig {registry:unknown;pins:Pins;credentialId:string;privateKey:KeyObject;lineage:unknown;environment:SessionEnvironment;
- limits?:{sessions?:number;peerSessions?:number;requests?:number;operations?:number};recoveryBudget?:{handshakeMs:number;remainingWorkMs:number}}
+ limits?:{sessions?:number;peerSessions?:number;requests?:number;operations?:number};recoveryBudget?:{handshakeMs:number;remainingWorkMs:number};business?:{apis:readonly string[];purpose:(api:string)=>'read'|'publication'|'maintenance'|'checkpoint'|'handoff'|'enrollment'}}
+export type AuthenticatedSessionCall=Readonly<{kind:'c3b-authenticated-call'}>;
+const authenticatedCalls=new WeakMap<AuthenticatedSessionCall,{peer:ServiceIdentity;server:ServiceIdentity;api:string;innerDigest:string;deadline:number;check:()=>void}>();
+export function inspectAuthenticatedCall(handle:AuthenticatedSessionCall,wire:Buffer){const c=authenticatedCalls.get(handle);need(c&&c.innerDigest===ownedSha256(wire),'peer_mismatch');c.check();return {peer:structuredClone(c.peer),server:structuredClone(c.server),api:c.api,deadline:c.deadline};}
 const limitsSchema=z.object({sessions:cn.positive().max(64),peerSessions:cn.positive().max(16),requests:cn.positive().max(256),operations:cn.positive().max(64)}).strict();
 function publicBytes(k:KeyObject){return k.export({type:'spki',format:'der'}).toString('base64');}
 // Module-private: no endpoint method or property exposes the key or signs a caller-chosen schema or body.
@@ -41,8 +45,11 @@ class Endpoint {
  verifyAuth(bytes:Buffer,c:Credential){this.gate(c);const e=parsed(authEnvelopeSchema,decodeCurrent(bytes));need(e.direction===c.direction&&e.keyId===c.keyId,'peer_mismatch');const sig=Buffer.from(e.signature,'base64');need(sig.toString('base64')===e.signature&&verify(null,Buffer.from(canonicalOwnedJson({domain:e.schema,direction:e.direction,keyId:e.keyId,body:e.body})),publicCredentialKey(c),sig),'signature_invalid');return e.body;}
  verifyRecovery(bytes:Buffer,c:Credential){this.gate(c);const schema=z.object({schema:z.literal('osv-mcp.q2.c3b.recovery.envelope.v1'),direction:z.enum(['request','reply']),keyId:cid,keyEpoch:cn.positive(),body:z.unknown(),signature:z.string().regex(/^[A-Za-z0-9+/]{86}==$/)}).strict();const e=parsed(schema,decodeCurrent(bytes,8192));need(e.direction===c.direction&&e.keyId===c.keyId&&e.keyEpoch===c.identity.keyEpoch,'peer_mismatch');const sig=Buffer.from(e.signature,'base64');need(sig.toString('base64')===e.signature&&verify(null,Buffer.from(canonicalOwnedJson({domain:e.schema,direction:e.direction,keyId:e.keyId,body:e.body})),publicCredentialKey(c),sig),'signature_invalid');return c.direction==='request'?parsed(recoveryReportSchema,e.body):parsed(recoveryReplySchema,e.body);}
  permit(c:Credential){need(c.permissions.some(p=>p.api==='recovery.GetRecoveryStatus'&&p.purpose==='recovery'&&same(p.lineage,this.lineage)&&(p.delegateInstance===null||p.delegateInstance===this.credential.identity.instanceId)),'permission_denied');}
- get diagnostics(){return {...flags};}
+ businessPurpose(api:string){need(this.config.business?.apis.includes(api),'permission_denied');return this.config.business!.purpose(api);}
+ permitAPI(c:Credential,api:string){const purpose=api==='recovery.GetRecoveryStatus'?'recovery':this.businessPurpose(api);need(c.permissions.some(p=>p.api===api&&p.purpose===purpose&&same(p.lineage,this.lineage)&&(p.delegateInstance===null||p.delegateInstance===this.credential.identity.instanceId)),'permission_denied');return purpose;}
+ get diagnostics(){return {...flags,scope:this.config.business?'cooperative-business-session' as const:flags.scope};}
 }
+function validateBusinessReply(inner:Buffer,e:Endpoint,api:string){verifyOwnerValue(inner,e.registry,{role:e.credential.identity.role,instanceId:e.credential.identity.instanceId,direction:'reply',domain:api.startsWith('aux.')?'aux':'control',api});need(inner.length<=8192,'budget_exceeded');}
 const api='recovery.GetRecoveryStatus';
 export type PeerChannel=Readonly<{kind:'c3b-peer-channel'}>;
 type Challenge={value:string;request:Buffer;reply:Buffer;origin:string;expires:number;ttlMs:number;used:boolean};
@@ -52,17 +59,17 @@ type Completion={digest:string;promise:Promise<unknown>;phase:'pending'|'complet
 export class SessionServer extends Endpoint {
  readonly #channels=new WeakMap<PeerChannel,ServerChannel>();readonly #active=new Set<ServerChannel>();readonly #hellos=new Map<string,Set<string>>();readonly #requests=new Map<string,number>();readonly #completed=new Map<string,Completion>();
  #dispatches=0;#replies=0;#challenges=0;
- constructor(config:SessionEndpointConfig,readonly status:()=>Promise<unknown>){super(config,'reply');need(this.credential.identity.role==='lineage-registry','permission_denied');}
+ constructor(config:SessionEndpointConfig,readonly status:()=>Promise<unknown>,readonly businessDispatch?:(wire:Buffer,call:AuthenticatedSessionCall)=>Promise<Buffer>){super(config,'reply');need(this.credential.identity.role==='lineage-registry','permission_denied');}
  #close(s:ServerChannel){s.phase='closed';s.challenge=undefined;if(!s.working)this.#active.delete(s);}
  #check(s:ServerChannel){const now=this.gate(s.peer);need(s.phase!=='closed','session_closed');if(now-s.created>=30000){this.#close(s);need(false,'session_expired');}return now;}
  #sweep(){const now=this.gate();for(const s of this.#active)if(now-s.created>=30000)this.#close(s);}
  /** Called by the root transport adapter, not decoded from a peer-supplied frame. */
- openPeer(credentialId:string,evidence:unknown){this.#sweep();const e=parsed(z.object({mode:z.literal('synthetic-local-process'),credentialId:cid,instanceId:cid,boot:chash}).strict(),evidence),peer=this.registry.credentials.find(c=>c.identity.credentialId===credentialId);need(peer&&peer.direction==='request'&&e.credentialId===credentialId&&e.instanceId===peer.identity.instanceId&&e.boot===peer.identity.boot,'peer_mismatch');this.gate(peer);this.permit(peer);
+ openPeer(credentialId:string,evidence:unknown){this.#sweep();const e=parsed(z.object({mode:z.literal('synthetic-local-process'),credentialId:cid,instanceId:cid,boot:chash}).strict(),evidence),peer=this.registry.credentials.find(c=>c.identity.credentialId===credentialId);need(peer&&peer.direction==='request'&&e.credentialId===credentialId&&e.instanceId===peer.identity.instanceId&&e.boot===peer.identity.boot,'peer_mismatch');this.gate(peer);need(peer.permissions.some(p=>p.api===api||this.config.business?.apis.includes(p.api)),'permission_denied');
   need(this.#active.size<this.limits.sessions&&[...this.#active].filter(s=>s.peer.identity.credentialId===credentialId).length<this.limits.peerSessions,'capacity_exhausted');const handle=Object.freeze({kind:'c3b-peer-channel' as const}),state:ServerChannel={handle,peer,phase:'hello',created:this.now(),receiveSequence:0,sendSequence:0,business:0,working:false};this.#channels.set(handle,state);this.#active.add(state);return handle;
  }
  closePeer(handle:PeerChannel){const s=this.#channels.get(handle);need(s,'peer_mismatch');this.#close(s);}
  async receive(handle:PeerChannel,packet:SessionPacket):Promise<SessionPacket>{const s=this.#channels.get(handle);need(s,'peer_mismatch');let reserved=false,launched=false;try{
-  const now=this.#check(s);need(Buffer.isBuffer(packet.wire)&&packet.wire.length<=16384&&(!packet.inner||(Buffer.isBuffer(packet.inner)&&packet.inner.length<=8192)),'budget_exceeded');const m=this.verifyAuth(packet.wire,s.peer);this.permit(s.peer);
+  const now=this.#check(s);need(Buffer.isBuffer(packet.wire)&&packet.wire.length<=16384&&(!packet.inner||(Buffer.isBuffer(packet.inner)&&packet.inner.length<=8192)),'budget_exceeded');const m=this.verifyAuth(packet.wire,s.peer);
   if(s.phase==='hello'){
    need(m.kind==='client-hello'&&!packet.inner,'schema_invalid');const server=this.credential.identity,peer=s.peer.identity;const base={clientCredentialId:peer.credentialId,serverCredentialId:server.credentialId,deploymentDigest:this.registry.deploymentDigest,enrollmentDigest:this.registry.enrollmentDigest,profileDigest:this.registry.profileDigest,registryDigest:this.config.pins.registryDigest,endpointId:this.credential.endpointId,clientBoot:peer.boot,serverBoot:server.boot,clientKeyEpoch:peer.keyEpoch,serverKeyEpoch:server.keyEpoch};for(const [k,v]of Object.entries(base))need((m as any)[k]===v,'binding_mismatch');
    const seen=this.#hellos.get(peer.credentialId)??new Set<string>();need(!seen.has(m.clientNonce),'challenge_replayed');need(seen.size<256,'capacity_exhausted');seen.add(m.clientNonce);this.#hellos.set(peer.credentialId,seen);
@@ -75,11 +82,15 @@ export class SessionServer extends Endpoint {
   need(s.phase==='ready','session_closed');const facts=s.facts;for(const [k,v]of Object.entries({...facts.base,clientNonce:facts.clientNonce,serverNonce:facts.serverNonce,sessionId:facts.sessionId,transcriptDigest:facts.transcriptDigest}))need((m as any)[k]===v,'binding_mismatch');
   need((m.kind==='challenge-request'||m.kind==='channel')&&m.sequence===s.receiveSequence+1,'sequence_invalid');
   if(m.kind==='challenge-request'){
-   need(!packet.inner&&!s.working&&(!s.challenge||s.challenge.used||now>=s.challenge.expires),'busy');need(m.api===api,'permission_denied');const n=this.#requests.get(s.peer.identity.credentialId)??0;need(n<this.limits.requests&&s.business<256,'capacity_exhausted');
+   need(!packet.inner&&!s.working&&(!s.challenge||s.challenge.used||now>=s.challenge.expires),'busy');this.permitAPI(s.peer,m.api);const n=this.#requests.get(s.peer.identity.credentialId)??0;need(n<this.limits.requests&&s.business<256,'capacity_exhausted');
    this.#requests.set(s.peer.identity.credentialId,n+1);s.business++;s.receiveSequence=m.sequence;const challenge=fresh(),reply=signAuth(this,{...m,kind:'challenge',sequence:++s.sendSequence,challenge});s.challenge={value:challenge,request:Buffer.from(packet.wire),reply,origin:m.originDigest,expires:Math.min(now+m.ttlMs,s.created+30000),ttlMs:m.ttlMs,used:false};this.#challenges++;return {wire:reply};
   }
   const pending=s.challenge;need(pending&&!pending.used&&pending.value===m.challenge&&pending.origin===m.originDigest&&pending.ttlMs===m.ttlMs,'challenge_replayed');need(now<pending.expires,'request_expired');need(!s.working,'busy');need(packet.inner,'schema_invalid');
-  validateChannelFrame(packet.wire,packet.inner,s.codec!,{direction:'request',sequence:s.receiveSequence+1,challenge:pending.value,api,originDigest:pending.origin,ttlMs:m.ttlMs,purpose:'recovery',lineage:this.lineage});
+  const requestAPI=m.api,purpose=this.permitAPI(s.peer,requestAPI);
+  validateChannelFrame(packet.wire,packet.inner,s.codec!,{direction:'request',sequence:s.receiveSequence+1,challenge:pending.value,api:requestAPI,originDigest:pending.origin,ttlMs:m.ttlMs,purpose,lineage:this.lineage});
+  if(requestAPI!==api){need(this.businessDispatch,'permission_denied');verifyOwnerValue(packet.inner,this.registry,{role:s.peer.identity.role,instanceId:s.peer.identity.instanceId,direction:'request',domain:requestAPI.startsWith('aux.')?'aux':'control',api:requestAPI});pending.used=true;s.receiveSequence=m.sequence;s.working=true;reserved=true;const handle=Object.freeze({kind:'c3b-authenticated-call' as const});authenticatedCalls.set(handle,{peer:s.peer.identity,server:this.credential.identity,api:requestAPI,innerDigest:ownedSha256(packet.inner),deadline:pending.expires,check:()=>{this.#check(s);this.permitAPI(s.peer,requestAPI);need(this.now()<pending.expires,'request_expired');}});
+   const finish=(async()=>{this.#check(s);this.#dispatches++;const inner=await this.businessDispatch!(Buffer.from(packet.inner!),handle);inspectAuthenticatedCall(handle,packet.inner!);validateBusinessReply(inner,this,requestAPI);const wire=signAuth(this,{...m,kind:'channel',sequence:++s.sendSequence,innerWireDigest:ownedSha256(inner)});this.#replies++;return {wire,inner};})().finally(()=>{authenticatedCalls.delete(handle);s.working=false;if(s.phase==='closed')this.#active.delete(s);});launched=true;return await deadline(finish,Math.max(0,pending.expires-this.now()),()=>this.#close(s));
+  }
   const request:any=this.verifyRecovery(packet.inner,s.peer);need(request.api==='GetRecoveryStatus'&&same(request.lineage,this.lineage)&&request.instanceId===this.credential.identity.instanceId,'permission_denied');
   // No await occurs between checking the challenge and reserving/consuming it.
   pending.used=true;s.receiveSequence=m.sequence;s.working=true;reserved=true;
@@ -94,19 +105,23 @@ export class SessionServer extends Endpoint {
   const finish=completion.promise.then(body=>{this.#check(s);this.permit(s.peer);need(this.now()<pending.expires,'request_expired');const inner=signRecovery(this,body),wire=signAuth(this,{...m,kind:'channel',sequence:++s.sendSequence,innerWireDigest:ownedSha256(inner)});this.#replies++;return {wire,inner};}).finally(()=>{s.working=false;if(s.phase==='closed')this.#active.delete(s);});
   launched=true;return await deadline(finish,Math.max(0,pending.expires-this.now()),()=>this.#close(s));
  }catch(e){if(reserved&&!launched)s.working=false;this.#close(s);throw e;}}
- override get diagnostics(){return {...flags,activeChannels:this.#active.size,issuedChallenges:this.#challenges,dispatches:this.#dispatches,replies:this.#replies,retainedOperations:this.#completed.size,bootRequests:Object.fromEntries(this.#requests)};}
+ override get diagnostics(){return {...super.diagnostics,activeChannels:this.#active.size,issuedChallenges:this.#challenges,dispatches:this.#dispatches,replies:this.#replies,retainedOperations:this.#completed.size,bootRequests:Object.fromEntries(this.#requests)};}
  close(){this.closed=true;for(const s of this.#active)this.#close(s);}
 }
 function deadline<T>(promise:Promise<T>,ms:number,expire:()=>void){let timer:ReturnType<typeof setTimeout>;const timeout=new Promise<never>((_,reject)=>{timer=setTimeout(()=>{expire();reject(new CurrentControlError('request_expired'));},Math.max(0,ms));});return Promise.race([promise,timeout]).finally(()=>clearTimeout(timer));}
 export interface SessionTransport {open:()=>Promise<void>;exchange:(packet:SessionPacket)=>Promise<SessionPacket>;close:()=>void}
 export class SessionBootQuota {
- #used=0;readonly identity:ServiceIdentity;
- constructor(identity:ServiceIdentity,readonly limit=256){this.identity=structuredClone(identity);need(Number.isSafeInteger(limit)&&limit>0&&limit<=256,'configuration_invalid');}
- take(identity:ServiceIdentity){need(same(identity,this.identity),'peer_mismatch');need(this.#used<this.limit,'capacity_exhausted');this.#used++;}
+ #used=0;readonly #identity:ServiceIdentity;readonly #business=new Map<string,{started:number;expires:number;recoveries:number;unknown:boolean}>();
+ constructor(identity:ServiceIdentity,readonly limit=256){this.#identity=structuredClone(identity);need(Number.isSafeInteger(limit)&&limit>0&&limit<=256,'configuration_invalid');}
+ get identity(){return structuredClone(this.#identity);}
+ take(identity:ServiceIdentity){need(same(identity,this.#identity),'peer_mismatch');need(this.#used<this.limit,'capacity_exhausted');this.#used++;}
+ reserveBusiness(identity:ServiceIdentity,key:string,now:number){need(same(identity,this.#identity),'peer_mismatch');const old=this.#business.get(key);if(old){need(now>=old.started,'clock_invalid');need(now<old.expires,'request_expired');need(!old.unknown,'recovery_required');return {...old};}need(this.#business.size<256,'capacity_exhausted');const budget={started:now,expires:now+5000,recoveries:0,unknown:false};this.#business.set(key,budget);return {...budget};}
+ recoverBusiness(key:string){const b=this.#business.get(key);need(b&&b.recoveries<1,'recovery_required');b.recoveries++;}
+ finishBusiness(key:string,unknown:boolean){const b=this.#business.get(key);need(b,'binding_mismatch');b.unknown=unknown;}
  get used(){return this.#used;}
 }
 export type SessionOperation=Readonly<{kind:'c3b-status-operation'}>;
-type Operation={origin:string;inner:Buffer;started:number;expires:number;recoveries:number;state:'new'|'pending'|'complete'|'unknown';request:any};
+type Operation={origin:string;inner:Buffer;started:number;expires:number;recoveries:number;state:'new'|'pending'|'complete'|'unknown';request:any;api?:string;budgetKey?:string;purpose?:'read'|'publication'|'maintenance'|'checkpoint'|'handoff'|'enrollment'};
 export class SessionClient extends Endpoint {
  readonly #server:Credential;readonly #operations=new WeakMap<SessionOperation,Operation>();readonly #pending=new Set<SessionOperation>();#codec?:StaticSession;#facts?:any;#receiveSequence=0;#sendSequence=0;#created=0;#busy=false;#rejections=0;#lastRejection:string|null=null;#recovered=0;
  readonly #quota:SessionBootQuota;readonly #floor:ServiceContextFloor;readonly #recovery:{handshakeMs:number;remainingWorkMs:number};
@@ -124,19 +139,21 @@ export class SessionClient extends Endpoint {
  }
  async connect(){need(!this.#busy,'busy');this.#busy=true;try{await this.#connect(this.now()+5000);}catch(e){this.#drop();throw e;}finally{this.#busy=false;}}
  prepareStatus(recoveryRun:string){const now=this.gate(this.#server);parsed(chash,recoveryRun);for(const h of this.#pending)if(now>=this.#operations.get(h)!.expires)this.#pending.delete(h);need(this.#pending.size<this.limits.operations,'capacity_exhausted');const request=parsed(recoveryReportSchema,{schema:'osv-mcp.q2.c3b.recovery.body.v1',api:'GetRecoveryStatus',lineage:this.lineage,recoveryRun,instanceId:this.#server.identity.instanceId});const inner=signRecovery(this,request),started=this.now(),handle=Object.freeze({kind:'c3b-status-operation' as const});this.#operations.set(handle,{origin:ownedDigest({domain:'c3b1-diagnostic-intent',id:fresh(),client:this.credential.identity,server:this.#server.identity,request}),inner,request,started,expires:started+5000,recoveries:0,state:'new'});this.#pending.add(handle);return handle;}
- async execute(handle:SessionOperation){this.gate(this.#server);const op=this.#operations.get(handle);need(op&&this.#pending.has(handle)&&op.state==='new','binding_mismatch');need(!this.#busy,'busy');this.#busy=true;
+ prepareBusiness(api:string,inner:Buffer){this.gate(this.#server);const purpose=this.businessPurpose(api),envelope=verifyOwnerValue(inner,this.registry,{role:this.credential.identity.role,instanceId:this.credential.identity.instanceId,direction:'request',domain:api.startsWith('aux.')?'aux':'control',api});need(same(envelope.identity,this.credential.identity)&&inner.length<=8192,'binding_mismatch');const body:any=envelope.body;need(body.command&&body.command.api===api,'schema_invalid');const now=this.now();for(const h of this.#pending)if(now>=this.#operations.get(h)!.expires)this.#pending.delete(h);need(this.#pending.size<this.limits.operations,'capacity_exhausted');const budgetKey=ownedDigest({server:this.#server.identity,api,origin:body.command.requestDigest}),budget=this.#quota.reserveBusiness(this.credential.identity,budgetKey,now),handle=Object.freeze({kind:'c3b-status-operation' as const});this.#operations.set(handle,{origin:body.command.requestDigest,inner:Buffer.from(inner),request:structuredClone(body.command),started:budget.started,expires:budget.expires,recoveries:budget.recoveries,state:'new',api,budgetKey,purpose});this.#pending.add(handle);return handle;}
+ async execute(handle:SessionOperation){this.gate(this.#server);const op=this.#operations.get(handle);need(op&&this.#pending.has(handle)&&op.state==='new','binding_mismatch');need(!this.#busy,'busy');this.#busy=true;const api=op.api??'recovery.GetRecoveryStatus',purpose=op.purpose??'recovery';
   try{for(;;){try{need(this.now()<op.expires,'request_expired');await this.#connect(op.recoveries?Math.min(op.expires,this.now()+this.#recovery.handshakeMs):op.expires);this.#quota.take(this.credential.identity);const facts=this.#facts,{base,clientNonce,serverNonce,sessionId,transcriptDigest}=facts,common={...base,clientNonce,serverNonce,sessionId,transcriptDigest};
      const challengeRequest=signAuth(this,{...common,kind:'challenge-request',sequence:++this.#sendSequence,requestId:fresh(),api,originDigest:op.origin,ttlMs:Math.min(5000,op.expires-this.now())}),requestBody:any=parsed(authEnvelopeSchema,decodeCurrent(challengeRequest)).body;
      op.state='pending';const reply=await this.#await(()=>this.transport.exchange({wire:challengeRequest}),op.expires);
-     need(!reply.inner,'schema_invalid');const expected={requestId:requestBody.requestId,api,originDigest:op.origin,requestSequence:this.#sendSequence,replySequence:this.#receiveSequence+1,ttlMs:requestBody.ttlMs,purpose:'recovery',lineage:this.lineage};const issued=validateChallengeExchange(challengeRequest,reply.wire,this.#codec!,expected);this.#receiveSequence++;
+     need(!reply.inner,'schema_invalid');const expected={requestId:requestBody.requestId,api,originDigest:op.origin,requestSequence:this.#sendSequence,replySequence:this.#receiveSequence+1,ttlMs:requestBody.ttlMs,purpose,lineage:this.lineage};const issued=validateChallengeExchange(challengeRequest,reply.wire,this.#codec!,expected);this.#receiveSequence++;
      const wire=signAuth(this,{...common,kind:'channel',sequence:++this.#sendSequence,challenge:issued.challenge,api,originDigest:op.origin,innerWireDigest:ownedSha256(op.inner),ttlMs:requestBody.ttlMs}),result=await this.#await(()=>this.transport.exchange({wire,inner:Buffer.from(op.inner)}),op.expires);
-     need(result.inner,'schema_invalid');validateChannelFrame(result.wire,result.inner,this.#codec!,{direction:'reply',sequence:this.#receiveSequence+1,challenge:issued.challenge,api,originDigest:op.origin,ttlMs:requestBody.ttlMs,purpose:'recovery',lineage:this.lineage});const body:any=this.verifyRecovery(result.inner,this.#server);
+     need(result.inner,'schema_invalid');validateChannelFrame(result.wire,result.inner,this.#codec!,{direction:'reply',sequence:this.#receiveSequence+1,challenge:issued.challenge,api,originDigest:op.origin,ttlMs:requestBody.ttlMs,purpose,lineage:this.lineage});const body:any=op.api?verifyOwnerValue(result.inner,this.registry,{role:this.#server.identity.role,instanceId:this.#server.identity.instanceId,direction:'reply',domain:api.startsWith('aux.')?'aux':'control',api}).body:this.verifyRecovery(result.inner,this.#server);
+     if(op.api){need(body.requestDigest===op.request.requestDigest,'binding_mismatch');this.gate(this.#server);need(this.now()<op.expires,'request_expired');if(api==='aux.ReadContext')this.#floor.observe(body.result);this.#receiveSequence++;op.state='complete';return structuredClone(body);}
      need(body.api==='GetRecoveryStatus'&&same(body.lineage,this.lineage)&&body.recoveryRun===op.request.recoveryRun&&body.instanceId===op.request.instanceId,'binding_mismatch');this.gate(this.#server);need(this.now()<op.expires,'request_expired');this.#receiveSequence++;op.state='complete';return structuredClone(body);
-    }catch(e){this.#rejections++;this.#lastRejection=e instanceof CurrentControlError?e.reason:'transport_unavailable';const localRefusal=op.state==='new'&&e instanceof CurrentControlError&&['capacity_exhausted','permission_denied','configuration_invalid','budget_exceeded'].includes(e.reason);op.state='unknown';this.#drop();if(localRefusal)throw e;if(this.closed||op.recoveries>=1||!recoveryTimeFits(this.now(),this.#recovery.handshakeMs,this.#recovery.remainingWorkMs,op.expires))throw e;this.gate(this.#server);op.recoveries++;this.#recovered++;}}
-  }finally{this.#busy=false;this.#pending.delete(handle);}}
+    }catch(e){this.#rejections++;this.#lastRejection=e instanceof CurrentControlError?e.reason:'transport_unavailable';const localRefusal=op.state==='new'&&e instanceof CurrentControlError&&['capacity_exhausted','permission_denied','configuration_invalid','budget_exceeded'].includes(e.reason);op.state='unknown';this.#drop();if(localRefusal)throw e;if(this.closed||op.recoveries>=1||!recoveryTimeFits(this.now(),this.#recovery.handshakeMs,this.#recovery.remainingWorkMs,op.expires))throw e;this.gate(this.#server);if(op.budgetKey)this.#quota.recoverBusiness(op.budgetKey);op.recoveries++;this.#recovered++;}}
+  }finally{this.#busy=false;this.#pending.delete(handle);if(op.budgetKey)this.#quota.finishBusiness(op.budgetKey,op.state!=='complete');}}
  disconnect(){need(!this.#busy,'busy');this.#drop();}
  observeContext(value:unknown){return this.#floor.observe(value);}
  contextFloor(){return this.#floor.snapshot();}
- override get diagnostics(){return {...flags,pending:this.#pending.size,bootRequests:this.#quota.used,sessionId:this.#facts?.sessionId??null,rejections:this.#rejections,lastRejection:this.#lastRejection,recoveries:this.#recovered};}
+ override get diagnostics(){return {...super.diagnostics,pending:this.#pending.size,bootRequests:this.#quota.used,sessionId:this.#facts?.sessionId??null,rejections:this.#rejections,lastRejection:this.#lastRejection,recoveries:this.#recovered};}
  close(){this.closed=true;this.#drop();}
 }

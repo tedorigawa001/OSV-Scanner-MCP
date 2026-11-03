@@ -12,9 +12,12 @@
     "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
-    "src/utils/gradleOwnedServiceOwners.ts": "81bbe25ff0c3e165f044c0599902d421b43669d044aa11cca42954236e269e7b",
-    "src/utils/gradleOwnedServiceSession.ts": "72db27313dfbaff208abc2ecc1d06d0d6b5f7ad1bf07608dfe7fafb2c67bad3e",
-    "src/utils/gradleOwnedSessionRuntime.ts": "df0c17e1b0f9caa850e417e5ef37a8b30ea18545fe07b30325a5968b6b275efa",
+    "src/utils/gradleOwnedRegistrySchema.ts": "61b89f6912c9138f3a354662fe3c2fdec88679d8f401c9fedc92140002f59963",
+    "src/utils/gradleOwnedRoleSigner.ts": "b147d0088679c92c5acf41692da53b532f7f7a11dfa5ba057077d7cdbc1cdd7e",
+    "src/utils/gradleOwnedServiceOwners.ts": "27902ebdae45acd59039107f4d0cdc5eaca27dee3286b715e964d88b4e27f3d5",
+    "src/utils/gradleOwnedServiceSession.ts": "033426d57b207cf5f5cc1a183509bd77701a7b92fa5ae78a690d2124fc759115",
+    "src/utils/gradleOwnedServiceStages.ts": "d42e360e05fe29a26c542b04ed68493b02f321c42e1f4e84515a27260ffc8933",
+    "src/utils/gradleOwnedSessionRuntime.ts": "88d0e54d32f7c2915788a4d7be8badde6908f444c7b58f0f1e1928845491b97a",
     "tsconfig.build.json": "49e7f5e2be44cc034bf5ef401064bf3b1588070e80aacfe1e1c8dde541c3117f",
     "tsconfig.json": "7375ac5d334f50eed3d766799fd016e068f1998639c7b02ba201db280a1583c3"
   },
@@ -102,5 +105,29 @@
       "typecheck": "passed",
       "build": "passed"
     }
+  },
+  "beforeC3b2SourceSha256": {
+    "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
+    "package.json": "5a0ff34ffcd644bbefaa713dcd8e65782b719bc01be52cd8f26672bcc123ec9b",
+    "src/test/fixtures/c3b_session_child.mjs": "f240d8b49614de13e0f9f06dee82c4343081d2cd63167013cabc36e44f5f19bb",
+    "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
+    "src/test/utils/gradleOwnedSessionProcess.test.ts": "7a6909b9636fc4ed125275e17456b359dafedd2b46c651dbb7196a4b9aeb674c",
+    "src/test/utils/gradleOwnedSessionRuntime.test.ts": "36bc96d51f6b850f343d1efaf0bf26317c25689e693e489c05ce8b4494fa09e2",
+    "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
+    "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/utils/gradleOwnedServiceOwners.ts": "81bbe25ff0c3e165f044c0599902d421b43669d044aa11cca42954236e269e7b",
+    "src/utils/gradleOwnedServiceSession.ts": "72db27313dfbaff208abc2ecc1d06d0d6b5f7ad1bf07608dfe7fafb2c67bad3e",
+    "src/utils/gradleOwnedSessionRuntime.ts": "df0c17e1b0f9caa850e417e5ef37a8b30ea18545fe07b30325a5968b6b275efa",
+    "tsconfig.build.json": "49e7f5e2be44cc034bf5ef401064bf3b1588070e80aacfe1e1c8dde541c3117f",
+    "tsconfig.json": "7375ac5d334f50eed3d766799fd016e068f1998639c7b02ba201db280a1583c3"
+  },
+  "c3b2Compatibility": {
+    "scope": "existing contracts and diagnostic status only",
+    "sourceReceiptsUpdated": true,
+    "fullSuitePassedTests": 5277,
+    "fullSuiteSkippedTests": 1418,
+    "typecheck": "passed",
+    "build": "passed"
   }
 }

@@ -48,8 +48,8 @@ export function validateChannelFrame(bytes:Buffer,inner:Buffer,handle:StaticSess
  need(credentialAPIRoles(m.api).includes(c.identity.role)&&credentialDestination(m.api)===server.identity.role,'permission_denied');
  need(inner.length<=SERVICE_SESSION_LIMITS.innerBytes&&m.innerWireDigest===ownedSha256(inner),'budget_exceeded');const raw:any=decodeCurrent(inner,SERVICE_SESSION_LIMITS.innerBytes);
  const [domain,...apiParts]=m.api.split('.'),api=apiParts.join('.');const schemas={control:'osv-mcp.q2.current-control.envelope.v1',aux:'osv-mcp.q2.current-aux.envelope.v1',recovery:'osv-mcp.q2.c3b.recovery.envelope.v1'};
- need(raw?.schema===schemas[domain as keyof typeof schemas]&&raw.direction===x.direction&&raw.body?.api===api,'binding_mismatch');
- const binding=raw.body.binding??raw.body.lineage;need(binding&&Object.entries(x.lineage).every(([k,v])=>binding[k]===v),'binding_mismatch');
+ need((raw?.schema===schemas[domain as keyof typeof schemas]||raw?.schema==='osv-mcp.q2.c3b.owner-envelope.v1')&&raw.direction===x.direction&&raw.body?.api===api,'binding_mismatch');
+ const binding=raw.body.binding??raw.body.lineage??raw.body.command?.lineage??raw.body.result?.binding;need(binding&&Object.entries(x.lineage).every(([k,v])=>binding[k]===v),'binding_mismatch');
  need(c.permissions.some(p=>p.api===m.api&&p.purpose===x.purpose&&same(p.lineage,x.lineage)&&(p.delegateInstance===null||p.delegateInstance===server.identity.instanceId)),'permission_denied');
  // The domain-specific kernel must still verify/authorize the complete inner payload and live binding.
  return {api:m.api,innerWireDigest:m.innerWireDigest,scope:'static-contract-only' as const,backendEligible:false,originalReadsSkipped:0};

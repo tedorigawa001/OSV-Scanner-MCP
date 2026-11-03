@@ -65,7 +65,7 @@ export function validateOwnerPlans(values:unknown,registryValue:unknown,expected
 export function ownerPlanFacts(plan:OwnerPlan){const p=plans.get(plan);need(p,'configuration_invalid');return structuredClone(p.config);}
 /** Future adapters implement these ports; C3b-0 never calls them. */
 export type ScopedSignIntent=Readonly<{kind:'c3b-scoped-sign-intent'}>;
-const signIntents=new WeakMap<ScopedSignIntent,{identity:ServiceIdentity;direction:'request'|'reply';bytes:Buffer}>();
+const signIntents=new WeakMap<ScopedSignIntent,{identity:ServiceIdentity;direction:'request'|'reply';bytes:Buffer;domain:string;api:string|null}>();
 /** No signatures are produced here. Future signer adapters must consume this scoped handle. */
 export function prepareOwnerSignature(plan:OwnerPlan,credentialId:string,value:unknown,body:Buffer){
  const p=plans.get(plan);need(p,'configuration_invalid');const q=parsed(z.object({domain:z.enum(['auth','control','aux','stage','recovery']),direction:z.enum(['request','reply']),api:serviceAPISchema.nullable(),bodyDigest:chash}).strict(),value);
@@ -75,8 +75,10 @@ export function prepareOwnerSignature(plan:OwnerPlan,credentialId:string,value:u
  else if(q.domain==='stage'){need(q.direction==='reply'&&raw.schema==='osv-mcp.q2.c3b.stage-record.v1'&&raw.ownerId===p.config.ownerId&&raw.storageEpoch===p.config.storageEpoch,'permission_denied');}
  else {need(q.api&&q.api.startsWith(q.domain+'.')&&raw.api===q.api.slice(q.domain.length+1),'permission_denied');}
  if(q.api)need(q.direction==='request'?credentialAPIRoles(q.api).includes(c.identity.role):credentialDestination(q.api)===c.identity.role,'permission_denied');
- const h=Object.freeze({kind:'c3b-scoped-sign-intent' as const});signIntents.set(h,{identity:c.identity,direction:c.direction,bytes:Buffer.from(body)});return h;
+ const h=Object.freeze({kind:'c3b-scoped-sign-intent' as const});signIntents.set(h,{identity:c.identity,direction:c.direction,bytes:Buffer.from(body),domain:q.domain,api:q.api});return h;
 }
+/** Scope is read only after checking the opaque handle and the signer's own identity. */
+export function readSigningScope(handle:ScopedSignIntent,identity:ServiceIdentity,direction:'request'|'reply'){readSigningIntent(handle,identity,direction);const v=signIntents.get(handle)!;return {domain:v.domain,api:v.api};}
 export function readSigningIntent(handle:ScopedSignIntent,identity:ServiceIdentity,direction:'request'|'reply'){const v=signIntents.get(handle);need(v&&same(v.identity,identity)&&v.direction===direction,'permission_denied');return Buffer.from(v.bytes);}
 export interface RoleSigner {identity:ServiceIdentity;direction:'request'|'reply';keyId:string;spki:string;sign(message:ScopedSignIntent):Promise<Buffer>}
 export interface OwnedStore {ownerId:string;storageEpoch:string;roots:OwnerConfig['roots'];journalKeyId:string;checkpointKeyId:string;assertOpen():void;recover():Promise<unknown>;readCommitted(ref:unknown):Promise<unknown>;commitStageExact(request:unknown):Promise<unknown>;close():void}
