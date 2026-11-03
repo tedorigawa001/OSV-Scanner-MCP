@@ -5097,6 +5097,44 @@ challengeはmanifest／launch digest、instance／profile、provider boot、role
 
 次は残るB1隔離攻撃・runtime依存closureの独立承認／配備履歴、B2／B3をこのtransportへ結ぶ別UID保存service、fresh checkpoint issuer／独立registry／分散fencing、実VM保存故障・power-loss条件、Q3／Q4である。今回の3機能の実証をB1全体や本番provider採用完了へ読み替えない。
 
+### 9.85 Q3a／Q4a・診断用byte cacheと採用拒否gate（2026-11-03）
+
+Q2の未完了条件を残したままread省略を実装せず、診断用cacheと採用gateから進めるという選択に沿う。実装は`src/test/fixtures/gradleOwnedPrefixCache.ts`と`gradleOwnedPrefixAdoption.ts`で、配布対象の本番reader・authority・migration入口には接続しない。
+
+#### 9.85.1 Q3aの所有・比較・容量
+
+`DiagnosticPrefixCache.seal`は入力を同期的にprivate copyし、既存`replayV2`で全履歴を検証してopaque handleを返す。保存先は同一process内のprivate memoryであり、native隔離providerとはしない。入力sourceは最大8個・合計64 MiB、cacheは最大64 MiB（小さい上限も指定可能）、未完了candidateは最大16個・入力換算合計64 MiB。payloadの重複digestを拒否する。source枠はevictionで戻さず、長期churnには新しい診断ownerを必要とする。無期限にsourceを蓄積するAPIではない。
+
+cache identityはbinding・base ref／承認base・signing key digest／key ID・authority audit modeに束縛する。parser／policyはこの固定fixtureの実装で、外部profileによる差替えを受け付けない。同identityの最長prefixについてcommit bytes・全保持payloadの一致を確認し、不一致・rollbackはcache missへ落とさずownerを停止する。再使用するのは所有済みbytesであり、wire digestからproofを作らない。
+
+`verify`はcacheからのprefixと追加suffixを組み立て、**prefixを含む全commitのMAC・chain・全中間stateを毎回replayする**。full referenceも別にreplayし、head・state root・materialized records・全state・retained payloads・storage usageを比較する。suffixだけを認証する増分verifierは未実装である。candidateは`complete`前にcacheへ入らず、成功completeでcache viewのepochを進め、他の未完了candidateを破棄する。これにより古いcompletionから新headへ戻せない。checkpoint異常・invalidate・evict・closeでもcandidateを破棄する。checkpoint状態のfixture設定はdurable checkpoint同期の証拠にはしない。
+
+#### 9.85.2 計数と再現記録
+
+`docs/validation/gradle-q3q4-diagnostic-2026-11-03.json`は実行したcold／hit／suffix比較と実装2ファイルのSHA-256を保存する。通常回帰は再計算した値との一致を確認する。
+
+| 診断case | sourceから取り込むuncached input bytes | full reference input bytes | 全履歴認証 |
+| --- | --- | --- | --- |
+| cold | 2,067 | 2,067 | 実行 |
+| hit | 0 | 2,067 | 実行 |
+| suffix追加 | 2,016 | 4,083 | 実行 |
+
+この数値は、cacheから供給できる入力と追加入力を分類した**メモリfixtureの計数**である。prefixのbyte照合・payload hash・private copy・全履歴認証・full referenceの費用は依然として発生する。OS file read bytes・read削減・同期削減・性能改善の計測ではない。`nativeReadReductionObserved=false`、`checkpointSynchronizationObserved=false`、`originalReadsSkipped=0`を維持する。native VMの再実行もしていない。
+
+再現は`bdo npx vitest run src/test/utils/gradleOwnedPrefixCache.test.ts src/test/utils/gradleOwnedPrefixAdoption.test.ts`。比較recordの出力は`bdo proxy env OSV_Q3Q4_REPORT=1 npx vitest run src/test/utils/gradleOwnedPrefixCache.test.ts --silent=false`で得る。環境変数はrecord出力用で、採用を有効にしない。
+
+#### 9.85.3 Q4aの採用拒否と信頼範囲
+
+`inspectPrefixAdoption`は外側の独立manager／controller／manifest／run pinを必須としてB1ctの実署名記録を既存verifierへ通す。2 native launch bindings・認証transport・制御actorのrestart FD drainだけを認識する。呼出元が付けた`profileApproved`／`backendEligible`／`independentRegistryVerified`やpin設定への未知fieldは拒否する。署名・pinが一致しても独立registryのcurrent admissionにはしない。
+
+`requireProductionPrefixBackend`は常に読取前に拒否し、path resolver・source reader・callbackを受け付けない。未成立条件はnative storage isolation、別UID durable service、fresh source checkpoint issuer、独立registry current pin、分散handoff／fencing、native suffix verifier、承認runtime profile、authority／migration bridgeの8項目。記録がなければ認証transport未確認も加える。これらをbooleanや自己署名profileで解消する入口はない。実backend・検証済み証拠・live pinを接続する将来変更が必要である。
+
+#### 9.85.4 回帰結果と残件
+
+新規31テストが成功。cold／hit／suffixとfull reference、checkpoint異常4種、candidate失効・再使用・偽／別owner handle、caller Buffer改変、MAC不正、再認証したprefix交換、rollback、key identity変更、pending／source／cache上限、eviction、逆順completion、独立pin不一致・自己申告承認を検証した。全体117 files／4,443 tests成功、24 files／1,418 tests skipped。型検査・build成功。
+
+**Q3／Q4全体は未完了。** Q3bでは完全inventory／live grant・pin・checkpoint実同期に接続したsuffix-only verifier、authority audit継続state、node／key bookkeepingのbudget、large history／scope・churn／失効／故障比較とnative性能を実証する必要がある。Q4bでは独立承認registry・runtime closure・current pin／barrierを実装し、B／C authorityとPO3／M0移行へ接続する。先行するQ2のnative storage service・全隔離経路・fresh issuer・実保存故障の未成立条件も残る。今回の診断cacheと拒否gateを本番最適化や採用完了に読み替えない。
+
 B1ctの検証結果: 実VM28ケース、2 native launch binding、通常回帰40件成功。全体115 files／4,411 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。manager／controller署名と独立pin、source receipt、boot／cookie更新・残存FD拒否を照合した。原本read省略・本番採用は0。
 
 #### 9.84.7 095bbecレビュー修正・pinの同時commit・拒否理由・EOFの分類

@@ -2580,6 +2580,14 @@ B2／B3 local contractの検証結果: 新規54回帰成功（53 domainケース
 
 B1ctの検証結果: 全体115 files／4,411 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。2署名主体・独立pin・16 sourceの不変receipt、実VM28ケース／診断操作13・成功client5、2つのboot／新cookieとFD回収を照合した。秘密鍵・seed・credential archiveは検証資料へ含めず、本番採用・原本read省略は0。
 
+### Q3a／Q4a・診断cache・採用拒否gate（2026-11-03）
+
+- §9.85、診断用private byte cache、独立pin付きB1ct記録の採用範囲判定と読取前拒否gateを追加。Q2の未完了条件を残したまま、本番read省略を有効にしないという選択に沿う。
+- cold／hit／追加suffixをfull referenceと比較。全履歴MAC／chain／中間state検証を毎回維持し、suffix-only検証・native性能とはしない。入力計数2,067→0／追加2,016 bytesはmemory fixtureの分類で、実file read削減ではない。実装fingerprint付き比較recordを通常回帰で再計算する。
+- source8個／合計64 MiB、cache最大64 MiB、pending16個／入力換算64 MiBを制限。checkpoint異常・失効・改変・rollback・逆順completion・evictionを検証。独立pin不一致や自己申告approvalを拒否し、本番gateは常に閉じる。
+- 新規31件、全体117 files／4,443 tests成功、24 files／1,418 tests skipped。型検査・build成功。native再実行・checkpoint同期実証・独立registry・承認profile・本番採用・原本read省略は0。
+- **残件**: Q2の別UID native保存service／全隔離経路／fresh issuer・独立registry／分散fencing／実保存故障、Q3bのlive pin・完全inventory・checkpoint同期に結んだsuffix-only verifier／authority audit／各budget・large history／native性能、Q4bの独立承認profile・authority／PO3／M0接続。Q3／Q4全体を完了扱いにしない。
+
 ### 2026-11-03: bce3aa6レビュー修正・B1c pinの独立性と拒否理由
 
 - §9.82.6へ、controller pinが記録と同じcommitで追加されリポジトリ上は同時差替えを防げないこと、以後はpinを別commit／リポジトリ外へ先に固定する運用を明記。

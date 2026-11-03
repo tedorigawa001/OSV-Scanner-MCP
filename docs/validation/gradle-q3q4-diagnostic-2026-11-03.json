@@ -1,0 +1,73 @@
+{
+  "schema": "osv-mcp.q3q4.diagnostic-comparison.v1",
+  "scenarios": {
+    "cold": {
+      "hit": false,
+      "equivalent": true,
+      "revision": 1,
+      "stateRoot": "a36a86d339e55a81b6e01748a2247425eeb4290178b9380f05be55be158ee78c",
+      "commitDigest": "3e40580fbd2e7558a31fd6eba40165ceac46a548c5e0306370790c26e1f9ea76",
+      "retainedPayloads": [
+        "a9dad54491026a1162a26134eeab79b247fdff4e17add43675e28fb9e732b5c2",
+        "d6e4a9aa74f623ec7469cfdfce8668c690da88b47ed25be6b01d458df814b203",
+        "e48b07535442a41576cab775282de0dd285c1c65479901a595f79ca7bbdaa153",
+        "e70fbd7d061633bf801aeebf2c262ae9a823fd37aced67f6af07b8dfdac701c1"
+      ],
+      "uncachedInputBytes": 2067,
+      "referenceInputBytes": 2067,
+      "fullHistoryAuthenticated": true,
+      "checkpointSynchronizationObserved": false,
+      "nativeReadReductionObserved": false,
+      "backendEligible": false,
+      "originalReadsSkipped": 0
+    },
+    "hit": {
+      "hit": true,
+      "equivalent": true,
+      "revision": 1,
+      "stateRoot": "a36a86d339e55a81b6e01748a2247425eeb4290178b9380f05be55be158ee78c",
+      "commitDigest": "3e40580fbd2e7558a31fd6eba40165ceac46a548c5e0306370790c26e1f9ea76",
+      "retainedPayloads": [
+        "a9dad54491026a1162a26134eeab79b247fdff4e17add43675e28fb9e732b5c2",
+        "d6e4a9aa74f623ec7469cfdfce8668c690da88b47ed25be6b01d458df814b203",
+        "e48b07535442a41576cab775282de0dd285c1c65479901a595f79ca7bbdaa153",
+        "e70fbd7d061633bf801aeebf2c262ae9a823fd37aced67f6af07b8dfdac701c1"
+      ],
+      "uncachedInputBytes": 0,
+      "referenceInputBytes": 2067,
+      "fullHistoryAuthenticated": true,
+      "checkpointSynchronizationObserved": false,
+      "nativeReadReductionObserved": false,
+      "backendEligible": false,
+      "originalReadsSkipped": 0
+    },
+    "suffix": {
+      "hit": true,
+      "equivalent": true,
+      "revision": 2,
+      "stateRoot": "15ed2f9b217d3f43f983ef153436a916e05562f1bfe73a06cca025dcdf7d66bb",
+      "commitDigest": "fa3b4491eea26c43e09da14d0a21de499c8269645337ffa40ab78c8a595d6987",
+      "retainedPayloads": [
+        "1a57a3ff80e77edfddefc0f7e273cef993eb378387bd7ba5a45b8ac1d9a2fb40",
+        "a9dad54491026a1162a26134eeab79b247fdff4e17add43675e28fb9e732b5c2",
+        "d6e4a9aa74f623ec7469cfdfce8668c690da88b47ed25be6b01d458df814b203",
+        "e48b07535442a41576cab775282de0dd285c1c65479901a595f79ca7bbdaa153",
+        "e70fbd7d061633bf801aeebf2c262ae9a823fd37aced67f6af07b8dfdac701c1"
+      ],
+      "uncachedInputBytes": 2016,
+      "referenceInputBytes": 4083,
+      "fullHistoryAuthenticated": true,
+      "checkpointSynchronizationObserved": false,
+      "nativeReadReductionObserved": false,
+      "backendEligible": false,
+      "originalReadsSkipped": 0
+    }
+  },
+  "sources": {
+    "gradleOwnedPrefixCache.ts": "99d42d90346c7796f9a55e6289dab66556e2912f3caa73b7bd586a6f38879dba",
+    "gradleOwnedPrefixAdoption.ts": "7c9e23a5fc8b1a8ec619aca047652e4ff1ba1d7e5de1a90f8337eeb79b559684"
+  },
+  "nativeRunPerformed": false,
+  "productionAdoption": false,
+  "originalReadsSkipped": 0
+}
