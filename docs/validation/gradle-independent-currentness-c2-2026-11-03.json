@@ -3,7 +3,7 @@
   "date": "2026-11-03",
   "scope": "published-client-and-reader-injection-with-local-fixture-services",
   "command": "npx vitest run src/test/utils/gradleOwnedCurrentBridge.test.ts",
-  "tests": 29,
+  "tests": 32,
   "sourceSha256": {
     "package-lock.json": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285",
     "package.json": "bbb5c5fde9e96539da7395e928f91d9fa34372213260063059877a5b1c000f18",
@@ -27,7 +27,7 @@
     "src/test/fixtures/gradleOwnedJournalV2.ts": "e4860481e0dacd227d42ff65cb56e8b80fc521492ccb2375a73622a3b2293af2",
     "src/test/fixtures/gradleOwnedPolicyFixture.ts": "42ab32aedc435e92b5dee75863da7778f66c8131648546ba4a6e791b84b31c81",
     "src/test/fixtures/gradleOwnedSealedProvider.ts": "838f77afce58af4aae65125f4fc92f4ab17d78b21bf9898d45f768bf8a31e187",
-    "src/test/utils/gradleOwnedCurrentBridge.test.ts": "cd241cac202ca5ea5845e9207846820a035baba3f105e9236e97553dd2957d43",
+    "src/test/utils/gradleOwnedCurrentBridge.test.ts": "22527316de4de5d7c3222b0dde4a67f54548e1a8591ad91320e48efaf83f4f6b",
     "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
     "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
     "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
@@ -40,7 +40,7 @@
     "src/utils/gradleOrigins.ts": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884",
     "src/utils/gradleOwnedAuthoritySchema.ts": "893449dd0f388cdc0434de47624f269aa12c678df67e63d1bb195fb18dbe52e2",
     "src/utils/gradleOwnedAuthoritySnapshot.ts": "694e88c771dff66e88b151e098172ffc0a04610bfcb62c56b79ef5f4b52c754e",
-    "src/utils/gradleOwnedCurrentBridge.ts": "f1748a5b8439d8fd052fbc815c51f8db4f8d502b170292fdf2ef7b7633c203de",
+    "src/utils/gradleOwnedCurrentBridge.ts": "6fa8fb5163cda4b144218acf5e717e34560a3213dd5c5c5c02be1c4bd0c18d65",
     "src/utils/gradleOwnedCurrentClient.ts": "40b7977162caf938a104873f1642ac969faf7d8f156bcf20afc1fb0e8053e779",
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
     "src/utils/gradleOwnedExecution.ts": "360a8d5e61a7b115619077cb444f8a863f6d6d0459be9d17b87ae4c43f279fd4",
@@ -216,5 +216,35 @@
     "build": "passed",
     "diffCheck": "passed",
     "publishedModulesFixturePrincipalImports": false
+  },
+  "reservationWedgeReviewFix": {
+    "rootCause": "A single pending reservation slot was cleared only on success; after an expired lost reply every other read, mirror repair and publication failed with binding_mismatch for the bridge lifetime without recovery_required",
+    "supersedes": "initialReservationReviewFix contract: refuse replacement by another intent while unresolved",
+    "contract": [
+      "Pending reservations are keyed by logical intent and bounded to 8; another intent is never blocked by a pending one",
+      "Only an unknown outcome (response_lost or a non-control transport failure) retains the request for a same-ID retry",
+      "A decided refusal frees the slot; an expired request is never re-sent or extended and a later call is a new request",
+      "A registry selection change drops reservations bound to the old selection; their leases are left to expire",
+      "A full table refuses a new reservation before transport with capacity_exhausted and does not block the bridge",
+      "A deliverRead live-check failure before any handoff write fails only that read; later failures still require recovery"
+    ],
+    "regressionTestsAdded": 3,
+    "regressionTestsRewritten": 4,
+    "beforeFix": {
+      "tests": 7,
+      "failed": 7
+    },
+    "afterFix": {
+      "targetedTestsPassed": 32,
+      "fullSuite": {
+        "command": "npx vitest run --maxWorkers=2",
+        "filesPassed": 121,
+        "filesSkipped": 24,
+        "testsPassed": 4712,
+        "testsSkipped": 1418
+      },
+      "typecheck": "passed",
+      "build": "passed"
+    }
   }
 }

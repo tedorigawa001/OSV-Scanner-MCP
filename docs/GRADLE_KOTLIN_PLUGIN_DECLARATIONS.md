@@ -5661,3 +5661,22 @@ BeginEnrollmentのcommitted-historical応答だけからprovisionを採用せず
 回帰を8件追加（C2合計29件）。BeginEnrollment・ReserveWriter・読取pin・mirror pinの応答紛失4件は修正前に全件失敗することを確認し、修正後に同一ID／payload、予約／pinの同一性、期限延長なし、後続公開／ACKの成功を確認した。3種の期限切れ再試行と、保留読取を別fileで置換する試みも拒否する。
 
 C2初回予約レビュー修正の最終検証: C2回帰29件成功。全体は`npm test -- --maxWorkers=1`で121 files／4,709 tests成功、24 files／1,418 tests skipped（243.48秒）。型検査・build・diff整形検査成功。元の全体検証結果はvalidationのpreReviewVerificationとして保持する。
+
+#### 9.90.6 保留予約によるbridge停止の解消（7aa8512レビュー修正）
+
+§9.90.5の単一保留slotは成功時にしか空かず、応答紛失後にleaseが失効すると、元の要求は`historical_only`等で確定拒否され続けた。その間、別file・mirror修復・公開は`binding_mismatch`となり、`recovery_required`も示さないままbridge寿命の間すべて不能になった。GradleGraphCache経由では全fileが`owned_current_unavailable`になる。
+
+保留予約はlogical intentごとの上限8件の表とし、§9.90.5の「保留中は別intentで置換しない」を次に改める。
+
+- 同一intentの再呼出しは保存済みのoperation ID・payloadで再送する。別intentはその保留に阻まれない。
+- 結果不明（`response_lost`、またはcontrol error以外のtransport失敗）だけが保留を残す。確定拒否（`historical_only`・`writer_stale`・送信前拒否等）は保留を外して例外を返す。失効した要求は再送も延長もせず、後続の呼出しは新しいIDの別要求になる。
+- registry selectionが変わると、旧selectionに結び付いた保留は到達不能なので破棄する。leaseは延長せず失効に任せる。
+- 未解決の保留が上限に達すると、新規予約を送信前に`capacity_exhausted`で拒否する。bridgeは止めない。
+
+deliverReadの最初のlive確認はhandoff書込み前なので、その失敗では当該readだけを`failed`にし、pinを解放試行してbridgeを止めない。authority gate作成以降の失敗は従来どおり`recovery_required`とする。
+
+失効後のBeginEnrollment新規要求はC0 controlが`control_conflict`で拒否する。これはcontrol側の既存挙動であり、bridgeでは変えない。
+
+回帰: 期限切れ3種を正確な理由（`writer_stale`／`historical_only`）と後続の新ID要求で検査し、§9.90.5の置換拒否試験を「別readを阻まない」へ改めた。さらに、失効した保留の後の別read・mirror修復・公開、保留上限、handoff前のpin失効を追加した（C2計32件）。期限切れ3種・置換試験・追加3件の計7件は修正前に全件失敗する。
+
+7aa8512レビュー修正の最終検証: C2回帰32件成功。全体は`npx vitest run --maxWorkers=2`で121 files／4,712 tests成功、24 files／1,418 tests skipped。型検査・build成功。

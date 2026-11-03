@@ -1,6 +1,6 @@
 /** C2 orchestration for explicit application-owned clients. All admission flags stay closed. */
 import {OwnedCurrentClient,currentOperation} from './gradleOwnedCurrentClient.js';
-import {cref,chash,parsed,need,type CurrentRef,type CurrentBinding,currentNamespaceSchema,type CurrentNamespace} from './gradleOwnedCurrentSchema.js';
+import {cref,chash,parsed,need,CurrentControlError,type CurrentRef,type CurrentBinding,currentNamespaceSchema,type CurrentNamespace} from './gradleOwnedCurrentSchema.js';
 import {replayV2,type V2ReplayInput} from './gradleOwnedJournalV2.js';
 import {parseGradleExport,parseGradleExportG0,type GradleExport} from './gradleOwnedManifest.js';
 import {ownedSessionSchema,inspectOwnedExecution,type TrustedOwnedCaller} from './gradleOwnedExecution.js';
@@ -44,10 +44,14 @@ export interface CurrentAuthorityClient {prepare(proof:CurrentAuthorityProof,use
 export type CurrentPublication=Readonly<{kind:'current-publication'}>;
 export type CurrentRead=Readonly<{kind:'current-read'}>;
 type Publication={mode:'genesis'|'advance';fence:CurrentRef;prepared?:{snapshot:CurrentRef};checkpoint?:CurrentRef;selected?:NonNullable<CurrentBinding['selected']>;ids:Record<string,string>;done:boolean};
+type Reservation={id:string;role:'operator'|'writer'|'reader';api:'BeginEnrollment'|'ReserveWriter'|'AcquireReadPin';payload:unknown;selection:string};
+const RESERVATION_LIMIT=8;
+/** Only an unknown outcome keeps a request for its same-ID retry; a decided refusal frees the slot. */
+const ambiguous=(e:unknown)=>!(e instanceof CurrentControlError)||e.reason==='response_lost';
 type Read={pin:CurrentRef;selected:NonNullable<CurrentBinding['selected']>;witness:CurrentRef;proof:CurrentAuthorityProof;scope:CurrentScope;phase:'active'|'decision-recorded'|'delivering'|'released'|'failed';useId:string;document:GradleExport;gate?:{gate:CurrentRef;result:CurrentRef};receiptDigest?:string;delivery?:CurrentRef};
 export class OwnedCurrentBridge {
  readonly #publications=new WeakMap<CurrentPublication,Publication>();readonly #reads=new WeakMap<CurrentRead,Read>();#closed=false;#blocked=false;#busy=false;
- #reservation?:{intent:string;id:string;role:'operator'|'writer'|'reader';api:'BeginEnrollment'|'ReserveWriter'|'AcquireReadPin';payload:unknown};
+ readonly #reservations=new Map<string,Reservation>();
  constructor(readonly client:OwnedCurrentClient,readonly provider:CurrentProviderClient,readonly authority:CurrentAuthorityClient,readonly verifier:CurrentAuthorityVerifier,readonly resolveScope:(file:string)=>CurrentScope,readonly maintenanceOperationBinding:string){parsed(chash,maintenanceOperationBinding);}
  #gate(){need(!this.#closed,'owner_closed');need(!this.#blocked,'recovery_required');this.client.assertOpen();this.provider.assertOpen();}
  async #call(...args:Parameters<OwnedCurrentClient['call']>){this.#gate();const reply=await this.client.call(...args);this.#gate();return reply;}
@@ -55,30 +59,37 @@ export class OwnedCurrentBridge {
  async #run<T>(work:()=>Promise<T>){this.#gate();need(!this.#busy,'busy');this.#busy=true;try{return await work();}finally{this.#busy=false;}}
  async #live(pin:CurrentRef){this.#gate();await this.#call('provider','CheckLiveBinding',{target:pin,purpose:'source-read'});this.#gate();}
  // Keep the original intent through ambiguous replies. A different operation cannot replace it.
- async #reserve(intent:unknown,role:'operator'|'writer'|'reader',api:'BeginEnrollment'|'ReserveWriter'|'AcquireReadPin',payload:unknown){
-  const binding=canonicalOwnedJson(intent);
-  if(!this.#reservation)this.#reservation={intent:binding,id:currentOperation(),role,api,payload:structuredClone(payload)};
-  const pending=this.#reservation;need(pending.intent===binding&&pending.role===role&&pending.api===api,'binding_mismatch');
-  const reply=await this.#call(pending.role,pending.api,pending.payload,pending.id,api==='BeginEnrollment');
-  const target=api==='BeginEnrollment'?reply.value.provision:api==='ReserveWriter'?reply.value.fence:reply.value.pin;
-  // Historical content alone never restores a lease. Check the original live grant before use.
-  await this.#call('provider','CheckLiveBinding',{target,purpose:api==='AcquireReadPin'?'source-read':'checkpoint'});
-  this.#reservation=undefined;return target as CurrentRef;
+ async #reserve(intent:unknown,selected:unknown,role:Reservation['role'],api:Reservation['api'],payload:unknown){
+  const binding=canonicalOwnedJson(intent),selection=canonicalOwnedJson(selected);
+  // A selection change makes an unanswered request unreachable; its lease is left to expire, never renewed.
+  for(const [key,r] of this.#reservations)if(r.selection!==selection)this.#reservations.delete(key);
+  let pending=this.#reservations.get(binding);
+  if(!pending){need(this.#reservations.size<RESERVATION_LIMIT,'capacity_exhausted');pending={id:currentOperation(),role,api,payload:structuredClone(payload),selection};this.#reservations.set(binding,pending);}
+  need(pending.role===role&&pending.api===api,'binding_mismatch');
+  try{
+   const reply=await this.#call(pending.role,pending.api,pending.payload,pending.id,api==='BeginEnrollment');
+   const target=api==='BeginEnrollment'?reply.value.provision:api==='ReserveWriter'?reply.value.fence:reply.value.pin;
+   await this.#call('provider','CheckLiveBinding',{target,purpose:api==='AcquireReadPin'?'source-read':'checkpoint'});
+   this.#reservations.delete(binding);return target as CurrentRef;
+  }catch(e){if(!ambiguous(e))this.#reservations.delete(binding);throw e;}
  }
- async beginPublication(mode:'genesis'|'advance'){return this.#run(async()=>{const context=await this.#context();need(mode==='genesis'?context.selected===null:context.selected!==null,'binding_mismatch');const fence=await this.#reserve({kind:'publication',mode,selected:context.selected},mode==='genesis'?'operator':'writer',mode==='genesis'?'BeginEnrollment':'ReserveWriter',mode==='genesis'?{approvedBase:this.verifier.baseDigest}:{expectedSelection:context.selectionRevision});const handle=Object.freeze({kind:'current-publication' as const});this.#publications.set(handle,{mode,fence,ids:{prepare:currentOperation(),publish:currentOperation()},done:false});return handle;});}
+ async #releaseQuietly(pin:CurrentRef){try{await this.#call('reader','ReleaseReadPin',{pin});}catch{/* A revoked or unknown pin is never treated as released. */}}
+ async beginPublication(mode:'genesis'|'advance'){return this.#run(async()=>{const context=await this.#context();need(mode==='genesis'?context.selected===null:context.selected!==null,'binding_mismatch');const fence=await this.#reserve({kind:'publication',mode,selected:context.selected},context.selected,mode==='genesis'?'operator':'writer',mode==='genesis'?'BeginEnrollment':'ReserveWriter',mode==='genesis'?{approvedBase:this.verifier.baseDigest}:{expectedSelection:context.selectionRevision});const handle=Object.freeze({kind:'current-publication' as const});this.#publications.set(handle,{mode,fence,ids:{prepare:currentOperation(),publish:currentOperation()},done:false});return handle;});}
  async publish(handle:CurrentPublication){return this.#run(async()=>{const p=this.#publications.get(handle);need(p&&!p.done,'binding_mismatch');
   if(!p.prepared){await this.#call('provider','CheckLiveBinding',{target:p.fence,purpose:'checkpoint'});p.prepared=await this.provider.prepare(p.fence);parsed(cref('snapshot'),p.prepared.snapshot);}
   if(!p.checkpoint)p.checkpoint=(await this.#call('provider','PrepareCheckpoint',{mode:p.mode,fence:p.fence,snapshot:p.prepared.snapshot},p.ids.prepare,true)).value.checkpoint;
   if(!p.selected){const reply=p.mode==='genesis'?await this.#call('operator','ActivateEnrollment',{provision:p.fence,checkpoint:p.checkpoint},p.ids.publish,true):await this.#call('writer','PublishSelection',{fence:p.fence,checkpoint:p.checkpoint},p.ids.publish,true);p.selected=reply.value.selected;need(p.selected&&canonicalOwnedJson(p.selected.snapshot)===canonicalOwnedJson(p.prepared.snapshot)&&canonicalOwnedJson(p.selected.checkpoint)===canonicalOwnedJson(p.checkpoint),'binding_mismatch');}
   await this.#mirror(p.selected);p.done=true;return {selected:structuredClone(p.selected),backendEligible:false as const,originalReadsSkipped:0 as const};});}
- async #mirror(selected:NonNullable<CurrentBinding['selected']>){const context=await this.#context();need(canonicalOwnedJson(context.selected)===canonicalOwnedJson(selected),'binding_mismatch');const pin=await this.#reserve({kind:'mirror',selected},'reader','AcquireReadPin',{operationBinding:this.maintenanceOperationBinding});
+ async #mirror(selected:NonNullable<CurrentBinding['selected']>){const context=await this.#context();need(canonicalOwnedJson(context.selected)===canonicalOwnedJson(selected),'binding_mismatch');const pin=await this.#reserve({kind:'mirror',selected},context.selected,'reader','AcquireReadPin',{operationBinding:this.maintenanceOperationBinding});
   try{await this.#live(pin);await this.provider.mirror(selected.snapshot,pin);await this.#live(pin);await this.#call('reader','ReleaseReadPin',{pin});}catch(e){this.#blocked=true;throw e;}}
  async repairMirror(){return this.#run(async()=>{const context=await this.#context();need(context.selected,'control_unavailable');await this.#mirror(context.selected);});}
- async prepareRead(file:string,budget:GradleBudget,policy:OwnedPolicy){return this.#run(async()=>{const scope=structuredClone(this.resolveScope(file));parsed(chash,scope.operationBinding);need(!policy.settings.invalid&&!policy.registry.invalid,'configuration_invalid');need(policy.settings.enabled&&policy.registry.authorization(scope,policy.settings),'profile_unapproved');const context=await this.#context();need(context.selected,'control_unavailable');const pin=await this.#reserve({kind:'read',file,scope,selected:context.selected},'reader','AcquireReadPin',{operationBinding:scope.operationBinding});
+ async prepareRead(file:string,budget:GradleBudget,policy:OwnedPolicy){return this.#run(async()=>{const scope=structuredClone(this.resolveScope(file));parsed(chash,scope.operationBinding);need(!policy.settings.invalid&&!policy.registry.invalid,'configuration_invalid');need(policy.settings.enabled&&policy.registry.authorization(scope,policy.settings),'profile_unapproved');const context=await this.#context();need(context.selected,'control_unavailable');const pin=await this.#reserve({kind:'read',file,scope,selected:context.selected},context.selected,'reader','AcquireReadPin',{operationBinding:scope.operationBinding});
   try{const cp=await this.#call('reader','ReadCurrentCheckpoint',{pin,checkpoint:context.selected.checkpoint});await this.#live(pin);const source=await this.provider.read(context.selected.snapshot,pin);await this.#live(pin);parsed(currentNamespaceSchema,source.namespace);for(const key of Object.keys(source.input.binding))need((source.input.binding as any)[key]===(context as any)[key],'binding_mismatch');const proof=this.verifier.verify(source.input,context.selected,pin,scope,policy,budget),facts=this.verifier.inspect(proof),handle=Object.freeze({kind:'current-read' as const});await this.#live(pin);this.#reads.set(handle,{pin,selected:context.selected,witness:cp.value.witness,proof,scope,phase:'active',useId:currentOperation(),document:facts.document});return handle;
-  }catch(e){try{await this.#call('reader','ReleaseReadPin',{pin});}catch{/* A revoked or unknown pin is never treated as released. */}throw e;}});}
+  }catch(e){await this.#releaseQuietly(pin);throw e;}});}
  async deliverRead(handle:CurrentRead){return this.#run(async()=>{const r=this.#reads.get(handle);need(r?.phase==='active','binding_mismatch');
-  try{await this.#live(r.pin);r.gate=await this.authority.prepare(r.proof,r.useId);await this.#live(r.pin);const receipt=await this.#call('authority-broker','PrepareHandoff',{pin:r.pin,witness:r.witness,...r.gate,useId:r.useId});r.phase='decision-recorded';r.receiptDigest=receipt.semanticResultRef?.sha256??ownedDigest(receipt.value);const delivered=await this.#call('authority-broker','DeliverResult',{pin:r.pin,useId:r.useId});r.delivery=delivered.value.delivery;r.phase='delivering';await this.#live(r.pin);
+  // Nothing is written before the first live check, so its refusal fails only this read.
+  try{await this.#live(r.pin);}catch(e){r.phase='failed';await this.#releaseQuietly(r.pin);throw e;}
+  try{r.gate=await this.authority.prepare(r.proof,r.useId);await this.#live(r.pin);const receipt=await this.#call('authority-broker','PrepareHandoff',{pin:r.pin,witness:r.witness,...r.gate,useId:r.useId});r.phase='decision-recorded';r.receiptDigest=receipt.semanticResultRef?.sha256??ownedDigest(receipt.value);const delivered=await this.#call('authority-broker','DeliverResult',{pin:r.pin,useId:r.useId});r.delivery=delivered.value.delivery;r.phase='delivering';await this.#live(r.pin);
    await this.provider.recordUse({grantId:r.pin.id,useId:r.useId,receiptDigest:r.receiptDigest,completeDigest:ownedDigest({pin:r.pin,witness:r.witness,...r.gate,useId:r.useId}),readerDigest:ownedDigest(r.scope),identityDigest:ownedDigest(r.selected)});await this.#live(r.pin);
   }catch(e){r.phase='failed';this.#blocked=true;throw e;}});}
  async acknowledgeRead(handle:CurrentRead){return this.#run(async()=>{const r=this.#reads.get(handle);need(r?.phase==='delivering'&&r.delivery,'binding_mismatch');await this.#live(r.pin);await this.#call('reader','AcknowledgeDelivery',{pin:r.pin,delivery:r.delivery,effect:null});this.#gate();r.phase='released';return structuredClone(r.document);});}

@@ -40,7 +40,7 @@ it('uses registry adoption before a local mirror and verifies the G0/G2 source u
 it('never reads or selects the local selected pointer in registry mode',async()=>{const f=await selected();await expect(f.store.readSelected()).rejects.toThrow('registry_selection_required');const before=f.store.view().metrics.contentReadBytes;f.offline();await expect(f.bridge.prepareRead('file',createGradleBudget(),f.policy)).rejects.toThrow('service-offline');expect(f.store.view().metrics.contentReadBytes).toBe(before);});
 it('holds the pin through recorded delivery and rejects publication until consumer ACK',async()=>{const f=await selected(),handle=await f.bridge.prepareRead('file',createGradleBudget(),f.policy);await f.bridge.deliverRead(handle);await expect(f.bridge.beginPublication('advance')).rejects.toThrow('pins_active');await f.bridge.acknowledgeRead(handle);f.setNext();const p=await f.bridge.beginPublication('advance');await f.bridge.publish(p);expect(f.c.view().selected!.head.revision).toBe(2);expect(f.store.view().ledger.namespaces.filter(n=>n.phase==='sealed')).toHaveLength(2);});
 it('refuses stale or changed source content and never creates an authority gate from it',async()=>{const f=await selected();f.hooks.source=input=>({...input,payloads:input.payloads.map((b:Buffer,i:number)=>i?b:Buffer.from('changed'))});await expect(f.bridge.prepareRead('file',createGradleBudget(),f.policy)).rejects.toThrow();expect(f.events).not.toContain('PrepareHandoff');});
-it('never promotes a fabricated proof or an expired pinned read',async()=>{const f=await selected();expect(()=>f.verifier.inspect({kind:'verified-current-authority'})).toThrow('gate_invalid');const h=await f.bridge.prepareRead('file',createGradleBudget(),f.policy);f.tick(5000);await expect(f.bridge.deliverRead(h)).rejects.toThrow();expect(f.store.view().ledger.uses).toHaveLength(0);});
+it('never promotes a fabricated proof or an expired pinned read',async()=>{const f=await selected();expect(()=>f.verifier.inspect({kind:'verified-current-authority'})).toThrow('gate_invalid');const h=await f.bridge.prepareRead('file',createGradleBudget(),f.policy);f.tick(5000);await expect(f.bridge.deliverRead(h)).rejects.toThrow('pin_expired');expect(f.store.view().ledger.uses).toHaveLength(0);});
 
 import {GradleGraphCache,GRADLE_COMPANION} from '../../utils/gradleGraphCache.js';
 it('feeds the actual GradleGraphCache through a fresh service read with no companion fallback or cached caller',async()=>{
@@ -109,22 +109,46 @@ it('retries a lost mirror pin acquisition without allocating another pin',async(
  const attempts=f.attempts.filter(a=>a.api==='AcquireReadPin');expect(attempts).toHaveLength(2);expect(attempts[1]).toEqual(attempts[0]);expect(Object.keys(f.c.view().pins)).toEqual(Object.keys(pins));
 });
 
+const decided={BeginEnrollment:'writer_stale',ReserveWriter:'historical_only',AcquireReadPin:'historical_only'} as const;
 it.each(['BeginEnrollment','ReserveWriter','AcquireReadPin'] as const)('never renews an expired initial %s after losing its response',async(api)=>{
  const f=api==='BeginEnrollment'?await setup():await selected(),first=f.attempts.length;
  const work=()=>api==='AcquireReadPin'?f.bridge.prepareRead('file',createGradleBudget(),f.policy):f.bridge.beginPublication(api==='BeginEnrollment'?'genesis':'advance');
  let armed=true;f.hooks.beforeCall=name=>{if(armed&&name===api){armed=false;f.c.schedule(f.a.operator,'anchor-after-cas','lose-response');}};
  await expect(work()).rejects.toThrow('response_lost');const before=f.c.view();f.tick(5000);
- await expect(work()).rejects.toThrow();await expect(work()).rejects.toThrow();
- const attempts=f.attempts.slice(first).filter(a=>a.api===api);expect(attempts).toHaveLength(3);expect(attempts.every(a=>canonicalOwnedJson(a)===canonicalOwnedJson(attempts[0]))).toBe(true);
+ await expect(work()).rejects.toThrow(decided[api]);
+ const retried=f.attempts.slice(first).filter(a=>a.api===api);expect(retried).toHaveLength(2);expect(retried[1]).toEqual(retried[0]);
  const after=f.c.view();expect(Object.keys(after.pins)).toEqual(Object.keys(before.pins));expect(after.provision?.ref).toEqual(before.provision?.ref);expect(after.provision?.expires).toBe(before.provision?.expires);expect(after.writer?.ref).toEqual(before.writer?.ref);expect(after.writer?.expires).toBe(before.writer?.expires);
  for(const [id,pin] of Object.entries(before.pins))expect(after.pins[id]!.expires).toBe(pin.expires);expect(f.store.view().ledger.uses).toHaveLength(0);
+ // The decided refusal frees the slot: a later call is a new request and never re-sends the expired one.
+ if(api==='BeginEnrollment')await expect(work()).rejects.toThrow('control_conflict');else await work();
+ const all=f.attempts.slice(first).filter(a=>a.api===api);expect(all).toHaveLength(3);expect(all[2]!.id).not.toBe(all[0]!.id);
+ for(const [id,pin] of Object.entries(before.pins))expect(f.c.view().pins[id]!.expires).toBe(pin.expires);
 });
-it('keeps a pending read intent and refuses replacement before source IO',async()=>{
+it('keeps a pending read intent for its own retry without blocking other reads',async()=>{
  const f=await selected();let armed=true;f.hooks.beforeCall=api=>{if(armed&&api==='AcquireReadPin'){armed=false;f.c.schedule(f.a.operator,'anchor-after-cas','lose-response');}};
- await expect(f.bridge.prepareRead('original',createGradleBudget(),f.policy)).rejects.toThrow('response_lost');const events=f.attempts.length,bytes=f.store.view().metrics.contentReadBytes;
- await expect(f.bridge.prepareRead('other',createGradleBudget(),f.policy)).rejects.toThrow('binding_mismatch');expect(f.attempts.length).toBe(events);expect(f.store.view().metrics.contentReadBytes).toBe(bytes);
- const h=await f.bridge.prepareRead('original',createGradleBudget(),f.policy);await f.bridge.deliverRead(h);await f.bridge.acknowledgeRead(h);
+ await expect(f.bridge.prepareRead('original',createGradleBudget(),f.policy)).rejects.toThrow('response_lost');const lost=f.attempts.filter(a=>a.api==='AcquireReadPin').at(-1)!;
+ const other=await f.bridge.prepareRead('other',createGradleBudget(),f.policy);await f.bridge.deliverRead(other);await f.bridge.acknowledgeRead(other);
+ const h=await f.bridge.prepareRead('original',createGradleBudget(),f.policy);expect(f.attempts.filter(a=>a.api==='AcquireReadPin').at(-1)).toEqual(lost);await f.bridge.deliverRead(h);await f.bridge.acknowledgeRead(h);
 });
+it('does not wedge other reads, mirror repair or publication behind an expired lost read reservation',async()=>{
+ const f=await selected();let armed=true;f.hooks.beforeCall=api=>{if(armed&&api==='AcquireReadPin'){armed=false;f.c.schedule(f.a.operator,'anchor-after-cas','lose-response');}};
+ await expect(f.bridge.prepareRead('a',createGradleBudget(),f.policy)).rejects.toThrow('response_lost');f.tick(5000);
+ const h=await f.bridge.prepareRead('b',createGradleBudget(),f.policy);await f.bridge.deliverRead(h);await f.bridge.acknowledgeRead(h);
+ await f.bridge.repairMirror();f.setNext();const p=await f.bridge.beginPublication('advance');await f.bridge.publish(p);expect(f.c.view().selected!.head.revision).toBe(2);
+ expect((await f.bridge.readDocument('a',createGradleBudget(),f.policy)).owned?.executionWitness).toBe('verified');
+});
+it('bounds unanswered reservations and refuses a new one before transport',async()=>{
+ const f=await selected();f.hooks.beforeCall=api=>{if(api==='AcquireReadPin')f.c.schedule(f.a.operator,'anchor-after-cas','lose-response');};
+ for(let i=0;i<8;i++)await expect(f.bridge.prepareRead('file'+i,createGradleBudget(),f.policy)).rejects.toThrow('response_lost');
+ const sent=f.attempts.length;await expect(f.bridge.prepareRead('file8',createGradleBudget(),f.policy)).rejects.toThrow('capacity_exhausted');expect(f.attempts.length).toBe(sent);
+ f.hooks.beforeCall=undefined;const h=await f.bridge.prepareRead('file0',createGradleBudget(),f.policy);await f.bridge.deliverRead(h);await f.bridge.acknowledgeRead(h);
+});
+it('fails only the read when its pin is no longer live before any handoff write',async()=>{
+ const f=await selected(),h=await f.bridge.prepareRead('file',createGradleBudget(),f.policy);f.tick(5000);
+ await expect(f.bridge.deliverRead(h)).rejects.toThrow('pin_expired');expect(f.events).not.toContain('PrepareHandoff');await expect(f.bridge.deliverRead(h)).rejects.toThrow('binding_mismatch');
+ expect((await f.bridge.readDocument('file',createGradleBudget(),f.policy)).owned?.executionWitness).toBe('verified');
+});
+
 it('reproduces the recorded C2 integration outcomes and source fingerprints',async()=>{
  const scenario={schema:'osv-mcp.q2.c2.scenario.v1',scope:'application-client-with-local-service-fixtures',observations,backendEligible:false,profileApproved:false,independentRegistryVerified:false,originalReadsSkipped:0};expect(Object.keys(observations).sort()).toEqual(['durable','graphCache','publicationRetry','read']);
  if(process.env.OSV_CURRENT_C2_REPORT==='1'){console.log('C2_REPORT '+JSON.stringify(scenario));return;}

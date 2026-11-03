@@ -2700,7 +2700,6 @@ C1レビュー修正の最終検証: 追加8件・C1計37件・C0計142件成功
 
 762be6eレビュー修正の検証結果: C1回帰39件・C0回帰142件成功。全体120 files／4,680 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。
 
-
 ### C2：本番用client・Gradle readerの明示接続（2026-11-03）
 
 - §9.90へclient／provider／authority境界を追加。共有schema・full v2 replay・authority snapshot decoderをutilsへ移し、fixture側は互換re-export。本番moduleにprincipal発行を入れない。
@@ -2713,3 +2712,11 @@ C1レビュー修正の最終検証: 追加8件・C1計37件・C0計142件成功
 C2レビュー修正: 初回予約の送信前にintent／要求ID／payloadを保持し、BeginEnrollment・ReserveWriter・AcquireReadPin（通常read／mirror）の応答紛失を同一要求で再試行する。元grantのlive確認、期限切れ時の新規予約拒否、保留intent差替え拒否を8件追加（合計29件）。別UID認証IPC・本番承認等の未成立範囲は維持。
 
 C2初回予約レビュー修正の最終検証: C2回帰29件成功。全体は`npm test -- --maxWorkers=1`で121 files／4,709 tests成功、24 files／1,418 tests skipped（243.48秒）。型検査・build・diff整形検査成功。元の全体検証結果はvalidationのpreReviewVerificationとして保持する。
+
+### 2026-11-03: 7aa8512レビュー修正・C2保留予約によるbridge停止
+
+- 応答紛失した初回予約がlease失効後も単一slotに残り、別file・mirror修復・公開が`binding_mismatch`で永久に不能になる問題を修正（§9.90.6）。保留はintentごとの上限8件、結果不明だけ保持、確定拒否・selection変更で破棄。
+- deliverReadのhandoff前live確認失敗では当該readだけを失敗させ、bridgeを止めない。
+- 期限切れ再試行テストの素の`toThrow()`を正確な理由に改め、回帰を追加（C2計32件）。
+
+7aa8512レビュー修正の検証結果: C2回帰32件、全体4,712 tests成功（1,418 skipped）。型検査・build成功。
