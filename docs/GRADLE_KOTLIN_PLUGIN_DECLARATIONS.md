@@ -4842,3 +4842,17 @@ principalStateのUID／GIDをscalarから必須の`[real,effective,saved]`三つ
 これは静的fixtureのschema／証拠照合の修正であり、OS上のsetresuid／setresgidやsocket GID設定・アクセス拒否を新規実証したものではない。nativeIsolationVerified／profileApproved／backendEligible=false、originalReadsSkipped=0は変更しない。
 
 B1aレビュー修正の検証結果: 新規57件・B1a合計176回帰成功。全体111 files／4,206 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。現sourceでのtrace検査除去RED／復元GREENも再確認した。検証JSONの176 case名／status・実装／回帰／canonical utilityのSHA-256一致、distにB1a fixtureが含まれないことを確認した。正しい再署名と実際に変更したlaunch digest・参照更新後でも不一致／欠落を拒否する。Q2/Bの新規native隔離・配備・採用flag変更は0。
+
+#### 9.80.8 09ac3a8レビュー修正・FD名とlauncher memfd bootstrap／記録照合／manager phaseの資格
+
+**FD配置の実現性。** 従来のB1aは`LISTEN_FDS=3`とその外側のbootstrap FD 6をmanager phaseから要求していたが、systemdの標準機構でその配置を作る方法を固定していなかった。`OpenFile=`で渡すFDは`LISTEN_FDS`／`LISTEN_FDNAMES`に数えられ、stdinはfd 0を`null`に固定しているため使えない。また`LISTEN_FDNAMES`の既定値はsocket unit名であり、role名を期待するにはunitの`FileDescriptorName=`が必要だが、unit本文は不透明bytesとしてしか照合していなかった。
+
+bootstrapは固定launcherが作るsealed read-only memfdとする。manifestの`execution.bootstrap`は`{mechanism:'launcher-memfd', fd:6, sealed:true, readOnly:true}`だけを受け付け、`OpenFile=`方式・未seal・書込可能・fd 6以外を拒否する。systemdが渡すのは3 listenerだけで、`LISTEN_FDS=3`、`LISTEN_FDNAMES`はfd順の各endpointの`fileDescriptorName`をつないだ値とする。manifestの各endpointに`fileDescriptorName`を必須で追加し、roleと一致させる（unitの`FileDescriptorName=`に対応する期待値）。bootstrap FDはmanager phaseには存在してはならず、launcher／provider phaseでは`ownerUid`＝provider UID・`sealed`・`readOnly`・launch digestの一致を要求する。memfdの所有者はlauncherを実行するprovider UIDであり、内容保護の根拠は所有者ではなくsealである。launcherが作るbootstrap recordの内容（§9.81のB1b fixture）とmanager署名のlaunch inventory digestの対応は、B1bで統一する。
+
+**記録の自動照合。** 保存記録`docs/validation/gradle-q2b-b1a-static-2026-11-03.json`の3 sourceのSHA-256、`verifiedTests`と記録件数の一致、test名の一意性、全件passed、非採用flagを検査するVitest回帰を1件追加した。記録を更新しないままsourceを変更すると失敗する。記録は現source・実テスト結果から再生成した。
+
+**manager phaseの資格。** manager phaseの観測値は、managerがprovider用の資格（setresuid／setresgid・capability・no_new_privs）を子processへ適用した後、最初のlauncher execの直前の状態とする。そのため`identity`は全phaseでproviderの実／実効／保存UID/GIDになる。一方、manager stageのeventのuid 0は、その判定を発行した主体（manager）を表し、子processの資格ではない。両者を同じ意味の値として比較しない。
+
+13回帰を追加しB1a合計189件：FD名・OpenFile方式・未seal・書込可能・fd 6以外のmanifest拒否5件、`LISTEN_FDS=4`・bootstrap入りFDNAMES・socket unit既定名のmanager拒否3件、記録照合1件、manager phaseに既にあるbootstrapの拒否1件、launcher phaseで未seal・root所有・欠落したbootstrapの拒否3件。いずれも静的fixtureの照合であり、memfd sealや実systemdのFD受渡しをOS上で実証したものではない。nativeIsolationVerified／profileApproved／backendEligible=false、originalReadsSkipped=0は変更しない。
+
+09ac3a8レビュー修正の検証結果: B1a回帰189件成功（新規13件）。全体111 files／4,219 tests成功、24 files／1,418 tests skipped（未commitの別作業B1b launcher testを除く）。型検査・build・diff整形検査成功。記録照合testで保存記録と現source・189 test名の一致を確認し、distにB1a fixtureが含まれないことを確認した。新規native隔離・配備・採用flag変更は0。

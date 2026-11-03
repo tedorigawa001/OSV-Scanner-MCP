@@ -10,18 +10,18 @@
   "sources": [
     {
       "path": "src/test/fixtures/gradleOwnedDeployment.ts",
-      "sha256": "e0cceb1f37aed23ab51f2cb578dd8614687e0f80cfcaab9bc78d2efba37f2453"
+      "sha256": "a82e32c1101d629dc67186c97ec84b1ae93eb6497fe3b2220812a73fdcb44b1c"
     },
     {
       "path": "src/test/utils/gradleOwnedDeployment.test.ts",
-      "sha256": "1cace8fea47f89a244bd891ead73009281a195dd5bb1c156ea5e44763dec5005"
+      "sha256": "b822a8314050c6b2ec9b0b913398b2e87795b42822f16a2f5668fdea943a1a58"
     },
     {
       "path": "src/utils/gradleOwnedJson.ts",
       "sha256": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e"
     }
   ],
-  "verifiedTests": 176,
+  "verifiedTests": 189,
   "tests": [
     {
       "name": "verifies a closed, independently pinned synthetic deployment without granting native adoption",
@@ -726,6 +726,58 @@
     {
       "name": "does not equate socket owner GID with the root listener custodian GID",
       "status": "passed"
+    },
+    {
+      "name": "pins the systemd FD names and the launcher memfd bootstrap in the manifest: default unit FD name",
+      "status": "passed"
+    },
+    {
+      "name": "pins the systemd FD names and the launcher memfd bootstrap in the manifest: systemd OpenFile bootstrap",
+      "status": "passed"
+    },
+    {
+      "name": "pins the systemd FD names and the launcher memfd bootstrap in the manifest: unsealed bootstrap",
+      "status": "passed"
+    },
+    {
+      "name": "pins the systemd FD names and the launcher memfd bootstrap in the manifest: writable bootstrap",
+      "status": "passed"
+    },
+    {
+      "name": "pins the systemd FD names and the launcher memfd bootstrap in the manifest: bootstrap outside fd 6",
+      "status": "passed"
+    },
+    {
+      "name": "rejects an FD environment that does not match the pinned units: OpenFile-style LISTEN_FDS",
+      "status": "passed"
+    },
+    {
+      "name": "rejects an FD environment that does not match the pinned units: FDNAMES with bootstrap",
+      "status": "passed"
+    },
+    {
+      "name": "rejects an FD environment that does not match the pinned units: default socket unit FD names",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a bootstrap FD that already exists before the launcher creates it",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a launcher-phase bootstrap that is unsealed",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a launcher-phase bootstrap that is root-owned file instead of the launcher memfd",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a launcher-phase bootstrap that is missing after the launcher",
+      "status": "passed"
+    },
+    {
+      "name": "keeps the saved B1a validation record in sync with the executed sources and test names",
+      "status": "passed"
     }
   ],
   "mutationControl": {
@@ -776,9 +828,9 @@
     "nativeTrials": 0
   },
   "verification": {
-    "newTestsPassed": 57,
-    "b1aTestsPassed": 176,
-    "fullSuiteTestsPassed": 4206,
+    "newTestsPassed": 13,
+    "b1aTestsPassed": 189,
+    "fullSuiteTestsPassed": 4219,
     "fullSuiteTestsSkipped": 1418,
     "testFilesPassed": 111,
     "testFilesSkipped": 24,
@@ -786,5 +838,20 @@
     "build": "passed",
     "diffCheck": "passed",
     "testFixtureInProductionBuild": false
+  },
+  "fdLayoutReview": {
+    "addedTests": 13,
+    "totalTests": 189,
+    "bootstrapMechanism": "launcher-memfd",
+    "bootstrapFd": 6,
+    "bootstrapAbsentAtManagerPhase": true,
+    "listenFds": 3,
+    "listenFdNames": [
+      "reader",
+      "upload",
+      "publish"
+    ],
+    "recordSyncTest": true,
+    "nativeTrials": 0
   }
 }

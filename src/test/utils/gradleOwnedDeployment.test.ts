@@ -1,4 +1,5 @@
 import { generateKeyPairSync, sign } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import { canonicalOwnedJson, ownedSha256 } from '../../utils/gradleOwnedJson.js';
 import { verifyDeploymentManifest, verifyB1aDiagnostic, verifyB1aSuite } from '../fixtures/gradleOwnedDeployment.js';
@@ -17,9 +18,10 @@ function fixture() {
     artifacts: artifacts.map((a, i) => ({ role: roles[i], path: a.path, sha256: h(a.bytes), byteLength: a.bytes.length, ownerUid: 0, writers: [0], kind: 'regular', nlink: 1 })),
     execution: { launcher: image + '/launcher', runtime: image + '/runtime', entrypoint: image + '/entrypoint', cwd: image,
       launcherArgv: [image + '/launcher', '--profile', 'profile', '--instance', 'instance'], runtimeArgv: [image + '/runtime', '-I', image + '/entrypoint'],
-      credentialDirectory: '/run/credentials/osv-q2b-instance.service', shell: false, inheritEnvironment: false, dynamicFdStore: false },
+      credentialDirectory: '/run/credentials/osv-q2b-instance.service',
+      bootstrap: { mechanism: 'launcher-memfd', fd: 6, sealed: true, readOnly: true }, shell: false, inheritEnvironment: false, dynamicFdStore: false },
     roots: ['provider', 'checkpoint', 'registry', 'evidence'].map((role, i) => ({ role, path: '/var/lib/osv-q2b/' + role + '/instance', ownerUid: role === 'evidence' ? 0 : (principals as any)[role].uid, kind:'directory', mode: 448, ancestorWriters: [0], writers: [role === 'evidence' ? 0 : (principals as any)[role].uid], device: '1', inode: String(10 + i), newPrivate: true })),
-    endpoints: ['reader', 'upload', 'publish'].map((role, i) => ({ role, path: '/run/osv-q2b/instance/' + role + '.sock', unitPath: image + '/' + role + '-unit', groupGid: 1202 + i, ownerUid: 0, mode: 432, directoryWriters: [0], accept: false, passCredentials: true })),
+    endpoints: ['reader', 'upload', 'publish'].map((role, i) => ({ role, path: '/run/osv-q2b/instance/' + role + '.sock', unitPath: image + '/' + role + '-unit', groupGid: 1202 + i, ownerUid: 0, mode: 432, directoryWriters: [0], accept: false, passCredentials: true, fileDescriptorName: role })),
     limits: { frameBytes: 4096, connectionMs: 2000, pending: 64, requests: 2 },
     providerMayBind: false, coordinatedRestart: true,
   };
@@ -95,14 +97,14 @@ function runFixture() {
     environment: [{name:'LANG',value:'C'},{name:'LC_ALL',value:'C'},{name:'CREDENTIALS_DIRECTORY',value:m.execution.credentialDirectory},{name:'LISTEN_PID',value:'700'},{name:'LISTEN_FDS',value:'3'},{name:'LISTEN_FDNAMES',value:'reader:upload:publish'}],
     fds: [{ fd: 0, kind: 'stdio', target: 'null' }, { fd: 1, kind: 'stdio', target: 'controller-log' }, { fd: 2, kind: 'stdio', target: 'controller-log' },
       ...launch.listeners.map((x: any) => ({ ...x, kind:'listener', socketGeneration: launch.socketGeneration })),
-      {fd:6,kind:'bootstrap',ownerUid:0,readOnly:true,launchDigest:h(launchBytes)}],
+      {fd:6,kind:'bootstrap',ownerUid:1101,readOnly:true,sealed:true,launchDigest:h(launchBytes)}],
   };
   const events = [
     ['manager','gate-begin'],['manager','gate-pass'],['launcher','exec'],['launcher','gate-begin'],['launcher','gate-pass'],
     ['provider','exec'],['provider','gate-begin'],['provider','gate-pass'],
   ].map(([stage, kind], i) => ({ seq:i+1, stage, kind, pid:700, uid:stage==='manager'?0:1101 }));
   const diagnostic = { schema:'osv-mcp.q2b.diagnostic.v1', mode:'synthetic-static', runId:'run',caseId:'honest',manifestDigest:manifest.manifestDigest,launchDigest:h(launchBytes),
-    observations: ['manager','launcher','provider'].map(phase => ({phase, ...structuredClone(observation)})), events,
+    observations: ['manager','launcher','provider'].map(phase => { const o: any = {phase, ...structuredClone(observation)}; if (phase === 'manager') o.fds = o.fds.filter((x: any) => x.kind !== 'bootstrap'); return o; }), events,
     claimed: {status:'accepted',stage:'provider',reason:'preflight-accepted'},
   };
   const expectation = {runId:'run',caseId:'honest',launchDigest:h(launchBytes),status:'accepted',stage:'provider',reason:'preflight-accepted'};
@@ -235,7 +237,7 @@ function suiteFixture() {
   rejected.launch.caseId='denied';rejected.launchBytes=signed(rejected.launch,'manager');
   rejected.expectation.caseId='denied';rejected.expectation.launchDigest=h(rejected.launchBytes);
   rejected.diagnostic.caseId='denied';rejected.diagnostic.launchDigest=h(rejected.launchBytes);
-  const o=rejected.diagnostic.observations[0];o.fds.find((x:any)=>x.kind==='bootstrap').launchDigest=h(rejected.launchBytes);
+  for(const o of rejected.diagnostic.observations){const b=o.fds.find((x:any)=>x.kind==='bootstrap');if(b)b.launchDigest=h(rejected.launchBytes);}
   return {manifest:accepted.manifest,manager,controller,runId:'run',expectations:[accepted.expectation,rejected.expectation],
     records:[accepted,rejected].map(f=>({caseId:f.expectation.caseId,launch:f.launchBytes,diagnostic:signed(f.diagnostic,'controller')}))};
 }
@@ -334,7 +336,7 @@ it('rejects a re-signed legacy launch that omits the listener owner GID',()=>{
   f.launchBytes=signed(f.launch,'manager');f.expectation.launchDigest=h(f.launchBytes);f.diagnostic.launchDigest=h(f.launchBytes);
   for(const o of f.diagnostic.observations){
     for(const fd of o.fds)if(fd.kind==='listener')delete fd.ownerGid;
-    o.fds.find((x:any)=>x.kind==='bootstrap').launchDigest=h(f.launchBytes);
+    const b=o.fds.find((x:any)=>x.kind==='bootstrap');if(b)b.launchDigest=h(f.launchBytes);
   }
   expect(()=>verifyRun(f)).toThrow('schema_invalid');
 });
@@ -399,4 +401,42 @@ it('does not equate socket owner GID with the root listener custodian GID',()=>{
   const f=runFixture();
   expect(f.launch.listeners.every((l:any)=>l.ownerGid!==l.custodianGid)).toBe(true);
   expect(verifyRun(f)).toMatchObject({status:'accepted',nativeIsolationVerified:false,backendEligible:false});
+});
+
+it.each([
+  ['default unit FD name', (m: any) => { m.endpoints[0].fileDescriptorName = 'upload'; }],
+  ['systemd OpenFile bootstrap', (m: any) => { m.execution.bootstrap.mechanism = 'open-file'; }],
+  ['unsealed bootstrap', (m: any) => { m.execution.bootstrap.sealed = false; }],
+  ['writable bootstrap', (m: any) => { m.execution.bootstrap.readOnly = false; }],
+  ['bootstrap outside fd 6', (m: any) => { m.execution.bootstrap.fd = 7; }],
+])('pins the systemd FD names and the launcher memfd bootstrap in the manifest: %s', (_name, change) => {
+  const f = fixture(); change(f.manifest); expect(() => verify(f)).toThrow(/q2b_(endpoint|execution|schema)_invalid/);
+});
+it.each([
+  ['OpenFile-style LISTEN_FDS', (o: any) => { o.environment.find((e: any) => e.name === 'LISTEN_FDS').value = '4'; }],
+  ['FDNAMES with bootstrap', (o: any) => { o.environment.find((e: any) => e.name === 'LISTEN_FDNAMES').value = 'reader:upload:publish:bootstrap'; }],
+  ['default socket unit FD names', (o: any) => { o.environment.find((e: any) => e.name === 'LISTEN_FDNAMES').value = 'osv-q2b-reader.socket:osv-q2b-upload.socket:osv-q2b-publish.socket'; }],
+])('rejects an FD environment that does not match the pinned units: %s', (_name, mutate) => {
+  const f = rejection('manager', mutate, 'execution_invalid');
+  expect(verifyRun(f)).toMatchObject({ status: 'rejected', stage: 'manager', reason: 'execution_invalid', launcherExecCount: 0, runtimeExecCount: 0 });
+});
+it('rejects a bootstrap FD that already exists before the launcher creates it', () => {
+  const f = rejection('manager', o => o.fds.push({fd:6,kind:'bootstrap',ownerUid:1101,readOnly:true,sealed:true,launchDigest:h('premature-bootstrap')}), 'fd_invalid');
+  expect(verifyRun(f)).toMatchObject({ status: 'rejected', stage: 'manager', reason: 'fd_invalid', launcherExecCount: 0 });
+});
+it.each([
+  ['unsealed', (o: any) => { o.fds.find((x: any) => x.kind === 'bootstrap').sealed = false; }],
+  ['root-owned file instead of the launcher memfd', (o: any) => { o.fds.find((x: any) => x.kind === 'bootstrap').ownerUid = 0; }],
+  ['missing after the launcher', (o: any) => { o.fds = o.fds.filter((x: any) => x.kind !== 'bootstrap'); }],
+])('rejects a launcher-phase bootstrap that is %s', (_name, mutate) => {
+  expect(verifyRun(rejection('launcher', mutate, 'fd_invalid'))).toMatchObject({ status: 'rejected', stage: 'launcher', reason: 'fd_invalid', launcherExecCount: 1, runtimeExecCount: 0 });
+});
+it('keeps the saved B1a validation record in sync with the executed sources and test names', () => {
+  const record = JSON.parse(readFileSync('docs/validation/gradle-q2b-b1a-static-2026-11-03.json', 'utf8'));
+  for (const source of record.sources) expect(source.sha256).toBe(h(readFileSync(source.path)));
+  expect(record.sources.map((x: any) => x.path).sort()).toEqual(['src/test/fixtures/gradleOwnedDeployment.ts', 'src/test/utils/gradleOwnedDeployment.test.ts', 'src/utils/gradleOwnedJson.ts']);
+  expect(record.verifiedTests).toBe(record.tests.length);
+  expect(new Set(record.tests.map((x: any) => x.name)).size).toBe(record.tests.length);
+  expect(record.tests.every((x: any) => x.status === 'passed')).toBe(true);
+  expect(record).toMatchObject({ nativeIsolationVerified: false, profileApproved: false, backendEligible: false, originalReadsSkipped: 0, nativeQ2bTrials: 0 });
 });

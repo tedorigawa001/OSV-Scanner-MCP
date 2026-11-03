@@ -2518,3 +2518,10 @@ B1aの検証結果: 新規119回帰成功。全体111 files／4,149 tests成功�
 - 新規57件・B1a合計176件。旧不完全記録が修正前に受理されるREDを確認し、全phaseの不一致／欠落と再署名・socket世代／boot／launch digest・参照更新後の拒否を検証。検証JSONを現sourceと実テスト結果で更新する。native隔離・配備・本番採用は引き続き未成立。
 
 B1aレビュー修正の検証結果: 新規57件・B1a合計176回帰成功。全体111 files／4,206 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。現sourceでのtrace検査除去RED／復元GREENも再確認した。検証JSONの176 case名／status・実装／回帰／canonical utilityのSHA-256一致、distにB1a fixtureが含まれないことを確認した。正しい再署名と実際に変更したlaunch digest・参照更新後でも不一致／欠落を拒否する。Q2/Bの新規native隔離・配備・採用flag変更は0。
+
+### 2026-11-03: 09ac3a8レビュー修正・B1aのFD名／memfd bootstrap／記録照合
+
+- §9.80.8へ、bootstrapを固定launcherのsealed read-only memfd（fd 6）とし`LISTEN_FDS=3`を維持、endpointの`fileDescriptorName`をmanifestへ必須化して`LISTEN_FDNAMES`を照合、manager phaseではbootstrap不在・以後はprovider UID所有／seal／read-onlyを要求する変更を追加。保存記録の自動照合testと、manager phaseの資格の意味を明記。
+- 新規13件・B1a合計189件。launcher作成のbootstrap recordとmanager署名launch digestの対応はB1bで統一する。
+
+09ac3a8レビュー修正の検証結果: B1a回帰189件成功（新規13件）。全体111 files／4,219 tests成功、24 files／1,418 tests skipped（未commitのB1b launcher testを除く）。型検査・build・diff整形検査成功。

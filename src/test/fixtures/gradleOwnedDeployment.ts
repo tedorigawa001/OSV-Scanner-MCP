@@ -31,11 +31,13 @@ const manifestSchema = z.object({
   artifacts: z.array(artifact).min(8).max(DEPLOYMENT_LIMITS.artifacts),
   execution: z.object({ launcher: path, runtime: path, entrypoint: path, cwd: path,
     launcherArgv: z.array(z.string().max(1024)).max(8), runtimeArgv: z.array(z.string().max(1024)).max(8), credentialDirectory: path,
+    // The fixed launcher creates the bootstrap as a sealed read-only memfd at fd 6; systemd passes only the 3 listeners.
+    bootstrap: z.object({ mechanism: z.literal('launcher-memfd'), fd: z.literal(6), sealed: z.literal(true), readOnly: z.literal(true) }).strict(),
     shell: z.literal(false), inheritEnvironment: z.literal(false), dynamicFdStore: z.literal(false) }).strict(),
   roots: z.array(z.object({ role: z.enum(['provider', 'checkpoint', 'registry', 'evidence']), path, ownerUid: uid,
     kind: z.literal('directory'), mode: z.literal(448), ancestorWriters: z.tuple([z.literal(0)]), writers: z.array(uid).length(1), device: decimal, inode: decimal, newPrivate: z.literal(true) }).strict()).length(4),
   endpoints: z.array(z.object({ role: z.enum(endpointRoles), path, unitPath: path, groupGid: uid, ownerUid: z.literal(0), mode: z.literal(432),
-    directoryWriters: z.tuple([z.literal(0)]), accept: z.literal(false), passCredentials: z.literal(true) }).strict()).length(3),
+    directoryWriters: z.tuple([z.literal(0)]), accept: z.literal(false), passCredentials: z.literal(true), fileDescriptorName: z.enum(endpointRoles) }).strict()).length(3),
   limits: z.object({ frameBytes: uint.positive().max(4096), connectionMs: uint.positive().max(2000), pending: uint.positive().max(64), requests: uint.positive().max(2) }).strict(),
   providerMayBind: z.literal(false), coordinatedRestart: z.literal(true),
 }).strict();
@@ -85,7 +87,7 @@ export function verifyDeploymentManifest(input: { manifest: Buffer; expectedDige
     unique(m.endpoints.map(e => e.role), 'endpoint_invalid'); unique(m.endpoints.map(e => e.path), 'endpoint_invalid');
     for (const endpoint of m.endpoints) {
       const actor = endpoint.role === 'reader' ? 'reader' : endpoint.role === 'upload' ? 'build' : 'writer';
-      check(endpoint.groupGid === m.principals[actor].gid && endpoint.path === '/run/osv-q2b/' + m.instanceId + '/' + endpoint.role + '.sock' && endpoint.unitPath === byRole((endpoint.role + '-unit') as typeof artifactRoles[number]).path, 'endpoint_invalid');
+      check(endpoint.groupGid === m.principals[actor].gid && endpoint.path === '/run/osv-q2b/' + m.instanceId + '/' + endpoint.role + '.sock' && endpoint.fileDescriptorName === endpoint.role && endpoint.unitPath === byRole((endpoint.role + '-unit') as typeof artifactRoles[number]).path, 'endpoint_invalid');
     }
     check(Array.isArray(input.artifacts) && input.artifacts.length === m.artifacts.length, 'closure_invalid');
     unique(input.artifacts.map(a => a.path), 'closure_invalid');
@@ -117,7 +119,7 @@ type Launch = B1aLaunchInventory;
 const fd = z.discriminatedUnion('kind', [
   z.object({fd:uint.max(2),kind:z.literal('stdio'),target:z.enum(['null','controller-log'])}).strict(),
   listener.extend({kind:z.literal('listener'),socketGeneration:id}).strict(),
-  z.object({fd:uint,kind:z.literal('bootstrap'),ownerUid:uid,readOnly:z.boolean(),launchDigest:digest}).strict(),
+  z.object({fd:uint,kind:z.literal('bootstrap'),ownerUid:uid,readOnly:z.boolean(),sealed:z.boolean(),launchDigest:digest}).strict(),
   z.object({fd:uint,kind:z.literal('unexpected'),description:id}).strict(),
 ]);
 const rootState=z.object({role:z.enum(['provider','checkpoint','registry','evidence']),path,ownerUid:uid,kind:id,mode:uint.max(511),ancestorWriters:z.array(uid).max(16),writers:z.array(uid).max(16),device:decimal,inode:decimal,newPrivate:z.boolean()}).strict();
@@ -170,13 +172,14 @@ function evaluate(m:Manifest, l:Launch, launchDigest:string, o:Observation):z.in
   if(!same(o.identity.uid,[p.uid,p.uid,p.uid])||!same(o.identity.gid,[p.gid,p.gid,p.gid])||o.identity.supplementaryGroups.length||
     o.identity.capabilities.length||o.identity.adminRoutes.length||!o.identity.noNewPrivileges)return 'principal_invalid';
   const env=[{name:'LANG',value:'C'},{name:'LC_ALL',value:'C'},{name:'CREDENTIALS_DIRECTORY',value:m.execution.credentialDirectory},
-    {name:'LISTEN_PID',value:String(l.pid)},{name:'LISTEN_FDS',value:'3'},
-    {name:'LISTEN_FDNAMES',value:[...l.listeners].sort((a,b)=>a.fd-b.fd).map(x=>x.role).join(':')}];
+    {name:'LISTEN_PID',value:String(l.pid)},{name:'LISTEN_FDS',value:String(l.listeners.length)},
+    {name:'LISTEN_FDNAMES',value:[...l.listeners].sort((a,b)=>a.fd-b.fd).map(x=>m.endpoints.find(e=>e.role===x.role)!.fileDescriptorName).join(':')}];
   const sortEnv=(xs:{name:string;value:string}[])=>[...xs].sort((a,b)=>a.name<b.name?-1:a.name>b.name?1:0);
   if(!same(sortEnv(o.environment),sortEnv(env))||!same(o.launcherArgv,m.execution.launcherArgv)||!same(o.runtimeArgv,m.execution.runtimeArgv)||o.cwd!==m.execution.cwd)return 'execution_invalid';
   const wanted=[{fd:0,kind:'stdio',target:'null'},{fd:1,kind:'stdio',target:'controller-log'},{fd:2,kind:'stdio',target:'controller-log'},
     ...l.listeners.map(x=>({...x,kind:'listener',socketGeneration:l.socketGeneration})),
-    {fd:6,kind:'bootstrap',ownerUid:0,readOnly:true,launchDigest}];
+    // The memfd does not exist before the launcher; it is created by the launcher running as the provider UID.
+    ...(o.phase==='manager'?[]:[{fd:m.execution.bootstrap.fd,kind:'bootstrap',ownerUid:m.principals.provider.uid,readOnly:true,sealed:true,launchDigest}])];
   const sortFd=(xs:{fd:number}[])=>[...xs].sort((a,b)=>a.fd-b.fd);
   if(!same(sortFd(o.fds),sortFd(wanted)))return 'fd_invalid';
   return undefined;
