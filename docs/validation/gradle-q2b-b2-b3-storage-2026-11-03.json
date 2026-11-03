@@ -1,0 +1,379 @@
+{
+  "schema": "osv-mcp.q2b.b2-b3.validation.v1",
+  "scope": "local-posix-storage-and-cooperative-pin-contract",
+  "runtime": {
+    "os": "Darwin",
+    "kernel": "27.2.0",
+    "architecture": "arm64",
+    "node": "v26.12.1"
+  },
+  "sources": [
+    {
+      "path": "src/errors.ts",
+      "sha256": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30"
+    },
+    {
+      "path": "src/test/fixtures/gradleOwnedAuthorityJournal.ts",
+      "sha256": "df213ca2a6d6ce3dfd7822745ac78d1a91506d9141f6575f2470b2c73c72d4da"
+    },
+    {
+      "path": "src/test/fixtures/gradleOwnedAuthoritySchema.ts",
+      "sha256": "108ec4f0965f325f75e6888a0a0e6e22cc40963665c37b1a0a000d07d78bc38d"
+    },
+    {
+      "path": "src/test/fixtures/gradleOwnedAuthoritySnapshot.ts",
+      "sha256": "de0b0f241b0465c6ba76914c3f547e9984d39ee6c27271ad4dbd4e2a5c57cdf2"
+    },
+    {
+      "path": "src/test/fixtures/gradleOwnedJournalCheckpoint.ts",
+      "sha256": "3ca31e62fa5521d7352fc6f4a0528483444fcadce3351f53629e50198c251159"
+    },
+    {
+      "path": "src/test/fixtures/gradleOwnedJournalDisk.ts",
+      "sha256": "cc16330bbbde29b2d52a6c14e90d9f83a9638894c8c7087662c21af9f83162d7"
+    },
+    {
+      "path": "src/test/fixtures/gradleOwnedJournalFs.ts",
+      "sha256": "481389a0fc5ebd5eb234d7b0f25daef7f3e1898419c28dc379e2d628ce0002ef"
+    },
+    {
+      "path": "src/test/fixtures/gradleOwnedJournalV2.ts",
+      "sha256": "ac47697774483edf8ee4319e63a74b52adcc5947f2b0556df2fc6db7d18986ef"
+    },
+    {
+      "path": "src/test/fixtures/gradleOwnedPrefixContract.ts",
+      "sha256": "4ad9fb0015c928bd4e500506f7caf696ef4a9207cef3f44a3d5d53aea00ba2e0"
+    },
+    {
+      "path": "src/test/fixtures/gradleOwnedSealedCoordinator.ts",
+      "sha256": "de152c9937f481b2b87c9adeaa90c10712bf6f8fb6da7bf51b7728891a3214f2"
+    },
+    {
+      "path": "src/test/fixtures/gradleOwnedSealedProvider.ts",
+      "sha256": "393e311999d770bee296d45f6d05cd19387dc1cae07b47d0ab52e95be25b173a"
+    },
+    {
+      "path": "src/test/utils/gradleOwnedSealedProvider.test.ts",
+      "sha256": "6178d303f1f8b93dbacbc59807f8d6e4d4cedc7f156f6e7a0abbb2a421323c58"
+    },
+    {
+      "path": "src/utils/cargoLock.ts",
+      "sha256": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005"
+    },
+    {
+      "path": "src/utils/dependencyRelations.ts",
+      "sha256": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888"
+    },
+    {
+      "path": "src/utils/externalText.ts",
+      "sha256": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b"
+    },
+    {
+      "path": "src/utils/gradleCatalogs.ts",
+      "sha256": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b"
+    },
+    {
+      "path": "src/utils/gradleDeclarations.ts",
+      "sha256": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be"
+    },
+    {
+      "path": "src/utils/gradleGraph.ts",
+      "sha256": "73a36886ed6c8be17b63e5581392cca6c5ba5efb0463e475f7ee3913ac888e81"
+    },
+    {
+      "path": "src/utils/gradleJson.ts",
+      "sha256": "f7f3ef047d30a675cb55044072e8fb516dceeb822192777ea7b7444699c9dc9f"
+    },
+    {
+      "path": "src/utils/gradleOrigins.ts",
+      "sha256": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884"
+    },
+    {
+      "path": "src/utils/gradleOwnedExecution.ts",
+      "sha256": "360a8d5e61a7b115619077cb444f8a863f6d6d0459be9d17b87ae4c43f279fd4"
+    },
+    {
+      "path": "src/utils/gradleOwnedJson.ts",
+      "sha256": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e"
+    },
+    {
+      "path": "src/utils/gradleOwnedSchema.ts",
+      "sha256": "44fa3f141b1931e3043bd4e876f93b46132f54e1c36aaf7f6d3c43f1c6ea734c"
+    },
+    {
+      "path": "src/utils/gradlePluginJar.ts",
+      "sha256": "b180ee353104a11e1ddd1a091930bda1aaf8138fcf5a1df7d66370ef8c848ab9"
+    },
+    {
+      "path": "src/utils/gradlePluginSnapshots.ts",
+      "sha256": "2c0ce15f1c90e6c11916d2a8107c2d1c761719543932a0aeef722cfeb4acf2c1"
+    },
+    {
+      "path": "src/utils/gradlePlugins.ts",
+      "sha256": "582f72462c13927e7284e1c7ca70681f4e455e469596020cd4e8bc5e9ec637af"
+    },
+    {
+      "path": "src/utils/openedFilePath.ts",
+      "sha256": "963ac04f6eb3744af00771feaaf054c08ca8b2dcc7d2846507525394d3fdff8f"
+    },
+    {
+      "path": "src/utils/projectWalk.ts",
+      "sha256": "5ff06d6df2c601017928d26709d6f4bf3ea9d9ff6813e627cfec82d010d9e316"
+    },
+    {
+      "path": "src/utils/safeRead.ts",
+      "sha256": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054"
+    }
+  ],
+  "dependencies": [
+    {
+      "path": "package-lock.json",
+      "sha256": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285"
+    }
+  ],
+  "caseCount": 53,
+  "cases": [
+    {
+      "name": "durably seals a fresh namespace before selecting it, preserving copied source bytes",
+      "status": "passed"
+    },
+    {
+      "name": "does not retain mutable caller inputs, results or candidate identifiers as authority",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a dirty root before reserving or writing a namespace",
+      "status": "passed"
+    },
+    {
+      "name": "quarantines a generation changed during sealing: unknown",
+      "status": "passed"
+    },
+    {
+      "name": "quarantines a generation changed during sealing: pending",
+      "status": "passed"
+    },
+    {
+      "name": "quarantines a generation changed during sealing: modify",
+      "status": "passed"
+    },
+    {
+      "name": "quarantines a generation changed during sealing: remove",
+      "status": "passed"
+    },
+    {
+      "name": "quarantines a generation changed during sealing: symlink",
+      "status": "passed"
+    },
+    {
+      "name": "quarantines a generation changed during sealing: hardlink",
+      "status": "passed"
+    },
+    {
+      "name": "quarantines a generation changed during sealing: root-swap",
+      "status": "passed"
+    },
+    {
+      "name": "withholds a seal on marker storage failure at before-create",
+      "status": "passed"
+    },
+    {
+      "name": "withholds a seal on marker storage failure at after-create",
+      "status": "passed"
+    },
+    {
+      "name": "withholds a seal on marker storage failure at after-write",
+      "status": "passed"
+    },
+    {
+      "name": "withholds a seal on marker storage failure at after-file-sync",
+      "status": "passed"
+    },
+    {
+      "name": "withholds a seal on marker storage failure at after-publish",
+      "status": "passed"
+    },
+    {
+      "name": "withholds a seal on marker storage failure at before-directory-sync",
+      "status": "passed"
+    },
+    {
+      "name": "withholds a seal on marker storage failure at after-directory-sync",
+      "status": "passed"
+    },
+    {
+      "name": "rejects marker changes after durable publication but before capture",
+      "status": "passed"
+    },
+    {
+      "name": "recovers the selected view with full replay, re-sync and a new boot; old candidates remain unusable",
+      "status": "passed"
+    },
+    {
+      "name": "keeps an unfinished reservation and quota charged after restart and requires a fresh root",
+      "status": "passed"
+    },
+    {
+      "name": "fails closed on selected-view unknown corruption instead of treating it as a cache miss",
+      "status": "passed"
+    },
+    {
+      "name": "fails closed on selected-view content corruption instead of treating it as a cache miss",
+      "status": "passed"
+    },
+    {
+      "name": "fails closed on selected-view marker corruption instead of treating it as a cache miss",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a cloned namespace even when every saved byte matches",
+      "status": "passed"
+    },
+    {
+      "name": "holds a disk-backed read pin through Complete decision and delivery until explicit release",
+      "status": "passed"
+    },
+    {
+      "name": "keeps the selected inventory unchanged and the writer fenced while a pin is active",
+      "status": "passed"
+    },
+    {
+      "name": "keeps the selected inventory unchanged and the writer fenced while a pin is completing",
+      "status": "passed"
+    },
+    {
+      "name": "keeps the selected inventory unchanged and the writer fenced while a pin is decision-recorded",
+      "status": "passed"
+    },
+    {
+      "name": "keeps the selected inventory unchanged and the writer fenced while a pin is delivering",
+      "status": "passed"
+    },
+    {
+      "name": "orders freeze before late Complete/handoff and never authorizes physical deletion",
+      "status": "passed"
+    },
+    {
+      "name": "orders cutover before late Complete/handoff and never authorizes physical deletion",
+      "status": "passed"
+    },
+    {
+      "name": "orders gc before late Complete/handoff and never authorizes physical deletion",
+      "status": "passed"
+    },
+    {
+      "name": "orders revoke before late Complete/handoff and never authorizes physical deletion",
+      "status": "passed"
+    },
+    {
+      "name": "persists one Complete decision idempotently and keeps a replayed old release from freeing another use",
+      "status": "passed"
+    },
+    {
+      "name": "rechecks expiry after the final decision persistence await without converting history into a live receipt",
+      "status": "passed"
+    },
+    {
+      "name": "rechecks freeze after the final decision persistence await without converting history into a live receipt",
+      "status": "passed"
+    },
+    {
+      "name": "rechecks owner-close after the final decision persistence await without converting history into a live receipt",
+      "status": "passed"
+    },
+    {
+      "name": "retains an old proof after natural expiry but still replays and syncs the disk source for the next grant",
+      "status": "passed"
+    },
+    {
+      "name": "cancels disconnects and rejects old Complete and reader handles after a new provider boot",
+      "status": "passed"
+    },
+    {
+      "name": "fails admission when no registry exists, and does not turn fixture admission into independent registry evidence",
+      "status": "passed"
+    },
+    {
+      "name": "stops a warm reader when fixture currentness becomes unavailable",
+      "status": "passed"
+    },
+    {
+      "name": "rejects an oversized wire before copying it or reading the selected disk source",
+      "status": "passed"
+    },
+    {
+      "name": "rejects an old writer from another boot and an obsolete expected head without selecting its view",
+      "status": "passed"
+    },
+    {
+      "name": "does not hide damage to the old selected view during the final selection await",
+      "status": "passed"
+    },
+    {
+      "name": "keeps a freeze barrier unfinished while an earlier durable decision is still in flight",
+      "status": "passed"
+    },
+    {
+      "name": "stops bounded inventory enumeration at the limit plus one before a reservation or write",
+      "status": "passed"
+    },
+    {
+      "name": "counts unselected and quarantined reservations against a persistent namespace quota",
+      "status": "passed"
+    },
+    {
+      "name": "refuses a byte quota before creating any namespace file and does not forget failed reservations",
+      "status": "passed"
+    },
+    {
+      "name": "fails closed on checkpoint publication failure and refuses reopen/retry until directory re-sync succeeds",
+      "status": "passed"
+    },
+    {
+      "name": "detects a rolled-back control history against the newer separate checkpoint",
+      "status": "passed"
+    },
+    {
+      "name": "does not replay a durable historical decision as a fresh use after restart",
+      "status": "passed"
+    },
+    {
+      "name": "recovers after an actual SIGKILL at after-reservation without reusing the old boot or reopening a generation",
+      "status": "passed"
+    },
+    {
+      "name": "recovers after an actual SIGKILL at after-selection without reusing the old boot or reopening a generation",
+      "status": "passed"
+    }
+  ],
+  "nativeProcessCases": [
+    {
+      "name": "recovers after an actual SIGKILL at after-reservation without reusing the old boot or reopening a generation",
+      "signal": "SIGKILL",
+      "verified": true,
+      "phaseAndBootWitnessVerified": true
+    },
+    {
+      "name": "recovers after an actual SIGKILL at after-selection without reusing the old boot or reopening a generation",
+      "signal": "SIGKILL",
+      "verified": true,
+      "phaseAndBootWitnessVerified": true
+    }
+  ],
+  "nativeIsolationVerified": false,
+  "independentRegistryVerified": false,
+  "backendEligible": false,
+  "profileApproved": false,
+  "originalReadsSkipped": 0,
+  "notEstablished": [
+    "B1c authenticated transport and complete isolation",
+    "separate-UID storage service",
+    "power-loss certification",
+    "independent registry currentness",
+    "cross-service atomic barrier",
+    "physical GC and quota release",
+    "Q3 source read omission and performance",
+    "Q4 approved production profile",
+    "fresh source-authority checkpoint and final authority gate"
+  ]
+}

@@ -36,4 +36,14 @@ export class OwnedJournalDisk {
   }catch(e){for(const io of [...opened.values()].reverse())io.close();throw e;}
  }
  close():void{journalAssert(!this.journal.busy&&!this.#store.busy&&!this.#checkpoint.busy,'busy');this.#store.close();this.#checkpoint.close();}
+ get rootIdentities(){return [this.#store.rootIdentity(),this.#checkpoint.rootIdentity()];}
+ /** Full test-only recovery gate; visibility is never substituted for synchronization. */
+ async revalidate():Promise<void>{
+  await this.journal.verifyHead();
+  for(const io of [this.#store,this.#checkpoint]){
+   const files=await io.list(4096);journalAssert(files.length<=4096,'budget_exceeded');
+   for(const file of files){journalAssert(!file.name.startsWith('pending-'),'tail_unknown');const bytes=await io.read(file.name,8*1024*1024);await io.put(file.name,bytes);}
+  }
+  await this.journal.verifyHead();
+ }
 }

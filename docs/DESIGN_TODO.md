@@ -2561,6 +2561,15 @@ B1bレビュー修正の検証結果: 追加28 native controlsで計58件、通�
 
 B1c VM部分の検証結果: 新規26 Vitest回帰・実VM142 native controls成功。全体113 files／4,311 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。errno照合を外した故障版で再署名済みunexpected-errno回帰が失敗し、復元後に成功した。公開記録の独立pin／signature・配備inventory digest・実source hashを照合し、本番buildにVM fixture／verifierが含まれないことを確認した。VM外controller署名は収集記録の出自だけを表し、manager署名や完全なexec監査の代用ではない。
 
+### 2026-11-03: B2／B3のlocal保存・Q1 pin連携contract
+
+- §9.83とSealedPrefixStore／SealedPrefixCoordinatorを追加。A2の実disk journal・別checkpointへnamespace予約／seal／選択とuse digestを保存し、完全inventory・byte検証・同期／readback・単調generation／fence・opaque writer handleを接続した。source write前に容量予約を保存し、candidate／quarantined／retiredも課金したまま再起動で復元する。
+- B3では全read pin phaseでwriter公開を止め、Completeのidempotent保存後もhandoff・releaseまでpinを保持する。最後のawait後のexpiry／freeze／owner終了を再判定し、歴史的decisionをlive権限へ戻さない。in-flight保存中のbarrier完了も拒否する。
+- 未知entry／tail／symlink／hardlink／root交換、marker同期障害、quota・列挙上限＋1、stale boot／head、全pin phase、切断・再送・失効、checkpoint公開後の再open／再同期、rollback、2つの実SIGKILLを検証。53件のdomain回帰と記録照合1件を追加し、実結果・source closure／lockfile hashをdocs/validation/gradle-q2b-b2-b3-storage-2026-11-03.jsonへ保存する。旧viewの最終再検証不足とbarrier早期完了は修正前のREDを確認して修正した。
+- **B2／B3の独立UID service実証は未完了。** 今回はlocal POSIX diskと同principalのprocess／child、memory admission fixtureの連携であり、新規VM・認証IPC・独立registry currentness・分散barrierを実証していない。provider ledger checkpointとsource authority checkpointを区別し、sourceの独立fresh issuer／authority gateも未接続とする。B1c残件との接続、実VM故障・power-loss条件、Q3のread省略／性能・Q4の承認profile・物理GC／quota回収が残る。nativeIsolationVerified／independentRegistryVerified／profileApproved／backendEligible=false・originalReadsSkipped=0を維持する。
+
+B2／B3 local contractの検証結果: 新規54回帰成功（53 domainケース＋保存記録照合1件）、実SIGKILL2ケースでchildの到達phase／bootを直接観測して復旧後の非再使用を照合した。全体114 files／4,365 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。実行結果に基づくcase閉包・29 sourceのSHA-256とlockfile hashを照合し、prod buildへのfixture非収録を確認した。VM／別UID service・B1c認証IPC・独立registry／source checkpoint issuerの新規実証、原本read省略・物理削除・本番採用は0。
+
 ### 2026-11-03: bce3aa6レビュー修正・B1c pinの独立性と拒否理由
 
 - §9.82.6へ、controller pinが記録と同じcommitで追加されリポジトリ上は同時差替えを防げないこと、以後はpinを別commit／リポジトリ外へ先に固定する運用を明記。

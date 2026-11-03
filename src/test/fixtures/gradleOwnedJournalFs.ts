@@ -120,6 +120,9 @@ export class RootedJournalIO implements JournalIO {
   }finally{this.#pairs.clear();this.#recovering=false;}
  }
  assertOpen():void{this.#guard();}
+ /** Diagnostic provider binding, not an isolation certificate or a transferable FD. */
+ rootIdentity():Readonly<{device:string;inode:string}>{this.#guard();return Object.freeze({device:String(this.#dev),inode:String(this.#ino)});}
+ get ownsWriterLock():boolean{this.#guard();return this.#exclusive;}
  get busy():boolean{return this.#writing||this.#recovering;}
  close():void {journalAssert(!this.busy,'busy');if(!this.#closed){this.#closed=true;closeSync(this.#fd);}}
 }

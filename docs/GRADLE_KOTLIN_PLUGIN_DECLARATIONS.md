@@ -4969,6 +4969,62 @@ SSHはrunごとに新しいclient／host keyを作り、固定host keyで接続�
 
 次は認証transportと両端kernel資格・全frame credential／FD転送対策、独立manager署名launchとbootstrap digestの統一、外側exec phase観測とB1aへの正規bridge、queued接続・credential保護の負例、coordinated restart／leak drainを実装してnative再検証する。今回の署名記録にこれらの証拠はなく、完全なQB01〜QB19／QB30〜QB32を満たさない。B2／B3の保存／fence／pin、Q3／Q4も後続である。`systemdBootVerified=true`のみ新たに実証し、`nativeIsolationVerified`／`profileApproved`／`backendEligible=false`、`originalReadsSkipped=0`を維持する。
 
+### 9.83 Q2/B2・B3の保存／pin連携contract（2026-11-03）
+
+#### 9.83.1 実装範囲と信頼境界
+
+`gradleOwnedSealedProvider.ts`と`gradleOwnedSealedCoordinator.ts`は、実local POSIX filesystem上のB2保存とQ1のB3 pin連携を実装したtest-only fixtureである。既存A2の`OwnedJournalDisk`／別root・別keyの`FileJournalCheckpoint`、有界openat／nofollow・排他flock付き`RootedJournalIO`、全履歴`replayV2`、Q1のhandle／Complete／handoff状態機械を再使用する。本番readerへの入口や既存の採用設定は変更しない。
+
+**独立UID serviceでのB2／B3 native完了ではない。** 新規VM・B1c認証IPCを使用せず、同じOS principalのtest processと実child processで保存故障を検証する。独立registryはなく、`PrefixAdmissionFixture`は明示的にharnessが配備するmemory admissionであり、独立current性を証明しない。raw role／callback／keyをprojectから渡してserviceを起動するAPIは追加していない。Q1の共有MACはこのmemory連携内だけで使い、B専用transportのserver署名方式と読み替えない。`nativeIsolationVerified`／`independentRegistryVerified`／`profileApproved`／`backendEligible=false`、`originalReadsSkipped=0`を維持する。
+
+#### 9.83.2 namespace ledger・容量予約・完全inventory
+
+provider control journalは、context digest、control／checkpointの実device・inode、単調generation／fence、selected namespace、全namespaceのroot identity・phase・marker digest・容量予約、履歴用Complete digestを保存する。source journalのbinding＋承認base digestをcontextへ束縛し、namespace rootとcontrol／checkpoint rootの同一実体を拒否する。namespaceにも持続する排他writer lockを要求する。
+
+準備は入力のmetadata／Bufferを最初のawait前にprivate copyして全V2履歴を検証し、新規・空rootを確認してから、generation／fenceと容量予約を**sourceへの最初のwrite前**にcontrol journal・checkpointへ保存する。namespace数は最大32、source bytesは最大64 MiB／namespace、fileは8 MiB、予約総量は128 MiB、marker予算は256 KiBとする。marker分を保守的に予約し、candidate・quarantined・retiredも課金したまま保持する。上限を狭めるfixture設定だけ許し、再起動後も予約を復元する。quota解放・物理GCは未実装であり、削除認可を返さない。
+
+dataの名は連番commitとcontent hash blobだけである。markerを除いた名前／size／byte digestのcanonical全一覧とinventory rootをmarkerへ入れる。全列挙は512 entries上限と上限＋1件で打ち切り、未知file／pending temp／欠落／symlink／hardlink／root交換を拒否する。marker自体のdigestはcontrol ledgerに置き、自己hashの循環を作らない。検証済み部分一覧やmembershipだけで完全性を主張しない。
+
+#### 9.83.3 seal・公開・writer fence
+
+状態は`sealing → sealed`、失敗は`quarantined`、旧selectedの入替えは`retired`である。同じroot／generationをopenへ戻さない。失敗時も予約を保存し、再起動では未完了・未選択の旧candidateを隔離する。回復は別の新root・新generationで行い、可視なmarkerを見つけて自動採用しない。
+
+file保存・file／directory同期、完全inventory／byte検証、MAC付きmarker保存・同期、再列挙・readback・同値再同期、sealed状態のcontrol保存の順に進める。source markerの署名keyはsource journal keyやcheckpoint keyと分離する。いずれかのwrite／sync／readbackが失敗した場合、陽性candidate／selected ackを返さずownerをfail-stopにする。
+
+candidateは生digestから再構築できない発行元・boot所有のopaque handleで、namespace／generation／fence／expected selected／prefix headへ束縛する。公開時は新旧viewを全検証・再同期し、immutableな旧prefix entriesの全保持とhead前進を要求する。最後のawaitで旧viewが変わった場合も、新viewの正しいcopyで隠さず拒否する。別boot・偽handle・既にselectedが変わったwriterを拒否し、成功時だけdurable ledgerの選択を進める。sealとselected公開は別の操作である。
+
+#### 9.83.4 B3のread pin・Complete・handoff
+
+coordinatorは選択済みdisk viewをQ1へ入れ、実marker generation／fence・fresh provider bootを採用する。Q1へ`assertPublishable`を追加し、writerはactive／completing／decision-recorded／deliveringの全pinが終了するまで公開を拒否される。未公開candidateは別namespace／予約のままで、selected inventoryには混ぜない。writerは`pins_active`から明示retryし、release前に選択を進めない。snapshot変更後はQ1をrotateして旧proofを失効させ、Q3のsuffix最適化は行わない。
+
+CompleteはQ1の有効use判定後、grant／use／reader／identity／Complete／receiptのdigestをcontrol journalへidempotentに保存する。保存後もpinは存続する。保存・再検証の最後のawait後に、owner・admission・pin／deadlineを再確認してから応答する。期限到達・freeze・owner終了なら応答成功なしとなり、保存済みdigestはhistorical記録だけである。handoff後も明示releaseまでpinを保持し、古いreleaseや再送が別useを解放しない。receiptの元wire bytesやlive権限は再起動で復元しない。
+
+freeze／cutover／GC／revokeは新規受付を閉じ、Q1で旧pin／proofを失効させる。barrier完了には未完了pinだけでなく、既に進行中の保存／公開処理が終了したことも必要とする。coordinatorの連番eventはAcquire・decision線形化・保存済み応答・snapshot選択開始／公開・freeze／barrier完了を区別する。これは単一process内の順序記録であり、独立service間の原子的barrierの実証ではない。途中のdisk公開後にadmission更新が失敗した場合は成功を返さず停止し、current性を推測して自動継続しない。
+
+#### 9.83.5 再起動・rollback・checkpoint責任
+
+起動／各入口でprovider control履歴・checkpointを全認証し、file／directoryを同値再同期する。selected marker・root identity・全inventory・全V2履歴も再検証する。新bootでは旧candidate／reader handle／grant／Complete／receiptを再使用できず、保存済みuseはroot側のhistorical監査だけに使う。予約直後と選択保存直後に実child processをSIGKILLし、owner lock解放後の再open・復旧を検証した。
+
+checkpoint公開後の同期失敗は、再open・再試行でも同期が成功するまで拒否する。新しい別checkpointを残してcontrol履歴だけ古く戻した場合はrollbackを拒否する。**controlとcheckpointの双方を過去へ戻した場合の独立current性は、このfixtureだけでは証明できない。** memory admissionを独立registryと呼ばず、実registry／外側revision pinへの接続を後続とする。
+
+ここで再同期するcheckpointはproviderのnamespace／use ledgerを保護するものであり、V2 sourceに記録されたcheckpoint metadataとは別である。source authorityの独立issuerからfresh checkpointを取得するAPIや、実authorityの最終gateも未接続である。Q1のcheckpoint／authority roleはharnessのmemory gateを維持している。control同期の成功をsource authorityの現在性の代替にしない。
+
+#### 9.83.6 回帰・再現・記録
+
+53件の保存／連携回帰と保存記録照合1件を追加した。実source変更／root交換・未知entry・marker同期障害・quota、全pin phaseのwriter待機、再送・disconnect・expiry／freeze／owner終了、旧boot／head／use、全列挙上限＋1、checkpoint公開後の再同期、control rollback、2つの実SIGKILLを扱う。公開待機中の旧view改変と保存中のbarrier早期完了は修正前の失敗を再現し、guard追加後に成功した。
+
+```sh
+npm test -- src/test/utils/gradleOwnedSealedProvider.test.ts
+```
+
+`docs/validation/gradle-q2b-b2-b3-storage-2026-11-03.json`へ、実テスト結果に基づくcase名／status、実行Node／OS／kernel、source closure・lockfile hash、2つのSIGKILL結果と非採用範囲を保存する。保存記録の自己hashを独立署名・承認profileの証拠にしない。通常テストはprivate temporary rootsと子processだけを使い、Docker／VM・host account・systemdを操作しない。本番buildにfixtureを収録しない。
+
+#### 9.83.7 後続
+
+QB20〜QB29の保存・協調条件をlocal contractで検証したが、独立UID／認証IPCを用いたnative達成件数へ数えない。B1c残件と組み合わせたLinux serviceでのstorage隔離・全書込経路拒否、独立checkpoint issuer／registry・current pin・分散barrier・停止／再開時のfencing、power-loss／実VM復旧の証拠が必要である。Q3の実原本read省略・suffix比較／性能、Q4の承認profile／本番採用、物理GC／quota回収も未完了である。
+
+B2／B3 local contractの検証結果: 新規54回帰・実SIGKILL2ケース成功。childの実到達phase／bootを同期stdoutで観測し、新owner bootと区別した。全体114 files／4,365 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。保存記録の53 domainケース・29 source／lockfile hashを照合し、本番buildに新fixtureが含まれないことを確認した。今回のOS／Node実版は検証JSONに記録し、他platformや独立UID serviceへの拡張成立は主張しない。
+
 #### 9.82.6 bce3aa6レビュー修正・pinの独立性の限界と拒否理由の固定
 
 **controller pinの独立性。** `.pin`はboot前にVM外で生成したcontroller公開鍵のSHA-256だが、署名記録`.json`と同じcommit（bce3aa6）で追加され、回帰も両方を同じリポジトリから読む。したがってリポジトリ上では、記録とpinを同時に差し替えれば回帰は通る。新しい鍵で再署名した記録も、そのpinを渡せば受理される。現在の独立性は「pinをboot前・VM外で作った」という作業手順だけに依存し、リポジトリの内容としては担保されていない。以後のnative記録では、pinを記録より前の別commit、またはリポジトリ外の独立した保管先に固定し、記録追加commitでpinを同時に変更しない運用とする。今回のpinをその条件を満たした独立承認とはみなさない。

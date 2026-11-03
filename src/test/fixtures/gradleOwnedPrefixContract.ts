@@ -66,7 +66,7 @@ export class PrefixContract{
   return {cacheBytes:[...unique].reduce((n,s)=>n+s.bytes,0),cacheEntries:[...unique].reduce((n,s)=>n+s.inventory.size,0),cacheNodes:[...unique].reduce((n,s)=>n+countNodes({identity:s.identity,snapshot:s.wire,inventory:[...s.inventory]}),0),keyBytes:[...proofs.values()].reduce((n,{proof,reader})=>n+Buffer.byteLength(canonicalOwnedJson({identity:proof.snapshot.identity,reader:reader.peer,snapshot:proof.snapshot.wire,key:proof.key})),0)};
  }
  install(actor:object,input:V2ReplayInput):void{
-  this.#role(actor,'operator');this.#sweep();check(this.#owner&&this.#phase==='idle','control_unavailable');check(![...this.#pins.values()].some(p=>!this.#terminal(p)),'pins_active');
+  this.assertPublishable(actor);
   const size=input.commits.reduce((n,b)=>n+b.length,0)+input.payloads.reduce((n,b)=>n+b.length,0);check(size<=this.#limits.sourceBytes,'budget_exceeded');
   const copy:V2ReplayInput={...JSON.parse(canonicalOwnedJson({binding:input.binding,baseRef:input.baseRef,keyId:input.keyId,approvedBaseDigest:input.approvedBaseDigest,checkpoint:input.checkpoint})),key:Buffer.from(input.key),commits:input.commits.map(b=>Buffer.from(b)),payloads:input.payloads.map(b=>Buffer.from(b)),auditAuthoritySnapshot:this.#identity.proofMode==='authority-audit'};
   const result=replayV2(copy);this.#metrics.fullVerifications++;check(same(copy.binding,Object.fromEntries(Object.keys(copy.binding).map(k=>[k,this.#identity[k as keyof Identity]])))&&copy.approvedBaseDigest===this.#identity.baseDigest,'binding_mismatch');
@@ -77,6 +77,8 @@ export class PrefixContract{
   const summary={head:{revision:result.revision,commitDigest:result.commitDigest,stateRoot:result.stateRoot},inventoryRoot:ownedDigest([...inventory].sort(([a],[b])=>a<b?-1:1)),entries:inventory.size,bytes:[...inventory.values()].reduce((n,b)=>n+b.size,0),manifestDigest:ownedSha256(manifest)};
   this.#source={identity:{...this.#identity},wire:{...summary,digest:ownedDigest({identity:this.#identity,...summary})},input:copy,inventory,bytes:size};this.#cpVersion++;
  }
+ /** Q2/B3 coordinator must call this before any durable head publication. */
+ assertPublishable(actor:object):void{this.#role(actor,'operator');this.#sweep();check(this.#owner&&this.#phase==='idle','control_unavailable');check(![...this.#pins.values()].some(p=>!this.#terminal(p)),'pins_active');}
  begin(actor:object,operationBinding:string):Buffer{
   const r=this.#reader(actor);this.#sweep();this.#service();check(!r.stopped,'recovery_required');check(!r.pending,'busy');check(this.#readers.filter(r=>r.pending).length<this.#limits.pending,'budget_exceeded');
   const request=parse(requestSchema,{kind:'acquire',requestId:fresh(),challenge:fresh(),sequence:++r.sequence,reader:r.peer,identity:this.#identity,operationBinding,cachedPrefix:r.cache?{cacheKey:r.cache.key,snapshot:r.cache.snapshot.wire}:null});const encoded=this.#wire(Buffer.from(canonicalOwnedJson(request)));r.pending={request,started:this.#now('reader'),accepted:false};return encoded;
