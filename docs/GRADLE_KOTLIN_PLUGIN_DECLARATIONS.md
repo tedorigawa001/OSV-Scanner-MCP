@@ -6158,3 +6158,49 @@ C3b設計レビュー修正の検証結果: §9.93.1〜12の12小節、C3b-0〜5
 CB45・CB46を加え、回帰条件はCB01〜CB46となる（§9.93.10の表はCB44まで、追加分は本小節）。
 
 153a867レビュー修正の検証結果: §9.93.1〜13の13小節、CB01〜CB46の一意性・順序を確認。文書のみの変更で、ledger解決順・floor保持・v2予算profileとCB45／CB46の実装・native実証は未実施。
+
+### 9.94 C3b-0：owner・session・stage・回復・v2予算の静的contract（2026-11-04）
+
+#### 9.94.1 role固有の組立・公開credential
+
+`gradleOwnedServiceOwners.ts`は5 ownerのstrict config、独立digestでpinした公開credential registry、Signer／OwnedStore／clientのportと静的bindingを実装する。root pairの識別子／実体identityとjournal／checkpoint key IDの重複、他roleのsigner／client入替え、全private key／actor表・unknown fieldを拒否する。公開keyはcanonical Ed25519 SPKI、credential ID／key ID／公開keyは方向・roleをまたいで重複させず、API roleとlineage／profile／Enrollmentを照合する。
+
+OwnerPlan・OwnerPorts・ScopedSignIntentは私有WeakMapに登録したhandleで、JSONの同shapeを拒否する。Signer portはidentity／方向を照合したintentを受ける型とし、port bindingはadapter関数の存在とown metadataを検査する。組立検査でsign／store／client callbackは呼ばず、秘密key loaderや実preflightは実装しない。静的planはOS承認・live ownerではない。実際の署名実行はC3b-1以降の信頼されたrole adapterが担い、inner messageの完全schema／runtime認可を省略しない。
+
+ownerのcreated／preflight／recovering／control-ready／operational／draining／blocked／closedに対する状態・遷移検査も追加した。前提不足のoperational化、未完了in-flight／effectを持つclose、blocked／closedからsession作り直しだけで復帰する遷移を拒否する。operationalとlineage servingは別で、新規genesis／drainingでも管理endpointの状態を表現できる。これは状態値の整合検査で、状態機械の実行や実際のIO抑止を証明しない。
+
+#### 9.94.2 session・channel・復旧port
+
+`gradleOwnedServiceSession.ts`にclient-hello→server-hello→client-proof→ready、challenge-request／challenge、channelのstrict schemaとEd25519照合を追加した。独立registryから両端credential・key・方向を引き、deployment／Enrollment／profile／registry digest、endpoint、両端boot／key epoch、nonce／session／transcriptと前phaseのexact signed bytesを束縛する。同keyを保持したboot交換でも旧transcriptを受けない。
+
+channelは呼出し元が独立pending表から与えるsequence／challenge／API／origin digest／TTLを照合し、canonical inner wireのdigest・domain／方向・API／lineageとcredential permissionを検査する。raw innerは最大8192 bytes、署名外側frameは16 KiBに制限する。4096 raw bytesのsource chunkを包める上限で、raw stage image全体をchannelへ送る契約ではない。inner payloadの完全検証はC0／auxiliary／recovery kernel側で引き続き必要。
+
+Sessionは私有の**StaticSession**であり、実AuthenticatorのAuthenticatedRequestではない。server nonce生成、used challenge／sequence管理、同時予約、通信・queue・clockは実装していない。sequence等は外部expectationとの静的対応であり、同じframeを二度呼び出して一度だけconsumeする機構ではない。ReportRecovered／GetRecoveryStatusのrequest／reply／envelope schemaと、committed／pending／確定拒否／unknownのoutcome schemaも別型で定義し、live grantや任意業務APIを復旧replyへ持ち込まない。
+
+#### 9.94.3 保存stageと再試行
+
+`gradleOwnedServiceStages.ts`はowner／API別の閉じたstage表、StageCommitRequest／StageRecord／StageReceiptを検査する。K／Dを保存stageのkey／digestと分け、expectedHead・前stage receipt・nextImageのcanonical bytes／digest・outcomeを束縛する。nextImageは最大8 MiBのlocal store payloadで、owner別の業務image schemaは後続kernelが検査する。現在のStageRecordに現在のcommit head／receiptを埋め込まず、commit headが与えられた後にsemantic receiptを導出する。
+
+resolveStageRetryはK／Dのledgerを先に照会し、既存stageなら元receiptを返す。head前進後の再送でStageCommitRequestを新たに構築しない。同Kの2stage正常進行、同transitionの異内容拒否、前stage参照の閉包・重複／欠落拒否、in-flightへの集約判定をpure関数で確認する。保存後headと実commit bytesの照合、exactly-once予約、同期・crash復旧はまだ行っていない。構造的に整合するStageReceiptを、保存の実観測やlive権限とは扱わない。
+
+#### 9.94.4 session回復・floor・v2予算
+
+sessionRecoverySchemaは旧channel abandoned→同bootの新session readyを表し、元K／D・binding／payload・両端identity／epoch・deployment／registry／endpoint・local期限を保持する。nonce／session／transcriptの新規性、sequence=1、boot countを戻さないこと、回復最大1回・元pin／operation期限内を検査する。旧bootの結果照会や実行中要求の二重適用防止はruntime ledger側の責任で、schemaだけでその状態を復元しない。
+
+ServiceContextFloorは同lineageのaccepted contextについてrevision系の高水位をbridge寿命内に保持し、provider boot／incarnationが変わっても後退を拒否する。snapshotを変更して内部floorを戻せない。raw observationの署名認証はこのhelperの前段で必要であり、process外の永続floorを新たに実装したものではない。
+
+`gradleOwnedServiceBudget.ts`はv1を読み替えず`osv-mcp.q2.c3b.read-budget.v2`を要求する。初期のbounded-full-read-v1計画は4096 raw bytes chunk、issuerの最大8 prepared sourceの全検証とreader／brokerの読取、関連live照会、10 directed service edgeの初回・回復handshake、署名、9保存stageを保守的に課金する。1業務要求での回復は最大1回のままで、計画上は各edgeの回復余裕を予約して過少計上しない。実call graphとの対応・観測速度はC3b-5／C3dで別途検証し、異なる処理手順を同algorithm IDで採用しない。
+
+v1の9工程・余裕／速度条件に加え、wire bytes・signature検証・stage処理の費用と回復handshake時間が5秒以内であることをBigIntで検査する。boot／sessionのrequest残枠・frame／stage残枠とclosure上限も検査する。例の4096 bytesは388 frames／776 signature checks／9 stagesを計画する。これは実測値ではなく、quotaの予約・消費や実際のpin取得／原本IOを行わない。実serviceでは信頼されたsource size上限とruntime countersを使い、計画にない処理や不足を検出したら成功結果を返さない。
+
+#### 9.94.5 検証と残る範囲
+
+新規4 files・240回帰。root／credential／port交換、private tableや偽handle、phase状態、署名transcript／boot／channel交換、challenge対応、保存stage・ledger先行解決、floor・session回復、v2予算の上限／残枠／精度を検査する。server boot照合・保存済みstage先行返却・floor高水位・10 edge handshake費用の4対照を外すと各回帰が失敗し、復元後は成功した。記録は`docs/validation/gradle-independent-currentness-c3b0-2026-11-04.json`で、14 source閉包fingerprintを通常回帰で再照合する。
+
+対応はCB01〜CB08の組立／schema、CB09〜CB18の署名・静的対応、CB20／CB34／CB39／CB45のstage構造とpure解決順、CB41／CB42の予算計画、CB46のmemory floor等の**静的な部分**に限る。CBの二者process・atomic再送防止・durable保存・実live gate・fencing条件は成立済みとしない。
+
+次はC3b-1の独立SessionClient／SessionServerと有界pending／nonce／sequence・dispatch前の一回予約、二者child-process対照。その後C3b-2以降で実store／Anchor／kernel・原本転送・authority／ACKへ接続する。今回の新規service配備・native実行・OSV／BTA実接続・read省略は0。nativeIsolationVerified／independentRegistryVerified／profileApproved／backendEligible=false、originalReadsSkipped=0を維持する。
+
+C3b-0の最終検証: 新規4 files／240 tests成功。全体は`npm test -- --maxWorkers=1`で127 files／5,177 tests成功、24 files／1,418 tests skipped（242.60秒）。型検査・build・diff整形検査成功。4つの検査除去対照で各1件が失敗し、復元後に成功。14 source閉包fingerprintの一致と、test fixture／秘密署名処理がproduction distへ混入していないことを確認。新規native実行・本番採用は0。
+
+C3b-0コミット前の依存更新互換確認: 既存のkoffi 3.3.5／MCP SDK 1.32.2更新（9997f4eまで）を維持し、validationのpackage fingerprintを更新。対象240件、全体5,177件成功（1,418 skipped、並行数1、265.15秒）、型検査・build成功。更新前の検証結果・package fingerprintは履歴として記録内へ保持した。

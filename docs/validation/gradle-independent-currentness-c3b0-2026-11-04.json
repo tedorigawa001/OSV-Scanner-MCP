@@ -1,0 +1,155 @@
+{
+  "schema": "osv-mcp.q2.c3b0.validation.v1",
+  "date": "2026-11-04",
+  "scope": "static-contract-only",
+  "sourceSha256": {
+    "package-lock.json": "7ca889f29792212298919fbf0405e9f7d119e39740b94fa86cee94831ed3b91b",
+    "package.json": "bbb4b96e57ed719df1d39f5ad15bb8dee6921c120930814da3e0cbfad309263f",
+    "src/test/fixtures/gradleOwnedServiceContract.ts": "77d6980ea54c89f07b806af301add06f733cf6577f950c3c70af2a74467708d0",
+    "src/test/utils/gradleOwnedServiceBudget.test.ts": "de75aca0c89a9d2b439daefbcb1b6b4ad02ff03a1ae50709eac3be897b3d111a",
+    "src/test/utils/gradleOwnedServiceOwners.test.ts": "a2a51b8fdcdf37509409e08e8ce6214eb98e35c0a10e01ac708323037397ea5c",
+    "src/test/utils/gradleOwnedServiceSession.test.ts": "547deea9eb0a8090ca1b0437e41df2bece592b733b5ea043b7129089b912932b",
+    "src/test/utils/gradleOwnedServiceStages.test.ts": "2edf555838fbc5b514fdf3bfc3edac4754924e1ec9171b5d0f7829fe15695255",
+    "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
+    "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/utils/gradleOwnedServiceBudget.ts": "118d3368a8af859017a825b7b9092f1aec13ba8c48be51c4256c33e9a9aa3b75",
+    "src/utils/gradleOwnedServiceOwners.ts": "81bbe25ff0c3e165f044c0599902d421b43669d044aa11cca42954236e269e7b",
+    "src/utils/gradleOwnedServiceSession.ts": "96ccaf6dbe364cfcc5b0676b9cb3c19fdfb12fda12e3cf3cd1af89930381d3f5",
+    "src/utils/gradleOwnedServiceStages.ts": "d42e360e05fe29a26c542b04ed68493b02f321c42e1f4e84515a27260ffc8933"
+  },
+  "nativeTrials": 0,
+  "backendEligible": false,
+  "originalReadsSkipped": 0,
+  "verification": {
+    "targeted": {
+      "filesPassed": 4,
+      "testsPassed": 240
+    },
+    "fullSuite": {
+      "command": "npm test -- --maxWorkers=1",
+      "filesPassed": 127,
+      "filesSkipped": 24,
+      "testsPassed": 5177,
+      "testsSkipped": 1418,
+      "durationSeconds": 265.15
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "diffCheck": "passed",
+    "fixtureInDist": false,
+    "privateSigningInPublishedModules": false,
+    "sourceFingerprintCount": 14,
+    "ownerAssemblyAdapterCalls": 0
+  },
+  "baseCommit": "2b40bc3",
+  "tests": 240,
+  "command": "npx vitest run src/test/utils/gradleOwnedServiceOwners.test.ts src/test/utils/gradleOwnedServiceStages.test.ts src/test/utils/gradleOwnedServiceSession.test.ts src/test/utils/gradleOwnedServiceBudget.test.ts",
+  "established": [
+    "Five role-specific static OwnerConfig plans with disjoint root/key identifiers and independently pinned public credentials",
+    "Opaque static plans, scoped signing intents and non-invoking Signer/OwnedStore/client-port bindings",
+    "Four-phase Ed25519 transcript and one-shot challenge/channel correspondence, including both boots/key epochs and registry digest",
+    "Closed stage tables, predecessor receipt closure, ledger-first retry resolution and non-circular post-commit receipt derivation",
+    "Same-operation fresh-session recovery with fixed deadlines, one-recovery cap and retained context floor",
+    "Version-2 conservative byte, frame, request, signature and storage-stage budget planning"
+  ],
+  "limitations": [
+    "No key loader, OS preflight, file-store writer, journal commit, Anchor CAS or production owner kernel is executed",
+    "No nonce/challenge/sequence table, atomic reservation, replay-state mutation, real connection or two-child service pair is implemented",
+    "Channel metadata validation binds canonical inner bytes/domain/API/lineage; complete inner payload validation and runtime authorization remain mandatory",
+    "A validated stage receipt represents structurally consistent hypothetical facts, not observed durable storage or live authority",
+    "Budget schedule bounded-full-read-v1 is a static worst-case plan; binding the actual runtime call graph, reserving/consuming quotas and measuring throughput remain C3b-1/5 and C3d work",
+    "Context observations must already be accepted by the domain-specific authenticated client; the floor helper does not authenticate a raw observation",
+    "No separate UID isolation, independent rollback domain, actual authority handoff, Task/BTA/OSV connection, read skipping or adoption"
+  ],
+  "mutations": [
+    {
+      "removed": "server boot field binding to public registry",
+      "test": "binds handshake serverBoot to the pinned public registry",
+      "exitCode": 1,
+      "testsFailed": 1,
+      "restored": true
+    },
+    {
+      "removed": "ledger-first saved stage result",
+      "test": "resolves the ledger before touching a rebuilt current image after head advances",
+      "exitCode": 1,
+      "testsFailed": 1,
+      "restored": true
+    },
+    {
+      "removed": "context high-water check",
+      "test": "retains context high-water floors across boot and incarnation changes",
+      "exitCode": 1,
+      "testsFailed": 1,
+      "restored": true
+    },
+    {
+      "removed": "ten-edge handshake cost (reduced to five)",
+      "test": "reserves the ten directed service edges plus recovery handshakes",
+      "exitCode": 1,
+      "testsFailed": 1,
+      "restored": true
+    }
+  ],
+  "exampleBudget": {
+    "closureBytes": 4096,
+    "chunks": 1,
+    "requests": {
+      "reader": 7,
+      "provider": 23,
+      "checkpoint-issuer": 27,
+      "authority-broker": 9,
+      "lineage-registry": 11
+    },
+    "frames": 388,
+    "signatureChecks": 776,
+    "wireBytes": 6356992,
+    "verificationBytes": 40960,
+    "storageStages": 9,
+    "plannedMsIncludingMarginAndRecovery": 3800
+  },
+  "nativeIsolationVerified": false,
+  "independentRegistryVerified": false,
+  "profileApproved": false,
+  "preDependencyUpdateVerification": {
+    "targeted": {
+      "filesPassed": 4,
+      "testsPassed": 240
+    },
+    "fullSuite": {
+      "command": "npm test -- --maxWorkers=1",
+      "filesPassed": 127,
+      "filesSkipped": 24,
+      "testsPassed": 5177,
+      "testsSkipped": 1418,
+      "durationSeconds": 242.6
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "diffCheck": "passed",
+    "fixtureInDist": false,
+    "privateSigningInPublishedModules": false,
+    "sourceFingerprintCount": 14,
+    "ownerAssemblyAdapterCalls": 0
+  },
+  "dependencyUpdateCompatibility": {
+    "baseCommit": "9997f4e",
+    "previousPackageFingerprints": {
+      "package.json": "bbb5c5fde9e96539da7395e928f91d9fa34372213260063059877a5b1c000f18",
+      "package-lock.json": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285"
+    },
+    "verification": {
+      "targetedTestsPassed": 240,
+      "fullSuiteTestsPassed": 5177,
+      "fullSuiteTestsSkipped": 1418,
+      "fullSuiteDurationSeconds": 265.15,
+      "typecheck": "passed",
+      "build": "passed",
+      "installedVersions": {
+        "koffi": "3.3.5",
+        "@modelcontextprotocol/sdk": "1.32.2"
+      }
+    }
+  }
+}

@@ -2784,3 +2784,15 @@ C3b設計レビュー修正の検証結果: §9.93.1〜12の12小節、C3b-0〜5
 - C3b-0の予算計画を、C3a `read-budget.v1`を拡張する新version（v2）として定義することを明記した。
 
 153a867レビュー修正の検証結果: §9.93.1〜13・CB01〜CB46の一意性と順序を確認。文書のみの変更。
+
+### C3b-0：role固有port・session／stage／回復・v2予算の静的contract（2026-11-04）
+
+- §9.94に5 ownerのstrict config・公開credential registry、私有plan／port／signing intent、状態遷移検査を追加。Signer／OwnedStore callbackを呼ばず静的組立を検査する。
+- 両端boot／key epoch／registry digest付き署名transcript、challenge／channel・復旧API・outcome schema、保存stageとledger優先のpure解決、session回復・context floorを実装。
+- v2は10経路handshake・issuer最大8 prepared source・chunk／request／署名／9stageを保守的に課金。計画のみで、実quota消費・native throughputやcall graph成立を主張しない。
+- 新規240回帰、4つの検査除去対照、検証記録とsource閉包照合を追加。CB01〜CB46の静的な一部のみ。新規native実行・本番採用は0。
+- **次はC3b-1**：独立session client/server・pending／nonce／sequence・atomic予約・二者child-process対照。C3b-2以降の実store・Anchor・原本・authority／ACK、C3c／C3d／C4は残る。
+
+C3b-0の最終検証: 新規4 files／240 tests成功。全体は`npm test -- --maxWorkers=1`で127 files／5,177 tests成功、24 files／1,418 tests skipped（242.60秒）。型検査・build・diff整形検査成功。4つの検査除去対照で各1件が失敗し、復元後に成功。14 source閉包fingerprintの一致と、test fixture／秘密署名処理がproduction distへ混入していないことを確認。新規native実行・本番採用は0。
+
+C3b-0コミット前の依存更新互換確認: 既存のkoffi 3.3.5／MCP SDK 1.32.2更新（9997f4eまで）を維持し、validationのpackage fingerprintを更新。対象240件、全体5,177件成功（1,418 skipped、並行数1、265.15秒）、型検査・build成功。更新前の検証結果・package fingerprintは履歴として記録内へ保持した。
