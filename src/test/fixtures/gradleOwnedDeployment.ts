@@ -268,7 +268,7 @@ const nativeDiagnostic=z.object({schema:z.literal('osv-mcp.q2b.native-launch-dia
  execs:z.array(z.object({sequence:uint.min(1).max(2),phase:z.enum(['launcher','provider']),pid:uint.positive(),path,sha256:digest}).strict()).length(2),
  artifacts:z.array(z.object({path,sha256:digest,byteLength:uint.max(16*1024*1024),ownerUid:z.literal(0),mode:uint.max(511),nlink:z.literal(1)}).strict()).min(8).max(128)}).strict();
 export function verifyB1cNativeLaunchBinding(input:{manifest:Buffer;expectedManifestDigest:string;launch:Buffer;diagnostic:Buffer;
- manager:B1aSignerPin;controller:B1aSignerPin;runId:string;caseId:string}){
+manager:B1aSignerPin;controller:B1aSignerPin;runId:string;caseId:string;diagnosticFilesystem?:'ext4'}){
  return guarded(()=>{
   const m=decode(input.manifest,nativeManifestSchema);check(ownedSha256(input.manifest)===input.expectedManifestDigest,'manifest_pin_mismatch');
   check(input.manager.publicKey?.asymmetricKeyType==='ed25519'&&input.controller.publicKey?.asymmetricKeyType==='ed25519'&&
@@ -288,7 +288,7 @@ export function verifyB1cNativeLaunchBinding(input:{manifest:Buffer;expectedMani
    same(m.execution.launcherArgv,[m.execution.launcher,'--profile','b1ct','--instance','b1ct'])&&same(m.execution.runtimeArgv,[m.execution.runtime,'-I',m.execution.entrypoint])&&
    m.execution.credentialDirectory==='/run/credentials/osv-q2b-b1ct.service','execution_invalid');
   unique(roles.map(r=>m.principals[r].uid),'principal_invalid');unique(roles.map(r=>m.principals[r].gid),'principal_invalid');
-  check(roles.every(r=>m.principals[r].supplementaryGroups.length===0)&&m.platform.os==='linux'&&m.platform.filesystem==='tmpfs'&&m.platform.mountOptions.includes('nodev')&&m.platform.mountOptions.includes('nosuid'),'configuration_invalid');
+  check(roles.every(r=>m.principals[r].supplementaryGroups.length===0)&&m.platform.os==='linux'&&m.platform.filesystem===(input.diagnosticFilesystem??'tmpfs')&&m.platform.mountOptions.includes('nodev')&&m.platform.mountOptions.includes('nosuid'),'configuration_invalid');
   unique(m.roots.map(r=>r.role),'roots_invalid');const providerRoot=m.roots.find(r=>r.role==='provider')!;
   unique(m.roots.map(r=>r.device+':'+r.inode),'roots_invalid');unique(m.platform.mountOptions,'configuration_invalid');
   for(const root of m.roots){const owner=root.role==='evidence'?0:m.principals[root.role].uid;check(root.path==='/var/lib/osv-q2b/'+root.role+'/b1ct'&&root.ownerUid===owner&&same(root.writers,[owner]),'roots_invalid');}

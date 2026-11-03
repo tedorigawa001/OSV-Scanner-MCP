@@ -2588,6 +2588,14 @@ B1ctの検証結果: 全体115 files／4,411 tests成功、24 files／1,418 test
 - 新規31件、全体117 files／4,443 tests成功、24 files／1,418 tests skipped。型検査・build成功。native再実行・checkpoint同期実証・独立registry・承認profile・本番採用・原本read省略は0。
 - **残件**: Q2の別UID native保存service／全隔離経路／fresh issuer・独立registry／分散fencing／実保存故障、Q3bのlive pin・完全inventory・checkpoint同期に結んだsuffix-only verifier／authority audit／各budget・large history／native性能、Q4bの独立承認profile・authority／PO3／M0接続。Q3／Q4全体を完了扱いにしない。
 
+### 別UID保存serviceと認証IPCの限定native接続（2026-11-03）
+
+- §9.86とq2b_storageを追加。固定B1ct manager／launcher・Ed25519 IPCへ、別UIDのext4保存primitiveを接続した。単一snapshot／generation 1／最大512 bytesであり、TS SealedPrefixStoreのwire format・複数generation・authority復元のbridgeではない。
+- file／directory fsync・readback後だけseal成功を返す。controllerが保存した成功seal digestを外側anchorとしてSIGKILL後に再検証・再同期する。独立fresh checkpoint issuer・authority ackには数えない。正しく署名された不正body型を読取前に拒否するgateも保存variantへ追加した。
+- 新規VMで24起動・31保存response（成功14／拒否17）・57 protected events、5 principal×13操作の拒否と5許可対照、旧要求再送／不正body拒否、8保存障害・3改変復旧拒否を実行。23 source receipt・独立pin・各署名・部分inventory・実failed状態を公開recordと照合した。全体期限だけ30分とし、IPCの2秒期限は維持した。
+- 新規Vitest54件成功（別processの保存層22ケースを含む）。fsync除去mutantはcounterが8／5のままでも実呼出し0で拒否された。全体118 files／4,499 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功、dist混入なし。公開recordとbindings以外はexportせず、専用コンテナの秘密鍵・seed・ディスクは削除済み。
+- **残件**: TSの複数namespace／generation／inventory・Q1 pin／writer fenceとのnative bridge、全FD／mmap／mount alias経路とruntime closure承認、fresh checkpoint issuer・独立registry／分散barrier、実VM再boot／power-loss、Q3b／Q4b。今回の限定接続をQ2全体の完了にしない。nativeIsolationVerified／independentRegistryVerified／profileApproved／backendEligible=false、originalReadsSkipped=0を維持する。
+
 ### 2026-11-03: bce3aa6レビュー修正・B1c pinの独立性と拒否理由
 
 - §9.82.6へ、controller pinが記録と同じcommitで追加されリポジトリ上は同時差替えを防げないこと、以後はpinを別commit／リポジトリ外へ先に固定する運用を明記。

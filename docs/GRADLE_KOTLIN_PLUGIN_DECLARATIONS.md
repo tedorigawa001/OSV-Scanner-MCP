@@ -5149,6 +5149,54 @@ cache identityはbinding・base ref／承認base・signing key digest／key ID�
 
 **Q3／Q4全体は未完了。** Q3bでは完全inventory／live grant・pin・checkpoint実同期に接続したsuffix-only verifier、authority audit継続state、node／key bookkeepingのbudget、large history／scope・churn／失効／故障比較とnative性能を実証する必要がある。Q4bでは独立承認registry・runtime closure・current pin／barrierを実装し、B／C authorityとPO3／M0移行へ接続する。先行するQ2のnative storage service・全隔離経路・fresh issuer・実保存故障の未成立条件も残る。今回の診断cacheと拒否gateを本番最適化や採用完了に読み替えない。
 
+### 9.86 別UID保存serviceと認証IPCのnative接続（2026-11-03）
+
+#### 9.86.1 接続単位・信頼境界
+
+`src/test/fixtures/q2b_storage`はB1ctの固定manager／launcher・sealed bootstrap・全fragmentのkernel資格とEd25519認証を再利用した別fixtureである。旧fixtureのPython／C sourceと署名記録を変更しない。保存serviceはUID/GID 1101/1201、reader／upload／publish／checkpoint／registry対照は1102〜1106／1202〜1206とする。全非root actorはreal／effective／saved ID一致、補助group・capabilityなし、NNPを実測する。ホストにはアカウント・systemd unit・socket・mountを作らない。
+
+保存先は固定guestのext4 root disk上のprivate directoryとし、bind mountの`rw,nosuid,nodev,noexec`をfindmntで確認する。B1ctのtmpfsを永続保存の証拠へ読み替えない。native launch verifierにはext4診断を明示指定する引数を追加し、既定のB1ctは従来のtmpfs限定を維持する。B1a synthetic契約・容量上限・190件は変更せず、source fingerprintだけ更新する。
+
+今回の接続単位は**generation 1・最大512 bytes・単一の不変snapshot**である。TS `SealedPrefixStore`のwire formatやauthority journalの復元を実装したものではなく、複数generation／namespace・writer fence・Q1 pin協調へ一般化しない。readerの`read-state`、uploadの`stage`、publishの`seal`を固定し、クライアントからpath／実行命令／fault選択／callbackを受け取らない。
+
+#### 9.86.2 保存・seal・失敗停止
+
+serviceは固定rootのdirfdと排他的flockを保持する。closureは`lock`／`intent.json`／`data.bin`／`seal.json`／`selected.json`だけで、entry列挙は上限＋1で停止する。root device／inode・owner／mode、各fileのregular／owner／mode／nlinkを確認し、dirfd相対・NOFOLLOWで開き、新規writeはEXCLとする。未知entry・symlink・外部hardlink・root置換・不完全inventoryは拒否する。
+
+stageはintentとpayloadを保存する。sealはintent・payload hash／size・root／generation、manifest／run／origin bootをdomain別Ed25519署名へ束縛し、署名済みselectionを書き込む。各putのwrite→file fsync→directory fsync→readbackに加え、全4証拠fileの認証・再同期とdirectory fsyncを完了してから成功responseを署名する。read／recoveryでも全証拠を再検証・再同期し、原本read・同期の省略は0。成功はこの限定storage primitiveの結果であり、authorityのackやdurable Task実行証拠ではない。
+
+書込・同期・保存後の不明結果はownerをunavailableにし、通常retryで解除しない。不正role／argumentはmutation前に拒否する。障害後はroot controllerが停止・証拠隔離を行い、新しいprivate rootで次の独立試験を開始する。この操作は自動修復・GC／quota回収・不完全snapshotの採用ではない。
+
+#### 9.86.3 再起動と外側anchor
+
+controllerは正しく認証された成功seal responseを保存し、そのexact seal digestをroot-owned recovery anchorへ渡す。実providerをSIGKILLした後、新manager／新socket cookie／新provider bootで起動し、accept前にroot・完全inventory・全署名・payload・anchorを照合して再同期する。旧bootの署名済み保存要求は新しい認証接続でもsession bindingで拒否する。正常停止後にstatic unitがunloadされる場合、failed unitだけをresetし、Type=simpleの起動returnをreadyの証拠にしない。
+
+anchorは外側controllerが保存した既知の受領結果であり、独立fresh source checkpoint issuer・rollback保護registry・分散current pinではない。応答直前に失敗して全fileが残っていても、受領anchorなしの再起動で採用しない。VM再boot／強制power loss／host disk障害は今回の条件に含めず、`vmPowerLossTested=false`を維持する。
+
+#### 9.86.4 native対照と記録検証
+
+5つの別principalが各13操作（直接read／write、create、unlink、rename、hardlink、symlink、root rename、proc FD、ptrace、pidfd_getfd、signal、mount namespace）を試みる。EACCES／EPERMだけを拒否結果に数え、各actor自身のdirectoryでwrite／read／deleteできる許可対照を伴わせる。認証IPCのstage／seal／readを正規の許可対照とし、攻撃後にpayload・sealが不変なことを確認する。
+
+障害はwrite／file-sync／directory-syncへの明示的なEIO注入、実RLIMIT_FSIZEによるwriteのEFBIG、after-data／after-seal／after-selection／before-responseの8種類。各拒否後のunavailable、未完了または未受領snapshotの再起動拒否を要求する。注入EIOはdisk driverの実EIOと区別する。別の対照で成功seal後の同size payload改変・未知entry追加・symlink化を行い、既知anchorがあっても復旧を拒否させる。失敗はprotected eventと実service failed state／exit statusへ対応付け、単なるtimeoutや接続断を成功に数えない。
+
+記録verifier `gradleOwnedStorageNative.ts`は独立manager／controller／manifest／run pin、各bootのB1a native binding、manifestにpinされたrole公開鍵、実challenge／proof／request／response署名、ディスクseal／selection、操作event・同期counter、actor ID／資格、fault／partial inventoryの閉包を照合する。controller鍵で再署名しても不整合を拒否する回帰を持つ。23 source receiptはnative runの前後で一致させる。export対象は公開recordと独立public bindingsだけで、秘密鍵・credential archive・seed・VM diskは含めない。
+
+保存fixtureの認証parserは、署名が正しくてもbodyがobjectでなければsignature-domainとして検証前に拒否する。list bodyを正しく署名した実clientの負例を追加し、protected拒否eventと同じprovider PIDの存続を確認する。旧B1ctのsourceを差し替えず、保存variantだけのauth hashとentry hashを再計算・再compileする。
+
+ローカル回帰は22件に加え、seal成功前の実file fsync 8回・directory fsync 5回の呼出し順を観測する。private mutantからos.fsyncだけを除去してcounterを残すと、counterは8／5を主張しても実呼出し0として回帰が失敗することを確認した。元source fileは変更せず、private namespaceでmutantを実行した。mockの署名器をnative Ed25519の証拠には数えない。
+
+#### 9.86.5 残る採用条件
+
+これは制御されたDAC／process隔離と単一snapshotのguest同期・process再起動の実証単位である。全FD／mmap／mount alias経路・runtime依存closureの独立承認、TSの複数namespace／generation・完全inventory／Q1 pin・writer fenceとのbridge、fresh checkpoint issuer・独立registry／分散barrier、実VM power-loss条件は残る。従ってQ2全体、Q3bのsuffix-only verifier／native read削減、Q4bのauthority／PO3／M0採用は未成立のまま。`nativeIsolationVerified`／`independentRegistryVerified`／`profileApproved`／`backendEligible=false`、`originalReadsSkipped=0`を維持する。
+
+#### 9.86.6 実行結果・公開record
+
+固定した最終sourceで、新規systemd VMから全24起動／72 phase／48 exec、署名付き保存response 31件（成功14件・拒否17件）、別UIDの直接操作拒否65件と自己領域の許可対照5件、旧boot要求の再送／不正bodyの負例各1件を確認した。8種類の保存障害とその後のunavailable／再起動拒否、3種類の改変後の復旧拒否を通過した。各bootと操作を57個のprotected eventへ対応付け、seal時8 file／5 directory sync、正常復旧時4 file／1 directory syncを照合した。
+
+公開recordは`docs/validation/gradle-q2b-native-storage-2026-11-03.json`、独立pinは同basenameの`.bindings.json`。recordは外側の整形JSONを許容し、内部の署名envelopeはcanonical bytesを必須とする。invalid UTF-8・duplicate key・署名内部の余白・自己申告採用fieldは拒否する。新規Vitest回帰54件（ローカルfilesystem 22ケースを別processで実行するテストを含む）が成功した。全体118 files／4,499 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功、native fixtureのdist混入なし。公開record照合後に専用コンテナを削除し、秘密鍵・seed・credential archive・guest diskを破棄した。
+
+途中の開発runは正常停止後のunloaded unit処理、全体10分timeout、追加body型gateの修正前に打ち切り、陽性recordには使っていない。最終runの全体期限は30分で、IPCの2秒期限・child／boot個別期限・拒否条件は緩めていない。通常回帰はDocker／VMを起動しない。再現方法と対象範囲は`src/test/fixtures/q2b_storage/README.md`を参照する。
+
 #### 9.85.5 9037db7レビュー修正・公開文書の個人環境command・文書配置・Q4aの拒否理由
 
 **公開文書の個人環境command。** §9.85.2の再現commandに、個人環境のcommand proxyの接頭辞が本文中のインラインコードとして入っていた。素の`npx vitest run …`と`env OSV_Q3Q4_REPORT=1 npx vitest run … --silent=false`へ戻した。既存の回帰（ef0c08f）は行頭がその接頭辞で始まる行だけを検出するため、本文中のインラインコードはすり抜けていた。READMEとdocs配下のMarkdownについて、インラインコードのspan内で接頭辞の後にcommandが続く場合と、docs配下のJSON記録の文字列が接頭辞＋空白で始まる場合も失敗するよう回帰を2件追加した。toolの名前だけを挙げる過去のreview記録の言及は引き続き許可する。修正前の文書で新しい回帰が該当1行だけを検出することを確認した。
