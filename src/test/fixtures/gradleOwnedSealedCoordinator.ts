@@ -67,7 +67,11 @@ export class SealedPrefixCoordinator{
  startComplete(reader:object,candidate:PrefixHandle){return this.#call('completing',()=>this.#protocol.startComplete(reader,candidate,
   this.#protocol.checkpoint(this.#checkpoint,candidate),this.#protocol.authority(this.#authority,candidate)));}
  async decide(reader:object,wire:Buffer){
-  const bytes=this.#wire(wire);this.#gate();need(!this.#busy,'busy');this.#busy=true;
+  const bytes=this.#wire(wire);this.#gate();need(!this.#busy,'busy');
+  // Refuse a new Complete once the use ledger is full, before the protocol records a decision. The grant ID
+  // is unauthenticated here and only selects idempotent retries; decide() still authenticates the request.
+  let grantId:unknown;try{grantId=JSON.parse(bytes.toString('utf8')).grantId;}catch{grantId=undefined;}
+  need(this.#config.store.hasUseCapacity(grantId),'uses_exhausted');this.#busy=true;
   try{
    await this.#fresh();const receipt=this.#protocol.decide(reader,bytes),body=JSON.parse(receipt.toString()).body;
    const receiptDigest=ownedSha256(receipt);if(!this.#decisionsSeen.has(receiptDigest)){this.#event('decision-linearized');this.#decisionsSeen.add(receiptDigest);}

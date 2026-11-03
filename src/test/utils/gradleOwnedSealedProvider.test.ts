@@ -100,8 +100,8 @@ it('rejects a cloned namespace even when every saved byte matches',async()=>{
  await expect(SealedPrefixStore.open({...f.config,selectedIO:io})).rejects.toThrow('root_changed');
 });
 function prefixIdentity(data:V2ReplayInput){return {...binding,providerId:'provider',providerBootId:'untrusted-config-boot',storeRootId:'source',checkpointRootId:'checkpoint',rootPairId:'pair',storageInstanceId:'instance',namespaceGeneration:1,fence:1,baseDigest:data.approvedBaseDigest,format:'v2-flat-contract' as const,schemaDigest:hash('schema'),parserDigest:hash('parser'),providerProfileDigest:hash('provider-profile'),policyDigest:hash('policy'),registryRevision:1,checkpointIssuer:'issuer',checkpointKeyEpoch:1,providerKeyEpoch:1,proofMode:'record' as const};}
-async function coordinated(){
- const f=await selected(),registry=new PrefixAdmissionFixture();
+async function coordinated(limits?:SealedStoreOptions['limits']){
+ const g=await selected(),f=limits?{...g,store:await SealedPrefixStore.open({...g.config,limits,selectedIO:g.io})}:g,registry=new PrefixAdmissionFixture();
  registry.stage((await f.store.readSelected()).markerDigest);registry.initialize((await f.store.readSelected()).markerDigest);
  let now=0;const coordinator=await SealedPrefixCoordinator.open({store:f.store,registry,identity:prefixIdentity(f.data),keyId:'provider-key',key:Buffer.alloc(32,29),providerNow:()=>now,readerNow:()=>now});
  const reader=coordinator.reader({peerId:'reader',bootId:'reader-boot'});return {...f,registry,coordinator,reader,tick:(n:number)=>now+=n};
@@ -264,10 +264,44 @@ it.each(['after-reservation','after-selection'] as const)('recovers after an act
  if(target==='after-reservation'){expect(store.view().ledger.namespaces[0]!.phase).toBe('quarantined');expect(store.view().selected).toBeNull();}
  else {expect((await store.readSelected()).input.commits).toEqual(f.data.commits);expect(store.view().metrics.recoveries).toBe(1);}
 },30000);
+it('keeps the owner usable after a dirty-root refusal that wrote nothing',async()=>{
+ const f=await setup();await writeFile(path.join(f.root,'ns1','unknown'),'keep',{mode:0o600});
+ await expect(f.store.prepare(f.io,f.data)).rejects.toThrow('root_not_empty');await rm(path.join(f.root,'ns1','unknown'));
+ expect(f.store.view().phase).toBe('diagnostic-only');expect((await f.store.select(await f.store.prepare(f.io,f.data))).generation).toBe(1);
+});
+it('keeps the owner usable after quota and missing-snapshot refusals',async()=>{
+ const f=await setup(),store=await SealedPrefixStore.open({...f.config,limits:{retainedBytes:1}});
+ await expect(store.readSelected()).rejects.toThrow('snapshot_missing');await expect(store.prepare(f.io,f.data)).rejects.toThrow('budget_exceeded');
+ expect(store.view().phase).toBe('diagnostic-only');await expect(store.readSelected()).rejects.toThrow('snapshot_missing');
+});
+it('refuses a stale candidate before writing to it and keeps serving the selected snapshot',async()=>{
+ const f=await selected(),a=await nextCandidate(f),b=await nextCandidate(f,'ns3');await f.store.select(a.candidate);
+ const written=b.io.metrics.bytesWritten;await expect(f.store.select(b.candidate)).rejects.toThrow('fence_invalid');
+ expect(b.io.metrics.bytesWritten).toBe(written);expect(f.store.view().phase).toBe('diagnostic-only');expect((await f.store.readSelected()).marker.generation).toBe(2);
+});
+const fakeUse=(i:number)=>({grantId:hash('grant-'+i),useId:hash('use-'+i),receiptDigest:hash('receipt-'+i),completeDigest:hash('complete-'+i),readerDigest:hash('reader'),identityDigest:hash('identity')});
+it('refuses a use beyond a narrowed ledger capacity without stopping the owner, while an idempotent retry still succeeds',async()=>{
+ const g=await selected(),store=await SealedPrefixStore.open({...g.config,limits:{uses:2},selectedIO:g.io}),f={...g,store};
+ for(let i=0;i<2;i++)await f.store.recordUse(fakeUse(i));
+ expect(f.store.hasUseCapacity(hash('grant-2'))).toBe(false);expect(f.store.hasUseCapacity(hash('grant-0'))).toBe(true);
+ await expect(f.store.recordUse(fakeUse(2))).rejects.toThrow('uses_exhausted');await f.store.recordUse(fakeUse(0));
+ await expect(f.store.recordUse({...fakeUse(0),receiptDigest:hash('other')})).rejects.toThrow('use_conflict');
+ expect(f.store.view().phase).toBe('diagnostic-only');expect((await f.store.readSelected()).marker.generation).toBe(1);
+});
+it('rejects a use capacity above the fixed 64-use ledger limit',async()=>{
+ const f=await setup();await expect(SealedPrefixStore.open({...f.config,limits:{uses:65}})).rejects.toThrow('configuration_invalid');
+});
+it('refuses a new Complete decision at use capacity before recording it and keeps the coordinator serving',async()=>{
+ const f=await coordinated({uses:2});for(let i=0;i<2;i++)await f.store.recordUse(fakeUse(i));
+ const s=await use(f,'completing');await expect(f.coordinator.decide(f.reader,s.complete!)).rejects.toThrow('uses_exhausted');
+ expect(f.coordinator.status(f.reader,s.ticket).phase).toBe('completing');expect(f.store.view().ledger.uses).toHaveLength(2);
+ expect(()=>f.coordinator.reader({peerId:'second',bootId:'second-boot'})).not.toThrow();expect(f.store.view().phase).toBe('diagnostic-only');
+});
+
 it('binds the saved B2/B3 validation to the exercised source closure and keeps native isolation/adoption unestablished',async()=>{
  const record=JSON.parse(await readFile(path.resolve('docs/validation/gradle-q2b-b2-b3-storage-2026-11-03.json'),'utf8'));
- expect(record.schema).toBe('osv-mcp.q2b.b2-b3.validation.v1');expect(record.caseCount).toBe(53);expect(record.cases).toHaveLength(53);
- expect(new Set(record.cases.map((c:{name:string})=>c.name)).size).toBe(53);
+ expect(record.schema).toBe('osv-mcp.q2b.b2-b3.validation.v1');expect(record.caseCount).toBe(59);expect(record.cases).toHaveLength(59);
+ expect(new Set(record.cases.map((c:{name:string})=>c.name)).size).toBe(59);
  expect(record.cases.every((c:{status:string})=>c.status==='passed')).toBe(true);
  for(const source of record.sources)expect(hashBytes(await readFile(path.resolve(source.path)))).toBe(source.sha256);
  for(const pin of record.dependencies)expect(hashBytes(await readFile(path.resolve(pin.path)))).toBe(pin.sha256);

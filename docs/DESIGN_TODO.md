@@ -2576,3 +2576,10 @@ B2／B3 local contractの検証結果: 新規54回帰成功（53 domainケース
 - VM verifierのparse／schema失敗を`q2b_vm_schema`へ統一し、拒否回帰23件の期待値を完全一致の理由へ具体化。§9.82挿入でずれたB1b検証結果行を§9.81.6へ戻した。
 
 bce3aa6レビュー修正の検証結果: VM回帰26件成功。全体113 files／4,311 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。
+
+### 2026-11-03: 9bc56adレビュー修正・B2の書込み前拒否とuse ledger容量
+
+- §9.83.8へ、状態変更前の明示的な拒否（汚れ・再使用root、上限、古いcandidate、use衝突／容量到達、未選択）ではstoreを停止しないよう変更し、選択時の呼出し側検査を同期なしの検証へ前倒し。保存・put後の失敗と整合性の失敗はfail-stopのまま。
+- use ledgerの64件上限を明記し、到達後の新規Completeは`uses_exhausted`でstore／coordinatorを停止せずに拒否。同値再送は継続可能。rotation／compactionは未実装。§9.82.6を§9.83の前へ戻した。
+
+9bc56adレビュー修正の検証結果: B2/B3回帰60件成功（新規6件）。全体114 files／4,371 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。

@@ -46,15 +46,15 @@
     },
     {
       "path": "src/test/fixtures/gradleOwnedSealedCoordinator.ts",
-      "sha256": "de152c9937f481b2b87c9adeaa90c10712bf6f8fb6da7bf51b7728891a3214f2"
+      "sha256": "cbbd720a8e89d51346cb7b546fb1d745a9afc2951ef19ed386fef33a1756d576"
     },
     {
       "path": "src/test/fixtures/gradleOwnedSealedProvider.ts",
-      "sha256": "393e311999d770bee296d45f6d05cd19387dc1cae07b47d0ab52e95be25b173a"
+      "sha256": "66d51a70fba04a2adc908ef82457081791423e872dc7a7ab30a2d51768b93c54"
     },
     {
       "path": "src/test/utils/gradleOwnedSealedProvider.test.ts",
-      "sha256": "6178d303f1f8b93dbacbc59807f8d6e4d4cedc7f156f6e7a0abbb2a421323c58"
+      "sha256": "8d25b9c4475c7c3fa6864ac9cc67e766f8d3ebedde16b1d7c637b46dd3a0421a"
     },
     {
       "path": "src/utils/cargoLock.ts",
@@ -131,7 +131,7 @@
       "sha256": "c7bfdf1fa709869185318922051c52f124b79fc8cedce1d9e6546b87e6524285"
     }
   ],
-  "caseCount": 53,
+  "caseCount": 59,
   "cases": [
     {
       "name": "durably seals a fresh namespace before selecting it, preserving copied source bytes",
@@ -343,6 +343,30 @@
     },
     {
       "name": "recovers after an actual SIGKILL at after-selection without reusing the old boot or reopening a generation",
+      "status": "passed"
+    },
+    {
+      "name": "keeps the owner usable after a dirty-root refusal that wrote nothing",
+      "status": "passed"
+    },
+    {
+      "name": "keeps the owner usable after quota and missing-snapshot refusals",
+      "status": "passed"
+    },
+    {
+      "name": "refuses a stale candidate before writing to it and keeps serving the selected snapshot",
+      "status": "passed"
+    },
+    {
+      "name": "refuses a use beyond a narrowed ledger capacity without stopping the owner, while an idempotent retry still succeeds",
+      "status": "passed"
+    },
+    {
+      "name": "rejects a use capacity above the fixed 64-use ledger limit",
+      "status": "passed"
+    },
+    {
+      "name": "refuses a new Complete decision at use capacity before recording it and keeps the coordinator serving",
       "status": "passed"
     }
   ],
