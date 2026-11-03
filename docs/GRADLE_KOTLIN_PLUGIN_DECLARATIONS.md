@@ -4624,7 +4624,7 @@ b62e339レビュー修正の検証結果: native回帰18件成功（17 nativeケ
 
 #### 9.79.1 対象と到達点
 
-Q2/Aと§9.78.5のclient pin／応答照合を前提に、Q2/Bのnative隔離実証を実行可能にする配備契約を定める。今回は設計のみで、OS account作成・service配備・新規native実行を行わない。Q2/Aの同UID診断を設定変更だけで採用可能にせず、別domain・別実装closure・別evidenceを必要とする。
+Q2/Aと§9.78.5のclient pin／応答照合を前提に、Q2/Bのnative隔離実証を実行可能にする配備契約を定める。今回は設計のみで、OS account作成・service配備・新規native実行を行わない。exec前gateとmanager所有listenerは§9.79.9、SO_PASSCREDの有効化時点とready前のqueued接続は§9.79.10で改訂した。Q2/Aの同UID診断を設定変更だけで採用可能にせず、別domain・別実装closure・別evidenceを必要とする。
 
 基準環境候補は専用の使い捨てLinux VM内のsystem-level serviceとlocal filesystem。kernel／distribution／systemd／filesystem／mount options／runtimeの実版・image digestを実証時に固定する。user service、同UID child、同UID containerやrootless user namespaceだけの配置は陽性基準にしない。macOSは既存のQ2/A対象のままで、launchd・ACL・process制御を含む同等の別profileを実証するまでBはunsupportedとする。Linux分岐が存在することやCIがUbuntuであること自体もBの証拠ではない。
 
@@ -4686,7 +4686,7 @@ LinuxのSO_PEERCREDは接続時のpeer資格として扱い、PID文字列を現
 
 攻撃ごとに同等の許可領域で同じ操作が成功する対照を実行し、ENOSYS・ENOENT・tool欠落・攻撃process未起動を「隔離による拒否」へ数えない。標的の存続・identityをcontrollerが確認し、敵対側でEACCES／EPERM等の期待拒否と前後不変性を確認する。意図的な既存FD注入は無害fixtureで行い、OSがwriteを許す負例＋起動gateの拒否を要求する。単なるchmod後のwrite拒否を期待しない。
 
-配備前提不足は`provider_unsupported`、closure／独立pin不一致は`binding_mismatch`、認証不正は`receipt_invalid`／再送は`challenge_replayed`、未知entry／root交換は`inventory_mismatch`、内容変更は`content_mismatch`、復旧／同期不完了は`sync_incomplete`、証拠欠落は`evidence_incomplete`として診断記録する。後者はB検証runnerの分類で本番schemaを今回拡張しない。攻撃による変更成功は隔離失敗としてrun全体を不採用にし、後から元へ戻して合格にしない。制限による未実行／blocked／skipも陽性件数へ加算しない。
+配備前提不足は`provider_unsupported`、closure／独立pin不一致は`binding_mismatch`、認証不正は`receipt_invalid`／再送は`challenge_replayed`、未知entry／root交換は`inventory_mismatch`、内容変更は`content_mismatch`、復旧／同期不完了は`sync_incomplete`、証拠欠落は`evidence_incomplete`として診断記録する。`evidence_incomplete`だけがB検証runner固有の分類で、他は§9.74の理由を診断へ流用する。いずれも本番schemaを今回拡張しない。攻撃による変更成功は隔離失敗としてrun全体を不採用にし、後から元へ戻して合格にしない。制限による未実行／blocked／skipも陽性件数へ加算しない。
 
 B1の独立隔離合格、B2の保存合格、B3のpin協調合格を別flag・別必要証拠とする。初期B1 runnerは診断専用で採用flagを出さない。独立registryが未実装なら外側fixture pinであることを明記し、現在性・rollback保護の本番成立を主張しない。B1合格だけでdurable／grant／read省略を有効にする条件は作らない。
 
@@ -4702,15 +4702,15 @@ B1の独立隔離合格、B2の保存合格、B3のpin協調合格を別flag・�
 | QB06 | 一時rootのwrite FD／directory FD／writable mmapを起動前に意図的に漏洩し、chmodだけでは書ける負例を確認。継承FD検出と履歴不明rootのgate拒否・新root必須を確認 |
 | QB07 | reader／buildからproviderのsignal・ptrace／process memory・proc FD取得を試し、利用可能な全手段で拒否。未対応手段を実証済みと数えない |
 | QB08 | projectからunit／実行file／runtime／library／設定／credential sourceを変更不可。NODE_OPTIONSの--require／--import、PYTHONPATH／PYTHONHOME、LD_PRELOAD／LD_LIBRARY_PATH、未知env、-e／-c／追加argv／shell展開／別entry pointをmanagerのexec前gateで拒否しruntimeExecCount=0・注入コード実行0・秘密／canonical内容読取0。親環境からの注入はruntime／launcherへ渡らないことを確認し、許可設定の起動成功と、無防備な隔離fixtureではpreloadがgateより先にmarkerを書ける負例も対照 |
-| QB09 | 正しいprovider／reader／build／writerを各実UIDで起動し、独立pinと両端の受信時credentialを照合する。clientのSO_PEERCREDはmanager custodian、SCM_CREDENTIALSはprovider UIDとして別々に検証する陽性対照 |
-| QB10 | 鍵が正しくても異なるcustodian UID／実送信provider UID／client UIDをそれぞれ拒否。manager listenerの正常root UIDをprovider UID不一致と誤判定しない陽性対照と、clientのhello／秘密送信0、serverの操作受付0を観測 |
+| QB09 | 正しいprovider／reader／build／writerを各実UIDで起動し、独立pinと両端の受信時credentialを照合する。clientのSO_PEERCREDはmanager custodian、SCM_CREDENTIALSはprovider UIDとして別々に検証する陽性対照。両端でSO_PASSCREDが§9.79.10の時点までに有効であることも記録 |
+| QB10 | 鍵が正しくても異なるcustodian UID／実送信provider UID／client UIDをそれぞれ拒否。manager listenerの正常root UIDをprovider UID不一致と誤判定しない陽性対照と、clientのhello／秘密送信0、serverの操作受付0を観測。SO_PASSCRED無効時点に送られた資格なしdata（overflow UID／pid 0）を欠落として拒否する負例も含む |
 | QB11 | reader credentialでprovider署名の偽造を試して拒否。旧共有HMAC方式・未承認crypto closureも採用不可 |
 | QB12 | reader／buildの正当接続でpublish／管理／任意path／callback／role変更を試し、MACが正しくても拒否 |
 | QB13 | 同接続のrequest／response再送・順序差替え、別reader／role／接続への転用を拒否。正しい連番対照も必要 |
 | QB14 | 実serviceをstop／SIGKILL・restartし、旧bootのhello／token／要求／遅延応答を拒否。新bootも独立pin検証を要求 |
 | QB15 | 重複key／未知field／不正整数／oversize／途中EOFとslow-dripを拒否。絶対deadline内終了と有界read／allocationを計測 |
 | QB16 | ancillary FDの注入・接続FD転送を試し、FD受領拒否／closeと別principalのrole拒否を確認。リークしない |
-| QB17 | manager事前作成・role別listener受渡しの陽性と、FD欠落／余分／重複／role入替／名前だけ一致／wrong cookie／別path／別domain／connected socket／非listener／偽LISTEN_*を拒否する負例を実行。2重起動・残存socket・leaf／ancestor交換では無条件unlinkもprovider自身のbind fallbackもなし。managerの停止・identity照合・再作成条件とproviderのdirectory writeなしを確認。runtime exec前とaccept前の拒否境界、old listener／backlog／接続の再使用拒否も観測 |
+| QB17 | manager事前作成・role別listener受渡しの陽性と、FD欠落／余分／重複／role入替／名前だけ一致／wrong cookie／別path／別domain／connected socket／非listener／偽LISTEN_*を拒否する負例を実行。2重起動・残存socket・leaf／ancestor交換では無条件unlinkもprovider自身のbind fallbackもなし。managerの停止・identity照合・再作成条件とproviderのdirectory writeなしを確認。runtime exec前とaccept前の拒否境界、old listener／backlog／接続の再使用拒否も観測。PassCredentials未設定（SO_PASSCREDなし）のlistenerをinventory照合で拒否し、ready前のqueued接続が送ったdataを受理しない負例を含む |
 | QB18 | bootstrap／credential欠落・wrong owner／期限・key epoch変更・manager供給元不明を拒否。argv／env／log／coreに秘密bytesがないことを確認 |
 | QB19 | reader／buildからcheckpoint／registry canonical rootsへのwriteとprovider経由の代理writeを拒否し、issuer同期責任を保つ |
 | QB20 | B2: 未知file／symlink／hardlink／未完了temp／tailを完全inventory検査で拒否。上限+1で列挙を停止し陽性sealなし |
@@ -4759,3 +4759,18 @@ listenerはmanagerのexec時FD継承として渡し、stdinや通常IPCのSCM_RI
 これらはQB08の実行前注入拒否、QB04の任意名作成／隣接leaf削除拒否、QB17の正当FD受渡し／差替え／再作成回帰を具体化した未実装条件である。manager-owned listenerの採用に合わせQB09／QB10のcustodianとsenderの陽性・負例も更新した。既存Q2/Aはprovider自身のbind方式のままで、B方式への変更や新規native成功を今回主張しない。
 
 Q2/B設計レビュー修正の検証結果: 公開command例・既存Q2/A native・Q1 memory contractの関連117件成功。§9.79.1〜9の9小節、QB01〜QB32の一意性、QB04／QB08／QB17と両端credential条件の追記、旧filename別ACL前提の撤回を確認。diff整形検査成功。文書のみの変更であり、QB回帰は未実装、Q2/B配備・native隔離の新規実証・採用flag変更は0。
+
+
+#### 9.79.10 920bf01レビュー修正・SO_PASSCREDの有効化時点とready前のqueued接続
+
+**SO_PASSCREDの時点。** Linuxのunix socketでは、送信時点で送信側か受信側のどちらかにSO_PASSCREDがなければ、そのdataへkernel資格が付かない。受信時に有効にしても、資格なしdataはoverflow UID（通常65534）／pid 0として届き、cmsg自体が無いとは限らない。manager（systemd）が作ったlistenerは既定でSO_PASSCREDを持たないため、§9.79.5／§9.79.9の受信ごとのSCM_CREDENTIALS照合は有効化の時点を固定しなければ成立しない。
+
+- provider側: 3 roleのsocket unitに`PassCredentials=yes`を必須とし、managerのlaunch inventoryとproviderのFD照合（SO_DOMAIN／SO_TYPE／SO_ACCEPTCONN／getsockname／cookie）へlistenerのSO_PASSCRED状態を加える。無効なlistenerは起動gateで拒否する。provider自身が後から有効化して補う経路を採用しない。accepted socketでも有効であることを最初の受信前に再確認する。
+- client側: connectより前に自socketへSO_PASSCREDを設定し、server challengeを含む全受信で資格を得る。接続後の設定を代替にしない。
+- 資格欠落の判定: cmsgの欠落・MSG_CTRUNCに加え、pid 0またはoverflow UID／GIDを報告した受信を「資格なし」として拒否する。pinとの不一致による拒否に任せず、欠落として別に記録する。overflow UIDと同値のUIDを専用principalへ割り当てない。
+
+**ready前のqueued接続。** listenerはproviderのready前から接続を受け付けるため、backlogに溜まった接続とそのdataの扱いを固定する。providerはpreflight／FD照合／必要な復旧が成功するまでacceptしない。ready後にacceptした接続はserver challengeを最初のmessageとし、challenge送信前にclientから届いていたdataが1byteでもあれば、その接続を認証前に閉じる。clientはserver challengeを受けるまで送信しない（Q2/Aと同じserver-first順序）。旧socketGeneration／旧bootの間に溜まった接続は新しいboot／generationの許可に使わず、再作成時は§9.79.9どおりmanagerがlistenerごと回収する。queued接続の存在をreadinessや認可の証拠にしない。
+
+これらによりQB09／QB10（SO_PASSCREDの時点・資格なしdataの拒否）とQB17（PassCredentials未設定listener・ready前queued dataの拒否）の条件を追加した。設計のみの修正で、unit／launcher／FD gate／QB回帰の実装・配備・新規native実行は0。既存Q2/Aはprovider自身がbindする同UID診断のままで、本節の時点条件を満たしたとは主張しない。
+
+920bf01レビュー修正の検証結果: §9.79.1〜10の10小節、QB01〜QB32の一意性、QB09／QB10／QB17への追記、§9.79.6の理由分類の明確化を確認。全体110 files／4,030 tests成功、24 files／1,418 tests skipped。diff整形検査成功。文書のみの変更である。

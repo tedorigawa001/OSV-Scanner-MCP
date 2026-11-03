@@ -2492,3 +2492,10 @@ Q2/B設計の検証結果: 公開command例・既存Q2/A native・Q1 memory cont
 - manager listenerのSO_PEERCREDとproviderのSCM_CREDENTIALSを別pinとして両端認証へ束縛し、QB09／QB10も整合。今回も設計のみで、unit／launcher／FD gate／QB回帰実装・配備・新規native実行は0。
 
 Q2/B設計レビュー修正の検証結果: 公開command例・既存Q2/A native・Q1 memory contractの関連117件成功。§9.79.1〜9の9小節、QB01〜QB32の一意性、QB04／QB08／QB17と両端credential条件の追記、旧filename別ACL前提の撤回を確認。diff整形検査成功。文書のみの変更であり、QB回帰は未実装、Q2/B配備・native隔離の新規実証・採用flag変更は0。
+
+### 2026-11-03: 920bf01レビュー修正・Q2/BのSO_PASSCRED時点とqueued接続
+
+- §9.79.10へ、socket unitの`PassCredentials=yes`とlistener inventoryでのSO_PASSCRED照合、clientのconnect前設定、overflow UID／pid 0の資格欠落判定、ready前queued接続の扱い（ready後acceptのみ・challenge前dataで切断・server-first）を追加。QB09／QB10／QB17へ負例を追記し、§9.79.6の理由分類（`evidence_incomplete`だけrunner固有）を明確化。
+- 設計のみ。実装・配備・native実行は0。
+
+920bf01レビュー修正の検証結果: §9.79の10小節・QB01〜QB32の一意性・追記箇所を確認。全体110 files／4,030 tests成功、24 files／1,418 tests skipped。diff整形検査成功。
