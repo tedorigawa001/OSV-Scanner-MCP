@@ -5035,6 +5035,22 @@ QB20〜QB29の保存・協調条件をlocal contractで検証したが、独立U
 
 B2／B3 local contractの検証結果: 新規54回帰・実SIGKILL2ケース成功。childの実到達phase／bootを同期stdoutで観測し、新owner bootと区別した。全体114 files／4,365 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。保存記録の53 domainケース・29 source／lockfile hashを照合し、本番buildに新fixtureが含まれないことを確認した。今回のOS／Node実版は検証JSONに記録し、他platformや独立UID serviceへの拡張成立は主張しない。
 
+#### 9.83.8 9bc56adレビュー修正・書込み前拒否の継続とuse ledger容量
+
+**書込み前の拒否。** `SealedPrefixStore`は、内部処理の失敗を種類によらずすべてfail-stop（`recovery_required`）にしていた。そのため、汚れたroot・再使用root・namespace／容量の上限・古いcandidate・use衝突といった、状態を変える前に分かる呼出し側の誤りでもproviderが停止し、汚れたrootや古いcandidateを渡すだけで停止させられた。A2 journalの書込み前拒否（6fbbaa0）と同じ種類の問題である。
+
+状態を書き換える前の明示的な拒否だけを継続可能とした。対象は`root_invalid`／`root_reused`／`root_not_empty`、entries・namespace数・予約bytesの`budget_exceeded`、選択時の`fence_invalid`（expectedSelected不一致）／`head_invalid`／`prefix_changed`、`use_conflict`／`uses_exhausted`、未選択時の`snapshot_missing`である。そのrunでcontrol journalへの保存またはnamespace rootへのputが一度でも起きた後の失敗、`#load`の再認証・再同期の失敗、内容・identityの不一致、V2 replayの失敗は従来どおりfail-stopのままである。選択時の呼出し側検査は、先に同期なしの読取専用検証で行うよう順序を変えた。同期付きの全検証は、従来どおりdurableな選択の保存前に新旧両方へ実行する。
+
+**use ledgerの容量。** ledgerの`uses`は最大64件（`SEALED_LIMITS.uses`）で、従来は上限到達後の`recordUse`が`budget_exceeded`で失敗し、上記のfail-stopによりstoreとcoordinatorの双方が停止した。再openしても64件は残るため、providerは通算64回でComplete記録が不可能になり、§9.83に上限の記載もなかった。上限到達後の新規Completeは`uses_exhausted`として拒否するが、storeは停止させない。既存useの同値再送は上限後も成功する。coordinatorは、protocolが新しい決定を記録する前に、Complete wireのgrant IDが既存useか空き容量があるかを確認し、なければ`uses_exhausted`で拒否する。この時点ではcoordinatorを停止させず、pinは`completing`のまま残る。grant IDは未認証のまま再送判定にだけ使い、protocolのdecideは引き続き認証を行う。容量はfixture設定で狭めることだけ許す。上限到達後のrotation／compaction・新ledgerへの移行は未実装であり、上限に達したproviderは新規Completeを受け付けない状態で運用者の対応を待つ。
+
+**読込み時の再同期。** `readSelected`と、coordinatorの全入口が経由する`#fresh`は、selected namespaceの全fileを`#verify(sync=true)`で書き直して再同期する。要求1回ごとに最大64 MiBの読直し・書直しが起き、sealedとしたrootをprovider自身が読込みのたびに置き換え続ける。正しさの問題ではなく、§9.83.4のとおり最適化はQ3以降の範囲である。
+
+**文書配置。** 9bc56adは§9.83を§9.82.6の前へ挿入しており、§9.82.6が§9.83.7の後ろにあった。§9.82.6を§9.83の前へ戻した。
+
+回帰を6件追加し、B2/B3は60件（保存記録の照合1件を含む）になった：汚れたroot拒否後の空root準備と選択、容量／未選択snapshot拒否後の継続、古いcandidateを書込みなしで拒否してselectedを提供し続けること、容量を狭めたledgerでの`uses_exhausted`と同値再送・`use_conflict`、64を超える容量設定の拒否、coordinatorが容量到達時に新規Completeを記録前に拒否して継続すること。保存記録は現sourceと実テスト結果（59 domain cases）から再生成した。
+
+9bc56adレビュー修正の検証結果: B2/B3回帰60件成功（新規6件）。全体114 files／4,371 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。保存記録の59 domainケース・source／lockfile hashを照合した。実SIGKILL 2ケースも全体で再実行して成功した。独立UID service・独立registry・採用flagの変更は0。
+
 ### 9.84 B1c追加実証：認証IPC・manager署名／B1a連携・再起動／FD回収
 
 #### 9.84.1 独立fixtureと実証範囲
@@ -5075,7 +5091,7 @@ challengeはmanifest／launch digest、instance／profile、provider boot、role
 
 #### 9.84.6 保存記録・回帰・後続
 
-`docs/validation/gradle-q2b-b1ct-transport-2026-11-03.json`と別保存の`.bindings.json`へ、実VM結果・manager／controller署名・独立公開pin／manifest pin・16 sourceの不変receiptを保存する。controller pinはboot前、manager pinは配備前、manifest pinはtrace／accept前に外側へ保存する。private key／seed／credential archive／guest diskはexportしない。再現手順はfixture READMEへ記載した。
+`docs/validation/gradle-q2b-b1ct-transport-2026-11-03.json`と別保存の`.bindings.json`（リポジトリ上の独立性の限界は§9.84.7）へ、実VM結果・manager／controller署名・独立公開pin／manifest pin・16 sourceの不変receiptを保存する。controller pinはboot前、manager pinは配備前、manifest pinはtrace／accept前に外側へ保存する。private key／seed／credential archive／guest diskはexportしない。再現手順はfixture READMEへ記載した。
 
 通常回帰40件で、独立pin／署名と28ケース閉包・B1aの2 native bindingを検証し、正しいcontroller再署名・観測値の整合更新後もbootstrap／資格／exec／拒否理由／FD回収・scope／採用flagの不正を拒否する。bootstrapのmanifest照合を外した変異版で該当回帰が失敗し、復元後に成功することも確認した。B1a既存190件は保持してsource fingerprintを更新する。
 
@@ -5083,18 +5099,14 @@ challengeはmanifest／launch digest、instance／profile、provider boot、role
 
 B1ctの検証結果: 実VM28ケース、2 native launch binding、通常回帰40件成功。全体115 files／4,411 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。manager／controller署名と独立pin、source receipt、boot／cookie更新・残存FD拒否を照合した。原本read省略・本番採用は0。
 
-#### 9.83.8 9bc56adレビュー修正・書込み前拒否の継続とuse ledger容量
+#### 9.84.7 095bbecレビュー修正・pinの同時commit・拒否理由・EOFの分類
 
-**書込み前の拒否。** `SealedPrefixStore`は、内部処理の失敗を種類によらずすべてfail-stop（`recovery_required`）にしていた。そのため、汚れたroot・再使用root・namespace／容量の上限・古いcandidate・use衝突といった、状態を変える前に分かる呼出し側の誤りでもproviderが停止し、汚れたrootや古いcandidateを渡すだけで停止させられた。A2 journalの書込み前拒否（6fbbaa0）と同じ種類の問題である。
+**pinの独立性。** `.bindings.json`（manager／controller公開鍵pin・manifest pin・runId）は、署名記録`.json`と同じcommit（095bbec）で追加された。§9.82.6で定めた「以後のnative記録では、pinを記録より前の別commit、またはリポジトリ外の独立した保管先に固定する」という運用を満たしていない。§9.84.6の「pinをboot前・配備前・trace前に外側へ保存した」は作業手順の記述であり、リポジトリ上では記録とpinを同時に差し替えれば回帰は通る。今回のpinも§9.82.6と同じ限界を持ち、独立承認とはみなさない。次のnative記録から、pinを先に別commitとして固定する。
 
-状態を書き換える前の明示的な拒否だけを継続可能とした。対象は`root_invalid`／`root_reused`／`root_not_empty`、entries・namespace数・予約bytesの`budget_exceeded`、選択時の`fence_invalid`（expectedSelected不一致）／`head_invalid`／`prefix_changed`、`use_conflict`／`uses_exhausted`、未選択時の`snapshot_missing`である。そのrunでcontrol journalへの保存またはnamespace rootへのputが一度でも起きた後の失敗、`#load`の再認証・再同期の失敗、内容・identityの不一致、V2 replayの失敗は従来どおりfail-stopのままである。選択時の呼出し側検査は、先に同期なしの読取専用検証で行うよう順序を変えた。同期付きの全検証は、従来どおりdurableな選択の保存前に新旧両方へ実行する。
+**拒否理由。** `verifyNativeTransportRun`のparse／schema失敗をzodの生例外から`q2b_transport_schema`へ統一し、B1a native入口の`q2b_`理由はそのまま通す。pin不一致3件・署名破損2件・未署名記録1件・正しく再署名した不正記録の期待値を`toThrow()`から完全一致の理由へ変えた。事前の確認では全件が想定どおりの検査で拒否されていた。ただし「manager署名の破損」は、launch bytesだけを書き換えるとcontroller署名済みのboot copyと食い違うため`q2b_transport_boot_binding`で拒否されており、manager署名の検証自体には到達していなかった。boot copyも同じbytesへ揃えてcontrollerで再署名する負例（`manager-signature`）を追加し、`q2b_signature_invalid`で拒否されることを確認した。
 
-**use ledgerの容量。** ledgerの`uses`は最大64件（`SEALED_LIMITS.uses`）で、従来は上限到達後の`recordUse`が`budget_exceeded`で失敗し、上記のfail-stopによりstoreとcoordinatorの双方が停止した。再openしても64件は残るため、providerは通算64回でComplete記録が不可能になり、§9.83に上限の記載もなかった。上限到達後の新規Completeは`uses_exhausted`として拒否するが、storeは停止させない。既存useの同値再送は上限後も成功する。coordinatorは、protocolが新しい決定を記録する前に、Complete wireのgrant IDが既存useか空き容量があるかを確認し、なければ`uses_exhausted`で拒否する。この時点ではcoordinatorを停止させず、pinは`completing`のまま残る。grant IDは未認証のまま再送判定にだけ使い、protocolのdecideは引き続き認証を行う。容量はfixture設定で狭めることだけ許す。上限到達後のrotation／compaction・新ledgerへの移行は未実装であり、上限に達したproviderは新規Completeを受け付けない状態で運用者の対応を待つ。
+**EOFの分類（既知の制約）。** `auth.py`の受信処理は、EOF（受信bytesが空）を資格確認の条件に含めているため、途中で切れたframeを`credential-missing`として拒否する。安全側の拒否だが、資格が実際に欠けた場合と区別できず、`truncated`ケースは`credential-missing`の理由で合格している。資格検査が後で壊れても`truncated`ケースでは検出できない。`auth.py`は署名記録のsource receipt（16 files）に含まれるため、修正すると記録のhashが一致しなくなり、記録の再生成には実VMでの再実行が必要になる。今回は既知の制約として記録し、次の実VM実行で、資格検査の前にEOFを別の理由で拒否し、verifierの対応表・記録を合わせて更新する。
 
-**読込み時の再同期。** `readSelected`と、coordinatorの全入口が経由する`#fresh`は、selected namespaceの全fileを`#verify(sync=true)`で書き直して再同期する。要求1回ごとに最大64 MiBの読直し・書直しが起き、sealedとしたrootをprovider自身が読込みのたびに置き換え続ける。正しさの問題ではなく、§9.83.4のとおり最適化はQ3以降の範囲である。
+**文書配置。** 095bbecは§9.84を§9.83.8の前へ挿入しており、§9.83.8が§9.84.6の後ろにあった。§9.83.8を§9.84の前へ戻した。§9.82.6・§9.83.8に続き3回目である。
 
-**文書配置。** 9bc56adは§9.83を§9.82.6の前へ挿入しており、§9.82.6が§9.83.7の後ろにあった。§9.82.6を§9.83の前へ戻した。
-
-回帰を6件追加し、B2/B3は60件（保存記録の照合1件を含む）になった：汚れたroot拒否後の空root準備と選択、容量／未選択snapshot拒否後の継続、古いcandidateを書込みなしで拒否してselectedを提供し続けること、容量を狭めたledgerでの`uses_exhausted`と同値再送・`use_conflict`、64を超える容量設定の拒否、coordinatorが容量到達時に新規Completeを記録前に拒否して継続すること。保存記録は現sourceと実テスト結果（59 domain cases）から再生成した。
-
-9bc56adレビュー修正の検証結果: B2/B3回帰60件成功（新規6件）。全体114 files／4,371 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。保存記録の59 domainケース・source／lockfile hashを照合した。実SIGKILL 2ケースも全体で再実行して成功した。独立UID service・独立registry・採用flagの変更は0。
+095bbecレビュー修正の検証結果: transport回帰41件成功（新規1件・期待理由を具体化）。全体115 files／4,412 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。署名記録・pin・source receiptは変更していない。native実行・採用flag変更は0。

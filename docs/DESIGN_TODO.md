@@ -2593,3 +2593,11 @@ bce3aa6レビュー修正の検証結果: VM回帰26件成功。全体113 files�
 - use ledgerの64件上限を明記し、到達後の新規Completeは`uses_exhausted`でstore／coordinatorを停止せずに拒否。同値再送は継続可能。rotation／compactionは未実装。§9.82.6を§9.83の前へ戻した。
 
 9bc56adレビュー修正の検証結果: B2/B3回帰60件成功（新規6件）。全体114 files／4,371 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。
+
+### 2026-11-03: 095bbecレビュー修正・B1ct pin・拒否理由・EOF分類
+
+- §9.84.7へ、`.bindings.json`が記録と同じcommitで追加され§9.82.6の運用を満たしていないことを明記。次のnative記録からpinを先に別commitで固定する。
+- transport verifierのparse／schema失敗を`q2b_transport_schema`へ統一し、拒否回帰の期待値を完全一致の理由へ具体化。manager署名の検証に実際に到達する負例を追加。
+- `auth.py`がEOFを`credential-missing`として拒否する点を既知の制約として記録（次の実VM実行で修正）。§9.83.8を§9.84の前へ戻した。
+
+095bbecレビュー修正の検証結果: transport回帰41件成功。全体115 files／4,412 tests成功、24 files／1,418 tests skipped。型検査・build・diff整形検査成功。

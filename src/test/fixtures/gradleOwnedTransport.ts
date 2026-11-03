@@ -37,7 +37,12 @@ const envelopeSchema=z.object({schema:z.literal('osv-mcp.q2b.evidence.v1'),role:
 function need(value:unknown,reason:string):asserts value{if(!value)throw new Error('q2b_transport_'+reason);}
 function bytes(encoded:string){const value=Buffer.from(encoded,'base64');need(value.toString('base64')===encoded,'encoding');return value;}
 function envelope(encoded:string,key:ReturnType<typeof createPublicKey>){const raw=bytes(encoded);need(raw.length<=512*1024,'budget');const value=envelopeSchema.parse(parseOwnedJson(raw.toString('utf8'),512*1024));need(canonicalOwnedJson(value,512*1024)===raw.toString('utf8'),'canonical');const {signature,...unsigned}=value;need(verify(null,Buffer.from(canonicalOwnedJson(unsigned,512*1024)),key,bytes(signature)),'signature');return value.body;}
-export function verifyNativeTransportRun(input:{record:Buffer;managerKeyDigest:string;controllerKeyDigest:string;manifestDigest:string;runId:string}){
+type TransportInput={record:Buffer;managerKeyDigest:string;controllerKeyDigest:string;manifestDigest:string;runId:string};
+/** All rejections carry a q2b_ reason: B1a binding errors pass through, parse/schema failures become q2b_transport_schema. */
+export function verifyNativeTransportRun(input:TransportInput){
+ try{return verifyRun(input);}catch(error){if(error instanceof Error&&error.message.startsWith('q2b_'))throw error;throw new Error('q2b_transport_schema');}
+}
+function verifyRun(input:TransportInput){
  need(Buffer.isBuffer(input.record)&&input.record.length<=1024*1024,'budget');const r=recordSchema.parse(parseOwnedJson(input.record.toString('utf8'),1024*1024));
  const managerDer=bytes(r.managerPublicKeyDer),controllerDer=bytes(r.controllerPublicKeyDer);
  need(ownedSha256(managerDer)===input.managerKeyDigest&&ownedSha256(controllerDer)===input.controllerKeyDigest&&!managerDer.equals(controllerDer),'independent_key_pin');

@@ -13,7 +13,7 @@ it('rejects duplicate JSON keys and noncanonical frames before authentication',(
  expect(()=>execFileSync('python3',['-I','-c',script],{stdio:'pipe',timeout:10000})).not.toThrow();
 });
 it('requires independent manager/controller pins and a signed native run before accepting any evidence',()=>{
- expect(()=>verifyNativeTransportRun({record:Buffer.from('{}'),managerKeyDigest:'0'.repeat(64),controllerKeyDigest:'0'.repeat(64),manifestDigest:'0'.repeat(64),runId:'test'})).toThrow();
+ expect(()=>verifyNativeTransportRun({record:Buffer.from('{}'),managerKeyDigest:'0'.repeat(64),controllerKeyDigest:'0'.repeat(64),manifestDigest:'0'.repeat(64),runId:'test'})).toThrow(/^q2b_transport_schema$/);
 });
 it('builds an offline transport-only profile with separate public pins and no credentials in rootfs',()=>{
  const out=mkdtempSync(join(tmpdir(),'q2b-auth-'));
@@ -46,13 +46,15 @@ it('binds the native evidence to the actual immutable source receipt and indepen
 });
 it.each(['manager','controller','manifest'])('refuses the wrong independent %s pin',kind=>{
  const record=JSON.parse(readFileSync(recordPath,'utf8')),pins=JSON.parse(readFileSync(pinPath,'utf8'));
- pins[kind==='manifest'?'manifestDigest':kind+'KeyDigest']='0'.repeat(64);expect(()=>verifyRecord(record,pins)).toThrow();
+ pins[kind==='manifest'?'manifestDigest':kind+'KeyDigest']='0'.repeat(64);
+ expect(()=>verifyRecord(record,pins)).toThrow(kind==='manifest'?/^q2b_transport_independent_manifest_pin$/:/^q2b_transport_independent_key_pin$/);
 });
 it.each(['controller','manager'])('rejects a corrupted %s signature',role=>{
  const record=JSON.parse(readFileSync(recordPath,'utf8'));
  if(role==='controller'){const value=decoded(record.transportEvidence);value.signature=Buffer.alloc(64).toString('base64');record.transportEvidence=encoded(value);}
  else{const value=decoded(record.launches[0].launch);value.signature=Buffer.alloc(64).toString('base64');record.launches[0].launch=encoded(value);}
- expect(()=>verifyRecord(record)).toThrow();
+ // An unsigned edit of the manager launch no longer matches the controller-signed boot copy.
+ expect(()=>verifyRecord(record)).toThrow(role==='controller'?/^q2b_transport_signature$/:/^q2b_transport_boot_binding$/);
 });
 
 function resigned(fault:string){
@@ -87,6 +89,7 @@ function resigned(fault:string){
   case 'source-closure':body.sources[0]=body.sources[1];break;
   case 'adoption':o.backendEligible=true;break;
   case 'skipped-read':o.originalReadsSkipped=1;break;
+  case 'manager-signature':{const value=decoded(record.launches[0].launch);value.signature=Buffer.alloc(64).toString('base64');record.launches[0].launch=encoded(value);o.boots[0].launch=record.launches[0].launch;break;}
  }
  const keys=generateKeyPairSync('ed25519'),publicDer=keys.publicKey.export({format:'der',type:'spki'});
  record.controllerPublicKeyDer=publicDer.toString('base64');pins.controllerKeyDigest=sha(publicDer);
@@ -101,9 +104,15 @@ function resigned(fault:string){
  if(fault==='same-key'){record.managerPublicKeyDer=record.controllerPublicKeyDer;pins.managerKeyDigest=pins.controllerKeyDigest;}
  return {record,pins};
 }
-it.each(['bootstrap-manifest','bootstrap-launch','bootstrap-cookie','saved-uid','capabilities','extra-fd','bootstrap-writable','exec-missing','exec-digest','argv',
- 'activation-names','synthetic-mode','operation-count','missing-case','duplicate-case','server-proof-sent','timeout-as-refusal','unauthenticated-negative',
- 'missing-rejection','provider-credential','custodian-as-provider','forward-initial-gid','same-uid-control','drain-not-empty','holder-wrong-gid',
- 'missing-client-reference','source-closure','adoption','skipped-read','same-key'])('rejects %s after valid controller re-signing and coherent observation updates',fault=>{
- const {record,pins}=resigned(fault);expect(()=>verifyRecord(record,pins)).toThrow();
+it.each([['bootstrap-manifest','q2b_bootstrap_binding'],['bootstrap-launch','q2b_bootstrap_binding'],['bootstrap-cookie','q2b_bootstrap_binding'],
+ ['saved-uid','q2b_principal_invalid'],['capabilities','q2b_principal_invalid'],['extra-fd','q2b_schema_invalid'],['bootstrap-writable','q2b_fd_invalid'],
+ ['exec-missing','q2b_transport_schema'],['exec-digest','q2b_event_invalid'],['argv','q2b_execution_invalid'],['activation-names','q2b_execution_invalid'],
+ ['synthetic-mode','q2b_schema_invalid'],['operation-count','q2b_transport_case_expectation'],['missing-case','q2b_transport_schema'],
+ ['duplicate-case','q2b_transport_case_closure'],['server-proof-sent','q2b_transport_proof_boundary'],['timeout-as-refusal','q2b_transport_server_proof'],
+ ['unauthenticated-negative','q2b_transport_incomplete_case'],['missing-rejection','q2b_transport_rejection_not_exercised'],
+ ['provider-credential','q2b_transport_provider_credential'],['custodian-as-provider','q2b_transport_provider_sender'],['forward-initial-gid','q2b_transport_fd_forward'],
+ ['same-uid-control','q2b_transport_case_expectation'],['drain-not-empty','q2b_transport_schema'],['holder-wrong-gid','q2b_transport_fd_drain'],
+ ['missing-client-reference','q2b_transport_schema'],['source-closure','q2b_transport_source_closure'],['adoption','q2b_transport_schema'],
+ ['skipped-read','q2b_transport_schema'],['same-key','q2b_transport_independent_key_pin'],['manager-signature','q2b_signature_invalid']])('rejects %s after valid controller re-signing and coherent observation updates as %s',(fault,reason)=>{
+ const {record,pins}=resigned(fault);expect(()=>verifyRecord(record,pins)).toThrow(new RegExp('^'+reason+'$'));
 });
