@@ -2870,6 +2870,13 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - rootがA1 producerと同じ原点のauthority clockを登録するlocal profileを追加。期限・原点不明・巻戻しを拒否し、fresh pinでauthority lifetimeを延長しない。別host／時計条件未確認は未対応。
 - registryへ2段階handoffとbarrier順序を接続。completingの途中停止をpendingとして保持し、再起動・TTLで決定を捏造しない。
 - 新規受付・実session／保留RPCを閉じるruntime drain、gate別のregistry照合による不明予約解決、reader／writerの同boot再使用拒否を追加。旧注入証拠とruntime証拠を区別する。
-- 5 ownerのlocal process接続と、実SIGKILL後の不明予約復旧を検証。別UID／kernel FD隔離・独立rollback・本番採用は未成立、originalReadsSkipped=0。
+- 5 ownerのlocal process接続と、実SIGKILL後に予約を不明として復元することを検証（settle以降は未実行）。別UID／kernel FD隔離・独立rollback・本番採用は未成立、originalReadsSkipped=0。
 - 検証件数と実行範囲は`docs/validation/gradle-independent-currentness-c3b4-2026-11-04.json`へ記録する。
 - 次はC3b-5：C2／authenticated outcome／RecordUse／consumer ACK・結果転送・全工程予算・全service復旧／shutdown。C3c／C3d／C4、Q3b／Q4b、GC／compaction・性能検証も残る。
+
+6f6602bレビュー修正（§9.98.6）:
+
+- 全予約の決着後は新bootのbrokerが受付を再開する。旧gate・旧予約の再送は拒否する。
+- 旧providerのseal、拒否されたsettle、`QueryOperation`のpending、既存barrier中の失効、revoking中の保存済みgate、`ServiceDrain`のresource不足を修正した。
+- authority processテストをvitestの実時間projectへ移した。
+- 実測上限: prepareは1 bootあたり14回、handoffはbarrierを挟まず8回。GC／compactionなしでは、再開は1周1予約で約10周までである（計算値）。C3b-5の前に優先度を判断する。

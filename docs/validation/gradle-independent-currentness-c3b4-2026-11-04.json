@@ -51,7 +51,7 @@
     "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
     "src/test/fixtures/gradleOwnedSourceFixture.ts": "e6d2b1dff6c2cc412d8b8f9342934e392acaade9f06089d4365259424776ff9b",
     "src/test/utils/gradleOwnedAuthorityClock.test.ts": "0cf2d40d6ee0fff6db1935ce123649483d84ce2a314813288a3f838dc150f085",
-    "src/test/utils/gradleOwnedAuthorityOwner.test.ts": "a70fb800a886548fbf919882707c0296e4e547e7ee0253525862d66aa5550e74",
+    "src/test/utils/gradleOwnedAuthorityOwner.test.ts": "6ad8e84af5e9b5711cc06d110f3bd095bc6dbbe7c601afca23dd7276e53f5453",
     "src/test/utils/gradleOwnedAuthorityProcess.test.ts": "13e96edfe48d80c294f46287039751c30fbbe28260fb233eb1ace088c0f2107e",
     "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
     "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
@@ -64,8 +64,8 @@
     "src/utils/gradleOrigins.ts": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884",
     "src/utils/gradleOwnedAnchorOwner.ts": "619224499224ac02e98b52c9f97ad07c467a9ce332d65248c08867c4a5207dbe",
     "src/utils/gradleOwnedAuthorityClock.ts": "71f593e38f88fc1f1dcd2c049202c25a969d3ee60350104ee9f5a5d9fff53994",
-    "src/utils/gradleOwnedAuthorityOwner.ts": "28c42324f184a3ac5dee851b7b03e03613dd876c6bf684010affd2a79c5bb92f",
-    "src/utils/gradleOwnedAuthorityOwnerClient.ts": "1fe54f60860057e78445507025f36459f6e4142febc006db4da96748a780a7ff",
+    "src/utils/gradleOwnedAuthorityOwner.ts": "827b6e6d1482678e4e26547435c711c6015bbe4b12cba66776d396be3e8393ac",
+    "src/utils/gradleOwnedAuthorityOwnerClient.ts": "0c98b07e64f81dc5c96ffffa59cbfdda33910969474652c963bc2553357b6e71",
     "src/utils/gradleOwnedAuthorityOwnerSchema.ts": "7ec7f48b4641d0a60fa0ea0b209c245fede748c1932c5de4a2a79d04dc1459a4",
     "src/utils/gradleOwnedAuthoritySchema.ts": "893449dd0f388cdc0434de47624f269aa12c678df67e63d1bb195fb18dbe52e2",
     "src/utils/gradleOwnedAuthoritySnapshot.ts": "694e88c771dff66e88b151e098172ffc0a04610bfcb62c56b79ef5f4b52c754e",
@@ -78,15 +78,15 @@
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
     "src/utils/gradleOwnedManifest.ts": "3886c2ba26e50cb888fd8b5e7513c1ac1e0e152e0b29111de4224ebd07846e9b",
     "src/utils/gradleOwnedPolicy.ts": "2ace3536b349b4b2368c5a01bb1979864bd7377aa218134f4f197b6259892bf2",
-    "src/utils/gradleOwnedRegistryOwner.ts": "84b39c1001af89796414b4a52b89fbc139e6cc1a1a9dd573db4795e8872d51be",
+    "src/utils/gradleOwnedRegistryOwner.ts": "b98358f1a3489741492f0effd737e423a0afb8242e845d6d3dc1d90c25c59264",
     "src/utils/gradleOwnedRegistrySchema.ts": "bd48efa5b8ec73dc86670946dc85a01e273eb3ee36958fa28e16ddaa0b1eba6b",
     "src/utils/gradleOwnedRoleSigner.ts": "ab0fd16da7a2f8ebb88465fefa81b6423d59f23fa023cebd39c59f9acf8ecc29",
     "src/utils/gradleOwnedSchema.ts": "44fa3f141b1931e3043bd4e876f93b46132f54e1c36aaf7f6d3c43f1c6ea734c",
-    "src/utils/gradleOwnedServiceDrain.ts": "d2319589dd8fcb5339ee67e8936bb8de636d5b347c8674b3346f460a3024b849",
+    "src/utils/gradleOwnedServiceDrain.ts": "c889d4b2590841162b223194c568e4d1c76338e6315489337da8f2f5a45bdc7c",
     "src/utils/gradleOwnedServiceOwners.ts": "4635c8b4f5f9e9ce3848f7f725ffcfa3106769fee8cbfa4112d50e6bcd3f24ff",
     "src/utils/gradleOwnedServiceSession.ts": "033426d57b207cf5f5cc1a183509bd77701a7b92fa5ae78a690d2124fc759115",
     "src/utils/gradleOwnedServiceStages.ts": "a8c1c61497b14cace51f60835df3b2866028f6c07a0ab432983944ae9a71a308",
-    "src/utils/gradleOwnedSessionRuntime.ts": "e39b6c82c4420831620c7f3a8b5dbc6f168480aa3a81834bac7642e75869e44a",
+    "src/utils/gradleOwnedSessionRuntime.ts": "50b12aa979e09c1965df082c74997e7649530cf25538437b79d9adaa5b1c45af",
     "src/utils/gradleOwnedSourceClient.ts": "8e56051a31fb3adc2280ff296f99ead37a7f11d321c49c3cc563c9da7f653948",
     "src/utils/gradleOwnedSourceOwner.ts": "c736ebb8810d29defb4d99ae3bf908d5b851a37e0d68677deb5623640fb862f0",
     "src/utils/gradleOwnedSourceSchema.ts": "3f9af08d0733fd1a910e01a34029555cba32c919fdde36bb809b02be17416083",
@@ -103,7 +103,7 @@
     "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054",
     "tsconfig.build.json": "49e7f5e2be44cc034bf5ef401064bf3b1588070e80aacfe1e1c8dde541c3117f",
     "tsconfig.json": "7375ac5d334f50eed3d766799fd016e068f1998639c7b02ba201db280a1583c3",
-    "vitest.config.ts": "72325956d28201bd648231e56ac56121dfcdf14e4925d85841a74e1cd4102523"
+    "vitest.config.ts": "67b31b70877a3a3feb46f750eb0e5919c8def493edf7e0d938bc7dc8dea96489"
   },
   "nativeIsolationVerified": false,
   "independentRegistryVerified": false,
@@ -190,7 +190,7 @@
       "durationSeconds": 483.85,
       "failure": "C2 validation source fingerprints had not yet been updated for the shared verifier raw timing projection and optional fixture clock; C2 scenario unchanged"
     },
-    "authorityOwnerUnitTests": 33,
+    "authorityOwnerUnitTests": 47,
     "authorityClockTests": 4,
     "authorityProcessTests": 3,
     "productionFixtureImports": false,
@@ -206,7 +206,128 @@
     "allTestsPassedAtLeastOnce": 5384,
     "singleFinalFullSuiteGreen": false,
     "preClockAuthorityUnitTestsPassed": 28,
-    "preClockAuthorityUnitDurationSeconds": 84.59
+    "preClockAuthorityUnitDurationSeconds": 84.59,
+    "reviewFix": {
+      "commit": "6f6602b",
+      "fixes": [
+        "settled reservations no longer close a new boot; settled gates and old-boot retries stay refused",
+        "broker verifies a selected seal from an earlier provider boot as historical",
+        "settlement refused before a durable barrier restores admission",
+        "QueryOperation reports a completing handoff as pending",
+        "revocation adopts an existing barrier",
+        "readGate refuses a saved gate once its scope is revoking",
+        "ServiceDrain requires the complete local session inventory before closing and before signing",
+        "authority process suite moved to the real-time vitest project"
+      ],
+      "mutationControls": [
+        {
+          "removed": "settled-aware restart",
+          "selectedTest": "reopens only for new work",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "recovered gate not republished",
+          "selectedTest": "reopens only for new work",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "old-boot reservation retry guard",
+          "selectedTest": "refuses a retry of a settled",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "historical seal verification",
+          "selectedTest": "serves again after a redeployed",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "settle refusal restores admission",
+          "selectedTest": "keeps serving after settlement",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "pending query status",
+          "selectedTest": "reports a completing handoff",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "pending query mode",
+          "selectedTest": "reports a completing handoff",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "existing barrier accepted",
+          "selectedTest": "completes revocation against",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "readGate revoking closure",
+          "selectedTest": "closes a saved gate to the registry",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "live client inventory",
+          "selectedTest": "refuses a drain statement",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "live server inventory",
+          "selectedTest": "refuses a drain statement",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "resource ownership check",
+          "selectedTest": "refuses a drain resource",
+          "expectedFailureObserved": true,
+          "restored": true
+        },
+        {
+          "removed": "drain inventory call",
+          "selectedTest": "refuses a drain statement",
+          "expectedFailureObserved": true,
+          "restored": true
+        }
+      ],
+      "measuredLimits": {
+        "preparesPerBoot": {
+          "bundle56KB": 14,
+          "bundle76KB": 11,
+          "stop": "capacity_exhausted",
+          "businessRequestsPerPrepareMinimum": 18
+        },
+        "handoffsWithoutBarrier": 8,
+        "processPrepareMilliseconds": {
+          "bundle117KB": 1792
+        },
+        "bundle180KB": "rejected after transfer; core about 94 KB exceeds the 64 KiB result limit",
+        "restartCyclesWithOneReservationCalculated": 10,
+        "scope": "this fixture on one machine; not a deployment performance guarantee"
+      },
+      "fullSuite": {
+        "command": "npx vitest run --maxWorkers=2",
+        "passedFiles": 137,
+        "failedFiles": 0,
+        "skippedFiles": 24,
+        "passedTests": 5398,
+        "failedTests": 0,
+        "skippedTests": 1418,
+        "durationSeconds": 414.44,
+        "runsAfterFix": 1,
+        "typecheck": "passed",
+        "build": "passed"
+      }
+    }
   },
   "limitations": [
     "same-UID cooperative local processes; no kernel FD isolation or independent rollback domain proof",
@@ -214,7 +335,11 @@
     "no RecordUse, delivery bytes, consumer ACK, automatic whole-service restart/resume or default MCP route",
     "bounded 64 authority stages; ordinary reservation budget 40; no GC or compaction",
     "five-second leases unchanged; maximum source size throughput not established",
-    "authority clock is independently registered by the trusted root; same-host monotonic origin only, no OS proof of arbitrary clock-domain correspondence"
+    "authority clock is independently registered by the trusted root; same-host monotonic origin only, no OS proof of arbitrary clock-domain correspondence",
+    "no GC: about 14 prepares per broker boot, 8 handoffs without a barrier, about 10 resume cycles with one reservation each (calculated); fixture measurements only",
+    "SIGKILL process evidence stops at restoring the reservation as unknown; settle and barrier completion after that restart require a deployment update and were not run",
+    "revocation before a session's first reservation is refused and does not close that session",
+    "ServiceDrain inventory covers sessions registered in this process only"
   ],
   "authorityClockTrust": {
     "domain": "same-host-monotonic-v1",

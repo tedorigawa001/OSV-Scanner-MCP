@@ -6459,7 +6459,7 @@ brokerは新規予約・prepared再試行・gate公開read・成功reply直前�
 
 authority journalはresult-reserved→result-preparedを別stageで保存し、後段は前段receiptへ結ぶ。inputと結果bytesもown storeへ保存する。gateの保存前、元pinの期限／資格の最終確認前に成功しない。同業務K／Dは保存済みgateへ収束し、stageを追加しない。起動bootも保存し、使用済みbootを再openしない。通常予約は40 stage手前で停止し、総64 stageの残りをboot／失効／不明予約解決へ残す。GC／compactionは未実装である。
 
-RevokeAuthorityは先にauthority-revokingを保存して対象scopeの新gateを閉じる。その後、同lineageのregistry BeginBarrierを要求する。外部handoffの失効確定点はこのbarrierのdurable commitであり、authority側の受付時刻ではない。元要求・結果が不明ならrevokingを残す。再送では独立のaux.ReadAuthorityStateを使い、既に確定した新しいbarrierと照合してからauthority-revokedを保存する。pin／fenceを延長しない。
+RevokeAuthorityは先にauthority-revokingを保存して対象scopeの新gateを閉じる。その後、同lineageのregistry BeginBarrierを要求する。外部handoffの失効確定点はこのbarrierのdurable commitであり、authority側の受付時刻ではない。ただしbrokerはrevoking保存後、対象scopeの保存済みgateも公開しない（§9.98.6）。元要求・結果が不明ならrevokingを残す。再送では独立のaux.ReadAuthorityStateを使い、既に確定した新しいbarrierと照合してからauthority-revokedを保存する。pin／fenceを延長しない。
 
 registryにPrepareHandoffを接続した。authorityの署名gateを公開ref portで取得し、own pin owner・broker boot・同selected binding／witness／use／result・登録operation bindingを独立検査する。他rootを開かない。handoff-completingのR／Anchor採用→handoff-decision-recordedの別R／Anchor採用とし、各stageに異なるstate imageを保存する。初段後に期限・資格が失われた場合はcompletingを残し、再送もpendingを成功へ昇格させない。再起動で不足する決定stageを自動補完しない。
 
@@ -6477,10 +6477,34 @@ ServiceDrainはrootが固定登録したownerと実際のincoming SessionServer�
 
 回帰は、broker full source／G0/G2、clockの登録／原点不明／future／巻戻し、fresh pinでもauthority期限後は拒否、authority期限だけがhandoff stage間で到達する場合、最終結果bytes、scope／consumer差替え、署名済みgateのreader／pin／witness／result／use／operation binding交換、非read-only／path／WeakMap入力拒否、準備応答紛失、失効前後の決定順序、barrier応答紛失、各保存stage後の期限／停止、旧terminal残存、再起動後の不明予約・旧gate拒否、runtime drain不足、保留await再開後の原本read 0を対象にする。
 
-local process harnessはregistry／Anchor／provider／issuer／authorityの5 childを起動し、active ownerの秘密署名鍵を親へ渡さない。各childは自身のrequest／reply鍵2個とown journal鍵だけを持つ。正常のG0/G2→handoff→revoke→5 participant drainに加え、authority予約の実publication直後をpauseしてSIGKILLし、新bootの復旧でunresolved=1／prepared=0・live gate復元なしを確認する。source MAC materialとサービス認証鍵は別である。
+local process harnessはregistry／Anchor／provider／issuer／authorityの5 childを起動し、active ownerの秘密署名鍵を親へ渡さない。各childは自身のrequest／reply鍵2個とown journal鍵だけを持つ。正常のG0/G2→handoff→revoke→5 participant drainに加え、authority予約の実publication直後をpauseしてSIGKILLし、新bootの復旧でunresolved=1／prepared=0・live gate復元なしを確認する。この実証は不明予約として復元するところまでで、SIGKILL後のsettleやFinishBarrierは実行していない。registry processは旧bootのcredentialを持つため、broker単独の再起動後にsettleするには配備更新が必要である。source MAC materialとサービス認証鍵は別である。
 
 検証記録は`docs/validation/gradle-independent-currentness-c3b4-2026-11-04.json`。同UID／協調POSIXのlocal-process実証であり、別UIDのnative隔離・独立rollback domain・実VM／kernel資格・固定launch／FD回収は未成立。全採用flag false・originalReadsSkipped=0を維持する。
 
 残件はC3b-5のC2経路／authenticated outcome・RecordUse／結果転送／consumer ACK・全工程予算・配備更新を伴う再開／shutdown・全service復旧報告。その後C3c／C3d／C4の固定配備・native故障・採用審査、Q3b／Q4b、GC／compaction・大容量入力の性能検証へ進む。今回のローカル正常系を、既存KGPの透過対応・declared_inの本番採用・実読取省略へ昇格させない。
 
 C3b-4最終検証：authority owner 33件・clock 4件・process suite 3件を含む全体実行は5,383通過／1失敗／1,418 skip（483.85秒）。唯一の失敗は、共有verifierの生時刻projectionとfixture clock引数を変更したC2記録の旧source hashだった。元hashを保存して互換記録を更新し、C2の32件を再実行して全通過した（28.10秒）。全5,384件をそれぞれ通過確認したが、最終全体実行を単一batchのgreenとは扱わない。型検査・build・diff整形検査、74 source fingerprintsと全互換receiptの一致を確認。検査除去対照5件で期待した失敗を確認し、元codeへ復元した。
+
+#### 9.98.6 6f6602bレビュー修正
+
+実際の再開経路とbarrier周辺を通して次を修正した。
+
+- **再開後の停止。** 予約の履歴があるだけで`#restarted`が立ち、全予約の決着後も新bootのbrokerが`authority_revoking`で拒否し続けていた。未解決の予約が残る場合だけ閉じる。決着済みでも旧gateは復元せず（`readGate`は`gate_invalid`、`prepared`に数えない）、旧bootの予約の再送は`authority_revoking`で拒否する。
+- **旧providerのseal。** providerの再起動後、選択中snapshotのsealを現bootとして検証し、`peer_mismatch`で読めなかった。sealはregistryが選択したsnapshot refへbytesで束縛されるので、履歴検証へ変更した。
+- **拒否されたsettle。** barrierの確認前の拒否や照会失敗でも受付が閉じたままになっていた。確認できるまでの間だけ閉じ、拒否時は元の状態へ戻す。durableなbarrierを確認した後は閉じたままにする。
+- **pendingの照会。** `QueryOperation`が`completing`のhandoffを`committed-historical`と返していた。`status`と応答`mode`を`pending`にする。barrier完了後も元ledgerの結果を保持するため、再送と同じくpendingのままである。
+- **既存barrier中の失効。** 進行中のbarrierがあると`BeginBarrier`を再度要求し、`revoked`へ進めなかった。command以降の世代の既存barrierを採用する。barrier中はhandoffを拒否するので、失効の効果は満たされる。
+- **revoking中の保存済みgate。** barrierが未確定の間は保存済みgateをregistryへ渡し、決定まで進められた。`readGate`も`authority_revoking`で閉じる。registryの決定順序の規則は変更しない。
+- **不足したresource一覧。** `ServiceDrain`は一部のsessionだけでも`activeChannels: 0`へ署名できた。同じowner bootのlive client／serverがすべて一覧にあることを、閉じる前と署名の直前に確認し、他ownerのresourceも拒否する。同processの登録だけを見るもので、kernelや別processのFDは証明しない。
+- **実時間テスト。** `gradleOwnedAuthorityProcess.test.ts`もvitestの実時間projectで単独実行する。
+
+**仕様として残す点。** 初回予約の前のRevokeAuthorityは`authority_session_missing`で拒否し、そのsessionを閉じない。brokerはsessionの一覧を持たないためである。operatorにはエラーが返る。
+
+**実測した上限（GC／compaction未実装）。** いずれも本fixtureの測定で、配備の性能保証ではない。
+
+- brokerのprepareは最小の約56 KB sourceで1 bootあたり14回、76 KBで11回。1回に最小でも18 business requestを使い、broker→providerのboot予算で`capacity_exhausted`となる。ownerはblockedにならず、14件すべてをsettleできる。
+- registryのhandoffはbarrierを挟まず8回で`capacity_exhausted`となった。主因は状態レコードの大きさ（8回後の最終レコードはbase64で約42.5 KB）と考える。状態は縮まないため、barrier後も回復しない見込みである。barrierは容量到達後も受理する。
+- 1予約あたり予約2 stage・boot 1 stage・解決1 stageを使う。修正後も通常予約の40 stage上限へ達するため、再開できるのは1周1予約で約10周までである（計算値）。
+- local processでのprepareは117 KB sourceで約1.8秒。180 KBはcoreが約94 KBあり、64 KiBの結果上限を超えて転送後に拒否された。最大サイズと負荷時のthroughputは未確認である。
+
+レビュー修正の最終検証: `npx vitest run --maxWorkers=2`で137 files／5,398 tests成功、24 files／1,418 tests skipped（414.44秒、実行直後の負荷平均は約4.5）。型検査・build成功。対照13件で期待した失敗を確認し、元のコードへ戻した。全体の単一実行での成功は修正後の1回で、安定性は回数を重ねて確認していない。新規の別UID隔離・本番採用は0。
