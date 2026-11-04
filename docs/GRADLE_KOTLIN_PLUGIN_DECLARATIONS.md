@@ -6277,7 +6277,7 @@ RoleSignerはown credentialのEd25519鍵をclosure内に保持し、OwnerPlanが
 
 StageStoreはown store／checkpoint rootのdevice・inode、owner／storage epoch・key IDを固定する。独立入力のpreflightを鍵・業務rootのopen前に行う。履歴全体のjournal認証、checkpoint同期、完全inventory、stage順序・expected head・直前receipt・image digestを検査し、各StageReceiptを実commit headから再構成する。current receiptをcurrent imageへ埋め戻さない。
 
-同transitionのexact再送は元receiptだけを返し、後続head前進後も旧imageを書き戻さない。異内容の同transitionはconflict。未保存stageだけが現在headから構築できる。入力の形・head・stage拒否をwrite前に行い、write開始後の失敗・同期／readback失敗は結果不明としてfail-stopする。clientの診断cacheをdurable ledgerへ流用せず、完了済み業務結果は期限で削除しない。初期上限は64 stageで、長期運用のGC／compactionは未実装である。
+同transitionのexact再送は元receiptだけを返し、後続head前進後も旧imageを書き戻さない。異内容の同transitionはconflict。未保存stageだけが現在headから構築できる。入力の形・head・stage拒否をwrite前に行い、write開始後の失敗・同期／readback失敗は結果不明としてfail-stopする。clientの診断cacheをdurable ledgerへ流用せず、完了済み業務結果は期限で削除しない。初期上限は64 stageで（通常の業務が使える範囲は§9.96.8）、長期運用のGC／compactionは未実装である。
 
 registryの各Rにはlineage・owner／storage epoch・revision・previous・attempt ID・状態・業務K／D・元result／applied revisionを署名する。Rと業務ledgerを同じown-store stageへ保存してからexact Anchor CASする。ActivateEnrollment／PublishSelectionでは、selection-recorded→Anchor採用→selection-adoptedの2stageを使う。以後の業務要求は保存履歴とAnchorを再検証し、K／Dを先に引く。元resultの解決に現在のbindingからStageCommitRequestを組み立て直さない。
 
@@ -6320,3 +6320,25 @@ local-process suiteではregistryとAnchorの2 childが各自のrequest／reply�
 次はC3b-3のProviderOwner／IssuerOwner・candidate seal／prepare・full inventory／chunk assembler・exact selected read・採用後mirrorを接続する。C3b-4のauthority・実行予約／失効・実participant drain、C3b-5のC2 client／authenticated outcomeの対応付け／RecordUse／consumer ACK・全工程予算／shutdown、C3c固定配備・C3d native故障検証・C4採用審査、Q3b／Q4bと長期運用GC／compactionは残る。
 
 C3b-2の最終検証: 新規3 files／51 tests（StageStore 19件・RegistryOwner 28件・別process suite 4件）。全体は`npm test -- --maxWorkers=1`で132 files／5,277 tests成功、24 files／1,418 tests skipped（359.64秒）。型検査・build・diff整形検査成功。3種類の検査除去対照で計4件が期待どおり失敗し、検査を復元して全体を再確認した。56 source閉包とC3b-0／1の互換receiptを照合し、production distにtest fixture／全actor factory／鍵生成がないことを確認。全採用flag false、originalReadsSkipped=0。
+
+#### 9.96.8 acacac7レビュー修正：容量到達・呼出し元の失敗・同時要求
+
+**registryの停止。** 修正前は、Begin／Activateの後にpinの取得・解放を3往復すると、4回目の取得でregistryが止まり（Anchor revision 8）、再起動も失敗した。原因は`prepareOwnerSignature`が本文を16 KiBの既定上限で読むことで、recordが約12 KiBを超えると`anchor.cas`を署名できない。この拒否は自rootへの保存の後に起きるためregistryがblockedになり、再起動の`#reconcile`が同じ上限に当たった。上限を要求の実サイズ（`CURRENT_LIMITS.record`）へ揃え、stage数と署名後の`anchor.cas`の正確な大きさ（`anchorCasBytes`）を**保存の前に**確認する。超える場合は`capacity_exhausted`で拒否し、registryは止めない。
+
+**容量の予約。** 通常の業務は、残りが16 stageまたは20,000 record bytesになると停止する。これはbarrier管理APIと再起動の失効に残す枠で、再起動1回（失効1、participant 5、finish、resume）の8 stageを2回分確保する。枠も尽きると再起動は保存前に`capacity_exhausted`で拒否され、保存内容は変わらないが、GC／compactionが未実装なのでその系統は再開できない。回帰では`limits`で上限を狭めて、この全経路を検査する。
+
+**処理時間。** 修正前は1回の書込みがrevision 10付近で5秒の期限を超えた。各stageのimageが過去のrecordをすべて持ち、履歴の検証が1行ごとにledger全体を調べ、さらに要求ごとに全ファイルを読み直してfsyncしていたためである。imageをそのstageのrecordだけにし（registry-image／anchor-image v2、連鎖は検証済み履歴から再構成）、検証を線形にした。全ファイルの再同期は起動時の`recover`だけで行う。要求ごとの確認は認証付き履歴の再検証と未解決tailの拒否で、blobの改変やpendingファイルは次の要求で検出する。`readCommitted(null)`が要求ごとの経路である。
+
+実際の上限での1回の計測（回帰には含まない）: 新規lineageから20往復で`capacity_exhausted`（revision 42）、状態はoperational、書込みの中央値605 ms・最大2,089 ms・5秒超0件。その後の再起動サイクル2回もservingへ戻った（約20秒・35秒）。これはこのmacOS環境の1回の値で、時間の保証ではない。C3dの実測が別に必要である。
+
+**呼出し元の失敗。** 修正前は保存後も呼出し元の期限・失効・sessionを確認していたため、1つの要求の期限切れで全peerが`recovery_required`になった（失効と切断はコード上同じ経路）。保存後はowner自身の状態だけを確認してAnchor採用まで完了させる。呼出し元には応答段階で失敗を返し、結果はledgerに残る。実際の保存・Anchor障害は従来どおりfail-stopである。
+
+**CheckLiveBinding。** 修正前はこのAPIだけ`#reply`を`await`せず、`finally`が受付handleを消した後に続行していたため、対象によらず成功する経路がなかった。provision対象はserving確認でも拒否されていた。`await`を加え、provisionはprovisioning中だけ確認できるようにした。成功経路の回帰を追加した。
+
+**同時要求。** 修正前は処理中の別peerの要求を`busy`で拒否していた。到着順の直列処理にし、待機は64件までとする。順番が来た時点で受付・期限を再検査する。同じK／Dの再試行は順番が来るとledgerの元結果へ収束する（§9.93.12）。
+
+**その他。** 送信していないローカル拒否は業務要求を`unknown`にしない。releaseしたpinと失効済みpinはstateから外し、recordの増加を抑える（再送はledgerの結果で解決する）。`aux.AbandonEnrollment`は、`QueryOperation`の`originalAPI`がC0のschemaに閉じているため照会できない。C0を変えず、結果不明のときは`aux.ReadContext`のphaseで確認する。
+
+回帰18件を追加した（RegistryOwner計46件）。修正前のsourceでは14件が失敗し、残る4件は修正前後で変わらない対照である。
+
+acacac7レビュー修正の最終検証: 全体は`npx vitest run --maxWorkers=2`で132 files／5,295 tests成功、24 files／1,418 tests skipped。型検査・build成功。新規の別UID隔離・本番採用は0。

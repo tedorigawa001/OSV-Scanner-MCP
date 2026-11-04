@@ -1,7 +1,7 @@
 /** C3b-0 static owner assembly. No key loading, filesystem access, dispatch or admission. */
 import {createPublicKey} from 'node:crypto';
 import {z} from 'zod';
-import {cid,chash,cn,currentRoles,currentAPIs,apiPolicy,parsed,need,decodeCurrent} from './gradleOwnedCurrentSchema.js';
+import {cid,chash,cn,currentRoles,currentAPIs,apiPolicy,parsed,need,decodeCurrent,CURRENT_LIMITS} from './gradleOwnedCurrentSchema.js';
 import {auxiliaryAPIs,auxiliaryPolicy,currentLineageSchema} from './gradleOwnedCurrentAuxiliary.js';
 import {canonicalOwnedJson,ownedDigest} from './gradleOwnedJson.js';
 
@@ -70,7 +70,7 @@ const signIntents=new WeakMap<ScopedSignIntent,{identity:ServiceIdentity;directi
 export function prepareOwnerSignature(plan:OwnerPlan,credentialId:string,value:unknown,body:Buffer){
  const p=plans.get(plan);need(p,'configuration_invalid');const q=parsed(z.object({domain:z.enum(['auth','control','aux','stage','recovery']),direction:z.enum(['request','reply']),api:serviceAPISchema.nullable(),bodyDigest:chash}).strict(),value);
  const c=p.registry.credentials.find(c=>c.identity.credentialId===credentialId);need(c&&[p.config.clientCredentialId,p.config.serverCredentialId].includes(credentialId)&&c.direction===q.direction,'permission_denied');
- const raw:any=decodeCurrent(body);need(ownedDigest(raw)===q.bodyDigest,'binding_mismatch');
+ const raw:any=decodeCurrent(body,CURRENT_LIMITS.record);need(ownedDigest(raw)===q.bodyDigest,'binding_mismatch');
  if(q.domain==='auth'){need(['client-hello','client-proof','server-hello','ready','challenge-request','challenge','channel'].includes(raw.kind)&&raw[q.direction==='request'?'clientCredentialId':'serverCredentialId']===credentialId,'permission_denied');need(q.direction==='request'?['client-hello','client-proof','challenge-request','channel'].includes(raw.kind):['server-hello','ready','challenge-request','challenge','channel'].includes(raw.kind),'permission_denied');need(['channel','challenge-request','challenge'].includes(raw.kind)?raw.api===q.api:q.api===null,'binding_mismatch');}
  else if(q.domain==='stage'){need(q.direction==='reply'&&raw.schema==='osv-mcp.q2.c3b.stage-record.v1'&&raw.ownerId===p.config.ownerId&&raw.storageEpoch===p.config.storageEpoch,'permission_denied');}
  else {need(q.api&&q.api.startsWith(q.domain+'.')&&raw.api===q.api.slice(q.domain.length+1),'permission_denied');}

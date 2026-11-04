@@ -21,22 +21,24 @@ export class StageStore implements OwnedStore {
  }
  get ownerId(){return this.#facts.ownerId;}get storageEpoch(){return this.#facts.storageEpoch;}get roots(){return structuredClone(this.#facts.roots);}get journalKeyId(){return this.#facts.journalKeyId;}get checkpointKeyId(){return this.#facts.checkpointKeyId;}
  assertOpen(){need(!this.#closed,'owner_closed');need(!this.#blocked,'recovery_required');}
- async #history(){
-  this.assertOpen();await this.#disk.revalidate();this.assertOpen();const history=await this.#disk.journal.readHistory();this.assertOpen();
-  const ledger:StageReceipt[]=[],images:unknown[]=[];let head:StageReceipt['appliedHead']|null=null;
+ async #history(resync=false){
+  this.assertOpen();if(resync)await this.#disk.revalidate();else await this.#disk.assertNoPendingTail();this.assertOpen();const history=await this.#disk.journal.readHistory();this.assertOpen();
+  const ledger:StageReceipt[]=[],images:unknown[]=[],byRef=new Map<string,StageReceipt>(),operations=new Map<string,{api:string;requestDigest:string;stages:Set<string>}>();let head:StageReceipt['appliedHead']|null=null;
   for(const row of history){
    need(row.records.length===4,'integrity_invalid');const get=(role:string)=>{const found=row.records.filter(r=>r.role===role);need(found.length===1,'integrity_invalid');return found[0]!.bytes;};
    const manifest=decodeCurrent(get('session-manifest'),MAX),q=parsed(stageCommitSchema,decodeCurrent(get('event-ledger'),MAX));
    need(same(manifest,{schema:'osv-mcp.q2.c3b.store.v1',ownerId:this.ownerId,storageEpoch:this.storageEpoch,roots:this.roots,journalKeyId:this.journalKeyId,checkpointKeyId:this.checkpointKeyId}),'binding_mismatch');
-   const prior=q.previousStageReceipt?ledger.find(r=>same(stageReceiptRef(r),q.previousStageReceipt)):null;
+   const prior=q.previousStageReceipt?byRef.get(canonicalOwnedJson(q.previousStageReceipt))??null:null;
    const record=validateStageCommit(this.#plan,q,head,prior),image=decodeCurrent(get('operation-result'),MAX);
    need(same(image,decodeCurrent(Buffer.from(q.nextImage,'base64'),MAX))&&same(decodeCurrent(get('session-index'),MAX),{transitionKey:q.transitionKey,transitionDigest:q.transitionDigest})&&row.operationId===q.transitionKey&&row.requestDigest===q.transitionDigest,'integrity_invalid');
-   need(resolveExactStage(this.#plan,q,ledger).kind==='assemble','integrity_invalid');head={revision:row.head.revision,sha256:row.head.headDigest};ledger.push(deriveStageReceipt(this.#plan,record,head));images.push(image);
+   // Same checks as resolveExactStage for one new row, kept linear because this replays on every request.
+   const operation=operations.get(q.operationKey)??{api:q.api,requestDigest:q.requestDigest,stages:new Set<string>()};need(operation.api===q.api&&operation.requestDigest===q.requestDigest&&!operation.stages.has(q.stageId),'integrity_invalid');operation.stages.add(q.stageId);operations.set(q.operationKey,operation);
+   head={revision:row.head.revision,sha256:row.head.headDigest};const receipt=deriveStageReceipt(this.#plan,record,head);ledger.push(receipt);byRef.set(canonicalOwnedJson(stageReceiptRef(receipt)),receipt);images.push(image);
   }
   return {ledger,images,head,image:images.at(-1)??null};
  }
  async #run<T>(work:()=>Promise<T>){this.assertOpen();need(!this.#busy,'busy');this.#busy=true;try{return await work();}catch(e){throw e;}finally{this.#busy=false;}}
- recover(){return this.#run(async()=>{try{return await this.#history();}catch(e){this.#blocked=true;throw e;}});}
+ recover(){return this.#run(async()=>{try{return await this.#history(true);}catch(e){this.#blocked=true;throw e;}});}
  readCommitted(ref:unknown){return this.#run(async()=>{try{const h=await this.#history();if(ref===null)return h;const r=h.ledger.find(r=>same(stageReceiptRef(r),ref));need(r,'receipt_invalid');return {receipt:r,image:h.images[h.ledger.indexOf(r)]};}catch(e){if(!(e instanceof Error&&e.message==='current_control_receipt_invalid'))this.#blocked=true;throw e;}});}
  commitStageExact(input:unknown){
   const q=parsed(stageCommitSchema,input);return this.#run(async()=>{

@@ -46,4 +46,8 @@ export class OwnedJournalDisk {
   }
   await this.journal.verifyHead();
  }
+ /** Per-request gate before an authenticated journal read: no unresolved tail. Files were synced when written and at revalidate. */
+ async assertNoPendingTail():Promise<void>{
+  for(const io of [this.#store,this.#checkpoint]){const files=await io.list(4096);journalAssert(files.length<=4096,'budget_exceeded');for(const file of files)journalAssert(!file.name.startsWith('pending-'),'tail_unknown');}
+ }
 }

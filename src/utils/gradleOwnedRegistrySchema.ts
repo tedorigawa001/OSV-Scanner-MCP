@@ -20,7 +20,8 @@ export type RegistryState=z.infer<typeof registryStateSchema>;
 export const registryRecordSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.registry-record.v1'),api:z.string(),lineage:currentLineageSchema,ownerId:cid,storageEpoch:chash,revision:cn.positive().max(256),previous:cref('registry-record').nullable(),attemptId:chash,state:registryStateSchema}).strict();
 export type RegistryRecord=z.infer<typeof registryRecordSchema>;
 export const storedRegistryRecordSchema=z.object({ref:cref('registry-record'),wire:z.string().max(90000)}).strict();
-export const registryImageSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.registry-image.v1'),records:z.array(storedRegistryRecordSchema).max(256),transaction:z.object({api:z.string(),operationKey:chash,requestDigest:chash}).strict()}).strict();
+// One record per stage: the chain is the owner's verified history, so history stays linear instead of repeating every record.
+export const registryImageSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.registry-image.v2'),record:storedRegistryRecordSchema,transaction:z.object({api:z.string(),operationKey:chash,requestDigest:chash}).strict()}).strict();
 export const preparedCheckpointSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.prepared-checkpoint.v1'),api:z.literal('PrepareCheckpoint'),lineage:currentLineageSchema,fence:z.union([cref('provision'),cref('writer-fence')]),mode:z.enum(['genesis','advance']),previous:cref('checkpoint-prepare').nullable(),snapshot:cref('snapshot'),head:selectionSchema.shape.head,inventoryDigest:chash}).strict();
 export const commandSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.registry-command.v1'),api:registryAPISchema,operationId:cid,peer:serviceIdentitySchema,lineage:currentLineageSchema,binding:z.union([currentBindingSchema,currentLineageSchema]),payload:z.unknown(),requestDigest:chash}).strict();
 export type RegistryCommand=z.infer<typeof commandSchema>;
@@ -35,7 +36,11 @@ export const anchorRequestSchema=z.discriminatedUnion('api',[
 ]);
 export type AnchorRequest=z.infer<typeof anchorRequestSchema>;
 export const anchorResultSchema=z.object({api:z.enum(['anchor.read','anchor.cas','anchor.query-operation']),requestDigest:chash,head:anchorHeadSchema,applied:anchorHeadSchema.nullable(),attemptId:chash.nullable()}).strict();
-export const anchorImageSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.anchor-image.v1'),entries:z.array(z.object({expected:anchorHeadSchema,next:anchorHeadSchema,attemptId:chash,record:storedRegistryRecordSchema}).strict()).max(256)}).strict();
+export const anchorEntrySchema=z.object({expected:anchorHeadSchema,next:anchorHeadSchema,attemptId:chash,record:storedRegistryRecordSchema}).strict();
+export type AnchorEntry=z.infer<typeof anchorEntrySchema>;
+export const anchorImageSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.anchor-image.v2'),entry:anchorEntrySchema}).strict();
+/** A two-stage transaction stores its one record in both stages. */
+export function registryRecordsOf(images:readonly unknown[]){const out:z.infer<typeof storedRegistryRecordSchema>[]=[];for(const value of images){const {record}=parsed(registryImageSchema,value);if(out.at(-1)?.ref.id!==record.ref.id)out.push(record);}return out;}
 export function decodeStoredRecord(value:z.infer<typeof storedRegistryRecordSchema>){const bytes=Buffer.from(value.wire,'base64');need(bytes.toString('base64')===value.wire&&bytes.length===value.ref.byteLength&&ownedSha256(bytes)===value.ref.sha256&&value.ref.id===value.ref.sha256,'integrity_invalid');return parsed(ownerEnvelopeSchema,decodeCurrent(bytes,CURRENT_LIMITS.record));}
 export const publicRecordRef=(wire:Buffer)=>({role:'registry-record' as const,id:ownedSha256(wire),sha256:ownedSha256(wire),byteLength:wire.length});
 export const sameRegistryValue=(a:unknown,b:unknown)=>canonicalOwnedJson(a,8*1024*1024)===canonicalOwnedJson(b,8*1024*1024);

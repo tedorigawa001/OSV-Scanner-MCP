@@ -2837,3 +2837,12 @@ e69babbレビュー修正の検証結果: 単体40件・別process 4件、全体
 C3b-2の追加境界検査: ReadContextのfloorをclientで自動観測し、server boot変更後も保持する。original deadline・回復枠・unknown状態をboot quotaへ束縛し、別handleによる再生成を拒否する。検査除去対照はledger優先1件・Anchor応答鮮度1件・業務予算2件で期待どおり失敗し、復元した。
 
 C3b-2の最終検証: 新規3 files／51 tests（StageStore 19件・RegistryOwner 28件・別process suite 4件）。全体は`npm test -- --maxWorkers=1`で132 files／5,277 tests成功、24 files／1,418 tests skipped（359.64秒）。型検査・build・diff整形検査成功。3種類の検査除去対照で計4件が期待どおり失敗し、検査を復元して全体を再確認した。56 source閉包とC3b-0／1の互換receiptを照合し、production distにtest fixture／全actor factory／鍵生成がないことを確認。全採用flag false、originalReadsSkipped=0。
+
+### 2026-11-04: acacac7レビュー修正・registryの容量到達と呼出し元の失敗
+
+- pin取得・解放の3往復でregistryが止まり再起動もできなかった問題を修正した。`anchor.cas`の署名上限を揃え、stage数と要求の大きさを保存前に確認して`capacity_exhausted`で拒否する。通常業務は16 stage／20,000 bytesを再起動とbarrierのために残す（§9.96.8）。
+- imageをstageごとのrecordだけにし、検証を線形にして、全ファイルの再同期を起動時だけにした。実際の上限で20往復、書込み最大約2.1秒（1回の計測）。
+- 保存後は呼出し元の失敗でregistryを止めない。`CheckLiveBinding`の`await`漏れとprovision対象の拒否を修正した。同時要求を到着順の直列処理にした。
+- GC／compaction未実装のため、容量に達した系統は再開できない。実運用の前に必要。
+
+acacac7レビュー修正の検証結果: RegistryOwner 46件、全体5,295 tests成功（1,418 skipped）。型検査・build成功。
