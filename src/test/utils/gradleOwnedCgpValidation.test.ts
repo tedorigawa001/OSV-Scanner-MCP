@@ -1,0 +1,7 @@
+import {it,expect} from 'vitest';
+import {readFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
+import {validateCgpReport,cgpSourceReceipt} from '../fixtures/gradleOwnedCgpReport.js';
+const recordPath='docs/validation/gradle-c3b-cgp-2026-11-04.json';
+async function load(){const record=JSON.parse(await readFile(recordPath,'utf8')),bytes=await readFile(record.measurements.path);expect(createHash('sha256').update(bytes).digest('hex')).toBe(record.measurements.sha256);return {record,raw:JSON.parse(bytes.toString())};}
+it('reproduces measured counters and the exact code receipt without promoting a page trial to native adoption',async()=>{const {raw,record}=await load();expect(validateCgpReport(raw).go).toBe(false);expect(await cgpSourceReceipt()).toEqual(raw.executionSources);expect(record.decision.cg3Proceed).toBe(false);expect(record.decision.readsPerGenerationTarget).toBe(8);});
+it('rejects rehashed measurement artifacts with altered publication, summaries, budget or adoption claims',async()=>{const {raw}=await load();for(const change of [(r:any)=>{r.samples[0].reason='Error: current_control_grant_revoked';r.samples[0].outcome='deadline-refused';},(r:any)=>{r.backendEligible=true;},(r:any)=>{r.samples[0].publishedThisRead=7;},(r:any)=>{r.samples[0].calls.groups[0].count++;},(r:any)=>{r.budget.projectedMs=0;},(r:any)=>{r.prototypeRuns[0].observations.find((o:any)=>o.mode==='paged').writes.pop();}]){const r=structuredClone(raw);change(r);expect(()=>validateCgpReport(r)).toThrow();}});

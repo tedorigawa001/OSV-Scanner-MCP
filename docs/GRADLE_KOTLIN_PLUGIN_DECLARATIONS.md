@@ -6798,7 +6798,7 @@ Prepared保存前のmissing／digest違い／root置換は改変拒否。Prepare
 
 CGPが次の着手点で、CG0はその後。CGPで5秒に収まる見込みと`readsPerGeneration`を示せなければ、CG3以降へ進まず§9.100の費用設計へ戻す。期限は延長しない。§9.66の既存M0やC3a control schemaは参照できるが、C3b owner state・Anchor移行・import receiptを実装済みとはしない。C3cの固定配備へ進む前にCG1のSGAの配備責任と、CG2以降の容量／性能改善の成立範囲を確認する。SGAのnative backendが未成立でもlocal contract／故障実証は進められるが、本番の切替・削除gateは開かない。
 
-#### 9.100.14 回帰条件（CG01〜CG48、未実装条件）
+#### 9.100.14 回帰条件（CG01〜CG52、未実装条件）
 
 | ID | 条件と必要な観測 |
 | --- | --- |
@@ -6855,4 +6855,122 @@ CGPが次の着手点で、CG0はその後。CGPで5秒に収まる見込みと`
 | CG51 | completed前のsource unlink0、GC証拠なしでのcompleted成立。GC実行中・hold・paused・native GC unsupportedのどの状態でも通常受付が継続し、source容量の課金と未削除が維持される |
 | CG52 | control record式の上限ちょうど（batchが揃う20,480 entries）で開始可、+1 record相当と端数batchで開始前拒否。resume 2回目の余力不足はGCだけ停止し、serving継続・control上限超過0 |
 
-CG01〜CG48は将来の実装検証条件であり、この文書の整形・ID検査や既存テスト通過を条件成立に数えない。初期performance目標は、CGPで`readsPerGeneration`と時間予算表を数値で確定することと、容量不足をpin前に予測すること。値はCGPの実測で決め、CG47はその値で判定する。CG48の最低速度承認は実測後に判定する。
+CG01〜CG52は将来の実装検証条件であり、この文書の整形・ID検査や既存テスト通過を条件成立に数えない。初期performance目標は、CGPで`readsPerGeneration`と時間予算表を数値で確定することと、容量不足をpin前に予測すること。値はCGPの実測で決め、CG47はその値で判定する。CG48の最低速度承認は実測後に判定する。
+
+### 9.101 CGP：5process実時間計測・registry page化の限定試作（2026-11-04）
+
+§9.100.13のCGPを実施した。既存の5owner readと、registry child内の隔離したsnapshot試作を測定する。新SGA／本番v2 format／世代移行／GC／5ownerのpage対応は実装していない。結論は**容量目標を8 read/世代の候補とし、時間面は未達、CG3以降のgateは閉じたまま**である。初回readの単発成功を連続利用成立としない。
+
+#### 9.101.1 再現ハーネスと観測の範囲
+
+- `gradleOwnedCgpProcess.ts`／`cgp_child.mjs`は既存local controller／delivery childを基にしたCGP専用fixture。各childはown鍵とown rootだけを持つ。新fixtureは一時領域へproduction utilitiesと試作codecをcompileし、既存production source／既定経路を変更しない。
+- 3回の独立bootstrapで、同時に5つの実Node child（registry／Anchor／provider／issuer／broker）を起動。sourceは41,460 raw bytes／9 entries、bundleは55,994 bytesの小さい正規authority fixture。最大source・実Gradle／BTA再実行・OSV再照会の測定ではない。
+- 既存ConsumerGraphBridgeで同じreader／sessionの連続readを試す。期限拒否／容量拒否が起きたら新pinで続けずreaderをcloseし、ownerの実inFlight=0まで待つ。readの返却時間と、その後の排出時間を別に記録する。5秒leaseと500msの余裕は変更しない。
+- reader RPC、child RPCのAPI／role／開始・終了、ownerごとのprocess CPU、StageStore／journal／rooted IO、署名検証・hash digestを観測する。RPCとcategoryはnestedなinclusive値であり、合計をread latencyやowner CPUへ置き換えない。owner CPUはresetから排出後の観測までのprocess全体（runtime workerを含む）で、CPU合計がwall timeを超えても直列時間とは解釈しない。
+- Ed25519のraw／instrumented sign・verifyを3 batchずつ各1,000 operationsで対照した。medianはraw 26.15〜26.51ms、instrumented 26.31〜26.71ms。この小さな対照は同期crypto wrapperの費用だけを扱い、async IO observerを含む全計測の無干渉証明ではない。観測費用を差し引いて成功扱いにしない。
+
+実行例（単独で実施し、他の重い検証を同時に走らせない）：
+
+```sh
+bdo proxy env OSV_CGP_NATIVE=1 OSV_CGP_RUNS=3 OSV_CGP_OUTPUT=/tmp/cgp-native.json npx vitest run src/test/utils/gradleOwnedCgpNative.test.ts --maxWorkers=1 --silent=false
+bdo proxy npx vitest run src/test/utils/gradleOwnedCgp.test.ts src/test/utils/gradleOwnedCgpValidation.test.ts --maxWorkers=1
+bdo node scripts/analyze-c3b-cgp.mjs --check
+```
+
+raw artifactとsummaryは`docs/validation/gradle-c3b-cgp-2026-11-04.measurements.json`／`gradle-c3b-cgp-2026-11-04.json`。実行前後の87 sourceの閉包hashが同一であることをnativeハーネスで確認し、検証記録へ保存する。summaryはraw bytesのhash・source receipt・計算scriptへ束縛し、`--check`で再計算できる。過去のpilotと最終sourceの反復を混ぜて成功率を作らない。
+
+#### 9.101.2 実readの内訳
+
+レビュー修正後にnative計測を再実行した。初回3/3成功（3,878.8〜3,942.1ms）、2回目は0/3成功で、いずれも4,500.5〜4,501.3msの明示的なrequest_expiredによる期限拒否だった。その他の拒否は0件、拒否時の公開差分も0。期限拒否／容量拒否が起きたら新pinで続けず、rawにはreadごとの公開差分とbridge内累積数を分けて保存する。旧反復と成功率を合算しない。
+
+成功した1 readでは認証付き業務callが138、raw Anchor callが99（read 94／CAS 5）、reader自身のcallは26だった。各callのowner・phase・inclusive wall／CPU、最大時間はrawの`calls.groups`と`rawSpans`で確認できる。
+
+| reader phase | 成功時の観測範囲（ms） | 時間表に使う最大値 |
+| --- | --- | --- |
+| context | 21〜25 | 25 |
+| pin | 144〜148 | 148 |
+| checkpoint | 197〜208 | 208 |
+| source | 960〜976 | 976 |
+| verify | 6〜8 | 8 |
+| authority | 1,278〜1,287 | 1,287 |
+| delivery-use | 757〜773 | 773 |
+| result | 119〜123 | 123 |
+| ACK | 230〜253 | 253 |
+| finish | 150〜159 | 159 |
+
+phaseは直列なreaderの区間であり、各最大値の合計は3,960ms（単一成功readの最大3,942.1msとは別のallocation）。内部callの時間をこの合計へ再加算しない。失敗時は未完了phaseもあるため、成功例のphase表と混ぜずrawのreader eventへ残す。
+
+| owner | 成功時process CPU範囲（ms） | readCommitted件数／inclusive wall（ms） | commit件数 | disk read bytes | Ed25519 verify件数／inclusive wall（ms） |
+| --- | --- | --- | --- | --- | --- |
+| control-anchor | 2,641〜2,649 | 99／625〜650 | 5 | 9,275,154 | 203／10.5〜10.9 |
+| lineage-registry | 3,132〜3,217 | 94／727〜731 | 5 | 9,956,920 | 880／42.9〜44.9 |
+| provider | 1,330〜1,350 | 39／260〜273 | 1 | 7,010,026 | 787／34.5〜35.3 |
+| checkpoint-issuer | 93〜94 | 1／6〜6 | 1 | 661,276 | 41／1.8〜1.9 |
+| authority-broker | 506〜528 | 5／43〜46 | 3 | 3,537,546 | 234／10.9〜11.0 |
+
+registry／Anchorの履歴照合が多数回発生し、成功後の2回目では、readが完了しない時点でも両roleの読取bytesが約25 MBに増えた。署名検証だけの削減を主要対策と断定できず、stateのparse／canonical化・全履歴再構成・root IOも分解すべきである。今回のwrapper計測はcall単位の費用を示すが、CPU flamegraph等による個々の関数の因果特定まで済ませたものではない。
+
+#### 9.101.3 page化の試作と比較条件
+
+`gradleOwnedCgpPages.ts`はtest-onlyの`osv-mcp.cgp.registry-trial.v0`。registryのpins／ledger／handoffsを16 hash bucketのimmutable pageへ分け、signed snapshotはdirectory rootとcountを持つ。ordinalを保存して元の配列順を完全復元し、field／bucket／count／ordinal／digest／canonical encoding・参照閉包を検証する。pageはcurrent snapshotの完全閉包として既存OwnedJournalDiskの同じ2 root／MAC／checkpoint backendへ保存する。sidecar専用鍵をregistry child内で生成し、active ownerの署名鍵をcontrollerへ渡さない。
+
+入力はcontrolled-clockの実consumer readから得た5つのregistry状態遷移を基に、freshなsynthetic IDを割り当てた8 read分の構造データ。新IDの署名・grant・live bindingの業務上の成立を検証したデータではない。本番registry／Anchorはこのformatを受け付けず、実readでpage方式を使った結果と数えない。
+
+同じ入力をfull／pagedの両方で試し、保存→checkpoint→readback・全履歴の署名／MAC／state復元を行った。3 pairで実行順をfull→paged、paged→full、full→pagedと交互にした。検証省略や新しいcacheは導入していない。
+
+| 指標 | full snapshot | paged snapshot |
+| --- | --- | --- |
+| 保存できた状態遷移 | 初期1＋13更新。synthetic read 3のstage 3でwire容量拒否 | 初期1＋40更新（8 read分）、3試行とも保存成功 |
+| CAS要求bytes | 初期6,241、最後の成功43,176。次の要求が通常上限45,536を超える | 初期4,201、最大4,530 |
+| 同一prefixのlogical record bytes（14 snapshot） | 593,758 | 332,772 |
+| 同一prefixの保存・検証wall合計 | 1,232〜1,271ms、median 1,244ms | 2,226〜2,454ms、median 2,330ms |
+| 各modeの終了時physical使用量 | 625,041 B／73 entries（途中停止時） | 938,009 B／437 entries（8 read分終了時） |
+
+logical bytesは約44%減ったが、今回の3 pairはいずれも同一prefixでpage側が遅かった。試作の全履歴復元とpage検証の費用が残る。この3 pairから一般的な速度倍率を保証しない。physical使用量は異なる進捗時点なので、両列の大小を圧縮率と呼ばない。
+
+page側の8 read目の最後のsnapshotは約654〜930ms、そのうち履歴read／検証は約274〜386msだった。完了済み状態を各commitから再構成する費用が残り、page参照を小さくするだけでは原本履歴の反復検証を解消できていない。新しい本番base・delta・owner別page・incremental verificationを実装済みとはしない。
+
+#### 9.101.4 SGA確認6境界を含む時間予算
+
+独立SGAは未実装なので、各deploymentで認証付きregistry ReadContextを6回、計18回測った。これはfresh challenge／署名／往復の**latency proxy**であり、SGAの独立保存・認可・失効・raceの成立証拠ではない。実read内でSGAが6回実行された観測でもない。境界候補はpin／checkpoint／source開始／authority／handoff／ACK・公開で、CG11／CG49による安全性確認は残る。
+
+proxy最大は54.75ms/境界、6回で328.50ms。phase表では上記6区間に各1回を割り当て、context／verify／result／finishへは加算しない。失敗回復100ms、deadline余裕500msを別に確保する。
+
+registry trialの追加費用は、同一更新prefixの各更新iでmax(0, page[i]−full[i])を求め、その最大値と、page側の8 readまでの増分を分け、5 transition/readへ展開したwhat-ifモデル。非同一prefixの速度比を直接適用せず、未計測のAnchor等の改善も勝手に差し引かない。ただしsnapshot sidecarの値を実readへ合成したもので、実paged readの測定やlatency上限証明ではない。
+
+| 費用 | 保守的allocation（ms） |
+| --- | --- |
+| 成功例のphase最大値合計 | 3,960 |
+| SGA候補6境界（latency proxy） | 328.50 |
+| registry追加費用の最悪what-if | 3,988.06 |
+| 回復枠 | 100 |
+| 余裕 | 500 |
+| 合計 | 8,876.56（5,000を超過） |
+
+単一read最大値を使ったpair別モデルは約8,175〜8,859ms。page試作追加費用を除いたphase envelope＋proxy＋回復＋余裕だけなら約4,889msとなるが、実際のpage経路を省いた仮計算にすぎない。2回目readの期限拒否もあり、速度値の承認はできない。追加費用モデルをCG3本番性能の予測値として使わず、実際の5owner page経路と独立SGAを再計測して更新する。
+
+#### 9.101.5 readsPerGenerationと進行gate
+
+**readsPerGenerationの候補を8**とする。試作で8 read分を保存できたことと、既存v1のrole別stage費用を維持できる場合の次の余力を根拠にする。
+
+| role | 8 read後の仮計算 | 既存上限 |
+| --- | --- | --- |
+| registry | 初期3＋5×8＋保守16=59 | 64 |
+| broker | 初期1＋3×8=25 | 通常40 |
+| provider | 初期3＋1×8=11 | boot以外48 |
+| issuer | 初期2＋1×8=10、diagnostic 8 | 総64／diagnostic 16 |
+| Anchor | 初期2＋5×8=42 | 64 |
+
+この計算は新v2のCapacityCertificateではない。追加page／SGA／retryのstage・file／bytes・request枠と5ownerすべての実admissionをCG0／CG1で再計算する必要がある。8回の実read・writer advance・移行後readが成立した値でもない。1 readだけ通る値へ目標を縮めて継続利用成立としない。
+
+CGPの計測・限定試作と数値候補の設定は行ったが、時間面の成立条件は未達。CG0／CG1／CG2の純粋contract作業は進められるものの、CG3以降は閉じたまま。次の性能作業はCGP内で、registry／Anchor等の反復履歴・state検証をさらに分解し、ownership・鮮度・閉包完全性を維持するbounded再使用／incremental verificationをfixtureで試作すること。その後、実paged 5ownerと独立SGA、同じ8 read目標・最大入力・cold／継続負荷で再計測する。Q3b／Q4bの原本読取省略を先取りして有効にしない。
+
+#### 9.101.6 回帰・証拠と未成立事項
+
+回帰はpage往復と順序、missing／corrupt／orphan／field違い・再hash後のordinal重複、重複key、wire上限と8 read分保存、後続commit後のexact retry／異内容拒否、checkpoint障害後のfail-stop／disk復旧、予算の不正値・採用禁止を扱う。検査除去対照はrow-order／exact intent／ordinal coverageの3件で失敗を観測して復元した。raw artifact検査は公開数・call集計・予算・試作件数・採用flagの改変に加え、reasonと拒否分類の不一致も拒否する。
+
+native測定は同UIDの協調5process、page試作はregistry child内の別のown 2root store。kernel隔離・独立SGA・本番format・GC／世代移行・原本読取省略は未成立。全採用flag false、originalReadsSkipped=0。新コードはtest fixtureに限定し、測定・試作を本番admissionや性能保証へ昇格させない。
+
+CGPレビュー修正の回帰：fullとpageの最大値が異なる更新に現れる場合（full=[1000,1]、page=[1000,500]）に追加499msを保持する。grant_revoked／recovery_required／budget_exceeded／未知エラーをother-refusedへ分離し、文字列中にrequest_expiredを混ぜた偽装も期限拒否へ分類しない。budget_exceededは時間以外の予算にも使われるため、期限到達の根拠とはしない。native runnerはother-refusedの証拠を保存した上で検証失敗とする。2つの新規回帰は修正前の失敗と修正後の成功を確認した。
+
+CGP最終検証結果はsummaryのverificationを参照。native診断は3 bootstrap／3 snapshot比較pairで通過（91.95秒）。型検査・buildと対象回帰・source／raw／派生集計を別々に検証し、全体suiteの通過とは扱わない。

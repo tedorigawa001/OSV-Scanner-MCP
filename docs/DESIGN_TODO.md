@@ -2916,3 +2916,18 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - control record式を定義し、移行可能量をbatchが揃う場合の最大20,480 entriesへ修正。未GC世代の上限は2。
 - CGPを追加。fresh SGA確認を1 read 6境界の候補に限定し、5秒に収まる見込みと`readsPerGeneration`が示せなければCG3以降へ進まない。page化要件を5ownerへ拡張。
 - CG49〜CG52を追加。いずれも設計のみで、runtime回帰条件は未実装。
+
+### CGP：実時間read計測・registry page限定試作（§9.101）
+
+- 3回の5owner bootstrapでcall／owner／phase・process CPU／stage／disk／署名検証を計測。レビュー修正後の反復は初回3/3成功（3.879〜3.942秒）、成功後の2回目0/3で明示的な期限切れによる拒否（その他の拒否0件）。拒否の公開差分0を確認。
+- registry childの別2rootで、実状態遷移からsynthetic IDを付けたfull／page snapshotを3 pair比較。pageはCAS要求最大4,530 Bで8 read分を保存できたが、全履歴検証費用が残り、同一prefixで一貫した速度改善はない。本番registry／Anchorにpage formatを接続した実測ではない。
+- `readsPerGeneration=8`を容量上の候補として設定。5ownerの旧stage費用を仮定したregistry余力は保守込み59/64。新formatの実容量・request予約は未成立。
+- SGAは未実装のため認証付きReadContext 18回をlatency proxyとして使用。6境界＋phase envelope＋回復・余裕＋page試作追加費用の最悪what-ifは約8.88秒。これは実paged readの測定や性能上限ではない。
+- **CGPの時間面は未達、CG3以降のgateは閉鎖。** 次はCGP内で反復履歴／state検証の費用をさらに分解し、ownership／鮮度を維持したbounded再使用・incremental検証の限定試作と再計測を行う。CG0〜CG2のcontract作業は並行して進められるが、CGP成立済みとはしない。
+- 再現ハーネス・回帰・性能比較・rawとsummary記録を追加。独立SGA、本番format、GC／移行、native隔離、Q3b／Q4bは未成立。全採用flag false／originalReadsSkipped=0。
+
+§9.101レビュー修正：
+
+- 追加時間は同じ更新ごとの非負差を計算してから最大値へ集約。full／pageの最大値の位置が違っても相殺しない回帰を追加した。
+- 明示的なrequest_expiredだけを期限拒否とし、容量拒否とother-refusedを分離。権限・復旧・汎用予算・未知エラーを期限扱いせず、native runnerはother-refusedがあれば失敗。記録検証もreasonとの不一致を拒否する。
+- 修正後コードで5process native計測を再実行し、raw・source receipt・同一prefix比較・6境界の時間予算を更新。SGAは代用計測、8 readsは容量候補、CG3保留を維持する。

@@ -1,0 +1,1057 @@
+{
+  "schema": "osv-mcp.cgp.validation.v1",
+  "date": "2026-11-04",
+  "scope": "instrumented-five-owner-v1-read-and-isolated-paged-registry-snapshot-trial",
+  "sourceBaseline": "afa75b7; experimental files pinned separately",
+  "measurements": {
+    "path": "docs/validation/gradle-c3b-cgp-2026-11-04.measurements.json",
+    "sha256": "e0bdcaf256dcf504cd5d42919a7c1f8b7d72c370423a670691cf2d9860502163"
+  },
+  "analysisSource": {
+    "path": "scripts/analyze-c3b-cgp.mjs",
+    "sha256": "b3e7241e1c8f4870fb01e297441d0618642e1efe7b74000d586b0a6a19ab81ab"
+  },
+  "sourceSha256": {
+    "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
+    "package.json": "5a0ff34ffcd644bbefaa713dcd8e65782b719bc01be52cd8f26672bcc123ec9b",
+    "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
+    "src/test/fixtures/cgp_child.mjs": "d9225198efdf85784f069a39bdd777f0f4ce9b2388c222845acbc79ace1e9842",
+    "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
+    "src/test/fixtures/gradleOwnedAuthority.ts": "6bed67749ddd6142b1025e24eedb656a448545078bfb2b81e996b340ad320655",
+    "src/test/fixtures/gradleOwnedAuthorityJournal.ts": "df213ca2a6d6ce3dfd7822745ac78d1a91506d9141f6575f2470b2c73c72d4da",
+    "src/test/fixtures/gradleOwnedAuthorityOwnerFixture.ts": "85e104eaae62545ba8b5118133e067176e1e098a87f9ff9df900c0e48aca79e1",
+    "src/test/fixtures/gradleOwnedAuthoritySchema.ts": "e7642cdfb3cfa092f79edc163eb4e6ac0e0d5590bdb2553c13016bc500f52115",
+    "src/test/fixtures/gradleOwnedAuthoritySnapshot.ts": "d1b9ee07a9f2173ca57b30cbd6e8e89057c8cd3fd1b148a3f07e03a2ab8c4ba9",
+    "src/test/fixtures/gradleOwnedCgpBudget.ts": "2a4371885fb9d03b278cb4ba70e1aaf68a9e826bd96d3873b0590df2bd9da520",
+    "src/test/fixtures/gradleOwnedCgpOutcome.ts": "12cbebdf42c59883b2c4de4fcd7f2c70e41fb6eba52dd94571b25a79b6a1c5e1",
+    "src/test/fixtures/gradleOwnedCgpPages.ts": "6e50dcd9d99c1eac1461023c0713ebfe054c3b7e769f6393b653483a7ee539dd",
+    "src/test/fixtures/gradleOwnedCgpProcess.ts": "64ca17f411936acf4b3f72ad3cb9c656a6ab1b8709d48fe8deab3b6d048523c0",
+    "src/test/fixtures/gradleOwnedCgpRead.ts": "013fb9d955c49c3847669783849e17557e1ef822f353195f80bd308adf1cbaf6",
+    "src/test/fixtures/gradleOwnedCgpReport.ts": "4a01deb7914c469c3bffb1ad8219785341f8af4799c18886b22d8f3b588eb659",
+    "src/test/fixtures/gradleOwnedConsumerFixture.ts": "67786133ebf55df646b15ef7455005cf80152d69916182686c11a4a5d0fd83fc",
+    "src/test/fixtures/gradleOwnedCurrentBridgeFixture.ts": "cbf6cc8806e38909dd35c71c1b1926f5e1c9aa5f2100f6b4ddb44d299c1d089e",
+    "src/test/fixtures/gradleOwnedCurrentSource.ts": "5bd9c9d4a9fa8fedd7f42f819b88ccf0ca969da94b74e064116b282f6ab205a3",
+    "src/test/fixtures/gradleOwnedExecutionFixture.ts": "047ebf4a3eab650430e916cc7ad63b2403c49cb71c42d05a7866c152f4b0ae6b",
+    "src/test/fixtures/gradleOwnedFixture.ts": "eca87a67c8ef3073ab778cb7ed60f01e272501e3722db11b60d166593c5618d6",
+    "src/test/fixtures/gradleOwnedJournalV2.ts": "e4860481e0dacd227d42ff65cb56e8b80fc521492ccb2375a73622a3b2293af2",
+    "src/test/fixtures/gradleOwnedPolicyFixture.ts": "42ab32aedc435e92b5dee75863da7778f66c8131648546ba4a6e791b84b31c81",
+    "src/test/fixtures/gradleOwnedRegistryFixture.ts": "b526f4b13d5455f40721f251a58088f0abcd4f388768431b3641505e99ff6599",
+    "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
+    "src/test/fixtures/gradleOwnedSourceFixture.ts": "3c05f9182f943d10865ee34d891a58f1b315b1cb917eff7586ad7446cdde5d60",
+    "src/test/utils/gradleOwnedCgp.test.ts": "3e97093af6908e533ed8e08672c9b96a51062e01b434299cf93a0f74e9a68317",
+    "src/test/utils/gradleOwnedCgpNative.test.ts": "0f239fe4696d14e6702af05991434714332954386b1fd72fa2d008bdcf3ee082",
+    "src/test/utils/gradleOwnedCgpValidation.test.ts": "6167d7fc2764a245d5269a8f06e5a212b539ab1727cf48bf5358b76ac0a620dc",
+    "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
+    "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
+    "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
+    "src/utils/gradleCatalogs.ts": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b",
+    "src/utils/gradleDeclarations.ts": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be",
+    "src/utils/gradleExportJson.ts": "0fea68255a7dbabe559f1ee35bfcc156a565519c63ca16bb92614e1c866422fe",
+    "src/utils/gradleGraph.ts": "73a36886ed6c8be17b63e5581392cca6c5ba5efb0463e475f7ee3913ac888e81",
+    "src/utils/gradleJson.ts": "f7f3ef047d30a675cb55044072e8fb516dceeb822192777ea7b7444699c9dc9f",
+    "src/utils/gradleOrigins.ts": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884",
+    "src/utils/gradleOwnedAnchorOwner.ts": "2fb299b1407670d79ac51f3e49c3eefeafe39de63691bc69cc78736d0c9e88a3",
+    "src/utils/gradleOwnedAuthorityClock.ts": "71f593e38f88fc1f1dcd2c049202c25a969d3ee60350104ee9f5a5d9fff53994",
+    "src/utils/gradleOwnedAuthorityOwner.ts": "06bc3cb97ce45423f86d5cc77225e80bd1471955360d19e0e5624ec4a468a0d9",
+    "src/utils/gradleOwnedAuthorityOwnerClient.ts": "d100881e7a84358173b8316259a3ed8454183e1ccc109ebeacc9435cd168eacb",
+    "src/utils/gradleOwnedAuthorityOwnerSchema.ts": "18867824165fa4c7a6d7553017599541d87bce94e9a4a28c2ed3c9721e9b852f",
+    "src/utils/gradleOwnedAuthoritySchema.ts": "893449dd0f388cdc0434de47624f269aa12c678df67e63d1bb195fb18dbe52e2",
+    "src/utils/gradleOwnedAuthoritySnapshot.ts": "694e88c771dff66e88b151e098172ffc0a04610bfcb62c56b79ef5f4b52c754e",
+    "src/utils/gradleOwnedBusinessOutcome.ts": "c6ddc4359128d7114a027c784c4b33c4f63e3589afdeaf2383143475b1f80837",
+    "src/utils/gradleOwnedConsumerBridge.ts": "c901167fb3306204c2c8b095ba999b72cbcb70a8bb44193472342b71a4d1e4a7",
+    "src/utils/gradleOwnedConsumerClient.ts": "65059d4671da343e8b3644cc165b481976331c74c6f8da71ca3dc5512f82b3b8",
+    "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
+    "src/utils/gradleOwnedCurrentBridge.ts": "2b4ec0db98aeae83eaad81eae8c4c8b558e108a2a33e12d195672f042fc98f69",
+    "src/utils/gradleOwnedCurrentClient.ts": "40b7977162caf938a104873f1642ac969faf7d8f156bcf20afc1fb0e8053e779",
+    "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+    "src/utils/gradleOwnedDeliverySchema.ts": "d956f4b536fcb090369aff1e75ff592446178a7a940ff7de38629ce50460acf1",
+    "src/utils/gradleOwnedExecution.ts": "360a8d5e61a7b115619077cb444f8a863f6d6d0459be9d17b87ae4c43f279fd4",
+    "src/utils/gradleOwnedJournalV2.ts": "5f78e8a9cb127fe8d0f25942668e360727e13057559ee046db0ed14f06b49253",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/utils/gradleOwnedManifest.ts": "3886c2ba26e50cb888fd8b5e7513c1ac1e0e152e0b29111de4224ebd07846e9b",
+    "src/utils/gradleOwnedPolicy.ts": "2ace3536b349b4b2368c5a01bb1979864bd7377aa218134f4f197b6259892bf2",
+    "src/utils/gradleOwnedReadPlan.ts": "171f27bcd7522879a228208393c1302537077bba674f9dd447609dc18801eb1b",
+    "src/utils/gradleOwnedRecovery.ts": "5666924978ddf0cba75ae0fe87ae38b5c2111a1f5946662f03cc3f56a1b9380a",
+    "src/utils/gradleOwnedRecoverySchema.ts": "e0b8029f5544d7d5348d6debfa45ec9ba563ff6b68e1f1dcb6655b5f15afebdb",
+    "src/utils/gradleOwnedRegistryOwner.ts": "27eb48e09d58136c2661ebe1439371486038ab42eb31d50ae407912641e3d3fb",
+    "src/utils/gradleOwnedRegistrySchema.ts": "c4cd7687cff7c1095053d37cfc169be616e18086a960f23b00e4bf06fbb3dfc7",
+    "src/utils/gradleOwnedRoleSigner.ts": "0e280b2fa6a4056dcd999f1fb13a02c22b069b786b8b2aebccfefdc5f00faa30",
+    "src/utils/gradleOwnedSchema.ts": "44fa3f141b1931e3043bd4e876f93b46132f54e1c36aaf7f6d3c43f1c6ea734c",
+    "src/utils/gradleOwnedServiceDrain.ts": "c889d4b2590841162b223194c568e4d1c76338e6315489337da8f2f5a45bdc7c",
+    "src/utils/gradleOwnedServiceOwners.ts": "8c15621a5d12180f5cb855fe3b41438e3444f45fff577b250a264e684d8a22a4",
+    "src/utils/gradleOwnedServiceSession.ts": "033426d57b207cf5f5cc1a183509bd77701a7b92fa5ae78a690d2124fc759115",
+    "src/utils/gradleOwnedServiceStages.ts": "5e0dd5f8e122474d4da2af41687523a6e3ab908df75e04ee5f3d5eb5c47269cd",
+    "src/utils/gradleOwnedSessionRuntime.ts": "c7cdb85e33ef8f4b016857c07c87b1c9d48d52436a72e38ece98f37a4936601f",
+    "src/utils/gradleOwnedSourceClient.ts": "0991b2c68cb5317bbb177be3fd82ef5c3d7c86578762cf7485ba55dab4afd773",
+    "src/utils/gradleOwnedSourceOwner.ts": "4e008c25b1a78caa4870f18baf1d81cb0e261e50f673bfdd411af58ebb0fe3d0",
+    "src/utils/gradleOwnedSourceSchema.ts": "4a4b70982504fc1e275ab2c45cf6330136916dbeb0eb8ec2b8963cbdc1649cb9",
+    "src/utils/gradleOwnedStageStore.ts": "0c1a105ca8aefbc790ca63997cd14dcb1c31895b0c10186191e6217c241043d1",
+    "src/utils/gradleOwnedStoreCheckpoint.ts": "8875ec5c3d7c58001d7eb19b8df921e15ce3cc5c0a6967fc50f0ad006203846a",
+    "src/utils/gradleOwnedStoreDisk.ts": "c3b2a9a69fea0a9b11e3a6dffdbbaf1db67df490f9981ba91d2075b95c1eb1c2",
+    "src/utils/gradleOwnedStoreFs.ts": "6746560c43f17cf272ec300985c79770b827a890dd44a69194696610e1dbbec1",
+    "src/utils/gradleOwnedStoreJournal.ts": "3e95764d5ab7e19ccd0339d73bf3a2290b6146dd067c9f0d0cee13ca5388c093",
+    "src/utils/gradlePluginJar.ts": "b180ee353104a11e1ddd1a091930bda1aaf8138fcf5a1df7d66370ef8c848ab9",
+    "src/utils/gradlePluginSnapshots.ts": "2c0ce15f1c90e6c11916d2a8107c2d1c761719543932a0aeef722cfeb4acf2c1",
+    "src/utils/gradlePlugins.ts": "582f72462c13927e7284e1c7ca70681f4e455e469596020cd4e8bc5e9ec637af",
+    "src/utils/openedFilePath.ts": "963ac04f6eb3744af00771feaaf054c08ca8b2dcc7d2846507525394d3fdff8f",
+    "src/utils/projectWalk.ts": "5ff06d6df2c601017928d26709d6f4bf3ea9d9ff6813e627cfec82d010d9e316",
+    "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054",
+    "tsconfig.build.json": "49e7f5e2be44cc034bf5ef401064bf3b1588070e80aacfe1e1c8dde541c3117f",
+    "tsconfig.json": "7375ac5d334f50eed3d766799fd016e068f1998639c7b02ba201db280a1583c3",
+    "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
+  },
+  "sourceClosureDigest": "f2dcee4c99f0980fbd6ada7fedc15c58b1cde0148b5a3564d30145ab54d5d5cf",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "node": "v26.12.1",
+    "cpus": 10,
+    "loadAverage": [
+      3.7607421875,
+      3.00146484375,
+      2.0498046875
+    ]
+  },
+  "readSummary": {
+    "deploymentSamples": 3,
+    "readAttempts": 6,
+    "firstRead": {
+      "completed": 3,
+      "attempts": 3
+    },
+    "secondRead": {
+      "completed": 0,
+      "attempts": 3
+    },
+    "completedElapsedMs": {
+      "min": 3878.8337910175323,
+      "max": 3942.11016702652
+    },
+    "otherRefusals": [],
+    "deadlineRefusedElapsedMs": {
+      "min": 4500.471832990646,
+      "max": 4501.308084011078
+    },
+    "sourceWorkloads": [
+      {
+        "sourceBytes": 41460,
+        "sourceEntries": 9,
+        "bundleBytes": 55994
+      },
+      {
+        "sourceBytes": 41460,
+        "sourceEntries": 9,
+        "bundleBytes": 55994
+      },
+      {
+        "sourceBytes": 41460,
+        "sourceEntries": 9,
+        "bundleBytes": 55994
+      },
+      {
+        "sourceBytes": 41460,
+        "sourceEntries": 9,
+        "bundleBytes": 55994
+      },
+      {
+        "sourceBytes": 41460,
+        "sourceEntries": 9,
+        "bundleBytes": 55994
+      },
+      {
+        "sourceBytes": 41460,
+        "sourceEntries": 9,
+        "bundleBytes": 55994
+      }
+    ],
+    "publishedThisRead": [
+      {
+        "sample": 1,
+        "index": 1,
+        "outcome": "completed",
+        "published": 1
+      },
+      {
+        "sample": 1,
+        "index": 2,
+        "outcome": "deadline-refused",
+        "published": 0
+      },
+      {
+        "sample": 2,
+        "index": 1,
+        "outcome": "completed",
+        "published": 1
+      },
+      {
+        "sample": 2,
+        "index": 2,
+        "outcome": "deadline-refused",
+        "published": 0
+      },
+      {
+        "sample": 3,
+        "index": 1,
+        "outcome": "completed",
+        "published": 1
+      },
+      {
+        "sample": 3,
+        "index": 2,
+        "outcome": "deadline-refused",
+        "published": 0
+      }
+    ],
+    "phases": {
+      "context": {
+        "min": 21,
+        "max": 25,
+        "unit": "ms"
+      },
+      "pin": {
+        "min": 144,
+        "max": 148,
+        "unit": "ms"
+      },
+      "checkpoint": {
+        "min": 197,
+        "max": 208,
+        "unit": "ms"
+      },
+      "source": {
+        "min": 960,
+        "max": 976,
+        "unit": "ms"
+      },
+      "verify": {
+        "min": 6,
+        "max": 8,
+        "unit": "ms"
+      },
+      "authority": {
+        "min": 1278,
+        "max": 1287,
+        "unit": "ms"
+      },
+      "delivery-use": {
+        "min": 757,
+        "max": 773,
+        "unit": "ms"
+      },
+      "result": {
+        "min": 119,
+        "max": 123,
+        "unit": "ms"
+      },
+      "ack": {
+        "min": 230,
+        "max": 253,
+        "unit": "ms"
+      },
+      "finish": {
+        "min": 150,
+        "max": 159,
+        "unit": "ms"
+      }
+    },
+    "ownerRows": [
+      {
+        "role": "control-anchor",
+        "processCpuMs": {
+          "min": 2640.696,
+          "max": 2649.454
+        },
+        "historyReadCount": {
+          "min": 99,
+          "max": 99
+        },
+        "historyReadInclusiveWallMs": {
+          "min": 624.8069170000017,
+          "max": 649.7089579999974
+        },
+        "commitCount": {
+          "min": 5,
+          "max": 5
+        },
+        "commitInclusiveWallMs": {
+          "min": 348.95000100000016,
+          "max": 373.331584
+        },
+        "diskReadBytes": {
+          "min": 9275154,
+          "max": 9275154
+        },
+        "signatureVerifyCount": {
+          "min": 203,
+          "max": 203
+        },
+        "signatureVerifyInclusiveWallMs": {
+          "min": 10.528166999994937,
+          "max": 10.855499999993754
+        }
+      },
+      {
+        "role": "lineage-registry",
+        "processCpuMs": {
+          "min": 3132.351,
+          "max": 3216.997
+        },
+        "historyReadCount": {
+          "min": 94,
+          "max": 94
+        },
+        "historyReadInclusiveWallMs": {
+          "min": 727.4508360000045,
+          "max": 730.8208720000034
+        },
+        "commitCount": {
+          "min": 5,
+          "max": 5
+        },
+        "commitInclusiveWallMs": {
+          "min": 368.493625000001,
+          "max": 381.1361249999991
+        },
+        "diskReadBytes": {
+          "min": 9956920,
+          "max": 9956920
+        },
+        "signatureVerifyCount": {
+          "min": 880,
+          "max": 880
+        },
+        "signatureVerifyInclusiveWallMs": {
+          "min": 42.88934000000427,
+          "max": 44.942590999998174
+        }
+      },
+      {
+        "role": "provider",
+        "processCpuMs": {
+          "min": 1330.439,
+          "max": 1350.158
+        },
+        "historyReadCount": {
+          "min": 39,
+          "max": 39
+        },
+        "historyReadInclusiveWallMs": {
+          "min": 259.74483100000134,
+          "max": 272.7041649999992
+        },
+        "commitCount": {
+          "min": 1,
+          "max": 1
+        },
+        "commitInclusiveWallMs": {
+          "min": 61.45820800000001,
+          "max": 67.61041700000078
+        },
+        "diskReadBytes": {
+          "min": 7010026,
+          "max": 7010026
+        },
+        "signatureVerifyCount": {
+          "min": 787,
+          "max": 787
+        },
+        "signatureVerifyInclusiveWallMs": {
+          "min": 34.527953000012076,
+          "max": 35.25753899999518
+        }
+      },
+      {
+        "role": "checkpoint-issuer",
+        "processCpuMs": {
+          "min": 92.901,
+          "max": 94.494
+        },
+        "historyReadCount": {
+          "min": 1,
+          "max": 1
+        },
+        "historyReadInclusiveWallMs": {
+          "min": 5.573457999999846,
+          "max": 6.149334000000181
+        },
+        "commitCount": {
+          "min": 1,
+          "max": 1
+        },
+        "commitInclusiveWallMs": {
+          "min": 57.04795899999999,
+          "max": 68.56620800000019
+        },
+        "diskReadBytes": {
+          "min": 661276,
+          "max": 661276
+        },
+        "signatureVerifyCount": {
+          "min": 41,
+          "max": 41
+        },
+        "signatureVerifyInclusiveWallMs": {
+          "min": 1.815250000001015,
+          "max": 1.8542100000013306
+        }
+      },
+      {
+        "role": "authority-broker",
+        "processCpuMs": {
+          "min": 505.852,
+          "max": 528.223
+        },
+        "historyReadCount": {
+          "min": 5,
+          "max": 5
+        },
+        "historyReadInclusiveWallMs": {
+          "min": 43.142667000000074,
+          "max": 45.54300100000091
+        },
+        "commitCount": {
+          "min": 3,
+          "max": 3
+        },
+        "commitInclusiveWallMs": {
+          "min": 191.1489159999992,
+          "max": 193.2944579999994
+        },
+        "diskReadBytes": {
+          "min": 3537546,
+          "max": 3537546
+        },
+        "signatureVerifyCount": {
+          "min": 234,
+          "max": 234
+        },
+        "signatureVerifyInclusiveWallMs": {
+          "min": 10.898958000009316,
+          "max": 11.009082000003218
+        }
+      }
+    ],
+    "counts": [
+      {
+        "sample": 1,
+        "authenticatedBusinessCalls": 138,
+        "anchorCalls": 99,
+        "readerCalls": 26
+      },
+      {
+        "sample": 2,
+        "authenticatedBusinessCalls": 138,
+        "anchorCalls": 99,
+        "readerCalls": 26
+      },
+      {
+        "sample": 3,
+        "authenticatedBusinessCalls": 138,
+        "anchorCalls": 99,
+        "readerCalls": 26
+      }
+    ]
+  },
+  "prototypeComparison": {
+    "pairs": [
+      {
+        "sample": 1,
+        "order": [
+          "full",
+          "paged"
+        ],
+        "matchedSnapshotUpdates": 14,
+        "full": {
+          "completedReads": 2,
+          "stopped": {
+            "read": 3,
+            "stage": 3,
+            "reason": "cgp_capacity_exhausted"
+          },
+          "matchedWallMs": 1244.0674590000017,
+          "matchedLogicalBytes": 593758,
+          "maxCasBytes": 43176,
+          "physicalBytesAtStop": 625041,
+          "entriesAtStop": 73
+        },
+        "paged": {
+          "completedSyntheticReads": 8,
+          "matchedWallMs": 2454.470207000002,
+          "matchedLogicalBytes": 332772,
+          "maxCasBytes": 4530,
+          "physicalBytesAtEightReads": 938009,
+          "entriesAtEightReads": 437,
+          "lastSnapshotWallMs": 654.4670839999999,
+          "lastSnapshotVerifyMs": 274.3261249999996
+        }
+      },
+      {
+        "sample": 2,
+        "order": [
+          "paged",
+          "full"
+        ],
+        "matchedSnapshotUpdates": 14,
+        "full": {
+          "completedReads": 2,
+          "stopped": {
+            "read": 3,
+            "stage": 3,
+            "reason": "cgp_capacity_exhausted"
+          },
+          "matchedWallMs": 1270.9794179999917,
+          "matchedLogicalBytes": 593758,
+          "maxCasBytes": 43176,
+          "physicalBytesAtStop": 625041,
+          "entriesAtStop": 73
+        },
+        "paged": {
+          "completedSyntheticReads": 8,
+          "matchedWallMs": 2226.3699570000044,
+          "matchedLogicalBytes": 332772,
+          "maxCasBytes": 4530,
+          "physicalBytesAtEightReads": 938009,
+          "entriesAtEightReads": 437,
+          "lastSnapshotWallMs": 677.3935410000013,
+          "lastSnapshotVerifyMs": 276.2694580000025
+        }
+      },
+      {
+        "sample": 3,
+        "order": [
+          "full",
+          "paged"
+        ],
+        "matchedSnapshotUpdates": 14,
+        "full": {
+          "completedReads": 2,
+          "stopped": {
+            "read": 3,
+            "stage": 3,
+            "reason": "cgp_capacity_exhausted"
+          },
+          "matchedWallMs": 1232.0850820000032,
+          "matchedLogicalBytes": 593758,
+          "maxCasBytes": 43176,
+          "physicalBytesAtStop": 625041,
+          "entriesAtStop": 73
+        },
+        "paged": {
+          "completedSyntheticReads": 8,
+          "matchedWallMs": 2329.7234200000003,
+          "matchedLogicalBytes": 332772,
+          "maxCasBytes": 4530,
+          "physicalBytesAtEightReads": 938009,
+          "entriesAtEightReads": 437,
+          "lastSnapshotWallMs": 929.8799999999974,
+          "lastSnapshotVerifyMs": 386.3615420000024
+        }
+      }
+    ],
+    "pairedPrefixMedianWallMs": {
+      "full": 1244.0674590000017,
+      "paged": 2329.7234200000003
+    },
+    "note": "Compare identical snapshot prefixes only. Full stops during synthetic read 3; paged reaches 8. Eight-read physical usage is not directly comparable to the stopped full trial. Complete current page closure is recorded in each journal commit; all history is still read and validated. No incremental verification, live registry/Anchor page integration, or other-owner page trial."
+  },
+  "timeBudget": {
+    "baselineSingleReadMaxMs": 3942.11016702652,
+    "phaseEnvelopeMs": 3960,
+    "budgetRows": [
+      {
+        "phase": "context",
+        "observedMaxMs": 25,
+        "sgaProxyChecks": 0,
+        "sgaProxyMs": 0,
+        "allocationMs": 25
+      },
+      {
+        "phase": "pin",
+        "observedMaxMs": 148,
+        "sgaProxyChecks": 1,
+        "sgaProxyMs": 54.75079107284546,
+        "allocationMs": 202.75079107284546
+      },
+      {
+        "phase": "checkpoint",
+        "observedMaxMs": 208,
+        "sgaProxyChecks": 1,
+        "sgaProxyMs": 54.75079107284546,
+        "allocationMs": 262.75079107284546
+      },
+      {
+        "phase": "source",
+        "observedMaxMs": 976,
+        "sgaProxyChecks": 1,
+        "sgaProxyMs": 54.75079107284546,
+        "allocationMs": 1030.7507910728455
+      },
+      {
+        "phase": "verify",
+        "observedMaxMs": 8,
+        "sgaProxyChecks": 0,
+        "sgaProxyMs": 0,
+        "allocationMs": 8
+      },
+      {
+        "phase": "authority",
+        "observedMaxMs": 1287,
+        "sgaProxyChecks": 1,
+        "sgaProxyMs": 54.75079107284546,
+        "allocationMs": 1341.7507910728455
+      },
+      {
+        "phase": "delivery-use",
+        "observedMaxMs": 773,
+        "sgaProxyChecks": 1,
+        "sgaProxyMs": 54.75079107284546,
+        "allocationMs": 827.7507910728455
+      },
+      {
+        "phase": "result",
+        "observedMaxMs": 123,
+        "sgaProxyChecks": 0,
+        "sgaProxyMs": 0,
+        "allocationMs": 123
+      },
+      {
+        "phase": "ack",
+        "observedMaxMs": 253,
+        "sgaProxyChecks": 1,
+        "sgaProxyMs": 54.75079107284546,
+        "allocationMs": 307.75079107284546
+      },
+      {
+        "phase": "finish",
+        "observedMaxMs": 159,
+        "sgaProxyChecks": 0,
+        "sgaProxyMs": 0,
+        "allocationMs": 159
+      }
+    ],
+    "sgaProxyPerBoundaryMs": 54.75079107284546,
+    "sgaSixBoundaryMs": 328.50474643707275,
+    "registryMatchedAndGrowthModels": [
+      {
+        "sample": 1,
+        "readsPerGeneration": 8,
+        "capacityProjection": {
+          "registry": {
+            "initialStages": 3,
+            "stagesPerRead": 5,
+            "reads": 8,
+            "maintenanceStages": 16,
+            "total": 59,
+            "cap": 64
+          },
+          "broker": {
+            "initialStages": 1,
+            "stagesPerRead": 3,
+            "normalTotal": 25,
+            "normalCap": 40
+          },
+          "provider": {
+            "initialStages": 3,
+            "stagesPerRead": 1,
+            "normalTotal": 11,
+            "normalCap": 48
+          },
+          "issuer": {
+            "initialStages": 2,
+            "stagesPerRead": 1,
+            "total": 10,
+            "cap": 64,
+            "diagnosticStages": 8,
+            "diagnosticCap": 16
+          },
+          "anchor": {
+            "initialStages": 2,
+            "stagesPerRead": 5,
+            "total": 42,
+            "cap": 64
+          },
+          "assumption": "v1 role-stage costs plus inline page records; not a v2 CapacityCertificate"
+        },
+        "baselineCompleteMax": 3942.11016702652,
+        "sgaPerBoundaryProxyMs": 54.75079107284546,
+        "sgaSixBoundaryMs": 328.50474643707275,
+        "matchedTransitionCount": 13,
+        "matchedPagedMaxMs": 238.25283300000046,
+        "matchedFullMaxMs": 128.05266699999993,
+        "matchedTransitionExtrasMs": [
+          42.988499999999476,
+          67.93808400000125,
+          70.01570899999933,
+          75.23654100000022,
+          88.91141600000083,
+          109.76587400000062,
+          132.85049999999865,
+          99.06691599999795,
+          83.77137500000026,
+          100.16808299999866,
+          78.54291600000033,
+          115.63762500000121,
+          108.99366700000064
+        ],
+        "matchedRegistryExtraMs": 132.85049999999865,
+        "pagedGrowthAfterMatchedPrefixMs": 642.9744169999994,
+        "registryExtraPerTransitionMs": 775.8249169999981,
+        "registryExtraPerReadMs": 3879.1245849999905,
+        "marginMs": 500,
+        "recoveryMs": 100,
+        "leaseMs": 5000,
+        "projectedMs": 8749.739498463583,
+        "withinArithmeticBudget": false,
+        "observedOtherRefusals": 0,
+        "observedDeadlineRefusals": 3,
+        "maxCompletedReadIndex": 1,
+        "sgaEvidence": "six authenticated registry ReadContext round trips used as a latency proxy; not an independent SGA",
+        "composition": "max successful baseline + 6*max proxy + 5*(maximum nonnegative paired-update extra + paged growth to eight reads) + margin + recovery; inclusive RPC spans are not summed",
+        "candidateOnly": true,
+        "cg3Gate": "closed: paged five-owner end-to-end and real independent SGA not measured",
+        "backendEligible": false,
+        "originalReadsSkipped": 0
+      },
+      {
+        "sample": 2,
+        "readsPerGeneration": 8,
+        "capacityProjection": {
+          "registry": {
+            "initialStages": 3,
+            "stagesPerRead": 5,
+            "reads": 8,
+            "maintenanceStages": 16,
+            "total": 59,
+            "cap": 64
+          },
+          "broker": {
+            "initialStages": 1,
+            "stagesPerRead": 3,
+            "normalTotal": 25,
+            "normalCap": 40
+          },
+          "provider": {
+            "initialStages": 3,
+            "stagesPerRead": 1,
+            "normalTotal": 11,
+            "normalCap": 48
+          },
+          "issuer": {
+            "initialStages": 2,
+            "stagesPerRead": 1,
+            "total": 10,
+            "cap": 64,
+            "diagnosticStages": 8,
+            "diagnosticCap": 16
+          },
+          "anchor": {
+            "initialStages": 2,
+            "stagesPerRead": 5,
+            "total": 42,
+            "cap": 64
+          },
+          "assumption": "v1 role-stage costs plus inline page records; not a v2 CapacityCertificate"
+        },
+        "baselineCompleteMax": 3942.11016702652,
+        "sgaPerBoundaryProxyMs": 54.75079107284546,
+        "sgaSixBoundaryMs": 328.50474643707275,
+        "matchedTransitionCount": 13,
+        "matchedPagedMaxMs": 237.9282089999997,
+        "matchedFullMaxMs": 135.26366600000256,
+        "matchedTransitionExtrasMs": [
+          26.0049999999992,
+          59.29745799999728,
+          63.523958000001585,
+          57.667458000001716,
+          72.89166599999953,
+          50.13104100000237,
+          70.06950000000325,
+          78.80937500000073,
+          87.94429100000343,
+          76.4592079999984,
+          74.02420900000288,
+          100.44979100000273,
+          102.66454299999714
+        ],
+        "matchedRegistryExtraMs": 102.66454299999714,
+        "pagedGrowthAfterMatchedPrefixMs": 558.2407079999994,
+        "registryExtraPerTransitionMs": 660.9052509999965,
+        "registryExtraPerReadMs": 3304.5262549999825,
+        "marginMs": 500,
+        "recoveryMs": 100,
+        "leaseMs": 5000,
+        "projectedMs": 8175.141168463575,
+        "withinArithmeticBudget": false,
+        "observedOtherRefusals": 0,
+        "observedDeadlineRefusals": 3,
+        "maxCompletedReadIndex": 1,
+        "sgaEvidence": "six authenticated registry ReadContext round trips used as a latency proxy; not an independent SGA",
+        "composition": "max successful baseline + 6*max proxy + 5*(maximum nonnegative paired-update extra + paged growth to eight reads) + margin + recovery; inclusive RPC spans are not summed",
+        "candidateOnly": true,
+        "cg3Gate": "closed: paged five-owner end-to-end and real independent SGA not measured",
+        "backendEligible": false,
+        "originalReadsSkipped": 0
+      },
+      {
+        "sample": 3,
+        "readsPerGeneration": 8,
+        "capacityProjection": {
+          "registry": {
+            "initialStages": 3,
+            "stagesPerRead": 5,
+            "reads": 8,
+            "maintenanceStages": 16,
+            "total": 59,
+            "cap": 64
+          },
+          "broker": {
+            "initialStages": 1,
+            "stagesPerRead": 3,
+            "normalTotal": 25,
+            "normalCap": 40
+          },
+          "provider": {
+            "initialStages": 3,
+            "stagesPerRead": 1,
+            "normalTotal": 11,
+            "normalCap": 48
+          },
+          "issuer": {
+            "initialStages": 2,
+            "stagesPerRead": 1,
+            "total": 10,
+            "cap": 64,
+            "diagnosticStages": 8,
+            "diagnosticCap": 16
+          },
+          "anchor": {
+            "initialStages": 2,
+            "stagesPerRead": 5,
+            "total": 42,
+            "cap": 64
+          },
+          "assumption": "v1 role-stage costs plus inline page records; not a v2 CapacityCertificate"
+        },
+        "baselineCompleteMax": 3942.11016702652,
+        "sgaPerBoundaryProxyMs": 54.75079107284546,
+        "sgaSixBoundaryMs": 328.50474643707275,
+        "matchedTransitionCount": 13,
+        "matchedPagedMaxMs": 286.62433299999975,
+        "matchedFullMaxMs": 132.26816700000018,
+        "matchedTransitionExtrasMs": [
+          35.67933400000038,
+          64.3406670000004,
+          68.96245799999997,
+          79.54070899999897,
+          73.1629580000008,
+          52.91595799999959,
+          104.00937599999997,
+          80.80216699999983,
+          79.76495900000009,
+          82.54520899999989,
+          77.19100099999923,
+          101.71841700000004,
+          154.35616599999958
+        ],
+        "matchedRegistryExtraMs": 154.35616599999958,
+        "pagedGrowthAfterMatchedPrefixMs": 643.2556669999976,
+        "registryExtraPerTransitionMs": 797.6118329999972,
+        "registryExtraPerReadMs": 3988.059164999986,
+        "marginMs": 500,
+        "recoveryMs": 100,
+        "leaseMs": 5000,
+        "projectedMs": 8858.674078463579,
+        "withinArithmeticBudget": false,
+        "observedOtherRefusals": 0,
+        "observedDeadlineRefusals": 3,
+        "maxCompletedReadIndex": 1,
+        "sgaEvidence": "six authenticated registry ReadContext round trips used as a latency proxy; not an independent SGA",
+        "composition": "max successful baseline + 6*max proxy + 5*(maximum nonnegative paired-update extra + paged growth to eight reads) + margin + recovery; inclusive RPC spans are not summed",
+        "candidateOnly": true,
+        "cg3Gate": "closed: paged five-owner end-to-end and real independent SGA not measured",
+        "backendEligible": false,
+        "originalReadsSkipped": 0
+      }
+    ],
+    "registryExtraPerReadWorstModelMs": 3988.059164999986,
+    "marginMs": 500,
+    "recoveryMs": 100,
+    "leaseMs": 5000,
+    "phaseBasedWhatIfMs": 8876.563911437059,
+    "standaloneModelRangeMs": {
+      "min": 8175.141168463575,
+      "max": 8858.674078463579
+    },
+    "sgaLatencyScenariosWithoutPageTrial": [
+      {
+        "proxyPerBoundaryMs": 0,
+        "totalWhatIfMs": 4560
+      },
+      {
+        "proxyPerBoundaryMs": 1,
+        "totalWhatIfMs": 4566
+      },
+      {
+        "proxyPerBoundaryMs": 5,
+        "totalWhatIfMs": 4590
+      },
+      {
+        "proxyPerBoundaryMs": 10,
+        "totalWhatIfMs": 4620
+      },
+      {
+        "proxyPerBoundaryMs": 54.75079107284546,
+        "totalWhatIfMs": 4888.504746437073
+      }
+    ],
+    "note": "What-if allocation, not a measured paged read or a latency bound. Proxy RPCs are authenticated registry ReadContext, not an independent SGA. Includes no unmeasured benefit from paging other owners. RPC/category inclusive spans overlap and are not summed as latency. Phase envelope maxima are serial reader phases, so their sum is a separate conservative allocation."
+  },
+  "instrumentationControl": [
+    {
+      "sample": 1,
+      "rawMedianMs": 26.509249999999156,
+      "instrumentedMedianMs": 26.71045800000138,
+      "operationsPerBatch": 1000,
+      "scope": "local synchronous Ed25519 sign/verify instrumentation control; not full-path overhead calibration"
+    },
+    {
+      "sample": 2,
+      "rawMedianMs": 26.154875000000175,
+      "instrumentedMedianMs": 26.311916999999085,
+      "operationsPerBatch": 1000,
+      "scope": "local synchronous Ed25519 sign/verify instrumentation control; not full-path overhead calibration"
+    },
+    {
+      "sample": 3,
+      "rawMedianMs": 26.235250000001543,
+      "instrumentedMedianMs": 26.408917000000656,
+      "operationsPerBatch": 1000,
+      "scope": "local synchronous Ed25519 sign/verify instrumentation control; not full-path overhead calibration"
+    }
+  ],
+  "decision": {
+    "readsPerGenerationTarget": 8,
+    "capacityCandidateOnly": true,
+    "capacityProjection": {
+      "registry": {
+        "initialStages": 3,
+        "stagesPerRead": 5,
+        "reads": 8,
+        "maintenanceStages": 16,
+        "total": 59,
+        "cap": 64
+      },
+      "broker": {
+        "initialStages": 1,
+        "stagesPerRead": 3,
+        "normalTotal": 25,
+        "normalCap": 40
+      },
+      "provider": {
+        "initialStages": 3,
+        "stagesPerRead": 1,
+        "normalTotal": 11,
+        "normalCap": 48
+      },
+      "issuer": {
+        "initialStages": 2,
+        "stagesPerRead": 1,
+        "total": 10,
+        "cap": 64,
+        "diagnosticStages": 8,
+        "diagnosticCap": 16
+      },
+      "anchor": {
+        "initialStages": 2,
+        "stagesPerRead": 5,
+        "total": 42,
+        "cap": 64
+      },
+      "assumption": "v1 role-stage costs plus inline page records; not a v2 CapacityCertificate"
+    },
+    "throughputApproved": false,
+    "cg3Proceed": false,
+    "next": "remain in CGP: profile repeated history/state validation and prototype bounded incremental verification with ownership/freshness preserved; then remeasure the actual paged five-owner path and independent SGA",
+    "reasons": [
+      "v1 second consecutive read did not complete in the original deadline",
+      "page trial fixes CAS wire growth but has increasing history verification cost",
+      "candidate eight reads is an isolated snapshot capacity result, not eight end-to-end reads",
+      "six SGA checks have latency proxies only; CG11/CG49 race/admission contracts remain unproved",
+      "what-if budgets exceed 5000 ms; maximum-input/cold/continuous-load guarantees absent"
+    ]
+  },
+  "checks": {
+    "rawEvidenceValidatedByFixture": true,
+    "sourceReceiptMatched": true,
+    "matchedWorkloadComparison": true,
+    "sixBoundaryBudgetCount": 6
+  },
+  "backendEligible": false,
+  "profileApproved": false,
+  "nativeIsolationVerified": false,
+  "independentRegistryVerified": false,
+  "originalReadsSkipped": 0,
+  "reviewCorrections": {
+    "pairedUpdateExtra": {
+      "formula": "max_i(max(0, paged[i].wallMs - full[i].wallMs)) over matched update prefix",
+      "regression": {
+        "fullMs": [
+          1000,
+          1
+        ],
+        "pagedMs": [
+          1000,
+          500
+        ],
+        "expectedExtraMs": 499,
+        "failedBeforeFix": true,
+        "passedAfterFix": true
+      }
+    },
+    "refusalClassification": {
+      "deadline": "exact Error: current_control_request_expired only",
+      "capacity": "exact Error: current_control_capacity_exhausted only",
+      "other": "grant_revoked, recovery_required, ambiguous budget_exceeded, unknown and mixed-text errors",
+      "nativeUnexpectedRefusalFails": true,
+      "reasonOutcomeBindingValidated": true,
+      "failedBeforeFix": true,
+      "passedAfterFix": true
+    },
+    "nativeRerun": {
+      "independentDeployments": 3,
+      "prototypePairs": 3,
+      "firstReadSuccesses": 3,
+      "secondReadSuccesses": 0,
+      "explicitDeadlineRefusals": 3,
+      "otherRefusals": 0,
+      "oldAndNewSamplesCombined": false
+    }
+  },
+  "verification": {
+    "typecheck": "passed",
+    "build": "passed",
+    "cgpAbsentFromProductionDist": true,
+    "targetedRegression": {
+      "files": [
+        "gradleOwnedCgp.test.ts",
+        "gradleOwnedCgpValidation.test.ts",
+        "gradleOwnedConsumerBridge.test.ts"
+      ],
+      "passedTests": 23,
+      "failedTests": 0,
+      "durationSeconds": 87.95
+    },
+    "nativeMeasurement": {
+      "file": "gradleOwnedCgpNative.test.ts",
+      "passedTests": 1,
+      "failedTests": 0,
+      "durationSeconds": 91.95,
+      "independentDeployments": 3,
+      "prototypePairs": 3
+    },
+    "sourceAndDerivedArtifactCheck": "passed",
+    "fullSuiteRerun": false,
+    "fullSuiteReason": "production sources unchanged; targeted existing consumer regressions and all CGP tests run",
+    "diffWhitespace": "passed"
+  }
+}

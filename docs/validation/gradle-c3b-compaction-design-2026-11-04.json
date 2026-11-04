@@ -119,8 +119,8 @@
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb"
   },
   "documentSha256": {
-    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "f2060077c845698701792f3ad0a6439f794cbf09023c5e8935a0849a4b73e8b8",
-    "docs/DESIGN_TODO.md": "2edc9d5bef841fd75d193af9806763790578be18e7f1b6fd980f377fcf7601b5"
+    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "b659b9c2a14ed05ac7d31f68f8e213fa606ce7e77cb848235dbf279f510a519a",
+    "docs/DESIGN_TODO.md": "25f1d4bf9c0c5c53192af7361270860a76730307aefd020fd73f610712b66a2c"
   },
   "reviewNotes": [
     "Existing journal v1/stage/registry/Anchor parsers do not accept the proposed v2 formats.",
@@ -647,5 +647,22 @@
     ],
     "runtimeRegressionConditionsExecuted": 0,
     "nativeExperiments": 0
+  },
+  "beforeCgpDocumentSha256": {
+    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "f2060077c845698701792f3ad0a6439f794cbf09023c5e8935a0849a4b73e8b8",
+    "docs/DESIGN_TODO.md": "2edc9d5bef841fd75d193af9806763790578be18e7f1b6fd980f377fcf7601b5"
+  },
+  "cgpExperiment": {
+    "summary": "docs/validation/gradle-c3b-cgp-2026-11-04.json",
+    "designSection": "9.101",
+    "scope": "experimental performance measurements and isolated registry snapshot trial only",
+    "readsPerGenerationCandidate": 8,
+    "throughputApproved": false,
+    "cg3Proceed": false,
+    "migrationConditionsImplemented": false,
+    "reviewCorrections": [
+      "paired-update nonnegative extra before max aggregation",
+      "explicit expiry classification; other refusals separated and native check fails"
+    ]
   }
 }
