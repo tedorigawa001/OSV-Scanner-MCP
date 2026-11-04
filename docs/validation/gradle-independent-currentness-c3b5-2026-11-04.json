@@ -15,11 +15,11 @@
     "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
     "src/test/fixtures/gradleOwnedAuthority.ts": "6bed67749ddd6142b1025e24eedb656a448545078bfb2b81e996b340ad320655",
     "src/test/fixtures/gradleOwnedAuthorityJournal.ts": "df213ca2a6d6ce3dfd7822745ac78d1a91506d9141f6575f2470b2c73c72d4da",
-    "src/test/fixtures/gradleOwnedAuthorityOwnerFixture.ts": "8fbf05ffa9cadc3ffffc46e0aee983bfcdaf03e749d03106526f9385dace8347",
+    "src/test/fixtures/gradleOwnedAuthorityOwnerFixture.ts": "85e104eaae62545ba8b5118133e067176e1e098a87f9ff9df900c0e48aca79e1",
     "src/test/fixtures/gradleOwnedAuthorityProcess.ts": "d24f99eda13f601eb2cb41e929c6142ea603f23a9bb04fd2db280d20b302323f",
     "src/test/fixtures/gradleOwnedAuthoritySchema.ts": "e7642cdfb3cfa092f79edc163eb4e6ac0e0d5590bdb2553c13016bc500f52115",
     "src/test/fixtures/gradleOwnedAuthoritySnapshot.ts": "d1b9ee07a9f2173ca57b30cbd6e8e89057c8cd3fd1b148a3f07e03a2ab8c4ba9",
-    "src/test/fixtures/gradleOwnedConsumerFixture.ts": "6b286d04dd0ab051c93b0e85be1f1d3fdecab75734f756d71ed8ef1a5328b3f2",
+    "src/test/fixtures/gradleOwnedConsumerFixture.ts": "67786133ebf55df646b15ef7455005cf80152d69916182686c11a4a5d0fd83fc",
     "src/test/fixtures/gradleOwnedCurrentBridgeFixture.ts": "cbf6cc8806e38909dd35c71c1b1926f5e1c9aa5f2100f6b4ddb44d299c1d089e",
     "src/test/fixtures/gradleOwnedCurrentSource.ts": "5bd9c9d4a9fa8fedd7f42f819b88ccf0ca969da94b74e064116b282f6ab205a3",
     "src/test/fixtures/gradleOwnedExecutionFixture.ts": "047ebf4a3eab650430e916cc7ad63b2403c49cb71c42d05a7866c152f4b0ae6b",
@@ -30,8 +30,8 @@
     "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
     "src/test/fixtures/gradleOwnedSourceFixture.ts": "3c05f9182f943d10865ee34d891a58f1b315b1cb917eff7586ad7446cdde5d60",
     "src/test/utils/gradleOwnedBusinessOutcome.test.ts": "b417f88cc0107b432cd249b472b925afaaa0fbaaa3fadfc27d3e3d28a5f264e2",
-    "src/test/utils/gradleOwnedConsumerBridge.test.ts": "4ea985c8a3802a64108d45518ed67345269267d8ccaf034e1a7b2752ecc225e8",
-    "src/test/utils/gradleOwnedConsumerProcess.test.ts": "0f76dfc0f071f6e9bc4270acbdc6bcd26c593c52903c551f22e14171b4a4299e",
+    "src/test/utils/gradleOwnedConsumerBridge.test.ts": "7b29e808b3a5b743fb87b1a71ca694da165a06713dbb165e9ae5e8495bc7805a",
+    "src/test/utils/gradleOwnedConsumerProcess.test.ts": "45aba6601de1f3406f6b50a119199d09c847294cc3f498e48638785973ec68bc",
     "src/test/utils/gradleOwnedConsumerValidation.test.ts": "e86a5c1ca8dd2fe63c8efbc62973a9f84c6a09e6f98ee744b25e0de0e7b3855d",
     "src/test/utils/gradleOwnedDelivery.test.ts": "5a9d2d96df89fb8fac4016a07bddb111190f2723b7cc91f5bb5e0a2a4fb2ed69",
     "src/test/utils/gradleOwnedRecovery.test.ts": "4449b5c191fba1523ef62e69d32e0cb27849a0cee1dadb78df12c3078a7a6213",
@@ -218,11 +218,15 @@
     "read-only results only; no arbitrary external effects",
     "bounded journals, operations and reservations; no GC or compaction",
     "C3c/C3d/C4 and Q3b/Q4b remain unsupported",
-    "normal local native reads completed in 3911/3876 ms; loaded run refused at 4502 ms; no continuous-load or maximum-input guarantee"
+    "normal local native reads completed in 3911/3876 ms; loaded run refused at 4502 ms; no continuous-load or maximum-input guarantee",
+    "no GC/compaction: at most 2 published reads per registry history at default limits; the third fails with capacity_exhausted after its pin and handoff and needs a barrier",
+    "admission compares a root-supplied view only; no real counters feed it and owner record capacity is not included",
+    "after an ambiguous outcome a same-ID retry is refused locally with recovery_required, even inside the lease; recovery needs a barrier",
+    "same-machine native reads within the deadline are not repeatable: first read 4/8, immediately following read 0/2, read after full restart and resume 0/4 before this fix; load average about 3-7"
   ],
   "verification": {
     "fullSuite": {
-      "command": "bdo proxy npx vitest run --maxWorkers=1 --silent=false",
+      "command": "npx vitest run --maxWorkers=1 --silent=false",
       "passedTests": 5403,
       "failedTests": 17,
       "skippedTests": 1418,
@@ -252,7 +256,29 @@
     "typecheck": "passed",
     "build": "passed",
     "diffCheck": "passed",
-    "untrackedWhitespace": "passed"
+    "untrackedWhitespace": "passed",
+    "reviewFix": {
+      "fixes": [
+        "removed a tool-specific command prefix from this record",
+        "added contract tests for the two-read registry limit, same-ID retry refusal and a read after full restart and resume",
+        "renamed the native test as a real-time diagnostic and added a read after resume"
+      ],
+      "fullSuite": {
+        "command": "npx vitest run --maxWorkers=2",
+        "passedTests": 5424,
+        "failedTests": 0,
+        "skippedTests": 1418,
+        "passedFiles": 143,
+        "failedFiles": 0,
+        "skippedFiles": 24,
+        "durationSeconds": 631.43,
+        "loadAverageAfterRun": 7.95
+      },
+      "singleRun": true,
+      "typecheck": "passed",
+      "build": "passed",
+      "productionSourceChanged": false
+    }
   },
   "mutationControls": [
     {
@@ -274,6 +300,59 @@
       "removed": "skip settlement after completed barrier on stop retry",
       "expectedFailureObserved": true,
       "restored": true
+    },
+    {
+      "removed": "same-ID retry refusal after unknown",
+      "expectedFailureObserved": true,
+      "restored": true
+    },
+    {
+      "removed": "registry reserved record bytes",
+      "expectedFailureObserved": true,
+      "restored": true
+    },
+    {
+      "removed": "settled reservations may resume after restart",
+      "expectedFailureObserved": true,
+      "restored": true
     }
-  ]
+  ],
+  "nativeRepeatability": {
+    "codeState": "46abe1f, before the review fix",
+    "loadAverage": "about 3-7, machine not idle",
+    "firstRead": {
+      "published": 4,
+      "attempts": 8,
+      "publishedMs": [
+        3670,
+        4111
+      ],
+      "refusedMs": 4501
+    },
+    "immediatelyFollowingRead": {
+      "published": 0,
+      "attempts": 2
+    },
+    "afterFullRestartAndResume": {
+      "published": 0,
+      "attempts": 4
+    },
+    "afterReviewFix": {
+      "runs": 1,
+      "firstRead": "deadline-refused",
+      "afterResume": "deadline-refused",
+      "publishedResults": 0
+    }
+  },
+  "registryCapacity": {
+    "casRequestBytesPerRead": [
+      9614,
+      22344,
+      36041
+    ],
+    "thirdReadStoppedAtBytes": 42445,
+    "ordinaryLimitBytes": 45536,
+    "publishedReadsPerRegistryHistory": 2,
+    "fixture": "fake clock, default limits"
+  }
 }

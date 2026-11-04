@@ -2884,8 +2884,9 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 ### C3b-5：consumer-only業務接続・outcome・use／ACK・協調復旧
 
 - 実装：明示注入のC2 consumer bridge、broker本人のhandoff／delivery／durable RecordUse、bounded結果bytesの照合、reader本人ACK、予約完了。旧既定経路は維持。
-- 実装：署名付きrefused／unknownとprivate intent、同一ID／元期限を維持する再試行、read-plan.v3の全工程費用とpin取得前admission。正常readはAnchorを含む15保存stage。
+- 実装：署名付きrefused／unknownとprivate intent（unknown確定後の同一ID再試行は`recovery_required`で止まりbarrierへ送る）、read-plan.v3の全工程費用とpin取得前admission。正常readはAnchorを含む15保存stage。
 - 実装：barrier／全participant drain／実停止、fresh bootstrap、own履歴を検証した5ownerの署名付き復旧報告、exact roots／epoch／run／barrier／bootとregistry digestへ結んだ再開gate。
 - 契約正常系・応答紛失・保存障害・期限・barrier・偽造復旧報告の回帰と、同UID5childの期限拒否→全service再起動／再開を検証する。別UID隔離・本番採用の証拠ではない。
 - 同UID native正常readは最終コードで3,876ms／15stage／本人ACK／公開1、全停止・復旧報告5件・再開を確認。負荷時は4,502msで公開0の期限拒否も観測。**残件は最大入力・継続負荷の性能と独立した実速度profileの承認**。転送・反復履歴検証の改善は引き続き候補。
 - 続いてC3c固定配備、C3d native故障・権限分離、C4採用審査、Q3b／Q4b、GC／compaction・大容量性能が残る。全採用flag false／originalReadsSkipped=0。
+- レビュー修正：GCなしの上限を契約テストで固定。公開は1 registry履歴あたり2 readまでで、3回目はpin・handoff後に`capacity_exhausted`となりbarrierが必要。実時間の5 processでは、初回4／8、直後の2回目0／2、再開後0／4（修正前のコード）で、期限内の連続利用は未成立。**C3cの前にGC／compactionと履歴検証の費用を判断する**。admission viewを実カウンタから作る実装も未着手。

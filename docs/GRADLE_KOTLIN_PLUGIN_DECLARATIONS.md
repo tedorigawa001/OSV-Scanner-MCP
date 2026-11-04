@@ -6521,11 +6521,11 @@ ReadAuthorityResultは4096 bytes以下のchunkで、transfer ID・offset・total
 
 #### 9.99.2 認証された拒否と結果不明
 
-opt-inのbusiness-outcome.v1を使用する。認証session内で検証したexact request digest・lineage・両端identityへ署名を結ぶ。ownerの直列化区間で既存operationを検査した後、無副作用と確定した拒否だけをrefused／effects:noneとする。保存・他serviceへの変更開始後、既存operation、未分類例外はunknown／possible。通信exceptionや署名改変をrefusedに変換しない。clientは検証したopaque outcomeの事実だけを使い、同一要求のintent・元のoperation ID・期限を保持する。unknownから新pin・新useIdを自動発行しない。期限超過後の公開・再開は拒否し、barrierと管理復旧へ送る。
+opt-inのbusiness-outcome.v1を使用する。認証session内で検証したexact request digest・lineage・両端identityへ署名を結ぶ。ownerの直列化区間で既存operationを検査した後、無副作用と確定した拒否だけをrefused／effects:noneとする。保存・他serviceへの変更開始後、既存operation、未分類例外はunknown／possible。通信exceptionや署名改変をrefusedに変換しない。clientは検証したopaque outcomeの事実だけを使い、同一要求のintent・元のoperation ID・期限を保持する。unknownから新pin・新useIdを自動発行しない。セッション内の自動復旧1回を超えてunknownになった操作は、同じIDでも`SessionBootQuota`が`recovery_required`で止め、ownerへ再送しない。期限内でも再試行では完了せず、公開・再開は拒否してbarrierと管理復旧へ送る。
 
 #### 9.99.3 実call graph用予算
 
-旧v2を読み替えずread-plan.v3／consumer-broker-full-read-ack-v1を要求する。source bytes／entry数／inventory／result bytesからchunk数を上限計算し、9 directed authenticated edgeの業務要求と、registry→Anchorの原本照合／CAS／query要求・回復handshake・frame／signature・保存stageと履歴検証bytesを計上する。pin／handoff／delivery／ACKに伴う独立Anchor保存を含め、正常readは15 stage。各edgeの既存残量、frame／stage容量が足りなければpin取得前に拒否する。履歴検証の費用は512 MiBのbounded履歴を反復検証する保守的上限を使用する。
+旧v2を読み替えずread-plan.v3／consumer-broker-full-read-ack-v1を要求する。source bytes／entry数／inventory／result bytesからchunk数を上限計算し、9 directed authenticated edgeの業務要求と、registry→Anchorの原本照合／CAS／query要求・回復handshake・frame／signature・保存stageと履歴検証bytesを計上する。pin／handoff／delivery／ACKに伴う独立Anchor保存を含め、正常readは15 stage。rootが渡すadmission view（各edgeの残量、frame／stage数）が足りなければpin取得前に拒否する。この判定は渡された値との比較だけで、実カウンタから値を作る実装はまだなく、ownerのrecord容量も含まない。registry容量の不足は9.99.6のとおりpin取得後に発覚する。履歴検証の費用は512 MiBのbounded履歴を反復検証する保守的上限を使用する。
 
 rootが供給する最低速度は独立した配備承認が必要で、wireが自由に指定できる採用証拠ではない。fixtureの大きな速度値は計算・経路接続の診断専用で、最大入力のthroughput認証ではない。全readは一つの5秒期限と500ms以上の余裕を保持し、consumerの各RPCへ元の絶対期限を渡す。再接続・再試行・途中保存で期限を更新しない。実elapsed・phase・edge件数・保存数は別途観測し、予測値を実測値と呼ばない。
 
@@ -6544,3 +6544,22 @@ ServiceLifecycleCoordinatorはBeginBarrier→broker予約解決→全participant
 C3b-5 native診断では、期限拒否と正常完了の両方を観測した。負荷のある実行ではauthority準備中に元期限の余裕境界へ到達し、4,502msで拒否・公開0だった。全体テスト中は3,911ms、最終コードでの再実行は3,876msで正常完了し、いずれも15保存stage／本人ACK／公開1と全停止・新boot・復旧報告5件・再開を確認した。速度値は一台の実測であり、最大入力・継続負荷・独立した最低速度profileの承認を示さない。期限と安全検査は緩めていない。
 
 停止再試行はexact barrierと確認済みparticipantを保持し、FinishBarrier後のstop失敗ではfrozen registryへsettleを再送せずstopだけを再試行する。再開の報告取得失敗でも同じ起動済みbootstrapを維持し、同bootのsession予算を再初期化しない。最終検証は全体5,403通過／17失敗／1,418 skip（975.57秒）。17失敗は既存Unix socket起動が実行制限で拒否されたケースで、対象18件をsocket作成可能な条件で再実行して全通過した。停止再試行の追加後は関連7件を再実行して全通過（13.69秒）。最終tree全件の単一batch greenとは呼ばず、各検証の範囲を記録する。型検査・build・tracked／untracked整形検査、4件の検査除去対照と復元を確認した。検証記録は`docs/validation/gradle-independent-currentness-c3b5-2026-11-04.json`。
+
+#### 9.99.6 レビュー修正：連続利用と再開後readの実測
+
+GC／compactionがない現状の上限を、fake clockの契約テストで固定した。
+
+- registryのCAS要求は1 readで約13.7 KB増える（9.6→22.3→36.0→42.4 KB）。通常処理の上限は45,536 B（65,536−予約20,000）で、**既定の上限で公開できるのは1 registry履歴あたり2 readまで**。
+- 3回目はadmissionを通り、pin・source読取・PrepareHandoffまで進んだ後に`capacity_exhausted`（署名付きunknown）で止まる。broker未解決1件が残り、`ReserveWriter`は`effects_pending`、同じbridgeの再readは`budget_exceeded`になる。barrierが必要。
+- barrierと再開も履歴を約6.5 KB増やす。fake clockでは「read→全owner再起動・再開→新reader bootでread」の公開を確認した。この2回目で要求は43.6 KBに達する。
+- barrier後に履歴が縮まないことはコード上の判断で、barrier後の3回目は測っていない。
+
+実時間の5 process診断は、期限切れも許す診断テストとして名前を変え、再開後のreadも試す。公開の成否は契約テストが判定する。修正前のコードで、負荷平均約3〜7の同じ1台で測った結果は次のとおり。
+
+- 初回read：8回中4回公開（3.7〜4.1秒）、残りは約4.5秒で期限拒否。
+- 初回成功の直後の2回目：2回中0回。sourceが約0.9〜1.0秒から約1.5秒、authorityが約1.2秒から約1.9秒に増えた。
+- 再開後の新bridge：4回中0回。修正後の診断1回も、初回・再開後とも期限拒否（公開0）だった。
+
+処理時間は履歴とともに増えており、履歴検証の反復を原因と見ているが未特定である。したがってC3b-5は小さなfixtureで1回読める段階であり、期限内の連続利用は成立していない。
+
+修正後の検証結果は検証記録の`verification.reviewFix`に記す。追加3件について対照3件で期待した失敗を確認し、復元した。
