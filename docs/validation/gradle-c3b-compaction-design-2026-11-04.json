@@ -6,6 +6,7 @@
   "designSection": "9.100",
   "subsections": 14,
   "implementationUnits": [
+    "CGP",
     "CG0",
     "CG1",
     "CG2",
@@ -14,7 +15,7 @@
     "CG5",
     "CG6"
   ],
-  "phaseCount": 11,
+  "phaseCount": 10,
   "regressionConditions": [
     "CG01",
     "CG02",
@@ -63,7 +64,11 @@
     "CG45",
     "CG46",
     "CG47",
-    "CG48"
+    "CG48",
+    "CG49",
+    "CG50",
+    "CG51",
+    "CG52"
   ],
   "checks": {
     "sectionSequence": "passed",
@@ -75,7 +80,10 @@
     "genesisAndClockOriginConditions": "passed",
     "generationIdentitySelectionSeparation": "passed",
     "gcStartResumeTargetEvidenceConditions": "passed",
-    "CG30CG32CG33Updated": "passed"
+    "CG30CG32CG33Updated": "passed",
+    "gcAfterCompletedDependencies": "passed",
+    "controlRecordArithmetic": "passed",
+    "cgpBeforeCg0": "passed"
   },
   "implementationStatus": {
     "schemaRuntime": false,
@@ -86,7 +94,9 @@
     "cutover": false,
     "gc": false,
     "nativeExperiments": 0,
-    "runtimeRegressionConditionsExecuted": 0
+    "runtimeRegressionConditionsExecuted": 0,
+    "cgpTimeBudget": false,
+    "readsPerGeneration": null
   },
   "backendEligible": false,
   "profileApproved": false,
@@ -109,8 +119,8 @@
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb"
   },
   "documentSha256": {
-    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "ea5d8de43eb3e79152fcfb4b8762acee93089802fb802ec73a4b19b90eb68f52",
-    "docs/DESIGN_TODO.md": "e9e8484dce20a0bb0f5a0a3dac898b2eac1571aa15a3fc7e2c882c61c506a852"
+    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "f2060077c845698701792f3ad0a6439f794cbf09023c5e8935a0849a4b73e8b8",
+    "docs/DESIGN_TODO.md": "2edc9d5bef841fd75d193af9806763790578be18e7f1b6fd980f377fcf7601b5"
   },
   "reviewNotes": [
     "Existing journal v1/stage/registry/Anchor parsers do not accept the proposed v2 formats.",
@@ -119,7 +129,9 @@
     "No runtime code changed. CG01-CG48 are requirements, not passing tests.",
     "Current 2-read and real-time continuous-read limitations remain; no performance improvement claimed.",
     "GenerationId is fixed before construction; built vector and SGA receipts are separate and cannot enter base/genesis/template/import-core bytes.",
-    "GC requires fresh five-target verification at start and resume, continuous custody and exact batch execution binding; old Ready alone grants no deletion."
+    "GC requires fresh five-target verification at start and resume, continuous custody and exact batch execution binding; old Ready alone grants no deletion.",
+    "Second review: source GC runs after completed; the earlier rule that the target stays read-only until GC completes is withdrawn.",
+    "Current read budget has no fitted time plan; CGP must show one and readsPerGeneration before CG3."
   ],
   "beforeReviewDocumentSha256": {
     "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "05d979b23caea6d6baf133a487f9b7dffb44bd04c8c60a2360e122f06ff8cca6",
@@ -371,6 +383,268 @@
       "CG32": "全base・checkpoint・profile・templateをexact照合。Ready後／cutover後・GC開始前にtargetのbase／material／page／checkpointを改変・欠落・追加、同path別inodeへ交換し、source unlink0。5roleのfresh再検証／challenge／custody証拠欠落・旧Ready又は再検証集合の再送もGC予約0。正規5targetの完全再検証だけがcurrent gcRunを有効にする",
       "CG33": "ready／activation／cutover及びtarget再検証後・batch予約後・Prepared後で停止／応答紛失、controller／custodian／executor再起動・FD受渡しを交差させる。selection照会までsource再開0、cutover後rollback0、再開時は旧gcRun／permitでunlink0。元batchをfence・解決しfreshな5target完全再検証＋限定resume認可後だけ同じBatchIntentを再開。欠落／改変target又は1role custody断ではsource保持・後続unlink0"
     },
+    "runtimeRegressionConditionsExecuted": 0,
+    "nativeExperiments": 0
+  },
+  "sourceRetentionStateCount": 3,
+  "beforeSecondReviewDocumentSha256": {
+    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "ea5d8de43eb3e79152fcfb4b8762acee93089802fb802ec73a4b19b90eb68f52",
+    "docs/DESIGN_TODO.md": "e9e8484dce20a0bb0f5a0a3dac898b2eac1571aa15a3fc7e2c882c61c506a852"
+  },
+  "secondReviewFix": {
+    "scope": "design correction and document-level checks only",
+    "gcOrder": "completed before source GC; replaces the section 9.66 order for C3b only",
+    "availability": "hold, paused GC and native GC unsupported do not stop normal admission; source stays and is charged",
+    "targetRejected": "explicit rejection before normal admission; re-plan from the same FrozenSet with a new generation; no source serving",
+    "gcTargetGate": {
+      "subject": "running owners",
+      "checks": "immutable closure, delta chain from genesis to current head, complete inventory, fresh challenge, same boot per batch",
+      "readOnlyCustodyRequired": false
+    },
+    "controlRecords": {
+      "formula": "64 + sum over roots of 3*ceil(entries/64) <= 1024",
+      "maximumEntriesWithFullBatches": 20480,
+      "fixedBreakdown": {
+        "throughCompleted": 31,
+        "gc": 19,
+        "oneResume": 8,
+        "slack": 6
+      }
+    },
+    "unGcGenerationsInitialLimit": 2,
+    "freshSgaBoundariesPerReadCandidate": 6,
+    "newUnit": "CGP before CG0; no CG3 without a fitted time plan and readsPerGeneration",
+    "dependencyCheck": {
+      "kind": "symbolic graph checked by a throwaway script; not a schema or cryptographic test",
+      "dependencies": {
+        "generationId": [],
+        "provisionFacts": [
+          "generationId"
+        ],
+        "template": [
+          "generationId",
+          "provisionFacts"
+        ],
+        "provision": [
+          "provisionFacts",
+          "template"
+        ],
+        "sourceSelection": [],
+        "start": [
+          "generationId",
+          "provision",
+          "sourceSelection"
+        ],
+        "freeze": [
+          "start"
+        ],
+        "inventory": [
+          "freeze"
+        ],
+        "archive": [
+          "inventory"
+        ],
+        "importMap": [
+          "inventory",
+          "template"
+        ],
+        "plan": [
+          "importMap",
+          "archive",
+          "provision"
+        ],
+        "release": [
+          "plan"
+        ],
+        "copiedMaterial": [
+          "release",
+          "inventory"
+        ],
+        "importCore": [
+          "importMap",
+          "copiedMaterial",
+          "generationId",
+          "provision"
+        ],
+        "registryBase": [
+          "importCore",
+          "release",
+          "template",
+          "freeze"
+        ],
+        "registryGenesis": [
+          "registryBase",
+          "generationId",
+          "template"
+        ],
+        "registryCheckpoint": [
+          "registryGenesis"
+        ],
+        "anchorBase": [
+          "registryBase",
+          "registryGenesis",
+          "sourceSelection",
+          "release",
+          "template"
+        ],
+        "anchorGenesis": [
+          "anchorBase",
+          "generationId",
+          "template"
+        ],
+        "anchorCheckpoint": [
+          "anchorGenesis"
+        ],
+        "otherBases": [
+          "importCore",
+          "release",
+          "template"
+        ],
+        "otherGenesis": [
+          "otherBases",
+          "generationId",
+          "template"
+        ],
+        "otherCheckpoints": [
+          "otherGenesis"
+        ],
+        "ownerVector": [
+          "generationId",
+          "provision",
+          "registryBase",
+          "registryCheckpoint",
+          "anchorBase",
+          "anchorCheckpoint",
+          "otherBases",
+          "otherCheckpoints"
+        ],
+        "manifest": [
+          "ownerVector"
+        ],
+        "ready": [
+          "manifest",
+          "ownerVector",
+          "archive"
+        ],
+        "activation": [
+          "ready"
+        ],
+        "cutover": [
+          "activation",
+          "ownerVector",
+          "manifest"
+        ],
+        "gcRun": [
+          "completed"
+        ],
+        "targetRevalidation": [
+          "gcRun",
+          "ready",
+          "manifest",
+          "ownerVector",
+          "completed"
+        ],
+        "deleteAuthorization": [
+          "targetRevalidation",
+          "completed"
+        ],
+        "batchPermit": [
+          "targetRevalidation",
+          "deleteAuthorization"
+        ],
+        "gcCompletion": [
+          "batchPermit"
+        ],
+        "bootstrap": [
+          "template",
+          "cutover"
+        ],
+        "finalization": [
+          "bootstrap",
+          "registryBase",
+          "anchorBase",
+          "otherBases"
+        ],
+        "completed": [
+          "finalization",
+          "cutover"
+        ],
+        "retirementDelta": [
+          "gcCompletion",
+          "completed"
+        ]
+      },
+      "positiveTopologicalOrder": [
+        "generationId",
+        "sourceSelection",
+        "provisionFacts",
+        "template",
+        "provision",
+        "start",
+        "freeze",
+        "inventory",
+        "archive",
+        "importMap",
+        "plan",
+        "release",
+        "copiedMaterial",
+        "importCore",
+        "otherBases",
+        "registryBase",
+        "otherGenesis",
+        "registryGenesis",
+        "anchorBase",
+        "otherCheckpoints",
+        "registryCheckpoint",
+        "anchorGenesis",
+        "anchorCheckpoint",
+        "ownerVector",
+        "manifest",
+        "ready",
+        "activation",
+        "cutover",
+        "bootstrap",
+        "finalization",
+        "completed",
+        "gcRun",
+        "targetRevalidation",
+        "deleteAuthorization",
+        "batchPermit",
+        "gcCompletion",
+        "retirementDelta"
+      ],
+      "negativeControls": [
+        {
+          "addedReference": "completed -> gcCompletion",
+          "expectedCycleRejected": true
+        },
+        {
+          "addedReference": "finalization -> gcCompletion",
+          "expectedCycleRejected": true
+        },
+        {
+          "addedReference": "bootstrap -> gcCompletion",
+          "expectedCycleRejected": true
+        },
+        {
+          "addedReference": "template -> provision",
+          "expectedCycleRejected": true
+        },
+        {
+          "addedReference": "importCore -> cutover",
+          "expectedCycleRejected": true
+        },
+        {
+          "addedReference": "registryGenesis -> ownerVector",
+          "expectedCycleRejected": true
+        }
+      ]
+    },
+    "limitations": [
+      "Fixed record counts, the 6 boundaries and the 2 generation limit are initial candidates, not measured.",
+      "The 5 second fit is unproven and may force a further design change.",
+      "No runtime condition was executed."
+    ],
     "runtimeRegressionConditionsExecuted": 0,
     "nativeExperiments": 0
   }

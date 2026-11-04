@@ -2898,8 +2898,8 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - freeze時のuse／ACK／broker予約の解決、保持・historical・retire分類、旧receipt／署名bytes・選択sourceの新rootへのimport対応、revocation／budgetの持越しを具体化。
 - StageStore.v2 base＋delta、新registry／Anchor base、current outcomeのpage化で、単なるjournal切詰めや次の2 readでの再膨張を避ける。hash順序、phase別の必須証拠、bootstrapと読取前gateを定義。
 - exact cutover／応答紛失／再起動、holdとGC batch予約の順序、有限inventoryのunlink／sync／再試行、source削除後の起動、上限到達時の拒否を具体化。
-- 実装順はCG0（strict schema・閉包・射影・状態／認可の純粋contract）→CG1（SGA／予約）→CG2（gate／freeze）→CG3（base／import／page）→CG4（cutover／復旧）→CG5（GC）→CG6（連続利用・性能）。CG01〜CG48は未実装の回帰条件。
-- **次の着手点はCG0。** SGAの独立backend、GC・移行runtime、新format reader、native故障・性能実証は未成立。C3c／C3d／C4、Q3b／Q4bも引き続き残る。
+- 実装順はCGP（5秒の内訳・page化試作・時間予算・目標read回数）→CG0（strict schema・閉包・射影・状態／認可の純粋contract）→CG1（SGA／予約）→CG2（gate／freeze）→CG3（base／import／page）→CG4（cutover／completed／復旧）→CG5（completed後のGC）→CG6（連続利用・性能）。CG01〜CG52は未実装の回帰条件。
+- **次の着手点はCGP。** SGAの独立backend、GC・移行runtime、新format reader、native故障・性能実証は未成立。C3c／C3d／C4、Q3b／Q4bも引き続き残る。
 - 文書の検証範囲とsource fingerprintは`docs/validation/gradle-c3b-compaction-design-2026-11-04.json`へ記録する。設計条件の列挙・整形検査を、runtime回帰の通過と数えない。
 
 §9.100レビュー修正：
@@ -2907,3 +2907,12 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - 生成前のServiceGenerationId／OwnerProvisionVectorと、構築後のOwnerVector／ServiceSelection・採用receiptを分離。template・import core・genesis checkpointから未来vectorへの循環を禁止し、registry→Anchor baseの生成順も明示した。
 - GC開始・再開前の5target完全再検証、fresh gcRun／challenge、TargetRevalidationSetと継続read-only custody、実行permitの失効・限定resume認可を具体化。Readyだけではunlinkを許可せず、target runtimeの書込はGC完了後に限定した。
 - CG30は正常な非循環生成と未来refの負例、CG32はReady後／cutover後のtarget改変、CG33は再検証後・予約後・Prepared後の停止／再起動と旧permit拒否を追加。設計のみで、runtime回帰条件は引き続き未実装。
+
+§9.100第2次レビュー修正：
+
+- source GCを`completed`後の別工程（`sourceRetention`）へ分離し、§9.66の順序をC3bでは置換。target起動を確かめてから削除でき、hold・GC非対応・paused中も通常受付を止めない。上記「target runtimeの書込はGC完了後に限定」は取消し。
+- 通常受付前の起動不良に`target-rejected`を追加。同じFrozenSetから新generationをplanでき、sourceの通常再開はしない。
+- GC再検証を、稼働中ownerによる不変閉包＋delta連鎖の検証へ変更。読取専用custodyは廃止。
+- control record式を定義し、移行可能量をbatchが揃う場合の最大20,480 entriesへ修正。未GC世代の上限は2。
+- CGPを追加。fresh SGA確認を1 read 6境界の候補に限定し、5秒に収まる見込みと`readsPerGeneration`が示せなければCG3以降へ進まない。page化要件を5ownerへ拡張。
+- CG49〜CG52を追加。いずれも設計のみで、runtime回帰条件は未実装。

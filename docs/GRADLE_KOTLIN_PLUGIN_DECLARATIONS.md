@@ -3792,7 +3792,7 @@ registry stateはphaseごとのstrict unionとし、必須refを曖昧なoptiona
 | completed | 実target finalization head・local checkpoint・retire receipts・復旧予算・registry完了receipt | 検証済みtargetだけ通常受付可。以後のlocal headはこのhead以上でcontinuityを保つ |
 | aborted-before-select | CASでsource選択維持＋理由。未freezeならAbsentWitness、freeze済みならfrozen evidenceを必須とするstrict union。候補は非採用で保持 | sourceの旧actorは復元しない。通常受付にはsource側の保守予約再確保・新boot等が別に必要 |
 
-selected-target以後にaborted-before-selectへ戻さない。制約不明・新hold・保存障害では確定済みphaseで停止し、認可を更新して同じtargetについて再開する。初回方式ではGC完了・finalization・完了CASまで通常受付を開かない。hold等によりGCできなければtarget選択済みでも停止が続く可用性上の制約を明示する。sourceを選び直して可用性を優先しない。
+selected-target以後にaborted-before-selectへ戻さない。制約不明・新hold・保存障害では確定済みphaseで停止し、認可を更新して同じtargetについて再開する。初回方式ではGC完了・finalization・完了CASまで通常受付を開かない。hold等によりGCできなければtarget選択済みでも停止が続く可用性上の制約を明示する。sourceを選び直して可用性を優先しない。C3b 5ownerの移行は§9.100.9／§9.100.11のとおりcompleted後へsource GCを分離し、この順序と可用性制約を置換する。producer store自身の本節の方式は変更しない。
 
 #### 9.66.6 source freeze・予約と再試行
 
@@ -6566,7 +6566,7 @@ GC／compactionがない現状の上限を、fake clockの契約テストで固�
 
 ### 9.100 C3b保存層のGC／compaction・service世代移行契約（設計）
 
-§9.66のoffline移行をC3bの5ownerへ適用する具体契約。今回の変更は設計と回帰条件であり、移行reader／新base／削除API・独立世代authorityを実装・有効化しない。§9.99.6の2 read上限、実admission未接続、継続負荷・再開後readの期限問題は現実装の制限のままである。
+§9.66のoffline移行をC3bの5ownerへ適用する具体契約。ただしsource GCはtargetの通常受付開始後の別工程とし、§9.66のGC→finalization→completedの順序をこの契約では置換する。今回の変更は設計と回帰条件であり、移行reader／新base／削除API・独立世代authorityを実装・有効化しない。§9.99.6の2 read上限、実admission未接続、継続負荷・再開後readの期限問題は現実装の制限のままである。
 
 #### 9.100.1 対象と世代identity
 
@@ -6595,7 +6595,7 @@ C3bの既存5role用`validateOwnerPlans`へSGAを6番目として追加しない
 | SGA | 現selection、phase CAS、purpose別認可、履歴照会とfresh challenge | owner原本、source／target IO、任意script実行 |
 | role別GC executor | 自分のsource inventoryとexact batch認可、root相対の限定unlink | target書込、path／URL指定の削除、採用判断 |
 
-SGAの各APIは独立enrollment上のrole／credential／deploymentLineageId／purposeを照合する。`RequestFreeze`と`AbortBeforeSelect`はcontroller＋start認可、`RecordFrozen／RecordReady`はcontroller＋全owner／verifier証拠、`SelectTarget`はcontroller＋別のactivation認可、`AuthorizeGc`はhold管理issuerを含むdelete認可、`RecordGc／CompleteGeneration`は対応receipt集合、`ReadCurrent／QueryMigration`は承認済みclient、`AuthorizeBootstrap`はmanager＋選択済み世代のtemplateとする。別purposeの認可を流用しない。`BeginGcRun`はcontroller＋cutoverとrevalidate-purpose認可（削除不可）、`SubmitTargetRevalidation`は登録custodian／verifier、`ReserveGcBatch`はcontroller＋delete-purpose認可とcurrent再検証集合／exact executor、`ResumeGcExecution`は同認可に加えて旧executorのfence・元Preparedと新gcRunを必要とする。BeginGcRunへ未来のdelete permitを要求しない。鍵／API認可の詳細schemaはCG0で固定する。
+SGAの各APIは独立enrollment上のrole／credential／deploymentLineageId／purposeを照合する。`RequestFreeze`と`AbortBeforeSelect`はcontroller＋start認可、`RecordFrozen／RecordReady`はcontroller＋全owner／verifier証拠、`SelectTarget`はcontroller＋別のactivation認可、`AuthorizeGc`はhold管理issuerを含むdelete認可、`RecordFinalized／CompleteGeneration`と`RecordGc／RecordRetired`は対応receipt集合、`RejectTarget`はcontroller＋別のreject-purpose認可と通常受付未開始の証拠、`ReadCurrent／QueryMigration`は承認済みclient、`AuthorizeBootstrap`はmanager＋選択済み世代のtemplateとする。別purposeの認可を流用しない。`BeginGcRun`はcontroller＋completed receiptとrevalidate-purpose認可（削除不可）、`SubmitTargetRevalidation`は現runtime owner／verifier、`ReserveGcBatch`はcontroller＋delete-purpose認可とcurrent再検証集合／exact executor、`ResumeGcExecution`は同認可に加えて旧executorのfence・元Preparedと新gcRunを必要とする。BeginGcRunへ未来のdelete permitを要求しない。鍵／API認可の詳細schemaはCG0で固定する。
 
 SGA未接続時は`generation_authority_unsupported`。local memory／同UID childのSGA対照は契約実証に限り、本番隔離flagを立てない。通常要求は接続先の自己申告だけで世代を採用せず、独立公開pinによるSGA確認を要求する。
 
@@ -6605,7 +6605,7 @@ source 5 pairの10 root、target 5 pairの10 root、migration-control pairの2 r
 
 start前に、sourceを削除しなくても全target・control・archiveと一時領域を構築できるピーク容量を予約する。sourceの現在使用量も課金し、copy失敗候補・未公開temp・archiveの実copyを除外しない。共有bytesは物理rootごとの実在分を数え、別rootへのcopyを1回分と計算しない。各rootの現hard capを引き上げない。
 
-初期候補profileは§9.66のcontrol 1 MiB／閉包64 MiB／1,024 records、inventory page・GC batch各64 entriesを引継ぐ。5ownerのsource両root inventory上限は40,960 entries（10×4,096）で、owner／root上限も同時適用。owner baseは4 MiB、5base合計16 MiBを上限とし、source material本体はdigest付き独立entryへ分けて重複埋込しない。これらは新profileの設計上限であり、現64 KiBのCurrentRef／registry record parserへ大きいrefを通さない。control用typed refは別schemaにする。
+初期候補profileは§9.66のcontrol 1 MiB／閉包64 MiB／1,024 records、inventory page・GC batch各64 entriesを引継ぐ。物理上限は10 rootで40,960 entries（10×4,096）だが、移行可能な量はcontrol上限で決まる。1 migrationのcontrol recordsは`64 + Σroot 3×ceil(entries/64)`以下が1,024であることをstart前に確定する（inventory page・Prepared・Doneで1 batch 3 records）。固定分64の内訳は、completedまで31、GC 19（gcRun 1、再検証6、認可／barrier 2、completion 5、retirement 5）、限定resume 1回分8、余力6である。batchが揃う場合の最大は20,480 entries。超える系統は`maintenance_reserve_insufficient`で開始前に拒否し、通常admissionもこの余力を割る前に保守へ移る。実行予約の継続証拠はPrepared recordへ含め、別recordにしない。SGAのbatch予約／Done（1 batch 2 CAS）もSGA予約へ計上する。owner／root上限も同時適用。owner baseは4 MiB、5base合計16 MiBを上限とし、source material本体はdigest付き独立entryへ分けて重複埋込しない。これらは新profileの設計上限であり、現64 KiBのCurrentRef／registry record parserへ大きいrefを通さない。control用typed refは別schemaにする。
 
 owner別`CapacityCertificate`は、凍結開始から全pin等の失効・予約解決・FinishBarrier・最終freeze／export・owner停止までに必要なstage／record bytes／CAS wire bytes／file数、target初期化・新boot・finalization・復旧用余力、SGA／controlの最大retry枠を正確なserializerで算出する。単に既存16 stage／20,000 bytes予約があれば十分と扱わない。cross-service pendingが64件ある場合等の集合サイズも費用に含める。start CASでownerごとの論理予約をatomicに結び、他の通常要求が使えないようにする。
 
@@ -6613,9 +6613,11 @@ migration-aware profileの通常admissionは、次のread全工程（15保存sta
 
 旧profileで既に満杯となりfreezeを保存できない系統を「移行可能」としない。初回profileではunsupportedのまま保存・監査し、原本を削って空きを作らない。以後の通常admissionが早期に保守へ移ることで、同じ状況を避ける。
 
+未GCの旧世代sourceは、通常受付の可否とは独立に容量へ課金し続ける。次の移行は未GC世代が残っていても開始できるが、その実bytes／entriesをピークへ含め、未GC世代の初期上限は2とする。hold等で超える場合は次の移行を開始前に拒否する。
+
 #### 9.100.4 freezeとcross-owner整合性
 
-開始手順はSGAの`serving-source→freeze-requested` CASを先に確定する。これ以後、全roleの新規通常受付、grant発行、dispatch、原本読取、ACK／結果公開の直前gateはSGAとroot所有を確認して閉じる。cache・過去のServingReceiptだけで返答しない。既存operationの解決に必要なmaintenance APIだけをexact migration capabilityで許可する。
+開始手順はSGAの`serving-source→freeze-requested` CASを先に確定する。これ以後、全roleの新規通常受付、grant発行、dispatch、原本読取の開始、ACK／結果公開の直前gateはSGAとroot所有を確認して閉じる（確認する境界は§9.100.8）。chunk単位の読取は有効なpinの`CheckLiveBinding`へ従い、BeginBarrierでpinが失効した後は通らない。cache・過去のServingReceiptだけで返答しない。既存operationの解決に必要なmaintenance APIだけをexact migration capabilityで許可する。
 
 初期profileは、正常ACK済みを維持し、それ以外のread／deliveryを「新たに成功させず失効・解決する」方針に固定する。registry BeginBarrier→broker settleReservations→provider／issuer／broker／reader／writerのdrain証拠→ConfirmFenced→FinishBarrierを使用する。これらにSGA gateを接続する新profileが必要で、既存のreason=`gc`／`cutover`だけを呼んで移行freeze成立としない。genesis provisioning中は移行対象外。未確定のwriter publicationは元CASを照会して選択を一意にした後、writerをcancelする。registry／Anchorの未adopt tail、ownerの保存tailを解決する前にinventoryを確定しない。
 
@@ -6634,7 +6636,7 @@ readの解決表は次のとおり。外部effectはread-only限定のまま。
 
 #### 9.100.5 保持・射影・回収の分類
 
-全source stage・state field・外部参照を`retain-material／historical-fact／retire`のいずれか一つへ分類する`ImportMap`を作る。owner・元epoch・stage ref・record field path又は集合key・原本digestを鍵とし、欠落・二重分類・未知field・集合の一部だけの省略を拒否する。classificationの根拠、archive ref、target対応refを保存する。target対応は先行してcopyしたmaterialの実ref又は固定targetItemKeyで表し、未来のbase／import core／vectorのrefを要求しない。完成後のcore／baseとのjoinはReady側で検証する。単に最後のimageだけをcopyして過去operationの意味を失わない。
+全source stage・state field・外部参照を`retain-material／historical-fact／retire`のいずれか一つへ分類する`ImportMap`を作る。owner・元epoch・stage ref・record field path又は集合key・原本digestを鍵とし、欠落・二重分類・未知field・集合の一部だけの省略を拒否する。classificationの根拠、archive ref、target対応refを保存する。copyはrelease認可の後なので、target対応は固定targetItemKeyと期待digest／sizeで表し、copy後の実ref・未来のbase／import core／vectorを要求しない。copy結果と完成後のcore／baseとのjoinはReady側で検証する。単に最後のimageだけをcopyして過去operationの意味を失わない。
 
 | owner／対象 | targetの最小保持内容 | live stateへ復元しないもの |
 | --- | --- | --- |
@@ -6669,17 +6671,17 @@ role別`OwnerBase.v2`は固定transform version、target generationId／provisio
 
 registry v2のlocal revisionはbase genesisから増える一方、source末尾のcontrolRevision／selectionRevision等は`originHighWater`へ保持する。比較はgeneration stampを含むtupleとhigh-waterで行い、旧revision=256と新revision=1を同じ列の巻戻しと解釈又は許可しない。high-waterの減少・integer overflowは拒否する。新registry Rはprojected stateとindex rootを持ち、過去pin等の全配列を持たない。新Anchorのv2 baseは新registry base／genesis head、target generationId／provision、先行するsourceのSGA freeze／selection証拠を参照する。未来のtarget selectionはbaseへ入れず、cutover後のfinalization deltaと通常APIのgateで結ぶ。新AnchorをSGAの代用品にしない。
 
-さらにv2の通常処理中も、完了したcurrent-generationのoperation／handoff／ACKはcopy-on-writeの有界page索引へ保存し、Rにはrootとactive集合だけを置く。移行時だけ配列を空にして次の2 readで再び同じwire上限へ達する設計にしない。pageを保存・同期した後、そのrootを含むRをexact Anchor CASで採用し、未採用pageは非採用のまま課金する。元operationのexact retryとlive確認の意味は維持する。current索引とimport済みhistorical索引は混同せず、古いgrantの再発行を禁止する。新しいpage保存・署名・検索の費用をv2 read planに追加し、現15 stageをv2でも保証した値として再利用しない。
+さらにv2の通常処理中も、完了したcurrent-generationのoperation／handoff／ACKはcopy-on-writeの有界page索引へ保存し、Rにはrootとactive集合だけを置く。移行時だけ配列を空にして次の2 readで再び同じwire上限へ達する設計にしない。同じ要件を5owner全てへ適用する。特にbrokerは現在1 readで3行を保存し（上限40行、行ごとにbundleとresult bytesを含む）、registryだけpage化しても計算上約12回で止まるので、source bundle／result bytesはmaterial参照へ分け、行へ重複埋込しない。providerのuse・issuerのwitnessも同様に1 readあたりの増分を固定する。pageを保存・同期した後、そのrootを含むRをexact Anchor CASで採用し、未採用pageは非採用のまま課金する。元operationのexact retryとlive確認の意味は維持する。current索引とimport済みhistorical索引は混同せず、古いgrantの再発行を禁止する。新しいpage保存・署名・検索の費用をv2 read planに追加し、現15 stageをv2でも保証した値として再利用しない。
 
-hash順序は`generationId＋provision facts→templates→provision vector→start→freeze receipts→inventory/archive/intent→plan→release authorization→source import cores→owner bases（registry base／genesis→Anchor baseの順）→各genesis head／checkpoint→owner vector→target manifest→ready witness→activation authorization→SGA cutover→target revalidation→GC receipts→target finalization→SGA completed`。base・template・import core・genesisは未来vector／manifest／selection／ready／activation／GCを参照しない。依存graphはCG30で正常なtopological生成が可能であることも検証する。各refは先に確定した実envelope bytesのdigest／sizeを示し、自身のdigestを含めない。SGA selected stateは既に確定したvector／readyを参照し、finalization headを先取りしない。
+hash順序は`generationId＋provision facts→templates→provision vector→start→freeze receipts→inventory/archive/intent→plan→release authorization→source import cores→owner bases（registry base／genesis→Anchor baseの順）→各genesis head／checkpoint→owner vector→target manifest→ready witness→activation authorization→SGA cutover→bootstrap authorization→target finalization→SGA completed→GC run→target revalidation→GC authorization／batch receipts→GC completion→target retirement delta`。base・template・import core・genesis・finalization・completedは未来のGC証拠を参照しない。base・template・import core・genesisは未来vector／manifest／selection／ready／activationも参照しない。依存graphはCG30で正常なtopological生成が可能であることも検証する。各refは先に確定した実envelope bytesのdigest／sizeを示し、自身のdigestを含めない。SGA selected stateは既に確定したvector／readyを参照し、finalization headを先取りしない。
 
 #### 9.100.8 鍵・bootstrap・読取前gate
 
 targetは5ownerそれぞれ新journal MAC key／checkpoint keyと新keyIdをprovisionし、公開署名credentialもkeyEpochを増加させる。旧秘密鍵をcontroller／verifier／他roleへ渡さない。旧署名の検証に必要な承認済みSPKIとkey historyは保持するが、旧credentialを現APIのcallerとして受理しない。data source MAC materialは従来の独立登録を維持し、署名key rotationと混同しない。 source journal MACの全検証は元roleの専有verifierが行い、その結果を公開署名証拠として渡す。外部MigrationVerifierへ5roleのMAC keyを集約しない。archive再監査に必要な旧MAC materialの保管・利用はrole別の承認済みcustodyに限定し、通常APIの旧credential復活とは切り離す。
 
-base／owner templateにはruntime bootを将来値として埋めない。target bootstrapのexact credential registry／plans（新bootを含む）はbase完成後、SGAのphase付き`BootstrapAuthorization`へ別途束縛する。target構築receiptを通常boot成功記録として流用しない。selected-targetからgc-completeまではtargetをReady時のgenesis／inventoryに固定してread-only custodyを保ち、runtimeのboot／delta書込を開始しない。gc-complete以後にtarget processをadmission閉鎖のmaintenance modeで起動し、新bootの保存とfinalizationを行う。boot計画の変更は同baseに対する新bootstrap認可と旧bootの取消しを必要とし、旧nonce／session表を再初期化して同bootを使わない。
+base／owner templateにはruntime bootを将来値として埋めない。target bootstrapのexact credential registry／plans（新bootを含む）はbase完成後、SGAのphase付き`BootstrapAuthorization`へ別途束縛する。target構築receiptを通常boot成功記録として流用しない。selected-targetになるまでtargetをReady時のgenesis／inventoryに固定する。selected-target以後にtarget processをadmission閉鎖のmaintenance modeで起動し、新bootの保存とfinalizationを行う。実起動で不良が出ても、この時点ではsourceを1 fileも削除していない。boot計画の変更は同baseに対する新bootstrap認可と旧bootの取消しを必要とし、旧nonce／session表を再初期化して同bootを使わない。
 
-通常のread／write／ACK／result公開は、承認profile・新format対応→fresh SGA completed selection→exact vector／own epoch・root所有→current bootstrap／credentialとpeer→local base／checkpoint／delta→operationのlive bindingの順にgateする。世代不一致・hold・SGA不達時はsource bytesを読む前に拒否する。SGA確認のcache省略はQ3b／Q4bの独立承認まで禁止。読取開始後の世代変更・資格取消し・owner終了は応答直前にも検査し、古いprivate resultを公開しない。
+通常のread／write／ACK／result公開は、承認profile・新format対応→fresh SGA completed selection→exact vector／own epoch・root所有→current bootstrap／credentialとpeer→local base／checkpoint／delta→operationのlive bindingの順にgateする。世代不一致・SGA不達時はsource bytesを読む前に拒否する。holdはsource GCだけを止め、通常受付の拒否理由にしない。SGA確認の結果を次の境界へ流用するcacheはQ3b／Q4bの独立承認まで禁止する。fresh確認を行う境界は1 readにつきpin発行・checkpoint witness・source読取開始・authority準備・handoff・ACK／公開の6か所を初期候補とし、chunk／内部`CheckLiveBinding`ごとには行わない（現行の完了例は1 readで認証付き138 call）。この6か所で移行とのraceが閉じることはCG11で確認し、費用は§9.100.13のCGPで確定する。読取開始後の世代変更・資格取消し・owner終了は応答直前にも検査し、古いprivate resultを公開しない。
 
 #### 9.100.9 共通record・phase別必須証拠
 
@@ -6695,11 +6697,12 @@ base／owner templateにはruntime bootを将来値として埋めない。targe
 | ServiceReadyWitness | verifier署名、実manifest／5base／inventory／checkpoint、全対応・保存同期・archive readback・予算・source不変検証。5roleのown ready receiptを含む |
 | ServiceActivationAuthorization | exact ready／manifest／target vector、現在hold、expected SGA revision・期限。新targetのselectionだけを認可 |
 | ServiceCutoverReceipt | SGA CASのsource→target selection、ready／activation、以後source通常起動禁止。通常serving許可ではない |
-| TargetRevalidationSet | fresh SGA gcRunId／challenge、exact cutover／selection／target vector／manifest、5ownerの現在root・genesis／checkpoint・base／全inventory／control閉包の検証とreadback・sync結果、custodian identity／boot／custodyEpoch、独立verifierの集合検証。古いReadyの再送不可 |
-| ServiceGcAuthorization／GcBarrier | exact選択target・source inventory・hold CAS・有限batch plan。各実行予約はcurrent TargetRevalidationSetと5roleの継続custody証拠へ結ぶ。source root限定の削除だけを認可 |
+| TargetRevalidationSet | fresh SGA gcRunId／challenge、exact completed／selection／target vector／manifest、5ownerの現在root・不変閉包（base／material／import core／移入page／genesis checkpoint）の検証とreadback、genesisから現在headまでのdelta連鎖、未知fileなし、現runtime owner identity／boot、独立verifierの集合検証。古いReadyの再送不可 |
+| ServiceGcAuthorization／GcBarrier | exact completed target・source inventory・hold CAS・有限batch plan。各実行予約はcurrent TargetRevalidationSetと5ownerの同一boot継続証拠へ結ぶ。source root限定の削除だけを認可 |
 | OwnerGcPrepared／Done／GcCompletion | batchId／requestDigest／previous progress／inventory page、処理前file identity／digest、unlink／directory sync／再列挙、残存root、archive残存。Doneは実完了後のみ |
-| OwnerFinalization／CompletedSet | base／cutover／GC receipt、historical index・予算復元、新bootstrap authorization／boot、実local head／checkpointと5owner recovery receipt |
-| ServiceCompletedReceipt | exact target finalization vector、SGA completed CAS、新bootstrap／credential registry digest・control revision。初めて通常admissionを許可 |
+| OwnerFinalization／CompletedSet | base／cutover receipt、historical index・予算復元、新bootstrap authorization／boot、実local head／checkpointと5owner recovery receipt。GC証拠は含めない |
+| ServiceCompletedReceipt | exact target finalization vector、SGA completed CAS、新bootstrap／credential registry digest・control revision。初めて通常admissionを許可。source削除の完了を意味しない |
+| OwnerRetirementDelta | GC completion後にtarget通常deltaとして保存するRetireReceipt。tombstoneCore・immutable base digest・completed／GC completionを参照する。これがあるまで原本削除済み・retired完了と扱わない |
 
 Source freezeは新profileのSGA gate付きdrain／停止で確定し、`OwnerFreezeReceipt`をown signerで作りmigration-controlへ保存・同期する。provider等の旧journalへ仮のfreeze stageを追加したことにしない。receipt作成前にown sourceの全履歴とcheckpointを再検証し、署名前後のhead／inventory／inFlightを比較する。sourceの通常runtimeは停止済みで、migratorは排他的root取得を保持する。既存profileのruntimeがSGA gateを実行できない場合は、単なる外部署名追加で対応済みにせずsource profile unsupportedとする。
 
@@ -6710,12 +6713,19 @@ Source freezeは新profileのSGA gate付きdrain／停止で確定し、`OwnerFr
 | frozen | FrozenSet／全inventory／停止証拠 | plan・archiveを作る。source append／自動ResumeServingは禁止 |
 | prepared | plan／release認可／archive／hold／capacity | target構築だけ。target serving／source削除は禁止 |
 | ready | 実manifest／5ready／verifier witness／checkpoint | exact activationを取得。candidateの存在だけでは切り替えない |
-| selected-target | cutover／ready／activation、selection=target | sourceへのrollback不可。targetはmaintenance専用、GC hold確認へ進む |
-| deleting-source | GC認可／hold barrier／progress root、gcAdmissionのstrict union（paused又はvalidated:gcRunId／TargetRevalidationSet／custody集合） | validatedだけbatch予約可。停止・custody不明・改変時はpausedとなり、元batchの解決とfreshな全target再検証後に復旧 |
-| gc-complete | 5GC completion／source残存inventory | target新bootstrap／finalization。まだ通常受付しない |
-| finalizing | BootstrapAuthorization／5ownerの進捗head | 同じ新epochのfinalizationをexact retry。失敗bootは失効・新認可、成功headは巻き戻さない |
-| completed | 5final head／checkpoint／recovery・CompletedReceipt | 新世代だけserving。sourceと旧bootstrapは恒久的に不採用 |
+| selected-target | cutover／ready／activation、selection=target | sourceの通常再開は不可。targetはmaintenance専用でbootstrap認可へ進む。sourceは削除しない |
+| target-rejected | RejectTarget receipt、不良の証拠、source FrozenSet | 通常受付前のtargetを恒久不採用とする。source servingへは戻さず、同じFrozenSetから新generation・新認可のplanだけを許可。旧targetは課金して保持 |
+| finalizing | BootstrapAuthorization／5ownerの進捗head | 同じ新epochのfinalizationをexact retry。失敗bootは失効・新認可、成功headは巻き戻さない。解決不能な不良は明示認可でtarget-rejectedへ |
+| completed | 5final head／checkpoint／recovery・CompletedReceipt | 新世代だけserving。sourceと旧bootstrapは恒久的に不採用。source GCの状態には依存しない |
 | aborted-before-select | source選択維持・abort receipt・freeze有無を表すstrict union | sourceを自動でservingへ戻さない。candidateも課金して保持。別認可による再planのみ |
+
+source GCはphaseとは別の`sourceRetention`として、source世代ごとにSGAが保持する。completed後にだけ進行し、次の表のどの状態でも通常受付を止めない。
+
+| sourceRetention | 必須ref | 許可する進行／障害時 |
+| --- | --- | --- |
+| retained | completed receipt、source inventory、hold revision、課金中の容量 | gcRunの開始と再検証。hold中・backend非対応なら削除せず課金して保持 |
+| deleting | GC認可／hold barrier／progress root、gcAdmissionのstrict union（paused又はvalidated:gcRunId／TargetRevalidationSet／継続証拠） | validatedだけbatch予約可。owner再起動・証拠不明・改変時はpausedとなり、元batchの解決とfreshな全target再検証後に復旧 |
+| gc-complete | 5GC completion／source残存inventory／5OwnerRetirementDelta | 保持対象だけが残る。容量課金は残存分へ縮小 |
 
 freeze要求前のheadがdrain中に進む場合は、認可した進行中operation・tail解決・barrierによるprefixの前進だけをFrozenSetで説明する。before-headを黙って差し替えない。説明不能な前進はstale／integrity拒否。freeze receipt確定後のhead前進は一切許可しない。
 
@@ -6725,38 +6735,38 @@ freeze要求前のheadがdrain中に進む場合は、認可した進行中opera
 2. §9.100.4のdrain／解決を実行し5ownerを停止。role別migratorがsource／新規targetを専有し、全履歴・file inventoryと署名付きFrozenSetを確定する。source raw archiveはdigestだけでなくreadback可能な実bytesを確認する。
 3. plan→release認可→決定的5baseと新target checkpointを構築。source／targetの一対一対応と公開署名履歴を独立verifierが検査し、5readyとServiceReadyWitnessをcontrolへ同期する。失敗時の部分targetは非採用のまま課金・隔離し、上書きして成功候補へ変えない。
 4. activation認可を同期し、SGA `ready→selected-target` をexact CASする。CAS不明時はfresh challengeのQueryMigrationで元operationの採用有無を解決するまでsourceへ戻らない。後続transactionが確定済みでも元のreceiptを返し、現在値を書き戻さない。
-5. fresh gcRunをSGAで予約し、§9.100.11の全target再検証・custody確認を確定してからGC認可と現hold revisionをSGAでCASする。role別の各batchはcurrent再検証集合／custody証拠を束縛した実行予約→Preparedを同期→source root／inventory・selection／holdとtarget custody有効性を再検証→exact unlink→directory sync→残存確認→Done保存の順。停止後の再開もfreshな全target再検証を必須とし、古いReady／古い実行permitだけで進めない。5completionとGC完了phaseを確定する。
-6. SGAがphase付きの新bootstrapを認可。新owner runtimeは受付閉鎖でboot保存・target finalizationを行い、5ownerがbase／delta／SGA／checkpointを検証した復旧報告を出す。SGAが5最終headと新credential registryをcompletedへ採用した後だけ通常受付を開く。履歴内に現bootを見つけた再openは拒否し、新boot認可の保存なしにリトライしない。
+5. SGAがphase付きの新bootstrapを認可。新owner runtimeは受付閉鎖でboot保存・target finalizationを行い、5ownerがbase／delta／SGA／checkpointを検証した復旧報告を出す。SGAが5最終headと新credential registryをcompletedへ採用した後だけ通常受付を開く。履歴内に現bootを見つけた再openは拒否し、新boot認可の保存なしにリトライしない。解決不能な起動不良は明示認可のRejectTargetでtarget-rejectedへ移し、同じFrozenSetから新generationをplanする。通常受付を開いたtargetはrejectできない。
+6. completed後の別工程としてfresh gcRunをSGAで予約し、§9.100.11の全target再検証を確定してからGC認可と現hold revisionをSGAでCASする。role別の各batchはcurrent再検証集合／継続証拠を束縛した実行予約→Preparedを同期→source root／inventory・selection／holdと証拠の有効性を再検証→exact unlink→directory sync→残存確認→Done保存の順。停止後の再開もfreshな全target再検証を必須とし、古いReady／古い実行permitだけで進めない。5completion後にOwnerRetirementDeltaを保存し、sourceRetentionをgc-completeへ進める。
 
 管理要求もdeadline・purpose・credential・expected revisionを持つ。長い移行を一つの5秒read leaseに押し込めず、有限のphase／chunk／batchごとの期限を使う。timeoutで旧grantを復活させない。controllerの私有pending表は進捗の最終根拠ではなく、再起動はSGA selection／phase→exact control ref→own checkpoint／historyの順に再構成する。
 
 source尾部の保存結果が不明なら既存A2手順で解決し、checkpoint同期成功前にfreeze／ready ACKを返さない。ready／cutover／GC Done／completedの保存・sync・readback失敗もACKなし。SGAへのside effect開始後の通信例外はunknownとし、別ID・別target・新世代番号を自動発行しない。切替済みのtargetをsourceから作り直さない。
 
-pre-selectのabortは明示CASだけで行う。freeze未確定なら5ownerのtail検証・不在証拠を必要とし、部分freezeを「何も起きなかった」としない。初回C3b profileはabort後の通常source再開をunsupportedとし、sourceをfrozenのまま保持して新plan／新認可へ引き継ぐ。原本不変なら元freeze証拠を再利用できるが、migration bindingを明示し、新target identityを用いる。selected-target以後のabort・source選び直しは禁止。
+pre-selectのabortは明示CASだけで行う。freeze未確定なら5ownerのtail検証・不在証拠を必要とし、部分freezeを「何も起きなかった」としない。初回C3b profileはabort後の通常source再開をunsupportedとし、sourceをfrozenのまま保持して新plan／新認可へ引き継ぐ。原本不変なら元freeze証拠を再利用できるが、migration bindingを明示し、新target identityを用いる。selected-target以後のabort・sourceの通常再開は禁止。不良targetの置換はtarget-rejectedからの新planだけで、completed以後は不可（targetに新しい業務stateがあるため、sourceから作り直さない）。
 
 #### 9.100.11 GC・hold・file境界
 
 全保持集合、historical index、retained material、control／tombstone、archive証拠からmarkを計算し、ownerのsource inventoryと全単射で照合する。現在の選択sourceと監査rawをarchiveへ退避できても、targetが通常起動で必要とする原本はtarget側の実bytesとして保持する。targetのhardlink／mmap／aliasから旧rootに依存するreadyは拒否する。
 
-**GC開始・再開前のtarget gate。** 初回削除前と、controller／migrator／custodian／executorの再起動・FD解放／受渡し・権限取消し・整合性不明後の再開前には、必ず5owner全targetを新たに検証する。Readyの署名・時刻、SGAが同じtargetを選択している事実だけでは代用しない。SGAの`BeginGcRun`はfresh runId／challengeを発行し、target custodianはown rootを排他的に取得した状態で次を確認する。
+**GC開始・再開前のtarget gate。** GCはcompleted receipt確定後だけ開始でき、targetは通常受付とdelta書込を続ける。初回削除前と、controller／owner／executorの再起動・FD受渡し・権限取消し・整合性不明後の再開前には、必ず5owner全targetを新たに検証する。Readyの署名・時刻、SGAが同じtargetを選択している事実だけでは代用しない。SGAの`BeginGcRun`はfresh runId／challengeを発行し、現runtime ownerはown root所有を保持したまま次を確認する。
 
 - 実rootのdevice／inode／rootPairIdとvector、path／FDの同一性、別writer／alias／symlink／hardlinkなし。
-- 各base／genesis head／checkpoint、原本material／import core、historical／revocation／control pageの全参照閉包の実bytes・size／digest、完全inventoryと未知fileなし。Ready時のtargetからの未認可delta／boot書込は拒否する。
+- 不変閉包（各base／genesis head／genesis checkpoint、原本material／import core、移入したhistorical／revocation／control page）の実bytes・size／digest。genesisから現在headまでのdelta連鎖と完全inventoryを照合し、連鎖で説明できないfileは拒否する。
 - own MAC／公開署名・template／key history、必要なfile／directory syncとreadback、全5roleの相互対応とexact manifest／cutover／source inventoryのbinding。
 
-各roleがrun／challenge、custodianのmaintenance credential／boot／custodyEpoch（未起動の通常runtime bootとは別）、検証したexact roots／heads／inventory、保持中のread-only専有を署名し、独立verifierが5件を検証した`TargetRevalidationSet`をcontrolへ同期する。SGAはfresh challenge・現在phase／selection／権限を再検査してvalidatedへCASする。GC executorには公開refだけを渡し、targetの鍵／IOを渡さない。検証・同期失敗、欠落／余分file、改変、root／checkpoint不一致、1roleの証拠欠落では実行予約・unlinkとも0。
+各roleがrun／challenge、自分のcurrent boot、検証したexact roots／不変閉包root／現在head／inventoryを署名し、独立verifierが5件を検証した`TargetRevalidationSet`をcontrolへ同期する。SGAはfresh challenge・現在phase／selection／権限を再検査してvalidatedへCASする。GC executorには公開refだけを渡し、targetの鍵／IOを渡さない。検証・同期失敗、欠落／余分file、改変、root／checkpoint不一致、1roleの証拠欠落では実行予約・unlinkとも0で、通常受付の扱いは別途そのownerの整合性検査に従う。全量検証の費用は通常readの5秒枠に計上せず、保守予算としてCG6で測る。
 
-validatedから最後のsource unlinkまで5roleのtarget custodyを継続する。各`ReserveGcBatch`はcurrent gcRun／TargetRevalidationSetRef、全custodianのboot／custodyEpoch、fresh challenge付き継続証拠とexact batchを束縛し、executorもunlink直前に有効性を確認する。custodyが途切れた／不明ならSGAのGC受付をpausedへ閉じ、既発行executorをfenceして未完了batchを解決する。旧permitをTTLだけで回収しない。全targetの再取得・完全再検証と新gcRunを確定するまで次のunlinkは許可しない。署名された継続申告だけで外部writer不存在を保証せず、継続専有・immutable bytesのstorage保証を実証できないbackendはnative GC unsupportedとする。
+validatedから最後のsource unlinkまで、5ownerの同一bootとroot所有の継続を要求する。各`ReserveGcBatch`はcurrent gcRun／TargetRevalidationSetRef、全ownerのboot、fresh challenge付き継続証拠とexact batchを束縛し、executorもunlink直前に有効性を確認する。継続が途切れた／不明ならsourceRetentionのGC受付をpausedへ閉じ、既発行executorをfenceして未完了batchを解決する。旧permitをTTLだけで回収しない。全targetの完全再検証と新gcRunを確定するまで次のunlinkは許可しない。署名された継続申告だけで外部writer不存在を保証せず、不変閉包のstorage保証を実証できないbackendはnative GC unsupportedとする。この場合もtargetの通常受付は止めず、sourceを課金して保持する。
 
-再開では元`BatchIntent`（batchId／entries／source inventory／requestDigest）とPrepared／Doneを変更しない。旧実行許可の失効・実停止／FD回収と残存inventoryの解決を証拠に、新gcRun・再検証集合へ結んだ限定`ResumeGcExecutionAuthorization`を別に保存する。Ready後又はcutover後のtarget破損はsourceを保持して停止し、cutover後のsource fallback・自動target再生成で成功扱いにしない。GC完了後、custodyを明示的に解放・引渡し、finalization runtimeが同じtargetを再検証してからboot／deltaを書き始める。
+再開では元`BatchIntent`（batchId／entries／source inventory／requestDigest）とPrepared／Doneを変更しない。旧実行許可の失効・実停止／FD回収と残存inventoryの解決を証拠に、新gcRun・再検証集合へ結んだ限定`ResumeGcExecutionAuthorization`を別に保存する。Ready後又はcutover後のtarget破損はsourceを保持して止め、source fallback・自動target再生成で成功扱いにしない。completed前ならtarget-rejectedの手順だけを使う。
 
 delete認可はsourceのroot role／device／inode、固定grammarの相対名、size／digest／file identity／nlink、finite batch順に限定する。unlink前にSGAがexact target選択・GC phase・hold revisionを維持していることを確認し、容量超過や失効で止まる。GC barrier確定後に入ったholdは以後のbatchを止め、既削除を取り消したことにしない。retention／hold契約はこの不可逆境界を承認しなければならない。
 
-SGAの`ReserveGcBatch`はexact batch／executor boot／root identityへのdurable実行枠を一回予約する。hold要求はこの枠と線形化し、新しい予約を閉じた後、既予約batchのDone又は実executor停止・FD回収と残存inventoryの解決までpendingとなる。holdの確定ACK後は予約中batchが0であることを必須とする。単にhold revisionを読んでからunlinkする間のraceを無視しない。予約済みbatchの完了前に新holdが全削除を防いだとは返答せず、既unlinkは完了証拠へ明記する。executorが不明のままTTLだけで予約を取消して別executorへ二重発行しない。このfencingが実証できないprofileはnative GC unsupported。
+SGAの`ReserveGcBatch`はexact batch／executor boot／root identityへのdurable実行枠を一回予約する。hold要求はこの枠と線形化し、新しい予約を閉じた後、既予約batchのDone又は実executor停止・FD回収と残存inventoryの解決までpendingとなる。holdの確定ACK後は予約中batchが0であることを必須とする。単にhold revisionを読んでからunlinkする間のraceを無視しない。予約済みbatchの完了前に新holdが全削除を防いだとは返答せず、既unlinkは完了証拠へ明記する。executorが不明のままTTLだけで予約を取消して別executorへ二重発行しない。このfencingが実証できないprofileはnative GC unsupportedで、sourceを課金して保持する。
 
 Prepared保存前のmissing／digest違い／root置換は改変拒否。Prepared保存後の再試行は、既Done又は同じPreparedからの実file不在を照合し、既unlinkを再課金・再削除しない。残存fileが同名別inodeなら削除しない。未知file、symlink、nlink不正、path外参照、有限inventory外entryを見つけたら停止し、単にdirectoryを空にする再帰削除は禁止。列挙はroot／pageの上限+1件以内、総bytesもboundedにする。
 
-全batch後、root identities・残存inventory・directory syncとarchive残存を記したOwnerGcCompletionを保存する。source rootのdirectory／監査marker等、policyが残すentryは明記する。GC completionはlogical unlinkの範囲だけを述べ、backup消滅／secure erase／kernel隔離の証拠にしない。source旧鍵の破棄も別の承認・archive復号条件へ結び、GC成功だけから自動破棄しない。
+全batch後、root identities・残存inventory・directory syncとarchive残存を記したOwnerGcCompletionを保存し、続けてtargetへOwnerRetirementDeltaを保存する。source rootのdirectory／監査marker等、policyが残すentryは明記する。GC completionはlogical unlinkの範囲だけを述べ、backup消滅／secure erase／kernel隔離の証拠にしない。source旧鍵の破棄も別の承認・archive復号条件へ結び、GC成功だけから自動破棄しない。
 
 #### 9.100.12 拒否分類・初期採用条件
 
@@ -6768,7 +6778,7 @@ Prepared保存前のmissing／digest違い／root置換は改変拒否。Prepare
 | maintenance_reserve_insufficient／capacity_exhausted | source保守余力・target／control／archive／SGA枠・peak不足。保存開始前の確定拒否。書込後はunknownと区別 |
 | effects_pending／tail_unknown | drain・join・未解決use／ACK／保存tail。frozen／ready／completedを発行しない |
 | binding_mismatch／integrity_invalid／rollback_detected | head／receipt／key history／file／checkpoint／SGA選択の不整合。採用・削除せず停止 |
-| hold_active／history_unavailable | 新hold、archive／必要index page不達。GC又はhistorical照会を停止。不在証拠に変換しない |
+| hold_active／gc_unsupported／history_unavailable | 新hold、GC実行条件の未実証、archive／必要index page不達。GC又はhistorical照会を停止し、通常受付は止めない。不在証拠に変換しない |
 | outcome_unknown／recovery_required | 保存・CAS・unlink開始後の不明。元ID・元bindingを保持してphase照会、別対象の再発行禁止 |
 
 同UIDの新format／mock SGA／disk故障試験が通過しても、独立rollback、別UID・kernel peer資格、manager固定起動・FD回収、SGA durabilityとrootの独立性はC3c／C3d／C4の証拠を別に要求する。今回の設計によって既存のtrust flag・default MCP経路・読取省略を有効にしない。全採用flag false、originalReadsSkipped=0を維持する。
@@ -6777,15 +6787,16 @@ Prepared保存前のmissing／digest違い／root置換は改変拒否。Prepare
 
 | 単位 | 実装対象 | この段階で成立としないもの |
 | --- | --- | --- |
+| CGP | 実時間5 processで1 readの5秒をcall・owner・phase別に分解し、毎要求の履歴確認・Anchor CAS・署名検証の費用を測る。registryのpage化をfixture上の試作で測り、SGA確認6か所を加えた時間予算表と、目標`readsPerGeneration`を決める | 本番format・移行・速度保証。試作を成立済み実装と数えない |
 | CG0 | strict schema／canonical ref・閉包、role別projection／ImportMap／historical index、予算式、phaseとAPI認可の純粋contract | 保存・削除・世代採用・速度改善 |
 | CG1 | 独立SGA portの状態機械・durable CAS／query／purpose認可・後続CAS後retry、owner別CapacityCertificateと予約 | mock／同UID serviceを独立rollback証拠と数えない |
 | CG2 | migration-aware gate、5ownerの実counter admission・drain／freeze・export、cross-owner joinとarchive readback | target採用／GCなし。未知予約を捨てない |
 | CG3 | StageStore.v2 base＋delta、5role import・新registry／Anchor baseとcurrent outcomeのpage化、fresh empty rootsへの構築・ready検証 | v1へ暗黙移行しない。source削除なし |
-| CG4 | exact cutover・target bootstrap／finalization／resume、全phase再起動／応答紛失・SIGKILL対照、移行を2周する対照 | source GC／継続負荷保証なし |
-| CG5 | hold付きfinite GC・progress／completion・残存inventory、sync／容量／file境界故障、source削除後startup | secure erase、無期限利用、native隔離の採用なし |
+| CG4 | exact cutover・target bootstrap／finalization／completed／resume・target-rejected、全phase再起動／応答紛失・SIGKILL対照、source保持のまま移行を2周する対照 | source GC／継続負荷保証なし |
+| CG5 | completed後のhold付きfinite GC・progress／completion・retirement delta・残存inventory、serving継続中のsync／容量／file境界故障、source削除後startup | secure erase、無期限利用、native隔離の採用なし |
 | CG6 | 初回／連続／移行後read・writer advance、最大profile入力、容量／bytes／署名／CPU／phase時間の比較、実速度admission承認 | 一台の単発成功を恒常的性能保証へ昇格しない |
 
-CG0が次の実装着手点。§9.66の既存M0やC3a control schemaは参照できるが、C3b owner state・Anchor移行・import receiptを実装済みとはしない。C3cの固定配備へ進む前にCG1のSGAの配備責任と、CG2以降の容量／性能改善の成立範囲を確認する。SGAのnative backendが未成立でもlocal contract／故障実証は進められるが、本番の切替・削除gateは開かない。
+CGPが次の着手点で、CG0はその後。CGPで5秒に収まる見込みと`readsPerGeneration`を示せなければ、CG3以降へ進まず§9.100の費用設計へ戻す。期限は延長しない。§9.66の既存M0やC3a control schemaは参照できるが、C3b owner state・Anchor移行・import receiptを実装済みとはしない。C3cの固定配備へ進む前にCG1のSGAの配備責任と、CG2以降の容量／性能改善の成立範囲を確認する。SGAのnative backendが未成立でもlocal contract／故障実証は進められるが、本番の切替・削除gateは開かない。
 
 #### 9.100.14 回帰条件（CG01〜CG48、未実装条件）
 
@@ -6816,14 +6827,14 @@ CG0が次の実装着手点。§9.66の既存M0やC3a control schemaは参照で
 | CG23 | historical索引のpage欠落・不正inclusion／non-membership・旧root・別ownerを拒否。普通のretryと監査照会を分離 |
 | CG24 | original peer／監査roleの再認可、別bootの通常readerへhistorical結果bytesをfresh deliveryしない |
 | CG25 | 元receiptを新epochのStageReceiptに変換しない。旧previous receipt連結・expected head再構築・同ID異digest拒否 |
-| CG26 | 決定的projectionを再計算し、不必要なraw再埋込・live配列残存・high-water／revocation減少・overflow拒否。通常v2処理の3 readでもRへ全履歴を再埋込しない |
+| CG26 | 決定的projectionを再計算し、不必要なraw再埋込・live配列残存・high-water／revocation減少・overflow拒否。通常v2処理の`readsPerGeneration`回のreadで、5ownerとも1 readあたりの増分がCGPの固定値以内で、Rや行へ全履歴・bundleを再埋込しない |
 | CG27 | archive実bytes／readback／hold・公開署名履歴の欠落でready拒否。digestだけのarchiveを認めない |
 | CG28 | 選択source・base・必要controlがtargetだけで起動可能。source削除／archive一時不達後も通常起動の原本完全性を検証 |
 | CG29 | 新規targetの非空・symlink・hardlink・旧root依存・未記録file・same-path inode置換をwrite前拒否、領域外write0 |
 | CG30 | 正規のgenerationId＋facts→template→provision vector→import core／registry base・genesis→Anchor base→5checkpoint→vector→manifest→ready→selectionを順に構築できる。ID／template／base／genesis／構築前共通bodyにvector・selectionの未来refを混入した循環、自己hash・仮digest・size不一致を拒否。vectorだけの差替えは生成済みID／genesisを再署名せずselection検証で拒否 |
 | CG31 | build途中の保存／同期／readback失敗でready0、部分targetを隔離・課金しimmutable成功候補へ上書きしない |
-| CG32 | 全base・checkpoint・profile・templateをexact照合。Ready後／cutover後・GC開始前にtargetのbase／material／page／checkpointを改変・欠落・追加、同path別inodeへ交換し、source unlink0。5roleのfresh再検証／challenge／custody証拠欠落・旧Ready又は再検証集合の再送もGC予約0。正規5targetの完全再検証だけがcurrent gcRunを有効にする |
-| CG33 | ready／activation／cutover及びtarget再検証後・batch予約後・Prepared後で停止／応答紛失、controller／custodian／executor再起動・FD受渡しを交差させる。selection照会までsource再開0、cutover後rollback0、再開時は旧gcRun／permitでunlink0。元batchをfence・解決しfreshな5target完全再検証＋限定resume認可後だけ同じBatchIntentを再開。欠落／改変target又は1role custody断ではsource保持・後続unlink0 |
+| CG32 | 全base・checkpoint・profile・templateをexact照合。completed後・GC開始前に不変閉包の改変・欠落・追加、連鎖外file、同path別inodeへの交換でsource unlink0。5roleのfresh再検証／challenge／継続証拠欠落・旧Ready又は再検証集合の再送もGC予約0。通常deltaの前進だけでは拒否しない。正規5targetの完全再検証だけがcurrent gcRunを有効にする |
+| CG33 | ready／activation／cutover及びtarget再検証後・batch予約後・Prepared後で停止／応答紛失、controller／owner／executor再起動・FD受渡しを交差させる。selection照会までsource再開0、cutover後のsource通常再開0、再開時は旧gcRun／permitでunlink0。元batchをfence・解決しfreshな5target完全再検証＋限定resume認可後だけ同じBatchIntentを再開。欠落／改変target又は1roleの継続証拠断ではsource保持・後続unlink0 |
 | CG34 | source署名履歴は監査検証だけにし、旧credential／keyEpoch・旧SessionBootQuota／recovery handleで業務受付0 |
 | CG35 | bootstrapをbaseから分離し、旧boot再使用・plans／credential registry差替え・認可なし新bootを拒否 |
 | CG36 | target finalization途中停止を元stage／元認可で復旧。5最終head／checkpoint／recovery不足でcompleted／通常受付0 |
@@ -6834,10 +6845,14 @@ CG0が次の実装着手点。§9.66の既存M0やC3a control schemaは参照で
 | CG41 | file grammar外・symlink・nlink異常・別inode・root置換・未知file追加を拒否。列挙は上限+1以内、対象外unlink0 |
 | CG42 | Prepared／unlink／directory sync／Doneの全境界でSIGKILL。元batchの完了prefixだけを回収し二重unlink・二重receipt0 |
 | CG43 | Prepared前のmissingは改変、Prepared後のmissingは元intentと照合して再確認。異内容の同batch／同名別fileは削除0 |
-| CG44 | 5GC completion・残存inventory・sync不足でgc-complete／finalization拒否。backup残存・logical unlinkを明示 |
+| CG44 | 5GC completion・残存inventory・sync不足でgc-complete／retirement delta拒否。通常受付は継続。backup残存・logical unlinkを明示 |
 | CG45 | target serving開始後に旧source root／旧registry／旧Anchorを復活させても旧selection不採用、原本読取／ACK0 |
-| CG46 | 移行を2周し既存tombstone／history／control／revocation／budgetを持越す。SGA・control上限では停止し履歴消失0 |
-| CG47 | 少なくとも3回の連続read、writer advance、移行後3回readと再起動を実clockで反復し、公開数・全phase時間・累積bytes・stage／request／entry・失敗理由を記録 |
+| CG46 | 未GCのsourceを課金したまま移行を2周し、未GC世代上限+1を開始前に拒否。既存tombstone／history／control／revocation／budgetを持越す。SGA・control上限では停止し履歴消失0 |
+| CG47 | CGPで決めた`readsPerGeneration`回の連続read、writer advance、移行後の同回数のreadと再起動を実clockで反復し、公開数・全phase時間・累積bytes・stage／request／entry・失敗理由を記録 |
 | CG48 | 最大profile入力・継続負荷・cold start・GC中断の比較を行い、期限を延長しない。実速度profile未承認／native隔離未成立では採用flag false・originalReadsSkipped=0 |
+| CG49 | CGPの時間予算表と実測を突合する。fresh SGA確認の回数が予算を超えた実装、chunk／内部callごとの確認、確認結果の境界越え流用を拒否。予算超過時は期限延長なしで公開0 |
+| CG50 | finalization失敗からtarget-rejectedへの移行。専用認可なし・通常受付開始後のreject拒否、source通常再開0、source unlink0、同じFrozenSetから新generationでの再planと旧targetの課金 |
+| CG51 | completed前のsource unlink0、GC証拠なしでのcompleted成立。GC実行中・hold・paused・native GC unsupportedのどの状態でも通常受付が継続し、source容量の課金と未削除が維持される |
+| CG52 | control record式の上限ちょうど（batchが揃う20,480 entries）で開始可、+1 record相当と端数batchで開始前拒否。resume 2回目の余力不足はGCだけ停止し、serving継続・control上限超過0 |
 
-CG01〜CG48は将来の実装検証条件であり、この文書の整形・ID検査や既存テスト通過を条件成立に数えない。初期performance目標は現状の2 read上限を超えた反復を計測できることと、容量不足をpin前に予測すること。CG47の公開成功・CG48の最低速度承認は実測後に判定し、設計の段階で達成値を置かない。
+CG01〜CG48は将来の実装検証条件であり、この文書の整形・ID検査や既存テスト通過を条件成立に数えない。初期performance目標は、CGPで`readsPerGeneration`と時間予算表を数値で確定することと、容量不足をpin前に予測すること。値はCGPの実測で決め、CG47はその値で判定する。CG48の最低速度承認は実測後に判定する。
