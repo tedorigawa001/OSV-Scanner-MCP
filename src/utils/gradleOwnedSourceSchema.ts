@@ -1,0 +1,49 @@
+/** C3b-3 bounded source interchange. Paths, service secrets and caller-supplied verification keys are forbidden. */
+import {z} from 'zod';
+import {cid,chash,cn,cref,currentBindingSchema,currentHeadSchema,currentNamespaceSchema,parsed,need,decodeCurrent} from './gradleOwnedCurrentSchema.js';
+import {currentLineageSchema} from './gradleOwnedCurrentAuxiliary.js';
+import {serviceIdentitySchema} from './gradleOwnedServiceOwners.js';
+import {v2BindingSchema,replayV2,type V2ReplayInput} from './gradleOwnedJournalV2.js';
+import {ownedDigest,ownedSha256,canonicalOwnedJson} from './gradleOwnedJson.js';
+export const SOURCE_LIMITS=Object.freeze({bundleBytes:256*1024,sourceBytes:192*1024,entries:256,snapshots:8,chunkBytes:4096});
+export const sourceAPIs=['aux.PrepareCandidate','aux.ResolveNamespace','control.ReadForCheckpoint','aux.ReadSealedSource','aux.MirrorSelection','control.PrepareCheckpoint','control.ReadCurrentCheckpoint'] as const;
+export const sourceAPISchema=z.enum(sourceAPIs);
+export function sourcePurpose(api:string):'publication'|'maintenance'|'checkpoint'|'read'{if(api==='aux.PrepareCandidate')return 'publication';if(['aux.ResolveNamespace','aux.MirrorSelection'].includes(api))return 'maintenance';if(['control.PrepareCheckpoint','control.ReadForCheckpoint'].includes(api))return 'checkpoint';return 'read';}
+export const sourceContentSchema=z.object({sha256:chash,byteLength:cn.positive().max(SOURCE_LIMITS.bundleBytes)}).strict();
+const base=z.object({role:z.literal('compacted-base'),id:cid,sha256:chash,byteLength:cn.max(SOURCE_LIMITS.bundleBytes)}).strict();
+export const sourceMetadataSchema=z.object({binding:v2BindingSchema,baseRef:base,keyId:cid,approvedBaseDigest:chash,checkpoint:z.object({revision:cn.positive().max(256),commitDigest:chash}).strict()}).strict();
+export const sourceBundleSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.source-bundle.v1'),metadata:sourceMetadataSchema,commits:z.array(z.string()).min(1).max(256),payloads:z.array(z.string()).min(4).max(256)}).strict();
+export type SourceBundle=z.infer<typeof sourceBundleSchema>;
+export const inventoryEntrySchema=z.object({kind:z.enum(['commit','payload']),index:cn.max(255),sha256:chash,byteLength:cn.positive().max(SOURCE_LIMITS.sourceBytes)}).strict();
+export type SourceEntry=z.infer<typeof inventoryEntrySchema>;
+export const sourceSealSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.source-seal.v1'),api:z.literal('PrepareCandidate'),lineage:currentLineageSchema,author:serviceIdentitySchema,provider:serviceIdentitySchema,fence:z.union([cref('provision'),cref('writer-fence')]),mode:z.enum(['genesis','advance']),previous:cref('checkpoint-prepare').nullable(),expectedSelection:cn,namespace:currentNamespaceSchema,input:sourceContentSchema,metadata:sourceMetadataSchema,inventory:sourceContentSchema,inventoryCount:cn.positive().max(SOURCE_LIMITS.entries),inventoryDigest:chash,sourceBytes:cn.positive().max(SOURCE_LIMITS.sourceBytes),head:currentHeadSchema}).strict();
+export type SourceSeal=z.infer<typeof sourceSealSchema>;
+const transfer={transferId:cid,kind:z.enum(['inventory','commit','payload']),index:cn.max(255),offset:cn.max(SOURCE_LIMITS.sourceBytes),maxBytes:cn.positive().max(4096)};
+export const sourcePayloads={
+ 'aux.PrepareCandidate':z.object({mode:z.enum(['genesis','advance']),fence:z.union([cref('provision'),cref('writer-fence')]),input:sourceContentSchema}).strict(),
+ 'aux.ResolveNamespace':z.object({snapshot:cref('snapshot'),target:z.union([cref('provision'),cref('writer-fence'),cref('read-pin')]),origin:serviceIdentitySchema.nullable()}).strict(),
+ 'control.ReadForCheckpoint':z.object({snapshot:cref('snapshot'),fence:z.union([cref('provision'),cref('writer-fence')]),...transfer}).strict(),
+ 'aux.ReadSealedSource':z.object({snapshot:cref('snapshot'),checkpoint:cref('checkpoint-prepare'),pin:cref('read-pin'),...transfer}).strict(),
+ 'aux.MirrorSelection':z.object({snapshot:cref('snapshot'),checkpoint:cref('checkpoint-prepare'),pin:cref('read-pin')}).strict(),
+ 'control.PrepareCheckpoint':z.object({snapshot:cref('snapshot'),fence:z.union([cref('provision'),cref('writer-fence')])}).strict(),
+ 'control.ReadCurrentCheckpoint':z.object({pin:cref('read-pin'),checkpoint:cref('checkpoint-prepare')}).strict(),
+};
+export const sourceCommandSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.source-command.v1'),api:sourceAPISchema,operationId:cid,peer:serviceIdentitySchema,lineage:currentLineageSchema,binding:currentBindingSchema,payload:z.unknown(),requestDigest:chash}).strict();
+export type SourceCommand=z.infer<typeof sourceCommandSchema>;
+export const sourceIntent=(r:Omit<SourceCommand,'requestDigest'>|SourceCommand)=>{const {requestDigest,...rest}=r as SourceCommand;return ownedDigest({domain:'osv-mcp.q2.c3b.source-intent.v1',...rest});};
+export const sourceOperationKey=(r:SourceCommand)=>ownedDigest({domain:'osv-mcp.q2.c3b.source-operation.v1',peer:r.peer,api:r.api,operationId:r.operationId,lineage:r.lineage});
+export function validateSourceCommand(value:unknown){const r=parsed(sourceCommandSchema,value);r.payload=parsed<unknown>(sourcePayloads[r.api],r.payload);need(sourceIntent(r)===r.requestDigest,'binding_mismatch');return r;}
+export function makeSourceCommand(value:Omit<SourceCommand,'schema'|'requestDigest'>){const r={schema:'osv-mcp.q2.c3b.source-command.v1' as const,...value};return validateSourceCommand({...r,requestDigest:sourceIntent(r as SourceCommand)});}
+export const sourceChunkSchema=z.object({snapshot:cref('snapshot'),inventoryDigest:chash,transferId:cid,entry:inventoryEntrySchema.extend({kind:z.enum(['inventory','commit','payload'])}),offset:cn,totalBytes:cn.positive().max(SOURCE_LIMITS.sourceBytes),bytes:z.string().max(5500),sha256:chash}).strict();
+export const sourceResultSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.source-result.v1'),api:z.string(),lineage:currentLineageSchema,requestDigest:chash,operationKey:chash,mode:z.enum(['applied','existing','observed']),result:z.unknown(),live:z.literal(false)}).strict();
+export const sourceWitnessSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.source-witness.v1'),api:z.literal('ReadCurrentCheckpoint'),lineage:currentLineageSchema,reader:serviceIdentitySchema,pin:cref('read-pin'),snapshot:cref('snapshot'),checkpoint:cref('checkpoint-prepare'),head:currentHeadSchema,inventoryDigest:chash,sourceBytes:cn.positive().max(SOURCE_LIMITS.sourceBytes)}).strict();
+export const sourceRef=(role:'snapshot'|'checkpoint-prepare'|'checkpoint-witness',bytes:Buffer)=>({role,id:ownedSha256(bytes),sha256:ownedSha256(bytes),byteLength:bytes.length});
+export function canonicalBase64(text:string){const b=Buffer.from(text,'base64');need(b.toString('base64')===text,'schema_invalid');return b;}
+export function parseSourceBundle(bytes:Buffer){return parsed(sourceBundleSchema,decodeCurrent(bytes,SOURCE_LIMITS.bundleBytes));}
+export function sourceInventory(bundle:SourceBundle){const rows:SourceEntry[]=[];let size=0;for(const kind of ['commit','payload'] as const){const values=kind==='commit'?bundle.commits:bundle.payloads;for(const [index,text]of values.entries()){const b=canonicalBase64(text);size+=b.length;need(b.length>0&&size<=SOURCE_LIMITS.sourceBytes,'budget_exceeded');rows.push({kind,index,sha256:ownedSha256(b),byteLength:b.length});}}need(rows.length<=SOURCE_LIMITS.entries,'budget_exceeded');return {rows,size,digest:ownedDigest({domain:'c3b-source-inventory-v1',metadata:bundle.metadata,entries:rows})};}
+export function fullSourceReplay(bundle:SourceBundle,key:Buffer,lineage:z.infer<typeof currentLineageSchema>,approvedBase:string,audit:boolean){const m=bundle.metadata;for(const k of ['authorityId','lineageId','generation','storeEpoch','profileDigest'] as const)need(m.binding[k]===lineage[k],'binding_mismatch');need(m.approvedBaseDigest===approvedBase,'base_unapproved');sourceInventory(bundle);const result=replayV2({...m,key:Buffer.from(key),commits:bundle.commits.map(canonicalBase64),payloads:bundle.payloads.map(canonicalBase64),auditAuthoritySnapshot:audit});return parsed(currentHeadSchema,{format:'v2',revision:result.revision,commitDigest:result.commitDigest,stateRoot:result.stateRoot,baseDigest:approvedBase});}
+export function encodeSourceBundle(input:V2ReplayInput):Buffer{const {key,auditAuthoritySnapshot,commits,payloads,...metadata}=input;return Buffer.from(canonicalOwnedJson({schema:'osv-mcp.q2.c3b.source-bundle.v1',metadata,commits:commits.map(b=>b.toString('base64')),payloads:payloads.map(b=>b.toString('base64'))},SOURCE_LIMITS.bundleBytes));}
+
+export const inventoryManifestSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.source-inventory.v1'),metadataDigest:chash,entries:z.array(inventoryEntrySchema).min(5).max(SOURCE_LIMITS.entries)}).strict();
+export function inventoryBytes(bundle:SourceBundle){const inventory=sourceInventory(bundle);return Buffer.from(canonicalOwnedJson({schema:'osv-mcp.q2.c3b.source-inventory.v1',metadataDigest:ownedDigest(bundle.metadata),entries:inventory.rows},65536));}
+export function validateInventory(bytes:Buffer,seal:SourceSeal){need(bytes.length===seal.inventory.byteLength&&ownedSha256(bytes)===seal.inventory.sha256,'integrity_invalid');const m=parsed(inventoryManifestSchema,decodeCurrent(bytes,65536));need(m.metadataDigest===ownedDigest(seal.metadata)&&m.entries.length===seal.inventoryCount&&ownedDigest({domain:'c3b-source-inventory-v1',metadata:seal.metadata,entries:m.entries})===seal.inventoryDigest,'integrity_invalid');let size=0;for(const kind of ['commit','payload'] as const){const list=m.entries.filter(e=>e.kind===kind);need(list.length>0&&list.every((e,i)=>e.index===i),'inventory_invalid');size+=list.reduce((n,e)=>n+e.byteLength,0);}need(size===seal.sourceBytes&&m.entries.every((e,i)=>i===0||m.entries[i-1]!.kind==='commit'||e.kind==='payload'),'inventory_invalid');return m.entries;}

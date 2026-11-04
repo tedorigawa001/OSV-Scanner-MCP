@@ -4,6 +4,8 @@ import {cid,chash,cn,parsed,need,decodeCurrent,CURRENT_LIMITS} from './gradleOwn
 import {ownerPlanFacts,type OwnerPlan} from './gradleOwnedServiceOwners.js';
 import {canonicalOwnedJson,ownedDigest,ownedSha256} from './gradleOwnedJson.js';
 export const stageTable={
+ 'internal.ProviderBoot':{role:'provider',stages:['provider-boot-opened']},
+ 'internal.IssuerBoot':{role:'checkpoint-issuer',stages:['issuer-boot-opened']},
  'aux.PrepareCandidate':{role:'provider',stages:['namespace-reserved','namespace-sealed']},
  'aux.MirrorSelection':{role:'provider',stages:['mirror-saved']},
  'aux.RecordUse':{role:'provider',stages:['use-saved']},

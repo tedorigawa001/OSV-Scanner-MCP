@@ -2846,3 +2846,12 @@ C3b-2の最終検証: 新規3 files／51 tests（StageStore 19件・RegistryOwne
 - GC／compaction未実装のため、容量に達した系統は再開できない。実運用の前に必要。
 
 acacac7レビュー修正の検証結果: RegistryOwner 46件、全体5,295 tests成功（1,418 skipped）。型検査・build成功。
+
+
+### C3b-3：provider／issuer・原本転送・mirror（2026-11-04）
+
+- §9.97にrole別Source owner factory・strict source schema／明示client portsを追加。own signer／store以外のprivate key・filesystemを渡さず、登録data MAC materialをservice鍵と分離する。
+- namespace reserved／sealed、全inventoryの有界chunk組立、source full replay／advance prefix、issuerのdurable prepare、registry採用・exact selected read／pin-bound witness、fresh mirror修復を接続した。
+- origin／delegate／snapshot付きlive check、読取前／応答前gate、失効・barrier・provider不能時の拒否、boot保存と同boot再open拒否に対応。既定MCP／C2 routeは変更しない。
+- 実disk回帰と4 owner child-process対照、応答紛失／保存障害、3つの検査除去対照・source receiptを追加。通常native対照は小さい正規authority snapshotで、大きい実行snapshotの5秒以内完了は未成立（期限到達は拒否）。
+- 次はC3b-4のauthority・実行予約／失効・実drain。C3b-5のC2／outcome／RecordUse／ACK／全工程予算／shutdown、C3c／C3d／C4、Q3b／Q4b、有限stage／snapshot容量を解決するGC／compactionが残る。

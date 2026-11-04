@@ -6342,3 +6342,62 @@ C3b-2の最終検証: 新規3 files／51 tests（StageStore 19件・RegistryOwne
 回帰18件を追加した（RegistryOwner計46件）。修正前のsourceでは14件が失敗し、残る4件は修正前後で変わらない対照である。
 
 acacac7レビュー修正の最終検証: 全体は`npx vitest run --maxWorkers=2`で132 files／5,295 tests成功、24 files／1,418 tests skipped。型検査・build成功。新規の別UID隔離・本番採用は0。
+
+
+### 9.97 C3b-3：provider／issuer・原本転送・mirror（2026-11-04）
+
+#### 9.97.1 実装と所有境界
+
+`gradleOwnedSourceSchema.ts`・`gradleOwnedSourceClient.ts`・`gradleOwnedSourceOwner.ts`を追加した。ProviderOwner／IssuerOwnerのrole別factoryは別roleのOwnerPlanを拒否し、共通kernelはown RoleSigner・own StageStoreと公開credential registry、登録source検証material、明示されたbinding／peer／input portだけを持つ。providerへissuerのroot／秘密署名鍵、issuerへproviderのfilesystem handleを渡さない。source MAC materialはservice認証鍵・own journal鍵とは別の入力で、登録key IDと32-byte keyを各verifierが固定する。wireから検証keyを取得しない。
+
+既定のMCP route・C2 client routeは追加しない。root applicationが明示注入したsource APIだけをC3b-1認証sessionで受付し、私有AuthenticatedSessionCallのpeer／server／inner digest／API／期限を確認する。source-command／source-result／source-seal／source-witnessはC3b独自schemaで、既存C0／C3aのwireを暗黙に読み替えない。
+
+#### 9.97.2 原本・inventory・namespaceの契約
+
+source-bundleはv2 metadata・commit bytes・payload bytesのcanonical JSONである。秘密MAC key・path・検証省略flagは入れない。初期profileはbundle 256 KiB、raw source 192 KiB、256 entries、8 snapshots、chunk 4096 bytesを上限とする。これはprotocol上限であり、この全量が5秒で完了する保証ではない。source ownerの保存はbootを含め64 retained stageまでで、GC／compactionは未実装である。
+
+providerはoperatorのgenesis／writerのadvance、exact fence・完全identityのoriginとlineage／bindingを確認する。入力はrootが登録したcontent refから有界chunkで取り込み、各offset／長さ／digest、最後の全体hashを照合する。peerが指定したpathを開かない。namespace-reserved→namespace-sealedを保存し、source full replayと署名済みsealの永続化後にsnapshot refを返す。途中reservationをsealedとして扱わない。
+
+sealはproviderの完全identity・原author・fence・mode／previous／expected selection、metadata、head、namespace rootのdevice／inode、marker、inventoryのcontent ref／count／digest・source bytesへ結ぶ。Signer自体もown lineage／provider identity／own rootとの一致を確認する。snapshot refはexact署名seal bytesへ結ぶ。inventory本体は別のcanonical manifestとしてchunk転送し、大きい一覧を1 frameへ埋め込まない。commit／payloadのkind・ordinal・hash・長さとmetadata digestをすべて含め、欠落・重複・順序変更・別namespaceへの転用を拒否する。
+
+#### 9.97.3 issuerの取得・完全検証・保存
+
+issuerは登録providerからexact snapshot／fenceのsealを取得し、公開署名・snapshot ref・lineageを照合する。inventoryを先に全件組み立ててsealのref／digestへ照合し、各entryを4096 bytes以下で取得する。transfer ID・snapshot・inventory digest・kind／ordinal・offset・entry length・chunk hash・最終entry hashを照合する。holeや部分成功からcheckpointを作らない。
+
+受信した全commitと全payloadを登録source keyで`replayV2`へ渡す。全履歴のMAC・previous commit・状態root・必要record・payload閉包・checkpointを検証し、advanceでは選択済みcheckpointの保存済みcommit列がexact prefixであることも要求する。正しいMACを持つ別forkに、previous refだけを付け替えても採用しない。authority snapshot auditの有無は登録profileの明示設定で、bundleの自己申告では変更できない。trueのprofileでは各中間状態もauthority decoderで検査する。
+
+PreparedCheckpointと原本copy／provider sealをissuer自身のcheckpoint-prepared stageへ保存・再検証してから応答する。registryのIssuerEvidencePortはissuerの公開readPreparedへ接続でき、署名済み公開事実だけを受け取る。registryがissuer／providerのrootを読むことはない。genesis／advanceとも、準備→registry保存／Anchor採用の順を保持する。公開readPreparedもin-flightとして数え、読取中のcloseはbusyで拒否する。closeの失敗でownerを閉じず、既に開始した読取を完了させる。
+
+#### 9.97.4 live gate・選択済みread・witness
+
+C3bのCheckLiveBinding payloadに、厳密なorigin・delegate instance・snapshot付きのsource用variantを追加した。C0 payloadは変更しない。registryはgrant ownerとoriginの完全identity、delegateと認証service、read-pinと選択snapshotを照合する。SourceRegistryClientはown request鍵と認証sessionを使い、API／lineage／request digest／target／phase／selectionを確認する。
+
+providerはprivate sourceの読取前とchunk応答前にfreshなlive照会を行う。issuerは転送開始、保存前・応答前に照会し、各chunk間も自身の受付・credential・元deadlineを確認する。providerで確認済みのchunkごとにissuerが同じ照会を重ねる処理は省いた。5秒のfence／pinを延長して継続しない。barrier確定後に新たに受付した要求はoriginal read前に拒否する。既にin-flightだったIOの物理read 0までは主張せず、最後のlive確認に失敗した要求のcheckpoint／witness成功を拒否する。
+
+ReadSealedSourceはreader本人のpin・現在選択のsnapshot／checkpointだけを使い、保存済みinventoryのkind／ordinalからbytesを解決する。過去のnamespace、存在しないentry、overrun、path fieldを拒否する。ReadCurrentCheckpointはexact selected prepareをown storeで再検証・full replayし、providerのfreshなResolveNamespaceも必須にする。provider不能・registry失効時にissuer copy／mirrorへfallbackしない。返すsource-witnessはreader／pin／snapshot／checkpoint／head／inventoryに結ぶ診断事実で、authority gateや実行許可ではない。
+
+#### 9.97.5 mirror・再試行・復旧
+
+MirrorSelectionは採用済みのexact pairとreader pinをfreshに確認した後だけmirror-savedを保存する。mirrorは最後に確認したprojectionであり、選択・live権限の代わりではない。採用後にmirrorが欠落／古い状態でもsource readはregistryの現在選択を使う。新しいpinとfresh bindingによる再要求でmirrorを修復する。
+
+namespace／prepare／mirrorの同K／D再送は保存済みstageの元結果へ収束し、別内容の同Kを拒否する。応答紛失でnamespaceやprepared checkpointを重複保存しない。実保存障害はfail-stop、明示再openでown journal・全source bytes・seal／prepare／witnessを再検証する。保存済み署名は履歴事実として検証し、旧fence／pinを復元しない。
+
+source ownerは受付開始前にown bootを専用stageへ保存する。同じbootの再openはboot_reusedで拒否する。純readだけのbootも記録されるため、session／boot quotaを再起動で同じidentityのまま初期化しない。復旧のown-store auditはmaintenanceで、通常pinを要求してregistryとの相互待ちを作らない。起動後の通常readはfreshなregistry確認を要求する。サービス群全体の復旧報告・実drain／manager fencingは後続段階に残す。
+
+#### 9.97.6 回帰・process実証と性能範囲
+
+source owner回帰はgenesis／advance、全inventory／multi-chunk、MAC不正、認証済みfork、transfer／offset／hash／entry／namespace差替え、selected read／overrun／path、source blob改変、live失効／barrier／期限、provider不能時のfallback拒否、witness、mirror修復、保存障害、再起動／旧pin／同boot拒否、role別factory／Signerのidentity・lineage・rootを検査する。実行証拠を含む完全authority snapshotのdecoder auditも、実kernel・実diskを使う単体対照で実行する（clockはfixture制御）。
+
+別process suiteはregistry／Anchor／provider／issuerの4 childを起動し、各childがown request／reply鍵2個だけを保持する。親は公開configと署名済みwire、登録されたsource author入力を中継し、active ownerの秘密署名鍵を受け取らない。data MACの登録materialは明示的にsource verifierへ渡し、service鍵共有と混同しない。genesis→advance→選択済みchunk／witness→mirror修復、旧namespace拒否、candidate／prepare応答紛失、実disk publication phaseへの故障注入での採用拒否を確認する。
+
+通常process回帰にはbegin直後の小さな正規authority snapshotを使い、authority audit=trueで全entryを検証する。更新は同じauthority内容を保持する新しいv2 commitであり、新しいauthority実行effectの証明ではない。実行証拠を含む大きいsnapshotは`OSV_C3B3_LARGE_SOURCE=1`とprocess testの単独selectorで別途調査できる。初期調査でwriter fenceの5秒到達による拒否と成功の双方を観測しており、期限を延長して成功扱いにしない。最大protocolサイズ・大きい実行snapshotの5秒以内完了・全工程のthroughputは未成立で、C3b-5／C3dの予算・性能検証へ残す。
+
+最終の大きいsnapshot単独対照は8.68秒（起動を含む）で通過し、leaseExtended=falseを記録した。これは最大量の時間保証ではない。既存stage容量回帰は最初の併走検証で120秒のtest timeoutに達したが、同じ上限のままコミット済みHEADの単独対照65.49秒、変更後の単独対照40.58秒で通過した。期限・timeoutは変更していない。公開readPrepared中のcloseについても失敗対照と修正後の通過を確認した。
+
+最終全体実行は838.54秒で5,328通過／4失敗／1,418 skipだった。既存CurrentDiskの2件が30秒timeout、source processのadvanceが5秒fence到達で拒否され、その結果欠落によって観測記録照合も失敗した。該当2ファイルの単独再実行は同じ期限のまま43件すべて通過した（244.81秒）。型検査・buildも通過した。全5,332件はそれぞれ一度以上通過したが、単一の全体実行greenとは扱わない。
+
+検査除去対照は、chunk対応照合・選択checkpointのprefix検証・providerのpre-read live gateをそれぞれ外すと各回帰が失敗することを確認し、元sourceへ復元した。記録は`docs/validation/gradle-independent-currentness-c3b3-2026-11-04.json`。共有moduleの変更後はC3b-0／1／2の互換source receiptを更新し、以前の値も保持する。
+
+#### 9.97.7 未成立の条件
+
+同UID local-process／協調POSIX保存の実証で、別UID・kernel peer資格・固定VM、独立rollback domain、manager署名配備、全serviceの実drain／authority full G0/G2、RecordUse／consumer ACK、実読取省略・本番採用は成立していない。全採用flag false、originalReadsSkipped=0を維持する。次はC3b-4のauthority・予約／失効と実drain。その後C3b-5のC2／outcome／ACK／全工程予算／shutdown、C3c／C3d／C4、Q3b／Q4bとGC／compactionが残る。
