@@ -6401,3 +6401,32 @@ source owner回帰はgenesis／advance、全inventory／multi-chunk、MAC不正�
 #### 9.97.7 未成立の条件
 
 同UID local-process／協調POSIX保存の実証で、別UID・kernel peer資格・固定VM、独立rollback domain、manager署名配備、全serviceの実drain／authority full G0/G2、RecordUse／consumer ACK、実読取省略・本番採用は成立していない。全採用flag false、originalReadsSkipped=0を維持する。次はC3b-4のauthority・予約／失効と実drain。その後C3b-5のC2／outcome／ACK／全工程予算／shutdown、C3c／C3d／C4、Q3b／Q4bとGC／compactionが残る。
+
+#### 9.97.8 e6d405fレビュー修正：容量と業務予算
+
+e6d405fでは、readerや失敗した操作だけでsource ownerを回復不能にできた。修正前の再現は、witness 62回またはmirror 61回で容量切れとなり、その後はadvanceも再起動も`capacity_exhausted`で失敗した。不正candidate 8回で正しいgenesisも拒否された。1 byte読取117回で業務要求の枠が尽き、診断は`operational`のままだった。
+
+**stage枠。** retained 64のうち、boot以外は48までとし、mirror／witnessは合わせて16までとする。これでbootの16件以上、publicationの32件以上が残る。同じ事実の再要求は再保存しない。mirrorは内容が完全一致すれば既存stageへ収束し、witnessは同じreader／pin／checkpointのproofへ収束する。別のpinによるwitnessが16件に達すると、witnessは拒否するが選択済みchunk読取・publication・再起動は続けられる。GC／compactionがない間、この16件は系統全体の上限である。
+
+**予約の順序。** `namespace-reserved`はfull replayとseal構築の後に保存する。入力不正や転送中の期限切れではstageを残さない。snapshot枠はsealedだけを数える。reservedとsealedの間で失敗した予約だけはstageを占有するが、snapshot枠は消費せず、同じK／Dの再送で再利用する。
+
+**live照会の枠。** `control.CheckLiveBinding`は副作用のない観測なので、clientの`take`・boot業務表とserverの`#requests`の3か所で数えない（CB17の例外はこのAPIだけ）。challengeの単回性、1 session 256要求、1 credentialあたりboot内256 helloは維持する。clientは256要求でsessionを張り直すため、live照会の実質上限はboot内の約65,000件、またはsession寿命30秒×256の約2時間である。他のAPIは従来どおり上限で停止する。
+
+**事前確認と診断。** issuerは転送前に残枠を確認する。inventory読取前は最小必要数、読取後は正確な必要数と比較し、不足ならstageを残さず`capacity_exhausted`で拒否する。確認するのはissuer自身のclient枠で、provider側の`#requests`は対象外である。診断に`retainedStages`・`diagnosticStages`・`peerBusinessRemaining`を追加した。
+
+**残る上限。** `ReadForCheckpoint`・`ReadSealedSource`・`ResolveNamespace`・`ReadContext`は従来どおり枠を消費する。issuerのbootあたりの転送は約256 chunk（約1 MiB）、readerは同じprovider bootに対して256 chunkまでである。
+
+**再送時の注意。** 同じ署名済み要求が回復を尽くすとunknownとなり、同じbootでの再送は`recovery_required`で拒否する。providerの`prepare-<snapshot>`は決定的なoperation IDなので、issuer拒否の後に同じ要求を再送せず、新しいfenceとcandidateから始める。
+
+**検証。** source owner回帰を10件追加し、広すぎた回帰を次のとおり修正した。
+
+- 失効の回帰は、共有clientの拒否ではなくregistry側のpin解放で確認する。
+- 「source認証失敗」の回帰は実際の拒否理由がbase未承認だったため、名前を改めた。
+- 検査が走っていなかったpath拒否の回帰は、正しいbindingとpayloadを使う形に直した。
+- 拒否理由を確認していなかった回帰へ理由を追加した。
+
+修正を1つずつ外す対照11件（server枠・client枠・業務表・mirror収束・witness収束・診断枠・boot枠・予約順序・事前確認2件・providerの読取前gate）は、すべて期待どおり失敗した。40 KB sourceの実測は、修正前の3回目のadvanceでの停止に対し、修正後は7回成功し、8 snapshotの上限で拒否された後も再起動できた。
+
+4 owner process回帰は実時間の5秒fenceに依存するため、vitestの別projectへ分け、他のテストの後に単独で実行する。fenceとtimeoutは変更していない。実時間の限界として、180 KB sourceは単独実行でも約5.1秒でfence期限に達し、`ActivateEnrollment`が`grant_revoked`で拒否された。128 KBは約3.6秒で通過したが、最大サイズの5秒以内完了は引き続き未成立である。
+
+レビュー修正の最終検証: `npx vitest run --maxWorkers=2`で134 files／5,342 tests成功、24 files／1,418 tests skipped（698.80秒、実行直後の負荷平均は約16）。型検査・build成功。全体実行は修正前の1回が失敗し、修正後の1回が成功した段階で、安定性は回数を重ねて確認していない。新規の別UID隔離・本番採用は0。

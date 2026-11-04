@@ -2855,3 +2855,11 @@ acacac7レビュー修正の検証結果: RegistryOwner 46件、全体5,295 test
 - origin／delegate／snapshot付きlive check、読取前／応答前gate、失効・barrier・provider不能時の拒否、boot保存と同boot再open拒否に対応。既定MCP／C2 routeは変更しない。
 - 実disk回帰と4 owner child-process対照、応答紛失／保存障害、3つの検査除去対照・source receiptを追加。通常native対照は小さい正規authority snapshotで、大きい実行snapshotの5秒以内完了は未成立（期限到達は拒否）。
 - 次はC3b-4のauthority・実行予約／失効・実drain。C3b-5のC2／outcome／RecordUse／ACK／全工程予算／shutdown、C3c／C3d／C4、Q3b／Q4b、有限stage／snapshot容量を解決するGC／compactionが残る。
+
+e6d405fレビュー修正（§9.97.8）: 3件を修正した。
+
+- mirror／witnessの16 stage枠とboot用の予約枠を追加し、同じ事実の再保存を廃止した。
+- 予約は入力検証後に保存する。
+- `CheckLiveBinding`をboot予算から外し、issuerの転送前残枠確認と診断を追加した。
+
+process回帰はvitestの別projectで単独実行する。GC／compaction、`ReadForCheckpoint`等のboot枠、180 KB sourceが5秒fenceに収まらない点は残る。

@@ -33,7 +33,7 @@
     "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
     "package.json": "5a0ff34ffcd644bbefaa713dcd8e65782b719bc01be52cd8f26672bcc123ec9b",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
-    "src/test/fixtures/c3b_source_child.mjs": "2d576e82d369000d527d909f08c5acb9cf4aaf77b8e9683d8eeaa27f80fc376c",
+    "src/test/fixtures/c3b_source_child.mjs": "d45b6cdc9045ab7e7f4efd975f4292bc1c23f8631f9b7eef588df8704f472757",
     "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
     "src/test/fixtures/gradleOwnedAuthority.ts": "6bed67749ddd6142b1025e24eedb656a448545078bfb2b81e996b340ad320655",
     "src/test/fixtures/gradleOwnedAuthorityJournal.ts": "df213ca2a6d6ce3dfd7822745ac78d1a91506d9141f6575f2470b2c73c72d4da",
@@ -48,9 +48,9 @@
     "src/test/fixtures/gradleOwnedRegistryFixture.ts": "637e87359ea49207d4ec022918059f56d327ad6b213757afa65e545813fbda12",
     "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
     "src/test/fixtures/gradleOwnedSmallAuthoritySource.ts": "a12fc66e8e8a6ad7de64cba3a36891f5ae3eca57e143d54cd838d0a2520aebe2",
-    "src/test/fixtures/gradleOwnedSourceFixture.ts": "2c5d3bdf016d8e623ebe547b0032816642da1d4437976d94069bce1a06025ddd",
+    "src/test/fixtures/gradleOwnedSourceFixture.ts": "3c18fe0de1624102f86c6744a62aed50766b3b5ac6e90cabea4a57148c3770d3",
     "src/test/fixtures/gradleOwnedSourceProcess.ts": "cbac57514fdba84b4ac71b3cd6720a2d219340c6aad06598f93d299ab19234a5",
-    "src/test/utils/gradleOwnedSourceOwner.test.ts": "085b7643d93562cc606814fbd247fe287f8500e125f044de082861c04f083a7a",
+    "src/test/utils/gradleOwnedSourceOwner.test.ts": "26a90ff23b66752d5df1ae0ed2b89575871e167daf7ebfe231305290663dcb34",
     "src/test/utils/gradleOwnedSourceProcess.test.ts": "13394e892f3ccc1d7bf733b304e3dc517501b31b87a8bf4449233073525273ba",
     "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
     "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
@@ -80,9 +80,9 @@
     "src/utils/gradleOwnedServiceOwners.ts": "654f5139318a5dcb94c6f88f29d4ac2cc6063511d52f6af55ae155fc3a29da67",
     "src/utils/gradleOwnedServiceSession.ts": "033426d57b207cf5f5cc1a183509bd77701a7b92fa5ae78a690d2124fc759115",
     "src/utils/gradleOwnedServiceStages.ts": "f7a9de3a599362b8381e448dbae08e48a66413c6d3da80ad8be372965677696a",
-    "src/utils/gradleOwnedSessionRuntime.ts": "75d7bb6d487efe5e88b0b442ade636843a78882107b38761b88ead68fdb05b61",
-    "src/utils/gradleOwnedSourceClient.ts": "042c0c5f0f7d44b45267560d617241924ea245b819e231cd90d34e2ca7cf7cfe",
-    "src/utils/gradleOwnedSourceOwner.ts": "34fe5f29bb2786be8616b7261666037719d55988cd91c3f5e026bf75e3c3e682",
+    "src/utils/gradleOwnedSessionRuntime.ts": "73ad682413cb2b4c4ce7d968344d02f66e3cf4240b061b028d6d01d085aaf08f",
+    "src/utils/gradleOwnedSourceClient.ts": "6b2cd6a832384b20c98b869bc3ba80f32c7fb837808ca450c8af4b6dcd25ff10",
+    "src/utils/gradleOwnedSourceOwner.ts": "66fe2f5ab3696bd62c4e2b4665aad1555d694409d7cfe5c8fd38c0e67ca471f2",
     "src/utils/gradleOwnedSourceSchema.ts": "aebd9e5d014969db44d79393c70b14f9b77b15ee88054fe1b8a2e971dfd383df",
     "src/utils/gradleOwnedStageStore.ts": "32947c644e9e03e12c4c99cad163d42b5ad328c6eb24a36995894f597ce4ed40",
     "src/utils/gradleOwnedStoreCheckpoint.ts": "8875ec5c3d7c58001d7eb19b8df921e15ce3cc5c0a6967fc50f0ad006203846a",
@@ -166,13 +166,13 @@
       "durationSeconds": 244.81,
       "timeoutsOrLeasesChanged": false
     },
-    "sourceOwnerUnitTests": 31,
+    "sourceOwnerUnitTests": 41,
     "localProcessSuiteTests": 4,
     "diffCheck": "passed",
     "productionFixtureImports": false,
     "fixtureInDist": false,
     "allTestsPassedAtLeastOnce": 5332,
-    "singleFullSuiteGreen": false,
+    "singleFullSuiteGreen": true,
     "sourceFingerprintCount": 67
   },
   "established": [
@@ -184,7 +184,68 @@
   "limitations": [
     "same-UID local processes; independent kernel isolation and rollback domain not established",
     "maximum-sized source throughput within five-second grant not established",
-    "source owner retention limited to 64 stages including boots; no GC or compaction",
-    "authority drain, RecordUse / consumer ACK and production adoption remain later stages"
-  ]
+    "authority drain, RecordUse / consumer ACK and production adoption remain later stages",
+    "source owner retention: 64 stages, 48 non-boot, 16 mirror/witness; no GC or compaction",
+    "transfer and selected-read business requests remain bounded per boot; only CheckLiveBinding is exempt",
+    "a 180 KB source reached the five-second fence even when run in isolation"
+  ],
+  "reviewFix": {
+    "commit": "e6d405f",
+    "stageBudget": {
+      "total": 64,
+      "nonBoot": 48,
+      "diagnostic": 16,
+      "repeatedFactsConverge": true
+    },
+    "reservationAfterValidation": true,
+    "liveCheckBudgetExemptAt": [
+      "client take",
+      "client business table",
+      "server boot requests"
+    ],
+    "preTransferBudgetCheck": true,
+    "mutationControls": {
+      "count": 11,
+      "allFailedAsExpected": true,
+      "restored": true
+    },
+    "realDiagnosticLimitRun": {
+      "limit": 16,
+      "passed": true,
+      "durationSeconds": 93.6
+    },
+    "advancesAt40KiB": {
+      "before": 2,
+      "after": 7,
+      "stoppedBy": "snapshot limit 8",
+      "restartAfterwards": true
+    },
+    "realProcessSizes": [
+      {
+        "payloadBytes": 128000,
+        "totalMs": 3605,
+        "passed": true
+      },
+      {
+        "payloadBytes": 180000,
+        "totalMs": 5113,
+        "passed": false,
+        "reason": "grant_revoked at ActivateEnrollment"
+      }
+    ],
+    "processSuiteIsolated": true,
+    "fencesOrTimeoutsChanged": false,
+    "fullSuite": {
+      "command": "npx vitest run --maxWorkers=2",
+      "passedFiles": 134,
+      "failedFiles": 0,
+      "skippedFiles": 24,
+      "passedTests": 5342,
+      "failedTests": 0,
+      "skippedTests": 1418,
+      "durationSeconds": 698.8,
+      "typecheck": "passed",
+      "build": "passed"
+    }
+  }
 }
