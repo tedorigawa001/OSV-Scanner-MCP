@@ -21,6 +21,7 @@ export class StageStore implements OwnedStore {
  }
  get ownerId(){return this.#facts.ownerId;}get storageEpoch(){return this.#facts.storageEpoch;}get roots(){return structuredClone(this.#facts.roots);}get journalKeyId(){return this.#facts.journalKeyId;}get checkpointKeyId(){return this.#facts.checkpointKeyId;}
  assertOpen(){need(!this.#closed,'owner_closed');need(!this.#blocked,'recovery_required');}
+ assertIdle(){this.assertOpen();need(!this.#busy,'busy');}
  async #history(resync=false){
   this.assertOpen();if(resync)await this.#disk.revalidate();else await this.#disk.assertNoPendingTail();this.assertOpen();const history=await this.#disk.journal.readHistory();this.assertOpen();
   const ledger:StageReceipt[]=[],images:unknown[]=[],byRef=new Map<string,StageReceipt>(),operations=new Map<string,{api:string;requestDigest:string;stages:Set<string>}>();let head:StageReceipt['appliedHead']|null=null;

@@ -1,4 +1,5 @@
 /** Explicit authenticated-session ports. No filesystem handles or foreign private keys. */
+import {deliveryStateSchema} from './gradleOwnedDeliverySchema.js';
 import {randomBytes} from 'node:crypto';
 import {ownerPlanFacts,type OwnerPlan,type RoleSigner,type ServiceIdentity} from './gradleOwnedServiceOwners.js';
 import {makeRegistryCommand,sameRegistryValue as same} from './gradleOwnedRegistrySchema.js';
@@ -6,10 +7,12 @@ import {makeSourceCommand,sourceResultSchema,type SourceCommand} from './gradleO
 import {registryResultSchema,signOwnerValue} from './gradleOwnedRoleSigner.js';
 import {parsed,need,type CurrentBinding,type CurrentRef} from './gradleOwnedCurrentSchema.js';
 export type AuthenticatedOwnerRPC=(api:string,wire:Buffer)=>Promise<unknown>;
-export interface SourceBindingPort {check:(binding:CurrentBinding,target:CurrentRef,origin:ServiceIdentity,purpose:'checkpoint'|'source-read'|'handoff',snapshot:CurrentRef|null)=>Promise<void>}
+export interface SourceBindingPort {check:(binding:CurrentBinding,target:CurrentRef,origin:ServiceIdentity,purpose:'checkpoint'|'source-read'|'handoff',snapshot:CurrentRef|null)=>Promise<void>;delivery?:(binding:CurrentBinding,value:{pin:CurrentRef;delivery:CurrentRef;useId:string;reader:ServiceIdentity})=>Promise<unknown>}
 export class SourceRegistryClient implements SourceBindingPort {
  constructor(readonly plan:OwnerPlan,readonly signer:RoleSigner,readonly rpc:AuthenticatedOwnerRPC){}
  async check(binding:CurrentBinding,target:CurrentRef,origin:ServiceIdentity,purpose:'checkpoint'|'source-read'|'handoff',snapshot:CurrentRef|null){const c=ownerPlanFacts(this.plan);need(['provider','checkpoint-issuer','authority-broker'].includes(c.role)&&this.signer.identity.credentialId===c.clientCredentialId,'permission_denied');const command=makeRegistryCommand({api:'control.CheckLiveBinding',operationId:'live-'+randomBytes(16).toString('hex'),peer:this.signer.identity,lineage:c.lineage,binding,payload:{target,purpose,origin,delegateInstance:c.instanceId,snapshot}}),wire=await signOwnerValue(this.plan,this.signer,'control',command.api,{api:'CheckLiveBinding',command}),reply=parsed(registryResultSchema,await this.rpc(command.api,wire));need(reply.requestDigest===command.requestDigest&&same(reply.lineage,c.lineage)&&reply.mode==='observed','binding_mismatch');const result:any=reply.result;need(result.phase==='active'&&same(result.target,target)&&result.selectionRevision===binding.selectionRevision,'grant_revoked');}
+ async delivery(binding:CurrentBinding,payload:{pin:CurrentRef;delivery:CurrentRef;useId:string;reader:ServiceIdentity}){const c=ownerPlanFacts(this.plan),command=makeRegistryCommand({api:'aux.ReadDelivery',operationId:'delivery-'+randomBytes(12).toString('hex'),peer:this.signer.identity,lineage:c.lineage,binding,payload:{pin:payload.pin,delivery:payload.delivery,useId:payload.useId,reader:payload.reader}}),wire=await signOwnerValue(this.plan,this.signer,'aux',command.api,{api:'ReadDelivery',command}),reply=parsed(registryResultSchema,await this.rpc(command.api,wire));need(reply.requestDigest===command.requestDigest&&same(reply.lineage,c.lineage)&&reply.mode==='observed','binding_mismatch');const state=parsed(deliveryStateSchema,reply.result);need(same(state.binding,binding)&&same(state.pin,payload.pin)&&same(state.delivery,payload.delivery)&&same(state.reader,payload.reader)&&state.useId===payload.useId&&state.phase==='delivering','binding_mismatch');return state;}
+
 }
 export interface SourcePeerPort {call:(api:SourceCommand['api'],payload:unknown,binding:CurrentBinding,operationId?:string)=>Promise<unknown>;remaining:()=>number}
 export class SourcePeerClient implements SourcePeerPort {

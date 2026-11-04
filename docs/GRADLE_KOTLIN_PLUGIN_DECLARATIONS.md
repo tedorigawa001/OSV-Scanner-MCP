@@ -6508,3 +6508,39 @@ C3b-4最終検証：authority owner 33件・clock 4件・process suite 3件を�
 - local processでのprepareは117 KB sourceで約1.8秒。180 KBはcoreが約94 KBあり、64 KiBの結果上限を超えて転送後に拒否された。最大サイズと負荷時のthroughputは未確認である。
 
 レビュー修正の最終検証: `npx vitest run --maxWorkers=2`で137 files／5,398 tests成功、24 files／1,418 tests skipped（414.44秒、実行直後の負荷平均は約4.5）。型検査・build成功。対照13件で期待した失敗を確認し、元のコードへ戻した。全体の単一実行での成功は修正後の1回で、安定性は回数を重ねて確認していない。新規の別UID隔離・本番採用は0。
+
+### 9.99 C3b-5：consumer-only C2接続・durable use／ACK・全工程期限と協調再開
+
+C2 graph cacheの注入境界を`CurrentGraphReader`へ狭め、`ConsumerGraphBridge`を明示登録する。既定経路・旧bridgeは維持する。consumerに渡すのはreader本人の4つの認証sessionと独立登録したsource MAC key／公開registry／policyだけであり、broker・providerの署名鍵、actor factory、他ownerの保存handleを渡さない。readerが原本を完全検証してもbroker側の独立G0/G2は省略しない。
+
+#### 9.99.1 結果の転送と本人ACK
+
+readerのPrepareAuthorityResult後、CompleteAuthorityResultを受けたbroker自身がPrepareHandoff→DeliverResult→provider RecordUseを行う。providerはregistryでexact pin／delivery／gate／reader／useId／resultと決定revisionを確認し、own storeへ署名付きuseを保存する。単にbrokerが「保存済み」と述べた応答だけではACKしない。registryは明示portでimmutable useを取得し、provider署名・全binding・revisionを再検証する。
+
+ReadAuthorityResultは4096 bytes以下のchunkで、transfer ID・offset・total・entry digest・result／use receiptを束縛する。consumerは全bytesのdigestと、自身で検証したdocumentとの同一性を照合し、本人のAcknowledgeDeliveryを送る。registryがACKを永続化し、brokerのFinishAuthorityResultが予約を解決するまでprivate bytesを公開しない。historical ACK・QueryDeliveryは状態確認だけで、fresh result publication／再deliveryの根拠にしない。read-only以外のeffectはunsupported。
+
+#### 9.99.2 認証された拒否と結果不明
+
+opt-inのbusiness-outcome.v1を使用する。認証session内で検証したexact request digest・lineage・両端identityへ署名を結ぶ。ownerの直列化区間で既存operationを検査した後、無副作用と確定した拒否だけをrefused／effects:noneとする。保存・他serviceへの変更開始後、既存operation、未分類例外はunknown／possible。通信exceptionや署名改変をrefusedに変換しない。clientは検証したopaque outcomeの事実だけを使い、同一要求のintent・元のoperation ID・期限を保持する。unknownから新pin・新useIdを自動発行しない。期限超過後の公開・再開は拒否し、barrierと管理復旧へ送る。
+
+#### 9.99.3 実call graph用予算
+
+旧v2を読み替えずread-plan.v3／consumer-broker-full-read-ack-v1を要求する。source bytes／entry数／inventory／result bytesからchunk数を上限計算し、9 directed authenticated edgeの業務要求と、registry→Anchorの原本照合／CAS／query要求・回復handshake・frame／signature・保存stageと履歴検証bytesを計上する。pin／handoff／delivery／ACKに伴う独立Anchor保存を含め、正常readは15 stage。各edgeの既存残量、frame／stage容量が足りなければpin取得前に拒否する。履歴検証の費用は512 MiBのbounded履歴を反復検証する保守的上限を使用する。
+
+rootが供給する最低速度は独立した配備承認が必要で、wireが自由に指定できる採用証拠ではない。fixtureの大きな速度値は計算・経路接続の診断専用で、最大入力のthroughput認証ではない。全readは一つの5秒期限と500ms以上の余裕を保持し、consumerの各RPCへ元の絶対期限を渡す。再接続・再試行・途中保存で期限を更新しない。実elapsed・phase・edge件数・保存数は別途観測し、予測値を実測値と呼ばない。
+
+#### 9.99.4 shutdownと全service復旧
+
+ServiceLifecycleCoordinatorはBeginBarrier→broker予約解決→全participant実drain→ConfirmFenced→FinishBarrier→実停止の順序を固定する。未完了await／保存処理がある間はdrained証拠を作らず、途中失敗でstop／resume成功に進まない。
+
+新bootstrapでは各ownerがown保存履歴を検証し、新boot・own storage epoch／roots digest・履歴head・未解決数・exact barrier／recoveryRunへ署名したReportServiceRecoveredを出す。署名前後に履歴headと実行中処理を再確認する。rootは公開報告5件をimmutable bundleへまとめる。registryの明示recovery portは独立公開pinと署名・role集合・新boot・run／barrier・roots／storage・未解決0を照合し、opaque approvalを返す。ResumeServingは承認を現registry digestへ結び、保存後にのみ成功する。証拠port未設定の旧profileを暗黙にC3b-5へ昇格させない。
+
+この報告は登録済み協調service codeがown履歴を検証した事実であり、kernel隔離・独立rollback domain・manager署名配備の証明ではない。crashで未解決予約が復元された場合はdrainingのまま、barrier確定・解決・停止と新bootstrapを経る。古いgate・use receipt・成功応答をfresh実行許可として復元しない。
+
+#### 9.99.5 実証範囲
+
+回帰はconsumer-only注入、broker use保存／本人ACK、応答紛失・期限・保存障害・barrier、署名改変と復旧報告の拒否を扱う。native診断は5つの同UID Node childと協調POSIX保存の範囲。別UID・kernel peer資格・固定launcher／VM・全FD回収、独立clock／checkpoint domain、実読取省略・本番採用は未成立。全採用flag false、originalReadsSkipped=0を維持する。C3c／C3d／C4、Q3b／Q4b、GC／compactionと大容量入力の性能検証は残る。
+
+C3b-5 native診断では、期限拒否と正常完了の両方を観測した。負荷のある実行ではauthority準備中に元期限の余裕境界へ到達し、4,502msで拒否・公開0だった。全体テスト中は3,911ms、最終コードでの再実行は3,876msで正常完了し、いずれも15保存stage／本人ACK／公開1と全停止・新boot・復旧報告5件・再開を確認した。速度値は一台の実測であり、最大入力・継続負荷・独立した最低速度profileの承認を示さない。期限と安全検査は緩めていない。
+
+停止再試行はexact barrierと確認済みparticipantを保持し、FinishBarrier後のstop失敗ではfrozen registryへsettleを再送せずstopだけを再試行する。再開の報告取得失敗でも同じ起動済みbootstrapを維持し、同bootのsession予算を再初期化しない。最終検証は全体5,403通過／17失敗／1,418 skip（975.57秒）。17失敗は既存Unix socket起動が実行制限で拒否されたケースで、対象18件をsocket作成可能な条件で再実行して全通過した。停止再試行の追加後は関連7件を再実行して全通過（13.69秒）。最終tree全件の単一batch greenとは呼ばず、各検証の範囲を記録する。型検査・build・tracked／untracked整形検査、4件の検査除去対照と復元を確認した。検証記録は`docs/validation/gradle-independent-currentness-c3b5-2026-11-04.json`。

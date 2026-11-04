@@ -49,7 +49,7 @@ export class AnchorOwner {
   this.#gate(peer);need(this.#env.now()-started<5000,'request_expired');const response=parsed(anchorResultSchema,{api:request.api,requestDigest:ownedDigest(request),head:this.#current(),applied,attemptId});const reply=await signOwnerValue(this.#plan,this.#signer,'control','control.'+request.api,response);this.#gate(peer);need(this.#env.now()-started<5000,'request_expired');return reply;
  }
  close(){need(!this.#busy,'busy');this.#closed=true;this.#store.close();}
- get diagnostics(){return {scope:'cooperative-local-anchor',cas:this.#cas,revision:this.#current().revision,blocked:this.#blocked,backendEligible:false,independentRegistryVerified:false,originalReadsSkipped:0};}
+ get diagnostics(){return {scope:'cooperative-local-anchor',inFlight:this.#busy?1:0,lifecycle:this.#closed?'closed':this.#blocked?'blocked':'operational',cas:this.#cas,revision:this.#current().revision,blocked:this.#blocked,backendEligible:false,independentRegistryVerified:false,originalReadsSkipped:0};}
 }
 /** Exact size of the signed CAS request, so a registry can refuse a record before saving what it could not adopt. */
 export function anchorCasBytes(identity:ServiceIdentity,keyId:string,lineage:unknown,expected:AnchorHead,record:{ref:any;wire:string},attemptId:string){return Buffer.byteLength(canonicalOwnedJson({schema:'osv-mcp.q2.c3b.owner-envelope.v1',identity,keyId,direction:'request',domain:'control',api:'control.anchor.cas',body:{api:'anchor.cas',requestId:'0'.repeat(64),lineage,expected,record,attemptId},signature:'A'.repeat(86)+'=='},8*1024*1024));}

@@ -49,6 +49,7 @@ const RESERVATION_LIMIT=8;
 /** Only an unknown outcome keeps a request for its same-ID retry; a decided refusal frees the slot. */
 const ambiguous=(e:unknown)=>!(e instanceof CurrentControlError)||e.reason==='response_lost';
 type Read={pin:CurrentRef;selected:NonNullable<CurrentBinding['selected']>;witness:CurrentRef;proof:CurrentAuthorityProof;scope:CurrentScope;phase:'active'|'decision-recorded'|'delivering'|'released'|'failed';useId:string;document:GradleExport;gate?:{gate:CurrentRef;result:CurrentRef};receiptDigest?:string;delivery?:CurrentRef};
+export interface CurrentGraphReader {readDocument(file:string,budget:GradleBudget,policy:OwnedPolicy):Promise<GradleExport>}
 export class OwnedCurrentBridge {
  readonly #publications=new WeakMap<CurrentPublication,Publication>();readonly #reads=new WeakMap<CurrentRead,Read>();#closed=false;#blocked=false;#busy=false;
  readonly #reservations=new Map<string,Reservation>();

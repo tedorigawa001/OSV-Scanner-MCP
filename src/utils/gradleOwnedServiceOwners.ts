@@ -8,7 +8,7 @@ import {canonicalOwnedJson,ownedDigest} from './gradleOwnedJson.js';
 export const serviceOwnerRoles=['provider','checkpoint-issuer','lineage-registry','authority-broker','control-anchor'] as const;
 export const serviceIdentitySchema=z.object({credentialId:cid,role:z.enum(currentRoles),instanceId:cid,boot:chash,keyEpoch:cn.positive()}).strict();
 export type ServiceIdentity=z.infer<typeof serviceIdentitySchema>;
-export const serviceAPIs=Object.freeze([...currentAPIs.map(a=>'control.'+a),...auxiliaryAPIs.map(a=>'aux.'+a),'recovery.ReportRecovered','recovery.GetRecoveryStatus','aux.RevokeAuthority','aux.ReadAuthorityState']);
+export const serviceAPIs=Object.freeze([...currentAPIs.map(a=>'control.'+a),...auxiliaryAPIs.map(a=>'aux.'+a),'recovery.ReportRecovered','recovery.GetRecoveryStatus','aux.RevokeAuthority','aux.ReadAuthorityState','aux.ReadDelivery','aux.ReadSourceDescriptor','aux.CompleteAuthorityResult','aux.ReadAuthorityResult','aux.FinishAuthorityResult','aux.QueryDelivery','aux.ReportServiceRecovered']);
 export const serviceAPISchema=z.string().refine(v=>serviceAPIs.includes(v));
 const root=z.object({rootId:cid,device:z.string().regex(/^[0-9]+$/),inode:z.string().regex(/^[0-9]+$/)}).strict();
 export const credentialSchema=z.object({identity:serviceIdentitySchema,keyId:cid,direction:z.enum(['request','reply']),spki:z.string().min(1).max(128),endpointId:cid,
@@ -20,6 +20,10 @@ export function publicCredentialKey(c:z.infer<typeof credentialSchema>){
  try{const raw=Buffer.from(c.spki,'base64');need(raw.toString('base64')===c.spki,'configuration_invalid');const key=createPublicKey({key:raw,format:'der',type:'spki'});need(key.asymmetricKeyType==='ed25519'&&key.export({format:'der',type:'spki'}).equals(raw),'configuration_invalid');return key;}catch{need(false,'configuration_invalid');}
 }
 export function credentialAPIRoles(api:string):readonly string[]{
+ if(api==='aux.ReportServiceRecovered')return serviceOwnerRoles;
+ if(api==='aux.QueryDelivery')return ['provider','authority-broker','reader'];
+ if(api==='aux.ReadDelivery')return ['provider','authority-broker','reader'];
+ if(['aux.ReadSourceDescriptor','aux.CompleteAuthorityResult','aux.ReadAuthorityResult','aux.FinishAuthorityResult'].includes(api))return ['reader'];
  if(api==='aux.ReadAuthorityState')return ['authority-broker'];
  if(api==='aux.RevokeAuthority')return ['operator'];
  if(['aux.ResolveNamespace','aux.ReadSealedSource'].includes(api))return [...auxiliaryPolicy[api.slice(4) as 'ResolveNamespace'|'ReadSealedSource'].roles,'authority-broker'];
@@ -29,6 +33,10 @@ export function credentialAPIRoles(api:string):readonly string[]{
  if(api==='recovery.GetRecoveryStatus')return [...serviceOwnerRoles,'operator'];return [];
 }
 export function credentialDestination(api:string){
+ if(api==='aux.ReportServiceRecovered')return 'lineage-registry';
+ if(['aux.ReadDelivery','aux.QueryDelivery'].includes(api))return 'lineage-registry';
+ if(api==='aux.ReadSourceDescriptor')return 'provider';
+ if(['aux.CompleteAuthorityResult','aux.ReadAuthorityResult','aux.FinishAuthorityResult'].includes(api))return 'authority-broker';
  if(api==='aux.ReadAuthorityState')return 'lineage-registry';
  if(api==='aux.RevokeAuthority')return 'authority-broker';
  if(api.startsWith('control.'))return ({registry:'lineage-registry',issuer:'checkpoint-issuer',provider:'provider',anchor:'control-anchor'} as const)[apiPolicy[api.slice(8) as keyof typeof apiPolicy].destination];
@@ -86,7 +94,7 @@ export function prepareOwnerSignature(plan:OwnerPlan,credentialId:string,value:u
 export function readSigningScope(handle:ScopedSignIntent,identity:ServiceIdentity,direction:'request'|'reply'){readSigningIntent(handle,identity,direction);const v=signIntents.get(handle)!;return {domain:v.domain,api:v.api};}
 export function readSigningIntent(handle:ScopedSignIntent,identity:ServiceIdentity,direction:'request'|'reply'){const v=signIntents.get(handle);need(v&&same(v.identity,identity)&&v.direction===direction,'permission_denied');return Buffer.from(v.bytes);}
 export interface RoleSigner {identity:ServiceIdentity;direction:'request'|'reply';keyId:string;spki:string;sign(message:ScopedSignIntent):Promise<Buffer>}
-export interface OwnedStore {ownerId:string;storageEpoch:string;roots:OwnerConfig['roots'];journalKeyId:string;checkpointKeyId:string;assertOpen():void;recover():Promise<unknown>;readCommitted(ref:unknown):Promise<unknown>;commitStageExact(request:unknown):Promise<unknown>;close():void}
+export interface OwnedStore {ownerId:string;storageEpoch:string;roots:OwnerConfig['roots'];journalKeyId:string;checkpointKeyId:string;assertOpen():void;assertIdle?():void;recover():Promise<unknown>;readCommitted(ref:unknown):Promise<unknown>;commitStageExact(request:unknown):Promise<unknown>;close():void}
 export type OwnerPorts=Readonly<{kind:'c3b-owner-ports'}>;
 const bindings=new WeakMap<OwnerPorts,OwnerPlan>();
 export function bindOwnerPorts(plan:OwnerPlan,signers:readonly RoleSigner[],store:OwnedStore,clients:readonly {role:string;instanceId:string;endpointId:string;call:(request:unknown)=>Promise<unknown>}[]){

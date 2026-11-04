@@ -4,6 +4,7 @@ import { configDefaults, defineConfig } from "vitest/config";
 const REAL_TIME_PROCESS_TESTS = [
   "src/test/utils/gradleOwnedSourceProcess.test.ts",
   "src/test/utils/gradleOwnedAuthorityProcess.test.ts",
+  "src/test/utils/gradleOwnedConsumerProcess.test.ts",
 ];
 // 偽のosv-scannerの起動・多数のファイルの作成を伴うテストが、マシンの負荷(他のビルド等)で既定の5秒を超え、
 // npm publishの事前テストが失敗した(2026-10-24、負荷平均23で6件)。止まったテストは30秒で失敗させる

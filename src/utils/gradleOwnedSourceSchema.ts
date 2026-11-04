@@ -1,14 +1,15 @@
 /** C3b-3 bounded source interchange. Paths, service secrets and caller-supplied verification keys are forbidden. */
 import {z} from 'zod';
+import {recordUsePayload} from './gradleOwnedDeliverySchema.js';
 import {cid,chash,cn,cref,currentBindingSchema,currentHeadSchema,currentNamespaceSchema,parsed,need,decodeCurrent} from './gradleOwnedCurrentSchema.js';
 import {currentLineageSchema} from './gradleOwnedCurrentAuxiliary.js';
 import {serviceIdentitySchema} from './gradleOwnedServiceOwners.js';
 import {v2BindingSchema,replayV2,type V2ReplayInput} from './gradleOwnedJournalV2.js';
 import {ownedDigest,ownedSha256,canonicalOwnedJson} from './gradleOwnedJson.js';
 export const SOURCE_LIMITS=Object.freeze({bundleBytes:256*1024,sourceBytes:192*1024,entries:256,snapshots:8,chunkBytes:4096});
-export const sourceAPIs=['aux.PrepareCandidate','aux.ResolveNamespace','control.ReadForCheckpoint','aux.ReadSealedSource','aux.MirrorSelection','control.PrepareCheckpoint','control.ReadCurrentCheckpoint'] as const;
+export const sourceAPIs=['aux.PrepareCandidate','aux.ResolveNamespace','control.ReadForCheckpoint','aux.ReadSealedSource','aux.MirrorSelection','control.PrepareCheckpoint','control.ReadCurrentCheckpoint','aux.ReadSourceDescriptor','aux.RecordUse'] as const;
 export const sourceAPISchema=z.enum(sourceAPIs);
-export function sourcePurpose(api:string):'publication'|'maintenance'|'checkpoint'|'read'{if(api==='aux.PrepareCandidate')return 'publication';if(['aux.ResolveNamespace','aux.MirrorSelection'].includes(api))return 'maintenance';if(['control.PrepareCheckpoint','control.ReadForCheckpoint'].includes(api))return 'checkpoint';return 'read';}
+export function sourcePurpose(api:string):'publication'|'maintenance'|'checkpoint'|'read'|'handoff'{if(api==='aux.RecordUse')return 'handoff';if(api==='aux.PrepareCandidate')return 'publication';if(['aux.ResolveNamespace','aux.MirrorSelection'].includes(api))return 'maintenance';if(['control.PrepareCheckpoint','control.ReadForCheckpoint'].includes(api))return 'checkpoint';return 'read';}
 export const sourceContentSchema=z.object({sha256:chash,byteLength:cn.positive().max(SOURCE_LIMITS.bundleBytes)}).strict();
 const base=z.object({role:z.literal('compacted-base'),id:cid,sha256:chash,byteLength:cn.max(SOURCE_LIMITS.bundleBytes)}).strict();
 export const sourceMetadataSchema=z.object({binding:v2BindingSchema,baseRef:base,keyId:cid,approvedBaseDigest:chash,checkpoint:z.object({revision:cn.positive().max(256),commitDigest:chash}).strict()}).strict();
@@ -20,6 +21,8 @@ export const sourceSealSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.source-
 export type SourceSeal=z.infer<typeof sourceSealSchema>;
 const transfer={transferId:cid,kind:z.enum(['inventory','commit','payload']),index:cn.max(255),offset:cn.max(SOURCE_LIMITS.sourceBytes),maxBytes:cn.positive().max(4096)};
 export const sourcePayloads={
+ 'aux.RecordUse':recordUsePayload,
+ 'aux.ReadSourceDescriptor':z.object({snapshot:cref('snapshot'),checkpoint:cref('checkpoint-prepare'),pin:cref('read-pin')}).strict(),
  'aux.PrepareCandidate':z.object({mode:z.enum(['genesis','advance']),fence:z.union([cref('provision'),cref('writer-fence')]),input:sourceContentSchema}).strict(),
  'aux.ResolveNamespace':z.object({snapshot:cref('snapshot'),target:z.union([cref('provision'),cref('writer-fence'),cref('read-pin')]),origin:serviceIdentitySchema.nullable()}).strict(),
  'control.ReadForCheckpoint':z.object({snapshot:cref('snapshot'),fence:z.union([cref('provision'),cref('writer-fence')]),...transfer}).strict(),

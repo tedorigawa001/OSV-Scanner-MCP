@@ -1,4 +1,4 @@
-import type {OwnedCurrentBridge} from './gradleOwnedCurrentBridge.js';
+import type {CurrentGraphReader} from './gradleOwnedCurrentBridge.js';
 import {unsupportedOwnedCaller} from './gradleOwnedExecution.js';
 import {startupOwnedPolicy,type OwnedPolicy} from './gradleOwnedPolicy.js';
 import {parseGradleExport, InvalidGradleWrapper, LegacyGradleMetadataTooLarge, type OwnedManifestStatus} from "./gradleOwnedManifest.js";
@@ -48,7 +48,7 @@ export class GradleGraphCache {
   private readonly catalogTrust: CatalogTrust;
   private readonly catalogTrustInvalid: boolean;
   private readonly pluginReader:GradlePluginReader;
-  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), trustSetting: DeclarationTrust | DeclarationTrustConfig = startupDeclarationTrust(), private readonly declarationBudget: GradleBudget = createGradleBudget(), catalogSetting: CatalogTrust | CatalogTrustConfig = startupCatalogTrust(), private readonly pluginSettings:PluginSettings=startupPluginSettings(), private readonly ownedPolicy:OwnedPolicy=startupOwnedPolicy(), private readonly ownedCaller:unknown=unsupportedOwnedCaller, private readonly currentBridge?:OwnedCurrentBridge) {
+  constructor(private readonly boundary: string, private readonly budget: GradleBudget = createGradleBudget(), trustSetting: DeclarationTrust | DeclarationTrustConfig = startupDeclarationTrust(), private readonly declarationBudget: GradleBudget = createGradleBudget(), catalogSetting: CatalogTrust | CatalogTrustConfig = startupCatalogTrust(), private readonly pluginSettings:PluginSettings=startupPluginSettings(), private readonly ownedPolicy:OwnedPolicy=startupOwnedPolicy(), private readonly ownedCaller:unknown=unsupportedOwnedCaller, private readonly currentBridge?:CurrentGraphReader) {
     const setting = typeof trustSetting === "object" ? trustSetting : { trust: trustSetting, invalid: false };
     this.trust = setting.trust; this.trustInvalid = setting.invalid;
     const catalog = typeof catalogSetting === "object" ? catalogSetting : { trust: catalogSetting, invalid: false };
