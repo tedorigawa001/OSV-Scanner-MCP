@@ -8,7 +8,7 @@ import {canonicalOwnedJson,ownedDigest} from './gradleOwnedJson.js';
 export const serviceOwnerRoles=['provider','checkpoint-issuer','lineage-registry','authority-broker','control-anchor'] as const;
 export const serviceIdentitySchema=z.object({credentialId:cid,role:z.enum(currentRoles),instanceId:cid,boot:chash,keyEpoch:cn.positive()}).strict();
 export type ServiceIdentity=z.infer<typeof serviceIdentitySchema>;
-export const serviceAPIs=Object.freeze([...currentAPIs.map(a=>'control.'+a),...auxiliaryAPIs.map(a=>'aux.'+a),'recovery.ReportRecovered','recovery.GetRecoveryStatus']);
+export const serviceAPIs=Object.freeze([...currentAPIs.map(a=>'control.'+a),...auxiliaryAPIs.map(a=>'aux.'+a),'recovery.ReportRecovered','recovery.GetRecoveryStatus','aux.RevokeAuthority','aux.ReadAuthorityState']);
 export const serviceAPISchema=z.string().refine(v=>serviceAPIs.includes(v));
 const root=z.object({rootId:cid,device:z.string().regex(/^[0-9]+$/),inode:z.string().regex(/^[0-9]+$/)}).strict();
 export const credentialSchema=z.object({identity:serviceIdentitySchema,keyId:cid,direction:z.enum(['request','reply']),spki:z.string().min(1).max(128),endpointId:cid,
@@ -20,12 +20,17 @@ export function publicCredentialKey(c:z.infer<typeof credentialSchema>){
  try{const raw=Buffer.from(c.spki,'base64');need(raw.toString('base64')===c.spki,'configuration_invalid');const key=createPublicKey({key:raw,format:'der',type:'spki'});need(key.asymmetricKeyType==='ed25519'&&key.export({format:'der',type:'spki'}).equals(raw),'configuration_invalid');return key;}catch{need(false,'configuration_invalid');}
 }
 export function credentialAPIRoles(api:string):readonly string[]{
+ if(api==='aux.ReadAuthorityState')return ['authority-broker'];
+ if(api==='aux.RevokeAuthority')return ['operator'];
+ if(['aux.ResolveNamespace','aux.ReadSealedSource'].includes(api))return [...auxiliaryPolicy[api.slice(4) as 'ResolveNamespace'|'ReadSealedSource'].roles,'authority-broker'];
  if(api.startsWith('control.'))return apiPolicy[api.slice(8) as keyof typeof apiPolicy]?.roles??[];
  if(api.startsWith('aux.'))return auxiliaryPolicy[api.slice(4) as keyof typeof auxiliaryPolicy]?.roles??[];
  if(api==='recovery.ReportRecovered')return serviceOwnerRoles;
  if(api==='recovery.GetRecoveryStatus')return [...serviceOwnerRoles,'operator'];return [];
 }
 export function credentialDestination(api:string){
+ if(api==='aux.ReadAuthorityState')return 'lineage-registry';
+ if(api==='aux.RevokeAuthority')return 'authority-broker';
  if(api.startsWith('control.'))return ({registry:'lineage-registry',issuer:'checkpoint-issuer',provider:'provider',anchor:'control-anchor'} as const)[apiPolicy[api.slice(8) as keyof typeof apiPolicy].destination];
  if(api.startsWith('aux.'))return ({registry:'lineage-registry',provider:'provider',authority:'authority-broker'} as const)[auxiliaryPolicy[api.slice(4) as keyof typeof auxiliaryPolicy].destination];
  return 'lineage-registry';

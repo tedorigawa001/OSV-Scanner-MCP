@@ -1,0 +1,33 @@
+/** Typed authenticated ports for a single authority owner. No foreign signer or root. */
+import {randomBytes} from 'node:crypto';
+import {type OwnerPlan,type RoleSigner,type ServiceIdentity,ownerPlanFacts} from './gradleOwnedServiceOwners.js';
+import {authorityRegistryStatusSchema,makeRegistryCommand,sameRegistryValue as same,type RegistryCommand} from './gradleOwnedRegistrySchema.js';
+import {registryResultSchema,signOwnerValue,verifyOwnerValue} from './gradleOwnedRoleSigner.js';
+import {SourceRegistryClient,type AuthenticatedOwnerRPC,type SourcePeerPort} from './gradleOwnedSourceClient.js';
+import {sourceSealSchema,sourceChunkSchema,sourceRef,canonicalBase64,validateInventory,sourceBundleSchema,SOURCE_LIMITS,type SourceBundle} from './gradleOwnedSourceSchema.js';
+import {parsed,need,type CurrentBinding,type CurrentRef} from './gradleOwnedCurrentSchema.js';
+import {ownedSha256} from './gradleOwnedJson.js';
+import {type CredentialRegistry} from './gradleOwnedServiceOwners.js';
+export interface AuthorityRegistryPort {
+ live:(binding:CurrentBinding,pin:CurrentRef,reader:ServiceIdentity)=>Promise<void>;
+ inspect:(gate?:CurrentRef)=>Promise<{binding:CurrentBinding;phase:string;barrier:{ref:CurrentRef;reason:string;participants:string[]}|null;handoffs:{gate:CurrentRef;phase:'completing'|'decision-recorded'|'cancelled';operationKey:string}[];controlRevision:number;record:CurrentRef|null}>;
+ barrier:(binding:CurrentBinding,operationId:string)=>Promise<{barrier:CurrentRef;participants:string[]}>;
+}
+export class AuthorityRegistryClient implements AuthorityRegistryPort {
+ readonly #binding:SourceRegistryClient;
+ constructor(readonly plan:OwnerPlan,readonly signer:RoleSigner,readonly rpc:AuthenticatedOwnerRPC,readonly participants:readonly string[]){need(ownerPlanFacts(plan).role==='authority-broker','permission_denied');this.#binding=new SourceRegistryClient(plan,signer,rpc);}
+ live(binding:CurrentBinding,pin:CurrentRef,reader:ServiceIdentity){need(binding.mode==='serving','binding_mismatch');return this.#binding.check(binding,pin,reader,'handoff',binding.selected.snapshot);}
+ async call(api:RegistryCommand['api'],binding:CurrentBinding,payload:unknown,operationId='authority-'+randomBytes(16).toString('hex')){const c=ownerPlanFacts(this.plan),command=makeRegistryCommand({api,operationId,peer:this.signer.identity,lineage:c.lineage,binding,payload}),domain=api.startsWith('aux.')?'aux':'control',wire=await signOwnerValue(this.plan,this.signer,domain,api,{api:api.slice(api.indexOf('.')+1),command}),reply=parsed(registryResultSchema,await this.rpc(api,wire));need(reply.requestDigest===command.requestDigest&&same(reply.lineage,c.lineage),'binding_mismatch');return reply;}
+ async inspect(gate?:CurrentRef){const c=ownerPlanFacts(this.plan),command=makeRegistryCommand({api:'aux.ReadAuthorityState',operationId:'state-'+randomBytes(12).toString('hex'),peer:this.signer.identity,lineage:c.lineage,binding:c.lineage,payload:{gate:gate??null}}),wire=await signOwnerValue(this.plan,this.signer,'aux',command.api,{api:'ReadAuthorityState',command}),reply=parsed(registryResultSchema,await this.rpc(command.api,wire));need(reply.mode==='observed'&&reply.requestDigest===command.requestDigest&&same(reply.lineage,c.lineage),'binding_mismatch');const value=parsed(authorityRegistryStatusSchema,reply.result);need(value.handoffs.every(h=>gate&&same(h.gate,gate)&&h.broker.instanceId===c.instanceId),'binding_mismatch');for(const [key,v]of Object.entries(c.lineage))need((value.binding as any)[key]===v,'binding_mismatch');return value;}
+ async barrier(binding:CurrentBinding,operationId:string){const reply=await this.call('control.BeginBarrier',binding,{reason:'revoke',participants:[...this.participants]},operationId);need(reply.mode==='applied'||reply.mode==='committed-historical','receipt_invalid');return reply.result as {barrier:CurrentRef;participants:string[]};}
+}
+export interface AuthoritySourcePort {read:(binding:CurrentBinding,pin:CurrentRef,reader:ServiceIdentity,check:()=>void)=>Promise<SourceBundle>}
+/** The broker uses its own request signer; the reader identity is an exact registry-checked delegation. */
+export class AuthoritySourceClient implements AuthoritySourcePort {
+ constructor(readonly peer:SourcePeerPort,readonly registry:CredentialRegistry,readonly providerInstance:string){}
+ async read(binding:CurrentBinding,pin:CurrentRef,reader:ServiceIdentity,check:()=>void){
+  need(binding.mode==='serving','binding_mismatch');check();const snapshot=binding.selected.snapshot,resolved:any=await this.peer.call('aux.ResolveNamespace',{snapshot,target:pin,origin:reader},binding);check();need(same(resolved.snapshot,snapshot),'binding_mismatch');const proof=canonicalBase64(resolved.seal);need(same(sourceRef('snapshot',proof),snapshot),'integrity_invalid');const seal=parsed(sourceSealSchema,verifyOwnerValue(proof,this.registry,{role:'provider',instanceId:this.providerInstance,direction:'reply',domain:'aux',api:'aux.PrepareCandidate'}).body);need(same(seal.head,binding.selected.head),'binding_mismatch');
+  const transferId='authority-'+randomBytes(12).toString('hex'),read=async(kind:'inventory'|'commit'|'payload',index:number,ref:{sha256:string;byteLength:number})=>{const chunks:Buffer[]=[];for(let offset=0;offset<ref.byteLength;){check();const maxBytes=Math.min(SOURCE_LIMITS.chunkBytes,ref.byteLength-offset),value=await this.peer.call('aux.ReadSealedSource',{snapshot,checkpoint:binding.selected.checkpoint,pin,origin:reader,transferId,kind,index,offset,maxBytes},binding);check();const c=parsed(sourceChunkSchema,value),b=canonicalBase64(c.bytes);need(same(c.snapshot,snapshot)&&c.inventoryDigest===seal.inventoryDigest&&c.transferId===transferId&&c.entry.kind===kind&&c.entry.index===index&&c.entry.sha256===ref.sha256&&c.entry.byteLength===ref.byteLength&&c.offset===offset&&c.totalBytes===ref.byteLength&&b.length===maxBytes&&ownedSha256(b)===c.sha256,'transfer_invalid');chunks.push(b);offset+=b.length;}const b=Buffer.concat(chunks);need(b.length===ref.byteLength&&ownedSha256(b)===ref.sha256,'integrity_invalid');return b;};
+  need(this.peer.remaining()>=Math.ceil(seal.inventory.byteLength/4096)+Math.ceil(seal.sourceBytes/4096),'capacity_exhausted');const entries=validateInventory(await read('inventory',0,seal.inventory),seal);need(this.peer.remaining()>=entries.reduce((n,e)=>n+Math.ceil(e.byteLength/4096),0),'capacity_exhausted');const commits:string[]=[],payloads:string[]=[];for(const entry of entries)(entry.kind==='commit'?commits:payloads)[entry.index]=(await read(entry.kind,entry.index,entry)).toString('base64');check();return parsed(sourceBundleSchema,{schema:'osv-mcp.q2.c3b.source-bundle.v1',metadata:seal.metadata,commits,payloads});
+ }
+}

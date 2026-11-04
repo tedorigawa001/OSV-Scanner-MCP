@@ -6430,3 +6430,57 @@ e6d405fでは、readerや失敗した操作だけでsource ownerを回復不能�
 4 owner process回帰は実時間の5秒fenceに依存するため、vitestの別projectへ分け、他のテストの後に単独で実行する。fenceとtimeoutは変更していない。実時間の限界として、180 KB sourceは単独実行でも約5.1秒でfence期限に達し、`ActivateEnrollment`が`grant_revoked`で拒否された。128 KBは約3.6秒で通過したが、最大サイズの5秒以内完了は引き続き未成立である。
 
 レビュー修正の最終検証: `npx vitest run --maxWorkers=2`で134 files／5,342 tests成功、24 files／1,418 tests skipped（698.80秒、実行直後の負荷平均は約16）。型検査・build成功。全体実行は修正前の1回が失敗し、修正後の1回が成功した段階で、安定性は回数を重ねて確認していない。新規の別UID隔離・本番採用は0。
+
+### 9.98 C3b-4：read-only AuthorityOwner・予約／失効・handoffと協調runtime drain
+
+#### 9.98.1 採用範囲と所有境界
+
+C3b-3の後続として`gradleOwnedAuthorityOwner{Schema,Client}.ts`・`gradleOwnedServiceDrain.ts`を追加する。AuthorityOwnerは自身のOwnerPlan・request/reply Signerのうちreply側・単一OwnedStore・公開credential registry・固定source MAC material／base・独立policy／operation binding・明示client portだけを持つ。producer／readerのWeakMap proofや任意path、全actor factory・他serviceの秘密鍵／root handleを受け取らない。rootによる明示組立のみで、MCPの既定route・採用flagは変更しない。
+
+初期profileは、認証済みv2 authority snapshotから**read-onlyのdocument**を作るものに限定する。source MACを持つ原本にもfull authority decoderとG0/G2を適用し、action-start・live session／scope・terminal・manifest／core・profile／recipe・consumerの対応をbroker自身が検証する。G3/G4・外部実行effect・producerの任意callback・直接A1 mutation endpointは公開しない。独立したA1の変更入口を残したままbrokerだけを失効窓口とみなす構成は対象外。今回のlive状態はbrokerのown reservation／revocation journalで管理し、旧snapshotのterminalが残ってもrevokingのscopeへ新gateを作らない。
+
+#### 9.98.2 strict protocol・full source・結果の対応
+
+C3b固有の`authority-command.v1`にPrepareAuthorityResult／RevokeAuthorityを定義した。前者はreaderの同pin・issuer署名witness bytes／ref・scope・use ID・最終document digestと`effect: read-only`を要求する。operatorだけが後者を呼べる。aux.RevokeAuthorityとbroker向けaux.ReadAuthorityStateはC3b service APIとして追加し、C0／C3aの旧wireを暗黙変更しない。
+
+brokerは自身のrequest signer／認証sessionでregistryを確認し、providerへexact reader identityを委譲元として選択済み原本を要求する。C3b source protocolのResolveNamespace／ReadSealedSourceだけにbrokerの権限を追加した。candidate fenceには転用できず、providerはoriginが実pin owner・同snapshotであることをregistryへ照会する。readerがoriginを自己申告して別readerへ成り代わる形式は拒否する。
+
+署名seal→完全inventory→全entry／chunkを取得し、snapshot・transfer・kind／ordinal・offset・長さ・hashを照合する。broker側でもbundle／raw bytes／entry上限を検査し、登録key／baseでfull replayする。scopeのoperation bindingも独立configへ照合する。issuer witnessの署名者・reader／pin／selected pair／headを照合し、readerが送ったproof handleで代用しない。既定上限はC3b-3と同じbundle 256 KiB／raw 192 KiB／256 entries／chunk 4096 bytes。これを超える入力と64 KiBを超える結果documentは初期profileの対象外である。
+
+返すcandidate-result refは`CurrentAuthorityVerifier`で作った最終documentそのもののcanonical bytesへ結ぶ。digestだけの小さな代理objectへ結ばない。gateはbroker／readerの完全identity、pin／use／witness、全binding、scope／consumer、source head、terminal digest、own reservation revision、同resultへ署名束縛する。gateは実行許可ではなく、registryが追加検査するread-only予約の証拠である。
+
+**authority自身の期限。** snapshotのvalidityだけをlive判定にせず、MACで束縛されたmanifest.createdとsessionMillisecondsも使う。rootがbroker／registry各ownerへ、A1 producerと同じ単調時計原点の`AuthorityClock`を独立登録する。初期local profileは`same-host-monotonic-v1`だけを許し、別clock domain・登録なし・future creation time・巻戻しはunsupported／拒否とする。JSONの自己申告からclock handleを作らず、owner／storage epoch／authorityへ束縛する。
+
+これは追加の配備信頼条件であり、Clockの名前だけで原点の一致をOS検証したことにはしない。通常実装を黙ってprocess起動時刻へ換算するfallbackはない。local-process実証は、producerを含む同hostのprocess.hrtimeと同じ原点で観測する。別host／原点未確認の構成はこのprofileでは未対応である。host再起動後に旧sourceの時刻を新しい時計原点で再解釈せず、同じ原点を独立に確認できなければ新しいA1 sessionを要求する。G0 verifierの出力自体は生のcreated／lifetimeだけで、clock domainを証明しない。
+
+brokerは新規予約・prepared再試行・gate公開read・成功reply直前、registryはhandoffの各durable stage間と成功reply前にauthority期限を再確認する。fresh pinを発行しても元authority lifetimeを延長しない。期限後の履歴は監査用として復旧できるが、新gate／live handoffへ復元しない。authority期限だけがstage間で到達した場合もcompletingを保持する。
+
+#### 9.98.3 durable予約・失効・registryの決定順序
+
+authority journalはresult-reserved→result-preparedを別stageで保存し、後段は前段receiptへ結ぶ。inputと結果bytesもown storeへ保存する。gateの保存前、元pinの期限／資格の最終確認前に成功しない。同業務K／Dは保存済みgateへ収束し、stageを追加しない。起動bootも保存し、使用済みbootを再openしない。通常予約は40 stage手前で停止し、総64 stageの残りをboot／失効／不明予約解決へ残す。GC／compactionは未実装である。
+
+RevokeAuthorityは先にauthority-revokingを保存して対象scopeの新gateを閉じる。その後、同lineageのregistry BeginBarrierを要求する。外部handoffの失効確定点はこのbarrierのdurable commitであり、authority側の受付時刻ではない。元要求・結果が不明ならrevokingを残す。再送では独立のaux.ReadAuthorityStateを使い、既に確定した新しいbarrierと照合してからauthority-revokedを保存する。pin／fenceを延長しない。
+
+registryにPrepareHandoffを接続した。authorityの署名gateを公開ref portで取得し、own pin owner・broker boot・同selected binding／witness／use／result・登録operation bindingを独立検査する。他rootを開かない。handoff-completingのR／Anchor採用→handoff-decision-recordedの別R／Anchor採用とし、各stageに異なるstate imageを保存する。初段後に期限・資格が失われた場合はcompletingを残し、再送もpendingを成功へ昇格させない。再起動で不足する決定stageを自動補完しない。
+
+BeginBarrierが先なら保存済みgateも拒否し、handoffの決定が先ならhistoricalな決定を保存したままbarrierへ進む。新しいhandoffはqueueのdurable順序で判定する。pending／decided pinをTTLやReleaseReadPinで解放してwriterへ渡さない。別pinを取得する際の整理処理でも元pinを保持し、同時pin上限へ課金する。この回帰は修正前の失敗と修正後の通過を確認した。全participantのfencingが済んだFinishBarrierでread-only holdをcancelledへ遷移させ、元ledger結果は保持する。
+
+#### 9.98.4 不明予約の照合・実際のruntime drain
+
+authorityの再起動は全own journal・source・G0/G2・署名gateを再検証するが、旧gateをliveとして復元しない。不明予約を残してdrainingとなる。settleReservationsは新規受付を先に閉じ、freshなregistryのdraining barrierと、gateごとのhandoff ledger状態を照合して解決記録を保存する。状態照会は1 gateずつに限定し、大きい全履歴をcontrol frameへ詰めない。未提出／completing／decision-recordedの区別、registry revision／record、barrierを保存する。TTLだけでの解決、別barrierへの付替え、通常serving中の解決は拒否する。
+
+ServiceDrainはrootが固定登録したownerと実際のincoming SessionServer／outgoing SessionClientへ接続する。ownerの受付を閉じ、全sessionをcloseした後も、queued／public read・保留RPCの実際のfinallyと不明予約解決が済むまで証拠を署名しない。source ownerのroot側publicationもdrain後は拒否する。reader／writerは同processの同credentialの全live clientを閉じ、保留要求0を確認してから限定したruntime drain証拠を署名する。同bootの新業務要求を再生成しない。失効済みactorや不足したresource一覧から証拠を作らない。
+
+新しい`runtime-drained.v1`はbarrier／subject／boot・admissionClosed・inFlight=0／effects=0／activeChannels=0へ結ぶ。C3b-4のregistry配備ではこの形式を必須にし、旧C3b-2の注入用cooperative-drained記録だけではFinishBarrierへ進めない。管理用ConfirmFencedのchannelと、停止した通常業務channelは区別する。これはrootが登録したローカルruntimeの協調排出で、kernelによるprocess停止・FD alias／mount／mmapの完全回収を証明しない。
+
+#### 9.98.5 回帰・process実証と残件
+
+回帰は、broker full source／G0/G2、clockの登録／原点不明／future／巻戻し、fresh pinでもauthority期限後は拒否、authority期限だけがhandoff stage間で到達する場合、最終結果bytes、scope／consumer差替え、署名済みgateのreader／pin／witness／result／use／operation binding交換、非read-only／path／WeakMap入力拒否、準備応答紛失、失効前後の決定順序、barrier応答紛失、各保存stage後の期限／停止、旧terminal残存、再起動後の不明予約・旧gate拒否、runtime drain不足、保留await再開後の原本read 0を対象にする。
+
+local process harnessはregistry／Anchor／provider／issuer／authorityの5 childを起動し、active ownerの秘密署名鍵を親へ渡さない。各childは自身のrequest／reply鍵2個とown journal鍵だけを持つ。正常のG0/G2→handoff→revoke→5 participant drainに加え、authority予約の実publication直後をpauseしてSIGKILLし、新bootの復旧でunresolved=1／prepared=0・live gate復元なしを確認する。source MAC materialとサービス認証鍵は別である。
+
+検証記録は`docs/validation/gradle-independent-currentness-c3b4-2026-11-04.json`。同UID／協調POSIXのlocal-process実証であり、別UIDのnative隔離・独立rollback domain・実VM／kernel資格・固定launch／FD回収は未成立。全採用flag false・originalReadsSkipped=0を維持する。
+
+残件はC3b-5のC2経路／authenticated outcome・RecordUse／結果転送／consumer ACK・全工程予算・配備更新を伴う再開／shutdown・全service復旧報告。その後C3c／C3d／C4の固定配備・native故障・採用審査、Q3b／Q4b、GC／compaction・大容量入力の性能検証へ進む。今回のローカル正常系を、既存KGPの透過対応・declared_inの本番採用・実読取省略へ昇格させない。
+
+C3b-4最終検証：authority owner 33件・clock 4件・process suite 3件を含む全体実行は5,383通過／1失敗／1,418 skip（483.85秒）。唯一の失敗は、共有verifierの生時刻projectionとfixture clock引数を変更したC2記録の旧source hashだった。元hashを保存して互換記録を更新し、C2の32件を再実行して全通過した（28.10秒）。全5,384件をそれぞれ通過確認したが、最終全体実行を単一batchのgreenとは扱わない。型検査・build・diff整形検査、74 source fingerprintsと全互換receiptの一致を確認。検査除去対照5件で期待した失敗を確認し、元codeへ復元した。

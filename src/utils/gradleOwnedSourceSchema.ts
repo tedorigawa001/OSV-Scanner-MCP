@@ -23,7 +23,7 @@ export const sourcePayloads={
  'aux.PrepareCandidate':z.object({mode:z.enum(['genesis','advance']),fence:z.union([cref('provision'),cref('writer-fence')]),input:sourceContentSchema}).strict(),
  'aux.ResolveNamespace':z.object({snapshot:cref('snapshot'),target:z.union([cref('provision'),cref('writer-fence'),cref('read-pin')]),origin:serviceIdentitySchema.nullable()}).strict(),
  'control.ReadForCheckpoint':z.object({snapshot:cref('snapshot'),fence:z.union([cref('provision'),cref('writer-fence')]),...transfer}).strict(),
- 'aux.ReadSealedSource':z.object({snapshot:cref('snapshot'),checkpoint:cref('checkpoint-prepare'),pin:cref('read-pin'),...transfer}).strict(),
+ 'aux.ReadSealedSource':z.object({snapshot:cref('snapshot'),checkpoint:cref('checkpoint-prepare'),pin:cref('read-pin'),origin:serviceIdentitySchema.optional(),...transfer}).strict(),
  'aux.MirrorSelection':z.object({snapshot:cref('snapshot'),checkpoint:cref('checkpoint-prepare'),pin:cref('read-pin')}).strict(),
  'control.PrepareCheckpoint':z.object({snapshot:cref('snapshot'),fence:z.union([cref('provision'),cref('writer-fence')])}).strict(),
  'control.ReadCurrentCheckpoint':z.object({pin:cref('read-pin'),checkpoint:cref('checkpoint-prepare')}).strict(),

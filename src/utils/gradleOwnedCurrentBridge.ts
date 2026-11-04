@@ -17,7 +17,7 @@ export interface CurrentProviderClient {
  recordUse(value:{grantId:string;useId:string;receiptDigest:string;completeDigest:string;readerDigest:string;identityDigest:string}):Promise<void>;
 }
 export type CurrentAuthorityProof=Readonly<{kind:'verified-current-authority'}>;
-type Facts={pin:CurrentRef;scope:CurrentScope;resultDigest:string;resultBytes:Buffer;authorityTerminalDigest:string;document:GradleExport};
+type Facts={pin:CurrentRef;scope:CurrentScope;resultDigest:string;resultBytes:Buffer;authorityTerminalDigest:string;authorityTime:{created:number;lifetimeMs:number};document:GradleExport};
 /** Proofs are minted only after full replay, exact source binding and G0/G2 validation. */
 export class CurrentAuthorityVerifier {
  readonly #proofs=new WeakMap<CurrentAuthorityProof,Facts>();
@@ -36,9 +36,9 @@ export class CurrentAuthorityVerifier {
   // authorityPlan carries profileId/recipeId; the session scope deliberately does not.
   const caller:TrustedOwnedCaller={backend:'caller-owned-receipt-store-v1',session:authoritySession,lookup:request=>{need(request.sessionId===m.id&&request.witnessId===w.witnessId&&request.coreGraphDigest===m.coreDigest&&request.rootRegistryDigest===m.rootDigest,'binding_mismatch');return sc.observation!.lookup;}};
   const auth=policy.registry.authorization(claim,policy.settings);need(auth&&inspectOwnedExecution(claim,caller,auth)==='capability_unsupported','witness_unavailable');const parsedDocument=parseGradleExport(text,budget,policy,caller),document={graph:parsedDocument.graph,...(parsedDocument.owned?{owned:parsedDocument.owned}:{})};
-  need(document.owned?.manifestStructure==='verified'&&document.owned.executionWitness==='verified','witness_unavailable');const resultDigest=ownedDigest(document),proof=Object.freeze({kind:'verified-current-authority' as const});this.#proofs.set(proof,{pin:structuredClone(pin),scope:structuredClone(scope),resultDigest,resultBytes:Buffer.from(canonicalOwnedJson({resultDigest})),authorityTerminalDigest:ownedDigest(sc.info.terminal),document});return proof;
+  need(document.owned?.manifestStructure==='verified'&&document.owned.executionWitness==='verified','witness_unavailable');const resultDigest=ownedDigest(document),proof=Object.freeze({kind:'verified-current-authority' as const});this.#proofs.set(proof,{pin:structuredClone(pin),scope:structuredClone(scope),resultDigest,resultBytes:Buffer.from(canonicalOwnedJson({resultDigest})),authorityTerminalDigest:ownedDigest(sc.info.terminal),authorityTime:{created:m.created,lifetimeMs:result.authorityAudit!.limits.sessionMilliseconds??0},document});return proof;
  }
- inspect(proof:CurrentAuthorityProof){const value=this.#proofs.get(proof);need(value,'gate_invalid');return {...structuredClone({pin:value.pin,scope:value.scope,resultDigest:value.resultDigest,authorityTerminalDigest:value.authorityTerminalDigest,document:value.document}),resultBytes:Buffer.from(value.resultBytes)};}
+ inspect(proof:CurrentAuthorityProof){const value=this.#proofs.get(proof);need(value,'gate_invalid');return {...structuredClone({pin:value.pin,scope:value.scope,resultDigest:value.resultDigest,authorityTerminalDigest:value.authorityTerminalDigest,authorityTime:value.authorityTime,document:value.document}),resultBytes:Buffer.from(value.resultBytes)};}
 }
 export interface CurrentAuthorityClient {prepare(proof:CurrentAuthorityProof,useId:string):Promise<{gate:CurrentRef;result:CurrentRef}>}
 export type CurrentPublication=Readonly<{kind:'current-publication'}>;

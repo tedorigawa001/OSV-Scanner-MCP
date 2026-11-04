@@ -2863,3 +2863,13 @@ e6d405fレビュー修正（§9.97.8）: 3件を修正した。
 - `CheckLiveBinding`をboot予算から外し、issuerの転送前残枠確認と診断を追加した。
 
 process回帰はvitestの別projectで単独実行する。GC／compaction、`ReadForCheckpoint`等のboot枠、180 KB sourceが5秒fenceに収まらない点は残る。
+
+### C3b-4：read-only authority・handoff・runtime drain
+
+- §9.98。AuthorityOwnerのfull原本／G0/G2、署名witness・scope／consumer／result照合、own予約／revoking／revoked、旧terminal拒否を実装。
+- rootがA1 producerと同じ原点のauthority clockを登録するlocal profileを追加。期限・原点不明・巻戻しを拒否し、fresh pinでauthority lifetimeを延長しない。別host／時計条件未確認は未対応。
+- registryへ2段階handoffとbarrier順序を接続。completingの途中停止をpendingとして保持し、再起動・TTLで決定を捏造しない。
+- 新規受付・実session／保留RPCを閉じるruntime drain、gate別のregistry照合による不明予約解決、reader／writerの同boot再使用拒否を追加。旧注入証拠とruntime証拠を区別する。
+- 5 ownerのlocal process接続と、実SIGKILL後の不明予約復旧を検証。別UID／kernel FD隔離・独立rollback・本番採用は未成立、originalReadsSkipped=0。
+- 検証件数と実行範囲は`docs/validation/gradle-independent-currentness-c3b4-2026-11-04.json`へ記録する。
+- 次はC3b-5：C2／authenticated outcome／RecordUse／consumer ACK・結果転送・全工程予算・全service復旧／shutdown。C3c／C3d／C4、Q3b／Q4b、GC／compaction・性能検証も残る。

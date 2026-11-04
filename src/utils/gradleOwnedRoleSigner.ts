@@ -7,8 +7,9 @@ import {registryRecordSchema,preparedCheckpointSchema,drainedProofSchema,anchorR
 import {stageRecordSchema} from './gradleOwnedServiceStages.js';
 import {chash,parsed,need,decodeCurrent} from './gradleOwnedCurrentSchema.js';
 import {canonicalOwnedJson,ownedDigest} from './gradleOwnedJson.js';
+import {validateAuthorityCommand,authorityGateSchema,authorityOwnerResultSchema} from './gradleOwnedAuthorityOwnerSchema.js';
 import {validateSourceCommand,sourceSealSchema,sourceResultSchema,sourceWitnessSchema} from './gradleOwnedSourceSchema.js';
-export const registryResultSchema=z.object({api:z.string(),schema:z.literal('osv-mcp.q2.c3b.registry-result.v1'),lineage:currentLineageSchema,requestDigest:chash,operationKey:chash,mode:z.enum(['applied','existing-live-confirmed','committed-historical','observed']),appliedRevision:z.number().int().nonnegative(),currentRevision:z.number().int().nonnegative(),result:z.unknown(),live:z.boolean()}).strict();
+export const registryResultSchema=z.object({api:z.string(),schema:z.literal('osv-mcp.q2.c3b.registry-result.v1'),lineage:currentLineageSchema,requestDigest:chash,operationKey:chash,mode:z.enum(['applied','existing-live-confirmed','committed-historical','observed','pending']),appliedRevision:z.number().int().nonnegative(),currentRevision:z.number().int().nonnegative(),result:z.unknown(),live:z.boolean()}).strict();
 const unsigned=(v:Omit<OwnerEnvelope,'signature'>)=>v;
 function checkBody(body:any,direction:string,api:string|null,domain:string){
  if(domain==='stage'){parsed(stageRecordSchema,body);return;}
@@ -19,8 +20,10 @@ function checkBody(body:any,direction:string,api:string|null,domain:string){
  if(body.schema==='osv-mcp.q2.c3b.source-seal.v1'){need(direction==='reply'&&api==='aux.PrepareCandidate','permission_denied');parsed(sourceSealSchema,body);return;}
  if(body.schema==='osv-mcp.q2.c3b.source-witness.v1'){need(direction==='reply'&&api==='control.ReadCurrentCheckpoint','permission_denied');parsed(sourceWitnessSchema,body);return;}
  if(body.schema==='osv-mcp.q2.c3b.prepared-checkpoint.v1'){need(direction==='reply'&&api==='control.PrepareCheckpoint','permission_denied');parsed(preparedCheckpointSchema,body);return;}
- if(body.schema==='osv-mcp.q2.c3b.cooperative-drained.v1'){need(direction==='request'&&api==='control.ConfirmFenced','permission_denied');parsed(drainedProofSchema,body);return;}
- if(body.command){need(direction==='request','permission_denied');const command=body.command.schema==='osv-mcp.q2.c3b.source-command.v1'?validateSourceCommand(body.command):validateRegistryCommand(body.command);need(command.api===api&&same(Object.keys(body).sort(),['api','command']),'schema_invalid');return;}
+ if(['osv-mcp.q2.c3b.cooperative-drained.v1','osv-mcp.q2.c3b.runtime-drained.v1'].includes(body.schema)){need(direction==='request'&&api==='control.ConfirmFenced','permission_denied');parsed(drainedProofSchema,body);return;}
+ if(body.schema==='osv-mcp.q2.c3b.authority-gate.v1'){need(direction==='reply'&&api==='aux.PrepareAuthorityResult','permission_denied');parsed(authorityGateSchema,body);return;}
+ if(body.schema==='osv-mcp.q2.c3b.authority-result.v1'){need(direction==='reply','permission_denied');parsed(authorityOwnerResultSchema,body);return;}
+ if(body.command){need(direction==='request','permission_denied');const command=body.command.schema==='osv-mcp.q2.c3b.authority-command.v1'?validateAuthorityCommand(body.command):body.command.schema==='osv-mcp.q2.c3b.source-command.v1'?validateSourceCommand(body.command):validateRegistryCommand(body.command);need(command.api===api&&same(Object.keys(body).sort(),['api','command']),'schema_invalid');return;}
  if(api.startsWith('control.anchor.')){direction==='request'?parsed(anchorRequestSchema,body):parsed(anchorResultSchema,body);return;}
  need(false,'permission_denied');
 }
@@ -33,6 +36,9 @@ export function createRoleSigner(plan:OwnerPlan,registryValue:unknown,pins:Param
   if(body.schema==='osv-mcp.q2.c3b.registry-record.v1')need(body.ownerId===c.ownerId&&body.storageEpoch===c.storageEpoch&&same(body.lineage,c.lineage),'binding_mismatch');
   if(['osv-mcp.q2.c3b.source-seal.v1','osv-mcp.q2.c3b.source-result.v1','osv-mcp.q2.c3b.source-witness.v1','osv-mcp.q2.c3b.prepared-checkpoint.v1'].includes(body.schema))need(same(body.lineage,c.lineage),'binding_mismatch');
   if(body.schema==='osv-mcp.q2.c3b.source-seal.v1')need(c.role==='provider'&&same(body.provider,identity)&&same(body.namespace.root,{device:c.roots.store.device,inode:c.roots.store.inode}),'binding_mismatch');
+  if(['osv-mcp.q2.c3b.authority-gate.v1','osv-mcp.q2.c3b.authority-result.v1'].includes(body.schema))need(c.role==='authority-broker'&&same(body.lineage,c.lineage),'binding_mismatch');
+  if(body.schema==='osv-mcp.q2.c3b.authority-gate.v1')need(same(body.broker,identity),'peer_mismatch');
+  if(['osv-mcp.q2.c3b.cooperative-drained.v1','osv-mcp.q2.c3b.runtime-drained.v1'].includes(body.schema))need(body.boot===identity.boot&&body.subject===identity.instanceId,'peer_mismatch');
   if(body.command)need(same(body.command.peer,identity)&&same(body.command.lineage,c.lineage),'peer_mismatch');
   const payload={schema:'osv-mcp.q2.c3b.owner-envelope.v1' as const,identity,keyId,direction,domain:scope.domain as OwnerEnvelope['domain'],api:scope.api,body};const signature=sign(null,Buffer.from(canonicalOwnedJson(unsigned(payload),65536)),key);assertOpen();return signature;}});
 }
@@ -45,5 +51,5 @@ export async function signOwnerValue(plan:OwnerPlan,signer:RoleSigner,domain:'co
 export function verifyOwnerValue(bytes:Buffer,registry:CredentialRegistry,expected:{role:string;instanceId:string;direction:'request'|'reply';domain:'control'|'aux'|'stage';api:string|null;historical?:boolean}){
  const envelope=parsed(ownerEnvelopeSchema,decodeCurrent(bytes,65536)),{signature,...body}=envelope,c=registry.credentials.find(c=>c.identity.credentialId===envelope.identity.credentialId);
  need(c&&c.keyId===envelope.keyId&&c.direction===expected.direction&&envelope.direction===expected.direction&&c.identity.role===expected.role&&envelope.identity.role===expected.role&&c.identity.instanceId===expected.instanceId&&envelope.identity.instanceId===expected.instanceId&&envelope.domain===expected.domain&&envelope.api===expected.api,'peer_mismatch');
- need(c.identity.keyEpoch===envelope.identity.keyEpoch&&(expected.historical||same(c.identity,envelope.identity)),'peer_mismatch');const sig=Buffer.from(signature,'base64');need(sig.toString('base64')===signature&&verify(null,Buffer.from(canonicalOwnedJson(body,65536)),publicCredentialKey(c),sig),'signature_invalid');checkBody(envelope.body,envelope.direction,envelope.api,envelope.domain);const content:any=envelope.body;if(content.schema==='osv-mcp.q2.c3b.source-seal.v1')need(same(content.provider,envelope.identity),'peer_mismatch');return envelope;
+ need(c.identity.keyEpoch===envelope.identity.keyEpoch&&(expected.historical||same(c.identity,envelope.identity)),'peer_mismatch');const sig=Buffer.from(signature,'base64');need(sig.toString('base64')===signature&&verify(null,Buffer.from(canonicalOwnedJson(body,65536)),publicCredentialKey(c),sig),'signature_invalid');checkBody(envelope.body,envelope.direction,envelope.api,envelope.domain);const content:any=envelope.body;if(content.schema==='osv-mcp.q2.c3b.source-seal.v1')need(same(content.provider,envelope.identity),'peer_mismatch');if(content.schema==='osv-mcp.q2.c3b.authority-gate.v1')need(same(content.broker,envelope.identity),'peer_mismatch');return envelope;
 }
