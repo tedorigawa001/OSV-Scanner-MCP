@@ -3,13 +3,14 @@
   "date": "2026-11-04",
   "scope": "instrumented-five-owner-v1-read-and-isolated-paged-registry-snapshot-trial",
   "sourceBaseline": "afa75b7; experimental files pinned separately",
+  "measuredAtCommit": "426ab84",
   "measurements": {
     "path": "docs/validation/gradle-c3b-cgp-2026-11-04.measurements.json",
     "sha256": "e0bdcaf256dcf504cd5d42919a7c1f8b7d72c370423a670691cf2d9860502163"
   },
   "analysisSource": {
     "path": "scripts/analyze-c3b-cgp.mjs",
-    "sha256": "b3e7241e1c8f4870fb01e297441d0618642e1efe7b74000d586b0a6a19ab81ab"
+    "sha256": "660a888212f165c62a60826cba15ec8b543913db66d25d2b7c9352df71d0b7fa"
   },
   "sourceSha256": {
     "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
@@ -482,7 +483,11 @@
           "physicalBytesAtEightReads": 938009,
           "entriesAtEightReads": 437,
           "lastSnapshotWallMs": 654.4670839999999,
-          "lastSnapshotVerifyMs": 274.3261249999996
+          "lastSnapshotVerifyMs": 274.3261249999996,
+          "lastSnapshotObjects": 30,
+          "lastSnapshotChangedObjects": 6,
+          "lastSnapshotWireBytes": 2370,
+          "lastSnapshotLogicalBytes": 101737
         }
       },
       {
@@ -513,7 +518,11 @@
           "physicalBytesAtEightReads": 938009,
           "entriesAtEightReads": 437,
           "lastSnapshotWallMs": 677.3935410000013,
-          "lastSnapshotVerifyMs": 276.2694580000025
+          "lastSnapshotVerifyMs": 276.2694580000025,
+          "lastSnapshotObjects": 30,
+          "lastSnapshotChangedObjects": 6,
+          "lastSnapshotWireBytes": 2370,
+          "lastSnapshotLogicalBytes": 101737
         }
       },
       {
@@ -544,7 +553,11 @@
           "physicalBytesAtEightReads": 938009,
           "entriesAtEightReads": 437,
           "lastSnapshotWallMs": 929.8799999999974,
-          "lastSnapshotVerifyMs": 386.3615420000024
+          "lastSnapshotVerifyMs": 386.3615420000024,
+          "lastSnapshotObjects": 30,
+          "lastSnapshotChangedObjects": 6,
+          "lastSnapshotWireBytes": 2370,
+          "lastSnapshotLogicalBytes": 101737
         }
       }
     ],
@@ -552,7 +565,7 @@
       "full": 1244.0674590000017,
       "paged": 2329.7234200000003
     },
-    "note": "Compare identical snapshot prefixes only. Full stops during synthetic read 3; paged reaches 8. Eight-read physical usage is not directly comparable to the stopped full trial. Complete current page closure is recorded in each journal commit; all history is still read and validated. No incremental verification, live registry/Anchor page integration, or other-owner page trial."
+    "note": "Compare identical snapshot prefixes only. Full stops during synthetic read 3; paged reaches 8. Eight-read physical usage is not directly comparable to the stopped full trial. Complete current page closure is recorded in each journal commit, so unchanged pages are stored again (see lastSnapshotObjects/lastSnapshotChangedObjects) and the speed comparison does not evaluate reuse of immutable pages; all history is still read and validated. No incremental verification, live registry/Anchor page integration, or other-owner page trial."
   },
   "timeBudget": {
     "baselineSingleReadMaxMs": 3942.11016702652,
@@ -873,7 +886,7 @@
         "originalReadsSkipped": 0
       }
     ],
-    "registryExtraPerReadWorstModelMs": 3988.059164999986,
+    "registryExtraPerReadMaxPairModelMs": 3988.059164999986,
     "marginMs": 500,
     "recoveryMs": 100,
     "leaseMs": 5000,
@@ -881,6 +894,141 @@
     "standaloneModelRangeMs": {
       "min": 8175.141168463575,
       "max": 8858.674078463579
+    },
+    "consecutiveReadGrowth": [
+      {
+        "sample": 1,
+        "secondOutcome": "deadline-refused",
+        "comparedPhases": [
+          "context",
+          "pin",
+          "checkpoint",
+          "source",
+          "verify",
+          "authority"
+        ],
+        "firstMs": 2608,
+        "secondMs": 4222,
+        "ratio": 1.6188650306748467,
+        "registryReadCommitted": {
+          "first": {
+            "count": 94,
+            "inclusiveWallMs": 728.5332519999979,
+            "perCallMs": 7.750353744680829
+          },
+          "second": {
+            "count": 84,
+            "inclusiveWallMs": 1316.0649549999926,
+            "perCallMs": 15.667439940476102
+          }
+        },
+        "anchorReadCommitted": {
+          "first": {
+            "count": 99,
+            "inclusiveWallMs": 624.8069170000017,
+            "perCallMs": 6.311180979797997
+          },
+          "second": {
+            "count": 87,
+            "inclusiveWallMs": 1278.4085790000017,
+            "perCallMs": 14.694351482758641
+          }
+        }
+      },
+      {
+        "sample": 2,
+        "secondOutcome": "deadline-refused",
+        "comparedPhases": [
+          "context",
+          "pin",
+          "checkpoint",
+          "source",
+          "verify",
+          "authority"
+        ],
+        "firstMs": 2648,
+        "secondMs": 4395,
+        "ratio": 1.6597432024169185,
+        "registryReadCommitted": {
+          "first": {
+            "count": 94,
+            "inclusiveWallMs": 730.8208720000034,
+            "perCallMs": 7.7746901276596105
+          },
+          "second": {
+            "count": 84,
+            "inclusiveWallMs": 1368.9681219999975,
+            "perCallMs": 16.297239547619018
+          }
+        },
+        "anchorReadCommitted": {
+          "first": {
+            "count": 99,
+            "inclusiveWallMs": 649.7089579999974,
+            "perCallMs": 6.562716747474721
+          },
+          "second": {
+            "count": 87,
+            "inclusiveWallMs": 1349.5389219999934,
+            "perCallMs": 15.511941632183833
+          }
+        }
+      },
+      {
+        "sample": 3,
+        "secondOutcome": "deadline-refused",
+        "comparedPhases": [
+          "context",
+          "pin",
+          "checkpoint",
+          "source",
+          "verify",
+          "authority"
+        ],
+        "firstMs": 2638,
+        "secondMs": 4295,
+        "ratio": 1.6281273692191054,
+        "registryReadCommitted": {
+          "first": {
+            "count": 94,
+            "inclusiveWallMs": 727.4508360000045,
+            "perCallMs": 7.738838680851112
+          },
+          "second": {
+            "count": 84,
+            "inclusiveWallMs": 1330.1238359999998,
+            "perCallMs": 15.834807571428568
+          }
+        },
+        "anchorReadCommitted": {
+          "first": {
+            "count": 99,
+            "inclusiveWallMs": 638.6301209999997,
+            "perCallMs": 6.4508093030303
+          },
+          "second": {
+            "count": 87,
+            "inclusiveWallMs": 1314.110918999997,
+            "perCallMs": 15.104723206896518
+          }
+        }
+      }
+    ],
+    "historyCallScaling": {
+      "registryReadCommittedPerRead": {
+        "min": 94,
+        "max": 94
+      },
+      "pagedEighthReadHistoryReadMs": {
+        "min": 137.1630624999998,
+        "max": 193.1807710000012
+      },
+      "registryWallIfCallCountUnchangedMs": {
+        "min": 12893.32787499998,
+        "max": 18158.99247400011
+      },
+      "sidecarHistoryReadsInWhatIf": 10,
+      "note": "Rough scaling, not a prediction: sidecar history reads multiplied by the v1 registry call count. Shows the what-if covers only 5 snapshot updates (10 sidecar history reads)."
     },
     "sgaLatencyScenariosWithoutPageTrial": [
       {
@@ -904,7 +1052,7 @@
         "totalWhatIfMs": 4888.504746437073
       }
     ],
-    "note": "What-if allocation, not a measured paged read or a latency bound. Proxy RPCs are authenticated registry ReadContext, not an independent SGA. Includes no unmeasured benefit from paging other owners. RPC/category inclusive spans overlap and are not summed as latency. Phase envelope maxima are serial reader phases, so their sum is a separate conservative allocation."
+    "note": "What-if allocation, neither conservative nor worst case and not a measured paged read or a latency bound. The phase baseline is the first read only; growth outside the registry sidecar and most history calls are not modelled. Proxy RPCs are authenticated registry ReadContext, not an independent SGA. Includes no unmeasured benefit from paging other owners. RPC/category inclusive spans overlap and are not summed as latency. Phase envelope maxima are serial reader phases, so their sum is a separate conservative allocation."
   },
   "instrumentationControl": [
     {
@@ -964,25 +1112,29 @@
       "anchor": {
         "initialStages": 2,
         "stagesPerRead": 5,
-        "total": 42,
+        "maintenanceStages": 16,
+        "total": 58,
         "cap": 64
       },
       "assumption": "v1 role-stage costs plus inline page records; not a v2 CapacityCertificate"
     },
     "throughputApproved": false,
+    "cg0Proceed": false,
     "cg3Proceed": false,
-    "next": "remain in CGP: profile repeated history/state validation and prototype bounded incremental verification with ownership/freshness preserved; then remeasure the actual paged five-owner path and independent SGA",
+    "next": "remain in CGP before CG0: find why one read makes 238 readCommitted calls and reduce the call count first; prototype immutable page reuse and bounded incremental verification with ownership/freshness preserved; then remeasure the actual paged five-owner path and independent SGA",
     "reasons": [
       "v1 second consecutive read did not complete in the original deadline",
       "page trial fixes CAS wire growth but has increasing history verification cost",
       "candidate eight reads is an isolated snapshot capacity result, not eight end-to-end reads",
       "six SGA checks have latency proxies only; CG11/CG49 race/admission contracts remain unproved",
-      "what-if budgets exceed 5000 ms; maximum-input/cold/continuous-load guarantees absent"
+      "what-if budgets exceed 5000 ms; maximum-input/cold/continuous-load guarantees absent",
+      "the second read grew about 1.6x through authority with one read of added history, so call-graph and cost assumptions for CG0 may still move"
     ]
   },
   "checks": {
     "rawEvidenceValidatedByFixture": true,
-    "sourceReceiptMatched": true,
+    "sourceReceiptInternallyConsistent": true,
+    "sourceReceiptMatchedMeasuredCommit": true,
     "matchedWorkloadComparison": true,
     "sixBoundaryBudgetCount": 6
   },
@@ -1027,6 +1179,46 @@
       "oldAndNewSamplesCombined": false
     }
   },
+  "secondReviewFix": {
+    "measurementsRewritten": false,
+    "measuredAtCommit": {
+      "commit": "426ab84",
+      "sourceFiles": 87,
+      "mismatches": 0,
+      "checkedBy": "throwaway script",
+      "currentTreeComparisonRemoved": true
+    },
+    "publicCommandPrefixRemoved": true,
+    "whatIfRelabelled": "neither conservative nor worst case",
+    "derivedAdditions": [
+      "timeBudget.consecutiveReadGrowth",
+      "timeBudget.historyCallScaling",
+      "prototypeComparison.pairs[].paged.lastSnapshot*"
+    ],
+    "capacity": {
+      "anchorTotal": 58,
+      "rawHistoricalAnchorTotal": 42,
+      "rawCapacityProjectionExcludedFromValidation": true
+    },
+    "classificationMutation": {
+      "target": "refused sample",
+      "exactReasonAsserted": true,
+      "removalControlBeforeFixPassed": true,
+      "removalControlAfterFixFailed": 3
+    },
+    "ordinalRemovalControlFailed": 1,
+    "gateDecision": {
+      "cg0Proceed": false,
+      "cg3Proceed": false
+    },
+    "loadObservation": {
+      "runs": 1,
+      "loadAverage1m": 6.8,
+      "firstReadOutcome": "deadline-refused",
+      "elapsedMs": 4501,
+      "scope": "native harness smoke after the fixes under other machine load; not merged into the measurements"
+    }
+  },
   "verification": {
     "typecheck": "passed",
     "build": "passed",
@@ -1050,8 +1242,35 @@
       "prototypePairs": 3
     },
     "sourceAndDerivedArtifactCheck": "passed",
-    "fullSuiteRerun": false,
-    "fullSuiteReason": "production sources unchanged; targeted existing consumer regressions and all CGP tests run",
-    "diffWhitespace": "passed"
+    "fullSuiteRerun": true,
+    "diffWhitespace": "passed",
+    "fullSuite": {
+      "passedFiles": 145,
+      "skippedFiles": 25,
+      "failedFiles": 0,
+      "passedTests": 5443,
+      "skippedTests": 1419,
+      "failedTests": 0,
+      "durationSeconds": 696.3
+    },
+    "fullSuiteEarlierRunsUnderLoad": [
+      {
+        "failedTests": 3,
+        "failedFiles": 2,
+        "durationSeconds": 569.29,
+        "note": "before the fixes: commandExamples plus two AuthorityProcess failures"
+      },
+      {
+        "failedTests": 9,
+        "failedFiles": 4,
+        "durationSeconds": 1448.32,
+        "loadAverage1m": 7.9,
+        "note": "after the fixes: timeouts and one real-time refusal; the four files passed when rerun alone (97 and 3 tests); cause not separately proven"
+      }
+    ],
+    "nativeHarnessSmokeAfterFixes": {
+      "runs": 1,
+      "passedTests": 1
+    }
   }
 }

@@ -6872,9 +6872,9 @@ CG01〜CG52は将来の実装検証条件であり、この文書の整形・ID�
 実行例（単独で実施し、他の重い検証を同時に走らせない）：
 
 ```sh
-bdo proxy env OSV_CGP_NATIVE=1 OSV_CGP_RUNS=3 OSV_CGP_OUTPUT=/tmp/cgp-native.json npx vitest run src/test/utils/gradleOwnedCgpNative.test.ts --maxWorkers=1 --silent=false
-bdo proxy npx vitest run src/test/utils/gradleOwnedCgp.test.ts src/test/utils/gradleOwnedCgpValidation.test.ts --maxWorkers=1
-bdo node scripts/analyze-c3b-cgp.mjs --check
+env OSV_CGP_NATIVE=1 OSV_CGP_RUNS=3 OSV_CGP_OUTPUT=/tmp/cgp-native.json npx vitest run src/test/utils/gradleOwnedCgpNative.test.ts --maxWorkers=1 --silent=false
+npx vitest run src/test/utils/gradleOwnedCgp.test.ts src/test/utils/gradleOwnedCgpValidation.test.ts --maxWorkers=1
+node scripts/analyze-c3b-cgp.mjs --check
 ```
 
 raw artifactとsummaryは`docs/validation/gradle-c3b-cgp-2026-11-04.measurements.json`／`gradle-c3b-cgp-2026-11-04.json`。実行前後の87 sourceの閉包hashが同一であることをnativeハーネスで確認し、検証記録へ保存する。summaryはraw bytesのhash・source receipt・計算scriptへ束縛し、`--check`で再計算できる。過去のpilotと最終sourceの反復を混ぜて成功率を作らない。
@@ -6908,7 +6908,7 @@ phaseは直列なreaderの区間であり、各最大値の合計は3,960ms（�
 | checkpoint-issuer | 93〜94 | 1／6〜6 | 1 | 661,276 | 41／1.8〜1.9 |
 | authority-broker | 506〜528 | 5／43〜46 | 3 | 3,537,546 | 234／10.9〜11.0 |
 
-registry／Anchorの履歴照合が多数回発生し、成功後の2回目では、readが完了しない時点でも両roleの読取bytesが約25 MBに増えた。署名検証だけの削減を主要対策と断定できず、stateのparse／canonical化・全履歴再構成・root IOも分解すべきである。今回のwrapper計測はcall単位の費用を示すが、CPU flamegraph等による個々の関数の因果特定まで済ませたものではない。
+registry／Anchorの履歴照合が多数回発生し、成功後の2回目では、readが完了しない時点でも両roleの読取bytesが28.4〜28.6 MBに増えた。署名検証だけの削減を主要対策と断定できず、stateのparse／canonical化・全履歴再構成・root IOも分解すべきである。今回のwrapper計測はcall単位の費用を示すが、CPU flamegraph等による個々の関数の因果特定まで済ませたものではない。
 
 #### 9.101.3 page化の試作と比較条件
 
@@ -6928,6 +6928,8 @@ registry／Anchorの履歴照合が多数回発生し、成功後の2回目で�
 
 logical bytesは約44%減ったが、今回の3 pairはいずれも同一prefixでpage側が遅かった。試作の全履歴復元とpage検証の費用が残る。この3 pairから一般的な速度倍率を保証しない。physical使用量は異なる進捗時点なので、両列の大小を圧縮率と呼ばない。
 
+試作は各commitへ現在の全pageを保存する。8 read目の最終commitは30 objectのうち変更は6個で、CAS対象のwire 2,370 Bに対してcommitのlogicalは101,737 Bある。変更のないpageを再保存・再検証する費用が含まれるため、この速度比較は不変pageの再利用を評価していない。
+
 page側の8 read目の最後のsnapshotは約654〜930ms、そのうち履歴read／検証は約274〜386msだった。完了済み状態を各commitから再構成する費用が残り、page参照を小さくするだけでは原本履歴の反復検証を解消できていない。新しい本番base・delta・owner別page・incremental verificationを実装済みとはしない。
 
 #### 9.101.4 SGA確認6境界を含む時間予算
@@ -6938,16 +6940,21 @@ proxy最大は54.75ms/境界、6回で328.50ms。phase表では上記6区間に�
 
 registry trialの追加費用は、同一更新prefixの各更新iでmax(0, page[i]−full[i])を求め、その最大値と、page側の8 readまでの増分を分け、5 transition/readへ展開したwhat-ifモデル。非同一prefixの速度比を直接適用せず、未計測のAnchor等の改善も勝手に差し引かない。ただしsnapshot sidecarの値を実readへ合成したもので、実paged readの測定やlatency上限証明ではない。
 
-| 費用 | 保守的allocation（ms） |
+| 費用 | what-if allocation（ms） |
 | --- | --- |
 | 成功例のphase最大値合計 | 3,960 |
 | SGA候補6境界（latency proxy） | 328.50 |
-| registry追加費用の最悪what-if | 3,988.06 |
+| registry追加費用のwhat-if（3 pairのモデルの最大） | 3,988.06 |
 | 回復枠 | 100 |
 | 余裕 | 500 |
 | 合計 | 8,876.56（5,000を超過） |
 
-単一read最大値を使ったpair別モデルは約8,175〜8,859ms。page試作追加費用を除いたphase envelope＋proxy＋回復＋余裕だけなら約4,889msとなるが、実際のpage経路を省いた仮計算にすぎない。2回目readの期限拒否もあり、速度値の承認はできない。追加費用モデルをCG3本番性能の予測値として使わず、実際の5owner page経路と独立SGAを再計測して更新する。
+この表は上限でも保守的な見積もりでもない。理由は次節の2点。単一read最大値を使ったpair別モデルは約8,175〜8,859ms。page試作追加費用を除いたphase envelope＋proxy＋回復＋余裕だけなら約4,889msとなるが、実際のpage経路を省いた仮計算にすぎない。2回目readの期限拒否もあり、速度値の承認はできない。追加費用モデルをCG3本番性能の予測値として使わず、実際の5owner page経路と独立SGAを再計測して更新する。
+
+what-ifに含まれない実測は次のとおり（`timeBudget.consecutiveReadGrowth`／`historyCallScaling`）。
+
+- **連続readの伸び：** phase合計の土台は1回目のread。1 read分の履歴が増えただけで、2回目はcontext〜authorityの区間が2,608〜2,648msから4,222〜4,395msへ1.62〜1.66倍に伸びた。`readCommitted`の1回あたりはregistryが7.7〜7.8msから15.7〜16.3ms、Anchorが6.3〜6.6msから14.7〜15.5ms。Anchor等の伸びはモデル外である。
+- **呼び出し回数：** モデルが覆うのはsnapshot更新5回、試作のhistory読取では10回分。実際の1 readでは`readCommitted`がregistry 94回、Anchor 99回、全owner計238回ある。試作の8 read目のhistory読取1回（137〜193ms）をregistryの94回へ単純に掛けると約12.9〜18.2秒になる。これは予測ではなく粗い換算だが、検証1回の単価より呼び出し回数を先に減らすべきことを示す。
 
 #### 9.101.5 readsPerGenerationと進行gate
 
@@ -6959,11 +6966,11 @@ registry trialの追加費用は、同一更新prefixの各更新iでmax(0, page
 | broker | 初期1＋3×8=25 | 通常40 |
 | provider | 初期3＋1×8=11 | boot以外48 |
 | issuer | 初期2＋1×8=10、diagnostic 8 | 総64／diagnostic 16 |
-| Anchor | 初期2＋5×8=42 | 64 |
+| Anchor | 初期2＋5×8＋保守16=58（registryの保存recordごとにCASが起きるため保守枠も加算） | 64 |
 
 この計算は新v2のCapacityCertificateではない。追加page／SGA／retryのstage・file／bytes・request枠と5ownerすべての実admissionをCG0／CG1で再計算する必要がある。8回の実read・writer advance・移行後readが成立した値でもない。1 readだけ通る値へ目標を縮めて継続利用成立としない。
 
-CGPの計測・限定試作と数値候補の設定は行ったが、時間面の成立条件は未達。CG0／CG1／CG2の純粋contract作業は進められるものの、CG3以降は閉じたまま。次の性能作業はCGP内で、registry／Anchor等の反復履歴・state検証をさらに分解し、ownership・鮮度・閉包完全性を維持するbounded再使用／incremental verificationをfixtureで試作すること。その後、実paged 5ownerと独立SGA、同じ8 read目標・最大入力・cold／継続負荷で再計測する。Q3b／Q4bの原本読取省略を先取りして有効にしない。
+CGPの計測・限定試作と数値候補の設定は行ったが、時間面の成立条件は未達。§9.100.13のとおりCGPに留まり、CG0へも進まない。2回目のv1 readが通らない段階では、contractの前提となるcall graphと費用も動く可能性があるためである。CG3以降も閉じたまま。次の性能作業はCGP内で、まず1 readで238回ある`readCommitted`の呼び出し元を分解して回数を減らす。次に、変更のないpageの再利用と、ownership・鮮度・閉包完全性を維持するbounded再使用／incremental verificationをfixtureで試作する。その後、実paged 5ownerと独立SGA、同じ8 read目標・最大入力・cold／継続負荷で再計測する。Q3b／Q4bの原本読取省略を先取りして有効にしない。
 
 #### 9.101.6 回帰・証拠と未成立事項
 
@@ -6972,5 +6979,13 @@ CGPの計測・限定試作と数値候補の設定は行ったが、時間面�
 native測定は同UIDの協調5process、page試作はregistry child内の別のown 2root store。kernel隔離・独立SGA・本番format・GC／世代移行・原本読取省略は未成立。全採用flag false、originalReadsSkipped=0。新コードはtest fixtureに限定し、測定・試作を本番admissionや性能保証へ昇格させない。
 
 CGPレビュー修正の回帰：fullとpageの最大値が異なる更新に現れる場合（full=[1000,1]、page=[1000,500]）に追加499msを保持する。grant_revoked／recovery_required／budget_exceeded／未知エラーをother-refusedへ分離し、文字列中にrequest_expiredを混ぜた偽装も期限拒否へ分類しない。budget_exceededは時間以外の予算にも使われるため、期限到達の根拠とはしない。native runnerはother-refusedの証拠を保存した上で検証失敗とする。2つの新規回帰は修正前の失敗と修正後の成功を確認した。
+
+CGP再レビュー修正：
+
+- 公開文書の実行例から個人環境のproxy接頭辞を除去した。
+- rawは書き換えず、`measuredAtCommit=426ab84`として固定した。87 sourceのhashはこのコミットと一致することを1回限りのscriptで確認済み。CGP記録の検証は記録内部の整合だけを見る。計測後のsource変更やversion更新で失敗させず、指紋の更新で計測時のsourceを偽らないためである。
+- raw内の`capacityProjection`（Anchor 42）は修正前の値として残し、検証から除外した。現在の予測はsummaryの`decision.capacityProjection`（Anchor 58）で、回帰で`CGP_CAPACITY_PROJECTION`と一致させる。
+- 拒否分類の改変は失敗sampleにも適用し、改変ごとに`cgp_evidence_*`の理由まで確認する。修正前の改変は成功sampleだけを変えており、分類検査を除去しても`publication`検査で失敗していたため、検査の有無を検出できなかった。page拒否のテストも`cgp_object_missing`など理由を分離して確認する。
+- `analyze-c3b-cgp.mjs`は再生成時に`reviewCorrections`／`secondReviewFix`／`verification`を保持する。
 
 CGP最終検証結果はsummaryのverificationを参照。native診断は3 bootstrap／3 snapshot比較pairで通過（91.95秒）。型検査・buildと対象回帰・source／raw／派生集計を別々に検証し、全体suiteの通過とは扱わない。

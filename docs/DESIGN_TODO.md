@@ -2922,8 +2922,8 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - 3回の5owner bootstrapでcall／owner／phase・process CPU／stage／disk／署名検証を計測。レビュー修正後の反復は初回3/3成功（3.879〜3.942秒）、成功後の2回目0/3で明示的な期限切れによる拒否（その他の拒否0件）。拒否の公開差分0を確認。
 - registry childの別2rootで、実状態遷移からsynthetic IDを付けたfull／page snapshotを3 pair比較。pageはCAS要求最大4,530 Bで8 read分を保存できたが、全履歴検証費用が残り、同一prefixで一貫した速度改善はない。本番registry／Anchorにpage formatを接続した実測ではない。
 - `readsPerGeneration=8`を容量上の候補として設定。5ownerの旧stage費用を仮定したregistry余力は保守込み59/64。新formatの実容量・request予約は未成立。
-- SGAは未実装のため認証付きReadContext 18回をlatency proxyとして使用。6境界＋phase envelope＋回復・余裕＋page試作追加費用の最悪what-ifは約8.88秒。これは実paged readの測定や性能上限ではない。
-- **CGPの時間面は未達、CG3以降のgateは閉鎖。** 次はCGP内で反復履歴／state検証の費用をさらに分解し、ownership／鮮度を維持したbounded再使用・incremental検証の限定試作と再計測を行う。CG0〜CG2のcontract作業は並行して進められるが、CGP成立済みとはしない。
+- SGAは未実装のため認証付きReadContext 18回をlatency proxyとして使用。6境界＋phase envelope＋回復・余裕＋page試作追加費用のwhat-ifは約8.88秒。これは実paged readの測定や性能上限ではない。
+- **CGPの時間面は未達、CG3以降のgateは閉鎖。** 次はCGP内で1 read 238回の`readCommitted`の呼び出し元を分解して回数を減らし、変更のないpageの再利用とownership／鮮度を維持したbounded再使用・incremental検証の限定試作と再計測を行う。CG0へはCGP成立まで進まない。
 - 再現ハーネス・回帰・性能比較・rawとsummary記録を追加。独立SGA、本番format、GC／移行、native隔離、Q3b／Q4bは未成立。全採用flag false／originalReadsSkipped=0。
 
 §9.101レビュー修正：
@@ -2931,3 +2931,13 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - 追加時間は同じ更新ごとの非負差を計算してから最大値へ集約。full／pageの最大値の位置が違っても相殺しない回帰を追加した。
 - 明示的なrequest_expiredだけを期限拒否とし、容量拒否とother-refusedを分離。権限・復旧・汎用予算・未知エラーを期限扱いせず、native runnerはother-refusedがあれば失敗。記録検証もreasonとの不一致を拒否する。
 - 修正後コードで5process native計測を再実行し、raw・source receipt・同一prefix比較・6境界の時間予算を更新。SGAは代用計測、8 readsは容量候補、CG3保留を維持する。
+
+§9.101再レビュー修正：
+
+- 公開文書の実行例から個人環境のproxy接頭辞を除去。全体suite未実行で`commandExamples`の失敗を見逃していた。
+- what-ifを上限・保守的と読める表現を削除。連続readの伸び（1.62〜1.66倍）とcall回数（`readCommitted`計238回）がモデル外であることを派生記録へ追加。
+- page試作が変更のないpageも再保存すること（最終commitは30 objectのうち変更6）を記録し、速度比較が再利用の評価ではないと明記。
+- 拒否分類の改変テストは成功sampleだけを変えており、分類検査を除去しても通っていた。失敗sampleで理由まで確認するよう修正。
+- CGP記録を`measuredAtCommit=426ab84`へ固定し、現在のsourceとの一致を要求しない。rawは書き換えない。
+- Anchorの容量予測を保守込み58/64へ修正。「約25 MB」を実測の28.4〜28.6 MBへ修正。分析scriptの再生成で手書き節が消えないよう修正。
+- 判断：§9.100.13どおりCGPに留まり、CG0へ進まない。
