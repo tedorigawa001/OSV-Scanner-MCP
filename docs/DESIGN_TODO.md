@@ -2890,3 +2890,20 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - 同UID native正常readは最終コードで3,876ms／15stage／本人ACK／公開1、全停止・復旧報告5件・再開を確認。負荷時は4,502msで公開0の期限拒否も観測。**残件は最大入力・継続負荷の性能と独立した実速度profileの承認**。転送・反復履歴検証の改善は引き続き候補。
 - 続いてC3c固定配備、C3d native故障・権限分離、C4採用審査、Q3b／Q4b、GC／compaction・大容量性能が残る。全採用flag false／originalReadsSkipped=0。
 - レビュー修正：GCなしの上限を契約テストで固定。公開は1 registry履歴あたり2 readまでで、3回目はpin・handoff後に`capacity_exhausted`となりbarrierが必要。実時間の5 processでは、初回4／8、直後の2回目0／2、再開後0／4（修正前のコード）で、期限内の連続利用は未成立。**C3cの前にGC／compactionと履歴検証の費用を判断する**。admission viewを実カウンタから作る実装も未着手。
+
+### C3b GC／compaction・service世代移行の具体設計（§9.100）
+
+- 設計のみ。5ownerの一括offline移行を対象に、service世代とproducer source世代を分離。現在の2 read上限・連続利用の性能・GC未実装という制約は未解消。
+- registry／Anchorを含む移行を承認する独立ServiceGenerationAuthorityを必須化。source／target 20 root＋control 2 root、role別鍵／IO、目的別API認可、全工程の容量予約・実counter admissionを定義。
+- freeze時のuse／ACK／broker予約の解決、保持・historical・retire分類、旧receipt／署名bytes・選択sourceの新rootへのimport対応、revocation／budgetの持越しを具体化。
+- StageStore.v2 base＋delta、新registry／Anchor base、current outcomeのpage化で、単なるjournal切詰めや次の2 readでの再膨張を避ける。hash順序、phase別の必須証拠、bootstrapと読取前gateを定義。
+- exact cutover／応答紛失／再起動、holdとGC batch予約の順序、有限inventoryのunlink／sync／再試行、source削除後の起動、上限到達時の拒否を具体化。
+- 実装順はCG0（strict schema・閉包・射影・状態／認可の純粋contract）→CG1（SGA／予約）→CG2（gate／freeze）→CG3（base／import／page）→CG4（cutover／復旧）→CG5（GC）→CG6（連続利用・性能）。CG01〜CG48は未実装の回帰条件。
+- **次の着手点はCG0。** SGAの独立backend、GC・移行runtime、新format reader、native故障・性能実証は未成立。C3c／C3d／C4、Q3b／Q4bも引き続き残る。
+- 文書の検証範囲とsource fingerprintは`docs/validation/gradle-c3b-compaction-design-2026-11-04.json`へ記録する。設計条件の列挙・整形検査を、runtime回帰の通過と数えない。
+
+§9.100レビュー修正：
+
+- 生成前のServiceGenerationId／OwnerProvisionVectorと、構築後のOwnerVector／ServiceSelection・採用receiptを分離。template・import core・genesis checkpointから未来vectorへの循環を禁止し、registry→Anchor baseの生成順も明示した。
+- GC開始・再開前の5target完全再検証、fresh gcRun／challenge、TargetRevalidationSetと継続read-only custody、実行permitの失効・限定resume認可を具体化。Readyだけではunlinkを許可せず、target runtimeの書込はGC完了後に限定した。
+- CG30は正常な非循環生成と未来refの負例、CG32はReady後／cutover後のtarget改変、CG33は再検証後・予約後・Prepared後の停止／再起動と旧permit拒否を追加。設計のみで、runtime回帰条件は引き続き未実装。
