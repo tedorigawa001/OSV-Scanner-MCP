@@ -7059,6 +7059,14 @@ node scripts/analyze-c3b-cgp-history.mjs --check
 - 速度改善の確証・本番採用は引き続きなし。CG0／CG3は保留。更新したraw・比較・回帰・native実行結果は新しいsummaryのverificationを参照する。
 
 
+#### §9.102後の全体テスト修正（`72c8abe`）
+
+- `eb2f257`は全体suiteを再実行しておらず、StageStoreを固定していた4つの検証記録の照合テスト（c3b2〜c3b5）を失敗させていた。既存の作法に合わせて旧ハッシュを`beforeStageReplaySourceSha256`に残し、`sourceSha256`を更新して`stageReplayCompatibility`に変更範囲を記録した。c3b2〜c3b4はprocess観測をテストが再実行して照合する。c3b5はsourceの固定だけを更新し、native観測・budgetは再測定していない。
+- history証拠の検査を`gradleOwnedCgpHistoryCheck.mjs`の1実装へ集約し、native runner・テスト・分析scriptから共有する。条件ごとの回帰を追加し、単独で働かない重複検査は削除した。分析scriptの再生成は`verification`等の記録項目を保持し、`--check`は欠落を拒否する。callsiteは最初の本番frameを記録する。保存済みrawと比較の`groups`は変わらない。
+- 全体suiteは失敗0。修正前の1回の全体実行には名前を残せなかった失敗3件があり、再発せず原因は不明。`verification.afterEb2f257Review`に記録した。
+- 後の再実行では初回readの成否が実行ごとに変わった（observerあり2/3と3/3、observerなし0/1）。直前のload average平均値だけでは説明できず、§9.102の初回3/3を安定した基準にしない。これらの再実行のrawは保存していない。
+
+
 ### 9.103 CGP：call graphの統合契約・禁止境界・比較計画（2026-11-05、設計のみ）
 
 §9.102の238回は同一RPCの重複ではない。回数を減らすにはsourceの取得単位そのものを明示的に変える必要がある。本節は設計と将来の回帰条件であり、新API・profile・gate・range plannerを実装又は採用済みとはしない。既存v1と5秒lease／500ms以上のmarginを維持し、CGPに留まる。CG0／CG3、原本読取省略・native隔離・独立SGAの採用flagは開かない。
@@ -7168,6 +7176,13 @@ clientの拒否対照は送信件数、guarded clientを通さないserver直送
 
 この表の+0はguard entry／追加intent予約の増分で、再送したtransport request数や累積CPUが0という意味ではない。pendingの旧処理による消費も別計上する。range数・APIがmodeで異なるためKのhashをmode間で同一にせず、正規化したcase、per-operationの拒否結果、entry増分、元期限・残枠の保持を比較する。
 
+**slotの分割と枠数（CGP-I0で固定）**：R[K]はboot中に回収しないので、枠数は比較結果と運用可能なread数を左右する。§9.102の完了readではproviderの対象観測がReadSealedSource 34、descriptor 1、ResolveNamespace 2の計37件ある（ResolveNamespaceはread-pin target分だけが対象）。全peer共有の256枠なら、S*は8 read分の約296件を確保できず7 read目付近で容量拒否となる一方、delta=10のB*は約216件で通過する。この差はbatchの速度効果ではない。そこで次を固定する。
+
+- server側の枠は認証済みpeerごとに分割するか、共有にするかを理由とともにG_expへ明記する。1つのpeerの消費が他のpeerを止める構成は採用前に評価する。
+- 枠数は目標read数と、S*の最悪のcoverage対象件数から算出し、全primary modeで同じ値にする。
+- 枠不足で拒否したmodeは容量拒否として別に記録し、そのpairを速度比較へ算入しない。枠数だけで片方が通る比較をbatch効果としない。
+- 回収しない限り長時間動くownerはいずれ容量拒否となり再起動が必要になる。何read分かをprofileに明記し、期限切れentryを安全に回収できる場合の方式（例：peerごとの高水位）は別途実証するまで主張しない。
+
 R[K]は新しいbounded intent guardであってdurableなbatch cursorでもbytes cacheでもない。現行SessionBootQuotaがrequestDigest由来の予算keyを使用することだけではこの契約を満たさない。実装時は全primary modeで安定したKへの束縛又は同じown guardを追加し、CGI17で実証する。boot／processを跨ぐ記憶の永続性を主張せず、新bootでは旧資格・旧pin・旧attemptを拒否し、旧unknownを新しいK／deadlineへ付け替えない。
 
 clientはdescriptorからsealを検証し、inventoryを現行経路で完全に取得・検証した後にだけdata planを作る。inventory hashだけを信じて未検査のentry集合をplanへ入れない。greedy packingはinventory順、entry内offset順で、上限に合わせてsegmentを分割する。serialized responseの上限を満たすまでrange数又はpayloadを縮める。plannerのestimateと実responseのsizeが違う場合は拒否し、上限を広げない。
@@ -7257,7 +7272,7 @@ ReadPlanの将来v4／新algorithmは、caller→providerのbatch＋inventory、
 | CGI20 | registry／Anchorのfresh確認をpre／postごとに計数。別ownerの履歴証拠・署名だけで省く負例を拒否 |
 | CGI21 | handoff各stage・use・ACK・finishの保存故障／SIGKILL／応答紛失で元のunknown解決を維持。stage統合・二重効果0 |
 | CGI22 | 後続batch・別read・boot／session／世代変更へhandle／live成功を持ち越した場合を拒否 |
-| CGI23 | 全rangeのCPU・メモリ・request／frame／verification予約の上限と+1。pin前の保守予約とinventory後のexact計画を照合 |
+| CGI23 | 全rangeのCPU・メモリ・request／frame／verification予約の上限と+1。pin前の保守予約とinventory後のexact計画を照合。G_expのslot分割と枠数が目標readのS*最悪値を満たすこと、枠不足時の容量拒否を別記録し比較から分離することを確認 |
 | CGI24 | event連番・RPC側一覧・owner counter・kind／range digest・pre／post・取得回数を照合。総数不変の重複／欠落も拒否 |
 | CGI25 | deltaの実計数と238−5×deltaを完了read同士で照合。不変APIの増減、負のdelta、内部history再生の未計上を隠さない |
 | CGI26 | 成功・期限拒否・容量拒否・other-refused・partialを分離し、完了例0でも失敗証拠を保持。成功例だけ選んで速度比較しない |
@@ -7274,11 +7289,21 @@ CGI01〜CGI32は将来の実行テスト条件で、本節の整形・ID検査�
 
 | 工程 | 作業・成果 | 次へ進む条件 |
 | --- | --- | --- |
+| CGP-H0 | 既存のpath・wireを変えず、read回数ごとの増大を計測し分解する（後述） | 候補Bの上限と増大幅の比較を記録し、CGP-I1以降の順序を決める。runtime採用0 |
 | CGP-I0 | schema／認可表／共通intent guard・mode manifest／range planner／exact wire estimatorのfixture contract、raceの状態表を固定 | CGI01〜06・17・23・28の入出力と負例をレビュー。runtime採用0 |
 | CGP-I1 | 候補Aだけを限定実証。opaque factsと現gateを分離し、同じ入力のparse／署名回数を対照 | CGI03・08〜13・22で既存の拒否維持。238回減少を成果に数えない |
 | CGP-I2 | 候補Bだけのscalar／batch切替fixture。元の署名検証を維持し、単一取得からのpartsとpre／postを観測 | CGI02・04〜20・23〜25で完全性・race条件と件数を確認 |
-| CGP-I3 | A＋Bの実時間5process対照、cold／warm・継続read・faultを実行し記録 | 同じ安全条件を満たす完了readでのみ速度／件数を比較。no-goも保存 |
-| CGP-I4 | page再利用・incremental検証等の別実証後、実paged 5owner・独立SGAを含め再計測 | 目標8回・writer advance・移行後・最大入力の条件までCGP成立／速度採用にしない |
+| CGP-I3 | A＋Bの実時間5process対照、cold／warm・継続read・faultを実行し記録 | CGI21・26・27・29・32と、CGI30・31の実行可能な範囲を実施。同じ安全条件を満たす完了readでのみ速度／件数を比較。no-goも保存 |
+| CGP-I4 | page再利用・incremental検証等の別実証後、実paged 5owner・独立SGAを含め再計測 | CGI30・31・32を目標条件で実施。目標8回・writer advance・移行後・最大入力の条件までCGP成立／速度採用にしない |
+
+**CGP-H0：履歴増大の分解**：§9.102のafter rawでは、1回目の完了readと2回目の期限拒否readの間で同じ処理の時間が大きく増える。Anchorの`readCommitted`平均は5.8〜5.9msから13.1〜13.5ms、registryは6.8msから14.1〜14.8ms、ReadSealedSourceのspan平均は46.6〜47.6msから80.5〜82.5msになった。一方、delta=10で減る時間はspan平均からの概算で1回目約470ms、2回目約810msであり、spanの外の処理は含まない。目標は8回連続なので、回数の削減だけでは増大に追い付かない可能性が高い。
+
+CGP-H0は次を行い、候補Bの実装前に順序を判断する。
+
+- read順序ごと、ownerごとに履歴行数・bytesと`readCommitted`の内訳（journal読取、署名／MAC検証、decode、stage検証）を測る。
+- 2回目以降が期限で止まるため、元の5秒を延長して成功扱いにはしない。増大の測定は、履歴深さを揃えた`readCommitted`単体の診断として別に保存し、read成立や速度の根拠にしない。
+- 候補Bの上限（実測deltaの上限×実測の1要求あたり費用）とread間の増大幅を同じ表に並べる。上限が増大幅より小さければ、page再利用・incremental検証の実証をCGP-I1〜I3より先に行い、候補Bは候補のまま着手しない。
+- 判断と根拠のrawを保存する。この判断は安全条件の緩和や、CGI01〜32の省略を意味しない。
 
 比較は既存baseline S_refと、共通のfixture用実験profile P_expに載せるS*／A*／B*／AB*を分ける。P_expはscalarとrangesの条件を列挙した承認候補catalogで、本番profileの承認ではない。P_legacyは参照runの実profile digest、P_expはCGP-I0でpinする共通catalog digestを指し、未生成のdigestを今ある承認値として扱わない。S*は現scalarの業務経路を共通fixture runtimeへ移したcontrolであり、無変更の旧binaryとは呼ばない。primary比較の全modeは同じmulti-schema対応binaryとobserverを使用し、modeだけをbootstrap前に固定する。
 

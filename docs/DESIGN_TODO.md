@@ -2972,7 +2972,7 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - 各batchのpre／post live確認、ownerごとのfresh保存検証、readerとbrokerの独立source pass、handoff・use・ACK・finishを維持。別RPC／batch・await・別ownerへlive成功を持ち越さない。
 - 取消しの粒度は明記した。preで拒否した場合は取得0、pre後の取消しは既入場取得の可能性を記録してpostで応答0。remote取消しACK以後の瞬時全物理IO停止を保証するprofileは、別の排他／drain実証までunsupported。
 - CGI01〜CGI32の未実装回帰条件とCGP-I0〜I4、S_refのbridgeと共通P_exp内のS*／A*／B*／AB*の比較計画を追加。kind別実計数・source閉包・元deadline・初期履歴深さを揃え、rawと失敗を残す。
-- source要求削減deltaを実証できた場合だけ238−5×deltaで件数を照合する。時間短縮や8回連続成立の保証ではない。次はCGP-I0のfixture contractとrace条件のレビュー・限定実証。CG0／CG3は保留。
+- source要求削減deltaを実証できた場合だけ238−5×deltaで件数を照合する。時間短縮や8回連続成立の保証ではない。次はCGP-H0（§9.103レビュー修正を参照）。CG0／CG3は保留。
 
 
 §9.103レビュー修正：
@@ -2990,3 +2990,16 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - 同じper-operation slot／deadline／retention規則を固定し、新K+1・exact/conflict等+0とtransport消費を分離。実要求数が異なるmode間でread全体のentry総数を同じとは仮定しない。
 - bridgeの「全拒否不変」を取り消し、同ID別payload／late retry／容量拒否等の意図した強化を別cohortと費用で測定。legacy guard counterはN/A。primary guard-offやmode別の上限緩和は不採用。
 - CGI17／CGI28をmode別の両端拒否・slot消費・guard policy比較へ更新。新RPCが増える場合はS*の実counterを再基準化。設計のみでruntime／native採用は未成立。
+
+
+§9.103 工程順序と容量のレビュー修正：
+
+- CGP-H0を先頭に追加。§9.102のrawでは1回目→2回目でReadSealedSourceのspan平均が約47ms→約81msへ増え、delta=10の削減は約470〜810msの概算にとどまる。read順序ごとの増大を分解し、候補Bの上限と比較してからCGP-I1以降の順序を決める。期限延長で成功扱いにしない。
+- R[K]のslot分割と枠数をCGP-I0の決定事項にした。全peer共有の256枠ではS*が8 read分の約296件を確保できず、B*だけ通過して比較が歪むため、枠不足の拒否は速度比較から分離する。回収なしの運用上の制約もprofileに明記する。
+- 未割当だったCGI21・26・27・29〜32をCGP-I3／I4へ割り当てた。
+- 検証記録のchecksは作成時の手動確認であり再実行手段がないことを明記し、基準ハッシュが`eb2f257`時点の値であることを記録した。設計のみ。runtime／native未実行、CG0／CG3は保留。
+
+§9.102後の全体テスト修正（`72c8abe`）：
+
+- `eb2f257`で失敗していたc3b2〜c3b5の照合テスト4件を、旧ハッシュを残す既存の作法で修正。c3b5の観測は再測定していない。
+- history検査を1実装へ集約し条件ごとの回帰を追加。記録項目は再生成で保持する。全体suiteは失敗0、修正前に出た名前不明の失敗3件は原因不明。初回readの成否は実行ごとに変わり、load average平均値だけでは説明できない。

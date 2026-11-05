@@ -21,7 +21,9 @@
       "authority-broker": 5
     },
     "total": 238,
-    "includesHistoryInternalToCommitRecover": false
+    "includesHistoryInternalToCommitRecover": false,
+    "sha256AtCommit": "eb2f2577126160d161a7953f44d4911cb9badd63",
+    "note": "the file changed later in 72c8abe with its groups and counts unchanged; this hash identifies the version the design read"
   },
   "regressionConditions": [
     "CGI01",
@@ -58,6 +60,7 @@
     "CGI32"
   ],
   "implementationStages": [
+    "CGP-H0",
     "CGP-I0",
     "CGP-I1",
     "CGP-I2",
@@ -134,8 +137,8 @@
     "src/utils/gradleOwnedStageStore.ts": "5df5d6595ac37ce76cb2573afc3e23d6e55553fed2425f0810ea57ebd9bbb77c"
   },
   "documentSha256": {
-    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "feb0730e2e19d89e010ffb7b4eeece4223a0b6efa70f62220c2bc8a0c881e6c7",
-    "docs/DESIGN_TODO.md": "e04981fd2b6027b11a0c597e49615fa4211634a27eef39d9a9b9b7894a82dd22"
+    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "872c45906ad30ff01c5a3cb07d9ec61c136ca9a66770753e23ec2a1cd467e89e",
+    "docs/DESIGN_TODO.md": "6f9a50a9bb5c8167539e77691812e2d52a93b08871267986a6fe792ee267dba4"
   },
   "implementationStatus": {
     "verifiedFactsHelper": false,
@@ -494,7 +497,10 @@
     "CGI17": "mode/endpoint rejection and per-operation entry delta, original budget, v1 wire versus internal guard digest, transport separate",
     "CGI28": "same guard policy/version/coverage/limits across primary modes; off/weak guard rejected; legacy bridge not rejection-equivalent",
     "runtimeImplementationChanged": false,
-    "guardApplicability": "all primary modes and serving observation coverage; bridge strengthening and cost separated"
+    "guardApplicability": "all primary modes and serving observation coverage; bridge strengthening and cost separated",
+    "stageOrder": "CGP-H0 added before candidate B; guards and CGI01-32 not relaxed",
+    "stageCoverage": "CGI21,26,27,29-32 assigned to CGP-I3/I4",
+    "slotCapacity": "partition and size are CGP-I0 decisions"
   },
   "guardApplicability": {
     "designRequirementOnly": true,
@@ -1072,5 +1078,127 @@
     "noSubtractionForCausalBridgeAttribution": true,
     "notCombinedWithPrimaryBatchEffect": true
   },
-  "counterProjectionScope": "238 is the recorded reference only; measure N_S* if common admission adds RPCs before applying the conditional -5*delta relationship"
+  "counterProjectionScope": "238 is the recorded reference only; measure N_S* if common admission adds RPCs before applying the conditional -5*delta relationship",
+  "checksMethod": "manual review when written; no script or test re-executes these results",
+  "stageCoverage": {
+    "CGP-I0": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      17,
+      23,
+      28
+    ],
+    "CGP-I1": [
+      3,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      22
+    ],
+    "CGP-I2": [
+      2,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      23,
+      24,
+      25
+    ],
+    "CGP-I3": [
+      21,
+      26,
+      27,
+      29,
+      30,
+      31,
+      32
+    ],
+    "CGP-I4": [
+      30,
+      31,
+      32
+    ]
+  },
+  "historyGrowthObservation": {
+    "source": "docs/validation/gradle-c3b-cgp-history-2026-11-05.after.measurements.json",
+    "deployments": 3,
+    "readSealedSourceSpanMeanMs": {
+      "read1": [
+        46.6,
+        47.6
+      ],
+      "read2": [
+        80.5,
+        82.5
+      ]
+    },
+    "anchorReadCommittedMeanMs": {
+      "read1": [
+        5.8,
+        5.9
+      ],
+      "read2": [
+        13.1,
+        13.5
+      ]
+    },
+    "registryReadCommittedMeanMs": {
+      "read1": [
+        6.8,
+        6.8
+      ],
+      "read2": [
+        14.1,
+        14.8
+      ]
+    },
+    "deltaTenSavingEstimateMs": {
+      "read1": [
+        466,
+        476
+      ],
+      "read2": [
+        805,
+        825
+      ]
+    },
+    "estimateScope": "span mean only; excludes work outside the span; read 2 stopped at the deadline",
+    "decisionStage": "CGP-H0"
+  },
+  "slotCapacity": {
+    "decisionStage": "CGP-I0",
+    "providerObservationsPerCompletedRead": {
+      "readSealedSource": 34,
+      "descriptor": 1,
+      "resolveNamespaceAtMost": 2
+    },
+    "illustrativeSharedPool": 256,
+    "illustrativeEightReads": {
+      "S*": 296,
+      "B*AtDeltaTen": 216
+    },
+    "capacityRefusalSeparatedFromSpeed": true,
+    "decided": false
+  }
 }

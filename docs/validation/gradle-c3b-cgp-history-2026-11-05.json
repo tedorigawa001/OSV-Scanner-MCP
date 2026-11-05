@@ -4513,8 +4513,8 @@
     "priorSourcePinsKept": true
   },
   "documentSha256": {
-    "docs/DESIGN_TODO.md": "0d2508f05e2a045d7e5af515db7086a66ab5da85a60d2f6ac7e7a43f09b548ea",
-    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "11a61c7818636bb4e1557ca5ab1fe98e603ba7de333a05ecd4868064bb36bc67"
+    "docs/DESIGN_TODO.md": "6f9a50a9bb5c8167539e77691812e2d52a93b08871267986a6fe792ee267dba4",
+    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "872c45906ad30ff01c5a3cb07d9ec61c136ca9a66770753e23ec2a1cd467e89e"
   },
   "regressionSourceSha256": {
     "src/test/utils/gradleOwnedStageReplay.test.ts": "f95e2c51a384e0d62f8531eb2e531185beb1d42ac4de6d59761ff42b900d947b",
