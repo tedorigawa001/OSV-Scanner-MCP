@@ -6,7 +6,9 @@
   "scope": "Anchor/registry storage replay reuse safety, candidate helper contracts, state machine, page and checkpoint boundaries; no implementation or new native measurement",
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
-    "sectionSha256": "52c0545c74fd426c85761922437b43a7315665940ece03e3d3c2e7bf510eb64c"
+    "heading": "### 9.106 ",
+    "sectionSha256": "32716389f17e678adf3a05008987ab3f93b0a5633317720a613fd322e7fd6194",
+    "sectionRange": "from the heading up to the next same-level heading"
   },
   "h0Evidence": {
     "path": "docs/validation/gradle-c3b-cgp-h0-2026-11-05.json",
@@ -75,7 +77,13 @@
     "SR33",
     "SR34",
     "SR35",
-    "SR36"
+    "SR36",
+    "SR37",
+    "SR38",
+    "SR39",
+    "SR40",
+    "SR41",
+    "SR42"
   ],
   "regressionExecution": {
     "runtimeConditionsExecuted": 0,
@@ -87,7 +95,7 @@
   },
   "designChecks": {
     "sectionCount": 8,
-    "contiguousUniqueRegressionIds": 36,
+    "contiguousUniqueRegressionIds": 42,
     "requiredContractNamesPresent": true,
     "meaning": "structural documentation checks only, not proof of safety or runtime regressions"
   },
@@ -102,16 +110,94 @@
     "resyncMaxFDs": 64,
     "rssBoundProven": false
   },
+  "feasibilityBound": {
+    "meaning": "optimistic arithmetic from saved H0 data, not a measurement of any S0 mode; depth 0 to 1 growth extended linearly; owner time treated as serial work",
+    "assumes": {
+      "removedForM": [
+        "json-canonical",
+        "json-decode",
+        "mac",
+        "journal.readHistory",
+        "stage-other"
+      ],
+      "removedForD": "disk.list in proportion of disk.put to disk.list",
+      "notIncluded": [
+        "S0-P",
+        "compact record",
+        "fewer readCommitted calls",
+        "retained checkpoint authentication",
+        "boundary listings",
+        "byte comparison and cache management"
+      ]
+    },
+    "time": {
+      "targetReads": 8,
+      "deadlineMs": 4500,
+      "samples": [
+        {
+          "sample": 1,
+          "firstReadMs": 3993,
+          "otherWorkMs": 2885,
+          "replayBudgetMs": 1615,
+          "growthPerDepthFullMs": 1670,
+          "growthPerDepthIdealMs": 616,
+          "lastReadFullMs": 15686,
+          "lastReadIdealMs": 7730,
+          "lastReplayIdealMs": 4845,
+          "readsWithinDeadlineIdeal": 2
+        },
+        {
+          "sample": 2,
+          "firstReadMs": 4133,
+          "otherWorkMs": 3074,
+          "replayBudgetMs": 1426,
+          "growthPerDepthFullMs": 1784,
+          "growthPerDepthIdealMs": 685,
+          "lastReadFullMs": 16623,
+          "lastReadIdealMs": 8386,
+          "lastReplayIdealMs": 5311,
+          "readsWithinDeadlineIdeal": 2
+        },
+        {
+          "sample": 3,
+          "firstReadMs": 3910,
+          "otherWorkMs": 2635,
+          "replayBudgetMs": 1865,
+          "growthPerDepthFullMs": 1683,
+          "growthPerDepthIdealMs": 706,
+          "lastReadFullMs": 15693,
+          "lastReadIdealMs": 8179,
+          "lastReplayIdealMs": 5544,
+          "readsWithinDeadlineIdeal": 2
+        }
+      ]
+    },
+    "anchorCapacity": {
+      "rowsPerRead": 5,
+      "bytesPerRow": 38089,
+      "capacityBytes": 1048576,
+      "rowsPerPageAtMeanSize": 1,
+      "rowsBeforeLastRead": 37,
+      "bytesBeforeLastRead": 1361600,
+      "deepestDepthByBytes": 5,
+      "deepestDepthByRows": 2
+    }
+  },
   "verification": {
-    "documentationTests": {
-      "passed": 3,
+    "relatedTests": {
+      "passed": 48,
       "failed": 0
     },
+    "typecheck": "passed",
     "historicalH0Check": "passed",
+    "historicalHistoryCheck": "passed",
     "diffCheck": "passed",
+    "fullSuite": "not run; documentation, record and one new test only, no product source changed",
     "commands": [
-      "npx vitest run src/test/docs/commandExamples.test.ts --maxWorkers=1",
+      "npx vitest run src/test/utils/gradleOwnedCgpS0Design.test.ts src/test/docs src/test/utils/gradleOwnedH0Validation.test.ts src/test/utils/gradleOwnedCgpHistoryCheck.test.ts src/test/utils/gradleOwnedCgpI0Manifest.test.ts --maxWorkers=1",
+      "npm run typecheck",
       "node scripts/analyze-c3b-cgp-h0.mjs --check",
+      "node scripts/analyze-c3b-cgp-history.mjs --check",
       "git diff --check"
     ]
   },
@@ -121,7 +207,9 @@
     "Every checkpoint file and directory sync remains required in initial fixtures.",
     "Paged private images alone do not remove whole public registry wire retained by Anchor.",
     "S0-X and durable-prefix reuse require independent evidence, no fallback from observed corruption.",
-    "No product sources, historical native evidence, adoption gates or existing time limits changed."
+    "No product sources, historical native evidence, adoption gates or existing time limits changed.",
+    "Cache-based rollback detection is an extra check only: cold start, restart or eviction removes it, so it is not rollback protection.",
+    "S0-M and S0-D alone do not reach eight reads even at the optimistic bound; effects of compact records and fewer calls are unmeasured."
   ],
   "flags": {
     "cg0Proceed": false,
@@ -131,5 +219,13 @@
     "nativeIsolationVerified": false,
     "independentRegistryVerified": false,
     "originalReadsSkipped": 0
-  }
+  },
+  "reviewCorrections": [
+    "Limited cache equivalence to unmodified input and recorded the rollback difference (SR37).",
+    "Added the optimistic bound, the progress rules and the stop conditions.",
+    "Stated the depths a whole-wire Anchor control fits (SR42).",
+    "Limited S0-D to ordinary reads after recovery (SR41).",
+    "Aligned SR03 and S0b, and added SR38 to SR40.",
+    "Bounded the section digest at the next same-level heading and added a repository check of this record."
+  ]
 }

@@ -3032,4 +3032,5 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - owner／boot／root pair／key／schema／policy／generationに束縛したprivate handle、ordered prefixと集約状態、append／改変／rollback／再起動／失敗の状態遷移を具体化。現在の認可・pin・期限・取消し・保存／ACK条件はcache対象外。
 - checkpointは全chain認証・genesisを含むexact再読取・file＋directory同期を維持。Dは新規作成や修復を許さず、各batch前後と完了前の完全inventory検査を要求。再fsync省略は別契約まで不可。
 - Anchorが保持するwhole signed registry wireとpage imageの差を明記し、compact recordは別schema／profile／両owner・verifier対応を要求。page化だけでsuffix IOやGC／世代選択を承認しない。
-- SR01〜SR36を定義。runtime／native回帰は全て未実施。次はCGP-S0aのstrict fixture・fresh bytes／pure prefixから限定実証し、S0b列挙／同期、S0c page、S0d比較へ進む。I1〜I4の順序は実証後に再判断。CG0／CG3保留、原本読取省略0。
+- SR01〜SR42を定義。runtime／native回帰は全て未実施。次はCGP-S0aのstrict fixture・fresh bytes／pure prefixから限定実証し、S0b列挙／同期、S0c page、S0d比較へ進む。I1〜I4の順序は実証後に再判断。CG0／CG3保留、原本読取省略0。
+- レビュー修正：cacheによるrollback検出は保証ではないと明記。S0-M／Dの理想上限は全bootstrapで2 readまで（8 read目7.7〜8.4秒、算術で実測ではない）なので、8 readを進行条件にせず、停止条件を追加。whole wireのAnchor対照は候補上限に深さ2〜5までしか収まらない。S0-Dは復旧完了後の通常readに限定。
