@@ -2949,3 +2949,17 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - 検査条件の変異テストを110件中25件検出から110件すべての検出へ。到達できない2検査は削除。計算式、`cgp_child.mjs`、native runner自体は対象外。
 - 分析scriptは比較できないsampleを理由つきで除外し、要約全体を止めない。完了readが0件のrunは拒否する。
 - 5 process fixtureの起動失敗時に、一時ディレクトリの削除とownerの停止を行う。
+
+
+### CGP工程1：caller分解と履歴row内の重複解析削減（§9.102）
+
+- API・直接caller・owner・reader phase別のreadCommitted観測を追加。RPC spanと件数を照合し、並行RPCの出自を分離する。完了例238回はすべて別RPCで、同一RPC内の二重呼出しは0。
+- 独立したfresh検証を省略せず、StageStoreのimage比較で重複するcanonical decodeをrowごとに3→2回へ削減。異内容・非canonical image拒否と、controlled-clockで238回・verified完了を維持する回帰を追加。
+- 同じ修正済みobserverのnative前後比較を各3 bootstrapで再実施。前後とも初回3/3成功・2回目0/3成功。初回の観測時間は変更後の方が短いが因果的速度改善は未実証。失敗は期限拒否・公開0で、途中のcall件数の大小を削減率としない。
+- 工程1の調査と限定最適化を実施したが、fresh readCommittedの回数削減は未達。call graph変更の設計、page再利用・incremental検証と継続計測が残る。CGP成立扱いにせずCG0／CG3は保留、原本読取省略0。
+
+§9.102レビュー修正：
+
+- eventId連番・eventCount・owner counterとRPC側historyEventIdsの完全一致を検証。総件数を変えない重複／欠落、再採番・別RPCへの付替え、manifest欠落を拒否する。
+- source閉包は前後キーの和集合で比較し、追加／削除／observer変更を拒否。StageStoreは両方に存在する内容変更だけを許可する。
+- 修正後の同じobserverでnative前後を再実行し、比較と検証記録を更新。旧rawはpre-reviewとしてそのまま保存し、IDを補って現在のcheckerを通すことはしない。CGP成立・速度承認にはしない。

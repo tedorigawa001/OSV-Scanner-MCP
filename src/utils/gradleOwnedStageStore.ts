@@ -30,8 +30,12 @@ export class StageStore implements OwnedStore {
    const manifest=decodeCurrent(get('session-manifest'),MAX),q=parsed(stageCommitSchema,decodeCurrent(get('event-ledger'),MAX));
    need(same(manifest,{schema:'osv-mcp.q2.c3b.store.v1',ownerId:this.ownerId,storageEpoch:this.storageEpoch,roots:this.roots,journalKeyId:this.journalKeyId,checkpointKeyId:this.checkpointKeyId}),'binding_mismatch');
    const prior=q.previousStageReceipt?byRef.get(canonicalOwnedJson(q.previousStageReceipt))??null:null;
-   const record=validateStageCommit(this.#plan,q,head,prior),image=decodeCurrent(get('operation-result'),MAX);
-   need(same(image,decodeCurrent(Buffer.from(q.nextImage,'base64'),MAX))&&same(decodeCurrent(get('session-index'),MAX),{transitionKey:q.transitionKey,transitionDigest:q.transitionDigest})&&row.operationId===q.transitionKey&&row.requestDigest===q.transitionDigest,'integrity_invalid');
+   const record=validateStageCommit(this.#plan,q,head,prior),imageBytes=get('operation-result');
+   // validateStageCommit has already checked nextImage's base64 and canonical JSON.
+   // Exact bytes bind the persisted image without parsing/serializing that same value again.
+   need(imageBytes.equals(Buffer.from(q.nextImage,'base64')),'integrity_invalid');
+   const image=decodeCurrent(imageBytes,MAX);
+   need(same(decodeCurrent(get('session-index'),MAX),{transitionKey:q.transitionKey,transitionDigest:q.transitionDigest})&&row.operationId===q.transitionKey&&row.requestDigest===q.transitionDigest,'integrity_invalid');
    // Same checks as resolveExactStage for one new row, kept linear because this replays on every request.
    const operation=operations.get(q.operationKey)??{api:q.api,requestDigest:q.requestDigest,stages:new Set<string>()};need(operation.api===q.api&&operation.requestDigest===q.requestDigest&&!operation.stages.has(q.stageId),'integrity_invalid');operation.stages.add(q.stageId);operations.set(q.operationKey,operation);
    head={revision:row.head.revision,sha256:row.head.headDigest};const receipt=deriveStageReceipt(this.#plan,record,head);ledger.push(receipt);byRef.set(canonicalOwnedJson(stageReceiptRef(receipt)),receipt);images.push(image);

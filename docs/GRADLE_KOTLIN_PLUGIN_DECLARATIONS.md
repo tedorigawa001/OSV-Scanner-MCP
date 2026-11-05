@@ -6997,3 +6997,63 @@ CGP証拠処理の修正（`0bc84c3`後のレビュー）：
 - 5 process fixtureは、コンパイル失敗・hello前の失敗・hello後の起動失敗のいずれでも一時ディレクトリを削除し、起動済みのownerを止める。修正前はテスト用の秘密鍵を含むディレクトリが残り、helloを返さないownerは停止されなかった。
 
 CGP最終検証結果はsummaryのverificationを参照。native診断は3 bootstrap／3 snapshot比較pairで通過（91.95秒）。型検査・buildと対象回帰・source／raw／派生集計を別々に検証し、全体suiteの通過とは扱わない。
+
+
+### 9.102 CGP：readCommittedの呼出し元分解とrow内の重複解析削減（2026-11-05）
+
+工程1を調査し、履歴rowの処理を限定最適化した。freshな`readCommitted`自体の省略は0で、回数削減を達成したとはしない。CG0／CG3のgateは閉じたままである。
+
+#### 呼出し元と省略しなかった境界
+
+`OSV_CGP_HISTORY=1`でCGP childのtest-only observerを有効にする。AsyncLocalStorageで並行するRPCのID／APIを分離し、直接のcompiled caller、history全体／receipt指定、開始・終了、成功／失敗を記録する。read開始時に記録枠と連番eventIdを予約し、上限1024・dropped／未完了の有無を検証する。cgp.history-events.v1のeventCount・1からの連続番号・StageStore counterを照合する。各RPC spanに別保存したhistoryEventIdsとも一対一照合し、同じ総件数のまま読取rowをコピーして別rowを失わせる置換、コピーを再採番した別RPCへの付け替え、RPC側一覧の欠落を拒否する。API・caller・reader phase別のinclusive時間は入れ子なので、総latencyへ合算しない。stack採取等の観測費用も計測に含まれ、観測なしの速度と同じとはしない。
+
+変更前の完了例で次の238回を確認した。これはreadCommittedの件数であり、commit／recover内部の#historyも含めた全再生回数ではない。レビュー修正後の12 read試行では、1つのowner RPCに複数のreadCommittedが属する例はなかった。独立したRPCをまとめて同じ履歴検証結果を使い回してよいという証拠ではない。
+
+| owner | 直接caller | 回数 | 主な契機 |
+| --- | --- | --- | --- |
+| Anchor | `#execute` | 99 | fresh read 94、CAS 5 |
+| registry | `receive` | 94 | CheckLiveBinding 81、ReadDelivery 6、他のread／pin／handoff／delivery／ACK等7 |
+| provider | `#load`／`#loadPublic` | 39 | source chunk 34、namespace 2、descriptor 1、use 2 |
+| issuer | `#load` | 1 | checkpoint witness |
+| broker | `#readSaved` | 5 | prepare／complete／result各1、公開gate照合2 |
+
+source読取前の確認は取消し後のIOを止め、読取後の確認は途中の取消し・期限到達後の応答を止める。registryの各受付とAnchorの各受付にも独立した保存検証がある。これらの確認結果を別RPCへcacheして回数だけを下げる変更は行わない。API境界の再設計による別の削減余地を否定するものではない。
+
+#### StageStoreの限定最適化
+
+各rowの`nextImage`はvalidateStageCommitでbase64・canonical JSON・digest・stage遷移を検査済み。従来はoperation-resultを解析した後、比較のためnextImageを再解析し、両方を再canonical化していた。canonicalなJSONは同じ値に一意のbytesを持つため、operation-result bytesと検査済みnextImage bytesの完全一致を先に検査し、operation-resultを一度だけ解析する方式にした。
+
+imageのcanonical decodeはrowごとに3回から2回へ減る。比較用decode 1回と比較用serialization 2回を省くが、保存層のMAC／署名・checkpoint／root／全履歴・stage遷移の検査は毎回続ける。跨る要求のbyte cacheや原本読取省略は導入しない。
+
+回帰ではdecode回数の修正前失敗（3回）と修正後成功（2回）、別内容・空白追加・末尾改行を含むoperation-result置換の拒否を確認する。controlled-clockの完了readでは5owner合計238回が維持され、verified結果が得られることも検査する。観測側では並行RPCの出自混同・件数欠落・unknown caller・範囲外timestamp・overflowを拒否し、原本の戻り値／例外を変更しないことを確認する。
+
+#### native前後比較と判定
+
+同じobserverで変更前・後それぞれ3回、実時間5processを独立bootstrapして測定した。production sourceの差はStageStoreのみ。observer等の実行sourceは各rawの前後一致receiptに保存した。旧§9.101のrawを上書きせず、新しいraw 2件と`gradle-c3b-cgp-history-2026-11-05.json`へ分離した。
+
+| 条件 | 初回read | 2回目read | 完了時時間 |
+| --- | --- | --- | --- |
+| 変更前＋修正済みcaller observer | 3/3成功 | 0/3成功 | 3,882.7〜3,962.5ms |
+| 変更後＋同じobserver | 3/3成功 | 0/3成功 | 3,739.9〜3,868.1ms |
+
+失敗はすべて明示的なrequest_expired、公開差分0。完了readは前後とも238回。失敗時は変更前212回、変更後212〜216回で、途中の進行度が異なるため削減率として比較しない。初回の観測時間は今回の変更後の方が短いが、逐次実行・host負荷・observer費用の影響を分離していないため、一般的・因果的な速度改善を実証したとはしない。2回目は全件失敗しており連続readは未成立。期限を延長した再成功や、有利なrunの選別はしない。SGA proxyを含むrawの参考what-ifは変更前最大約7.66秒、変更後最大約8.40秒で、実paged readの測定・時間上限ではない。
+
+再現：
+
+```sh
+env OSV_CGP_NATIVE=1 OSV_CGP_HISTORY=1 OSV_CGP_RUNS=3 OSV_CGP_OUTPUT=/tmp/cgp-history.json npx vitest run src/test/utils/gradleOwnedCgpNative.test.ts --maxWorkers=1 --silent=false
+node scripts/analyze-c3b-cgp-history.mjs --check
+```
+
+分析scriptは保存されたbefore／after rawを要約する。2つの実行はsource hashが異なるため、過去のbefore sourceを現在のsourceへ付け替えない。検証記録のverificationに対象テスト・nativeの実行結果を残す。rawの内部整合検査は独立authorityの証拠ではない。
+
+残課題は、call graphの変更を伴う削減方式の設計、変更のないpageの再保存抑制、所有・鮮度・閉包を維持するbounded再使用／incremental検証、その後の実paged 5owner・独立SGAでの8回連続readの成立確認。今回のrow内削減だけで時間条件を満たしたとはしない。
+
+
+#### §9.102レビュー修正と証拠の更新
+
+- eventIdの一意性だけでなく、reset後の連続した完全列、eventCount、owner counter、RPC span側に別記録したID一覧を照合する。総数を変えないコピー＋欠落・再採番＋別RPC付替え・一覧欠落・重複spanを拒否する回帰を追加。2件のレビュー指摘は修正前の失敗と修正後の成功を確認した。
+- source比較は前後のキーの和集合で追加／削除／変更を比較し、StageStoreが両方に存在して内容だけが変わることを要求する。追加source、削除、observer変更、StageStore自体の追加／削除を拒否する。objectのキー順序だけの違いは拒否しない。
+- 同一の修正済みobserverでnativeを前後各3 deployment、計12 read試行として再実行。source閉包の差はStageStoreだけと確認した。前後とも初回3/3成功・2回目0/3、全失敗で公開0。旧計測と混ぜて成功率を作らない。
+- レビュー前のrawはpre-review.before／pre-review.after.measurements.jsonへbyte単位で保存し、新しいsummaryのlegacyEvidenceでhashを記録した。eventId／RPC側一覧を後付けせず、現在のhistory checkerは旧形式を拒否する。欠けていた証拠を後から補完済みとして扱わない。
+- 速度改善の確証・本番採用は引き続きなし。CG0／CG3は保留。更新したraw・比較・回帰・native実行結果は新しいsummaryのverificationを参照する。
