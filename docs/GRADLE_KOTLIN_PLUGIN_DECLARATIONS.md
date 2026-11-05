@@ -7057,3 +7057,274 @@ node scripts/analyze-c3b-cgp-history.mjs --check
 - 同一の修正済みobserverでnativeを前後各3 deployment、計12 read試行として再実行。source閉包の差はStageStoreだけと確認した。前後とも初回3/3成功・2回目0/3、全失敗で公開0。旧計測と混ぜて成功率を作らない。
 - レビュー前のrawはpre-review.before／pre-review.after.measurements.jsonへbyte単位で保存し、新しいsummaryのlegacyEvidenceでhashを記録した。eventId／RPC側一覧を後付けせず、現在のhistory checkerは旧形式を拒否する。欠けていた証拠を後から補完済みとして扱わない。
 - 速度改善の確証・本番採用は引き続きなし。CG0／CG3は保留。更新したraw・比較・回帰・native実行結果は新しいsummaryのverificationを参照する。
+
+
+### 9.103 CGP：call graphの統合契約・禁止境界・比較計画（2026-11-05、設計のみ）
+
+§9.102の238回は同一RPCの重複ではない。回数を減らすにはsourceの取得単位そのものを明示的に変える必要がある。本節は設計と将来の回帰条件であり、新API・profile・gate・range plannerを実装又は採用済みとはしない。既存v1と5秒lease／500ms以上のmarginを維持し、CGPに留まる。CG0／CG3、原本読取省略・native隔離・独立SGAの採用flagは開かない。
+
+#### 9.103.1 基準graphと検証の分類
+
+基準は`eb2f257`と§9.102の修正済みobserverで保存した前後raw。完了readはregistry 94、Anchor 99、provider 39、issuer 1、broker 5、合計238 readCommitted。registryの81回はCheckLiveBinding、6回はReadDelivery、他7回はcontext／pin／handoff／delivery／ACK等。providerはsource chunk 34、namespace 2、descriptor 1、use 2。238はcommit／recover内部の履歴再生を含む総回数ではない。
+
+現行のsource chunkは概ね次の経路を通る。inventoryとdataの内訳は、将来observerでkind／range digestを追加して直接計数する。API件数だけをkind別実測と呼ばない。
+
+```mermaid
+sequenceDiagram
+  participant C as reader又はbroker
+  participant P as provider
+  participant R as registry
+  participant A as Anchor
+  C->>P: snapshot・pinに束縛したsource要求
+  P->>R: 読取前CheckLiveBinding
+  R->>R: fresh readCommitted・認可
+  R->>A: fresh read
+  A->>A: fresh readCommitted・認可
+  A-->>R: 現head
+  R-->>P: 現live binding
+  P->>P: fresh readCommittedで単一bundle取得
+  P->>R: 読取後CheckLiveBinding
+  R->>R: fresh readCommitted・認可
+  R->>A: fresh read・保存検証
+  R-->>P: 現live binding
+  P-->>C: 署名・最終ローカルgate後だけ応答
+```
+
+検証を3種類に分ける。
+
+| 種類 | 例 | 統合条件 |
+| --- | --- | --- |
+| 不変な入力の検証事実 | 同一wireの署名、canonical parse、requestDigest、選択したrangeの構文 | 同一bytes・同一call・同一検証policyに限って共有可能。権限が現在も有効という意味は持たない |
+| 変化する権限・鮮度 | peer／owner資格、pin、selection、revocation、deadline、root／checkpoint／head | IO前後、await後、保存／応答の既存gateで再検査。前の成功をcacheして代用しない |
+| 業務上の決定・保存 | handoff-completing、decision-recorded、use、ACK、finish | stage・role・unknown解決の境界を維持。別決定を1つの検証済み扱いにしない |
+
+#### 9.103.2 候補A：同一call内の不変な検証事実の共有
+
+最初はwireを変えず、SessionServerが検証済みのenvelopeをownerが再度parse／署名検証する部分の限定実証を行う。将来の`VerifiedRequestFacts`はserver内のprivate WeakMap等で発行し、caller製object・serialized token・別sessionのhandleを受理しない。
+
+入力はexact inner bytes、wire digest、peer／server identity・boot・keyEpoch、API／purpose、lineage、requestDigestと検証policy識別子。出力はdeep-frozenの正規化済みbodyとこれらの束縛で、変更可能なBufferへのaliasを返さない。ownerは取得の都度、既存AuthenticatedSessionCallの生存・wire digest・宛先・API・現資格・ローカルdeadlineを検査する。immutable factsだけを保持し、認可の成功結果を保持しない。call完了・close・recoveryで失効し、別RPC・別owner・次の試行へ渡せない。
+
+awaitを跨いでも不変なbodyの数学的事実は変わらないが、権限・期限・selectionの再検査を省く根拠にはしない。検証policy／key registryが変わる可能性を非評価で判別できない場合はfactsを拒否する。SessionServerとownerの期待envelope schemaが違う場合も再解釈せず拒否する。factsはsignature／canonical envelope等の検証済み項目とschema IDを明示し、bodyを返すだけで業務payloadのschemaまで検証済みと推定しない。現行SessionServerの検証範囲ではownerのsource／registry command検証は残す。payload parseまで共有するには、その正確なAPI別schema IDで検証するowner用factoryとcoverageを別途実証する。採用までは現行の二重検証を維持する。
+
+候補Aの目標はpure parse／署名処理の削減で、readCommitted 238回の削減は主張しない。issuer proof・broker gate等の別domain／historical署名をこのhandleで検証済み扱いにしない。
+
+#### 9.103.3 候補B：単一source取得からのbounded multi-range応答
+
+回数削減の主候補は、実装予定の別API `aux.ReadSourceRanges`。単一要求で同じsnapshotの小さな複数rangeを選ぶ。既存ReadSealedSourceの意味やv1 schemaを暗黙変更しない。初期採用範囲はreaderとbrokerのdata読取だけで、issuerのcheckpoint構築、inventory取得、descriptor／ResolveNamespace、use／deliveryは対象外。
+
+**将来の入出力契約**：
+
+- commandは新しいstrict schema／algorithm／承認profileと明示したAPI／purposeを使用する。credentialDestination、role／delegate認可、session allowlist、sourceIntent、read planを同時に対応させる。旧profile／旧parserではunknown APIとしてIO前に拒否する。
+- 入力はexact lineage／current binding、snapshot／checkpoint／pin、transferId、planDigest、`ranges[1..4]`。各rangeはordinal、kind（commit又はpayload）、index、offset、length、期待entryのsha256／byteLengthを持つ。readerはoriginを指定せず自分自身、brokerは正確なreader originを指定する。他role・別delegateは拒否する。
+- 全rangeが同じpeer／origin／pin／selection／snapshot／checkpoint／purposeに属する。重複、重なり、未定義field、順序違い、範囲外、ゼロ長を拒否する。計画は検証済みinventoryの順に連続coverageを構築し、応答のpartsが入力のexact listと一致することを検査する。
+- decoded data合計は4096 B以下、range数は4以下を候補とする。現行source reply 8192 B、Session frame 16384 Bを拡大しない。4rangeと4096 Bが常に収まるとは仮定しない。最大identifier・base64膨張・全envelope／auth overheadを含むexact canonical wire bytesを純粋に見積もり、actual wireも再検査する。
+- 出力はsnapshot、inventoryDigest、transferId、planDigestと、各rangeのordinal／entry／offset／totalBytes／bytes／sha256。署名はbatch全体を束縛し、partsの欠落・余分・入替えを許さない。requestDigestは全rangeとbyte budgetを含む。operation keyはpayloadから独立した論理IDとし、以下の責任分離に従う。成功応答はliveなgrantでも次のbatchの許可でもない。ordinalは各batchの0からの連番とし、transfer全体の重複／欠落／coverageはclientが検証する。planDigestはclientの完全planの相関値であってserverによる残り計画の認証ではない。現在batchの全tupleはrequestDigestで束縛し、clientは元のplanDigestと照合する。serverにdurable cursorや過去batchの成功cacheを追加しない。
+
+**operation key／requestDigest／予約の責任分離（CGI17）**：
+
+| 値 | 入力・用途 | 含めないもの |
+| --- | --- | --- |
+| 論理operation key K | 固定domainで、認証済みpeer identity（role／credential／instance／boot／keyEpoch）、宛先service identity、API、operationId、lineage／generationから導出。同じ論理attemptの検索とintent予約の索引 | ranges、range順序、byte budget、planDigest、transferId、pin等のpayload、requestDigest、transport challenge／sequence／session ID |
+| guard用semantic digest D_guard（以下D） | 別の固定domainで、schema／API／purpose、Kの識別情報と元のsemantic binding、snapshot／checkpoint／pin／origin、transferId／planDigest、全rangeの順序付きtuple、宣言したbyte／wire予算・read planをcanonical hash。intent全体の同一性を表す | 署名、transportのchallenge／sequence／再接続session ID、再試行時の照会field。業務scopeのsessionIdはsemantic bindingなので除外しない |
+| intent予約 R[K] | 最初に受理したD、元のdeadline、予約枠・消費counter、attempt状態。primaryの全mode（S*／A*／B*／AB*）のclientとserverが共通guardで管理 | 成功source bytes、live確認結果、過去replyを新しい許可として返すcache |
+
+宛先・peerはwireの自己申告から選ばず、現認証context／own planと照合してKを作る。候補domainはK用`osv-mcp.cgp.source-operation.v2`、D用`osv-mcp.cgp.source-intent.v2`で分離し、identity正規化規則とともにCGP-I0のv2 contractで固定する。既存v1 sourceOperationKeyを変更済みとはしない。originの委譲資格・payload中の各refはDに束縛し、別途freshな認可・整合性検査を行う。payloadを変えてKまで変わるcontent-addressed keyにはしない。
+
+clientは最初の送信前、serverは認証・認可と構文検証の後かつsource pre／取得前にKとDを照合する。未登録Kだけが最初の予約を取れる。同じK・同じDのexact retryは元の枠・counter・deadlineを使い、別Dならidempotency_conflictで追加予約・source取得0。同じKに新operation扱いの枠を取り直さず、digestを変えてunknownを回避しない。
+
+各側のdeadlineは各側のclockで保持する。clientは元ReadDeadline／最初のcall期限を上限にし、serverは最初の受理時に保存したown-clock期限と現在の認証session期限の短い方を使う。新challenge／reconnectの期限で延長しない。別clock domainのdeadline数値を直接比較しない。失敗・完了後も同じbootのlate retryを検出できるよう、R[K]のD／期限／retired状態はboundedなslot又はtombstoneとして保持する。上限到達時に古いKを捨てて再受理せず、admission拒否とする。client／serverのslot数・peak memory・request消費をReadPlanの予算へ追加する。
+
+R[K]のpendingは旧attemptが実行中、unknownはその終了が未確認であり、新attemptの取得を並行開始しない。completeは旧処理が終了した状態で、同じD・残り期限・残り枠・fresh gateを満たす場合だけ新しい観測attemptを許す。処理終了／reply紛失をただちにretiredとし、正規retryまで塞ぐことはしない。retiredはclientのread完了／放棄、serverのown期限／fence等、各側が確認できる失効に用い、late retryを再受理しない。serverが別processのread完了を知ったとは仮定せず、現pin／資格のpre確認も維持する。状態がunknownのまま期限が切れた場合は再入せず拒否し、進行中処理のdrain／fenceは別に完了させる。
+
+**primary全modeでの共通適用範囲**：
+
+R[K]のguard implementation／version、K／Dの導出規則、policy digest（G_exp）、slot／memory上限、期限・retry・unknown・retired保持規則をS*／A*／B*／AB*で固定する。G_expとcoverageはP_expのexperiment manifestに必須で、scalar側だから省略できるという分岐を置かない。facts経路を使うA*／AB*でもR[K]の照合、現deadline・状態・消費枠の検査と更新を省かない。
+
+| 対象 | S*／A* | B*／AB* | guardの共通規則 |
+| --- | --- | --- | --- |
+| serving data取得 | ReadSealedSourceのcommit／payload | ReadSourceRangesのcommit／payload ranges | 各論理operationについて両端でK→Dと元予約を保持 |
+| serving inventory取得 | ReadSealedSourceのinventory | 同左（v1 inventory経路） | 同じG_exp／coverageで保持 |
+| serving descriptor／namespace | ReadSourceDescriptor、read-pinをtargetとするResolveNamespace | 同左 | 呼出しpeer・origin・current bindingをそれぞれ束縛して保持 |
+| checkpoint構築・provision／writer、公開proof root port、registry／delivery等 | 既存契約を維持 | 同左 | 今回のsource観測guardの対象外。既存の認可・ledger・quotaを除去しない |
+
+client側はreaderだけでなく、broker／issuer等が上記のserving source観測を発行する側にも適用する。server側はproviderの対象受付へ適用する。適用表にないAPIへ拡張する場合はcoverageを改訂し、全primary modeへ同じ改訂を適用して再比較する。v1 inventoryを持つB*だけguardを外すことも禁止する。
+
+本節のK／Dは内部のK_guard／D_guardである。S*／A*や共通inventoryの**v1 wireのoperationKey／requestDigestをv2 domainへ書き換えない**。v1の署名・sourceIntent・requestDigest検証を通常どおり行った上で、検証済みのsemantic commandと信頼済みbootstrap文脈（mode、ReadPlan、G_exp等）から別にD_guardを導出する。v2も同じguard規則を使い、wire digestとの対応を明示する。v1には存在しないReadPlan／mode fieldを署名済みと推定しない。これらはbootstrap／sessionへの束縛を検証してからD_guardへ入れる。wire schema別のD_wireとD_guardを取り違えたreply照合・既存keyの上書きを拒否する。
+
+新規の受理可能なKはclient／serverで各1 guard entryを確保する。同じKのretry・conflictはentryを増やさず、失効・retiredの記録もevictionしない。batchの方が論理要求数を減らすので、read全体のentry総数まで同じとは要求しない。比較するのは**同じper-operation規則と上限**であり、実entry数・peak memory・予約消費は各modeの実績として報告する。
+
+| 共通guardのcase（各mode・両端） | guard entryの増分 | 要求する結果／消費の区別 |
+| --- | --- | --- |
+| 受理可能な新K・有効なgrant・十分な枠 | 各端+1 | 現gateの後にのみsource取得。消費したrequest／wire／verificationを計上 |
+| 既存K・同D・旧attempt終了・元期限内・枠あり | +0 | 元予約からfreshな観測attempt。transport／IOの消費は増え得るが予約上限・deadlineを取り直さない |
+| 既存K・別D（そのmodeで構文／認可上有効なpayload変更） | +0 | idempotency_conflict、追加intent予約・source IO0。guarded clientで拒否した場合と直接serverへ送った場合を分ける |
+| pending／未解決unknownの同K | +0 | 新attemptの取得0。旧attemptの終了確認前にcompleteへ変換しない |
+| 元期限切れ／retiredの同K | +0 | 新challengeでも拒否、取得0。retained entryは消さない |
+| guard entry上限での新K | +0 | capacity拒否、eviction0・取得0 |
+| schema／mode／資格が入口で不正 | +0 | guard予約前に拒否。受信済みframeや署名検証の費用は0に偽装しない |
+| 新Kを予約後にpreでpin取消し等を発見 | 各受理済み端+1 | source IO0でもentryは保持。最初の予約を巻戻して同K再受理にしない |
+
+clientの拒否対照は送信件数、guarded clientを通さないserver直送対照はsource取得件数をそれぞれ測る。両端のslotを同じprocessのcounterとして混ぜない。
+
+この表の+0はguard entry／追加intent予約の増分で、再送したtransport request数や累積CPUが0という意味ではない。pendingの旧処理による消費も別計上する。range数・APIがmodeで異なるためKのhashをmode間で同一にせず、正規化したcase、per-operationの拒否結果、entry増分、元期限・残枠の保持を比較する。
+
+R[K]は新しいbounded intent guardであってdurableなbatch cursorでもbytes cacheでもない。現行SessionBootQuotaがrequestDigest由来の予算keyを使用することだけではこの契約を満たさない。実装時は全primary modeで安定したKへの束縛又は同じown guardを追加し、CGI17で実証する。boot／processを跨ぐ記憶の永続性を主張せず、新bootでは旧資格・旧pin・旧attemptを拒否し、旧unknownを新しいK／deadlineへ付け替えない。
+
+clientはdescriptorからsealを検証し、inventoryを現行経路で完全に取得・検証した後にだけdata planを作る。inventory hashだけを信じて未検査のentry集合をplanへ入れない。greedy packingはinventory順、entry内offset順で、上限に合わせてsegmentを分割する。serialized responseの上限を満たすまでrange数又はpayloadを縮める。plannerのestimateと実responseのsizeが違う場合は拒否し、上限を広げない。
+
+新profileを明示して選ぶ前に、v1又はbatch用の保守的なadmissionを予約する。capの都合でbatch数が増える場合もあり、常に速くなるとはしない。実装初期は現行scalarの上界以上のrequest／verification予算を保持し、検証済みinventoryから得たexact計画が予約内に収まることを最初のdata IO前に確認する。予約を後から過少申告しない。unsupported・上限不足の選択はpin前に決め、実行中の拒否からv1へ自動fallbackして別pin／deadlineを発行しない。
+
+#### 9.103.4 batch内の順序・private buffer・取消しの意味
+
+1. session／ownerの認可とローカルdeadline、API・schema・全rangeの構文、総bytes／wire／CPU／request予算を検査する。偽の期待entry値は入力のsize見積りにしか使わず、真正なinventory証拠とはしない。
+2. registryへfreshなpre CheckLiveBindingを行う。provider自身とpeerの資格、brokerの場合はorigin／pin ownerの束縛、lineage・purpose・選択済みsnapshot／checkpointを照合する。registry自身の保存検証とAnchor確認を省かない。delegateのoriginはpin ownerとの一致だけで済ませず、registryで現資格も検査する。現在のCheckLiveBinding契約で不足する検査はversioned contract／認可表で明示し、既存v1が対応済みとはしない。
+3. preのawait後にローカルgateを再検査し、providerのfresh readCommittedを**1回だけ**開始する。全履歴・root・checkpoint・stageの検証後、bundle／seal／inventoryの対応を検査する。要求された期待entry値と実bundleのentryを全件照合し、偽entry・不正offsetを拒否する。
+4. その1回で得た単一の検証済みprivate bundleだけから全partsを同期的に切り出す。各partの前後でローカル資格・deadlineを確認する。ここには追加のfilesystem／peer IO、await、再入callback、別snapshot取得を置かない。必要になったらbatchを分割し、新しいpre／postを実行する。4parts・4096 Bに加えて同期処理の時間上限も計測する。
+5. freshなpost CheckLiveBindingを行う。preの結果を再使用せず、同じ要求束縛を現状態で照合する。postのawait後・署名前後・応答enqueue直前にローカルgateと元のdeadlineを確認し、成功時だけ全partsを返す。失敗時に部分partsや成功印を返さない。
+6. reader／brokerは全partsのtuple・digest・coverage・長さを検査し、各entryを組み立ててentry全体のhashも検証する。brokerはreaderからbundleを借りず、別のfresh source passと完全検証を続ける。最終graph公開は従来のuse／durable ACK／finishとreader gateを通る。
+
+取消しの観測点を混同しない。preで取消し・期限切れを確認した場合はsource取得0。pre成功後にremoteで取消しが確定した場合、既入場の単一取得が進行し得るが、postで拒否し、そのbatchの応答・次の取得・最終公開を0にする。現在の分散RPCにもpre確認とIO開始の間のraceはあり、remote取消しACK以後の全物理readを瞬時に0とする保証を新設しない。その強い保証が必要なprofileは、registry側の排他／read permit／drain契約を別途実証するまでunsupportedとする。
+
+取得完了後のfile改変までpost live確認が検出するとはしない。postはgrantの鮮度確認であって保存層の再読取ではない。既取得の検証済みbytesを現在のroot状態の証明にせず、次の取得では再び全保存検証を行う。
+
+各processは自分の認証済みsession deadlineとmonotonic clockで検査し、callerは元のReadDeadlineを既存SessionClientへ渡す。異なるclock domainの絶対値を単純にminしない。registryはgrant期限を自分のclockで検査する。batch・retry・reconnectで5秒とmarginをリセットしない。署名やnetwork awaitは同期slice区間の一部ではない。
+
+post成功後に発生するremote取消しまで遡って送信済みsource bytesを回収できるとはしない。遅配されたpartsはprivate factsであり、新たな許可ではない。取消しがbroker準備／ACKより前に確定する対照では最終公開0を要求する。ACK以降のglobal raceをbatchで解決済みとせず、既存CG11／CG49・独立SGAの採用条件を残す。
+
+#### 9.103.5 統合してはいけない境界
+
+| 境界 | 維持する検査／統合禁止の理由 |
+| --- | --- |
+| pre → source取得 → post | 別時点のlive確認。2回を1回へ減らさない |
+| 追加IO／await／再入の前後 | immutable facts以外を持ち越さず、認可・期限を再検査する |
+| batch A → batch B、別RPC／transfer／reader／boot | 取得結果・live成功・handler内handleを再使用しない |
+| inventory検証 → data plan | membershipとsizeが確定する前にdataを読む計画へ統合しない |
+| provider → registry → Anchor | 各ownerの資格・freshなown-root検証を他ownerの自己申告で代用しない |
+| 保存確認 → CAS／post-commit確認 | headを見た後のawait／書込で状態が変わる。先のhead確認で代用しない |
+| reader検証 → broker検証 | brokerの独立取得・完全再検証をreaderのproofだけに置き換えない |
+| handoff-completing → decision-recorded → delivery | durableな決定とunknown解決を1 stageに潰さない |
+| provider use → ACK → broker finish → 公開 | role別の保存・再試行・historical resultを分離し、source応答を実行許可にしない |
+| read → 次read／再起動／世代移行 | old pin・旧資格・署名済み過去結果をlive gateへ流用しない |
+| SGAの6確認候補境界 | 各境界のfresh確認を将来も別途必要とし、batch当たりのcacheで代用しない |
+
+business-level retryは同一intent・元の累積deadlineとrequest枠で扱う。未完了attemptを未解決のまま並行再発行せず、drain／recovery後に限る。retryでsource応答をsaved live proofとして返さず、現在のgateと必要なfresh取得を行う。途中失敗のbatchは全体を破棄し、欠けたpartだけを古い許可で補わない。既に受信したprivate factsの扱いと観測APIの再実行を区別し、次readへsource cacheを持ち越さない。
+
+#### 9.103.6 件数の予測とadmission
+
+各passの旧data要求数をC_R／C_B、新batch数をB_R／B_Bとし、inventory・descriptor・他APIの件数が不変なら、減るsource要求数は`delta=(C_R-B_R)+(C_B-B_B)`。各削減source要求に対してproviderの取得1、pre／postによるregistry取得2とAnchor取得2が減るため、同じ完了readでの予測は次のとおり。
+
+| counter | 条件付き予測 |
+| --- | --- |
+| provider readCommitted | 39 − delta |
+| registry readCommitted | 94 − 2×delta |
+| Anchor readCommitted | 99 − 2×delta（5 CASは維持） |
+| issuer／broker readCommitted | 1／5のまま |
+| 合計 | 238 − 5×delta |
+
+observerは既存のeventId／historyEventIdsに、logicalBatchId・planDigest・kind／range digest、pre／postのRPC対応、単一sourceAcquisitionIdを追加する。IDは観測用で権限ではなく、同じ認証済みcommandのpeer／snapshot／pinとの対応も照合する。commit／recover内部は親methodとhistoryReplayIdを分け、readCommitted件数へ二重計上しない。rangeが4件でも取得が1件であることと、awaitを挿入した負例で新gateが必要になることをtraceで判定する。
+
+238はS_ref時点の基準であり、guard導入やadmissionが追加RPCを必要とする場合はS*の実counterを新しい基準N_S*として計測する。他の経路が同じであることを確認してからN_S*−5×deltaを用い、移植／guard費用を0と仮定して238へ固定しない。
+
+deltaは正にclipせず、負なら悪化として記録する。1つのsource要求につき取得1／live確認2、CAS等の件数不変を実eventで確認できない場合、この式は使わない。34 chunk要求をそのまま34 data要求と解釈しない。9 entryの現fixtureではinventoryは4096 Bに収まる構造だが、kind別counterを追加するまではC_R=C_B=16をAPI集計から直接測定済みとしない。
+
+参考例：検証済みinventoryから旧dataが各16要求、新方式が各11batchと**実証できた場合だけ**delta=10、合計188となる。41,460 Bのdataに対する11は4096 Bだけを考えた下限であり、4range／wire制約で到達できるという意味ではない。ここから5秒到達を予測しない。
+
+ReadPlanの将来v4／新algorithmは、caller→providerのbatch＋inventory、provider→registryのpre／post、registry→Anchor、handshake・recovery、全bytes・署名・CPU・全履歴再生とstate増大を明示して計上する。基準238にも含まれないcommit／recover内部の履歴再生を追加計測する。source batch自体には新しいdurable stageを設けず、既存stage数・予約余力を勝手に減らさない。現行v3がschema最大入力をrequest上限で拒否する場合はunsupported／admission拒否として別記録し、最大入力の速度成立に数えない。新方式でも256等の既存上限を黙って増やさない。CPU／メモリ／exact wireの上限が証明できない計画はpin前に拒否する。
+
+#### 9.103.7 回帰条件（CGI01〜CGI32、未実装）
+
+| ID | 条件・確認する結果 |
+| --- | --- |
+| CGI01 | 新API／algorithm／purpose／profile未承認・旧schemaでsource IO0。旧v1の意味・結果は不変 |
+| CGI02 | peer／origin／pin／snapshot／checkpoint／selection／lineage／boot／scopeが混在するbatchを拒否 |
+| CGI03 | VerifiedRequestFactsの偽造・別call／wire／policy・Buffer alias改変を拒否。await後の現認可は別に検査 |
+| CGI04 | range数0／5、重複・重なり・不正順序・offset／index・ゼロ長・余分fieldを拒否。counter消費を記録 |
+| CGI05 | 4096 decoded B、8192 reply B、16384 frame Bの境界と+1、最大identifier／base64膨張を検査。予算超過で送信0 |
+| CGI06 | inventory未検証／入替え・期待entry偽装、別inventoryDigest・planDigest・transferIdを拒否。部分結果0 |
+| CGI07 | 同じsnapshotの全partsを単一fresh取得から作ることを観測。rangeごとの追加IO／awaitを入れた負例を拒否 |
+| CGI08 | pre前の取消し・期限到達・owner／peer資格取消しでsource取得0・応答0 |
+| CGI09 | pre成功後、source取得開始直前のremote取消し。既入場取得の有無を記録し、post拒否・次取得0・応答0。瞬時全IO停止とは数えない |
+| CGI10 | source取得中に取消し／期限到達／owner停止を起こし、取得後のgateでparts送信0。未完了IOはdrainして計数 |
+| CGI11 | source取得後・slice途中・post直前の取消しで全parts破棄。ローカル期限がslice途中に到達しても部分送信0 |
+| CGI12 | postのawait後・署名中・署名後・enqueue前のローカル取消し／期限到達で応答0。異なるclock値の混同を拒否 |
+| CGI13 | post後の遅配応答を取消し済みpinの新許可にしない。broker準備／ACK前に取消しを確定させ最終公開0 |
+| CGI14 | batch間のsource blob／checkpoint／commit改変・巻戻しを次のfresh取得で拒否。既検証headのcache対照は不採用 |
+| CGI15 | 取得前／取得中の保存検証でsymlink・root置換・未知file・pending tail・不完全復旧を検出し成功parts0。取得後改変の検出をpostに仮定せず、次取得で拒否。低level IO範囲を記録 |
+| CGI16 | 1partだけ不正hash／長さ、parts欠落・余分・入替え、範囲外bytesを拒否。entry全体の再hashも失敗させる負例 |
+| CGI17 | S*／A*／B*／AB*の全coverage APIと各client／providerで共通case表を実行。scalarはoffset／maxBytes／kind等、batchはrange／順序／予算等の有効payload変更で同K別Dを拒否しentry+0・source IO0。新K+1、exact retry+0、unknown／期限切れ／retired／満杯で再予約・eviction0、pre拒否後の新K entry保持を確認。D_wire／D_guardの混同とv1 hash書換えを拒否。元期限・消費枠、transport消費とentry増分を分けて記録し、未解決unknown・旧reply・別boot・並行再入・新pin・部分fallbackを拒否 |
+| CGI18 | broker originの偽装・別readerへの転用、別role／purpose・宛先を拒否。reader自身とdelegateを区別する |
+| CGI19 | readerとbrokerが別source passで全検証することを確認。reader bundleをbrokerに渡して取得を省く対照を拒否 |
+| CGI20 | registry／Anchorのfresh確認をpre／postごとに計数。別ownerの履歴証拠・署名だけで省く負例を拒否 |
+| CGI21 | handoff各stage・use・ACK・finishの保存故障／SIGKILL／応答紛失で元のunknown解決を維持。stage統合・二重効果0 |
+| CGI22 | 後続batch・別read・boot／session／世代変更へhandle／live成功を持ち越した場合を拒否 |
+| CGI23 | 全rangeのCPU・メモリ・request／frame／verification予約の上限と+1。pin前の保守予約とinventory後のexact計画を照合 |
+| CGI24 | event連番・RPC側一覧・owner counter・kind／range digest・pre／post・取得回数を照合。総数不変の重複／欠落も拒否 |
+| CGI25 | deltaの実計数と238−5×deltaを完了read同士で照合。不変APIの増減、負のdelta、内部history再生の未計上を隠さない |
+| CGI26 | 成功・期限拒否・容量拒否・other-refused・partialを分離し、完了例0でも失敗証拠を保持。成功例だけ選んで速度比較しない |
+| CGI27 | 最大entry・小entry多数・単一巨大entry・identifier最大・wire制約でbatch数が増える入力を比較。plannerの改善を仮定しない |
+| CGI28 | S_ref→S* bridgeの共通guard導入・拒否／容量条件の強化と費用を別cohortで検証し、P_exp内のprimary比較と分離。全modeでguard version／G_exp／coverage／上限・保持規則とCGI17の拒否・entry増分を照合。scalar guard-off・mode別のquota／retention緩和をinvalid experimentとして拒否。対応表どおりのscalar v1／ranges v2・ReadPlan algorithm・facts差は受理し、mode取り違え・unknown schema／profile・追加権限・producer policy／上限の変更・observer差をinvalid experimentとして拒否。modeはbootstrap時固定しpin後切替0。実source閉包の追加／削除、fixture／bytes／entry／terminal age／初期履歴深さを検査し、workload不一致pairは理由付きで分離。失敗試行を完了率から除外しない |
+| CGI29 | monotonicの元5秒lease・margin、recovery、途中取消し、複数clock domainの負例。期限延長なしで結果を記録 |
+| CGI30 | 初回・2回目以降・再起動・writer advance・予定8回を測定。v1容量拒否を自動GCや履歴削除で隠さない |
+| CGI31 | real-time 5process、cold／warm、継続負荷、SGA proxy有無を分離。独立SGA・実paged経路未成立では採用0 |
+| CGI32 | ソース差分の追加／削除を含む照合とobserver共通性、比較script再計算・raw hash・旧証拠保持を検証。未承認flag false／原本読取省略0 |
+
+CGI01〜CGI32は将来の実行テスト条件で、本節の整形・ID検査や既存テスト通過を成立数へ加算しない。
+
+#### 9.103.8 実証順序と性能比較計画
+
+| 工程 | 作業・成果 | 次へ進む条件 |
+| --- | --- | --- |
+| CGP-I0 | schema／認可表／共通intent guard・mode manifest／range planner／exact wire estimatorのfixture contract、raceの状態表を固定 | CGI01〜06・17・23・28の入出力と負例をレビュー。runtime採用0 |
+| CGP-I1 | 候補Aだけを限定実証。opaque factsと現gateを分離し、同じ入力のparse／署名回数を対照 | CGI03・08〜13・22で既存の拒否維持。238回減少を成果に数えない |
+| CGP-I2 | 候補Bだけのscalar／batch切替fixture。元の署名検証を維持し、単一取得からのpartsとpre／postを観測 | CGI02・04〜20・23〜25で完全性・race条件と件数を確認 |
+| CGP-I3 | A＋Bの実時間5process対照、cold／warm・継続read・faultを実行し記録 | 同じ安全条件を満たす完了readでのみ速度／件数を比較。no-goも保存 |
+| CGP-I4 | page再利用・incremental検証等の別実証後、実paged 5owner・独立SGAを含め再計測 | 目標8回・writer advance・移行後・最大入力の条件までCGP成立／速度採用にしない |
+
+比較は既存baseline S_refと、共通のfixture用実験profile P_expに載せるS*／A*／B*／AB*を分ける。P_expはscalarとrangesの条件を列挙した承認候補catalogで、本番profileの承認ではない。P_legacyは参照runの実profile digest、P_expはCGP-I0でpinする共通catalog digestを指し、未生成のdigestを今ある承認値として扱わない。S*は現scalarの業務経路を共通fixture runtimeへ移したcontrolであり、無変更の旧binaryとは呼ばない。primary比較の全modeは同じmulti-schema対応binaryとobserverを使用し、modeだけをbootstrap前に固定する。
+
+**schema／profileと意図した変更の対応表（CGI28）**：
+
+| mode | service profile | data API・command／result schema | ReadPlan／algorithm | facts経路 | intent guard |
+| --- | --- | --- | --- | --- | --- |
+| S_ref（参照） | 既存P_legacy | ReadSealedSource・現行source v1 | 現v3／consumer-broker-full-read-ack-v1 | 現行の二重検証 | legacyのまま。共通guard保障なし |
+| S*（共通control） | P_exp | ReadSealedSource・source v1 | 将来v4／実験用scalar-control-v1 | 二重検証を維持 | 共通G_exp・coverage・保持上限 |
+| A* | P_exp | S*と同じ | S*と同じ | VerifiedRequestFactsの明示coverageだけ使用 | S*と同じ |
+| B* | P_exp | ReadSourceRanges・将来source v2 | 将来v4／実験用ranges-v1 | 二重検証を維持 | S*と同じ |
+| AB* | P_exp | B*と同じ | B*と同じ | A*と同じ | S*と同じ |
+
+range統合の非対象API（inventory・descriptor・issuer・delivery等）はprimary mode間で同じschema／意味を使う。guard対象かどうかは上のcoverage表に従い、batch対象外だからguard対象外とはしない。P_expのcatalogが両data APIを記載していても、どのmodeでも自由に使えるという認可にはしない。別のexperiment manifestにactive mode、peer／role別の許可API・kind・purpose、schema ID、algorithm、facts coverageをexact tupleとして記録し、各owner／sessionのbootstrap contextへ束縛する。B*のv1 inventory取得は許可するが、scalar data取得へのdowngradeは拒否する。S*でranges APIを呼ぶ対照、v2 payloadにscalar algorithmを組み合わせる対照も拒否する。pin取得後・retry中にmodeを変えない。manifest／profileとgateの実装は未成立である。G_exp／guard version／coverage／slot上限・保持規則も同じmanifestで全primary modeに必須とし、guard-offのscalar controlは受理しない。
+
+| 比較の区分 | 固定する条件 | 意図して許す差 |
+| --- | --- | --- |
+| primary S*↔A* | P_exp、API／wire schema、ReadPlan、fresh gate、共通guard・G_exp・coverage／上限、検証policyの意味、データ仕様 | facts利用の有無とそれに伴うparse／署名回数だけ |
+| primary S*↔B* | P_expのcatalog、同じsourceの認可範囲・取消し意味、owner topology、producer／broker policy、元lease／margin・hard cap、共通guard・G_exp・coverage／上限・retention、非対象API、row最適化、初期履歴深さ | 対応表のdata API／schema／algorithm、active-mode manifest、range packingと正規算定したrequest／verification予約・wire費用だけ |
+| primary A*↔AB*／B*↔AB* | 上記の固定条件。比較しないfeatureは同じ設定 | 対応表の片方のfeatureだけ。AとBを同時に変えた効果と混同しない |
+| bridge S_ref↔S* | sourceの論理仕様、共通に受理可能な正規scalarの成功結果・stage効果、producerの検証policy、lease／margin・hard cap、fresh確認の意味 | P_legacy→P_exp、v3→v4 scalar control、catalog／adapter移植と共通intent guard導入。guardによる意図した拒否・容量条件の強化を明示し、移植とguard費用を別表示 |
+
+**bridgeでの意図した強化と別測定**：
+
+S_refの現行pending-intent検査等はそのまま測定するが、stable Kに対するD固定・両端の元期限保持・retained slotを実証済みとはしない。S*はこれらを追加するため、同ID別payload、late retry、再接続、slot満杯等で拒否結果がS_refと変わり得る。この差はCGI17の安全性強化であって「scalarの全拒否結果が同じ」というbridge条件にはしない。既存の取消し／期限／完全性の拒否を緩和する差は許可しない。
+
+bridgeでは（a）共通に受理可能な正規要求の成功結果・stage効果・fresh取得と（b）意図した強化のnegative cohortを分ける。S_refも既存検査で拒否する場合があるため、negative cohortが必ず成功するとは固定せず実結果を記録する。S_refの新guard entry counterは「未実装／N/A」とし、保障済みの0 entryとしてS*と比較しない。拒否を早く返して短くなった時間を完了readの速度改善へ算入しない。
+
+bridge全体のwall timeとは別に、共通guardのK／D_guard計算・lookup／状態確認・slot確保／retention・元deadline照合の費用、entry数・peak memory、各cohortのtransport／verification消費を計測する。nestedな計測値を加算したり、bridge全wallからguard subspanを引いて残りを純粋な移植効果と断定したりしない。比較の全primary modeでこのguard費用を含める。共通profile移植＋guard導入の差と、S*→B*のbatch効果を合算しない。guardを外したcontrolをprimaryへ混ぜず、費用を分離できない場合はcombined bridge費用として報告する。
+
+guardCoverage（保護するsource観測の範囲）とfactsCoverage（共有する不変な検証事実）は別の識別子である。前者は全primary modeで共通とし、後者の利用だけをA*／AB*の意図した差にする。
+
+G_expや実装version・coverage・slot上限／retentionの差は、active-mode manifestに書いただけでは意図した差として認めない。scalarだけguard-off、B*だけretired entryをevict、A*だけdeadline検査を省略したpairはinvalid experimentとする。各modeの論理要求数の差によるentry総数・消費量の差は、共通per-operation規則の下で測る正規の結果である。
+
+profileという語で異なる層をまとめない。producer owned-BTAの検証policy／承認範囲と、service transportの実験catalog、active-mode manifestは別の識別子・digestとして保存する。既存lineage等がservice profile digestを束縛する箇所は正規bootstrapで生成し、bridgeでのみ宣言したP_legacy→P_expの差として扱う。署名済みbytesやsource receiptを書き換えて同一profileに見せない。primary pair内ではP_expを固定し、mode manifestの差は上表で許可したexact tupleだけとする。
+
+共通に固定するのは論理fixture／entry構成とbyte長、5ownerの役割・資格強度・認可範囲、source完全性・独立再検証、取消し・期限・hard limitの意味、observer／計測版。生成ごとに変わるboot・nonce・鍵・署名・実時刻・実root identity等はrawをそのまま保存し、承認した生成規則との対応を検証する。CPU負荷やterminal ageは測定し、許容範囲を実行前に固定する。許可されたAPI差と無関係な追加権限・producer policyの緩和、hard limit拡大は対応表で正当化できない。
+
+比較controllerは、許可schema ID／profile digest・mode tuple・source差分の具体的allowlistを実行前にpinする。対応表にない差は「比較のための例外」にせずinvalid experimentとして拒否し、失敗証拠を残す。workloadのsize／初期履歴等が揃わないpairは理由付きで分離し、そのreadの成否を全試行の完了率から消さない。S_ref→S*のbridgeが未成立ならlegacyからの速度改善は未実証とし、P_exp内の限定対照だけを報告する。bridgeの移植差とbatchの効果を足し合わせて主張しない。
+
+compiled artifact・実行source閉包は全modeで保存する。共通binaryで比較するprimary pairは同じhashを要求し、bridge等でsource変更が必要なら変更可能集合を事前固定して前後キーの和集合で検査する。observerを片側だけ変えたpairを性能効果へ算入しない。
+
+初期スクリーニングは各モード3独立deployment、確認比較はcold／warm別に少なくとも10 matched pairを目標とし、ABBA又は記録したseedで順序を交互化する。sourceの論理内容・対応表で固定したpolicy／profile条件・entry構成・byte長・初期履歴深さを揃え、fresh nonce／署名／実clockの証拠は各deploymentで正規生成する。古いterminal時刻を再署名したり、固定bytesにするため時刻を書き換えたりしない。bytesが一致しない場合は実digest・サイズ・nonce／terminal ageを記録し、論理仕様とサイズが揃わないpairを理由付きで分離する。
+
+各modeは同じ成功read ordinal・同じ論理的な履歴成長位置で比較する。初回拒否ならそのdeploymentで2回目の新pinを作らず、排出時間・未完了stage・CPU／IOを失敗として記録する。current v1 storeで目標回数より前に容量拒否する場合、それもno-goであり、試行中のcompactionや期限延長で成功に変えない。cold／warmの定義、cache操作、host load、process／boot／PID、JDK／Node等の実行版、fixture source／policyを保存する。
+
+測定項目はreadのwall time、完了率（全試行を分母）、期限／容量／その他拒否、公開差分、owner別CPU、API別call、readCommittedとcommit／recover内部history、disk bytes、parse／署名検証回数、decoded／wire bytes、pre／post・batch取得回数、peak private memory・slice CPU、stage／request／entry残量とdrain時間。inclusive値は合算せず、外側wall timeと別表示する。成功readのp50／p95・rangeと全失敗を並べ、小標本から恒常的速度を保証しない。
+
+SGAは候補6境界の実確認が未実装なら引き続きproxyに限定する。chunk／rangeごとにSGAを追加して費用を隠さず、逆に6境界をcacheしない。batchの回数削減だけで5秒に収まると算定せず、同じ8 read目標・最大入力・cold／継続負荷・独立SGAを含む実経路で更新する。今は設計のみで、CGP成立・本番API対応・速度承認・原本読取省略は0のままである。

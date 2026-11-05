@@ -2963,3 +2963,30 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - eventId連番・eventCount・owner counterとRPC側historyEventIdsの完全一致を検証。総件数を変えない重複／欠落、再採番・別RPCへの付替え、manifest欠落を拒否する。
 - source閉包は前後キーの和集合で比較し、追加／削除／observer変更を拒否。StageStoreは両方に存在する内容変更だけを許可する。
 - 修正後の同じobserverでnative前後を再実行し、比較と検証記録を更新。旧rawはpre-reviewとしてそのまま保存し、IDを補って現在のcheckerを通すことはしない。CGP成立・速度承認にはしない。
+
+
+### CGPのcall graph統合設計（§9.103、実装前）
+
+- 候補Aは同一callのimmutableな署名／parse事実をopaque handleで共有する限定実証。現認可・deadline・IO前後のfresh検証は別に残し、238回の削減とはしない。
+- 候補Bは同一snapshotのdataを単一fresh bundle取得から切り出すReadSourceRanges。1〜4range・合計4096 Bを候補とし、現行reply／frame上限をexact wireで検査。inventory／descriptor、issuer構築、use／ACKは対象外。
+- 各batchのpre／post live確認、ownerごとのfresh保存検証、readerとbrokerの独立source pass、handoff・use・ACK・finishを維持。別RPC／batch・await・別ownerへlive成功を持ち越さない。
+- 取消しの粒度は明記した。preで拒否した場合は取得0、pre後の取消しは既入場取得の可能性を記録してpostで応答0。remote取消しACK以後の瞬時全物理IO停止を保証するprofileは、別の排他／drain実証までunsupported。
+- CGI01〜CGI32の未実装回帰条件とCGP-I0〜I4、S_refのbridgeと共通P_exp内のS*／A*／B*／AB*の比較計画を追加。kind別実計数・source閉包・元deadline・初期履歴深さを揃え、rawと失敗を残す。
+- source要求削減deltaを実証できた場合だけ238−5×deltaで件数を照合する。時間短縮や8回連続成立の保証ではない。次はCGP-I0のfixture contractとrace条件のレビュー・限定実証。CG0／CG3は保留。
+
+
+§9.103レビュー修正：
+
+- Kは認証済み論理identity／API／operationId等、Dは全range・byte budget等のsemantic payloadへ責任分離。boundedなR[K]でD・元deadline／counterを保持し、同K別Dは追加予約／source取得0。現SessionBootQuotaだけでは新契約を満たさないことを明記した。
+- CGI17にrange／budget等を変えた同ID、exact retry、reconnect・unknown・late retry、slot満杯／別bootを追加。Kへのpayload混入・予約evictionによる再受理を禁止。
+- 旧S_refは参照／bridgeに分離し、primaryは同一binary・共通P_expでS*／A*／B*／AB*を比較。schema／algorithm／mode manifestの意図した差と固定policy／上限を対応表化した。
+- CGI28に正規mode tupleの受理と、profile／schema取り違え・追加権限・producer policy／上限の変更の拒否を追加。bridge未成立ならlegacyに対する改善は未実証とする。
+- 設計のみ。runtime contract／回帰条件・native比較は未実行、CG0／CG3の保留を維持。
+
+
+§9.103 intent guard適用範囲のレビュー修正：
+
+- 共通G_expのintent guardをprimary全modeのdata／inventory／serving descriptor・namespace観測へ両端で適用。v1 wireのK／Dは書き換えず、内部K_guard／D_guardと区別する。
+- 同じper-operation slot／deadline／retention規則を固定し、新K+1・exact/conflict等+0とtransport消費を分離。実要求数が異なるmode間でread全体のentry総数を同じとは仮定しない。
+- bridgeの「全拒否不変」を取り消し、同ID別payload／late retry／容量拒否等の意図した強化を別cohortと費用で測定。legacy guard counterはN/A。primary guard-offやmode別の上限緩和は不採用。
+- CGI17／CGI28をmode別の両端拒否・slot消費・guard policy比較へ更新。新RPCが増える場合はS*の実counterを再基準化。設計のみでruntime／native採用は未成立。
