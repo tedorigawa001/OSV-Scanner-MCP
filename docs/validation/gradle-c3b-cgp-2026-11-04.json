@@ -10,7 +10,7 @@
   },
   "analysisSource": {
     "path": "scripts/analyze-c3b-cgp.mjs",
-    "sha256": "660a888212f165c62a60826cba15ec8b543913db66d25d2b7c9352df71d0b7fa"
+    "sha256": "728836360fef85a99444a867d4a1eb787db8e64ea07af8bf4e25a6d2081aa0c7"
   },
   "sourceSha256": {
     "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
@@ -1014,6 +1014,7 @@
         }
       }
     ],
+    "consecutiveReadGrowthExcluded": [],
     "historyCallScaling": {
       "registryReadCommittedPerRead": {
         "min": 94,
@@ -1207,6 +1208,26 @@
         ]
       },
       "measurementsRewritten": false
+    },
+    "analyzerAndFixtureStartup": {
+      "growthComparison": {
+        "excludedField": "timeBudget.consecutiveReadGrowthExcluded",
+        "currentlyExcluded": 0,
+        "noCompletedReadStillRejected": true
+      },
+      "fixtureStartup": {
+        "rootRemovedOn": [
+          "compile failure",
+          "failure before hello",
+          "startup failure after hello"
+        ],
+        "silentOwnerStopped": true
+      },
+      "removalControls": {
+        "total": 7,
+        "detected": 7
+      },
+      "measurementsRewritten": false
     }
   },
   "secondReviewFix": {
@@ -1309,6 +1330,14 @@
       "skippedTests": 1419,
       "failedTests": 0,
       "durationSeconds": 632.26
+    },
+    "fullSuiteAfterAnalyzerAndFixtureStartup": {
+      "passedFiles": 145,
+      "skippedFiles": 25,
+      "passedTests": 5532,
+      "skippedTests": 1419,
+      "failedTests": 0,
+      "durationSeconds": 602.02
     }
   }
 }

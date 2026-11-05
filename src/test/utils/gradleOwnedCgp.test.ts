@@ -1,6 +1,6 @@
 import {cgpReadFailure,cgpKeepEvidenceOnFailure,CGP_PARTIAL_SCHEMA} from '../fixtures/gradleOwnedCgpOutcome.js';
 import {it,expect,beforeAll,afterAll,vi} from 'vitest';
-import {mkdtemp,mkdir,rm,realpath,readFile,writeFile} from 'node:fs/promises';
+import {mkdtemp,mkdir,rm,realpath,readFile,readdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';import os from 'node:os';import {randomBytes,sign} from 'node:crypto';
 import {consumerFixture} from '../fixtures/gradleOwnedConsumerFixture.js';
 import {createGradleBudget} from '../../utils/gradleGraph.js';
@@ -8,6 +8,7 @@ import {registryRecordsOf} from '../../utils/gradleOwnedRegistrySchema.js';
 import {CgpSnapshotStore,cgpKeys,cgpWorkload,cgpState,encodeCgpPages,decodeCgpPages} from '../fixtures/gradleOwnedCgpPages.js';
 import {canonicalOwnedJson,ownedSha256 as hash} from '../../utils/gradleOwnedJson.js';
 import {AuthorityJournal} from '../../utils/gradleOwnedStoreJournal.js';
+import {cgpProcessFixture} from '../fixtures/gradleOwnedCgpProcess.js';
 import {cgpBudget,CGP_CAPACITY_PROJECTION} from '../fixtures/gradleOwnedCgpBudget.js';
 let base:any,templates:any[],workload:ReturnType<typeof cgpWorkload>;const roots:string[]=[];
 beforeAll(async()=>{const f=await consumerFixture();try{const store=f.f.r.stores.find(s=>s.ownerId==='lineage-registry')!,initial:any=await store.readCommitted(null);base=JSON.parse(Buffer.from(initial.image.record.wire,'base64').toString()).body.state;const previous=registryRecordsOf(initial.images).length;await f.bridge.readDocument('graph',createGradleBudget(),f.f.data.policy);const after:any=await store.readCommitted(null);templates=registryRecordsOf(after.images).slice(previous).map(r=>JSON.parse(Buffer.from(r.wire,'base64').toString()).body.state);workload=cgpWorkload(base,templates,8);}finally{await f.cleanup();}},120000);
@@ -93,3 +94,10 @@ it.each<[string,'full'|'paged',RowEdit,string]>([
  ['a state digest unlike the state','paged',{before:b=>{b.stateDigest='b'.repeat(64);}},'cgp_integrity_invalid'],
 ])('rejects a history row with %s',async(_name,mode,edit,reason)=>{await expect(readAltered(mode,edit)).rejects.toThrow(new RegExp('^'+reason+'$'));},120000);
 it('blocks the store when the read after a commit does not return the written state',async()=>{const store=await CgpSnapshotStore.open(await options(),'paged',cgpKeys()),real=AuthorityJournal.prototype.readHistory;try{await store.put(base,'first');let calls=0;const spy=vi.spyOn(AuthorityJournal.prototype,'readHistory').mockImplementation(async function(this:AuthorityJournal){const rows=await real.call(this);return ++calls===2?rows.slice(0,-1):rows;} as any);try{await expect(store.put(workload[0]!.state,'second')).rejects.toThrow(/^cgp_integrity_invalid$/);}finally{spy.mockRestore();}await expect(store.read()).rejects.toThrow(/^cgp_recovery_required$/);}finally{store.close();}},120000);
+
+async function emptyTmp(){const dir=await realpath(await mkdtemp(path.join(os.tmpdir(),'cgp-startup-')));roots.push(dir);vi.stubEnv('TMPDIR',dir);return dir;}
+const startupConfig={operationBinding:'',profileDigest:'',policyRegistry:null};
+it('removes the fixture root when compilation fails',async()=>{const dir=await emptyTmp(),empty=path.join(dir,'cwd');await mkdir(empty);const before=await readdir(dir),cwd=vi.spyOn(process,'cwd').mockReturnValue(empty);try{await expect(cgpProcessFixture({binding:{}} as any,startupConfig)).rejects.toThrow();expect(await readdir(dir)).toEqual(before);}finally{cwd.mockRestore();vi.unstubAllEnvs();}},120000);
+it('removes the fixture root when an owner never says hello',async()=>{const dir=await emptyTmp();try{await expect(cgpProcessFixture({binding:{}} as any,startupConfig,'cgp_absent_child.mjs')).rejects.toThrow(/child exit before hello/);expect(await readdir(dir)).toEqual([]);}finally{vi.unstubAllEnvs();}},120000);
+it('stops an owner that stays silent past the hello timeout',async()=>{const dir=await emptyTmp(),script=path.join(roots.at(-1)!,'silent-child.mjs'),pidFile=script+'.pid',fixtures=path.resolve('src/test/fixtures');await writeFile(script,`import {writeFileSync} from 'node:fs';writeFileSync(${JSON.stringify(pidFile)},String(process.pid));setInterval(()=>{},1000);`);try{await expect(cgpProcessFixture({binding:{}} as any,startupConfig,path.relative(fixtures,script))).rejects.toThrow(/hello timeout/);const pid=Number(await readFile(pidFile,'utf8')),alive=()=>{try{process.kill(pid,0);return true;}catch{return false;}};await vi.waitFor(()=>expect(alive()).toBe(false),{timeout:5000});expect((await readdir(dir)).sort()).toEqual(['silent-child.mjs','silent-child.mjs.pid']);}finally{vi.unstubAllEnvs();}},120000);
+it('removes the fixture root and stops owners when startup fails after they said hello',async()=>{const dir=await emptyTmp();try{await expect(cgpProcessFixture({binding:{authorityId:1},key:Buffer.alloc(32),keyId:'k'} as any,startupConfig)).rejects.toThrow(/\/start: /);expect(await readdir(dir)).toEqual([]);}finally{vi.unstubAllEnvs();}},120000);

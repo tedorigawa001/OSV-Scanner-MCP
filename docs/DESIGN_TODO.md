@@ -2947,3 +2947,5 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - owner接頭辞付きの期限・容量拒否を、既知の5 ownerに限って同じ分類にした。
 - native runnerの例外時に、収集済みの証拠を`osv-mcp.cgp.measurements.partial.v0`として残す。検証と分析は受理しない。
 - 検査条件の変異テストを110件中25件検出から110件すべての検出へ。到達できない2検査は削除。計算式、`cgp_child.mjs`、native runner自体は対象外。
+- 分析scriptは比較できないsampleを理由つきで除外し、要約全体を止めない。完了readが0件のrunは拒否する。
+- 5 process fixtureの起動失敗時に、一時ディレクトリの削除とownerの停止を行う。

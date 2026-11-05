@@ -1,5 +1,5 @@
 import {it,expect} from 'vitest';
-import {readFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
+import {readFile,writeFile,mkdir,mkdtemp,rm,realpath} from 'node:fs/promises';import path from 'node:path';import os from 'node:os';import {execFile} from 'node:child_process';import {promisify} from 'node:util';import {createHash} from 'node:crypto';
 import {validateCgpReport} from '../fixtures/gradleOwnedCgpReport.js';
 import {CGP_CAPACITY_PROJECTION} from '../fixtures/gradleOwnedCgpBudget.js';
 import {CGP_PARTIAL_SCHEMA} from '../fixtures/gradleOwnedCgpOutcome.js';
@@ -65,3 +65,12 @@ it.each<[string,(r:any)=>void,string]>([
  ['a missing source receipt',r=>{r.executionSources=null;},'source_receipt'],
  ['an altered source digest',r=>{r.executionSources.digest='0'.repeat(64);},'source_receipt'],
 ])('rejects a rehashed measurement artifact with %s',async(_name,change,reason)=>{const {raw}=await load(),r=structuredClone(raw);change(r);expect(()=>validateCgpReport(r)).toThrow(new RegExp('^cgp_evidence_'+reason+'$'));});
+
+const analyzerPath=path.resolve('scripts/analyze-c3b-cgp.mjs');
+/** Runs the real script on altered raw evidence in a throwaway tree; the committed record stays untouched. */
+async function analyze(change:(raw:any)=>void){const {raw,record}=await load(),root=await realpath(await mkdtemp(path.join(os.tmpdir(),'cgp-analyze-'))),rawPath=path.join(root,record.measurements.path),outPath=path.join(root,recordPath);try{await mkdir(path.dirname(rawPath),{recursive:true});change(raw);await writeFile(rawPath,JSON.stringify(raw));await writeFile(outPath,JSON.stringify(record));await promisify(execFile)(process.execPath,[analyzerPath],{cwd:root,timeout:60000});return JSON.parse(await readFile(outPath,'utf8'));}finally{await rm(root,{recursive:true,force:true});}}
+const read=(r:any,sample:number,index:number)=>r.samples.find((s:any)=>s.sample===sample&&s.index===index);
+const refuseFirst=(r:any,sample:number)=>{r.samples=r.samples.filter((s:any)=>!(s.sample===sample&&s.index===2));Object.assign(read(r,sample,1),{outcome:'deadline-refused',reason:'Error: current_control_request_expired',publishedThisRead:0});};
+it('leaves a refused first read out of the growth comparison and records why',async()=>{const summary=await analyze(r=>refuseFirst(r,3));expect(summary.timeBudget.consecutiveReadGrowth.map((g:any)=>g.sample)).toEqual([1,2]);expect(summary.timeBudget.consecutiveReadGrowthExcluded).toEqual([{sample:3,reason:'first_read_deadline-refused'}]);expect(summary.readSummary.firstRead).toEqual({completed:2,attempts:3});},120000);
+it('leaves a second read that stopped before a compared phase out of the growth comparison',async()=>{const summary=await analyze(r=>{delete read(r,2,2).phases.authority;});expect(summary.timeBudget.consecutiveReadGrowth.map((g:any)=>g.sample)).toEqual([1,3]);expect(summary.timeBudget.consecutiveReadGrowthExcluded).toEqual([{sample:2,reason:'second_read_stopped_before_authority'}]);},120000);
+it('still refuses to summarize a run with no completed read',async()=>{await expect(analyze(r=>{for(const sample of [1,2,3])refuseFirst(r,sample);})).rejects.toThrow(/no completed baseline for phase budget/);},120000);
