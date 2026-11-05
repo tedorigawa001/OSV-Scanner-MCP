@@ -3024,3 +3024,12 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - scalar data 16→理想batch下限11／pass、2 passで最大10要求の楽観的削減は約0.58〜0.60秒。完了状態の深さ0→1の再生work増加は中央値で約1.67〜1.78秒で、全3 bootstrapが上回る。拒否後の深さは進行量が揃わないので判定に使わない。実latency差や因果的速度改善ではない。
 - 次はCGP-S0：Anchor／registryの列挙・読取・decodeを中心に、page再利用／incremental検証の成立条件と限定実証を先行。fresh認可／取消し／期限／保存完了・checkpoint同期を維持し、成立後にI1〜I4の順序を再判断する。I0は完了、I1〜I4・実batch・独立SGA・8 read成立は残る。CG0／CG3保留、原本読取省略0。
 - レビュー修正：深さ2の表、判定条件（全組一致・中央値・未決定）、閉包漏れ2 file、チェッカー負例（42か所中15→41か所検出）、`--check`の照合を直し、再計測した。
+
+
+### CGP-S0：保存履歴再利用の安全契約（§9.106、設計のみ）
+
+- S0-F（full）、M（fresh bytesに対するpure parse／stage-prefix再利用）、D（call内の既存checkpoint再同期batch）、P（typed page表現）、X（独立provider付き跨call IO省略）を分離。mutable local IOでstat／flock／同digestだけを根拠にIOを省略しない。
+- owner／boot／root pair／key／schema／policy／generationに束縛したprivate handle、ordered prefixと集約状態、append／改変／rollback／再起動／失敗の状態遷移を具体化。現在の認可・pin・期限・取消し・保存／ACK条件はcache対象外。
+- checkpointは全chain認証・genesisを含むexact再読取・file＋directory同期を維持。Dは新規作成や修復を許さず、各batch前後と完了前の完全inventory検査を要求。再fsync省略は別契約まで不可。
+- Anchorが保持するwhole signed registry wireとpage imageの差を明記し、compact recordは別schema／profile／両owner・verifier対応を要求。page化だけでsuffix IOやGC／世代選択を承認しない。
+- SR01〜SR36を定義。runtime／native回帰は全て未実施。次はCGP-S0aのstrict fixture・fresh bytes／pure prefixから限定実証し、S0b列挙／同期、S0c page、S0d比較へ進む。I1〜I4の順序は実証後に再判断。CG0／CG3保留、原本読取省略0。

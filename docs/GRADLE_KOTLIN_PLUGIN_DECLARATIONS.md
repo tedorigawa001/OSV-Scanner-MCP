@@ -7455,3 +7455,162 @@ node scripts/analyze-c3b-cgp-h0.mjs --check
 - どれか1組が上回れば保存再生を先行としていた判定を、上記の全組一致・中央値に変更し、未決定の結果を追加した。
 - チェッカーの検査42か所を1つずつ外す確認で検出が15か所だったため負例を追加し、41か所を検出した（残る`diagnostic_pair`は閉包検査が先に拒否するので到達しない）。確認は使い捨てコピーでの手動実行で、リポジトリから再実行はできない。
 - `--check`に、記録項目（verification／reviewCorrections／documentSha256）の必須化、計測器sourceと回帰testのhash照合を追加した。製品sourceは変更され得るので照合しない。
+
+
+### 9.106 CGP-S0：保存履歴の再利用・incremental検証の安全契約（2026-11-05、設計のみ）
+
+§9.105の判断に従い、Anchor／registryの列挙・読取・decodeの増大を先に扱う。本節は採用範囲・候補API・状態遷移・回帰条件の設計であり、cache／新IO／page形式／readerを実装した記録ではない。§9.68.7〜9.68.9、§9.100、CGP-I0のintent guard・元期限／予算、H0の比較規則を変更しない。現RootedJournalIOで原本読取を跨callで省くことはunsupportedである。
+
+#### 9.106.1 sourceから確認した制約と候補の分離
+
+| 層 | 現行の処理／制約 | S0での扱い |
+|---|---|---|
+| RootedJournalIO | held root FD、各list/read/putのroot／file検査、read前後・名前とFDの対応、advisory writer lock | metadata一致を不変性証拠にしない。symlink／hardlink／root交換・inventory完全性の検査を維持 |
+| AuthorityJournal.#recover | 毎回manifest・全blob・commit chain・checkpointを検証。content memoは1回のreplay内のみ | fresh bytes／完全inventoryを先に確立。認証済みの同一bytesに関するpure事実だけを候補へ |
+| StageStore.#history | 四つのrecord、expectedHead／previous receipt／operation／stageの全履歴を再構成 | prefixの再利用にはordered chainと集約状態の束縛が必要。単独row digestだけでは足りない |
+| FileJournalCheckpoint.read | chain全件認証後、genesisを含む全fileをputしてfile＋directoryを再同期 | parse結果の再利用と同期完了を分離。可視性・前回成功・cache hitだけで同期を省略しない |
+| Anchor／registry | Anchorはregistryの署名付きwireを保持し、registryはwhole image／過去recordを保持 | imageだけpage化してもpublic wire中のwhole stateが残る。両者の表現・参照・署名範囲を揃える別形式が必要 |
+
+次の5 modeを混ぜず、mode／format／parser／policy／limits／observerをbootstrap前にpinする。表の「可」は後続fixtureの候補範囲であり本番承認ではない。
+
+| 候補mode | 再利用 | 毎回残すもの | 採用範囲 |
+|---|---|---|---|
+| S0-F | 現full readerのcontrol | 全inventory・bytes・検証・checkpoint同期・live gate | 基準 |
+| S0-M | fresh bytesとexact一致するprivate parse／認証／pure stage-prefix事実 | 全inventory／原本bytes読取・blob hash・現在chain／checkpoint照合・同期・live gate | mutable local IO上の限定fixtureが可。CPU改善のみでIO削減とは数えない |
+| S0-D | 同一call内のcheckpoint既存file再同期を明示batch化し、重複するdirectory全件列挙を減らす | 全chain認証、各fileの再読取とexact bytes比較・file fsync・directory fsync・境界検査 | 新しい非作成APIの限定fixtureのみ。現putをcacheで短絡しない |
+| S0-P | 新規page表現のunchanged page再保存抑制・型付きsuffix replay | 保持閉包の全inventory／実bytes／現在checkpoint／同期。全履歴を捨てない | full／pagedの並行fixture。v1へのoptional field追加や既存ownerへの暗黙導入は禁止 |
+| S0-X | providerが保証するimmutable prefix／inventoryの跨call再利用 | 独立storage証拠・現在の世代／prefix／認可／期限・新suffixと閉包の検証 | §9.68.7の独立provider・profile・失効／drain契約成立までunsupported |
+
+S0-Mでskipできるのは同じbytes・同じkey／parser等から得たpureな結果であり、ファイル読取そのものではない。blobのfresh digest、ref／role／index／順序／サイズ、現在のcheckpointの認証・chain照合は毎回維持する。hitの事実から現要求の許可やACKを導かない。S0-Dは跨callのinventory cacheではなく、S0-PはS0-Xの不変prefix証明でもない。
+
+#### 9.106.2 候補helperの入出力・信頼されたbinding
+
+以下の名前は将来fixture内部のstrict contract候補であり、現在の公開APIには登録しない。handleはowner instanceのprivate WeakMap等でmintし、JSON／wire／path／digestだけから復元できないものにする。callerから任意cache key／root／file list／key bytesを渡してhitを選ばせない。
+
+- `openReplayContext(ownerPlan, pinnedProfile, ownedRoots, storageGeneration)`：独立した承認設定と実open済みrootからcontextを作る。ownerId／role／instance／boot、authority／lineage／generation／storeEpoch、root pairとstorage instance、実root identity、journal／checkpoint key identity＋epoch、schema／parser／validator／policy／profile digest、storage generationを固定する。現形式にgeneration等のfieldがない場合は信頼済みbootstrapの値として別bindingへ固定し、v1 wireで署名済みと推定しない。未知又は取得できない値を空文字／0／自己申告で補わない。
+- `beginFreshReplay(context, ownCall)`：ownCallは認証済みK_guard／D_guard、purpose、readId、own-clock domain／元deadline・残予算、現binding／selectionを内部handleで参照する。cache事実のkeyにtransport sessionを入れて永続化せず、context／ownCallが失効ならIO前に拒否。S0-F/M/Dは現IOでfull inventory・tail検査・fresh bytesを取得し、call限定`FreshReplayInput`をmintする。caller提供bytesをそのままfresh IOと扱わない。
+- `matchPureFact(freshInput, expectedRole, schemaId)`：keyはcontext digest＋proof kind＋schema／role／index／descriptor列＋exact bytes長／digest。候補選択後にprivate保存bytesとの`Buffer.equals`を必須とする。hash一致・同名・stat一致だけでhitにしない。key materialはcontext内の承認key object／key epochに束縛し、外部から同keyIdの別鍵へ交換できない。missはfull parser／認証へ進め、改変・認証不正をmissへ格下げしない。
+- `replaySuffix(freshInput, prefixHandle)`：全現在prefix bytesとprefixHandleのordered descriptor列／headを照合してから、対応するimmutable集約状態を使用。新suffixの検証には直前head、全operationId、receipt ref map、operation→API／requestDigest／stage set、必要なowner-specific history状態を渡す。suffixなしでもfresh checkpoint／gate／同期は実行。過去entryの非連続変更、欠落、重複、並替え、同revision別headは拒否する。
+- `completeReplay(candidate, currentCheckpoint, synchronizationResult, ownCall)`：結果はstage ledger／images／headのprivate pure factsと診断counterのみ。durabilityはこのcallで完了した同期結果から別に確認し、最後のawait後の現認可／期限を確認してから結果を返す。cache candidateの公開は全検証・同期成功後だけ。live grant／原本省略証拠／checkpoint issuerの承認を生成しない。
+
+pure cacheの保存対象はprivate bytesと、canonical parse／schema・MAC又は署名のpure検証結果、同じowner planで検証済みのhistorical transitionだけとする。expiry／current pin／credentialCurrent／現在selection／barrier／fence／registry reconciled／use・delivery・ACKの可否は保存対象外。owner層の追加認可・署名keyの現有効性をstage-prefix factで置き換えず、AnchorOwner／RegistryOwnerの既存gate・rollback照合・reconcileをそのまま残す。
+
+#### 9.106.3 prefixとcache状態機械・変更時の扱い
+
+prefix handleは`contextDigest, format, genesis/base ref, ordered commit/head vector, checkpoint chain tip at verification, rowCount, descriptorClosureDigest, pureAccumulatorDigest`へ束縛する。accumulatorはledger／images／byRef／operations等のimmutable値であり、可変Map・Set・Bufferをcallerと共有しない。appendはcopy-on-writeの別candidateで、旧committed handleを更新しない。digestは候補索引であり、S0-M/D/Pでのfresh bytes照合や現在checkpoint検査の代わりにしない。
+
+| 状態／事象 | 次状態・動作 |
+|---|---|
+| cold／正常なmiss／任意eviction | full取得・full検証でcandidateを構築。cacheなしでも同じ結果又は同じ拒否 |
+| exactな現在bytesと全binding一致 | 純粋事実だけreuse。現gate・fresh IO・checkpoint同期・最終期限確認は実行 |
+| 正常なappend | prefix全bytes／連続性を照合し、suffixと新閉包をfull検証。同期完了後にだけ別candidateを公開 |
+| 現headの短縮・同revision別digest・middle変更／欠落 | rollback／integrityとしてcall拒否、cacheとownerをfail-stop。別bytesでfull fallbackして成功にしない |
+| parser／policy／schema／承認profileの予定変更 | 新contextへfull検証で入る。旧handleは無効。変更後も過去成功を元に現要求を再実行しない |
+| key rotation・boot／instance／root pair／generationの変更 | 旧contextを失効し、承認された新contextでfull open／recovery。旧handleを移植しない |
+| sync／IO障害・未知write／未知CAS結果・未完了tail | candidate破棄、no ACK、fail-stop／full recovery。既存の疑いあるprefixを使って続行しない |
+| owner終了・drain・migration freeze／GC | handle失効。復旧は現世代確認・全原本／checkpoint認証・再同期後。live capabilityを復元しない |
+
+現在のroot／schemaの不一致を、予定した世代移行と解釈して自動採用しない。世代移行の認可・現在世代選択はSGAの別契約（§9.100）であり、cacheや新しいpage rootの自己hashでは代替しない。現v1の通常動作に未実装SGAを偽装して挿入せず、S0-X又は新世代形式の採用gateで未接続ならunsupportedとする。
+
+#### 9.106.4 checkpoint再同期・call内の列挙削減候補
+
+S0-Mでは現`FileJournalCheckpoint.read`の全chain認証→genesisを含む全recordのequal put→file＋directory同期を維持する。checkpointに「前回の成功時刻」「同じtip」「same path/inode/mtime」しかない場合、再fsync省略は不可。publish後directory sync失敗・再open・再試行は、可視でも再同期が成功するまでACK／historical resultを返さない。
+
+S0-Dの候補APIは`resyncExistingBatch(callInventoryHandle, verifiedCheckpointRecords)`。既存JournalIO.putの意味は変えず、新しいfixture内部portとする。
+
+1. `callInventoryHandle`はこのcallのroot検査と有界の完全列挙からIO adapterがmintし、checkpoint chainの全認証後にだけ使用する。call／held root／exact sorted name-size集合／byte総量／profileを固定し、改変可能なcaller配列は不可。跨awaitの不変性や一般の権限証拠とは扱わない。
+2. operationは**既存checkpoint fileの再同期だけ**。作成・link・unlink・rename・追加・修復・checkpoint advanceは許可しない。chain以外のfile、pending pair、不正nlink／mode／device、未知inventory、容量超過は拒否し、通常のputへfallbackして作成しない。
+3. 最大64 FD以下のbatchでroot相対openを行い、同じFDから現在bytesを有界に読み直して、全chain認証時のprivate bytesとexact比較する。そのFDのfile fsyncを行い、名前→FD・file metadata・rootの再確認を行う。各file後のdirectory fsyncと既存fault境界を初期実証では維持する。Directory fsyncの1回への併合は本節の対象外。
+4. batch前後と全体完了直前に完全な現inventory／root／tail／容量を再検証する。新規file・欠落・path交換・size変更が見つかれば、既に同期済みfileがあっても成功を返さない。chunk間のawait後は現認可／期限を再確認する。batchが複数なら、それぞれの境界列挙も計上し、初期の1回だけ列挙した値を使い回してO(1)と主張しない。
+5. このportは現putがfileごとに行う全件列挙の重複だけを減らす候補であり、bytes読取・認証・同期を減らした実績ではない。cooperative local diskより強い連続的な不変性や、境界間に発生して元へ戻る他writerの操作の検出を保証しない。独立不変性が必要なprofileはS0-Xの証拠が揃うまでunsupported。
+
+各fileに同期完了前／後・directory同期前／後の故障点を持ち、元の全件put方式と拒否・ACK・再open後の状態を対照する。何回か同期できたことを全体完了証拠へ昇格させない。admissionと同期完了を混同せず、失敗時にdirtyなcandidate／durable handleを公開しない。
+
+#### 9.106.5 page形式とincremental materializationの候補範囲
+
+S0-Pの初回対象はAnchorのordered entriesとregistryのpins／ledger／handoffs。registryの残りのlivenessは既存`registryStateSchema`からこれらのfieldを除いた**strictな型付きschema**で保持し、`unknown`の任意JSONや汎用JSON pointerを採らない。Anchorのentriesはrevision／attemptIdの履歴順を保ち、registryのlogical keyはpin ref.id／ledger key／handoff operationKey。keyの重複を拒否し、page内のkey順と元のordinal順を別に束縛する。
+
+候補fixture形式は`cgp.s0.owner-root.v1`、`cgp.s0.page-directory.v1`、`cgp.s0.owner-page.v1`、`cgp.s0.owner-delta.v1`の別schema。rootはowner／lineage／storeEpoch／generation／format／revision、parent root、全field directory ref・count、liveness ref、完全なstate rootを持つ。pageはowner／field／bucket／ordinal付きtyped rows・count、directoryはcanonicalに並べた全page ref・bucket・countを持つ。refはschema／role／sha256／byteLengthを束縛し、root→directory→pageの閉包を全て検査する。空fieldもtyped empty directoryとして表現し、欠落と区別する。
+
+deltaはparent state root、operation／request digest、expected old ref、typed add／replace／remove、new ref、更新後state rootを持ち、適用前後をfull materializerと照合する。removeはlogicalな状態変更であり物理削除権限ではない。現在rootだけでなく、全retained commit／stage／retry／checkpoint／holdが参照する旧pageも保存し、旧版を orphan と誤判定して捨てない。真の未記録fileと、保持閉包に含まれる過去版を区別する。
+
+初回の構造候補は16 bucket／directory、16 rows／page、64 KiB／page、64 KiB／directory、root 64 KiB、decoded全体8 MiB、閉包4,096 objectsを上限とし、既存のrecords／store／wire／maintenance上限との小さい方を使う。bucket overflowを空きbucketへ黙って移したり上限を増やしたりせず、固定profileではcapacity拒否とする。複数page／bucketを採る将来schemaは別承認を要する。max entriesの一般対応や8 read成立を、この小さいfixture上限から主張しない。
+
+wholeとpageでは署名対象・head digest・public ref・実容量が変わり得るため、同じdigestを同値条件にしない。logical state・operation結果・expiry／失効・retry一回性・保持履歴・公開／ACK可否を比較する。実storage量とref閉包をmodeごとに課金する。registryの署名付きpublic recordがwhole stateを含む現形式を残した対照は、public wire再保存の削減未成立として別記録する。compactなsigned state-root recordとそれを保持するAnchorを導入する場合は、両owner・verifier・envelope／CAS・profile／schemaを同時に別fixtureへ固定し、旧v1 readerはunknown formatで拒否する。本番format・世代選択・移行・GCの採用は§9.100以降へ残す。
+
+S0-Pでも原本bytesをfreshに読むlocal IO modeでは、保持pageが増えれば読取とhashは増える。full prefix replayのJSON／状態再構成をsuffixへ限定できても、O(suffix) IOや履歴深さに依存しない時間を保証しない。IOを省くS0-Xへ、同じcontent-addressed ref又はS0-Pのpage handleだけで昇格しない。
+
+#### 9.106.6 S0-Xの追加条件・常に残すgate
+
+読取・列挙を跨callで省く場合は、独立保護されたstorage providerの承認profile、認証IPC、fresh challengeに結び付いたowner／storage instance／root pair／generation／exact head・prefix／inventory完全性の証拠と、失効・drain／fence順序が必須である。bytesのimmutable receiptだけではinventory追加／削除を省けず、inventory証拠だけではblob改変を省けない。prefix coverage／membership・必要なnon-membershipをそれぞれ検査し、証拠対象外のsuffixと新閉包は実取得する。providerが変更を認める前に旧receiptを失効させ、旧callが終了又はfenceされた後で変更する契約を別途実証する。
+
+root／providerの自己申告・同UID child・signed local counter・周期的scrub・stat一致だけのS0-Xはunsupported。proofのないcache missは最初から承認full modeを選べるが、不正・現在性不明・失効をmissへ読み替えて継続しない。receiptがあっても現在のcheckpointはfreshに確認し、checkpoint同期省略は別のdurable-prefix契約成立まで不可。
+
+全modeで、認証／API権限、現在のpeer／owner credential、read pin／selection／generation、barrier／handoff／fence／取消し、own-clock期限、元K_guard／D_guardと予算、現在checkpointとlocal head、source pre／post、保存／use／delivery／ACK／finishはcacheから独立に維持する。別owner・別call・awaitを跨いでlive成功を渡さない。再試行は元期限／counterを使い、署名／parse再利用を新しい実行許可としない。
+
+#### 9.106.7 資源・拒否分類・実装順・比較方法
+
+最初のS0-M fixture候補はownerごとprivate保存bytes合計16 MiB、proof entries 2,048、parsed nodes 25,000。Anchor＋registryの2 ownerでは合計32 MiB／4,096 entries／50,000 nodes以内で、既存budgetの小さい方を適用する。private bytes・object／Map／Set・key／index・未公開candidate・copy-on-write差分・返却copyを分けて予約する。共有bytesは実在するprivate buffer単位で一度だけ数えるが、別ownerへのcopyを同じメモリと計算しない。serialized size／node数の制限を実RSS上限とは呼ばず、peak RSSはprocess別に外部観測する。
+
+eviction／disabled cacheはfull検証へのmissだけで、正しさ・intent予約台帳の保持には影響しない。cache容量で原本のentry／bytes／historical stageを削除しない。IO／解析／同期／返却copyを含むcall全体の残予算が不足するなら、source取得／ACK前にcapacity又はdeadlineで拒否する。5秒lease／500ms marginを延ばさない。
+
+拒否理由候補は、入口の`schema/profile/permission unsupported`、`context_mismatch`、`freshness_unavailable`、`inventory_invalid`、`content_changed`、`rollback_detected`、`tail_unknown`、`checkpoint_unavailable`、`sync_failed`、`capacity_exhausted`、`request_expired`、`owner_closed/recovery_required`を分ける。nativeで既存コードが返る場合は対応表を固定し、unknown拒否を期限拒否へ分類しない。cache missは成功／拒否ではなく内部診断とする。
+
+| 工程 | 成果・進行条件 |
+|---|---|
+| CGP-S0a | S0-F/Mのstrict fixture contract・private bytes／context／prefix、故障対照。全IOと同期を維持してparse／stage再構成費用だけ比較 |
+| CGP-S0b | S0-F/Dのcall内再同期batch fixture。全chain認証・exact再読取・各file＋directory同期・境界列挙・失敗復旧の同値を先に実証。IO列挙削減とMAC／parse削減を別計測 |
+| CGP-S0c | S0-Pのfull／paged reference materializerとAnchor／registry両表現の対照。whole signed public wireを残す対照とcompact record候補を分離し、旧reader拒否・容量・保持閉包を確認 |
+| CGP-S0d | 同じobserver／依存／入力／承認条件、同じ履歴行数・bytes・terminal ageでF/M/D/Pを交互順に計測。別形式ではlogical workloadと履歴深さを揃え、実bytes／署名対象差を意図した変更として列挙。3 bootstrap以上・cold／warm・churn・miss／eviction・拒否／復旧を分離 |
+| CGP-S0x | 独立provider／inventory・immutable prefix・失効／drainとdurable prefixの別実証。未成立ならIO省略profileは閉じたまま |
+
+段階a/b/cの単独費用と組合せを分け、F/M等のguard・認可・期限・保存条件を共通化する。cold open／recoveryとread-onlyの固定深さ診断、graph read、writer advance、cache失効後のreadを別timed領域で記録する。fixture形式が違うpairのhead digest差を失敗にせず、workload／保持履歴や安全条件が違うpairをspeedup比較へ入れない。
+
+H0と同じcall／owner／phaseの出自・連番・件数照合を行い、inventory列挙回数／entries、IO返却bytes／read回数、hash／MAC／parse／canonical／full・suffix stage数、同期file／directory数、cache hit／miss／eviction／無効化、元予算、peak RSS、公開数、wallとexclusive phaseを保存する。inclusive RPC・owner時間は足し合わせない。初回だけ速い結果、拒否prefixの件数減少、診断中の同期を除外した値を8 read成立の根拠にしない。
+
+I1〜I4の再判断は、全bootstrapの比較可能な完了状態の中央値と全rawを用いる。分散・拒否／容量・unknown・partialも保持し、結果が割れれば未決定。実5 ownerとfresh gateを維持した継続readで有効性を実証できるまでは、CGP成立・速度採用・CG0／CG3の開放をしない。
+
+#### 9.106.8 回帰条件（SR01〜SR36、すべて未実施）
+
+各負例は他条件・署名／digest／予算を有効に保ち、狙った検査の拒否理由・source IO・解析／同期回数・公開／ACK・cache公開数を確認する。設計のID／整形checkや既存テスト通過は、下記runtime回帰の成立数に加算しない。
+
+| ID | 入力・期待結果 |
+|---|---|
+| SR01 | unknown mode／schema／profile・追加field・弱いgate設定を入口で拒否。全modeの共通条件とparser／observer pinを照合 |
+| SR02 | 任意JSON、偽造／別owner／別bootのhandle、同keyId別鍵をhitにできず、private proofを移植できない |
+| SR03 | fresh同一bytesのF/Mで全IO／blob hash／現在checkpoint／同期回数を維持。parse／pure stageだけ減ることを実counterで確認 |
+| SR04 | digest／size／stat／名前を同じにした別bytes又は衝突用test hashで、exact比較がhitを拒否。実MAC・record検査の不正をmissへ隠さない |
+| SR05 | role／index／descriptor順／chunk列・長さ・schemaの交換を拒否。同content別roleの解析結果を転用しない |
+| SR06 | caller／返却Buffer・配列・Map・Setの変更がprivate bytes／prefix／他callの結果を変えない |
+| SR07 | 正常appendのfull／suffix replayでledger・images・operation／stage集合・結果・拒否が一致。suffix0でも全gate・同期を維持 |
+| SR08 | middle byte改変・短縮・欠落・並替え・重複・同revision別headをrollback／integrity拒否。再署名・digest更新後も旧prefixは不一致 |
+| SR09 | operationId／requestDigest／API衝突、別operationのprevious receipt、stage重複・順序逆転をprefix跨ぎで拒否 |
+| SR10 | prefixのheadだけ正しくても集約byRef／operations／imagesが欠落・改変なら受理不可。handle再構成・部分prefix注入を拒否 |
+| SR11 | 旧root交換・同path再作成・storage instance／epoch／generation変更を検出。無認可変更をcache miss・自動世代移行へ格下げしない |
+| SR12 | restart／key rotation／schema・parser・policy変更で旧handle失効。新contextは承認full open／recoveryを要求し、旧資格・capabilityを復元しない |
+| SR13 | IO前の取消し／失効／期限到達でsource取得0。hitでも同じ。IO中／await後／返却直前はpost拒否し次取得・公開0 |
+| SR14 | 短いsession・長い再接続・reply紛失・unknownでも元deadline／counterを維持し、解析cacheで新attempt許可を作らない |
+| SR15 | cache cold／disabled／eviction／予算+1を対照。cache missはfull検証へ戻り、容量不足で原本・retained historyを削除しない |
+| SR16 | 同時call・owner終了・cache更新中の再入でcandidateを混ぜず、失敗candidateのhit／公開0。正しい旧committed factsも現gateなしで使わない |
+| SR17 | checkpoint tipの可視性・同一stat・古い成功情報だけでは同期省略不可。genesisを含む全認証・exact同期を実計数 |
+| SR18 | publish後のfile／directory同期失敗、再open・再試行は再同期成功までACK0。lookup／historical retryも同じ |
+| SR19 | Dで新file／pending pair／不正name／余剰file／未記録file／容量超過を拒否。作成・link・unlink・修復0、通常putへの作成fallback0 |
+| SR20 | Dの各fileでsymlink／hardlink／同path交換／FD・root差替えを拒否。認証bytesと同FDのfsync、前後の名前対応を検証 |
+| SR21 | Dのbatch境界・同期後から完了までの追加／削除／size変更を拒否。古いcall inventoryを別call・後のbatchの現inventoryと見なさない |
+| SR22 | Dの全file認証前・各file sync／directory sync前後へ故障を入れ、部分完了でも全体ACK0・candidate公開0。Fと復旧後のdurable headを対照 |
+| SR23 | DのFD／entry上限と+1、複数batch、境界列挙・全bytes・全同期counterを照合。batch上限を超えてFDを保持しない |
+| SR24 | pageのunknown field・重複logical key／ordinal、誤bucket／順序・count・digest／size、空field欠落、cycle／dangling refを拒否 |
+| SR25 | page／directory／rootのcapと+1、bucket overflow、全閉包budget不足を拒否。schemaの上限を黙って拡張しない |
+| SR26 | typed deltaのexpected old ref／parent root違い、競合add／replace／remove、順序変更・欠落を拒否。full materializerと毎操作後に一致 |
+| SR27 | 変更なしpageは同ref・再保存0、変更pathだけ新ref。cold materializeで全必要bytes検証を維持し、旧retained pageも到達可能 |
+| SR28 | 過去retry／checkpoint／holdのrefを残し、真の未記録fileと区別。logical removeで物理unlink0、GC／世代選択をpageから認可しない |
+| SR29 | whole public wireを残す対照では残存bytesを全計上。compact recordは別schema／profile・署名範囲で旧reader拒否、Anchor／registry／verifierのlogical結果を対照 |
+| SR30 | 同じhead／stat／flock・自己署名receipt・同UID対照・周期scrubしかないS0-Xはunsupported。原本読取省略0 |
+| SR31 | Xの正しいblob証拠だけでinventory省略不可、inventory証拠だけでbytes省略不可。prefix外・未記録suffixを見逃さない |
+| SR32 | Xのreceipt失効・provider restart／root変更・generation切替、drain／fence前の変更を拒否。現在性不明・不正をfull fallback成功へ変換しない |
+| SR33 | page／reuseがあってもfresh Anchor／registry・現pin／selection／barrier・source pre/post・use／delivery／ACK／finishの独立確認を実計数 |
+| SR34 | H0形式のevent／RPC／owner／phase／source閉包・件数を照合。総数を保つ差替え・欠落・modeだけ異なる安全設定をinvalid comparisonとして拒否 |
+| SR35 | 同じ完了深さ・workload・observerでF/M/D/Pの交互順／全bootstrap中央値と全rawを比較。失敗prefix・同期費用除外・別timed領域混在を速度改善へ算入しない |
+| SR36 | 5秒lease／500ms margin、cold／warm・writer advance・最大入力・miss／eviction・recovery・移行後、継続8 readを別scenarioで確認。未成立ならCG0／CG3を開かない |
+
+設計検証記録は`docs/validation/gradle-c3b-cgp-s0-design-2026-11-05.json`。本節のhelper・mode・page schema・SR回帰・native比較は全て未実装／未実施である。CG0／CG3、backendEligible、profileApproved、nativeIsolationVerified、independentRegistryVerifiedはfalse、originalReadsSkippedは0を維持する。次はCGP-S0aのstrict fixture contractとfresh bytes照合・pure prefixの限定実証から進む。

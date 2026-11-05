@@ -1,0 +1,135 @@
+{
+  "schema": "osv-mcp.cgp.s0-design.v1",
+  "date": "2026-11-05",
+  "status": "design-only",
+  "section": "9.106",
+  "scope": "Anchor/registry storage replay reuse safety, candidate helper contracts, state machine, page and checkpoint boundaries; no implementation or new native measurement",
+  "document": {
+    "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+    "sectionSha256": "52c0545c74fd426c85761922437b43a7315665940ece03e3d3c2e7bf510eb64c"
+  },
+  "h0Evidence": {
+    "path": "docs/validation/gradle-c3b-cgp-h0-2026-11-05.json",
+    "sha256": "d42e6cbd7219bb505ec0a14057a2cf7e42b7c500acbc6b6ca664497fff34cf7f",
+    "decisionUsed": "storage replay feasibility before CGP-I1/I2; existing H0 measurements not regenerated"
+  },
+  "sourceEvidence": {
+    "src/utils/gradleOwnedStoreFs.ts": "6746560c43f17cf272ec300985c79770b827a890dd44a69194696610e1dbbec1",
+    "src/utils/gradleOwnedStoreJournal.ts": "3e95764d5ab7e19ccd0339d73bf3a2290b6146dd067c9f0d0cee13ca5388c093",
+    "src/utils/gradleOwnedStoreCheckpoint.ts": "8875ec5c3d7c58001d7eb19b8df921e15ce3cc5c0a6967fc50f0ad006203846a",
+    "src/utils/gradleOwnedStoreDisk.ts": "c3b2a9a69fea0a9b11e3a6dffdbbaf1db67df490f9981ba91d2075b95c1eb1c2",
+    "src/utils/gradleOwnedStageStore.ts": "5df5d6595ac37ce76cb2573afc3e23d6e55553fed2425f0810ea57ebd9bbb77c",
+    "src/utils/gradleOwnedServiceStages.ts": "5e0dd5f8e122474d4da2af41687523a6e3ab908df75e04ee5f3d5eb5c47269cd",
+    "src/utils/gradleOwnedAnchorOwner.ts": "2fb299b1407670d79ac51f3e49c3eefeafe39de63691bc69cc78736d0c9e88a3",
+    "src/utils/gradleOwnedRegistryOwner.ts": "27eb48e09d58136c2661ebe1439371486038ab42eb31d50ae407912641e3d3fb",
+    "src/test/fixtures/gradleOwnedCgpPages.ts": "1cc484fcdb6bc63889dd9b8005cfce8cbf38f5f080ac659eb65d909b09719409"
+  },
+  "modes": {
+    "S0-F": "full control",
+    "S0-M": "pure facts only after full fresh IO and exact bytes/context match",
+    "S0-D": "call-local existing checkpoint resync batch, no creation or cross-call inventory reuse",
+    "S0-P": "typed page/delta materializer fixture, full retained closure still verified",
+    "S0-X": "cross-call IO skipping unsupported pending independent immutable provider, inventory and revocation/drain proofs"
+  },
+  "helperContracts": [
+    "openReplayContext",
+    "beginFreshReplay",
+    "matchPureFact",
+    "replaySuffix",
+    "completeReplay",
+    "resyncExistingBatch"
+  ],
+  "regressionConditions": [
+    "SR01",
+    "SR02",
+    "SR03",
+    "SR04",
+    "SR05",
+    "SR06",
+    "SR07",
+    "SR08",
+    "SR09",
+    "SR10",
+    "SR11",
+    "SR12",
+    "SR13",
+    "SR14",
+    "SR15",
+    "SR16",
+    "SR17",
+    "SR18",
+    "SR19",
+    "SR20",
+    "SR21",
+    "SR22",
+    "SR23",
+    "SR24",
+    "SR25",
+    "SR26",
+    "SR27",
+    "SR28",
+    "SR29",
+    "SR30",
+    "SR31",
+    "SR32",
+    "SR33",
+    "SR34",
+    "SR35",
+    "SR36"
+  ],
+  "regressionExecution": {
+    "runtimeConditionsExecuted": 0,
+    "nativeRuns": 0,
+    "helperImplemented": false,
+    "schemasImplemented": false,
+    "performanceImprovementEstablished": false,
+    "eightReadsEstablished": false
+  },
+  "designChecks": {
+    "sectionCount": 8,
+    "contiguousUniqueRegressionIds": 36,
+    "requiredContractNamesPresent": true,
+    "meaning": "structural documentation checks only, not proof of safety or runtime regressions"
+  },
+  "resourceCandidates": {
+    "owners": [
+      "control-anchor",
+      "lineage-registry"
+    ],
+    "privateCacheBytesPerOwner": 16777216,
+    "proofEntriesPerOwner": 2048,
+    "parsedNodesPerOwner": 25000,
+    "resyncMaxFDs": 64,
+    "rssBoundProven": false
+  },
+  "verification": {
+    "documentationTests": {
+      "passed": 3,
+      "failed": 0
+    },
+    "historicalH0Check": "passed",
+    "diffCheck": "passed",
+    "commands": [
+      "npx vitest run src/test/docs/commandExamples.test.ts --maxWorkers=1",
+      "node scripts/analyze-c3b-cgp-h0.mjs --check",
+      "git diff --check"
+    ]
+  },
+  "limitations": [
+    "All helper/mode/page contracts and SR01-SR36 runtime tests are future work.",
+    "RootedJournalIO stat/flock/content-addressed names are not immutability proofs.",
+    "Every checkpoint file and directory sync remains required in initial fixtures.",
+    "Paged private images alone do not remove whole public registry wire retained by Anchor.",
+    "S0-X and durable-prefix reuse require independent evidence, no fallback from observed corruption.",
+    "No product sources, historical native evidence, adoption gates or existing time limits changed."
+  ],
+  "flags": {
+    "cg0Proceed": false,
+    "cg3Proceed": false,
+    "backendEligible": false,
+    "profileApproved": false,
+    "nativeIsolationVerified": false,
+    "independentRegistryVerified": false,
+    "originalReadsSkipped": 0
+  }
+}
