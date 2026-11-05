@@ -137,8 +137,8 @@
     "src/utils/gradleOwnedStageStore.ts": "5df5d6595ac37ce76cb2573afc3e23d6e55553fed2425f0810ea57ebd9bbb77c"
   },
   "documentSha256": {
-    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "872c45906ad30ff01c5a3cb07d9ec61c136ca9a66770753e23ec2a1cd467e89e",
-    "docs/DESIGN_TODO.md": "6f9a50a9bb5c8167539e77691812e2d52a93b08871267986a6fe792ee267dba4"
+    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "6660de1e247340e2f170a3fc8b7cac3e971bf59816b3e3f461b7299ee876aa1d",
+    "docs/DESIGN_TODO.md": "deceea1a9a81052831eab2ca2a0112e9b986ed51ec270799925c9c3802080bb3"
   },
   "implementationStatus": {
     "verifiedFactsHelper": false,
@@ -500,7 +500,8 @@
     "guardApplicability": "all primary modes and serving observation coverage; bridge strengthening and cost separated",
     "stageOrder": "CGP-H0 added before candidate B; guards and CGI01-32 not relaxed",
     "stageCoverage": "CGI21,26,27,29-32 assigned to CGP-I3/I4",
-    "slotCapacity": "partition and size are CGP-I0 decisions"
+    "slotCapacity": "partition and size are CGP-I0 decisions",
+    "slotCapacityWorstCase": "37 was an observed count, not a worst case under the former 256-entry limits; limits are now fixed so 43 per read and 344 for eight reads are derived and checked at bootstrap"
   },
   "guardApplicability": {
     "designRequirementOnly": true,
@@ -1199,6 +1200,26 @@
       "B*AtDeltaTen": 216
     },
     "capacityRefusalSeparatedFromSpeed": true,
-    "decided": false
+    "decided": true,
+    "decidedIn": "section 9.104 review fix",
+    "partition": "owner-shared",
+    "maxSlots": 512,
+    "observedOperationsPerRead": 37,
+    "observedBreakdown": {
+      "control": 3,
+      "sourcePasses": 2,
+      "inventoryPerPass": 1,
+      "dataPerPass": 16
+    },
+    "workloadLimits": {
+      "maxEntries": 9,
+      "maxDataBytes": 41460,
+      "maxInventoryBytes": 4096,
+      "maxBatches": 19
+    },
+    "worstOperationsPerRead": 43,
+    "worstEightReads": 344,
+    "spareSlots": 168,
+    "scope": "comparison condition for this workload; not a general capacity or an eight-read guarantee"
   }
 }

@@ -3013,3 +3013,5 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 
 
 §9.104レビュー修正：現在のsession期限をretry／完了時にも適用し、元期限・予算を保持する。完全なstrict response（snapshot／inventoryDigest／transferIdを含む）でwire見積り・packing・署名／context照合を行い、再署名後の交換・欠落も拒否する。追加40件を含む68件の限定回帰を確認。本番／native採用0、CGP-H0以降の残課題は継続。
+
+§9.104再レビュー修正：session終了後もunknown／ended／retireを記録できるようにし、切断後のexact retryを復旧。range commandは検証済みinventoryから再計画したplanのhandleがある場合だけ認可し、全replyとentry digestの照合後にだけ返す。37は実測値だったため、workload上限を9 entry・41,460 Bに固定し、算出値43×8=344件が512枠以内であることをbootstrapで検査する。主要な検査62か所の除去で61か所を検出（残る1か所は別検査で同結果）。本番／native採用0、次はCGP-H0、CG0／CG3保留。

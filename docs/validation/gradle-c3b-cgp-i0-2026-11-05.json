@@ -21,37 +21,49 @@
     "originalReadsSkipped": 0
   },
   "verification": {
-    "targetedI0Tests": 65,
+    "targetedI0Tests": 142,
     "documentationTests": 3,
-    "testFiles": 5,
+    "testFiles": 6,
     "failed": 0,
     "typecheck": "passed",
     "build": "passed",
     "nativeRuns": 0,
-    "fullSuiteRun": false,
+    "fullSuiteRun": true,
     "initialRecordDocumentationFailure": "Record command examples used a local proxy prefix; normalized to portable commands, then rerun.",
     "reviewRegressionTests": 40,
     "reviewRedPhase": {
       "tests": 17,
       "failed": 17,
       "scope": "four modes x both endpoints: expired-session retry and completion, plus missing reply context"
+    },
+    "fullSuite": {
+      "passed": 5723,
+      "skipped": 1419,
+      "failed": 0
     }
   },
   "commands": [
     "npm run typecheck",
     "npm run build",
-    "npx vitest run src/test/utils/gradleOwnedCgpI0ReviewFix.test.ts src/test/utils/gradleOwnedCgpI0Contract.test.ts src/test/utils/gradleOwnedCgpI0Guard.test.ts src/test/utils/gradleOwnedCgpI0Manifest.test.ts src/test/docs/commandExamples.test.ts --maxWorkers=1",
+    "npx vitest run src/test/utils/gradleOwnedCgpI0ReviewFix.test.ts src/test/utils/gradleOwnedCgpI0Regression.test.ts src/test/utils/gradleOwnedCgpI0Contract.test.ts src/test/utils/gradleOwnedCgpI0Guard.test.ts src/test/utils/gradleOwnedCgpI0Manifest.test.ts src/test/docs/commandExamples.test.ts --maxWorkers=1",
     "git diff --check"
   ],
   "guard": {
+    "schema": "cgp.i0.guard-policy.v1",
+    "implementation": "common-cgp-intent-guard-v1",
+    "coverage": "serving-source-observations-v1",
+    "enabled": true,
     "partition": "owner-shared",
-    "slots": 512,
     "targetReads": 8,
-    "scalarOperationsPerRead": 37,
-    "eviction": false,
-    "attempts": 2,
+    "sourcePassesPerRead": 2,
+    "scalarControlOperationsPerRead": 3,
+    "scalarOperationsPerRead": 43,
+    "maxSlots": 512,
+    "maxSerializedBytes": 262144,
+    "maxAttempts": 2,
     "leaseMs": 5000,
-    "marginMs": 500
+    "marginMs": 500,
+    "noEviction": true
   },
   "limitations": [
     "Simulated authenticated context, not IPC signature authorization.",
@@ -59,24 +71,56 @@
     "No source dispatch, live cancellation or freshness witness.",
     "Structural work/serialized state limits are not CPU or heap performance evidence.",
     "No S_ref bridge, native isolation, workload performance or original read skipping.",
-    "Existing uncommitted design/history edits are preserved; historical native measurements are not regenerated."
+    "The workload limits describe this comparison only; a larger inventory is refused before any read, not supported.",
+    "Outcome recording after a session ends is a fixture call, not a native termination witness."
   ],
   "sources": {
-    "src/test/fixtures/gradleOwnedCgpI0Authority.ts": "231a03240b2c4beed3181c2255268f26743259c17c736d047cdadcf92ae13d49",
-    "src/test/fixtures/gradleOwnedCgpI0Case.ts": "020d218d22ce769c5b6dacd0a2bd795527e4d6d9c5edef2a8957ac8fa37ea2cb",
-    "src/test/fixtures/gradleOwnedCgpI0Guard.ts": "2b216ee6a435ce6983eaf5b820625661c396a0c5ca62bab9fa10ef4b7482a3b2",
-    "src/test/fixtures/gradleOwnedCgpI0Planner.ts": "2d377a31806226d4bb71abc5a723e62396ebf793a46230c8c5efcb4a11ce8719",
-    "src/test/fixtures/gradleOwnedCgpI0Schema.ts": "beabda777666d51d0d1e22a1ed1d38fcb69e87ea45a210d1d778324f53b01368",
-    "src/test/fixtures/gradleOwnedCgpI0Wire.ts": "a012fafd43d299b36935f4abe405e275904b828a8791720912f813745105c61f",
-    "src/test/utils/gradleOwnedCgpI0Contract.test.ts": "ed2b78995c36008111535d684942579c40da23d3ac1f3af4c533d557c04a240f",
-    "src/test/utils/gradleOwnedCgpI0Guard.test.ts": "c3d5942ca1df245ba14fc422d705da23476a5cc454999dad957c22a109eb3ea6",
-    "src/test/utils/gradleOwnedCgpI0Manifest.test.ts": "2a54afc5b105e49d1c233997849cff6596f7c67bed62d24e109b2e181359b0c6",
-    "src/test/utils/gradleOwnedCgpI0ReviewFix.test.ts": "d71ef736d29d2aca1058f1ee67be8f9290ecd6658d73da4434689385cc77c82f"
+    "src/test/fixtures/gradleOwnedCgpI0Authority.ts": "7a0a566379dd20b223c4b477e9d81e6aae99f6a7dea4c8d615ebf7f356149455",
+    "src/test/fixtures/gradleOwnedCgpI0Case.ts": "b35cb70e79373acea7e8dd80b0c147b693ee872e3aedf99d01e7028865b03ab5",
+    "src/test/fixtures/gradleOwnedCgpI0Guard.ts": "8012fce8fc9b18ad84df3f787946ac89e07ecadc509646a4228db525ef5caa94",
+    "src/test/fixtures/gradleOwnedCgpI0Planner.ts": "f1fa151fc25859400f34dcacde3d60297be156e9a5d0aec8c0c39a72f3ff2c7f",
+    "src/test/fixtures/gradleOwnedCgpI0Schema.ts": "a8afc49b44e8b9b8af53764cf87f32afaa77b04d09eccfbd30e5732076ddb9ed",
+    "src/test/fixtures/gradleOwnedCgpI0Wire.ts": "6780f73de875092b6bf3ed520998904da8aa3b2ff7fde3fff3a2083c105ad761",
+    "src/test/utils/gradleOwnedCgpI0Contract.test.ts": "82c2c5a2d75eb06c504b6b049f2081642c6e2ef3dcb2823c07eaeb8fd2dadc6a",
+    "src/test/utils/gradleOwnedCgpI0Guard.test.ts": "c36400c04167238e505537edcd91475920d592bfb24abfb104c860171dca97be",
+    "src/test/utils/gradleOwnedCgpI0Manifest.test.ts": "09106c5c87377657f8832cc8fc4d840cd0a5753a17f38d625d70a25e555a90b5",
+    "src/test/utils/gradleOwnedCgpI0Regression.test.ts": "b9800ab1c8d3105294d251d6adeb52516f34af3fc638a2fd4d471b1aaa1ed2c3",
+    "src/test/utils/gradleOwnedCgpI0ReviewFix.test.ts": "6b3b37cc8bd3a03068e03b67bdb898bc2fb764be792fe0974be926af97d4f258"
   },
   "reviewFixes": {
     "sessionDeadline": "begin and lease transitions compare current session deadline with retained original deadline; retries never refill counters",
     "completeReply": "strict snapshot, inventoryDigest, transferId, requestDigest, planDigest and exact parts; authority-pinned inventory and expected public-key signature validation",
     "negativeCases": "re-signed missing, swapped and extra response fields, altered parts, wrong signing key and oversized reply",
     "runtimeAdoption": false
+  },
+  "workload": {
+    "maxEntries": 9,
+    "maxDataBytes": 41460,
+    "maxBatches": 19
+  },
+  "slotDerivation": {
+    "observedOperationsPerRead": 37,
+    "worstDataChunks": 19,
+    "worstOperationsPerRead": 43,
+    "worstEightReads": 344,
+    "spareSlots": 168,
+    "maxInventoryBytes": 4096
+  },
+  "reviewFixes2": {
+    "sessionEnd": "unknown, ended and retire no longer need a live session; the deadline is fixed in the lease; only complete needs current authorization",
+    "rangeAuthorization": "a range command needs a verified plan handle replanned from verified inventory; estimate results cannot begin or accept a reply",
+    "noPartialResult": "i0ReceiveTransfer returns entries only after every reply and entry digest match",
+    "slotDerivation": "operations per read and slots are derived from the workload limits and checked at bootstrap",
+    "mutation": {
+      "checksRemoved": 62,
+      "detected": 61,
+      "equivalent": "reply total bytes: the same result follows from part length and range total checks",
+      "method": "manual script in a throwaway copy; not repeatable from the repository"
+    },
+    "runtimeAdoption": false
+  },
+  "documentSha256": {
+    "docs/DESIGN_TODO.md": "deceea1a9a81052831eab2ca2a0112e9b986ed51ec270799925c9c3802080bb3",
+    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "6660de1e247340e2f170a3fc8b7cac3e971bf59816b3e3f461b7299ee876aa1d"
   }
 }

@@ -11,19 +11,23 @@ export const i0Same=(a:unknown,b:unknown)=>canonicalOwnedJson(a)===canonicalOwne
 export const i0ModeSchema=z.enum(['S*','A*','B*','AB*']);
 export type I0Mode=z.infer<typeof i0ModeSchema>;
 export const I0_FLAGS=Object.freeze({backendEligible:false,profileApproved:false,nativeIsolationVerified:false,independentRegistryVerified:false,originalReadsSkipped:0});
-export const i0GuardPolicySchema=z.object({schema:z.literal('cgp.i0.guard-policy.v1'),implementation:z.literal('common-cgp-intent-guard-v1'),coverage:z.literal('serving-source-observations-v1'),enabled:z.literal(true),partition:z.literal('owner-shared'),targetReads:z.literal(8),scalarOperationsPerRead:z.literal(37),maxSlots:cn.min(296).max(512),maxSerializedBytes:cn.positive().max(1024*1024),maxAttempts:z.literal(2),leaseMs:z.literal(5000),marginMs:z.literal(500),noEviction:z.literal(true)}).strict();
-export const I0_GUARD_POLICY=Object.freeze({schema:'cgp.i0.guard-policy.v1',implementation:'common-cgp-intent-guard-v1',coverage:'serving-source-observations-v1',enabled:true,partition:'owner-shared',targetReads:8,scalarOperationsPerRead:37,maxSlots:512,maxSerializedBytes:262144,maxAttempts:2,leaseMs:5000,marginMs:500,noEviction:true} as const);
+export const i0GuardPolicySchema=z.object({schema:z.literal('cgp.i0.guard-policy.v1'),implementation:z.literal('common-cgp-intent-guard-v1'),coverage:z.literal('serving-source-observations-v1'),enabled:z.literal(true),partition:z.literal('owner-shared'),targetReads:z.literal(8),sourcePassesPerRead:z.literal(2),scalarControlOperationsPerRead:z.literal(3),scalarOperationsPerRead:cn.positive(),maxSlots:cn.positive().max(512),maxSerializedBytes:cn.positive().max(1024*1024),maxAttempts:z.literal(2),leaseMs:z.literal(5000),marginMs:z.literal(500),noEviction:z.literal(true)}).strict();
+export const I0_GUARD_POLICY=Object.freeze({schema:'cgp.i0.guard-policy.v1',implementation:'common-cgp-intent-guard-v1',coverage:'serving-source-observations-v1',enabled:true,partition:'owner-shared',targetReads:8,sourcePassesPerRead:2,scalarControlOperationsPerRead:3,scalarOperationsPerRead:43,maxSlots:512,maxSerializedBytes:262144,maxAttempts:2,leaseMs:5000,marginMs:500,noEviction:true} as const);
 const readPlan=z.object({schema:z.literal('cgp.i0.read-plan.v4'),algorithm:z.enum(['scalar-control-v1','ranges-v1']),maxBatches:cn.positive().max(256),maxDataBytes:cn.positive().max(192*1024),maxEntries:cn.positive().max(256),maxWireBytes:cn.positive().max(64*1024*1024),maxWorkUnits:cn.positive().max(64*1024*1024)}).strict();
 export const i0ManifestSchema=z.object({schema:z.literal('cgp.i0.mode-manifest.v1'),mode:i0ModeSchema,serviceProfile:chash,producerPolicy:chash,observerDigest:chash,guard:i0GuardPolicySchema,guardDigest:chash,facts:z.boolean(),readPlan,fixtureApproved:z.literal(true)}).strict();
 export type I0Manifest=z.infer<typeof i0ManifestSchema>;
 export const i0PinsSchema=z.object({manifestDigest:chash,serviceProfile:chash,producerPolicy:chash,observerDigest:chash,guardDigest:chash}).strict();
 export type I0Pins=z.infer<typeof i0PinsSchema>;
+/** The largest scalar data chunk count any inventory within these limits can need: each entry adds less than one full chunk of rounding. */
+export const i0WorstDataChunks=(plan:{maxEntries:number;maxDataBytes:number})=>Math.floor((plan.maxDataBytes+plan.maxEntries*4095)/4096);
+export const i0WorstOperationsPerRead=(guard:{scalarControlOperationsPerRead:number;sourcePassesPerRead:number},plan:{maxEntries:number;maxDataBytes:number})=>guard.scalarControlOperationsPerRead+guard.sourcePassesPerRead*(1+i0WorstDataChunks(plan));
 export type I0ManifestHandle=Readonly<{kind:'cgp-i0-manifest'}>;
 const manifests=new WeakMap<I0ManifestHandle,I0Manifest>();
 export function i0Bootstrap(input:unknown,pinsInput:unknown){const m=i0Parse(i0ManifestSchema,input),p=i0Parse(i0PinsSchema,pinsInput);
  i0Need(ownedDigest(m)===p.manifestDigest&&m.serviceProfile===p.serviceProfile&&m.producerPolicy===p.producerPolicy&&m.observerDigest===p.observerDigest,'manifest_pin_mismatch');
  i0Need(ownedDigest(m.guard)===m.guardDigest&&m.guardDigest===p.guardDigest,'guard_policy_mismatch');
  i0Need(m.facts===['A*','AB*'].includes(m.mode)&&m.readPlan.algorithm===(['B*','AB*'].includes(m.mode)?'ranges-v1':'scalar-control-v1'),'mode_mismatch');
+ i0Need(m.guard.scalarOperationsPerRead===i0WorstOperationsPerRead(m.guard,m.readPlan)&&m.readPlan.maxBatches<=i0WorstDataChunks(m.readPlan)&&m.guard.maxSlots>=m.guard.targetReads*m.guard.scalarOperationsPerRead,'slot_capacity_insufficient');
  const handle=Object.freeze({kind:'cgp-i0-manifest' as const});manifests.set(handle,structuredClone(m));return handle;
 }
 export function i0Manifest(handle:I0ManifestHandle){const m=manifests.get(handle);i0Need(m,'manifest_handle_invalid');return structuredClone(m);}

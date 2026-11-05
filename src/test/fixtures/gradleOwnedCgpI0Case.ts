@@ -3,9 +3,12 @@ import {ownedDigest as h,ownedSha256 as hash,canonicalOwnedJson} from '../../uti
 import {makeSourceCommand} from '../../utils/gradleOwnedSourceSchema.js';
 import {registryBinding} from './gradleOwnedRegistryFixture.js';
 import {I0_GUARD_POLICY,i0MakeBatch,type I0Mode,type I0Manifest} from './gradleOwnedCgpI0Schema.js';
-import {CgpI0Authority} from './gradleOwnedCgpI0Authority.js';
+import {CgpI0Authority,type I0Session} from './gradleOwnedCgpI0Authority.js';
+import {i0Plan} from './gradleOwnedCgpI0Planner.js';
+/** The current native workload: 9 entries and 41,460 B. Observed 37 operations per read; the limits allow 43. */
+export const I0_WORKLOAD=Object.freeze({maxEntries:9,maxDataBytes:41460,maxBatches:19});
 export function manifestCase(mode:I0Mode='B*'){
- const manifest:I0Manifest={schema:'cgp.i0.mode-manifest.v1',mode,serviceProfile:hash('P_exp'),producerPolicy:hash('policy'),observerDigest:hash('observer'),guard:structuredClone(I0_GUARD_POLICY),guardDigest:h(I0_GUARD_POLICY),facts:['A*','AB*'].includes(mode),readPlan:{schema:'cgp.i0.read-plan.v4',algorithm:['B*','AB*'].includes(mode)?'ranges-v1':'scalar-control-v1',maxBatches:256,maxDataBytes:196608,maxEntries:256,maxWireBytes:64*1024*1024,maxWorkUnits:64*1024*1024},fixtureApproved:true};
+ const manifest:I0Manifest={schema:'cgp.i0.mode-manifest.v1',mode,serviceProfile:hash('P_exp'),producerPolicy:hash('policy'),observerDigest:hash('observer'),guard:structuredClone(I0_GUARD_POLICY),guardDigest:h(I0_GUARD_POLICY),facts:['A*','AB*'].includes(mode),readPlan:{schema:'cgp.i0.read-plan.v4',algorithm:['B*','AB*'].includes(mode)?'ranges-v1':'scalar-control-v1',...I0_WORKLOAD,maxWireBytes:64*1024*1024,maxWorkUnits:64*1024*1024},fixtureApproved:true};
  const pins={manifestDigest:h(manifest),serviceProfile:manifest.serviceProfile,producerPolicy:manifest.producerPolicy,observerDigest:manifest.observerDigest,guardDigest:manifest.guardDigest};return {manifest,pins};
 }
 export function i0Case(mode:I0Mode='B*',sizes=[600,700,1600,2000,3000]){
@@ -16,10 +19,19 @@ export function i0Case(mode:I0Mode='B*',sizes=[600,700,1600,2000,3000]){
  const config={...m,scope:{binding,lineage,pin,reader,server},inventoryPin,principals};
  const authority=new CgpI0Authority(config);
  function open(role='reader',domain='server-clock',deadline=4500,readId='read-1'){return authority.open(identity(role).credentialId,domain,deadline,readId);}
- function command(role='reader',api?:string,payload?:any,operationId='op-1'){
+ function command(role='reader',api?:string,payload?:any,operationId='op-1',transferId='transfer'){
   const peer=identity(role),batch=['B*','AB*'].includes(mode);api??=role==='checkpoint-issuer'?'aux.ResolveNamespace':batch?'aux.ReadSourceRanges':'aux.ReadSealedSource';
-  payload??=api==='aux.ResolveNamespace'?{snapshot,target:pin,origin:reader}:api==='aux.ReadSourceDescriptor'?{snapshot,checkpoint,pin}:{snapshot,checkpoint,pin,...(role==='reader'?{}:{origin:reader}),transferId:'transfer',...(api==='aux.ReadSourceRanges'?{planDigest:hash('plan'),ranges:[{ordinal:0,kind:entries[0]!.kind,index:0,offset:0,length:Math.min(16,entries[0]!.byteLength),entry:{sha256:entries[0]!.sha256,byteLength:entries[0]!.byteLength}}],byteBudget:Math.min(16,entries[0]!.byteLength)}:{kind:'commit',index:0,offset:0,maxBytes:Math.min(16,entries[0]!.byteLength)})};
+  payload??=api==='aux.ResolveNamespace'?{snapshot,target:pin,origin:reader}:api==='aux.ReadSourceDescriptor'?{snapshot,checkpoint,pin}:{snapshot,checkpoint,pin,...(role==='reader'?{}:{origin:reader}),transferId,...(api==='aux.ReadSourceRanges'?{planDigest:hash('plan'),ranges:[{ordinal:0,kind:entries[0]!.kind,index:0,offset:0,length:Math.min(16,entries[0]!.byteLength),entry:{sha256:entries[0]!.sha256,byteLength:entries[0]!.byteLength}}],byteBudget:Math.min(16,entries[0]!.byteLength)}:{kind:'commit',index:0,offset:0,maxBytes:Math.min(16,entries[0]!.byteLength)})};
   return api==='aux.ReadSourceRanges'?i0MakeBatch({schema:'osv-mcp.cgp.source-command.v2',api,purpose:'read',operationId,peer,lineage,binding,payload}):makeSourceCommand({api:api as any,operationId,peer,lineage,binding,payload});
  }
- return {config,manifest:m.manifest,pins:m.pins,authority,open,command,reader,server,identity,binding,lineage,snapshot,checkpoint,pin,metadata,entries,data,inventory,inventoryPin};
+ const planned=new Map<string,{transferId:string;operationId:string}>();
+ function plan(session:I0Session,transferId:string,operationId:string){const inventoryHandle=authority.verifyInventory(session,inventory),value=i0Plan(authority,session,inventoryHandle,transferId,operationId);return {inventoryHandle,value,sealed:authority.sealPlan(session,inventoryHandle,transferId,value,operationId)};}
+ /** A command that can really dispatch in this mode: scalar as built, ranges as the first command of a verified plan. */
+ function planCommand(role='reader',operationId='op-1',transferId='transfer'){
+  if(!['B*','AB*'].includes(mode))return command(role,undefined,undefined,operationId,transferId);
+  const session=open(role),q=plan(session,transferId,operationId).value.commands[0]!;authority.closeSession(session);planned.set(q.requestDigest,{transferId,operationId});return q;
+ }
+ function authorize(session:I0Session,q:ReturnType<typeof command>){const meta=planned.get(q.requestDigest);return meta?authority.authorize(session,q,plan(session,meta.transferId,meta.operationId).sealed):authority.authorize(session,q);}
+ const partsFor=(q:any):Buffer[]=>q.payload.ranges.map((r:any)=>data[entries.findIndex(e=>e.kind===r.kind&&e.index===r.index)]!.subarray(r.offset,r.offset+r.length));
+ return {plan,planCommand,authorize,partsFor,config,manifest:m.manifest,pins:m.pins,authority,open,command,reader,server,identity,binding,lineage,snapshot,checkpoint,pin,metadata,entries,data,inventory,inventoryPin};
 }

@@ -4,7 +4,7 @@ import {serviceIdentitySchema} from '../../utils/gradleOwnedServiceOwners.js';
 /** Exact fixture layout, deliberately not registered in the production session API. */
 import {sign,verify,type KeyObject} from 'node:crypto';
 import {canonicalOwnedJson,ownedSha256,ownedDigest} from '../../utils/gradleOwnedJson.js';
-import {i0Intent,type I0Authorized} from './gradleOwnedCgpI0Authority.js';
+import {i0Intent,i0DispatchIntent,type I0Authorized} from './gradleOwnedCgpI0Authority.js';
 import {i0Need,i0Parse,i0Same,i0RangeSchema,type I0Range} from './gradleOwnedCgpI0Schema.js';
 const zero='0'.repeat(64),signature=Buffer.alloc(64).toString('base64');
 const bytes=(v:unknown)=>Buffer.from(canonicalOwnedJson(v));
@@ -19,14 +19,13 @@ export function i0Wire(intent:I0Authorized,parts?:Buffer[],keys?:{request:KeyObj
  const frames=[seal('osv-mcp.q2.c3b.auth.v1','request',{...common,kind:'challenge-request',sequence:511,requestId:q.requestDigest}),seal('osv-mcp.q2.c3b.auth.v1','reply',{...common,kind:'challenge',sequence:511,requestId:q.requestDigest,challenge:zero}),seal('osv-mcp.q2.c3b.auth.v1','request',{...common,kind:'channel',sequence:512,challenge:zero,innerWireDigest:ownedSha256(request)}),seal('osv-mcp.q2.c3b.auth.v1','reply',{...common,kind:'channel',sequence:512,challenge:zero,innerWireDigest:ownedSha256(reply)})];
  i0WireLimits(request.length,reply.length,frames.map(b=>b.length));i0ValidateReplyBody(intent,JSON.parse(reply.toString('utf8')).body);return {request,reply,frames,total:request.length+reply.length+frames.reduce((n,b)=>n+b.length,0)};
 }
-export function i0ValidateParts(ranges:I0Range[],parts:Buffer[],entries:Map<string,Buffer>){i0Need(parts.length===ranges.length,'reply_parts_invalid');ranges.forEach((r,i)=>{const source=entries.get(r.kind+':'+r.index);i0Need(source&&source.length===r.entry.byteLength&&ownedSha256(source)===r.entry.sha256&&parts[i]!.equals(source.subarray(r.offset,r.offset+r.length)),'reply_bytes_invalid');});}
 
 const partSchema=i0RangeSchema.omit({length:true}).extend({totalBytes:cn.positive().max(192*1024),bytes:z.string().min(4).max(5464).regex(/^[A-Za-z0-9+/]+={0,2}$/),sha256:chash}).strict();
 export const i0ReplySchema=z.object({schema:z.literal('cgp.i0.range-reply.v1'),api:z.literal('ReadSourceRanges'),requestDigest:chash,snapshot:cref('snapshot'),inventoryDigest:chash,transferId:cid,planDigest:chash,parts:z.array(partSchema).min(1).max(4)}).strict();
 const replyEnvelopeSchema=z.object({schema:z.literal('osv-mcp.q2.c3b.owner-envelope.v1'),identity:serviceIdentitySchema,keyId:cid,direction:z.literal('reply'),domain:z.literal('aux'),api:z.literal('ReadSourceRanges'),body:i0ReplySchema,signature:z.string().regex(/^[A-Za-z0-9+/]{86}==$/)}).strict();
 /** Trusted expected intent and public key are supplied by the fixture, never derived from the reply. */
 export function i0ValidateReply(intent:I0Authorized,wire:Buffer,publicKey:KeyObject){
- const f=i0Intent(intent),q=f.command;i0Need(q.api==='aux.ReadSourceRanges','wire_api_invalid');
+ const f=i0DispatchIntent(intent),q=f.command;i0Need(q.api==='aux.ReadSourceRanges','wire_api_invalid');
  const envelope=i0Parse(replyEnvelopeSchema,decodeCurrent(wire,8192)),{signature:sig,...unsigned}=envelope;
  i0Need(i0Same(envelope.identity,f.server)&&envelope.keyId===f.server.credentialId,'reply_identity_mismatch');
  i0Need(verify(null,bytes(unsigned),publicKey,Buffer.from(sig,'base64')),'reply_signature_invalid');
