@@ -3003,3 +3003,13 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 
 - `eb2f257`で失敗していたc3b2〜c3b5の照合テスト4件を、旧ハッシュを残す既存の作法で修正。c3b5の観測は再測定していない。
 - history検査を1実装へ集約し条件ごとの回帰を追加。記録項目は再生成で保持する。全体suiteは失敗0、修正前に出た名前不明の失敗3件は原因不明。初回readの成否は実行ごとに変わり、load average平均値だけでは説明できない。
+
+
+§9.104 CGP-I0 fixture contract：
+
+- strict schema／API認可／共通intent guard／mode manifest／range planner／exact signed wire見積りとCGI01〜06・17・23・28の静的回帰を追加。
+- owner共有512 retained slotsを全primaryで固定。容量拒否は比較から分離する。模擬context・固定wire layoutの限定検証であり、本番／native採用0。
+- 次はCGP-H0の履歴増大分解と順序判断。I1のopaque facts＋live gate接続、I2の単一fresh取得・pre/post・実session wire、I3／I4のnative比較は未実施。CG0／CG3保留。
+
+
+§9.104レビュー修正：現在のsession期限をretry／完了時にも適用し、元期限・予算を保持する。完全なstrict response（snapshot／inventoryDigest／transferIdを含む）でwire見積り・packing・署名／context照合を行い、再署名後の交換・欠落も拒否する。追加40件を含む68件の限定回帰を確認。本番／native採用0、CGP-H0以降の残課題は継続。

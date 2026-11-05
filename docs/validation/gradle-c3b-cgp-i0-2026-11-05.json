@@ -1,0 +1,82 @@
+{
+  "schema": "cgp-i0-validation.v1",
+  "date": "2026-11-05",
+  "scope": "static fixture contract only",
+  "coverage": [
+    "CGI01",
+    "CGI02",
+    "CGI03",
+    "CGI04",
+    "CGI05",
+    "CGI06",
+    "CGI17",
+    "CGI23",
+    "CGI28"
+  ],
+  "flags": {
+    "backendEligible": false,
+    "profileApproved": false,
+    "nativeIsolationVerified": false,
+    "independentRegistryVerified": false,
+    "originalReadsSkipped": 0
+  },
+  "verification": {
+    "targetedI0Tests": 65,
+    "documentationTests": 3,
+    "testFiles": 5,
+    "failed": 0,
+    "typecheck": "passed",
+    "build": "passed",
+    "nativeRuns": 0,
+    "fullSuiteRun": false,
+    "initialRecordDocumentationFailure": "Record command examples used a local proxy prefix; normalized to portable commands, then rerun.",
+    "reviewRegressionTests": 40,
+    "reviewRedPhase": {
+      "tests": 17,
+      "failed": 17,
+      "scope": "four modes x both endpoints: expired-session retry and completion, plus missing reply context"
+    }
+  },
+  "commands": [
+    "npm run typecheck",
+    "npm run build",
+    "npx vitest run src/test/utils/gradleOwnedCgpI0ReviewFix.test.ts src/test/utils/gradleOwnedCgpI0Contract.test.ts src/test/utils/gradleOwnedCgpI0Guard.test.ts src/test/utils/gradleOwnedCgpI0Manifest.test.ts src/test/docs/commandExamples.test.ts --maxWorkers=1",
+    "git diff --check"
+  ],
+  "guard": {
+    "partition": "owner-shared",
+    "slots": 512,
+    "targetReads": 8,
+    "scalarOperationsPerRead": 37,
+    "eviction": false,
+    "attempts": 2,
+    "leaseMs": 5000,
+    "marginMs": 500
+  },
+  "limitations": [
+    "Simulated authenticated context, not IPC signature authorization.",
+    "Exact size applies to the explicit fixed fixture layout; actual signed lengths are compared.",
+    "No source dispatch, live cancellation or freshness witness.",
+    "Structural work/serialized state limits are not CPU or heap performance evidence.",
+    "No S_ref bridge, native isolation, workload performance or original read skipping.",
+    "Existing uncommitted design/history edits are preserved; historical native measurements are not regenerated."
+  ],
+  "sources": {
+    "src/test/fixtures/gradleOwnedCgpI0Authority.ts": "231a03240b2c4beed3181c2255268f26743259c17c736d047cdadcf92ae13d49",
+    "src/test/fixtures/gradleOwnedCgpI0Case.ts": "020d218d22ce769c5b6dacd0a2bd795527e4d6d9c5edef2a8957ac8fa37ea2cb",
+    "src/test/fixtures/gradleOwnedCgpI0Guard.ts": "2b216ee6a435ce6983eaf5b820625661c396a0c5ca62bab9fa10ef4b7482a3b2",
+    "src/test/fixtures/gradleOwnedCgpI0Planner.ts": "2d377a31806226d4bb71abc5a723e62396ebf793a46230c8c5efcb4a11ce8719",
+    "src/test/fixtures/gradleOwnedCgpI0Schema.ts": "beabda777666d51d0d1e22a1ed1d38fcb69e87ea45a210d1d778324f53b01368",
+    "src/test/fixtures/gradleOwnedCgpI0Wire.ts": "a012fafd43d299b36935f4abe405e275904b828a8791720912f813745105c61f",
+    "src/test/utils/gradleOwnedCgpI0Contract.test.ts": "ed2b78995c36008111535d684942579c40da23d3ac1f3af4c533d557c04a240f",
+    "src/test/utils/gradleOwnedCgpI0Guard.test.ts": "c3d5942ca1df245ba14fc422d705da23476a5cc454999dad957c22a109eb3ea6",
+    "src/test/utils/gradleOwnedCgpI0Manifest.test.ts": "2a54afc5b105e49d1c233997849cff6596f7c67bed62d24e109b2e181359b0c6",
+    "src/test/utils/gradleOwnedCgpI0ReviewFix.test.ts": "d71ef736d29d2aca1058f1ee67be8f9290ecd6658d73da4434689385cc77c82f"
+  },
+  "reviewFixes": {
+    "sessionDeadline": "begin and lease transitions compare current session deadline with retained original deadline; retries never refill counters",
+    "completeReply": "strict snapshot, inventoryDigest, transferId, requestDigest, planDigest and exact parts; authority-pinned inventory and expected public-key signature validation",
+    "negativeCases": "re-signed missing, swapped and extra response fields, altered parts, wrong signing key and oversized reply",
+    "runtimeAdoption": false
+  }
+}

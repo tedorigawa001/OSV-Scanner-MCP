@@ -7353,3 +7353,35 @@ compiled artifact・実行source閉包は全modeで保存する。共通binary�
 測定項目はreadのwall time、完了率（全試行を分母）、期限／容量／その他拒否、公開差分、owner別CPU、API別call、readCommittedとcommit／recover内部history、disk bytes、parse／署名検証回数、decoded／wire bytes、pre／post・batch取得回数、peak private memory・slice CPU、stage／request／entry残量とdrain時間。inclusive値は合算せず、外側wall timeと別表示する。成功readのp50／p95・rangeと全失敗を並べ、小標本から恒常的速度を保証しない。
 
 SGAは候補6境界の実確認が未実装なら引き続きproxyに限定する。chunk／rangeごとにSGAを追加して費用を隠さず、逆に6境界をcacheしない。batchの回数削減だけで5秒に収まると算定せず、同じ8 read目標・最大入力・cold／継続負荷・独立SGAを含む実経路で更新する。今は設計のみで、CGP成立・本番API対応・速度承認・原本読取省略は0のままである。
+
+
+### 9.104 CGP-I0 fixture contract（2026-11-05）
+
+`src/test/fixtures/gradleOwnedCgpI0*.ts`へstrict schema、API認可、共通intent guard、mode manifest、range planner、exact wire見積りを追加した。本番API・reader・profileへの登録はない。検証記録は`docs/validation/gradle-c3b-cgp-i0-2026-11-05.json`。§9.103のCGI条件は下記の静的部分のみ実施し、native条件の成立へ加算しない。
+
+- CGI01／02：独立pinとstrict manifestを照合。serving binding・peer・origin・pin・snapshot・checkpoint・lineage・bootを検査し、reader／broker／issuerのAPIを限定する。scalar dataはS*／A*、rangesはB*／AB*。inventory・descriptor・read-pin namespaceも共通guardの対象。本fixtureのsessionは信頼済みconfigから生成する模擬contextで、認証IPCの証拠ではない。
+- CGI03：WeakMapのopaque handleと防御copyで認可済み入力・inventoryを束縛する。v1 commandのrequestDigestは既存validatorを使用し変更しない。実VerifiedRequestFacts／await後のlive gate接続はI1以降。
+- CGI04〜06：最大4 ranges・decoded合計4096 B、順序・重複・overlap・entry範囲を検査。独立inventory pinとのbytes／metadata／entry digest照合後だけ、greedy planningする。request 8192 B・reply 8192 B・4 frame各16384 Bをcanonical JSONとEd25519署名の固定長で見積もり、実署名したfixture bytesの長さと照合する。sequence 511／512・TTL4500・nonce等64桁の固定fixture layoutに限定し、一般のsessionでの完全なwire採用を主張しない。planはinventory・transfer・binding・全groupsへ束縛し、deterministic再計画との一致で検証する。
+- CGI17：Kはpeer／destination／API／operationId／lineage、Dは完全なsemantic commandとpurpose・bootstrapへ束縛する。D_wireとD_guardは別。exact retryはentry+0、同K別Dは予約前拒否。元期限・残予算を維持し、pending／unknownの並行再入、古いleaseの完了、期限超過・retiredの再利用を拒否する。新entryは以後の拒否でも保持し、evictionしない。
+- CGI23：全primaryでowner共有512 slots、8 read×scalar worst-case 37=296以上を確保する。peer別枠ではないため1 peerによる枯渇はowner全体を止める。512を使い切ったら再起動が必要であり、8 read成立のruntime保証ではない。serialized guard状態の予約上限、data・entry・batch・wire・構造的work unitsを検査する。CPU時間・実heap・source検証費用の測定ではない。容量拒否は速度比較へ入れない。
+- CGI28：4 modeでguard／profile／observer／policy／各上限を共通化し、facts・scalar/range algorithmだけを対応表どおり変更する。pin後の変更はhandleへ反映されない。S_ref bridgeや実workload閉包比較は未実施。
+
+| 現状態 | 入力／事象 | 結果 |
+|---|---|---|
+| 未登録 | 新K・予算内 | retained entryを予約しpending |
+| pending | exact retry／別D | busy／conflict、追加予約なし |
+| pending | 完了／応答不明 | complete／unknown |
+| unknown | exact retry／旧試行終了 | busy／complete（同leaseのみ） |
+| complete | exact retry | 元期限・残予算内だけ新attempt、entry+0 |
+| 任意 | 期限到達・明示retire | 再利用不可、entry保持 |
+| 新attempt開始後 | 旧lease完了 | stale拒否 |
+
+この状態表の終了通知はfixture呼出しであり、native実行終了witnessではない。実source取得・取消しrace・鮮度・5 process・性能比較は未実施。CGP-H0の判断を変更せず、I1以降の実装順はその結果で決める。CG0／CG3、backendEligible、profileApproved、nativeIsolationVerified、independentRegistryVerifiedはfalse、originalReadsSkippedは0のまま。
+
+
+#### §9.104 レビュー修正：現在のsession期限・完全な応答schema
+
+- guardは再試行の開始とleaseの完了／unknown／終了通知で、元期限と現在の認証contextのsession期限の短い方を検査する。短いsessionが既に失効した再試行は、残予算・entryを変更せず拒否する。開始済みleaseの期限到達はretiredとして保持し、成功へ戻さない。長い再接続期限・callerの大きな予約値でも元期限・残request／wire／work予算を更新しない。全4 mode×client／serverの負例を追加した。
+- responseのstrict schemaへsnapshot・inventoryDigest・transferIdを追加し、requestDigest・planDigest・全partsとともにcanonical wire見積りへ含める。inventoryDigestは返信から選ばずauthorityの独立inventory pinから認可handleへ束縛する。plannerは拡張後の完全な応答layoutでpackingする。
+- fixtureの応答取込は独立した期待intent・provider identity・公開鍵から署名とcontextを検査し、partsのexact tuple、canonical base64、長さ・SHA-256・合計予算を照合する。必須fieldの欠落、context／part交換、余分fieldは再署名しても拒否する。正しい署名だけでは採用しない。見積りと実署名wireのsize照合も維持した。
+- 追加回帰40件、既存I0 25件、文書例3件の計68件を確認。修正前は期限・必須contextの最小回帰17件が全て失敗した。本番session／source／live gateの接続、native・性能比較は依然未実施で、CG0／CG3等の採用flagは変えない。
