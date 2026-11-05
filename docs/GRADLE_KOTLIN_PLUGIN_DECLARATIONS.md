@@ -6988,4 +6988,10 @@ CGP再レビュー修正：
 - 拒否分類の改変は失敗sampleにも適用し、改変ごとに`cgp_evidence_*`の理由まで確認する。修正前の改変は成功sampleだけを変えており、分類検査を除去しても`publication`検査で失敗していたため、検査の有無を検出できなかった。page拒否のテストも`cgp_object_missing`など理由を分離して確認する。
 - `analyze-c3b-cgp.mjs`は再生成時に`reviewCorrections`／`secondReviewFix`／`verification`を保持する。
 
+CGP証拠処理の修正（`0bc84c3`後のレビュー）：
+
+- 拒否分類は、rpcが付ける`<role>/<action>: `の接頭辞を5 ownerに限って認める。`authority-broker/receive: current_control_request_expired`は期限拒否、未知のrole・後続文字列・接頭辞だけの一致は`other-refused`のまま。修正前は同じ期限切れでnative testが失敗していた。
+- native runnerは、どの段階の例外でも収集済みのsample・proxy・試作・calibrationと失敗段階を出力先へ残してから失敗する。schemaは`osv-mcp.cgp.measurements.partial.v0`で、`validateCgpReport`と分析scriptは受理しない。完全なreportを書いた後の失敗では上書きしない。sample 2のbootstrapで例外を注入し、sample 1の2 sampleと`failedAt`が残ることをnativeで確認した。
+- `Report`／`Pages`／`Budget`／`Outcome`の検査条件を1つずつ外す変異テストで、修正前は110件中25件しか検出できなかった。条件ごとの回帰を追加し、110件すべてを検出するようにした。対象は`check`の条件と予算入力の検証、分類・部分証拠の処理で、計算式、`cgp_child.mjs`、native runner自体は含まない。到達できない2検査（`cg3_gate`は`budget`の比較に含まれ、復号時の重複key検査はbucketとkey順の検査で先に拒否される）は削除した。
+
 CGP最終検証結果はsummaryのverificationを参照。native診断は3 bootstrap／3 snapshot比較pairで通過（91.95秒）。型検査・buildと対象回帰・source／raw／派生集計を別々に検証し、全体suiteの通過とは扱わない。

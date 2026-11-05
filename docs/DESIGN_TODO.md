@@ -2941,3 +2941,9 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - CGP記録を`measuredAtCommit=426ab84`へ固定し、現在のsourceとの一致を要求しない。rawは書き換えない。
 - Anchorの容量予測を保守込み58/64へ修正。「約25 MB」を実測の28.4〜28.6 MBへ修正。分析scriptの再生成で手書き節が消えないよう修正。
 - 判断：§9.100.13どおりCGPに留まり、CG0へ進まない。
+
+§9.101証拠処理の修正（`0bc84c3`後のレビュー）：
+
+- owner接頭辞付きの期限・容量拒否を、既知の5 ownerに限って同じ分類にした。
+- native runnerの例外時に、収集済みの証拠を`osv-mcp.cgp.measurements.partial.v0`として残す。検証と分析は受理しない。
+- 検査条件の変異テストを110件中25件検出から110件すべての検出へ。到達できない2検査は削除。計算式、`cgp_child.mjs`、native runner自体は対象外。

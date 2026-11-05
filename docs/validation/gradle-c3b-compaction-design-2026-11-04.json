@@ -118,10 +118,7 @@
     "src/utils/gradleOwnedReadPlan.ts": "171f27bcd7522879a228208393c1302537077bba674f9dd447609dc18801eb1b",
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb"
   },
-  "documentSha256": {
-    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "3034e3103b029ddcfff3da52bc4187f8e668169100f01fe788ad4da6a472d38e",
-    "docs/DESIGN_TODO.md": "c4d20f7a0fe5bdce7b4a7d4db08f5ea243cbd3b9c8bab242dd8125d734de7a0a"
-  },
+  "documentSha256": "ce980975c17f5986b80f4b83827311389a3ee7d711812a0dbdc1db25d7f9d259",
   "reviewNotes": [
     "Existing journal v1/stage/registry/Anchor parsers do not accept the proposed v2 formats.",
     "The present source profile lacks the SGA gate and atomic maintenance reservations; a detached signature alone does not make it migratable.",
@@ -665,7 +662,8 @@
       "explicit expiry classification; other refusals separated and native check fails",
       "what-if relabelled; consecutive-read growth and readCommitted call counts recorded outside the model",
       "CGP record fixed to measuredAtCommit 426ab84; no comparison with the current tree",
-      "remain in CGP; CG0 does not start before CGP is established"
+      "remain in CGP; CG0 does not start before CGP is established",
+      "native evidence kept on any failure as a partial schema; owner-prefixed refusals classified; 110 check-condition mutations all detected"
     ],
     "cg0Proceed": false
   }

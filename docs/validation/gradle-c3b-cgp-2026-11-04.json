@@ -1177,6 +1177,36 @@
       "explicitDeadlineRefusals": 3,
       "otherRefusals": 0,
       "oldAndNewSamplesCombined": false
+    },
+    "evidenceHandling": {
+      "ownerPrefixedRefusals": {
+        "accepted": "known owner <role>/<action>: hops before an exact code",
+        "unknownRoleOrTrailingTextStaysOther": true
+      },
+      "partialEvidence": {
+        "schema": "osv-mcp.cgp.measurements.partial.v0",
+        "rejectedByValidationAndAnalysis": true,
+        "completeReportNotOverwritten": true,
+        "nativeFaultInjection": {
+          "failedAt": {
+            "stage": "bootstrap",
+            "sample": 2
+          },
+          "keptSamples": 2,
+          "keptPrototypeRuns": 1
+        }
+      },
+      "checkMutations": {
+        "scope": "check conditions in Report and Pages, budget input validation, classification and partial evidence handling; not arithmetic, cgp_child.mjs or the native runner",
+        "total": 110,
+        "detectedBefore": 25,
+        "detectedAfter": 110,
+        "removedUnreachableChecks": [
+          "cg3_gate",
+          "duplicate key set in decode"
+        ]
+      },
+      "measurementsRewritten": false
     }
   },
   "secondReviewFix": {
@@ -1271,6 +1301,14 @@
     "nativeHarnessSmokeAfterFixes": {
       "runs": 1,
       "passedTests": 1
+    },
+    "fullSuiteAfterEvidenceHandling": {
+      "passedFiles": 145,
+      "skippedFiles": 25,
+      "passedTests": 5525,
+      "skippedTests": 1419,
+      "failedTests": 0,
+      "durationSeconds": 632.26
     }
   }
 }
