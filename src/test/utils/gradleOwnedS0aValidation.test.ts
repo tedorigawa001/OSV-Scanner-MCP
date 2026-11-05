@@ -1,0 +1,4 @@
+import {it,expect} from 'vitest';import {readFile} from 'node:fs/promises';import {spawnSync} from 'node:child_process';import {analyzeS0a} from '../fixtures/gradleOwnedS0aReport.mjs';
+const base='docs/validation/gradle-c3b-cgp-s0a-2026-11-06';
+it('replays all saved native comparisons with exact full IO/sync counts and closed adoption gates',async()=>{const raw=JSON.parse(await readFile(base+'.measurements.json','utf8')),a=analyzeS0a(raw);expect(a.groups).toHaveLength(18);expect(a.decision.productionSpeedupEstablished).toBe(false);expect(a.decision.eightGraphReadsEstablished).toBe(false);expect(a.decision.cg0Proceed).toBe(false);expect(a.decision.cg3Proceed).toBe(false);});
+it('checks implementation, raw data, comparison and regression source identities',()=>{const r=spawnSync(process.execPath,['scripts/analyze-c3b-cgp-s0a.mjs','--check'],{encoding:'utf8'});expect(r.stderr).toBe('');expect(r.status).toBe(0);});

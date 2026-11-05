@@ -1,0 +1,467 @@
+{
+  "schema": "cgp.s0a.analysis.v1",
+  "groups": [
+    {
+      "bootstrap": 1,
+      "cycles": 0,
+      "role": "control-anchor",
+      "historyRows": 2,
+      "fullMedianMs": 3.204584000000011,
+      "reuseMedianMs": 2.448541999999975,
+      "ratio": 1.3087723224678376,
+      "pairedMedianDifferenceMs": 0.4741665000000239,
+      "io": {
+        "lists": 7,
+        "reads": 16,
+        "bytes": 35619,
+        "puts": 3,
+        "entriesListed": 35
+      },
+      "sync": {
+        "files": 3,
+        "directories": 3
+      }
+    },
+    {
+      "bootstrap": 1,
+      "cycles": 0,
+      "role": "lineage-registry",
+      "historyRows": 3,
+      "fullMedianMs": 4.165103999999985,
+      "reuseMedianMs": 3.4910624999999413,
+      "ratio": 1.193076319888302,
+      "pairedMedianDifferenceMs": 0.5580830000000105,
+      "io": {
+        "lists": 8,
+        "reads": 21,
+        "bytes": 47456,
+        "puts": 4,
+        "entriesListed": 50
+      },
+      "sync": {
+        "files": 4,
+        "directories": 4
+      }
+    },
+    {
+      "bootstrap": 1,
+      "cycles": 4,
+      "role": "control-anchor",
+      "historyRows": 10,
+      "fullMedianMs": 16.43012500000009,
+      "reuseMedianMs": 12.16818749999993,
+      "ratio": 1.3502524513203122,
+      "pairedMedianDifferenceMs": 4.738790999999992,
+      "io": {
+        "lists": 15,
+        "reads": 64,
+        "bytes": 283148,
+        "puts": 11,
+        "entriesListed": 227
+      },
+      "sync": {
+        "files": 11,
+        "directories": 11
+      }
+    },
+    {
+      "bootstrap": 1,
+      "cycles": 4,
+      "role": "lineage-registry",
+      "historyRows": 11,
+      "fullMedianMs": 16.767875000000004,
+      "reuseMedianMs": 13.254187499999716,
+      "ratio": 1.2651001806033273,
+      "pairedMedianDifferenceMs": 3.5407290000005105,
+      "io": {
+        "lists": 16,
+        "reads": 69,
+        "bytes": 289021,
+        "puts": 12,
+        "entriesListed": 258
+      },
+      "sync": {
+        "files": 12,
+        "directories": 12
+      }
+    },
+    {
+      "bootstrap": 1,
+      "cycles": 8,
+      "role": "control-anchor",
+      "historyRows": 18,
+      "fullMedianMs": 31.33710449999944,
+      "reuseMedianMs": 24.25054199999977,
+      "ratio": 1.292222850111958,
+      "pairedMedianDifferenceMs": 6.876395999999659,
+      "io": {
+        "lists": 23,
+        "reads": 112,
+        "bytes": 669364,
+        "puts": 19,
+        "entriesListed": 547
+      },
+      "sync": {
+        "files": 19,
+        "directories": 19
+      }
+    },
+    {
+      "bootstrap": 1,
+      "cycles": 8,
+      "role": "lineage-registry",
+      "historyRows": 19,
+      "fullMedianMs": 32.445582999999715,
+      "reuseMedianMs": 25.436999999999898,
+      "ratio": 1.2755271061838993,
+      "pairedMedianDifferenceMs": 6.447416500000145,
+      "io": {
+        "lists": 24,
+        "reads": 117,
+        "bytes": 669205,
+        "puts": 20,
+        "entriesListed": 594
+      },
+      "sync": {
+        "files": 20,
+        "directories": 20
+      }
+    },
+    {
+      "bootstrap": 2,
+      "cycles": 0,
+      "role": "control-anchor",
+      "historyRows": 2,
+      "fullMedianMs": 3.020354500000394,
+      "reuseMedianMs": 3.0892919999996593,
+      "ratio": 0.9776850165023984,
+      "pairedMedianDifferenceMs": -0.08645849999993516,
+      "io": {
+        "lists": 7,
+        "reads": 16,
+        "bytes": 35619,
+        "puts": 3,
+        "entriesListed": 35
+      },
+      "sync": {
+        "files": 3,
+        "directories": 3
+      }
+    },
+    {
+      "bootstrap": 2,
+      "cycles": 0,
+      "role": "lineage-registry",
+      "historyRows": 3,
+      "fullMedianMs": 5.3612289999991845,
+      "reuseMedianMs": 3.2863539999998466,
+      "ratio": 1.6313607724546517,
+      "pairedMedianDifferenceMs": 1.8108959999990475,
+      "io": {
+        "lists": 8,
+        "reads": 21,
+        "bytes": 47456,
+        "puts": 4,
+        "entriesListed": 50
+      },
+      "sync": {
+        "files": 4,
+        "directories": 4
+      }
+    },
+    {
+      "bootstrap": 2,
+      "cycles": 4,
+      "role": "control-anchor",
+      "historyRows": 10,
+      "fullMedianMs": 16.786708000000544,
+      "reuseMedianMs": 12.287104,
+      "ratio": 1.3662054134156059,
+      "pairedMedianDifferenceMs": 4.4230205000012575,
+      "io": {
+        "lists": 15,
+        "reads": 64,
+        "bytes": 283148,
+        "puts": 11,
+        "entriesListed": 227
+      },
+      "sync": {
+        "files": 11,
+        "directories": 11
+      }
+    },
+    {
+      "bootstrap": 2,
+      "cycles": 4,
+      "role": "lineage-registry",
+      "historyRows": 11,
+      "fullMedianMs": 16.61529150000024,
+      "reuseMedianMs": 13.508104499999718,
+      "ratio": 1.2300239089800191,
+      "pairedMedianDifferenceMs": 3.1928535000006377,
+      "io": {
+        "lists": 16,
+        "reads": 69,
+        "bytes": 289021,
+        "puts": 12,
+        "entriesListed": 258
+      },
+      "sync": {
+        "files": 12,
+        "directories": 12
+      }
+    },
+    {
+      "bootstrap": 2,
+      "cycles": 8,
+      "role": "control-anchor",
+      "historyRows": 18,
+      "fullMedianMs": 30.676687500001208,
+      "reuseMedianMs": 23.63770850000037,
+      "ratio": 1.2977860142407935,
+      "pairedMedianDifferenceMs": 6.61645800000224,
+      "io": {
+        "lists": 23,
+        "reads": 112,
+        "bytes": 669364,
+        "puts": 19,
+        "entriesListed": 547
+      },
+      "sync": {
+        "files": 19,
+        "directories": 19
+      }
+    },
+    {
+      "bootstrap": 2,
+      "cycles": 8,
+      "role": "lineage-registry",
+      "historyRows": 19,
+      "fullMedianMs": 33.34283299999879,
+      "reuseMedianMs": 24.774874999997337,
+      "ratio": 1.3458325420411759,
+      "pairedMedianDifferenceMs": 8.72406250000131,
+      "io": {
+        "lists": 24,
+        "reads": 117,
+        "bytes": 669205,
+        "puts": 20,
+        "entriesListed": 594
+      },
+      "sync": {
+        "files": 20,
+        "directories": 20
+      }
+    },
+    {
+      "bootstrap": 3,
+      "cycles": 0,
+      "role": "control-anchor",
+      "historyRows": 2,
+      "fullMedianMs": 3.3632704999981797,
+      "reuseMedianMs": 2.4845415000017965,
+      "ratio": 1.3536785358569168,
+      "pairedMedianDifferenceMs": 0.8414794999971491,
+      "io": {
+        "lists": 7,
+        "reads": 16,
+        "bytes": 35619,
+        "puts": 3,
+        "entriesListed": 35
+      },
+      "sync": {
+        "files": 3,
+        "directories": 3
+      }
+    },
+    {
+      "bootstrap": 3,
+      "cycles": 0,
+      "role": "lineage-registry",
+      "historyRows": 3,
+      "fullMedianMs": 3.9433124999995925,
+      "reuseMedianMs": 4.023396000000503,
+      "ratio": 0.9800955461503417,
+      "pairedMedianDifferenceMs": 0.06572899999810033,
+      "io": {
+        "lists": 8,
+        "reads": 21,
+        "bytes": 47456,
+        "puts": 4,
+        "entriesListed": 50
+      },
+      "sync": {
+        "files": 4,
+        "directories": 4
+      }
+    },
+    {
+      "bootstrap": 3,
+      "cycles": 4,
+      "role": "control-anchor",
+      "historyRows": 10,
+      "fullMedianMs": 17.032874999998967,
+      "reuseMedianMs": 12.608541499997955,
+      "ratio": 1.3508997055687788,
+      "pairedMedianDifferenceMs": 4.196020499999577,
+      "io": {
+        "lists": 15,
+        "reads": 64,
+        "bytes": 283148,
+        "puts": 11,
+        "entriesListed": 227
+      },
+      "sync": {
+        "files": 11,
+        "directories": 11
+      }
+    },
+    {
+      "bootstrap": 3,
+      "cycles": 4,
+      "role": "lineage-registry",
+      "historyRows": 11,
+      "fullMedianMs": 17.40166700000009,
+      "reuseMedianMs": 13.956521000001885,
+      "ratio": 1.24684848036253,
+      "pairedMedianDifferenceMs": 3.5283335000003717,
+      "io": {
+        "lists": 16,
+        "reads": 69,
+        "bytes": 289021,
+        "puts": 12,
+        "entriesListed": 258
+      },
+      "sync": {
+        "files": 12,
+        "directories": 12
+      }
+    },
+    {
+      "bootstrap": 3,
+      "cycles": 8,
+      "role": "control-anchor",
+      "historyRows": 18,
+      "fullMedianMs": 32.44706249999945,
+      "reuseMedianMs": 23.293313000000126,
+      "ratio": 1.3929775682831924,
+      "pairedMedianDifferenceMs": 8.797124999999141,
+      "io": {
+        "lists": 23,
+        "reads": 112,
+        "bytes": 669364,
+        "puts": 19,
+        "entriesListed": 547
+      },
+      "sync": {
+        "files": 19,
+        "directories": 19
+      }
+    },
+    {
+      "bootstrap": 3,
+      "cycles": 8,
+      "role": "lineage-registry",
+      "historyRows": 19,
+      "fullMedianMs": 33.77147900000091,
+      "reuseMedianMs": 25.160729000001083,
+      "ratio": 1.3422297501793152,
+      "pairedMedianDifferenceMs": 8.610749999999825,
+      "io": {
+        "lists": 24,
+        "reads": 117,
+        "bytes": 669205,
+        "puts": 20,
+        "entriesListed": 594
+      },
+      "sync": {
+        "files": 20,
+        "directories": 20
+      }
+    }
+  ],
+  "decision": {
+    "pureStagePrefixReuseVerified": true,
+    "freshIoAndCheckpointSyncMaintained": true,
+    "productionSpeedupEstablished": false,
+    "eightGraphReadsEstablished": false,
+    "next": "S0b checkpoint inventory/resync fixture; journal authentication/JSON and all IO still full",
+    "cg0Proceed": false,
+    "cg3Proceed": false
+  },
+  "limitations": [
+    "single-process cooperative native disk, real persisted Anchor/registry histories, simulated authorization clock for history construction",
+    "F/M alternate on the same held disk context and warm OS/JIT; this is a stage replay diagnostic, not a five-owner graph read",
+    "same source and v1 bytes, no IO or checkpoint sync is skipped",
+    "M retains raw bytes plus parsed accumulator; resource accounting is serialized/node bounds, not measured RSS",
+    "journal parse/MAC and owner-level parse/signature/live gates are not reused",
+    "fixed-depth costs and small cohorts cannot establish causal production throughput or eight reads"
+  ],
+  "backendEligible": false,
+  "nativeIsolationVerified": false,
+  "originalReadsSkipped": 0,
+  "measurement": {
+    "path": "docs/validation/gradle-c3b-cgp-s0a-2026-11-06.measurements.json",
+    "sha256": "93114ea7f81287b158eae51c9d10e63429d31c0678c6fa11c2d3e704ae8ab431"
+  },
+  "analysisSource": {
+    "path": "scripts/analyze-c3b-cgp-s0a.mjs",
+    "sha256": "50aecbfc18f76d7ecdea97e89374c0237d8888ca6f39b658f192c2b331857bb1"
+  },
+  "checkerSource": {
+    "path": "src/test/fixtures/gradleOwnedS0aReport.mjs",
+    "sha256": "b0e2f4dbc9f10421330745cfcc04ee7957981858a6e9a64aa4e35d12812923fe"
+  },
+  "scope": "three cohorts x three fixed native storage depths x two roles; one process, no five-owner graph throughput claim",
+  "verification": {
+    "date": "2026-11-06",
+    "regressionTests": {
+      "passed": 66,
+      "failed": 0,
+      "files": 5,
+      "s0aFixture": 25,
+      "reportFaultCases": 17,
+      "savedEvidence": 2,
+      "productionStageStore": 19,
+      "documentation": 3
+    },
+    "nativeStorageTest": {
+      "passed": 1,
+      "cohorts": 3,
+      "independentRootFixtures": 9,
+      "processes": 1,
+      "ownerRoles": 2,
+      "fixedDepthStoreObservations": 18,
+      "alternatingPairs": 108,
+      "comparisonReads": 216,
+      "additionalWarmReads": 18,
+      "fiveOwnerGraphRuns": 0,
+      "peakRssMeasured": false
+    },
+    "typecheck": "passed",
+    "build": "passed",
+    "historicalH0Check": "passed",
+    "diffCheck": "passed",
+    "fullSuiteRun": false,
+    "regressionSources": {
+      "src/test/utils/gradleOwnedS0a.test.ts": "8375273b8ab0514784d55290c10bd31ee328763707590a96ef2fd0cc1e5a6434",
+      "src/test/utils/gradleOwnedS0aReport.test.ts": "cf1fedfd8d2b8346e6a6f3776f456e157e1ebc4e2e9549780c03003b3fb61af9",
+      "src/test/utils/gradleOwnedS0aValidation.test.ts": "f9eddedb55c5c597336cbd1391af998ed260808e6488ce460dd692345ddadd99"
+    },
+    "redGreen": [
+      "The first full/reuse integration test failed on the stub, then passed on real native journal/checkpoint IO.",
+      "Direct constructor invocation initially bypassed the factory; the private token regression now rejects it.",
+      "Malformed append initially poisoned the context; strict parsing now rejects before IO without blocking valid history.",
+      "A call could initially be rebound between slots; mode is now pinned in the own-call reservation."
+    ],
+    "commands": [
+      "env OSV_S0A_NATIVE=1 OSV_S0A_OUTPUT=docs/validation/gradle-c3b-cgp-s0a-2026-11-06.measurements.json npx vitest run src/test/utils/gradleOwnedS0aNative.test.ts --maxWorkers=1",
+      "npx vitest run src/test/utils/gradleOwnedS0a.test.ts src/test/utils/gradleOwnedS0aReport.test.ts src/test/utils/gradleOwnedS0aValidation.test.ts src/test/utils/gradleOwnedStageStore.test.ts src/test/docs/commandExamples.test.ts --maxWorkers=1",
+      "npm run typecheck",
+      "npm run build",
+      "node scripts/analyze-c3b-cgp-s0a.mjs --check",
+      "node scripts/analyze-c3b-cgp-h0.mjs --check",
+      "git diff --check"
+    ]
+  }
+}

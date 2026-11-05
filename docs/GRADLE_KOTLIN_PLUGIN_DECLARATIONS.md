@@ -7650,3 +7650,43 @@ I1〜I4の再判断は、全bootstrapの比較可能な完了状態の中央値�
 - S0-Dの使用範囲を復旧完了後の通常readに限定し、crash後の扱いを現行の`recoverPublished`／`tail_unknown`の分け方に揃えた（SR41を追加）。
 - SR03とS0bの記述の不一致を直し、未知write・tail、S0-Mのdrain／freeze／GC、拒否理由の対応表の回帰条件を追加した（SR38〜SR40）。
 - 設計記録を`src/test/utils/gradleOwnedCgpS0Design.test.ts`で照合するようにし、section hashの範囲を次の同階層見出しの前までに変更した。
+
+
+### 9.107 CGP-S0a：fresh IOを維持したpure stage-prefixの限定実証（2026-11-06）
+§9.106の最初の実装として、test-onlyの`gradleOwnedS0a.ts`へstrict profile、private storage context／simulated own-call、fresh bytesのexact prefix照合、pure stage accumulatorの再利用を実装した。本番のStageStore／journal／checkpoint／owner／reader sourceは変更していない。S0bの列挙batch・S0cのpage形式・S0xの独立provider付きIO省略は未実装である。
+#### 実装と信頼範囲
+- `S0aFixture.open`だけが実rootをexclusive openし、OwnerPlanのowner／role／storeEpoch／keyId／root identityとprofile pinを照合してcontextを作る。key・identity・optionsはawait前にcopyする。contextはliveなfixture instanceへ束縛し、再openや別ownerへproofを移植しない。TypeScript private constructorだけに依存せず、module-private tokenも要求する。任意JournalIOからfresh contextをmintするAPIは提供しない。
+- F/Mの2つの診断slotをprofileの固定catalogとしてopen前にpinする。own-callはprivate WeakMapへ登録し、operationIdにrequestDigestとslotを固定する。同ID別digest／slot、別context、偽handleをIO前に拒否する。slotはcall後に変更できない。これらは模擬の認可contextであり、認証IPC／実credential registry／独立承認profile／I0 runtime接続の証拠ではない。
+- 元deadlineはown monotonic clockで最初の値とnow＋4500 msの短い方、attemptは2回、予約はcontextあたり256件でevictionしない。新handle／長いdeadlineで予約を再取得しない。read前・各IO awaitの前後・copy／cache候補構築後の最終gateで現認可と期限を確認する。
+- `RootedJournalIO`、`AuthorityJournal`、`FileJournalCheckpoint`を実際に呼ぶ。現在のfull inventory／tail、全manifest／blob／commitの読取・hash／MAC／JSON検証、checkpoint chainの全認証とgenesisを含むfile＋directory再同期はそのまま残す。計数は各RootedJournalIO instanceの実methodを透過wrapperで囲み、checkpoint put内部のlist／readも含む。bytesはmethodの返却bytesであり物理disk読取量ではない。
+- Mが省くのは、既に検証済みの同一ordered rowに対するpure stage検証・画像parse・receipt／operation mapの再構成だけ。現在の完全なjournal履歴が得られてから、head／operationId／requestDigest／record role・id・順序と各Bufferのexact一致を確認する。journalの認証・JSONやowner-levelの追加parse／署名／現認可は再利用していない。
+- prefixにはledger／images／byRef／operation→API・digest・stage集合を保存する。appendはprivate stateをcloneしてsuffixを実検証し、旧prefixを変更しない。変更なしなら元のimmutable pure stateを使い、callerへは防御copyを返す。現在checkpoint、同期成功、gateの成功、expiry／pin／selection／ACKの許可をcacheへ保存しない。
+- cacheがevictされても、context内で最後に確認したhead vectorの下限は保持し、正しいMAC付きの過去journal／checkpointへの巻戻しを拒否する。新contextはcoldでfull recoveryする。local pairを同時に巻き戻した別bootでの独立rollback防止やSGAの現在世代確認を実証したとはしない。
+- cacheの保持bytesはraw snapshot＋pure state／indexのserialized表現、entries／parsed nodesは別に計数する。未変更candidateの二重保存を避け、append時は旧cache＋新candidateのcapを照合する。cache不足ではfull検証へ戻り原本を削除しない。これらは保持cacheの上限であり、full IO／解析scratch・返却copy・JS object overheadを含むpeak RSSの実証ではない。intent／floorのbounded状態とも区別する。
+- read中のIO／同期・integrity・最終認可拒否は結果を返さず、candidateを公開せず、fixtureをfail-stopにする。checkpoint同期失敗時は再openも再同期成功まで拒否し、成功後はcoldから開始する。不正な追記schema／既知の論理conflictはIO又はwrite前に拒否し、検証済みprefixを不用意に破棄しない。
+#### 回帰と実データ対照
+`gradleOwnedS0a.test.ts`の25件は、F/Mの同値、production StageStoreとの一致、正常append／2段stage、返却値改変、eviction、実fileのblob／commit／checkpoint改変・余剰file・symlink・root交換、MACが正しい過去pairへの巻戻し、再open／偽handle／constructor迂回、profile再pin、mode付替え、元期限／attempt、IO途中と全同期後の拒否、同期障害と再open復旧、並行再入等を確認する。
+SR01〜03・06〜09・11〜18のうち上記のstorage／simulated-call部分の限定対照である。SR04のcollision用hash対照、SR05の全descriptor変種、SR10の集約状態への故障注入、実session／unknown transport・世代／key rotationの全条件、SR19以降のS0b／page／provider／5owner条件を完了扱いにしない。実装module内のpure stage validatorは既存production関数を使用する。
+`gradleOwnedS0aReport.test.ts`では欠落／重複cohort、mode／順序／履歴交換、片側及び両側の同期・IO省略、誤prefix、resource cap、再計算profileの余剰field、期限延長・遅延成功・NaN・採用flagを拒否する。`gradleOwnedS0aValidation.test.ts`と分析scriptで保存raw・実装／計測source・比較・回帰testのhashを照合する。
+#### 固定深さのnative disk診断
+同一processで3 cohort×3履歴深さ×Anchor／registryの18 store観測を行った。各深さは独立したtemporary rootsに実owner fixtureでenrollment／activationし、pin acquire＋releaseを0／4／8回実行して生成する。history構築は既存fixtureの制御clock、比較readは実単調clockである。bootstrap列はcohort IDであり、別UID／別OS processの起動証拠ではない。
+各roleを止めてproduction StageStoreのfull history digestを取得し、S0aを同じrootへopenする。Mをwarmにした後、F/Mの順を交互にして6 pairずつ読む（計108 pair／216比較read、別途18 warm read）。全history digestがproduction referenceと一致し、同じpairで全IO／同期／journal hash counterが一致した。N行の固定深さでは、checkpoint file／directory同期は各N＋1件（genesis込み）、putもN＋1件、readはblobChecks＋3N＋3、listはN＋5を両側で検査する。読取省略0。
+以下は各cohortの6観測中央値の範囲で、異なる深さを混ぜた平均ではない。pairごとの差の中央値と全rawも保存し、中央値の差と取り違えない。
+| pin acquire/release回数 | owner | history行数 | F中央値msの範囲 | M中央値msの範囲 | 1 readのfile／directory同期件数（各） |
+|---|---|---|---|---|---|
+| 0 | control-anchor | 2 | 3.02〜3.36 | 2.45〜3.09 | 3 |
+| 0 | lineage-registry | 3 | 3.94〜5.36 | 3.29〜4.02 | 4 |
+| 4 | control-anchor | 10 | 16.43〜17.03 | 12.17〜12.61 | 11 |
+| 4 | lineage-registry | 11 | 16.62〜17.40 | 13.25〜13.96 | 12 |
+| 8 | control-anchor | 18 | 30.68〜32.45 | 23.29〜24.25 | 19 |
+| 8 | lineage-registry | 19 | 32.45〜33.77 | 24.77〜25.44 | 20 |
+
+4／8回の固定深さではMの中央値が全cohortで小さかったが、小さい初期履歴には逆転もある。同一process／同じheld IOとwarm OS・JIT、共通の計数／cache資源集計／返却copyを含む限定fixtureであり、Fのwallは未変更production readerの時間そのものではない。native diskの差を本番の因果的speedup・全graph read時間・独立5ownerでの8回成功へ換算しない。8回は履歴生成のpin操作回数であり8 graph readの成功数ではない。
+#### 再現・残課題
+rawと検証記録は`docs/validation/gradle-c3b-cgp-s0a-2026-11-06.measurements.json`と同名`.json`。
+```sh
+env OSV_S0A_NATIVE=1 OSV_S0A_OUTPUT=docs/validation/gradle-c3b-cgp-s0a-2026-11-06.measurements.json npx vitest run src/test/utils/gradleOwnedS0aNative.test.ts --maxWorkers=1
+node scripts/analyze-c3b-cgp-s0a.mjs
+node scripts/analyze-c3b-cgp-s0a.mjs --check
+```
+pure stage-prefixの限定実装と実disk対照は行ったが、generic parse／MAC事実cache、実認証session／owner live gate接続、scratch／peak RSS計測、S0bのcheckpoint列挙削減、S0c page、S0dの5owner比較、S0xの独立storage証拠は残る。次はS0bの既存checkpoint再同期batchを、全bytes／認証／各file＋directory同期・境界検査を保ったfixtureで実証する。CG0／CG3、backendEligible、profileApproved、nativeIsolationVerified、independentRegistryVerifiedはfalse、originalReadsSkippedは0のまま。

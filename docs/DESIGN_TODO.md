@@ -3034,3 +3034,11 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - Anchorが保持するwhole signed registry wireとpage imageの差を明記し、compact recordは別schema／profile／両owner・verifier対応を要求。page化だけでsuffix IOやGC／世代選択を承認しない。
 - SR01〜SR42を定義。runtime／native回帰は全て未実施。次はCGP-S0aのstrict fixture・fresh bytes／pure prefixから限定実証し、S0b列挙／同期、S0c page、S0d比較へ進む。I1〜I4の順序は実証後に再判断。CG0／CG3保留、原本読取省略0。
 - レビュー修正：cacheによるrollback検出は保証ではないと明記。S0-M／Dの理想上限は全bootstrapで2 readまで（8 read目7.7〜8.4秒、算術で実測ではない）なので、8 readを進行条件にせず、停止条件を追加。whole wireのAnchor対照は候補上限に深さ2〜5までしか収まらない。S0-Dは復旧完了後の通常readに限定。
+
+
+### CGP-S0a：fresh IO＋pure stage-prefixの限定実証（§9.107）
+
+- test-only strict profile・固定F/M slot catalog、private context／own-call、exact row bytes照合・suffix stage再生を実装。元期限・attempt・current callback、全journal認証／原本IO／checkpoint同期を維持。production sourceは変更なし。
+- production StageStoreと実Anchor／registry historyの同値、改変／巻戻し／root交換・偽造handle・同期障害／復旧・期限／最終取消し等の25回帰を追加。SR01〜18の限定部分であり、全SR条件成立とはしない。
+- 3 cohort×3固定深さ×2 role、6 pair交互順の実disk比較を実施。全108 pairでreference digest・全IO／同期counterが一致、stageの再解析のみ削減。4／8 pin操作後は中央値が改善したが、初期履歴では逆転もある。単一process・warm比較で、本番speedup／8 graph read成立は未実証。
+- 次はS0b：checkpointの既存file再同期batchによる重複inventory列挙削減のfixture。generic parse／MAC cache・実session接続／peak RSS・S0c page・S0d 5owner比較・S0x独立providerも残る。CG0／CG3保留、原本読取省略0。
