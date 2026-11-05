@@ -1,0 +1,5 @@
+import {it,expect} from 'vitest';import {readFile} from 'node:fs/promises';import {spawnSync} from 'node:child_process';
+import {analyzeH0} from '../fixtures/gradleOwnedH0Report.mjs';
+const base='docs/validation/gradle-c3b-cgp-h0-2026-11-05';
+it('reproduces the saved H0 decision from raw measurements without enabling adoption',async()=>{const raw=JSON.parse(await readFile(base+'.measurements.json','utf8')),result=analyzeH0(raw);expect(new Set(raw.samples.map((s:any)=>s.sample)).size).toBe(3);expect(result.decision.batchSpeedupEstablished).toBe(false);expect(result.decision.eightReadsEstablished).toBe(false);expect(result.decision.cg0Proceed).toBe(false);expect(result.decision.cg3Proceed).toBe(false);expect(raw.leaseMs).toBe(5000);expect(raw.marginMs).toBe(500);expect(result.diagnostics.length).toBe(raw.diagnostics.length);});
+it('matches raw evidence, analyzer identity and saved summary',()=>{const r=spawnSync(process.execPath,['scripts/analyze-c3b-cgp-h0.mjs','--check'],{encoding:'utf8'});expect(r.stderr).toBe('');expect(r.status).toBe(0);});

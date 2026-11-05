@@ -3015,3 +3015,11 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 §9.104レビュー修正：現在のsession期限をretry／完了時にも適用し、元期限・予算を保持する。完全なstrict response（snapshot／inventoryDigest／transferIdを含む）でwire見積り・packing・署名／context照合を行い、再署名後の交換・欠落も拒否する。追加40件を含む68件の限定回帰を確認。本番／native採用0、CGP-H0以降の残課題は継続。
 
 §9.104再レビュー修正：session終了後もunknown／ended／retireを記録できるようにし、切断後のexact retryを復旧。range commandは検証済みinventoryから再計画したplanのhandleがある場合だけ認可し、全replyとentry digestの照合後にだけ返す。37は実測値だったため、workload上限を9 entry・41,460 Bに固定し、算出値43×8=344件が512枠以内であることをbootstrapで検査する。主要な検査62か所の除去で61か所を検出（残る1か所は別検査で同結果）。本番／native採用0、次はCGP-H0、CG0／CG3保留。
+
+
+### CGP-H0：履歴深さ別のfresh再生費用と順序判断（§9.105）
+
+- 専用fixtureで3 bootstrap×5 processの実時間計測。5秒lease／500ms margin維持、初回3/3完了・2回目0/3（期限拒否、公開0）。本番source・既存CGP observerは変更しない。
+- read順／owner／call別に行数・論理record bytes・IO返却bytesとexclusive phaseを記録。固定深さ3回の診断は論理状態を進めず、checkpoint再同期も維持する。読取前後の診断をread成功に加算しない。
+- scalar data 16→理想batch下限11／pass、2 passで最大10要求の楽観的削減は約0.53〜0.55秒。初回増大のreplay work換算は約1.81〜2.22秒で全3 bootstrapが上回る。次の深さでは下回るpairも記録。実latency差や因果的速度改善ではない。
+- 次はAnchor／registryを中心とするpage再利用／incremental検証の成立条件・限定実証を先行。fresh認可／取消し／期限／保存完了・checkpoint同期を維持し、成立後にI1／I2の順序を再判断する。I0は完了、I1〜I4・実batch・独立SGA・8 read成立は残る。CG0／CG3保留、原本読取省略0。

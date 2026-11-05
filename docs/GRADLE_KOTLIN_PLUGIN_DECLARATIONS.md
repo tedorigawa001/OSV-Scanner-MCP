@@ -7396,3 +7396,43 @@ SGAは候補6境界の実確認が未実装なら引き続きproxyに限定す�
 - 回帰：再署名・再計算で他の条件を揃えた負例を追加した。主要な検査62か所を1つずつ外し、61か所を検出した。残る1か所（reply合計byte数）は、part長とrange合計の別検査で同じ結果になる。
 
 本番session／source／live gateへの接続、native実行、性能比較は未実施で、次はCGP-H0のままとする。CG0／CG3、backendEligible、profileApproved、nativeIsolationVerified、independentRegistryVerifiedはfalse、originalReadsSkippedは0のまま。
+
+
+### 9.105 CGP-H0：履歴深さ別のfresh再生費用と実装順（2026-11-05）
+既存v1のAPI・wire・5秒lease／500ms marginを維持した、独立3 bootstrap×実時間5 owner processの診断を行った。I0のP_expやbatch runtimeを有効にした計測ではない。結果は`docs/validation/gradle-c3b-cgp-h0-2026-11-05.measurements.json`、再生成可能な比較・判断は同名`.json`、runnerは`gradleOwnedH0Native.test.ts`、共有checkerは`gradleOwnedH0Report.mjs`。本番sourceは変更していない。
+#### 方法と計測範囲
+- 既存CGPのcontroller／childをH0専用fixtureへ分けた。通常buildのdistではなく、一時compile先のJSON parse／canonical関数だけにobserver wrapperを追加し、変換前後SHA-256と5 childが実行した変換後SHA-256を保存・照合する。重複変換・未知anchorは拒否し、値／例外の透過性を回帰検証する。
+- `readCommitted`ごとにjournal履歴行数、全recordの論理bytes、RootedJournalIOが返したbytes／read回数を記録する。IO bytesはOSから返されたbytesであり、物理diskアクセス量や保存容量ではない。eventId・RPC／owner／boot・selector・時間区間・既存counterを照合する。
+- AsyncLocalStorageでcallを分離し、phaseの子区間を親から除いたexclusive時間を記録する。journal読取、disk list/read/put、署名verify/sign、HMAC／hash（setup・update・digest）、JSON decode／canonical、journal残余、stage残余へ分解する。stage残余にはtail gate・schema／stage検査・選択・copy等も含み、純粋なstage検査だけの時間ではない。署名phaseがないcallでもRPC全体の署名検証0とはしない。
+- 各readの前後の固定履歴深さで、ownerごとに3回の`readCommitted(null)`を行い、行数・論理bytes・IO bytesが同じことを検査する。論理stageを進めない診断であり、現行checkpoint読取の再同期（既存fileのput／fsync）を省略していない。OS／V8のwarm状態へ影響し得る。この診断はread leaseの外で行い、graph readの成功数や時間には算入しない。
+- read失敗後は閉じてdrainし、以後のreadを成功扱いにしない。未知の拒否を期限拒否へ読み替えず、原本公開は成功時1・拒否時0を検査する。5秒を延長せず、実際には500ms marginを残した約4.50秒で拒否した。
+#### 実測（各ownerの固定深さ3回×3 bootstrapの平均）
+深さ0はenrollment後・read前、1は初回完了後、2は2回目の期限拒否／drain後であり、深さ2を2回目の完了状態とは扱わない。全完了readでfresh `readCommitted`は238回（Anchor 99、registry 94、provider 39、issuer 1、broker 5）だった。
+| owner | 履歴行数 0→1→2 | 論理record bytes 0→1→2 | IO返却bytes 0→1→2 | 平均readCommitted ms 0→1→2 |
+|---|---|---|---|---|
+| control-anchor | 2 → 7 → 10 | 28492 → 218936 → 406801 | 35608 → 238600 → 433998 | 3.99 → 14.05 → 16.70 |
+| lineage-registry | 3 → 8 → 11 | 44560 → 231366 → 417070 | 47445 → 246829 → 440087 | 5.33 → 14.47 → 18.63 |
+| provider | 3 → 4 → 4 | 155767 → 170591 → 170591 | 165249 → 182561 → 182561 | 6.99 → 8.37 → 7.92 |
+| checkpoint-issuer | 2 → 3 → 4 | 149939 → 165635 → 181331 | 157115 → 175326 → 193537 | 5.88 → 7.56 → 8.76 |
+| authority-broker | 1 → 4 → 6 | 1938 → 491983 → 813122 | 6576 → 504169 → 830340 | 2.97 → 12.85 → 17.46 |
+
+| bootstrap | 初回read ms／結果 | 2回目read ms／結果 | batch楽観的削減ms | 深さ0→1の再生work増加ms | 深さ1→2の再生work増加ms |
+|---|---|---|---|---|---|
+| 1 | 3956.74／completed | 4502.25／deadline-refused | 530.35 | 1853.38 | 1093.80 |
+| 2 | 3936.37／completed | 4501.26／deadline-refused | 546.84 | 1813.94 | 254.84 |
+| 3 | 4005.62／completed | 4500.45／deadline-refused | 548.23 | 2215.07 | 632.31 |
+
+#### batch比較と判断
+- 9 entry・41,460 Bの各passはscalar data 16要求。4096 B／4 rangeの理想下限は11要求なので、reader／brokerの2 passで削減数は最大10。inventory／descriptor／checkpoint構築等を削減へ混ぜない。source tupleのkind／index／offset／maxBytesを完全照合し、完了readだけで費用を見積もる。
+- 各passの実data RPC spanから費用の大きい5件を選んだ合計を、batchの追加費用0・他の費用不変という仮定での楽観的な削減値とする。exact wireによるpacking縮小やbatch検証の追加費用は未計測なので、実速度改善や保証された削減上限ではない。失敗prefixの件数を削減率にしない。
+- 各ownerの隣接深さ間の平均replay時間差へ、完了readのowner別件数を固定して掛けた。これはserial workの診断換算であり、owner間の並行性やRPCの待ちを含むend-to-endの実測latency差ではない。nested RPC span・phase inclusive時間・この換算を足し合わせない。負の差や小さい差も残す。
+- 初回の履歴増大（0→1）のwork増加は3 bootstrapすべてでbatch楽観値を上回る。1→2には下回るpairもあり、分散を隠さない。保守的な優先順は **保存再生のpage再利用／incremental検証の成立条件と限定実証を先行** とする。Anchor／registryの行数・bytes・列挙／読取・decode増加を優先して調べ、checkpoint再同期費用も分けて扱う。
+- I1のopaque facts共有とI2のbatch native接続は後回しにする。検証済みbytes／parseの再利用を成立させても、現資格・pin・取消し・期限・ownerごとのfresh確認・保存完了条件を省略しない。同期省略や期限延長を性能改善に数えない。次工程の設計・実証を経てI1〜I4の順序を再判断する。
+#### 回帰と再現
+`gradleOwnedH0.test.ts`でexclusive partition、重複計上・区間逸脱・event差替え・欠落、固定深さ改変、未知boot、実行compiled hash不一致、source coverage差替え、期限延長・拒否誤分類等を拒否する。`gradleOwnedH0Validation.test.ts`と以下のcheckでraw・分析・判断を照合する。
+```sh
+env OSV_H0_NATIVE=1 OSV_CGP_HISTORY=1 OSV_H0_RUNS=3 OSV_H0_OUTPUT=docs/validation/gradle-c3b-cgp-h0-2026-11-05.measurements.json npx vitest run src/test/utils/gradleOwnedH0Native.test.ts --maxWorkers=1
+node scripts/analyze-c3b-cgp-h0.mjs
+node scripts/analyze-c3b-cgp-h0.mjs --check
+```
+既存pathは維持したがobserverの費用とhost負荷の影響があり、非計測対照・因果的速度改善・実batch・独立SGA／別UID隔離・8回連続成立は未実証。CG0／CG3、backendEligible、profileApproved、nativeIsolationVerified、independentRegistryVerifiedはfalse、originalReadsSkippedは0のまま。
