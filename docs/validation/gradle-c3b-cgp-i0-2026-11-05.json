@@ -120,7 +120,7 @@
     "runtimeAdoption": false
   },
   "documentSha256": {
-    "docs/DESIGN_TODO.md": "deceea1a9a81052831eab2ca2a0112e9b986ed51ec270799925c9c3802080bb3",
-    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "6660de1e247340e2f170a3fc8b7cac3e971bf59816b3e3f461b7299ee876aa1d"
+    "docs/DESIGN_TODO.md": "37b7c9bb1f5b49c967c3530ffbea3f9762c41022508f80a7ee509f39dec3a205",
+    "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md": "dde8473c288ab2013c1e3f99a2ba662d66db03e59e6b871044484523e8291e4a"
   }
 }

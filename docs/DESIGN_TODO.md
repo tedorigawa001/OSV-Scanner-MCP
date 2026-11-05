@@ -3021,5 +3021,6 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 
 - 専用fixtureで3 bootstrap×5 processの実時間計測。5秒lease／500ms margin維持、初回3/3完了・2回目0/3（期限拒否、公開0）。本番source・既存CGP observerは変更しない。
 - read順／owner／call別に行数・論理record bytes・IO返却bytesとexclusive phaseを記録。固定深さ3回の診断は論理状態を進めず、checkpoint再同期も維持する。読取前後の診断をread成功に加算しない。
-- scalar data 16→理想batch下限11／pass、2 passで最大10要求の楽観的削減は約0.53〜0.55秒。初回増大のreplay work換算は約1.81〜2.22秒で全3 bootstrapが上回る。次の深さでは下回るpairも記録。実latency差や因果的速度改善ではない。
-- 次はAnchor／registryを中心とするpage再利用／incremental検証の成立条件・限定実証を先行。fresh認可／取消し／期限／保存完了・checkpoint同期を維持し、成立後にI1／I2の順序を再判断する。I0は完了、I1〜I4・実batch・独立SGA・8 read成立は残る。CG0／CG3保留、原本読取省略0。
+- scalar data 16→理想batch下限11／pass、2 passで最大10要求の楽観的削減は約0.58〜0.60秒。完了状態の深さ0→1の再生work増加は中央値で約1.67〜1.78秒で、全3 bootstrapが上回る。拒否後の深さは進行量が揃わないので判定に使わない。実latency差や因果的速度改善ではない。
+- 次はCGP-S0：Anchor／registryの列挙・読取・decodeを中心に、page再利用／incremental検証の成立条件と限定実証を先行。fresh認可／取消し／期限／保存完了・checkpoint同期を維持し、成立後にI1〜I4の順序を再判断する。I0は完了、I1〜I4・実batch・独立SGA・8 read成立は残る。CG0／CG3保留、原本読取省略0。
+- レビュー修正：深さ2の表、判定条件（全組一致・中央値・未決定）、閉包漏れ2 file、チェッカー負例（42か所中15→41か所検出）、`--check`の照合を直し、再計測した。
