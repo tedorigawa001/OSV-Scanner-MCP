@@ -29,4 +29,4 @@ export function s0AnchorCapacity(summary,cap={buckets:16,rowsPerPage:16,pageByte
  return {rowsPerRead,bytesPerRow,capacityBytes,rowsPerPageAtMeanSize:rowsPerPage,rowsBeforeLastRead:t.historyRowsBefore+rowsPerRead*lastDepth,bytesBeforeLastRead:t.recordBytesBefore+bytesPerRead*lastDepth,deepestDepthByBytes:Math.floor((capacityBytes-t.recordBytesBefore)/bytesPerRead),deepestDepthByRows:Math.floor((cap.buckets*rowsPerPage-t.historyRowsBefore)/rowsPerRead)};
 }
 /** A design section ends at the next same-level heading, so a later section does not change its digest. */
-export function designSection(text,heading){const at=text.indexOf(heading);need(at>=0,'section');const next=text.indexOf('\n### ',at+heading.length);return next<0?text.slice(at):text.slice(at,next+1);}
+export function designSection(text,heading){const at=text.indexOf(heading);need(at>=0,'section');const next=text.indexOf('\n### ',at+heading.length);return (next<0?text.slice(at):text.slice(at,next)).trimEnd()+'\n';}

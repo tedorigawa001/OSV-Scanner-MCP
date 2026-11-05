@@ -6,10 +6,11 @@
       "cycles": 0,
       "role": "control-anchor",
       "historyRows": 2,
-      "fullMedianMs": 3.204584000000011,
-      "reuseMedianMs": 2.448541999999975,
-      "ratio": 1.3087723224678376,
-      "pairedMedianDifferenceMs": 0.4741665000000239,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 3.7289369999999735,
+      "reuseMedianMs": 2.196124999999995,
+      "ratio": 1.6979620923216947,
+      "pairedMedianDifferenceMs": 1.2838329999999587,
       "io": {
         "lists": 7,
         "reads": 16,
@@ -27,10 +28,11 @@
       "cycles": 0,
       "role": "lineage-registry",
       "historyRows": 3,
-      "fullMedianMs": 4.165103999999985,
-      "reuseMedianMs": 3.4910624999999413,
-      "ratio": 1.193076319888302,
-      "pairedMedianDifferenceMs": 0.5580830000000105,
+      "reuseSlowerPairs": 2,
+      "fullMedianMs": 4.80427050000003,
+      "reuseMedianMs": 3.0667084999999474,
+      "ratio": 1.5665885753406663,
+      "pairedMedianDifferenceMs": 1.108541500000058,
       "io": {
         "lists": 8,
         "reads": 21,
@@ -48,10 +50,11 @@
       "cycles": 4,
       "role": "control-anchor",
       "historyRows": 10,
-      "fullMedianMs": 16.43012500000009,
-      "reuseMedianMs": 12.16818749999993,
-      "ratio": 1.3502524513203122,
-      "pairedMedianDifferenceMs": 4.738790999999992,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 16.30897899999991,
+      "reuseMedianMs": 12.306270999999924,
+      "ratio": 1.3252575861526217,
+      "pairedMedianDifferenceMs": 4.586832999999842,
       "io": {
         "lists": 15,
         "reads": 64,
@@ -69,10 +72,11 @@
       "cycles": 4,
       "role": "lineage-registry",
       "historyRows": 11,
-      "fullMedianMs": 16.767875000000004,
-      "reuseMedianMs": 13.254187499999716,
-      "ratio": 1.2651001806033273,
-      "pairedMedianDifferenceMs": 3.5407290000005105,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 16.34422900000004,
+      "reuseMedianMs": 12.779187500000035,
+      "ratio": 1.2789724698851157,
+      "pairedMedianDifferenceMs": 3.61685449999959,
       "io": {
         "lists": 16,
         "reads": 69,
@@ -90,10 +94,11 @@
       "cycles": 8,
       "role": "control-anchor",
       "historyRows": 18,
-      "fullMedianMs": 31.33710449999944,
-      "reuseMedianMs": 24.25054199999977,
-      "ratio": 1.292222850111958,
-      "pairedMedianDifferenceMs": 6.876395999999659,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 31.091895499998827,
+      "reuseMedianMs": 22.32464600000003,
+      "ratio": 1.3927161711768592,
+      "pairedMedianDifferenceMs": 8.36712499999885,
       "io": {
         "lists": 23,
         "reads": 112,
@@ -111,10 +116,11 @@
       "cycles": 8,
       "role": "lineage-registry",
       "historyRows": 19,
-      "fullMedianMs": 32.445582999999715,
-      "reuseMedianMs": 25.436999999999898,
-      "ratio": 1.2755271061838993,
-      "pairedMedianDifferenceMs": 6.447416500000145,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 34.12560399999984,
+      "reuseMedianMs": 24.032791500000712,
+      "ratio": 1.4199600574905678,
+      "pairedMedianDifferenceMs": 10.086228999999548,
       "io": {
         "lists": 24,
         "reads": 117,
@@ -132,10 +138,11 @@
       "cycles": 0,
       "role": "control-anchor",
       "historyRows": 2,
-      "fullMedianMs": 3.020354500000394,
-      "reuseMedianMs": 3.0892919999996593,
-      "ratio": 0.9776850165023984,
-      "pairedMedianDifferenceMs": -0.08645849999993516,
+      "reuseSlowerPairs": 1,
+      "fullMedianMs": 2.777458500000648,
+      "reuseMedianMs": 2.4205420000007507,
+      "ratio": 1.1474531323975319,
+      "pairedMedianDifferenceMs": 0.46985399999812216,
       "io": {
         "lists": 7,
         "reads": 16,
@@ -153,10 +160,11 @@
       "cycles": 0,
       "role": "lineage-registry",
       "historyRows": 3,
-      "fullMedianMs": 5.3612289999991845,
-      "reuseMedianMs": 3.2863539999998466,
-      "ratio": 1.6313607724546517,
-      "pairedMedianDifferenceMs": 1.8108959999990475,
+      "reuseSlowerPairs": 2,
+      "fullMedianMs": 3.8352500000000873,
+      "reuseMedianMs": 3.5485005000000456,
+      "ratio": 1.0808086401566064,
+      "pairedMedianDifferenceMs": 0.34079149999979563,
       "io": {
         "lists": 8,
         "reads": 21,
@@ -174,10 +182,11 @@
       "cycles": 4,
       "role": "control-anchor",
       "historyRows": 10,
-      "fullMedianMs": 16.786708000000544,
-      "reuseMedianMs": 12.287104,
-      "ratio": 1.3662054134156059,
-      "pairedMedianDifferenceMs": 4.4230205000012575,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 17.085187000000587,
+      "reuseMedianMs": 11.684833499999513,
+      "ratio": 1.4621677750052064,
+      "pairedMedianDifferenceMs": 5.043292000001202,
       "io": {
         "lists": 15,
         "reads": 64,
@@ -195,10 +204,11 @@
       "cycles": 4,
       "role": "lineage-registry",
       "historyRows": 11,
-      "fullMedianMs": 16.61529150000024,
-      "reuseMedianMs": 13.508104499999718,
-      "ratio": 1.2300239089800191,
-      "pairedMedianDifferenceMs": 3.1928535000006377,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 16.216104500000256,
+      "reuseMedianMs": 12.94097950000014,
+      "ratio": 1.2530816929275006,
+      "pairedMedianDifferenceMs": 3.2017920000007507,
       "io": {
         "lists": 16,
         "reads": 69,
@@ -216,10 +226,11 @@
       "cycles": 8,
       "role": "control-anchor",
       "historyRows": 18,
-      "fullMedianMs": 30.676687500001208,
-      "reuseMedianMs": 23.63770850000037,
-      "ratio": 1.2977860142407935,
-      "pairedMedianDifferenceMs": 6.61645800000224,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 30.07160450000083,
+      "reuseMedianMs": 23.589562999999544,
+      "ratio": 1.2747842976150687,
+      "pairedMedianDifferenceMs": 7.102063000000271,
       "io": {
         "lists": 23,
         "reads": 112,
@@ -237,10 +248,11 @@
       "cycles": 8,
       "role": "lineage-registry",
       "historyRows": 19,
-      "fullMedianMs": 33.34283299999879,
-      "reuseMedianMs": 24.774874999997337,
-      "ratio": 1.3458325420411759,
-      "pairedMedianDifferenceMs": 8.72406250000131,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 31.332728999999745,
+      "reuseMedianMs": 24.891833499999848,
+      "ratio": 1.2587553664939923,
+      "pairedMedianDifferenceMs": 5.362145999999484,
       "io": {
         "lists": 24,
         "reads": 117,
@@ -258,10 +270,11 @@
       "cycles": 0,
       "role": "control-anchor",
       "historyRows": 2,
-      "fullMedianMs": 3.3632704999981797,
-      "reuseMedianMs": 2.4845415000017965,
-      "ratio": 1.3536785358569168,
-      "pairedMedianDifferenceMs": 0.8414794999971491,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 3.78966649999893,
+      "reuseMedianMs": 2.2702919999992446,
+      "ratio": 1.6692418860658411,
+      "pairedMedianDifferenceMs": 0.8749579999985144,
       "io": {
         "lists": 7,
         "reads": 16,
@@ -279,10 +292,11 @@
       "cycles": 0,
       "role": "lineage-registry",
       "historyRows": 3,
-      "fullMedianMs": 3.9433124999995925,
-      "reuseMedianMs": 4.023396000000503,
-      "ratio": 0.9800955461503417,
-      "pairedMedianDifferenceMs": 0.06572899999810033,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 4.776353999999628,
+      "reuseMedianMs": 3.0352084999994986,
+      "ratio": 1.5736493885017842,
+      "pairedMedianDifferenceMs": 1.6959999999980937,
       "io": {
         "lists": 8,
         "reads": 21,
@@ -300,10 +314,11 @@
       "cycles": 4,
       "role": "control-anchor",
       "historyRows": 10,
-      "fullMedianMs": 17.032874999998967,
-      "reuseMedianMs": 12.608541499997955,
-      "ratio": 1.3508997055687788,
-      "pairedMedianDifferenceMs": 4.196020499999577,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 15.908312499999738,
+      "reuseMedianMs": 11.98431249999885,
+      "ratio": 1.3274280439533985,
+      "pairedMedianDifferenceMs": 4.435666499997751,
       "io": {
         "lists": 15,
         "reads": 64,
@@ -321,10 +336,11 @@
       "cycles": 4,
       "role": "lineage-registry",
       "historyRows": 11,
-      "fullMedianMs": 17.40166700000009,
-      "reuseMedianMs": 13.956521000001885,
-      "ratio": 1.24684848036253,
-      "pairedMedianDifferenceMs": 3.5283335000003717,
+      "reuseSlowerPairs": 1,
+      "fullMedianMs": 16.753937499999665,
+      "reuseMedianMs": 13.313041999999768,
+      "ratio": 1.2584605006128544,
+      "pairedMedianDifferenceMs": 3.3937915000005887,
       "io": {
         "lists": 16,
         "reads": 69,
@@ -342,10 +358,11 @@
       "cycles": 8,
       "role": "control-anchor",
       "historyRows": 18,
-      "fullMedianMs": 32.44706249999945,
-      "reuseMedianMs": 23.293313000000126,
-      "ratio": 1.3929775682831924,
-      "pairedMedianDifferenceMs": 8.797124999999141,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 31.988687999999456,
+      "reuseMedianMs": 22.71406299999944,
+      "ratio": 1.4083208274979357,
+      "pairedMedianDifferenceMs": 8.766666499999701,
       "io": {
         "lists": 23,
         "reads": 112,
@@ -363,10 +380,11 @@
       "cycles": 8,
       "role": "lineage-registry",
       "historyRows": 19,
-      "fullMedianMs": 33.77147900000091,
-      "reuseMedianMs": 25.160729000001083,
-      "ratio": 1.3422297501793152,
-      "pairedMedianDifferenceMs": 8.610749999999825,
+      "reuseSlowerPairs": 0,
+      "fullMedianMs": 32.21335449999788,
+      "reuseMedianMs": 23.751291499998842,
+      "ratio": 1.3562780154502103,
+      "pairedMedianDifferenceMs": 8.777270999999018,
       "io": {
         "lists": 24,
         "reads": 117,
@@ -400,30 +418,63 @@
   "backendEligible": false,
   "nativeIsolationVerified": false,
   "originalReadsSkipped": 0,
+  "boundComparison": {
+    "meaning": "fixture growth for two owners at H0 call counts; includes fixture accounting and copies; not a graph read or production speedup",
+    "idealSavingMs": 977,
+    "idealGrowthPerDepthMs": [
+      616,
+      685,
+      706
+    ],
+    "cohorts": [
+      {
+        "cohort": 1,
+        "fullGrowthPerDepthMs": 1708,
+        "reuseGrowthPerDepthMs": 1239,
+        "savedMs": 469,
+        "savedShare": 0.27
+      },
+      {
+        "cohort": 2,
+        "fullGrowthPerDepthMs": 1652,
+        "reuseGrowthPerDepthMs": 1282,
+        "savedMs": 370,
+        "savedShare": 0.22
+      },
+      {
+        "cohort": 3,
+        "fullGrowthPerDepthMs": 1678,
+        "reuseGrowthPerDepthMs": 1241,
+        "savedMs": 437,
+        "savedShare": 0.26
+      }
+    ]
+  },
+  "document": {
+    "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+    "heading": "### 9.107 ",
+    "sectionSha256": "3ddf7d0a53eab880e677a7e639debb7fee04500c9f31ec80239878d08c6db972"
+  },
   "measurement": {
     "path": "docs/validation/gradle-c3b-cgp-s0a-2026-11-06.measurements.json",
-    "sha256": "93114ea7f81287b158eae51c9d10e63429d31c0678c6fa11c2d3e704ae8ab431"
+    "sha256": "f2ba6cff9d2185693969c47bc6a7422cbfd8d69e051beac3b9bae13c80ee9f7d"
   },
   "analysisSource": {
     "path": "scripts/analyze-c3b-cgp-s0a.mjs",
-    "sha256": "50aecbfc18f76d7ecdea97e89374c0237d8888ca6f39b658f192c2b331857bb1"
+    "sha256": "8e20f6597452cb17c15f8d247aed7e743ed636d93e15015b3f72aca56ba7ee08"
   },
   "checkerSource": {
     "path": "src/test/fixtures/gradleOwnedS0aReport.mjs",
-    "sha256": "b0e2f4dbc9f10421330745cfcc04ee7957981858a6e9a64aa4e35d12812923fe"
+    "sha256": "b673876ea09755b1ad24d3420f1507cfdd7c15d87c8da41bb300bb73b0c7257f"
   },
   "scope": "three cohorts x three fixed native storage depths x two roles; one process, no five-owner graph throughput claim",
   "verification": {
     "date": "2026-11-06",
     "regressionTests": {
-      "passed": 66,
-      "failed": 0,
-      "files": 5,
-      "s0aFixture": 25,
-      "reportFaultCases": 17,
-      "savedEvidence": 2,
-      "productionStageStore": 19,
-      "documentation": 3
+      "s0aFixture": 78,
+      "reportFaultCases": 30,
+      "savedEvidence": 3,
+      "note": "counts per file; totals are in fullSuite"
     },
     "nativeStorageTest": {
       "passed": 1,
@@ -442,11 +493,11 @@
     "build": "passed",
     "historicalH0Check": "passed",
     "diffCheck": "passed",
-    "fullSuiteRun": false,
+    "fullSuiteRun": true,
     "regressionSources": {
-      "src/test/utils/gradleOwnedS0a.test.ts": "8375273b8ab0514784d55290c10bd31ee328763707590a96ef2fd0cc1e5a6434",
-      "src/test/utils/gradleOwnedS0aReport.test.ts": "cf1fedfd8d2b8346e6a6f3776f456e157e1ebc4e2e9549780c03003b3fb61af9",
-      "src/test/utils/gradleOwnedS0aValidation.test.ts": "f9eddedb55c5c597336cbd1391af998ed260808e6488ce460dd692345ddadd99"
+      "src/test/utils/gradleOwnedS0a.test.ts": "2072c92db5124430ad28897d51a6935c00a2959ca9a7c81becf98ba3eaaa1466",
+      "src/test/utils/gradleOwnedS0aReport.test.ts": "3200787a2515840fa7b1fb42075790c048d0e2aa69948f5b120722b6f2d224c0",
+      "src/test/utils/gradleOwnedS0aValidation.test.ts": "552d98eec636353d9e78462f512e2c4394f17603fd567f75fee23c6184808a5d"
     },
     "redGreen": [
       "The first full/reuse integration test failed on the stub, then passed on real native journal/checkpoint IO.",
@@ -462,6 +513,30 @@
       "node scripts/analyze-c3b-cgp-s0a.mjs --check",
       "node scripts/analyze-c3b-cgp-h0.mjs --check",
       "git diff --check"
-    ]
+    ],
+    "fullSuite": {
+      "passed": 5901,
+      "failed": 0,
+      "skipped": 1421,
+      "files": {
+        "passed": 161,
+        "skipped": 27
+      }
+    }
+  },
+  "reviewCorrections": {
+    "previousMeasurement": {
+      "commit": "eee8fe3",
+      "sha256": "93114ea7f81287b158eae51c9d10e63429d31c0678c6fa11c2d3e704ae8ab431"
+    },
+    "changes": [
+      "Fixture open now re-syncs every file of both roots, refuses an unresolved tail and replays stages, as StageStore.open does.",
+      "An expiry or revocation after the journal returned refuses that request only; inside the journal it stays fail-stop because the journal latches itself.",
+      "Added negatives for the exact prefix match, suffix stage checks, open bindings, deadline cap, clock domain, reservation cap, final gate, append floor and append cap.",
+      "Mutation by hand on a disposable copy: fixture 10 of 34 before, 36 of 39 after; checker 13 of 19 before, 23 of 23 after. Not repeatable from the repository.",
+      "Added the section digest and the comparison with the S0 ideal bound; a saving above the bound is refused.",
+      "Remeasured because the fixture changed."
+    ],
+    "relatedDefect": "designSection from f9a6671 included blank lines before the next heading; fixed, recorded digest unchanged."
   }
 }

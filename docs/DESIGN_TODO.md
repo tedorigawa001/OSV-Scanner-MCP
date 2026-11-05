@@ -3039,6 +3039,7 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 ### CGP-S0a：fresh IO＋pure stage-prefixの限定実証（§9.107）
 
 - test-only strict profile・固定F/M slot catalog、private context／own-call、exact row bytes照合・suffix stage再生を実装。元期限・attempt・current callback、全journal認証／原本IO／checkpoint同期を維持。production sourceは変更なし。
-- production StageStoreと実Anchor／registry historyの同値、改変／巻戻し／root交換・偽造handle・同期障害／復旧・期限／最終取消し等の25回帰を追加。SR01〜18の限定部分であり、全SR条件成立とはしない。
-- 3 cohort×3固定深さ×2 role、6 pair交互順の実disk比較を実施。全108 pairでreference digest・全IO／同期counterが一致、stageの再解析のみ削減。4／8 pin操作後は中央値が改善したが、初期履歴では逆転もある。単一process・warm比較で、本番speedup／8 graph read成立は未実証。
+- production StageStoreと実Anchor／registry historyの同値、改変／巻戻し／root交換・偽造handle・同期障害／復旧・期限／最終取消し、prefix exact照合とsuffix stage検証の負例等の78回帰を追加。SR01〜18・SR38の限定部分であり、全SR条件成立とはしない。
+- 3 cohort×3固定深さ×2 role、6 pair交互順の実disk比較を実施。全108 pairでreference digest・全IO／同期counterが一致、stageの再解析のみ削減。全深さで中央値は改善したが、pair単位の逆転は残る。H0の呼出し回数へ換算したAnchor＋registryの増加は深さごとに約1.65〜1.71秒→約1.24〜1.28秒（削減22〜27%、算術）で、理想上限（616〜706 ms）に届かない。単一process・warm比較で、本番speedup／8 graph read成立は未実証。
 - 次はS0b：checkpointの既存file再同期batchによる重複inventory列挙削減のfixture。generic parse／MAC cache・実session接続／peak RSS・S0c page・S0d 5owner比較・S0x独立providerも残る。CG0／CG3保留、原本読取省略0。
+- レビュー修正：openへstoreを含む全file再同期・tail拒否・stage再生を追加。journal完了後の期限・取消しは要求単位の拒否に変更（journal内はjournal自身のfail-stopのまま）。中核検査の負例を追加し再計測。`designSection`の空行の欠陥で§9.106の照合testが失敗していたのを修正。

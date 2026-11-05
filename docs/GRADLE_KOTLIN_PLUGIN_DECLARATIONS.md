@@ -7661,27 +7661,43 @@ I1〜I4の再判断は、全bootstrapの比較可能な完了状態の中央値�
 - `RootedJournalIO`、`AuthorityJournal`、`FileJournalCheckpoint`を実際に呼ぶ。現在のfull inventory／tail、全manifest／blob／commitの読取・hash／MAC／JSON検証、checkpoint chainの全認証とgenesisを含むfile＋directory再同期はそのまま残す。計数は各RootedJournalIO instanceの実methodを透過wrapperで囲み、checkpoint put内部のlist／readも含む。bytesはmethodの返却bytesであり物理disk読取量ではない。
 - Mが省くのは、既に検証済みの同一ordered rowに対するpure stage検証・画像parse・receipt／operation mapの再構成だけ。現在の完全なjournal履歴が得られてから、head／operationId／requestDigest／record role・id・順序と各Bufferのexact一致を確認する。journalの認証・JSONやowner-levelの追加parse／署名／現認可は再利用していない。
 - prefixにはledger／images／byRef／operation→API・digest・stage集合を保存する。appendはprivate stateをcloneしてsuffixを実検証し、旧prefixを変更しない。変更なしなら元のimmutable pure stateを使い、callerへは防御copyを返す。現在checkpoint、同期成功、gateの成功、expiry／pin／selection／ACKの許可をcacheへ保存しない。
-- cacheがevictされても、context内で最後に確認したhead vectorの下限は保持し、正しいMAC付きの過去journal／checkpointへの巻戻しを拒否する。新contextはcoldでfull recoveryする。local pairを同時に巻き戻した別bootでの独立rollback防止やSGAの現在世代確認を実証したとはしない。
+- cacheがevictされても、context内で最後に確認したhead vectorの下限は保持し、正しいMAC付きの過去journal／checkpointへの巻戻しを拒否する。§9.106.3／SR37はcache内のprefixだけを想定してeviction後は通るとしていたが、このfloorはcacheと別に持つので同じcontext内ではeviction後も拒否する。新contextはfloorも空のcoldでfull recoveryするので、再open後の巻戻しは通る。local pairを同時に巻き戻した別bootでの独立rollback防止やSGAの現在世代確認を実証したとはしない。
 - cacheの保持bytesはraw snapshot＋pure state／indexのserialized表現、entries／parsed nodesは別に計数する。未変更candidateの二重保存を避け、append時は旧cache＋新candidateのcapを照合する。cache不足ではfull検証へ戻り原本を削除しない。これらは保持cacheの上限であり、full IO／解析scratch・返却copy・JS object overheadを含むpeak RSSの実証ではない。intent／floorのbounded状態とも区別する。
-- read中のIO／同期・integrity・最終認可拒否は結果を返さず、candidateを公開せず、fixtureをfail-stopにする。checkpoint同期失敗時は再openも再同期成功まで拒否し、成功後はcoldから開始する。不正な追記schema／既知の論理conflictはIO又はwrite前に拒否し、検証済みprefixを不用意に破棄しない。
+- read中のIO／同期・integrityの失敗は結果を返さず、candidateを公開せず、fixtureをfail-stopにする。journalが返った後の期限到達・取消しはその要求だけを拒否し、結果とcandidateを公開せず、検証済みprefixとfloorを保持して次の要求を受ける。journalの処理中に起きた期限到達・取消しは、`AuthorityJournal`が自身をfail-stopにするのでfixtureもfail-stopになり、checkpoint読取中なら理由は`checkpoint_unavailable`に変わる。本番sourceを変えないS0aの範囲ではこの差を残す。
+- openは`StageStore.open`と同じく、`recoverPublished`の後に両rootの全fileを再読取・file＋directory再同期し、未解決tailを`tail_unknown`で拒否し、全stageを再生してからcontextを作る。同期失敗時は再openも再同期成功まで拒否し、成功後はcoldから開始する。不正な追記schema／既知の論理conflictはIO又はwrite前に拒否し、検証済みprefixを不用意に破棄しない。
 #### 回帰と実データ対照
-`gradleOwnedS0a.test.ts`の25件は、F/Mの同値、production StageStoreとの一致、正常append／2段stage、返却値改変、eviction、実fileのblob／commit／checkpoint改変・余剰file・symlink・root交換、MACが正しい過去pairへの巻戻し、再open／偽handle／constructor迂回、profile再pin、mode付替え、元期限／attempt、IO途中と全同期後の拒否、同期障害と再open復旧、並行再入等を確認する。
-SR01〜03・06〜09・11〜18のうち上記のstorage／simulated-call部分の限定対照である。SR04のcollision用hash対照、SR05の全descriptor変種、SR10の集約状態への故障注入、実session／unknown transport・世代／key rotationの全条件、SR19以降のS0b／page／provider／5owner条件を完了扱いにしない。実装module内のpure stage validatorは既存production関数を使用する。
-`gradleOwnedS0aReport.test.ts`では欠落／重複cohort、mode／順序／履歴交換、片側及び両側の同期・IO省略、誤prefix、resource cap、再計算profileの余剰field、期限延長・遅延成功・NaN・採用flagを拒否する。`gradleOwnedS0aValidation.test.ts`と分析scriptで保存raw・実装／計測source・比較・回帰testのhashを照合する。
+`gradleOwnedS0a.test.ts`の78件は、F/Mの同値、production StageStoreとの一致、正常append／2段stage、返却値改変、eviction、実fileのblob／commit／checkpoint改変・余剰file・symlink・root交換、MACが正しい過去pairへの巻戻し、再open／偽handle／constructor迂回、profile再pin、mode付替え、元期限／attempt、IO途中と全同期後の拒否、同期障害と再open復旧、並行再入等を確認する。journalの`readHistory`の戻り値を差し替え、journal・checkpoint・floorが受理する行に対して、prefixのexact照合（bytes・id・role・順序・operationId・requestDigest・同digest別revision）と、suffixのstage検証（manifest・image・session-index・prefixを跨ぐhead連結・request／API衝突・stage重複・別operationのreceipt）を直接確認する。`applyRows`は本番`StageStore`のloopの複製なので、これらの負例は複製側を守るものである。openのroot identity／key binding／全file再同期／未解決tail／stage再生の拒否、期限上限、clock domain、予約上限、最終gate、append時のcapも負例で確認する。
+SR01〜18・SR38のうち上記のstorage／simulated-call部分の限定対照である。SR04はhash衝突そのものではなく、同じhead digestで内容だけ異なる行を与えた対照である。SR05の全descriptor変種、SR10の集約状態への故障注入、実session／unknown transport・世代／key rotationの全条件、SR19以降のS0b／page／provider／5owner条件を完了扱いにしない。実装module内のpure stage validatorは既存production関数を使用する。
+`gradleOwnedS0aReport.test.ts`では欠落／重複cohort、mode／順序／履歴交換、片側及び両側の同期・IO省略、誤prefix、resource cap、再計算profileの余剰field、期限延長・遅延成功・NaN・採用flagを拒否する。`gradleOwnedS0aValidation.test.ts`と分析scriptで保存raw・実装／計測source・比較・回帰testのhash、本節のhash、下の表の値を照合する。
 #### 固定深さのnative disk診断
 同一processで3 cohort×3履歴深さ×Anchor／registryの18 store観測を行った。各深さは独立したtemporary rootsに実owner fixtureでenrollment／activationし、pin acquire＋releaseを0／4／8回実行して生成する。history構築は既存fixtureの制御clock、比較readは実単調clockである。bootstrap列はcohort IDであり、別UID／別OS processの起動証拠ではない。
 各roleを止めてproduction StageStoreのfull history digestを取得し、S0aを同じrootへopenする。Mをwarmにした後、F/Mの順を交互にして6 pairずつ読む（計108 pair／216比較read、別途18 warm read）。全history digestがproduction referenceと一致し、同じpairで全IO／同期／journal hash counterが一致した。N行の固定深さでは、checkpoint file／directory同期は各N＋1件（genesis込み）、putもN＋1件、readはblobChecks＋3N＋3、listはN＋5を両側で検査する。読取省略0。
 以下は各cohortの6観測中央値の範囲で、異なる深さを混ぜた平均ではない。pairごとの差の中央値と全rawも保存し、中央値の差と取り違えない。
-| pin acquire/release回数 | owner | history行数 | F中央値msの範囲 | M中央値msの範囲 | 1 readのfile／directory同期件数（各） |
-|---|---|---|---|---|---|
-| 0 | control-anchor | 2 | 3.02〜3.36 | 2.45〜3.09 | 3 |
-| 0 | lineage-registry | 3 | 3.94〜5.36 | 3.29〜4.02 | 4 |
-| 4 | control-anchor | 10 | 16.43〜17.03 | 12.17〜12.61 | 11 |
-| 4 | lineage-registry | 11 | 16.62〜17.40 | 13.25〜13.96 | 12 |
-| 8 | control-anchor | 18 | 30.68〜32.45 | 23.29〜24.25 | 19 |
-| 8 | lineage-registry | 19 | 32.45〜33.77 | 24.77〜25.44 | 20 |
+| pin acquire/release回数 | owner | history行数 | F中央値msの範囲 | M中央値msの範囲 | 1 readのfile／directory同期件数（各） | Mが遅かったpair |
+|---|---|---|---|---|---|---|
+| 0 | control-anchor | 2 | 2.78〜3.79 | 2.20〜2.42 | 3 | 1／18 |
+| 0 | lineage-registry | 3 | 3.84〜4.80 | 3.04〜3.55 | 4 | 4／18 |
+| 4 | control-anchor | 10 | 15.91〜17.09 | 11.68〜12.31 | 11 | 0／18 |
+| 4 | lineage-registry | 11 | 16.22〜16.75 | 12.78〜13.31 | 12 | 1／18 |
+| 8 | control-anchor | 18 | 30.07〜31.99 | 22.32〜23.59 | 19 | 0／18 |
+| 8 | lineage-registry | 19 | 31.33〜34.13 | 23.75〜24.89 | 20 | 0／18 |
 
-4／8回の固定深さではMの中央値が全cohortで小さかったが、小さい初期履歴には逆転もある。同一process／同じheld IOとwarm OS・JIT、共通の計数／cache資源集計／返却copyを含む限定fixtureであり、Fのwallは未変更production readerの時間そのものではない。native diskの差を本番の因果的speedup・全graph read時間・独立5ownerでの8回成功へ換算しない。8回は履歴生成のpin操作回数であり8 graph readの成功数ではない。
+全cohort・全深さでMの中央値が小さかったが、pair単位の逆転は小さい履歴を中心に残る。同一process／同じheld IOとwarm OS・JIT、共通の計数／cache資源集計／返却copyを含む限定fixtureであり、Fのwallは未変更production readerの時間そのものではない。native diskの差を本番の因果的speedup・全graph read時間・独立5ownerでの8回成功へ換算しない。8回は履歴生成のpin操作回数であり8 graph readの成功数ではない。
+#### §9.106.7の上限との比較
+fixtureの深さ0→8の傾きとH0の呼出し回数・行増加から、Anchor＋registryの深さごとの増加を換算した。fixtureの計数・copyを含む算術で、graph readの実測ではない。§9.106.7の理想上限（5 owner、S0-Mの全再利用＋S0-Dの列挙削除）は同じ換算で616〜706 ms、削減は最小でも977 msである。分析scriptは、削減がこの最小値を超えると拒否する（規則2）。
+
+| cohort | 増加（F） | 増加（M） | 削減 | 削減の割合 |
+|---|---|---|---|---|
+| 1 | 1,708 ms | 1,239 ms | 469 ms | 27% |
+| 2 | 1,652 ms | 1,282 ms | 370 ms | 22% |
+| 3 | 1,678 ms | 1,241 ms | 437 ms | 26% |
+
+S0aが省くのはstage層だけで、journalの認証・JSON、IO、同期は残るので、理想上限の削減の半分以下である。規則3の判定はS0bの実測後に行う。
+#### レビュー修正
+- `f9a6671`の`designSection`が次見出しの前の空行をhashへ含め、§9.107の追記で§9.106の照合testが失敗していたので、末尾の空行を除くよう直した。記録済みのhashは変わらない。
+- openがcheckpointだけを同期しstoreを同期していなかったので、`StageStore.open`と同じ再同期・tail拒否・stage再生を追加した。
+- 検査を1つずつ外す確認で34か所中24か所が未検出（うち6か所は他の検査と重複、又は実質的に同じ動作）だったので、上記の負例を追加した。証拠チェッカーも19条件中6条件が未検出だったので、対象条件を名指しする負例を追加した。修正後はfixture 39か所中36か所、チェッカー23条件すべてを検出する。残る3か所は後段の検査と重複するgate、既に新しいBufferであるsnapshotのcopy、capの事前判定で、外しても動作が変わらない。確認は使い捨てコピーでの手動実行で、リポジトリから再実行はできない。
+- journal完了後の期限・取消しを要求単位の拒否に変更し、記録に本節のhashと上限比較を追加した。fixtureの変更に合わせて再計測した。
 #### 再現・残課題
 rawと検証記録は`docs/validation/gradle-c3b-cgp-s0a-2026-11-06.measurements.json`と同名`.json`。
 ```sh

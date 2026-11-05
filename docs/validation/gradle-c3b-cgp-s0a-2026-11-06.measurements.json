@@ -25,8 +25,8 @@
       "package.json": "5a0ff34ffcd644bbefaa713dcd8e65782b719bc01be52cd8f26672bcc123ec9b",
       "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
       "src/test/fixtures/gradleOwnedRegistryFixture.ts": "b526f4b13d5455f40721f251a58088f0abcd4f388768431b3641505e99ff6599",
-      "src/test/fixtures/gradleOwnedS0a.ts": "756aeecba46c5fbe559063a0375b2d15ba4bb9d12cafd310f07df170674c5742",
-      "src/test/fixtures/gradleOwnedS0aReport.mjs": "b0e2f4dbc9f10421330745cfcc04ee7957981858a6e9a64aa4e35d12812923fe",
+      "src/test/fixtures/gradleOwnedS0a.ts": "2273a7ef2e3ed9a71abf52d4aa394f24bd76d3928e7dc578006d8151d31090ee",
+      "src/test/fixtures/gradleOwnedS0aReport.mjs": "b673876ea09755b1ad24d3420f1507cfdd7c15d87c8da41bb300bb73b0c7257f",
       "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
       "src/test/utils/gradleOwnedS0aNative.test.ts": "8dca52522077478886e321623f9a823e96e7604be8562101c2ebfa4ffef28b19",
       "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
@@ -74,16 +74,16 @@
       "tsconfig.json": "7375ac5d334f50eed3d766799fd016e068f1998639c7b02ba201db280a1583c3",
       "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
     },
-    "digest": "9d6bea9232271d3c3fecf975aeba881c8e38311197f11fb9992ead5b2b7c94ed"
+    "digest": "a92b79032c13b1aef0adb9b74e45fc4d9cb6596e1ecaceb9c9052bc29f35377f"
   },
   "host": {
     "platform": "darwin",
     "arch": "arm64",
     "node": "v26.12.1",
     "loadAverage": [
-      1.99169921875,
-      2.17041015625,
-      2.416015625
+      3.0361328125,
+      2.89990234375,
+      2.5673828125
     ]
   },
   "samples": [
@@ -92,7 +92,7 @@
       "cycles": 0,
       "role": "control-anchor",
       "rows": 2,
-      "referenceDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+      "referenceDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
       "observations": [
         {
           "round": 1,
@@ -102,13 +102,13 @@
           ],
           "results": [
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.001167000000009466,
-                "wallMs": 2.504374999999982,
+                "replayMs": 0.0015830000000960354,
+                "wallMs": 2.4788750000000164,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -141,13 +141,13 @@
               }
             },
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.6175829999999678,
-                "wallMs": 3.2598339999999553,
+                "replayMs": 0.6792910000000347,
+                "wallMs": 3.5341659999999138,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -189,13 +189,13 @@
           ],
           "results": [
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.5618330000000924,
-                "wallMs": 4.591209000000049,
+                "replayMs": 0.534334000000058,
+                "wallMs": 3.9237080000000333,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -228,13 +228,13 @@
               }
             },
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.0019999999999527063,
-                "wallMs": 2.3409580000000005,
+                "replayMs": 0.001209000000017113,
+                "wallMs": 2.2040829999999687,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -276,13 +276,13 @@
           ],
           "results": [
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.0005830000000059954,
-                "wallMs": 2.335207999999966,
+                "replayMs": 0.0005840000000034706,
+                "wallMs": 2.1655410000000757,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -315,13 +315,13 @@
               }
             },
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.49166700000000674,
-                "wallMs": 2.819749999999999,
+                "replayMs": 0.6645000000000891,
+                "wallMs": 2.8840000000000146,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -363,13 +363,13 @@
           ],
           "results": [
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.6542090000000371,
-                "wallMs": 3.6627079999999523,
+                "replayMs": 0.5097909999999501,
+                "wallMs": 4.986208000000033,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -402,13 +402,13 @@
               }
             },
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.0012500000000272848,
-                "wallMs": 3.524000000000001,
+                "replayMs": 0.0008329999999432403,
+                "wallMs": 2.1881670000000213,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -450,13 +450,13 @@
           ],
           "results": [
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.00045799999998052954,
-                "wallMs": 2.392708999999968,
+                "replayMs": 0.0005409999999983484,
+                "wallMs": 2.1456249999999955,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -489,13 +489,13 @@
               }
             },
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.4970419999999649,
-                "wallMs": 2.8564999999999827,
+                "replayMs": 0.48166600000001836,
+                "wallMs": 2.577374999999961,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -537,13 +537,13 @@
           ],
           "results": [
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.5857500000000755,
-                "wallMs": 3.149334000000067,
+                "replayMs": 1.3338750000000346,
+                "wallMs": 4.245083000000022,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -576,13 +576,13 @@
               }
             },
             {
-              "historyDigest": "ff7a4b7f806103b947c95a3262314e50b948ab22416e49157740e61e5cd7378f",
+              "historyDigest": "ba68e68a54cb96e05d5300724ad38df24656426509d02e2904080fd553619e08",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.0013750000000527507,
-                "wallMs": 3.9635829999999714,
+                "replayMs": 0.0014170000000603977,
+                "wallMs": 2.7327080000000024,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -623,7 +623,7 @@
       "cycles": 0,
       "role": "lineage-registry",
       "rows": 3,
-      "referenceDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+      "referenceDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
       "observations": [
         {
           "round": 1,
@@ -633,13 +633,13 @@
           ],
           "results": [
             {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0007920000000467553,
-                "wallMs": 3.3472079999999096,
+                "replayMs": 0.0009170000000722212,
+                "wallMs": 3.086832999999956,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -672,13 +672,13 @@
               }
             },
             {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.83787499999994,
-                "wallMs": 5.661166999999978,
+                "replayMs": 1.1357080000000224,
+                "wallMs": 4.232208000000014,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -720,13 +720,13 @@
           ],
           "results": [
             {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.746417000000065,
-                "wallMs": 6.83666699999992,
+                "replayMs": 0.9371670000000449,
+                "wallMs": 5.391917000000035,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -759,13 +759,13 @@
               }
             },
             {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0006660000000238142,
-                "wallMs": 3.150541999999973,
+                "replayMs": 0.0008329999999432403,
+                "wallMs": 10.921333000000004,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -807,13 +807,13 @@
           ],
           "results": [
             {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0007920000000467553,
-                "wallMs": 4.777709000000073,
+                "replayMs": 0.0007080000000314612,
+                "wallMs": 10.476416000000086,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -846,13 +846,13 @@
               }
             },
             {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.8795410000000174,
-                "wallMs": 4.258707999999956,
+                "replayMs": 2.066667000000052,
+                "wallMs": 6.020333000000051,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -894,13 +894,13 @@
           ],
           "results": [
             {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.818290999999931,
-                "wallMs": 4.0715000000000146,
+                "replayMs": 0.8767500000000155,
+                "wallMs": 4.2083339999999225,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -933,61 +933,61 @@
               }
             },
             {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
+              "metrics": {
+                "mode": "M",
+                "reusedRows": 3,
+                "replayedRows": 0,
+                "replayMs": 0.0006249999998999556,
+                "wallMs": 3.046583999999939,
+                "io": {
+                  "lists": 8,
+                  "reads": 21,
+                  "bytes": 47456,
+                  "puts": 4,
+                  "entriesListed": 50
+                },
+                "sync": {
+                  "files": 4,
+                  "directories": 4
+                },
+                "journal": {
+                  "blobChecks": 9,
+                  "blobReadBytes": 36940,
+                  "privateBlobCopyBytes": 36940,
+                  "recordChecks": 12,
+                  "recordHashChecks": 9,
+                  "recordHashBytes": 36940,
+                  "recordConcatBytes": 36940,
+                  "memoHits": 3,
+                  "memoEvictions": 0,
+                  "peakMemoEntries": 9,
+                  "peakMemoKeyBytes": 1243,
+                  "returnedRecordBytes": 0
+                },
+                "cacheBytes": 71427,
+                "cacheNodes": 213,
+                "cacheEntries": 20,
+                "cachePublished": 1
+              }
+            }
+          ]
+        },
+        {
+          "round": 5,
+          "order": [
+            "M",
+            "F"
+          ],
+          "results": [
+            {
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
                 "replayMs": 0.0004999999999881766,
-                "wallMs": 3.2741250000000264,
-                "io": {
-                  "lists": 8,
-                  "reads": 21,
-                  "bytes": 47456,
-                  "puts": 4,
-                  "entriesListed": 50
-                },
-                "sync": {
-                  "files": 4,
-                  "directories": 4
-                },
-                "journal": {
-                  "blobChecks": 9,
-                  "blobReadBytes": 36940,
-                  "privateBlobCopyBytes": 36940,
-                  "recordChecks": 12,
-                  "recordHashChecks": 9,
-                  "recordHashBytes": 36940,
-                  "recordConcatBytes": 36940,
-                  "memoHits": 3,
-                  "memoEvictions": 0,
-                  "peakMemoEntries": 9,
-                  "peakMemoKeyBytes": 1243,
-                  "returnedRecordBytes": 0
-                },
-                "cacheBytes": 71427,
-                "cacheNodes": 213,
-                "cacheEntries": 20,
-                "cachePublished": 1
-              }
-            }
-          ]
-        },
-        {
-          "round": 5,
-          "order": [
-            "M",
-            "F"
-          ],
-          "results": [
-            {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
-              "metrics": {
-                "mode": "M",
-                "reusedRows": 3,
-                "replayedRows": 0,
-                "replayMs": 0.0007500000000391083,
-                "wallMs": 4.765625,
+                "wallMs": 2.923375000000078,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -1020,13 +1020,13 @@
               }
             },
             {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.8564169999999649,
-                "wallMs": 4.056959000000006,
+                "replayMs": 0.9477090000000317,
+                "wallMs": 5.376333000000045,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -1068,13 +1068,13 @@
           ],
           "results": [
             {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.7531669999999622,
-                "wallMs": 3.953708000000006,
+                "replayMs": 0.8394170000000258,
+                "wallMs": 3.9811670000000277,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -1107,13 +1107,13 @@
               }
             },
             {
-              "historyDigest": "26ab72233f5c349d19b6c639e2ca0654dd39bebe5ae8a92fc30b92d8470a5bf9",
+              "historyDigest": "40f27b4341c0cad90072dba63433d38531dde756e68aa97547b01c9204575262",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.00041699999997035775,
-                "wallMs": 3.634916999999973,
+                "replayMs": 0.0004999999999881766,
+                "wallMs": 2.90945899999997,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -1154,7 +1154,7 @@
       "cycles": 4,
       "role": "control-anchor",
       "rows": 10,
-      "referenceDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+      "referenceDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
       "observations": [
         {
           "round": 1,
@@ -1164,13 +1164,13 @@
           ],
           "results": [
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.0009580000000823929,
-                "wallMs": 13.01891599999999,
+                "replayMs": 0.0013330000001587905,
+                "wallMs": 12.202457999999751,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1203,13 +1203,13 @@
               }
             },
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.954208000000108,
-                "wallMs": 16.47925000000032,
+                "replayMs": 4.888209000000188,
+                "wallMs": 15.824082999999973,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1251,13 +1251,13 @@
           ],
           "results": [
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.916082999999617,
-                "wallMs": 16.380999999999858,
+                "replayMs": 4.734209000000192,
+                "wallMs": 21.449291999999787,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1290,13 +1290,13 @@
               }
             },
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.0011669999998957792,
-                "wallMs": 11.6875,
+                "replayMs": 0.0018329999998059066,
+                "wallMs": 13.843791999999667,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1338,13 +1338,13 @@
           ],
           "results": [
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.001708000000235188,
-                "wallMs": 12.690500000000156,
+                "replayMs": 0.0014580000001842564,
+                "wallMs": 12.463374999999814,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1377,13 +1377,13 @@
               }
             },
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.9871250000001055,
-                "wallMs": 17.802000000000135,
+                "replayMs": 5.257542000000285,
+                "wallMs": 16.978624999999738,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1425,13 +1425,13 @@
           ],
           "results": [
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.590333000000101,
-                "wallMs": 15.810166999999637,
+                "replayMs": 5.1426659999997355,
+                "wallMs": 15.554666999999881,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1464,13 +1464,13 @@
               }
             },
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
                 "replayMs": 0.0009169999998448475,
-                "wallMs": 11.151792000000114,
+                "wallMs": 10.715916000000107,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1512,13 +1512,13 @@
           ],
           "results": [
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.0010000000002037268,
-                "wallMs": 12.648874999999862,
+                "replayMs": 0.0014169999999467109,
+                "wallMs": 12.410084000000097,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1551,13 +1551,13 @@
               }
             },
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 5.120582999999897,
-                "wallMs": 17.81637499999988,
+                "replayMs": 4.746875000000273,
+                "wallMs": 16.793874999999844,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1599,13 +1599,13 @@
           ],
           "results": [
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.660875000000033,
-                "wallMs": 16.046790999999757,
+                "replayMs": 4.5931659999996555,
+                "wallMs": 15.145207999999911,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1638,13 +1638,13 @@
               }
             },
             {
-              "historyDigest": "261692a843d9b71b9b436635aa113a5a7e830abb85efa7cd838cec8b77a65962",
+              "historyDigest": "156ca4fc89f02cf0f52a80cda91df58ddc472afd309d7a2edb4cc0409df6fd44",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.0009589999999661813,
-                "wallMs": 11.262708999999631,
+                "replayMs": 0.0016669999999976426,
+                "wallMs": 10.48679200000015,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -1685,7 +1685,7 @@
       "cycles": 4,
       "role": "lineage-registry",
       "rows": 11,
-      "referenceDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+      "referenceDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
       "observations": [
         {
           "round": 1,
@@ -1695,13 +1695,13 @@
           ],
           "results": [
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0010420000003250607,
-                "wallMs": 16.150125000000116,
+                "replayMs": 0.0017499999999017746,
+                "wallMs": 12.819042000000081,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -1734,13 +1734,13 @@
               }
             },
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.5314579999999296,
-                "wallMs": 16.618625000000065,
+                "replayMs": 3.7714999999998327,
+                "wallMs": 16.820791999999983,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -1782,13 +1782,13 @@
           ],
           "results": [
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.580500000000029,
-                "wallMs": 20.160167,
+                "replayMs": 3.6792500000001382,
+                "wallMs": 19.98416700000007,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -1821,13 +1821,13 @@
               }
             },
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0012499999997999112,
-                "wallMs": 13.211707999999817,
+                "replayMs": 0.00204200000007404,
+                "wallMs": 12.739332999999988,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -1869,13 +1869,13 @@
           ],
           "results": [
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0009580000000823929,
-                "wallMs": 13.305875000000015,
+                "replayMs": 0.0009579999996276456,
+                "wallMs": 12.66912500000035,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -1908,13 +1908,13 @@
               }
             },
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.342290999999932,
-                "wallMs": 17.20279100000016,
+                "replayMs": 3.6264580000001843,
+                "wallMs": 16.41729200000009,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -1956,13 +1956,13 @@
           ],
           "results": [
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.2714999999998327,
-                "wallMs": 16.665541999999732,
+                "replayMs": 3.498833999999988,
+                "wallMs": 16.271165999999994,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -1995,13 +1995,13 @@
               }
             },
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
                 "replayMs": 0.0012910000000374566,
-                "wallMs": 13.205082999999831,
+                "wallMs": 13.34512500000028,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -2043,13 +2043,13 @@
           ],
           "results": [
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0009580000000823929,
-                "wallMs": 13.296666999999616,
+                "replayMs": 0.0014580000001842564,
+                "wallMs": 12.987250000000131,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -2082,13 +2082,13 @@
               }
             },
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.352957999999944,
-                "wallMs": 16.870208000000275,
+                "replayMs": 3.6128750000002583,
+                "wallMs": 16.006958999999824,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -2130,13 +2130,13 @@
           ],
           "results": [
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.2605419999999867,
-                "wallMs": 16.641417000000274,
+                "replayMs": 3.412166999999954,
+                "wallMs": 16.078541999999743,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -2169,13 +2169,13 @@
               }
             },
             {
-              "historyDigest": "37b30cc3f33183dac0de564e9e1e2b7998861d74c6f470dbd027f729ac1c4678",
+              "historyDigest": "a59527172c4ac4e1a28c752183b68301af4cca05e8de91d9872143e234f01dd6",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0010419999998703133,
-                "wallMs": 13.133499999999913,
+                "replayMs": 0.0011250000002291927,
+                "wallMs": 12.593000000000302,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -2216,7 +2216,7 @@
       "cycles": 8,
       "role": "control-anchor",
       "rows": 18,
-      "referenceDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+      "referenceDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
       "observations": [
         {
           "round": 1,
@@ -2226,13 +2226,13 @@
           ],
           "results": [
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0012499999993451638,
-                "wallMs": 23.185625000000073,
+                "replayMs": 0.00145899999915855,
+                "wallMs": 22.388291999999637,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2265,13 +2265,13 @@
               }
             },
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 9.360709000000497,
-                "wallMs": 32.56062500000007,
+                "replayMs": 7.393041999999696,
+                "wallMs": 30.818749999998545,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2313,13 +2313,13 @@
           ],
           "results": [
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.615624999998545,
-                "wallMs": 30.839916999999332,
+                "replayMs": 7.34416599999895,
+                "wallMs": 28.710540999998557,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2352,13 +2352,13 @@
               }
             },
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0012080000014975667,
-                "wallMs": 23.275125000000116,
+                "replayMs": 0.0017500000012660166,
+                "wallMs": 23.976040999999896,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2400,13 +2400,13 @@
           ],
           "results": [
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0011670000003505265,
-                "wallMs": 25.22595899999942,
+                "replayMs": 0.0014169999994919635,
+                "wallMs": 22.261000000000422,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2439,13 +2439,13 @@
               }
             },
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.8509590000012395,
-                "wallMs": 31.413958999999522,
+                "replayMs": 7.492583999999624,
+                "wallMs": 28.59612500000003,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2487,13 +2487,13 @@
           ],
           "results": [
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.463709000001472,
-                "wallMs": 32.8973330000008,
+                "replayMs": 8.836624999999913,
+                "wallMs": 31.36504099999911,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2526,13 +2526,13 @@
               }
             },
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0014169999994919635,
-                "wallMs": 22.236249999999927,
+                "replayMs": 0.0009169999993901001,
+                "wallMs": 21.528542000000016,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2574,13 +2574,13 @@
           ],
           "results": [
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0013340000004973263,
-                "wallMs": 25.267541999999594,
+                "replayMs": 0.0014169999994919635,
+                "wallMs": 21.028833000000304,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2613,13 +2613,13 @@
               }
             },
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.686791000000085,
-                "wallMs": 31.26024999999936,
+                "replayMs": 8.411208999999872,
+                "wallMs": 32.91504200000054,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2661,13 +2661,13 @@
           ],
           "results": [
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.748541999999361,
-                "wallMs": 31.156708000000435,
+                "replayMs": 7.697207999999591,
+                "wallMs": 33.711874999999054,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2700,13 +2700,13 @@
               }
             },
             {
-              "historyDigest": "c290df3c5df8aae11ffdc4a72eac662126f41830338dec622b87ae9110ca42c2",
+              "historyDigest": "229785ad7a4b039c75632a24efcd54e4a4181150605140cd07fb98ae93c0e38d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0013330000001587905,
-                "wallMs": 25.476667000000816,
+                "replayMs": 0.0017919999991136137,
+                "wallMs": 25.40808300000026,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -2747,7 +2747,7 @@
       "cycles": 8,
       "role": "lineage-registry",
       "rows": 19,
-      "referenceDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+      "referenceDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
       "observations": [
         {
           "round": 1,
@@ -2757,13 +2757,13 @@
           ],
           "results": [
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.0012080000014975667,
-                "wallMs": 24.51983400000063,
+                "replayMs": 0.0017919999991136137,
+                "wallMs": 24.138084000000163,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -2796,13 +2796,13 @@
               }
             },
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 8.650582999998733,
-                "wallMs": 33.72883299999921,
+                "replayMs": 7.759374999999636,
+                "wallMs": 33.552583000000595,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -2844,13 +2844,13 @@
           ],
           "results": [
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.458292000001165,
-                "wallMs": 31.848292000000583,
+                "replayMs": 8.837917000000743,
+                "wallMs": 34.69862499999908,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -2883,13 +2883,13 @@
               }
             },
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.0014169999994919635,
-                "wallMs": 24.971999999999753,
+                "replayMs": 0.0012500000011641532,
+                "wallMs": 23.94066600000042,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -2931,13 +2931,13 @@
           ],
           "results": [
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.0012920000008307397,
-                "wallMs": 25.846332999999504,
+                "replayMs": 0.0017920000009326031,
+                "wallMs": 23.39270899999974,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -2970,13 +2970,13 @@
               }
             },
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.741125000000466,
-                "wallMs": 32.21558299999924,
+                "replayMs": 8.705125000000407,
+                "wallMs": 35.14799999999923,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -3018,13 +3018,13 @@
           ],
           "results": [
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.51666699999987,
-                "wallMs": 33.34416699999929,
+                "replayMs": 7.438125000000582,
+                "wallMs": 30.85375000000022,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -3057,13 +3057,13 @@
               }
             },
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.0011249999988649506,
-                "wallMs": 28.186459000000468,
+                "replayMs": 0.00204200000007404,
+                "wallMs": 26.196874999999636,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -3105,13 +3105,13 @@
           ],
           "results": [
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.0013330000001587905,
-                "wallMs": 26.149999999999636,
+                "replayMs": 0.0017090000001189765,
+                "wallMs": 24.124917000001005,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -3144,13 +3144,13 @@
               }
             },
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.670333999998547,
-                "wallMs": 32.67558300000019,
+                "replayMs": 7.532416000000012,
+                "wallMs": 30.867541999999958,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -3192,13 +3192,13 @@
           ],
           "results": [
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.290290999999343,
-                "wallMs": 29.59954199999993,
+                "replayMs": 8.473958000000493,
+                "wallMs": 35.36604100000113,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -3231,13 +3231,13 @@
               }
             },
             {
-              "historyDigest": "baf1dc874ad673de63f90f0466e1ce11eb5fbcfd7e50ad638d1f15e27f8c938f",
+              "historyDigest": "9a701e0ba45100a279d0b4751ece7292e2dbc9eb40fc76a189769d27bf15cfbd",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.0013330000001587905,
-                "wallMs": 25.027667000000292,
+                "replayMs": 0.001540999999633641,
+                "wallMs": 23.45695799999885,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -3278,7 +3278,7 @@
       "cycles": 0,
       "role": "control-anchor",
       "rows": 2,
-      "referenceDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+      "referenceDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
       "observations": [
         {
           "round": 1,
@@ -3288,13 +3288,13 @@
           ],
           "results": [
             {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.624708000001192,
-                "wallMs": 3.3697080000001733,
+                "replayMs": 0.4708339999997406,
+                "wallMs": 2.699292000001151,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -3327,13 +3327,13 @@
               }
             },
             {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.001082999999198364,
-                "wallMs": 3.6417920000003505,
+                "replayMs": 0.0012079999996785773,
+                "wallMs": 2.560417000000598,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -3375,13 +3375,13 @@
           ],
           "results": [
             {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.000249999999141437,
-                "wallMs": 2.3648750000011205,
+                "replayMs": 0.001082999999198364,
+                "wallMs": 4.686125000000175,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -3414,13 +3414,13 @@
               }
             },
             {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.518792000000758,
-                "wallMs": 2.873165999999401,
+                "replayMs": 0.5873329999994894,
+                "wallMs": 2.8556250000001455,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -3462,13 +3462,13 @@
           ],
           "results": [
             {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.4735000000000582,
-                "wallMs": 2.8551250000000437,
+                "replayMs": 0.462666999999783,
+                "wallMs": 2.635666999998648,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -3501,61 +3501,61 @@
               }
             },
             {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
+              "metrics": {
+                "mode": "M",
+                "reusedRows": 2,
+                "replayedRows": 0,
+                "replayMs": 0.0004580000004352769,
+                "wallMs": 2.193667000001369,
+                "io": {
+                  "lists": 7,
+                  "reads": 16,
+                  "bytes": 35619,
+                  "puts": 3,
+                  "entriesListed": 35
+                },
+                "sync": {
+                  "files": 3,
+                  "directories": 3
+                },
+                "journal": {
+                  "blobChecks": 7,
+                  "blobReadBytes": 28088,
+                  "privateBlobCopyBytes": 28088,
+                  "recordChecks": 8,
+                  "recordHashChecks": 7,
+                  "recordHashBytes": 28088,
+                  "recordConcatBytes": 28088,
+                  "memoHits": 1,
+                  "memoEvictions": 0,
+                  "peakMemoEntries": 7,
+                  "peakMemoKeyBytes": 969,
+                  "returnedRecordBytes": 0
+                },
+                "cacheBytes": 45881,
+                "cacheNodes": 164,
+                "cacheEntries": 14,
+                "cachePublished": 1
+              }
+            }
+          ]
+        },
+        {
+          "round": 4,
+          "order": [
+            "M",
+            "F"
+          ],
+          "results": [
+            {
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
                 "replayMs": 0.0004169999992882367,
-                "wallMs": 2.969042000000627,
-                "io": {
-                  "lists": 7,
-                  "reads": 16,
-                  "bytes": 35619,
-                  "puts": 3,
-                  "entriesListed": 35
-                },
-                "sync": {
-                  "files": 3,
-                  "directories": 3
-                },
-                "journal": {
-                  "blobChecks": 7,
-                  "blobReadBytes": 28088,
-                  "privateBlobCopyBytes": 28088,
-                  "recordChecks": 8,
-                  "recordHashChecks": 7,
-                  "recordHashBytes": 28088,
-                  "recordConcatBytes": 28088,
-                  "memoHits": 1,
-                  "memoEvictions": 0,
-                  "peakMemoEntries": 7,
-                  "peakMemoKeyBytes": 969,
-                  "returnedRecordBytes": 0
-                },
-                "cacheBytes": 45881,
-                "cacheNodes": 164,
-                "cacheEntries": 14,
-                "cachePublished": 1
-              }
-            }
-          ]
-        },
-        {
-          "round": 4,
-          "order": [
-            "M",
-            "F"
-          ],
-          "results": [
-            {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
-              "metrics": {
-                "mode": "M",
-                "reusedRows": 2,
-                "replayedRows": 0,
-                "replayMs": 0.0008330000000569271,
-                "wallMs": 4.165540999998484,
+                "wallMs": 2.758040999999139,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -3588,13 +3588,13 @@
               }
             },
             {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.603625000001557,
-                "wallMs": 3.0705419999994774,
+                "replayMs": 0.5435830000005808,
+                "wallMs": 4.788541000001715,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -3636,13 +3636,13 @@
           ],
           "results": [
             {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.49875000000065484,
-                "wallMs": 2.970167000001311,
+                "replayMs": 0.4510839999984455,
+                "wallMs": 2.6398749999989377,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -3675,13 +3675,13 @@
               }
             },
             {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.0002920000006270129,
-                "wallMs": 2.4630829999987327,
+                "replayMs": 0.0004169999992882367,
+                "wallMs": 2.142166999999972,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -3723,13 +3723,13 @@
           ],
           "results": [
             {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.0005419999997684499,
-                "wallMs": 3.2095419999986916,
+                "replayMs": 0.0003749999996216502,
+                "wallMs": 2.2806670000009035,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -3762,13 +3762,13 @@
               }
             },
             {
-              "historyDigest": "ea0bf1234e0fb4286985fae2356d2fd93e2f672fa58fbf6bd2b06471d37ac2db",
+              "historyDigest": "5c6e7ea02fe4a10bd3200d091d09c9b8eb4df8a3746f395406adfb5718b02faa",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.5598749999990105,
-                "wallMs": 3.1505419999994047,
+                "replayMs": 0.5811670000002778,
+                "wallMs": 4.2988750000004075,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -3809,7 +3809,7 @@
       "cycles": 0,
       "role": "lineage-registry",
       "rows": 3,
-      "referenceDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+      "referenceDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
       "observations": [
         {
           "round": 1,
@@ -3819,13 +3819,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.7892499999998108,
-                "wallMs": 5.1102499999997235,
+                "replayMs": 1.0774160000000848,
+                "wallMs": 35.68387499999881,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -3858,13 +3858,13 @@
               }
             },
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0006670000002486631,
-                "wallMs": 3.28650000000016,
+                "replayMs": 0.0010000000002037268,
+                "wallMs": 3.3606670000008307,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -3906,13 +3906,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0003749999996216502,
-                "wallMs": 3.286207999999533,
+                "replayMs": 0.0005830000009154901,
+                "wallMs": 3.4960840000003373,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -3945,13 +3945,13 @@
               }
             },
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 1.6718330000003334,
-                "wallMs": 5.694541999999274,
+                "replayMs": 0.9610830000001442,
+                "wallMs": 5.563583000001017,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -3993,13 +3993,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.7990840000002208,
-                "wallMs": 4.162707999999839,
+                "replayMs": 0.8261659999989206,
+                "wallMs": 3.8347499999999854,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -4032,13 +4032,13 @@
               }
             },
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0003749999996216502,
-                "wallMs": 3.2435830000013084,
+                "replayMs": 0.0008330000000569271,
+                "wallMs": 3.231083000000581,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -4080,13 +4080,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.00016700000014679972,
-                "wallMs": 3.2234169999992446,
+                "replayMs": 0.0011670000003505265,
+                "wallMs": 4.2054580000003625,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -4119,13 +4119,13 @@
               }
             },
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.8714170000002923,
-                "wallMs": 5.835417000000234,
+                "replayMs": 0.8697090000005119,
+                "wallMs": 3.835750000000189,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -4167,13 +4167,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.7660830000004353,
-                "wallMs": 4.111790999999357,
+                "replayMs": 0.7494580000002316,
+                "wallMs": 3.6788329999999405,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -4206,13 +4206,13 @@
               }
             },
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0008330000000569271,
-                "wallMs": 3.351667000000816,
+                "replayMs": 0.0004580000004352769,
+                "wallMs": 3.600916999999754,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -4254,13 +4254,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0005419999997684499,
-                "wallMs": 3.814166000000114,
+                "replayMs": 0.0006659999999101274,
+                "wallMs": 4.212290999999823,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -4293,13 +4293,13 @@
               }
             },
             {
-              "historyDigest": "9dc5da6cde647e7f93af42a5f1b0012c56223f6c21df54022c82397bed33bb0f",
+              "historyDigest": "10f470af43f20043833eada0c4d63891668549eec87a48215922be252360984f",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.7996669999993173,
-                "wallMs": 5.612207999998645,
+                "replayMs": 0.8523750000003929,
+                "wallMs": 3.8188329999993584,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -4340,7 +4340,7 @@
       "cycles": 4,
       "role": "control-anchor",
       "rows": 10,
-      "referenceDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+      "referenceDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
       "observations": [
         {
           "round": 1,
@@ -4350,13 +4350,13 @@
           ],
           "results": [
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 3.6406670000014856,
-                "wallMs": 15.933250000000044,
+                "replayMs": 3.4333329999990383,
+                "wallMs": 15.187583000000814,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4389,13 +4389,13 @@
               }
             },
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
                 "replayMs": 0.0010000000002037268,
-                "wallMs": 11.660832999999911,
+                "wallMs": 12.03766700000051,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4437,13 +4437,13 @@
           ],
           "results": [
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.0012499999993451638,
-                "wallMs": 12.913375000000087,
+                "replayMs": 0.00112500000068394,
+                "wallMs": 11.331999999998516,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4476,13 +4476,13 @@
               }
             },
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.822667000000365,
-                "wallMs": 17.941917000000103,
+                "replayMs": 3.516749999998865,
+                "wallMs": 16.42254200000025,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4524,13 +4524,13 @@
           ],
           "results": [
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.62054100000023,
-                "wallMs": 16.12341600000036,
+                "replayMs": 4.9539999999997235,
+                "wallMs": 16.79029100000116,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4563,13 +4563,13 @@
               }
             },
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.000959000000875676,
-                "wallMs": 11.605583000000479,
+                "replayMs": 0.0015839999996387633,
+                "wallMs": 11.064374999999927,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4611,13 +4611,13 @@
           ],
           "results": [
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.0010000000002037268,
-                "wallMs": 13.104792000000089,
+                "replayMs": 0.0010409999995317776,
+                "wallMs": 12.624832999999853,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4650,13 +4650,13 @@
               }
             },
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.6166250000005675,
-                "wallMs": 17.450000000000728,
+                "replayMs": 4.92541700000038,
+                "wallMs": 17.620875000000524,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4698,13 +4698,13 @@
           ],
           "results": [
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.455707999999504,
-                "wallMs": 15.757792000000336,
+                "replayMs": 4.54608399999961,
+                "wallMs": 20.021083999999973,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4737,13 +4737,13 @@
               }
             },
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.00112500000068394,
-                "wallMs": 11.48608299999978,
+                "replayMs": 0.0012499999993451638,
+                "wallMs": 10.666000000001077,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4785,13 +4785,13 @@
           ],
           "results": [
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.001082999999198364,
-                "wallMs": 13.220999999999549,
+                "replayMs": 0.0012499999993451638,
+                "wallMs": 13.082042000000001,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4824,13 +4824,13 @@
               }
             },
             {
-              "historyDigest": "5317e504e983755ea621c2f2aef7a6a01bee72a71ca2a5ba59ac85129ed8e042",
+              "historyDigest": "ff4c42a73eb9135b7f74b7165798a1b7a4855596c243451b627c7426728590a1",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.836457999999766,
-                "wallMs": 17.721833000001425,
+                "replayMs": 4.892417000000933,
+                "wallMs": 17.380083000000013,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -4871,7 +4871,7 @@
       "cycles": 4,
       "role": "lineage-registry",
       "rows": 11,
-      "referenceDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+      "referenceDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
       "observations": [
         {
           "round": 1,
@@ -4881,13 +4881,13 @@
           ],
           "results": [
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.4903749999994034,
-                "wallMs": 17.12262499999997,
+                "replayMs": 3.742082999999184,
+                "wallMs": 14.704165999999532,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -4920,13 +4920,13 @@
               }
             },
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0010000000002037268,
-                "wallMs": 13.554374999999709,
+                "replayMs": 0.001082999999198364,
+                "wallMs": 12.618166000000201,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -4968,13 +4968,13 @@
           ],
           "results": [
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.00112500000068394,
-                "wallMs": 13.461833999999726,
+                "replayMs": 0.001209000000017113,
+                "wallMs": 12.86658399999942,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -5007,13 +5007,13 @@
               }
             },
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.24474999999984,
-                "wallMs": 16.54583300000013,
+                "replayMs": 3.532999999999447,
+                "wallMs": 16.278000000000247,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -5055,13 +5055,13 @@
           ],
           "results": [
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.26575000000048,
-                "wallMs": 16.68475000000035,
+                "replayMs": 3.5713750000013533,
+                "wallMs": 16.459333000000697,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -5094,13 +5094,13 @@
               }
             },
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0008749999997235136,
-                "wallMs": 13.383041999999477,
+                "replayMs": 0.0013750000016443664,
+                "wallMs": 13.067832999999155,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -5142,13 +5142,13 @@
           ],
           "results": [
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0010839999995368998,
-                "wallMs": 13.384416999999303,
+                "replayMs": 0.0015829999993002275,
+                "wallMs": 13.015375000000859,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -5181,13 +5181,13 @@
               }
             },
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.2499580000003334,
-                "wallMs": 16.24604200000067,
+                "replayMs": 3.4966669999994338,
+                "wallMs": 16.154209000000264,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -5229,13 +5229,13 @@
           ],
           "results": [
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.2711249999993015,
-                "wallMs": 16.912250000001222,
+                "replayMs": 3.2376249999997526,
+                "wallMs": 16.466417000001456,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -5268,13 +5268,13 @@
               }
             },
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
                 "replayMs": 0.00166700000045239,
-                "wallMs": 13.560124999999971,
+                "wallMs": 13.315167000000656,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -5316,13 +5316,13 @@
           ],
           "results": [
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0010830000010173535,
-                "wallMs": 17.498874999999316,
+                "replayMs": 0.002500000000509317,
+                "wallMs": 12.700790999999299,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -5355,13 +5355,13 @@
               }
             },
             {
-              "historyDigest": "11f4665a9d9ea38de7dd76998cafad3e9da7c120ee713fe279d98545df28a724",
+              "historyDigest": "3530de69b33760315e96c1686756a9b0c28fbd3fb74f43ad1b1e77d4f871eb07",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.267166999999972,
-                "wallMs": 16.49516599999879,
+                "replayMs": 3.2579160000004777,
+                "wallMs": 15.953125,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -5402,7 +5402,7 @@
       "cycles": 8,
       "role": "control-anchor",
       "rows": 18,
-      "referenceDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+      "referenceDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
       "observations": [
         {
           "round": 1,
@@ -5412,13 +5412,13 @@
           ],
           "results": [
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.4294169999993755,
-                "wallMs": 30.576708000000508,
+                "replayMs": 7.259375000001455,
+                "wallMs": 28.73045899999852,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5451,13 +5451,13 @@
               }
             },
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0012080000014975667,
-                "wallMs": 25.106958000000304,
+                "replayMs": 0.001750000003085006,
+                "wallMs": 24.24133399999846,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5499,13 +5499,13 @@
           ],
           "results": [
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0008749999979045242,
-                "wallMs": 23.44212499999776,
+                "replayMs": 0.0014169999994919635,
+                "wallMs": 22.937792000000627,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5538,13 +5538,13 @@
               }
             },
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.401499999999942,
-                "wallMs": 30.001500000002125,
+                "replayMs": 7.493582999999489,
+                "wallMs": 28.682292000001326,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5586,13 +5586,13 @@
           ],
           "results": [
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 8.308875000002445,
-                "wallMs": 33.763999999999214,
+                "replayMs": 8.802208000000974,
+                "wallMs": 33.56962500000009,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5625,13 +5625,13 @@
               }
             },
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.001291999997192761,
-                "wallMs": 23.54925000000003,
+                "replayMs": 0.0012089999981981236,
+                "wallMs": 22.03925000000163,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5673,13 +5673,13 @@
           ],
           "results": [
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.001083000002836343,
-                "wallMs": 23.046916999999667,
+                "replayMs": 0.001082999999198364,
+                "wallMs": 24.87054200000057,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5712,13 +5712,13 @@
               }
             },
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 8.203083000000333,
-                "wallMs": 33.74929200000042,
+                "replayMs": 8.927959000000556,
+                "wallMs": 33.57637500000055,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5760,13 +5760,13 @@
           ],
           "results": [
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.47925000000032,
-                "wallMs": 30.399708000000828,
+                "replayMs": 7.567459000001691,
+                "wallMs": 29.7221669999999,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5799,13 +5799,13 @@
               }
             },
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0010000000002037268,
-                "wallMs": 23.726167000000714,
+                "replayMs": 0.0016249999971478246,
+                "wallMs": 21.262541000000056,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5847,13 +5847,13 @@
           ],
           "results": [
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0018329999984416645,
-                "wallMs": 29.119416000001365,
+                "replayMs": 0.0014999999984866008,
+                "wallMs": 25.610709000000497,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5886,13 +5886,13 @@
               }
             },
             {
-              "historyDigest": "08566f71f5f5ca634535f74b67e055b6de018ba97a541bca48afee42dc1c98d7",
+              "historyDigest": "07bd15d5965896959999b3ff3c8c7d2a5515db70e3d30794191e9d57b084c61c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.669292000002315,
-                "wallMs": 30.776667000001908,
+                "replayMs": 7.549209000000701,
+                "wallMs": 30.421042000001762,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -5933,7 +5933,7 @@
       "cycles": 8,
       "role": "lineage-registry",
       "rows": 19,
-      "referenceDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+      "referenceDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
       "observations": [
         {
           "round": 1,
@@ -5943,13 +5943,13 @@
           ],
           "results": [
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 8.414042000000336,
-                "wallMs": 34.922708000001876,
+                "replayMs": 7.594207999998616,
+                "wallMs": 31.085833000001003,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -5982,13 +5982,13 @@
               }
             },
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.001167000002169516,
-                "wallMs": 24.453624999998283,
+                "replayMs": 0.0020000000004074536,
+                "wallMs": 25.74487500000032,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -6030,13 +6030,13 @@
           ],
           "results": [
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.003250000001571607,
-                "wallMs": 26.95616599999994,
+                "replayMs": 0.0018329999984416645,
+                "wallMs": 24.038791999999376,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -6069,13 +6069,13 @@
               }
             },
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.6035830000000715,
-                "wallMs": 32.788958000001,
+                "replayMs": 9.746791000001394,
+                "wallMs": 32.90187499999956,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -6117,13 +6117,13 @@
           ],
           "results": [
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 8.853459000001749,
-                "wallMs": 33.5144999999975,
+                "replayMs": 7.317124999997759,
+                "wallMs": 31.604082999998354,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -6156,13 +6156,13 @@
               }
             },
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.0012500000011641532,
-                "wallMs": 24.720707999997103,
+                "replayMs": 0.0016250000007858034,
+                "wallMs": 22.490499999999884,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -6204,13 +6204,13 @@
           ],
           "results": [
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.001167000002169516,
-                "wallMs": 33.49504099999831,
+                "replayMs": 0.0016660000001138542,
+                "wallMs": 26.1962910000002,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -6243,13 +6243,13 @@
               }
             },
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.296667000002344,
-                "wallMs": 32.27745900000082,
+                "replayMs": 7.469042000000627,
+                "wallMs": 31.579624999998487,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -6291,13 +6291,13 @@
           ],
           "results": [
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 8.778915999999299,
-                "wallMs": 34.302458999998635,
+                "replayMs": 7.461290999999619,
+                "wallMs": 28.82641700000022,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -6330,13 +6330,13 @@
               }
             },
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.001082999999198364,
-                "wallMs": 24.82904199999757,
+                "replayMs": 0.001291000000492204,
+                "wallMs": 23.541791999999987,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -6378,13 +6378,13 @@
           ],
           "results": [
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.0010419999998703133,
-                "wallMs": 24.51683299999786,
+                "replayMs": 0.0017079999997804407,
+                "wallMs": 25.78849999999875,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -6417,13 +6417,13 @@
               }
             },
             {
-              "historyDigest": "a578c49d885199ddc70ae2a8057705b0365628b322689eeb5e750bd9e336b23c",
+              "historyDigest": "846e72fd49977e9c9c58a58b566a3eb8e4f0132d3a409c53b8d9c4c91f92804d",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.311792000000423,
-                "wallMs": 33.171166000000085,
+                "replayMs": 7.476458000001003,
+                "wallMs": 30.053082999998878,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -6464,7 +6464,7 @@
       "cycles": 0,
       "role": "control-anchor",
       "rows": 2,
-      "referenceDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+      "referenceDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
       "observations": [
         {
           "round": 1,
@@ -6474,13 +6474,13 @@
           ],
           "results": [
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.0014579999988200143,
-                "wallMs": 4.213708999999653,
+                "replayMs": 0.001458000002457993,
+                "wallMs": 3.593250000001717,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6513,13 +6513,13 @@
               }
             },
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.5338330000013229,
-                "wallMs": 3.141457999998238,
+                "replayMs": 0.6695419999996375,
+                "wallMs": 4.55279199999859,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6561,13 +6561,13 @@
           ],
           "results": [
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.4510410000002594,
-                "wallMs": 2.895375000000058,
+                "replayMs": 0.5414170000003651,
+                "wallMs": 2.872166000001016,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6600,13 +6600,13 @@
               }
             },
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.0002500000009604264,
-                "wallMs": 2.5050000000010186,
+                "replayMs": 0.0006670000002486631,
+                "wallMs": 2.3194579999981215,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6648,13 +6648,13 @@
           ],
           "results": [
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.0002080000012938399,
-                "wallMs": 2.5876250000001164,
+                "replayMs": 0.0003329999999550637,
+                "wallMs": 2.2584999999999127,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6687,13 +6687,13 @@
               }
             },
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.5343339999999444,
-                "wallMs": 5.4398330000003625,
+                "replayMs": 1.6150830000005953,
+                "wallMs": 5.184457999999722,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6735,13 +6735,13 @@
           ],
           "results": [
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.45287500000267755,
-                "wallMs": 3.005874999998923,
+                "replayMs": 0.5584579999995185,
+                "wallMs": 3.02654099999927,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6774,13 +6774,13 @@
               }
             },
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.0006250000005820766,
-                "wallMs": 2.4640830000025744,
+                "replayMs": 0.0005830000009154901,
+                "wallMs": 2.2361669999991136,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6822,13 +6822,13 @@
           ],
           "results": [
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.0002500000009604264,
-                "wallMs": 2.443916000000172,
+                "replayMs": 0.00029100000028847717,
+                "wallMs": 2.2369589999980235,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6861,13 +6861,13 @@
               }
             },
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.5731250000026193,
-                "wallMs": 3.5850829999981215,
+                "replayMs": 0.6504999999997381,
+                "wallMs": 3.011624999999185,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6909,13 +6909,13 @@
           ],
           "results": [
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 2,
-                "replayMs": 0.4750419999982114,
-                "wallMs": 3.974041000001307,
+                "replayMs": 0.5826659999984258,
+                "wallMs": 8.298624999999447,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6948,13 +6948,13 @@
               }
             },
             {
-              "historyDigest": "4285fb2d2fd8b71684ced277a87155c99510307b9f8625d13b741c7e1234860e",
+              "historyDigest": "4501c5926f60ee3ed2d36caf5e880287cd4f395aecaabb284d3707d866fd4bc7",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 2,
                 "replayedRows": 0,
-                "replayMs": 0.00033400000029359944,
-                "wallMs": 2.421959000002971,
+                "replayMs": 0.0006670000002486631,
+                "wallMs": 2.2820839999985765,
                 "io": {
                   "lists": 7,
                   "reads": 16,
@@ -6995,7 +6995,7 @@
       "cycles": 0,
       "role": "lineage-registry",
       "rows": 3,
-      "referenceDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+      "referenceDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
       "observations": [
         {
           "round": 1,
@@ -7005,13 +7005,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0010000000002037268,
-                "wallMs": 4.4606670000030135,
+                "replayMs": 0.0007920000025478657,
+                "wallMs": 3.153707999998005,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7044,13 +7044,13 @@
               }
             },
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.761000000002241,
-                "wallMs": 3.931416999999783,
+                "replayMs": 0.8154170000016165,
+                "wallMs": 3.818375000002561,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7092,13 +7092,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.6742080000003625,
-                "wallMs": 3.860333000000537,
+                "replayMs": 0.9635000000016589,
+                "wallMs": 5.540791999999783,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7131,13 +7131,13 @@
               }
             },
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0008339999985764734,
-                "wallMs": 4.76604099999895,
+                "replayMs": 0.001083000002836343,
+                "wallMs": 3.3008330000011483,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7179,13 +7179,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0003749999996216502,
-                "wallMs": 3.2289999999993597,
+                "replayMs": 0.00045900000259280205,
+                "wallMs": 3.0154590000020107,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7218,13 +7218,13 @@
               }
             },
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.7685419999979786,
-                "wallMs": 3.928416999999172,
+                "replayMs": 1.0091659999998228,
+                "wallMs": 4.167499999999563,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7266,13 +7266,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.859415999999328,
-                "wallMs": 4.2037079999972775,
+                "replayMs": 0.8404169999994338,
+                "wallMs": 5.542417000000569,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7305,13 +7305,13 @@
               }
             },
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0004580000022542663,
-                "wallMs": 4.807082999999693,
+                "replayMs": 0.0005829999972775113,
+                "wallMs": 3.0380420000001322,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7353,13 +7353,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.0009589999972376972,
-                "wallMs": 3.294499999999971,
+                "replayMs": 0.0005000000019208528,
+                "wallMs": 3.032374999998865,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7392,13 +7392,13 @@
               }
             },
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 0.7492499999971187,
-                "wallMs": 3.955207999999402,
+                "replayMs": 1.676207999997132,
+                "wallMs": 5.385207999999693,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7440,13 +7440,13 @@
           ],
           "results": [
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 3,
-                "replayMs": 1.7544170000001031,
-                "wallMs": 6.324415999999474,
+                "replayMs": 0.7758750000029977,
+                "wallMs": 3.9430839999986347,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7479,13 +7479,13 @@
               }
             },
             {
-              "historyDigest": "9052ccc6f85a39a4eb168558fb2ec1474c8417695a87732d7866119c32636cae",
+              "historyDigest": "50d06d997045152cf9d678c9361670e5e2b5fab292e1651b977454060ae25b16",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 3,
                 "replayedRows": 0,
-                "replayMs": 0.000499999998282874,
-                "wallMs": 3.586124999997992,
+                "replayMs": 0.0010000000002037268,
+                "wallMs": 2.9846250000009604,
                 "io": {
                   "lists": 8,
                   "reads": 21,
@@ -7526,7 +7526,7 @@
       "cycles": 4,
       "role": "control-anchor",
       "rows": 10,
-      "referenceDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+      "referenceDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
       "observations": [
         {
           "round": 1,
@@ -7536,13 +7536,13 @@
           ],
           "results": [
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.001458000002457993,
-                "wallMs": 12.967999999997119,
+                "replayMs": 0.0013330000001587905,
+                "wallMs": 12.451582999998209,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -7575,13 +7575,13 @@
               }
             },
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 3.726875000000291,
-                "wallMs": 16.393332999999984,
+                "replayMs": 3.7352499999979045,
+                "wallMs": 16.05000000000291,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -7623,13 +7623,13 @@
           ],
           "results": [
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.70350000000326,
-                "wallMs": 17.67241699999795,
+                "replayMs": 4.95391699999891,
+                "wallMs": 15.766624999996566,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -7662,13 +7662,13 @@
               }
             },
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.0009580000005371403,
-                "wallMs": 12.249082999998791,
+                "replayMs": 0.0014999999984866008,
+                "wallMs": 11.150792000000365,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -7710,13 +7710,13 @@
           ],
           "results": [
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.0012080000014975667,
-                "wallMs": 17.47345800000039,
+                "replayMs": 0.0010419999998703133,
+                "wallMs": 12.522541999998793,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -7749,13 +7749,13 @@
               }
             },
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.838042000003043,
-                "wallMs": 18.086041999998997,
+                "replayMs": 5.063999999998487,
+                "wallMs": 17.55958300000202,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -7797,13 +7797,13 @@
           ],
           "results": [
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.590499999998428,
-                "wallMs": 15.969666999997571,
+                "replayMs": 4.808041999996931,
+                "wallMs": 15.720249999998487,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -7836,13 +7836,13 @@
               }
             },
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.000959000000875676,
-                "wallMs": 11.548790999997436,
+                "replayMs": 0.001207999997859588,
+                "wallMs": 11.111959000001661,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -7884,13 +7884,13 @@
           ],
           "results": [
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.0011249999988649506,
-                "wallMs": 13.631083000000217,
+                "replayMs": 0.0019169999977748375,
+                "wallMs": 12.697583000001032,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -7923,13 +7923,13 @@
               }
             },
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.819500000001426,
-                "wallMs": 17.82262499999706,
+                "replayMs": 4.851957999999286,
+                "wallMs": 16.96062499999971,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -7971,13 +7971,13 @@
           ],
           "results": [
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 10,
-                "replayMs": 4.660415999998804,
-                "wallMs": 16.272415999999794,
+                "replayMs": 4.552292000000307,
+                "wallMs": 15.31474999999773,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -8010,13 +8010,13 @@
               }
             },
             {
-              "historyDigest": "6cf9fc92314c371f2f97724701c3a2e4f6b335abfae7933d754bb7390e3e125a",
+              "historyDigest": "ac06840ed4de5485cefa2c63962e9be1fdcb41de9cc1ea534e24414e04e1278a",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 10,
                 "replayedRows": 0,
-                "replayMs": 0.0010409999995317776,
-                "wallMs": 12.071916999997484,
+                "replayMs": 0.0024169999996956903,
+                "wallMs": 11.517041999999492,
                 "io": {
                   "lists": 15,
                   "reads": 64,
@@ -8057,7 +8057,7 @@
       "cycles": 4,
       "role": "lineage-registry",
       "rows": 11,
-      "referenceDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+      "referenceDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
       "observations": [
         {
           "round": 1,
@@ -8067,13 +8067,13 @@
           ],
           "results": [
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0012500000011641532,
-                "wallMs": 13.879208000002109,
+                "replayMs": 0.0015840000014577527,
+                "wallMs": 13.272417000000132,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8106,13 +8106,13 @@
               }
             },
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.590374999999767,
-                "wallMs": 17.229833000001236,
+                "replayMs": 3.781083000001672,
+                "wallMs": 16.810457999999926,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8154,13 +8154,13 @@
           ],
           "results": [
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.5130839999983436,
-                "wallMs": 17.34125000000131,
+                "replayMs": 3.7316250000003492,
+                "wallMs": 17.08295800000269,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8193,13 +8193,13 @@
               }
             },
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0012920000008307397,
-                "wallMs": 13.525541999999405,
+                "replayMs": 0.001583000001119217,
+                "wallMs": 17.19379200000185,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8241,13 +8241,13 @@
           ],
           "results": [
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.001082999999198364,
-                "wallMs": 14.233624999997119,
+                "replayMs": 0.0012920000008307397,
+                "wallMs": 13.015250000000378,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8280,13 +8280,13 @@
               }
             },
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.337208000000828,
-                "wallMs": 17.29095800000141,
+                "replayMs": 3.6630420000001322,
+                "wallMs": 16.636209000000235,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8328,13 +8328,13 @@
           ],
           "results": [
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.759208999999828,
-                "wallMs": 17.462083999998868,
+                "replayMs": 3.5598749999990105,
+                "wallMs": 16.41279200000281,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8367,13 +8367,13 @@
               }
             },
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0015419999981531873,
-                "wallMs": 18.155667000002722,
+                "replayMs": 0.0014999999984866008,
+                "wallMs": 13.163250000001426,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8415,13 +8415,13 @@
           ],
           "results": [
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0010000000002037268,
-                "wallMs": 13.835707999998704,
+                "replayMs": 0.0013330000001587905,
+                "wallMs": 13.513416999998299,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8454,13 +8454,13 @@
               }
             },
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.6769580000000133,
-                "wallMs": 17.54175000000032,
+                "replayMs": 3.657500000001164,
+                "wallMs": 16.697416999999405,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8502,13 +8502,13 @@
           ],
           "results": [
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 11,
-                "replayMs": 3.7262080000000424,
-                "wallMs": 17.851291999999376,
+                "replayMs": 3.5418339999996533,
+                "wallMs": 17.208958000002895,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8541,13 +8541,13 @@
               }
             },
             {
-              "historyDigest": "7ad0446bc54198d108ebdc838ca670bab5e268c6e08a8e5217ddfb6c9cde7661",
+              "historyDigest": "5dbd349048dc4d07399bfd1d25337a4062cbff274567e8080132161b9b7a5536",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 11,
                 "replayedRows": 0,
-                "replayMs": 0.0005419999979494605,
-                "wallMs": 14.033834000001661,
+                "replayMs": 0.0014999999984866008,
+                "wallMs": 13.353666999999405,
                 "io": {
                   "lists": 16,
                   "reads": 69,
@@ -8588,7 +8588,7 @@
       "cycles": 8,
       "role": "control-anchor",
       "rows": 18,
-      "referenceDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+      "referenceDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
       "observations": [
         {
           "round": 1,
@@ -8598,13 +8598,13 @@
           ],
           "results": [
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
                 "replayMs": 0.0014999999984866008,
-                "wallMs": 23.203084000000672,
+                "wallMs": 22.749416999999085,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -8637,13 +8637,13 @@
               }
             },
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.744041000001744,
-                "wallMs": 31.188750000001164,
+                "replayMs": 8.322500000002037,
+                "wallMs": 33.66920899999968,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -8685,13 +8685,13 @@
           ],
           "results": [
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 8.236249999998108,
-                "wallMs": 33.48254199999792,
+                "replayMs": 7.378083999999944,
+                "wallMs": 29.522917000002053,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -8724,13 +8724,13 @@
               }
             },
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0010409999995317776,
-                "wallMs": 23.06237500000134,
+                "replayMs": 0.0014579999988200143,
+                "wallMs": 22.6787089999998,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -8772,13 +8772,13 @@
           ],
           "results": [
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.001082999999198364,
-                "wallMs": 23.748625000000175,
+                "replayMs": 0.002041000003373483,
+                "wallMs": 23.980750000002445,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -8811,13 +8811,13 @@
               }
             },
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.748041999999259,
-                "wallMs": 32.3089579999978,
+                "replayMs": 7.353957999999693,
+                "wallMs": 34.66987499999959,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -8859,13 +8859,13 @@
           ],
           "results": [
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 9.145541999998386,
-                "wallMs": 32.58516700000109,
+                "replayMs": 7.773000000001048,
+                "wallMs": 30.30816699999923,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -8898,13 +8898,13 @@
               }
             },
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0013330000001587905,
-                "wallMs": 23.551250000000437,
+                "replayMs": 0.0018329999984416645,
+                "wallMs": 25.312666999998328,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -8946,13 +8946,13 @@
           ],
           "results": [
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0011249999988649506,
-                "wallMs": 23.38354199999958,
+                "replayMs": 0.0015410000014526304,
+                "wallMs": 22.471207999999024,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -8985,13 +8985,13 @@
               }
             },
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 8.294708000001265,
-                "wallMs": 33.58087500000329,
+                "replayMs": 7.616915999999037,
+                "wallMs": 28.928082999998878,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -9033,13 +9033,13 @@
           ],
           "results": [
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 18,
-                "replayMs": 7.642583999997441,
-                "wallMs": 30.91137499999968,
+                "replayMs": 8.952124999999796,
+                "wallMs": 37.51154199999655,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -9072,13 +9072,13 @@
               }
             },
             {
-              "historyDigest": "803efa1210d350011170ccf4ffad135fd785841d15e3797860d43ea668e21c8a",
+              "historyDigest": "396560131c1b126bf050d5f8405edcb4c38e7f010dcbd4774e49803ddccd931c",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 18,
                 "replayedRows": 0,
-                "replayMs": 0.0007089999999152496,
-                "wallMs": 23.154875000000175,
+                "replayMs": 0.0012909999968542252,
+                "wallMs": 22.40324999999939,
                 "io": {
                   "lists": 23,
                   "reads": 112,
@@ -9119,7 +9119,7 @@
       "cycles": 8,
       "role": "lineage-registry",
       "rows": 19,
-      "referenceDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+      "referenceDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
       "observations": [
         {
           "round": 1,
@@ -9129,13 +9129,13 @@
           ],
           "results": [
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.0012500000011641532,
-                "wallMs": 24.956333000001905,
+                "replayMs": 0.001750000003085006,
+                "wallMs": 23.696082999998907,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -9168,13 +9168,13 @@
               }
             },
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.645584000001691,
-                "wallMs": 33.93470800000068,
+                "replayMs": 9.99029199999859,
+                "wallMs": 34.29183300000295,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -9216,13 +9216,13 @@
           ],
           "results": [
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.463791999998648,
-                "wallMs": 31.822000000000116,
+                "replayMs": 7.6426250000004075,
+                "wallMs": 31.455832999999984,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -9255,13 +9255,13 @@
               }
             },
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.001167000002169516,
-                "wallMs": 26.721624999998312,
+                "replayMs": 0.001374999999825377,
+                "wallMs": 23.516250000000582,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -9303,13 +9303,13 @@
           ],
           "results": [
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.001082999999198364,
-                "wallMs": 25.365125000000262,
+                "replayMs": 0.0016250000007858034,
+                "wallMs": 25.776624999998603,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -9342,13 +9342,13 @@
               }
             },
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 9.180915999997524,
-                "wallMs": 33.608250000001135,
+                "replayMs": 7.808458999999857,
+                "wallMs": 31.70666699999856,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -9390,13 +9390,13 @@
           ],
           "results": [
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.178542000001471,
-                "wallMs": 45.41962499999863,
+                "replayMs": 9.287874999998166,
+                "wallMs": 32.72004199999719,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -9429,13 +9429,13 @@
               }
             },
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.001291000000492204,
-                "wallMs": 24.444958000000042,
+                "replayMs": 0.0012500000011641532,
+                "wallMs": 23.105082999998558,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -9477,13 +9477,13 @@
           ],
           "results": [
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.0017499999994470272,
-                "wallMs": 26.580666999998357,
+                "replayMs": 0.0012920000008307397,
+                "wallMs": 23.806499999998778,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -9516,13 +9516,13 @@
               }
             },
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 7.207500000000437,
-                "wallMs": 31.5679999999993,
+                "replayMs": 8.428749999999127,
+                "wallMs": 34.246375000002445,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -9564,13 +9564,13 @@
           ],
           "results": [
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "F",
                 "reusedRows": 0,
                 "replayedRows": 19,
-                "replayMs": 8.22137500000099,
-                "wallMs": 34.71491700000115,
+                "replayMs": 7.43566600000122,
+                "wallMs": 30.78137499999866,
                 "io": {
                   "lists": 24,
                   "reads": 117,
@@ -9603,13 +9603,13 @@
               }
             },
             {
-              "historyDigest": "69cb5120b678fb4bce0ea4d57702e73126f4e04aea756b7733231b01bee2e5ed",
+              "historyDigest": "ca5e454fae09feeb001af6f976614f1cc0218b760d4eeadaa28aa3e006b977a9",
               "metrics": {
                 "mode": "M",
                 "reusedRows": 19,
                 "replayedRows": 0,
-                "replayMs": 0.0008749999979045242,
-                "wallMs": 24.684833999999682,
+                "replayMs": 0.0016250000007858034,
+                "wallMs": 24.22166599999764,
                 "io": {
                   "lists": 24,
                   "reads": 117,

@@ -59,6 +59,8 @@ describe('CGP-S0 bound arithmetic',()=>{
  it('ends a section at the next same-level heading only',()=>{
   expect(designSection('x\n### A\ny\n#### b\nz\n### C\nw\n','### A')).toBe('### A\ny\n#### b\nz\n');
   expect(designSection('### A\ny\n','### A')).toBe('### A\ny\n');
+  expect(designSection('### A\ny\n\n\n### C\n','### A')).toBe('### A\ny\n');
+  expect(designSection('### A\ny\n\n','### A')).toBe('### A\ny\n');
   expect(()=>designSection('y','### A')).toThrow('s0_bound_invalid:section');
  });
 });
