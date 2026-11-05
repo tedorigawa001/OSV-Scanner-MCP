@@ -1,6 +1,7 @@
 import {spawnSync} from 'node:child_process';
 import {it,expect} from 'vitest';
-import {CgpHistoryProbe,historyCallsite,validateHistoryReads} from '../fixtures/gradleOwnedCgpHistory.js';
+import {CgpHistoryProbe,historyCallsite} from '../fixtures/gradleOwnedCgpHistory.js';
+import {validateHistoryReads} from '../fixtures/gradleOwnedCgpHistoryCheck.mjs';
 it('attributes overlapping work to its own asynchronous RPC without counting it twice',async()=>{
  const probe=new CgpHistoryProbe();let release!:()=>void;const pause=new Promise<void>(r=>release=r);
  const a=probe.run({rpcId:1,api:'one',action:'receive'},()=>probe.measure('readCommitted','history','caller-a',async()=>{await pause;return 1;}));
@@ -17,6 +18,7 @@ it('preserves returned identity and errors, bounds recording, and resets only id
 });
 it('keeps only a normalized direct production callsite',()=>{
  expect(historyCallsite('Error\n at observer (file:///tmp/probe.js:1:1)\n at #execute (file:///tmp/private/compiled/utils/gradleOwnedAnchorOwner.js:77:18)\n at call (gradleOwnedAnchorOwner.js:99:1)')).toBe('at #execute (gradleOwnedAnchorOwner.js:77:18)');
+ expect(historyCallsite('Error\n at load (file:///tmp/private/compiled/utils/gradleOwnedRecovery.js:8:3)\n at #execute (file:///tmp/private/compiled/utils/gradleOwnedAnchorOwner.js:77:18)')).toBe('at load (gradleOwnedRecovery.js:8:3)');
  expect(historyCallsite('Error\n at unknown (file:///tmp/unknown.js:1:1)')).toBe('unattributed');
 });
 

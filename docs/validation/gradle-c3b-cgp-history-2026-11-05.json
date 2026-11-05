@@ -15,7 +15,11 @@
   ],
   "analysisSource": {
     "path": "scripts/analyze-c3b-cgp-history.mjs",
-    "sha256": "557cacb2e23028546e0830beccda461fb1f5852e4dfb62140ac4d5dd75b294b7"
+    "sha256": "a6ac5f215dbaeb137d8af71fc6f0bcfe821696e32e0fdf9b3ac49312de5ad252"
+  },
+  "checkSource": {
+    "path": "src/test/fixtures/gradleOwnedCgpHistoryCheck.mjs",
+    "sha256": "5f0cb40a3a84c6c904d10795238c44f38596f2e198c4736a95b518772dfcb3aa"
   },
   "changedSources": [
     "src/utils/gradleOwnedStageStore.ts"
@@ -124,6 +128,17 @@
           "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
         },
         "digest": "653673741f60bb932d9989f302df4c4482a7c3831bc08486b7e092c8425495be"
+      },
+      "host": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "node": "v26.12.1",
+        "cpus": 10,
+        "loadAverage": [
+          2.73779296875,
+          2.505859375,
+          3.046875
+        ]
       },
       "whatIfProjectedMs": 7659.458708423652,
       "samples": [
@@ -517,6 +532,11 @@
               "inclusiveWallMs": 10.160959005355835
             }
           ],
+          "loadAverageBefore": [
+            2.51416015625,
+            2.42333984375,
+            3.07861328125
+          ],
           "ownerCpuMs": {
             "control-anchor": 2576.311,
             "lineage-registry": 3141.428,
@@ -790,6 +810,11 @@
               "count": 1,
               "inclusiveWallMs": 20.605083107948303
             }
+          ],
+          "loadAverageBefore": [
+            2.552734375,
+            2.4326171875,
+            3.078125
           ],
           "ownerCpuMs": {
             "control-anchor": 3140.882,
@@ -1189,6 +1214,11 @@
               "inclusiveWallMs": 13.278082966804504
             }
           ],
+          "loadAverageBefore": [
+            2.646484375,
+            2.4619140625,
+            3.06982421875
+          ],
           "ownerCpuMs": {
             "control-anchor": 2470.219,
             "lineage-registry": 3128.201,
@@ -1462,6 +1492,11 @@
               "count": 1,
               "inclusiveWallMs": 18.600374937057495
             }
+          ],
+          "loadAverageBefore": [
+            2.67431640625,
+            2.470703125,
+            3.0693359375
           ],
           "ownerCpuMs": {
             "control-anchor": 3154.24,
@@ -1861,6 +1896,11 @@
               "inclusiveWallMs": 9.174625039100647
             }
           ],
+          "loadAverageBefore": [
+            2.66650390625,
+            2.47998046875,
+            3.05517578125
+          ],
           "ownerCpuMs": {
             "control-anchor": 2591.836,
             "lineage-registry": 3060.174,
@@ -2125,6 +2165,11 @@
               "inclusiveWallMs": 20.355917096138
             }
           ],
+          "loadAverageBefore": [
+            2.53271484375,
+            2.455078125,
+            3.04296875
+          ],
           "ownerCpuMs": {
             "control-anchor": 3164.602,
             "lineage-registry": 3631.823,
@@ -2232,6 +2277,17 @@
           "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
         },
         "digest": "a6dc5ebcda7aff78401379c837a0f818e455290d276e1329479d5c528b841f4b"
+      },
+      "host": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "node": "v26.12.1",
+        "cpus": 10,
+        "loadAverage": [
+          2.8046875,
+          2.59326171875,
+          3.00048828125
+        ]
       },
       "whatIfProjectedMs": 8395.960706080476,
       "samples": [
@@ -2625,6 +2681,11 @@
               "inclusiveWallMs": 7.703832983970642
             }
           ],
+          "loadAverageBefore": [
+            2.64501953125,
+            2.50390625,
+            3.01953125
+          ],
           "ownerCpuMs": {
             "control-anchor": 2402.883,
             "lineage-registry": 2972.189,
@@ -2918,6 +2979,11 @@
               "count": 1,
               "inclusiveWallMs": 15.855374932289124
             }
+          ],
+          "loadAverageBefore": [
+            2.51318359375,
+            2.478515625,
+            3.00732421875
           ],
           "ownerCpuMs": {
             "control-anchor": 3138.381,
@@ -3317,6 +3383,11 @@
               "inclusiveWallMs": 7.3849170207977295
             }
           ],
+          "loadAverageBefore": [
+            2.640625,
+            2.517578125,
+            3.00537109375
+          ],
           "ownerCpuMs": {
             "control-anchor": 2512.653,
             "lineage-registry": 3086.616,
@@ -3620,6 +3691,11 @@
               "count": 1,
               "inclusiveWallMs": 21.036165952682495
             }
+          ],
+          "loadAverageBefore": [
+            2.9091796875,
+            2.5751953125,
+            3.0224609375
           ],
           "ownerCpuMs": {
             "control-anchor": 3058.251,
@@ -4019,6 +4095,11 @@
               "inclusiveWallMs": 7.269416093826294
             }
           ],
+          "loadAverageBefore": [
+            3.0771484375,
+            2.62744140625,
+            3.0263671875
+          ],
           "ownerCpuMs": {
             "control-anchor": 2520.63,
             "lineage-registry": 2916.743,
@@ -4283,6 +4364,11 @@
               "inclusiveWallMs": 15.870042085647583
             }
           ],
+          "loadAverageBefore": [
+            3.0771484375,
+            2.62744140625,
+            3.0263671875
+          ],
           "ownerCpuMs": {
             "control-anchor": 2914.323,
             "lineage-registry": 3360.379,
@@ -4310,7 +4396,8 @@
     "wall/CPU and nested call times are not additive",
     "sequential runs and varying host load do not establish a causal speedup",
     "a readCommitted call remains fresh per live request; byte reads/signatures are not cached",
-    "no independent SGA or actual paged five-owner path measured"
+    "no independent SGA or actual paged five-owner path measured",
+    "first-read success is not a stable baseline: it varied between later runs, and loadAverageBefore alone does not explain the variation"
   ],
   "backendEligible": false,
   "profileApproved": false,
@@ -4351,7 +4438,63 @@
     "baselineStageStoreMatchesCommit": true,
     "sourceBaselineCommit": "c0768b170e93edc6243d57df8f9716726f388682",
     "optimizedStageStoreRestoredAndMatchesAfterReceipt": true,
-    "fullSuiteRerun": false
+    "fullSuiteRerun": false,
+    "afterEb2f257Review": {
+      "fullSuite": {
+        "passedTests": 5581,
+        "failedTests": 0,
+        "skippedTests": 1419
+      },
+      "sourcePinRegressionsFixed": [
+        "gradleOwnedAuthorityProcess.test.ts",
+        "gradleOwnedSourceProcess.test.ts",
+        "gradleOwnedConsumerValidation.test.ts",
+        "gradleOwnedRegistryProcess.test.ts"
+      ],
+      "checkMutations": {
+        "detected": 28,
+        "total": 28,
+        "scope": "each fail() in the shared check, plus analysis-script and callsite changes"
+      },
+      "unexplainedEarlierFailures": {
+        "count": 3,
+        "note": "one earlier full run had 3 further failures whose names were not kept; they did not recur, so the cause is unknown"
+      },
+      "nativeRerunsNotSaved": {
+        "note": "summaries only; raw not committed and not part of the before/after comparison",
+        "runs": [
+          {
+            "observer": true,
+            "firstReadCompleted": 2,
+            "firstReadAttempts": 3,
+            "loadAverageBefore1m": [
+              3.27,
+              3.61,
+              5.84
+            ]
+          },
+          {
+            "observer": false,
+            "firstReadCompleted": 0,
+            "firstReadAttempts": 1,
+            "loadAverageBefore1m": [
+              5.26
+            ]
+          },
+          {
+            "observer": true,
+            "firstReadCompleted": 3,
+            "firstReadAttempts": 3,
+            "loadAverageBefore1m": [
+              5.7,
+              5.55,
+              4.68
+            ]
+          }
+        ]
+      },
+      "savedRawRemeasured": false
+    }
   },
   "reviewCorrections": {
     "constantCountDuplicateRegressionFailedBeforeFix": true,
@@ -4364,7 +4507,10 @@
     "sourceKeyUnionValidated": true,
     "sourceAdditionDeletionAndObserverChangeRejected": true,
     "legacyRawBytesPreserved": true,
-    "legacyIdentityNotSynthesized": true
+    "legacyIdentityNotSynthesized": true,
+    "singleCheckImplementation": true,
+    "recordedFieldsSurviveRegeneration": true,
+    "priorSourcePinsKept": true
   },
   "documentSha256": {
     "docs/DESIGN_TODO.md": "0d2508f05e2a045d7e5af515db7086a66ab5da85a60d2f6ac7e7a43f09b548ea",
@@ -4372,8 +4518,9 @@
   },
   "regressionSourceSha256": {
     "src/test/utils/gradleOwnedStageReplay.test.ts": "f95e2c51a384e0d62f8531eb2e531185beb1d42ac4de6d59761ff42b900d947b",
-    "src/test/utils/gradleOwnedCgpHistory.test.ts": "738404e863ffe9e9def2e8798b28a107f03792711b0c55a783bea3ae9a3c3769",
+    "src/test/utils/gradleOwnedCgpHistory.test.ts": "74d37e5a5d165a4395561fec98c608d0915ef12bc51f7e66409a8d34190d39da",
     "src/test/utils/gradleOwnedCgpHistorySources.test.ts": "176fa79035557afe1f9528561e3424703f49fdb37a582812db8c53b224e6de62",
-    "src/test/utils/gradleOwnedCgpHistoryValidation.test.ts": "80199a7ebfc7e76400f7d1fcbc131c67978abaafaf10aa0bbe193b319ef8c713"
+    "src/test/utils/gradleOwnedCgpHistoryValidation.test.ts": "b3e86edc2a1dd6fa06c82c44c03a12fcbf7140aa93b6e1eef634cb504b764318",
+    "src/test/utils/gradleOwnedCgpHistoryCheck.test.ts": "2a569569a84224111bc7dea9a39b5d04d2aef59b25d75f517edf13d1d7427782"
   }
 }

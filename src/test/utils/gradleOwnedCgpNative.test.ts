@@ -1,4 +1,4 @@
-import {validateHistoryReads} from '../fixtures/gradleOwnedCgpHistory.js';
+import {validateHistoryReads} from '../fixtures/gradleOwnedCgpHistoryCheck.mjs';
 import {cgpReadFailure,cgpKeepEvidenceOnFailure} from '../fixtures/gradleOwnedCgpOutcome.js';
 import {it,expect} from 'vitest';
 import {writeFile} from 'node:fs/promises';import os from 'node:os';

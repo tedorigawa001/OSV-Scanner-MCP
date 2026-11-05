@@ -1,7 +1,8 @@
 import {it,expect} from 'vitest';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {validateHistoryReads} from '../fixtures/gradleOwnedCgpHistory.js';
+import {spawnSync} from 'node:child_process';
+import {validateHistoryReads} from '../fixtures/gradleOwnedCgpHistoryCheck.mjs';
 import {validateCgpReport} from '../fixtures/gradleOwnedCgpReport.js';
 it('binds before/after attribution to measured RPCs, counters, phases and raw bytes',async()=>{
  const summary=JSON.parse(await readFile('docs/validation/gradle-c3b-cgp-history-2026-11-05.json','utf8'));
@@ -24,4 +25,18 @@ it('rejects constant-count duplicate/missing reads in the newly measured native 
  for(const report of summary.reports){const raw=JSON.parse(await readFile(report.path,'utf8')),complete=raw.samples.find((s:any)=>s.outcome==='completed');expect(complete).toBeDefined();
   for(const renumber of [false,true]){const sample=structuredClone(complete),owner=sample.owners.find((o:any)=>o.role==='lineage-registry'),rows=owner.historyReads.reads;const total=rows.length,id=rows[1].eventId;rows[1]=structuredClone(rows[0]);if(renumber)rows[1].eventId=id;expect(rows.length).toBe(total);expect(()=>validateHistoryReads(sample)).toThrow('cgp_history_evidence_invalid');}
  }
+});
+
+it.each(['c3b2','c3b3','c3b4','c3b5'])('moves the %s source pin to the measured StageStore and keeps the prior pin',async name=>{
+ const summary=JSON.parse(await readFile('docs/validation/gradle-c3b-cgp-history-2026-11-05.json','utf8')),record=JSON.parse(await readFile('docs/validation/gradle-independent-currentness-'+name+'-2026-11-04.json','utf8')),stage='src/utils/gradleOwnedStageStore.ts';
+ const measured=Object.fromEntries(summary.reports.map((r:any)=>[r.mode,r.executionSources.files[stage]])),before=record.beforeStageReplaySourceSha256,current=record.sourceSha256;
+ expect(before[stage]).toBe(measured.before);expect(current[stage]).toBe(measured.after);
+ expect(Object.keys(current)).toEqual(Object.keys(before));
+ expect(Object.keys(current).filter(file=>current[file]!==before[file])).toEqual(record.stageReplayCompatibility.changedSources);
+ expect(record.stageReplayCompatibility.changedSources).toEqual([stage]);
+ expect(record.stageReplayCompatibility.sourceFingerprintCount).toBe(Object.keys(current).length);
+});
+
+it('reproduces the saved comparison from the saved raw measurements',()=>{
+ const result=spawnSync(process.execPath,['scripts/analyze-c3b-cgp-history.mjs','--check'],{encoding:'utf8'});expect(result.stderr).toBe('');expect(result.status).toBe(0);
 });
