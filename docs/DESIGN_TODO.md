@@ -3047,6 +3047,7 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 
 ### CGP-S0b：checkpoint既存file再同期batch（§9.108）
 - [x] test-only F／D fixture。全bytes認証・再読取、各file／directory同期を維持し、batch前後・最終inventoryと同FD／名前対応を検査する。既存file専用で修復fallbackなし。
-- [x] 46 unit・28証拠checker回帰と保存証拠の再照合。容量・列挙上限・改変・同期故障・期限／取消し・再openを確認。
-- [x] 実disk、3cohort × 5file数 × 6pair＝90pair比較。64fileのF中央値77〜81 msに対しD約28 ms。1fileではDが遅い。全bytes・同期の計数は両mode同じ。
-- S0a／全journal／owner gateとの合成・規則3の再判断、scratch／RSS、S0c page・S0d 5owner比較・S0x独立storageが残る。CG0／CG3保留、原本読取省略0。単独checkpoint fixtureの結果を本番speedupへ換算しない。
+- [x] 84 unit・44証拠checker回帰と保存証拠の再照合。容量・列挙上限・改変・同期故障・期限／取消し・再open・pending linkの復旧、forkと本番の一致を確認。
+- [x] 実disk、3cohort × 5file数 × 6pair＝90pair比較と本番対照90読取。64fileは本番約69 ms、F約75 ms、D約25 ms。本番と比べると1・8 fileではDが遅く、32 file以上で速い。全bytes・同期の計数は両mode同じ。
+- [x] 規則3の判定：M＋Dの8 read目は約6.5秒（算術）で使える時間1.4〜1.9秒を超え、最大予算内は2 readまで。S0-M／S0-Dは製品統合しない。
+- 次はS0c compact recordとCGP-I1の呼出し回数削減の見積り。scratch／RSS、S0d 5owner比較、S0x独立storageも残る。CG0／CG3保留、原本読取省略0。単独checkpoint fixtureの結果を本番speedupへ換算しない。

@@ -22,26 +22,27 @@
     "files": {
       "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
       "package.json": "5a0ff34ffcd644bbefaa713dcd8e65782b719bc01be52cd8f26672bcc123ec9b",
-      "src/test/fixtures/gradleOwnedS0b.ts": "cec5c82fb2520fa83b4d04da0abf77b65e941e48dff402c1455be8d18b9e49ef",
-      "src/test/fixtures/gradleOwnedS0bReport.mjs": "ef9d00767d419f9fb6c7d9b872d767ab202d53839dd6f54ee836fab8ef8519cc",
-      "src/test/utils/gradleOwnedS0bNative.test.ts": "05b8c5d9baabc5804baacf3dcd3f2cb7e57ee3ac9263aa300e42c3351368bdb3",
+      "src/test/fixtures/gradleOwnedS0b.ts": "69772cd478db4568eb3dfe69edc1fcd486efb9cd9f27d84ef65a8f2b803e3515",
+      "src/test/fixtures/gradleOwnedS0bReport.mjs": "fffec55b1a0758006458e81fd9417f897c84626e6726646ac55ab81f69ab1701",
+      "src/test/utils/gradleOwnedS0bNative.test.ts": "1b7121201ba13263a5e941a596151a89b5050d1fbfb981330b3799b793c260c8",
       "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
       "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
       "src/utils/gradleOwnedStoreCheckpoint.ts": "8875ec5c3d7c58001d7eb19b8df921e15ce3cc5c0a6967fc50f0ad006203846a",
+      "src/utils/gradleOwnedStoreFs.ts": "6746560c43f17cf272ec300985c79770b827a890dd44a69194696610e1dbbec1",
       "src/utils/gradleOwnedStoreJournal.ts": "3e95764d5ab7e19ccd0339d73bf3a2290b6146dd067c9f0d0cee13ca5388c093",
       "tsconfig.json": "7375ac5d334f50eed3d766799fd016e068f1998639c7b02ba201db280a1583c3",
       "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
     },
-    "digest": "8d7f7fb572a889968ee740b3c66669c210ef8e0e8e696cb1ea40967f3b4f6a06"
+    "digest": "f2770fa81c73691945fa95b5f18bbb007701a17df38687526ac273043d873506"
   },
   "host": {
     "platform": "darwin",
     "arch": "arm64",
     "node": "v26.12.1",
     "loadAverage": [
-      2.79248046875,
-      2.35205078125,
-      2.6611328125
+      2.98193359375,
+      2.35546875,
+      2.1025390625
     ]
   },
   "samples": [
@@ -72,7 +73,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 1.2334999999999923,
+                "wallMs": 1.0185829999999925,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -100,7 +101,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.7700419999999895,
+                "wallMs": 0.6084170000000171,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -137,7 +138,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.8540000000000134,
+                "wallMs": 0.6023329999999874,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -165,7 +166,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 1.3354160000000093,
+                "wallMs": 0.9274169999999913,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -202,7 +203,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 1.1447919999999954,
+                "wallMs": 0.8481249999999818,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -230,7 +231,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.807124999999985,
+                "wallMs": 0.5924169999999833,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -267,7 +268,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.7549999999999955,
+                "wallMs": 0.7065420000000131,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -295,7 +296,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 1.0423330000000135,
+                "wallMs": 0.9684159999999906,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -332,7 +333,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 1.025624999999991,
+                "wallMs": 1.2935420000000022,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -360,7 +361,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.675832999999983,
+                "wallMs": 0.6504580000000146,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -397,7 +398,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.7833750000000066,
+                "wallMs": 0.5148749999999893,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -425,7 +426,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 1.1109160000000031,
+                "wallMs": 0.7923749999999927,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -445,6 +446,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 0.48537499999997635,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "91ab6a4f0c925e7be533050f59e044b17c125575a23938bad6ebf956097a896a",
+            "revision": 0,
+            "headDigest": "6126a9e505a2104dc6aa5c135106d5fd909ff8d96ba2d172cb7c7b1234d2fa94"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 2,
+          "wallMs": 0.3424579999999935,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "91ab6a4f0c925e7be533050f59e044b17c125575a23938bad6ebf956097a896a",
+            "revision": 0,
+            "headDigest": "6126a9e505a2104dc6aa5c135106d5fd909ff8d96ba2d172cb7c7b1234d2fa94"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 3,
+          "wallMs": 0.27641599999998334,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "91ab6a4f0c925e7be533050f59e044b17c125575a23938bad6ebf956097a896a",
+            "revision": 0,
+            "headDigest": "6126a9e505a2104dc6aa5c135106d5fd909ff8d96ba2d172cb7c7b1234d2fa94"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 4,
+          "wallMs": 0.2721249999999884,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "91ab6a4f0c925e7be533050f59e044b17c125575a23938bad6ebf956097a896a",
+            "revision": 0,
+            "headDigest": "6126a9e505a2104dc6aa5c135106d5fd909ff8d96ba2d172cb7c7b1234d2fa94"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 5,
+          "wallMs": 0.3193330000000003,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "91ab6a4f0c925e7be533050f59e044b17c125575a23938bad6ebf956097a896a",
+            "revision": 0,
+            "headDigest": "6126a9e505a2104dc6aa5c135106d5fd909ff8d96ba2d172cb7c7b1234d2fa94"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 6,
+          "wallMs": 0.31479199999998286,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "91ab6a4f0c925e7be533050f59e044b17c125575a23938bad6ebf956097a896a",
+            "revision": 0,
+            "headDigest": "6126a9e505a2104dc6aa5c135106d5fd909ff8d96ba2d172cb7c7b1234d2fa94"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
         }
       ]
     },
@@ -475,7 +556,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.318249999999978,
+                "wallMs": 4.254458,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -503,7 +584,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 8.085834000000006,
+                "wallMs": 5.769958000000003,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -540,7 +621,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.178083000000015,
+                "wallMs": 4.200959000000012,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -568,7 +649,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.351292000000001,
+                "wallMs": 4.5763749999999845,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -605,7 +686,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.6512500000000045,
+                "wallMs": 3.5427500000000123,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -633,7 +714,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.721332999999959,
+                "wallMs": 3.5050830000000133,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -670,7 +751,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.475375000000042,
+                "wallMs": 3.728375000000028,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -698,7 +779,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.239874999999984,
+                "wallMs": 3.354417000000012,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -735,7 +816,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.443500000000029,
+                "wallMs": 3.474207999999976,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -763,7 +844,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 6.308625000000006,
+                "wallMs": 3.6218749999999886,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -800,7 +881,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.474916000000007,
+                "wallMs": 3.567875000000015,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -828,7 +909,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.265791999999976,
+                "wallMs": 3.312167000000045,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -848,6 +929,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 2.5686249999999973,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ecbe793e71df70731196f69324f88b02ef3cc9fc2a22b1486a15872acb944352",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 2,
+          "wallMs": 3.050207999999998,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ecbe793e71df70731196f69324f88b02ef3cc9fc2a22b1486a15872acb944352",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 3,
+          "wallMs": 2.8460420000000113,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ecbe793e71df70731196f69324f88b02ef3cc9fc2a22b1486a15872acb944352",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 4,
+          "wallMs": 2.575166999999965,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ecbe793e71df70731196f69324f88b02ef3cc9fc2a22b1486a15872acb944352",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 5,
+          "wallMs": 3.887917000000016,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ecbe793e71df70731196f69324f88b02ef3cc9fc2a22b1486a15872acb944352",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 6,
+          "wallMs": 2.623874999999998,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ecbe793e71df70731196f69324f88b02ef3cc9fc2a22b1486a15872acb944352",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
         }
       ]
     },
@@ -878,7 +1039,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 21.207209000000034,
+                "wallMs": 15.657040999999936,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -906,7 +1067,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 27.728166999999985,
+                "wallMs": 25.1913330000001,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -943,7 +1104,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 29.410708,
+                "wallMs": 24.72995800000001,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -971,7 +1132,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 15.969540999999936,
+                "wallMs": 17.599249999999984,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -1008,7 +1169,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 31.101999999999975,
+                "wallMs": 12.720165999999836,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -1036,7 +1197,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 31.502624999999966,
+                "wallMs": 24.215458000000126,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -1073,7 +1234,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 26.384249999999952,
+                "wallMs": 23.574333000000024,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -1101,7 +1262,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 16.33179199999995,
+                "wallMs": 12.529957999999851,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -1138,7 +1299,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 14.847834000000034,
+                "wallMs": 12.410791000000017,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -1166,7 +1327,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 26.275916999999936,
+                "wallMs": 23.838374999999814,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -1203,7 +1364,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 27.276333000000022,
+                "wallMs": 24.294124999999894,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -1231,7 +1392,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 14.326625000000035,
+                "wallMs": 12.212749999999915,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -1251,6 +1412,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 21.14695800000004,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "607bd22661851e70a9273484cae991dca1db38f7e5f54a95970763d50190ee00",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 2,
+          "wallMs": 20.425291000000016,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "607bd22661851e70a9273484cae991dca1db38f7e5f54a95970763d50190ee00",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 3,
+          "wallMs": 35.34520799999996,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "607bd22661851e70a9273484cae991dca1db38f7e5f54a95970763d50190ee00",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 4,
+          "wallMs": 25.01783300000011,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "607bd22661851e70a9273484cae991dca1db38f7e5f54a95970763d50190ee00",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 5,
+          "wallMs": 20.727750000000015,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "607bd22661851e70a9273484cae991dca1db38f7e5f54a95970763d50190ee00",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 6,
+          "wallMs": 35.73308300000008,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "607bd22661851e70a9273484cae991dca1db38f7e5f54a95970763d50190ee00",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
         }
       ]
     },
@@ -1281,7 +1522,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 30.73329100000001,
+                "wallMs": 25.178957999999966,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1309,7 +1550,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 79.48583299999996,
+                "wallMs": 73.96274999999969,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1346,7 +1587,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 78.43541699999992,
+                "wallMs": 75.59066699999994,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1374,7 +1615,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 27.821959000000106,
+                "wallMs": 24.532541000000037,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1411,7 +1652,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 27.9721669999999,
+                "wallMs": 25.308332999999948,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1439,7 +1680,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 77.86287500000026,
+                "wallMs": 75.31570800000009,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1476,7 +1717,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 79.2352920000003,
+                "wallMs": 74.24179200000026,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1504,7 +1745,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 27.75304099999994,
+                "wallMs": 24.887416999999914,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1541,7 +1782,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 27.16637499999979,
+                "wallMs": 24.79566700000032,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1569,7 +1810,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 82.47404099999994,
+                "wallMs": 74.5170420000004,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1606,7 +1847,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 78.12333400000034,
+                "wallMs": 74.33333399999992,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1634,7 +1875,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 27.62629199999992,
+                "wallMs": 29.121334000000388,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -1654,6 +1895,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 68.31295799999998,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0760121715359d79de751b8e8d7eab72ad91d33ca08003313d5f604e06900691",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 2,
+          "wallMs": 73.70208400000001,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0760121715359d79de751b8e8d7eab72ad91d33ca08003313d5f604e06900691",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 3,
+          "wallMs": 71.00125000000025,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0760121715359d79de751b8e8d7eab72ad91d33ca08003313d5f604e06900691",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 4,
+          "wallMs": 66.96591599999965,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0760121715359d79de751b8e8d7eab72ad91d33ca08003313d5f604e06900691",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 5,
+          "wallMs": 68.43124999999964,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0760121715359d79de751b8e8d7eab72ad91d33ca08003313d5f604e06900691",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 6,
+          "wallMs": 67.65883300000041,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0760121715359d79de751b8e8d7eab72ad91d33ca08003313d5f604e06900691",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
         }
       ]
     },
@@ -1684,7 +2005,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 32.259833999999955,
+                "wallMs": 29.168249999999716,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -1712,7 +2033,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 105.95675000000028,
+                "wallMs": 76.5039999999999,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -1749,7 +2070,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 79.43425000000025,
+                "wallMs": 76.7096249999995,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -1777,7 +2098,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 31.381124999999884,
+                "wallMs": 28.807584000000134,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -1814,7 +2135,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 30.590957999999773,
+                "wallMs": 29.38129200000003,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -1842,7 +2163,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 78.21662500000002,
+                "wallMs": 79.75854099999924,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -1879,7 +2200,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 84.46608400000014,
+                "wallMs": 81.31737499999963,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -1907,7 +2228,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 31.25887499999999,
+                "wallMs": 44.978000000000065,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -1944,7 +2265,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 30.724959000000126,
+                "wallMs": 29.075166999999965,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -1972,7 +2293,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 78.80479100000002,
+                "wallMs": 76.66162499999973,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -2009,7 +2330,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 79.39712499999996,
+                "wallMs": 76.75483399999939,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -2037,7 +2358,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 34.98916599999984,
+                "wallMs": 28.701625000001513,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -2057,6 +2378,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 69.26766700000007,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "f284370b51e7cd76859e7e587ff71c602cc374cf75587035433a1ce65afbe935",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 2,
+          "wallMs": 70.1299170000002,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "f284370b51e7cd76859e7e587ff71c602cc374cf75587035433a1ce65afbe935",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 3,
+          "wallMs": 69.68133399999988,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "f284370b51e7cd76859e7e587ff71c602cc374cf75587035433a1ce65afbe935",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 4,
+          "wallMs": 70.35954099999981,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "f284370b51e7cd76859e7e587ff71c602cc374cf75587035433a1ce65afbe935",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 5,
+          "wallMs": 74.04600000000028,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "f284370b51e7cd76859e7e587ff71c602cc374cf75587035433a1ce65afbe935",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 6,
+          "wallMs": 69.21504099999947,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "f284370b51e7cd76859e7e587ff71c602cc374cf75587035433a1ce65afbe935",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
         }
       ]
     },
@@ -2087,7 +2488,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.5773329999992711,
+                "wallMs": 0.4848339999989548,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2115,7 +2516,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 0.9075830000001588,
+                "wallMs": 0.7180829999997513,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2152,7 +2553,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 1.0429160000003321,
+                "wallMs": 0.7495830000007118,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2180,7 +2581,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.8096669999995356,
+                "wallMs": 0.49870800000098825,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2217,7 +2618,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 7.566749999999956,
+                "wallMs": 0.4987909999999829,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2245,7 +2646,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 5.056000000000495,
+                "wallMs": 0.7644579999996495,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2282,7 +2683,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 0.8473329999997077,
+                "wallMs": 1.3962920000012673,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2310,7 +2711,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.5605420000001686,
+                "wallMs": 0.4672499999996944,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2347,7 +2748,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.5510839999997188,
+                "wallMs": 0.5175829999989219,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2375,7 +2776,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 0.8504999999995562,
+                "wallMs": 0.7824999999993452,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2412,7 +2813,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 0.846625000000131,
+                "wallMs": 0.8372499999986758,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2440,7 +2841,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.5759589999997843,
+                "wallMs": 0.5175829999989219,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -2460,6 +2861,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 0.26916699999856064,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "973204abc8d7e57eb1c2a0562001cc04838c0d25197e73a4a49e12197187a5e8",
+            "revision": 0,
+            "headDigest": "99f5e8cb809bc7ff6ea5fab4409d2d785686cf939e20a509c9f45fd14b95cd09"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 2,
+          "wallMs": 0.2753339999999298,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "973204abc8d7e57eb1c2a0562001cc04838c0d25197e73a4a49e12197187a5e8",
+            "revision": 0,
+            "headDigest": "99f5e8cb809bc7ff6ea5fab4409d2d785686cf939e20a509c9f45fd14b95cd09"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 3,
+          "wallMs": 0.2535840000000462,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "973204abc8d7e57eb1c2a0562001cc04838c0d25197e73a4a49e12197187a5e8",
+            "revision": 0,
+            "headDigest": "99f5e8cb809bc7ff6ea5fab4409d2d785686cf939e20a509c9f45fd14b95cd09"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 4,
+          "wallMs": 0.2537499999998545,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "973204abc8d7e57eb1c2a0562001cc04838c0d25197e73a4a49e12197187a5e8",
+            "revision": 0,
+            "headDigest": "99f5e8cb809bc7ff6ea5fab4409d2d785686cf939e20a509c9f45fd14b95cd09"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 5,
+          "wallMs": 0.24970899999971152,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "973204abc8d7e57eb1c2a0562001cc04838c0d25197e73a4a49e12197187a5e8",
+            "revision": 0,
+            "headDigest": "99f5e8cb809bc7ff6ea5fab4409d2d785686cf939e20a509c9f45fd14b95cd09"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 6,
+          "wallMs": 0.24391599999944447,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "973204abc8d7e57eb1c2a0562001cc04838c0d25197e73a4a49e12197187a5e8",
+            "revision": 0,
+            "headDigest": "99f5e8cb809bc7ff6ea5fab4409d2d785686cf939e20a509c9f45fd14b95cd09"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
         }
       ]
     },
@@ -2490,7 +2971,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.295500000000175,
+                "wallMs": 3.777915999999095,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2518,7 +2999,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 3.9803750000000946,
+                "wallMs": 3.488499999999476,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2555,7 +3036,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.034375000000182,
+                "wallMs": 3.472875000001295,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2583,7 +3064,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.198374999999942,
+                "wallMs": 3.6786670000001322,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2620,7 +3101,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.106834000000163,
+                "wallMs": 3.30212500000016,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2648,7 +3129,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.052416999999878,
+                "wallMs": 3.1284580000010465,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2685,7 +3166,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 3.8854160000000775,
+                "wallMs": 3.179167000000234,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2713,7 +3194,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.104874999999993,
+                "wallMs": 4.228166999999303,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2750,7 +3231,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.130000000000109,
+                "wallMs": 3.8505830000012793,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2778,7 +3259,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.025749999999789,
+                "wallMs": 4.296167000000423,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2815,7 +3296,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 3.6902090000003227,
+                "wallMs": 3.2255420000001322,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2843,7 +3324,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 3.95208299999922,
+                "wallMs": 3.3311670000002778,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -2863,6 +3344,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 2.663958000001003,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "4c37fbcffc7adac5e758979069389a4ffa5ec00a2fb69097f03e1d4e977597cd",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 2,
+          "wallMs": 2.673125000001164,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "4c37fbcffc7adac5e758979069389a4ffa5ec00a2fb69097f03e1d4e977597cd",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 3,
+          "wallMs": 2.671041999999943,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "4c37fbcffc7adac5e758979069389a4ffa5ec00a2fb69097f03e1d4e977597cd",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 4,
+          "wallMs": 2.478000000000975,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "4c37fbcffc7adac5e758979069389a4ffa5ec00a2fb69097f03e1d4e977597cd",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 5,
+          "wallMs": 2.4692919999997684,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "4c37fbcffc7adac5e758979069389a4ffa5ec00a2fb69097f03e1d4e977597cd",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 6,
+          "wallMs": 3.7651669999995647,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "4c37fbcffc7adac5e758979069389a4ffa5ec00a2fb69097f03e1d4e977597cd",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
         }
       ]
     },
@@ -2893,7 +3454,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 60.12041700000009,
+                "wallMs": 24.079749999998967,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -2921,7 +3482,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 32.84783400000015,
+                "wallMs": 13.429458999999042,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -2958,7 +3519,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 16.878875000000335,
+                "wallMs": 12.393292000000656,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -2986,7 +3547,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 30.970750000000407,
+                "wallMs": 24.348416999999245,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -3023,7 +3584,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 27.251459000000068,
+                "wallMs": 23.84416600000077,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -3051,7 +3612,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 28.596207999999933,
+                "wallMs": 13.032125000001543,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -3088,7 +3649,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 15.431167000000642,
+                "wallMs": 12.739583000000493,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -3116,7 +3677,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 79.28775000000041,
+                "wallMs": 23.920374999999694,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -3153,7 +3714,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 98.26233299999967,
+                "wallMs": 24.06787500000064,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -3181,7 +3742,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 15.77324999999928,
+                "wallMs": 12.972124999998414,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -3218,7 +3779,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 17.664042000000336,
+                "wallMs": 12.655291999999463,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -3246,7 +3807,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 29.267707999999402,
+                "wallMs": 24.192458000001352,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -3266,6 +3827,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 20.732500000000073,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0c0c06cc43ab1e7e28bcf4bbc76d080a8b869ca4a3a604f9d63e4184233bbec7",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 2,
+          "wallMs": 20.719209000000774,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0c0c06cc43ab1e7e28bcf4bbc76d080a8b869ca4a3a604f9d63e4184233bbec7",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 3,
+          "wallMs": 21.47912499999984,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0c0c06cc43ab1e7e28bcf4bbc76d080a8b869ca4a3a604f9d63e4184233bbec7",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 4,
+          "wallMs": 21.120999999999185,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0c0c06cc43ab1e7e28bcf4bbc76d080a8b869ca4a3a604f9d63e4184233bbec7",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 5,
+          "wallMs": 21.152000000000044,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0c0c06cc43ab1e7e28bcf4bbc76d080a8b869ca4a3a604f9d63e4184233bbec7",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 6,
+          "wallMs": 20.535250000000815,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "0c0c06cc43ab1e7e28bcf4bbc76d080a8b869ca4a3a604f9d63e4184233bbec7",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
         }
       ]
     },
@@ -3296,7 +3937,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 79.37725000000046,
+                "wallMs": 76.06858399999874,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3324,7 +3965,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 27.555624999999964,
+                "wallMs": 25.006792000000132,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3361,7 +4002,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 41.17291599999953,
+                "wallMs": 25.394000000000233,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3389,7 +4030,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 133.5932499999999,
+                "wallMs": 74.45245900000009,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3426,7 +4067,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 80.73049999999967,
+                "wallMs": 74.58608300000014,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3454,7 +4095,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 28.50804100000005,
+                "wallMs": 25.31487500000003,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3491,7 +4132,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 28.158833000000413,
+                "wallMs": 25.318874999999025,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3519,7 +4160,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 81.13824999999997,
+                "wallMs": 75.55274999999892,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3556,7 +4197,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 79.70670799999971,
+                "wallMs": 78.81074999999873,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3584,7 +4225,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 27.79858299999978,
+                "wallMs": 24.795750000001135,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3621,7 +4262,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 35.39862500000072,
+                "wallMs": 25.356125000000247,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3649,7 +4290,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 82.87191600000006,
+                "wallMs": 75.33579199999986,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -3669,6 +4310,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 72.59758300000067,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "66f3ceed2e90bb7ec290455a575393bfab520c8f975675e2e695fffad70e6183",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 2,
+          "wallMs": 66.46183299999939,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "66f3ceed2e90bb7ec290455a575393bfab520c8f975675e2e695fffad70e6183",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 3,
+          "wallMs": 68.55462499999885,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "66f3ceed2e90bb7ec290455a575393bfab520c8f975675e2e695fffad70e6183",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 4,
+          "wallMs": 71.32970899999964,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "66f3ceed2e90bb7ec290455a575393bfab520c8f975675e2e695fffad70e6183",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 5,
+          "wallMs": 68.55929199999991,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "66f3ceed2e90bb7ec290455a575393bfab520c8f975675e2e695fffad70e6183",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 6,
+          "wallMs": 70.01654199999939,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "66f3ceed2e90bb7ec290455a575393bfab520c8f975675e2e695fffad70e6183",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
         }
       ]
     },
@@ -3699,7 +4420,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 91.54916700000012,
+                "wallMs": 76.31887499999903,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -3727,7 +4448,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 31.051542000000154,
+                "wallMs": 28.799666000000798,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -3764,7 +4485,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 31.359375,
+                "wallMs": 29.011916999999812,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -3792,7 +4513,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 83.2505000000001,
+                "wallMs": 80.62445899999875,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -3829,7 +4550,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 88.56299999999919,
+                "wallMs": 76.78287499999897,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -3857,7 +4578,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 31.3140829999993,
+                "wallMs": 33.2879580000008,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -3894,7 +4615,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 32.13604099999975,
+                "wallMs": 28.988791000001584,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -3922,7 +4643,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 118.31766599999901,
+                "wallMs": 89.52420800000073,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -3959,7 +4680,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 84.47258299999885,
+                "wallMs": 77.88291700000082,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -3987,7 +4708,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 32.12758399999984,
+                "wallMs": 30.33783399999993,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -4024,7 +4745,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 31.960375000000568,
+                "wallMs": 29.14241700000275,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -4052,7 +4773,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 93.60874999999942,
+                "wallMs": 81.8037919999988,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -4072,6 +4793,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 71.36141599999974,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "c34aef9a2824f37d46aa610df10838115a8c7813645bb134c5ff4046b23a1061",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 2,
+          "wallMs": 72.9068329999991,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "c34aef9a2824f37d46aa610df10838115a8c7813645bb134c5ff4046b23a1061",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 3,
+          "wallMs": 71.8525410000002,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "c34aef9a2824f37d46aa610df10838115a8c7813645bb134c5ff4046b23a1061",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 4,
+          "wallMs": 70.9947919999995,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "c34aef9a2824f37d46aa610df10838115a8c7813645bb134c5ff4046b23a1061",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 5,
+          "wallMs": 72.13433299999997,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "c34aef9a2824f37d46aa610df10838115a8c7813645bb134c5ff4046b23a1061",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 6,
+          "wallMs": 71.30212500000198,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "c34aef9a2824f37d46aa610df10838115a8c7813645bb134c5ff4046b23a1061",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
         }
       ]
     },
@@ -4102,7 +4903,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 0.9797920000000886,
+                "wallMs": 0.7623749999984284,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4130,7 +4931,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.5675419999988662,
+                "wallMs": 0.5000419999996666,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4167,7 +4968,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.582749999999578,
+                "wallMs": 0.506082999996579,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4195,7 +4996,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 0.8786250000011933,
+                "wallMs": 0.7740830000002461,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4232,7 +5033,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 0.8849160000008851,
+                "wallMs": 0.7871669999985897,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4260,7 +5061,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.5875000000014552,
+                "wallMs": 0.506042000000889,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4297,7 +5098,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.5903750000015862,
+                "wallMs": 0.4844169999996666,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4325,7 +5126,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 0.888875000000553,
+                "wallMs": 0.9248339999976452,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4362,7 +5163,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 0.8886249999995925,
+                "wallMs": 0.7479999999995925,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4390,7 +5191,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.5924579999991693,
+                "wallMs": 0.4946669999990263,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4427,7 +5228,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 0.5907090000000608,
+                "wallMs": 0.497125000001688,
                 "listCalls": 4,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4455,7 +5256,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 0.8904170000005251,
+                "wallMs": 0.7859580000003916,
                 "listCalls": 5,
                 "readCalls": 2,
                 "readBytes": 1242,
@@ -4475,6 +5276,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 0.25216599999839673,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ce9674ffb6dd25e5116bd41d9e9501499bcf218f4cbed7b7ff6453134e4ffd70",
+            "revision": 0,
+            "headDigest": "e67f57c225ac1a3838339ac08c6b48ee62c65a119c33191b19e0304c36b1b83a"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 2,
+          "wallMs": 0.24708400000235997,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ce9674ffb6dd25e5116bd41d9e9501499bcf218f4cbed7b7ff6453134e4ffd70",
+            "revision": 0,
+            "headDigest": "e67f57c225ac1a3838339ac08c6b48ee62c65a119c33191b19e0304c36b1b83a"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 3,
+          "wallMs": 0.2516250000007858,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ce9674ffb6dd25e5116bd41d9e9501499bcf218f4cbed7b7ff6453134e4ffd70",
+            "revision": 0,
+            "headDigest": "e67f57c225ac1a3838339ac08c6b48ee62c65a119c33191b19e0304c36b1b83a"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 4,
+          "wallMs": 0.33233300000210875,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ce9674ffb6dd25e5116bd41d9e9501499bcf218f4cbed7b7ff6453134e4ffd70",
+            "revision": 0,
+            "headDigest": "e67f57c225ac1a3838339ac08c6b48ee62c65a119c33191b19e0304c36b1b83a"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 5,
+          "wallMs": 0.2421250000006694,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ce9674ffb6dd25e5116bd41d9e9501499bcf218f4cbed7b7ff6453134e4ffd70",
+            "revision": 0,
+            "headDigest": "e67f57c225ac1a3838339ac08c6b48ee62c65a119c33191b19e0304c36b1b83a"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
+        },
+        {
+          "round": 6,
+          "wallMs": 0.24008300000059535,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "ce9674ffb6dd25e5116bd41d9e9501499bcf218f4cbed7b7ff6453134e4ffd70",
+            "revision": 0,
+            "headDigest": "e67f57c225ac1a3838339ac08c6b48ee62c65a119c33191b19e0304c36b1b83a"
+          },
+          "filesSynced": 1,
+          "directoriesSynced": 1,
+          "entriesEnumerated": 2
         }
       ]
     },
@@ -4505,7 +5386,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.283332999999402,
+                "wallMs": 3.4512089999989257,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4533,7 +5414,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.0228749999987485,
+                "wallMs": 3.928583000000799,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4570,7 +5451,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.486417000000074,
+                "wallMs": 3.6367500000014843,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4598,7 +5479,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.006208000000697,
+                "wallMs": 3.575124999999389,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4635,7 +5516,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 3.896582999999737,
+                "wallMs": 3.970041000000492,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4663,7 +5544,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.179874999999811,
+                "wallMs": 3.306416999999783,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4700,7 +5581,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.266665999999532,
+                "wallMs": 3.674250000000029,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4728,7 +5609,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 3.9245410000003176,
+                "wallMs": 8.264791000001424,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4765,7 +5646,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 3.9297499999993306,
+                "wallMs": 3.3547079999989364,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4793,7 +5674,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.14508399999977,
+                "wallMs": 3.34845900000073,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4830,7 +5711,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 4.279750000001513,
+                "wallMs": 4.183874999998807,
                 "listCalls": 11,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4858,7 +5739,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 4.279791999999361,
+                "wallMs": 3.4789160000000265,
                 "listCalls": 5,
                 "readCalls": 16,
                 "readBytes": 9936,
@@ -4878,6 +5759,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 2.6345000000001164,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "2849ec1a680d707a5cf6212dbf6207aff45d075f2f354d5003dba3a76eebc31a",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 2,
+          "wallMs": 2.644083999999566,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "2849ec1a680d707a5cf6212dbf6207aff45d075f2f354d5003dba3a76eebc31a",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 3,
+          "wallMs": 2.465542000001733,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "2849ec1a680d707a5cf6212dbf6207aff45d075f2f354d5003dba3a76eebc31a",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 4,
+          "wallMs": 2.510374999998021,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "2849ec1a680d707a5cf6212dbf6207aff45d075f2f354d5003dba3a76eebc31a",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 5,
+          "wallMs": 3.0965419999993173,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "2849ec1a680d707a5cf6212dbf6207aff45d075f2f354d5003dba3a76eebc31a",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
+        },
+        {
+          "round": 6,
+          "wallMs": 2.4525830000020505,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "2849ec1a680d707a5cf6212dbf6207aff45d075f2f354d5003dba3a76eebc31a",
+            "revision": 7,
+            "headDigest": "16bcde6057a69a6e06627f2d07a783b0b6a915e7ab9296d521331a6c360f691e"
+          },
+          "filesSynced": 8,
+          "directoriesSynced": 8,
+          "entriesEnumerated": 72
         }
       ]
     },
@@ -4908,7 +5869,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 14.217834000000948,
+                "wallMs": 12.315750000001572,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -4936,7 +5897,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 26.088458000000173,
+                "wallMs": 26.872082999998383,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -4973,7 +5934,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 25.973124999998618,
+                "wallMs": 24.064916999999696,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -5001,7 +5962,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 13.555916999999681,
+                "wallMs": 12.914499999998952,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -5038,7 +5999,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 14.198459000001094,
+                "wallMs": 12.525124999996478,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -5066,7 +6027,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 25.90283399999862,
+                "wallMs": 27.953292000001966,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -5103,7 +6064,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 25.568042000000787,
+                "wallMs": 24.259624999998778,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -5131,7 +6092,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 14.001499999998487,
+                "wallMs": 12.37762500000099,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -5168,7 +6129,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 13.592540999999983,
+                "wallMs": 12.788749999999709,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -5196,7 +6157,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 25.99487500000032,
+                "wallMs": 24.119166000000405,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -5233,7 +6194,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 25.819666000001234,
+                "wallMs": 24.561584000002767,
                 "listCalls": 35,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -5261,7 +6222,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 17.58141699999942,
+                "wallMs": 12.723667000002024,
                 "listCalls": 5,
                 "readCalls": 64,
                 "readBytes": 39788,
@@ -5281,6 +6242,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 21.595666000001074,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "a7e2d670017eb2ba3186b41eb6bbcfe15ca94301e0c55969bd4dc051a8cdd132",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 2,
+          "wallMs": 20.769624999997177,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "a7e2d670017eb2ba3186b41eb6bbcfe15ca94301e0c55969bd4dc051a8cdd132",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 3,
+          "wallMs": 20.980917000000773,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "a7e2d670017eb2ba3186b41eb6bbcfe15ca94301e0c55969bd4dc051a8cdd132",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 4,
+          "wallMs": 20.8582920000008,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "a7e2d670017eb2ba3186b41eb6bbcfe15ca94301e0c55969bd4dc051a8cdd132",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 5,
+          "wallMs": 20.830583999999362,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "a7e2d670017eb2ba3186b41eb6bbcfe15ca94301e0c55969bd4dc051a8cdd132",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
+        },
+        {
+          "round": 6,
+          "wallMs": 21.29908400000204,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "a7e2d670017eb2ba3186b41eb6bbcfe15ca94301e0c55969bd4dc051a8cdd132",
+            "revision": 31,
+            "headDigest": "88f4e9bfa273a18e281019bdc2c79c36fe4fb3247855e0b77ea0ac197833211e"
+          },
+          "filesSynced": 32,
+          "directoriesSynced": 32,
+          "entriesEnumerated": 1056
         }
       ]
     },
@@ -5311,7 +6352,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 27.05145899999843,
+                "wallMs": 25.00250000000233,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5339,7 +6380,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 82.52812500000073,
+                "wallMs": 78.81108300000051,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5376,7 +6417,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 77.07529199999954,
+                "wallMs": 75.1683750000011,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5404,7 +6445,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 32.57283300000017,
+                "wallMs": 25.062749999997322,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5441,7 +6482,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 27.22441600000093,
+                "wallMs": 25.208290999999008,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5469,7 +6510,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 77.32987499999945,
+                "wallMs": 75.40708300000188,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5506,7 +6547,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 77.51241699999991,
+                "wallMs": 75.1977079999997,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5534,7 +6575,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 28.328333999999813,
+                "wallMs": 24.91949999999997,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5571,7 +6612,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 27.626625000000786,
+                "wallMs": 25.031958999999915,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5599,7 +6640,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 77.39420799999971,
+                "wallMs": 74.87904100000014,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5636,7 +6677,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 81.18174999999974,
+                "wallMs": 75.03616699999839,
                 "listCalls": 67,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5664,7 +6705,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 28.508209000001443,
+                "wallMs": 24.95979200000147,
                 "listCalls": 5,
                 "readCalls": 128,
                 "readBytes": 79596,
@@ -5684,6 +6725,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 67.95637500000157,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "3d5d04eb9e2d1b752442857cb691e06bd3e8af3ebbc4f86d0b94f63d3586afe4",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 2,
+          "wallMs": 69.56195799999841,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "3d5d04eb9e2d1b752442857cb691e06bd3e8af3ebbc4f86d0b94f63d3586afe4",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 3,
+          "wallMs": 73.15858300000036,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "3d5d04eb9e2d1b752442857cb691e06bd3e8af3ebbc4f86d0b94f63d3586afe4",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 4,
+          "wallMs": 69.25875000000087,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "3d5d04eb9e2d1b752442857cb691e06bd3e8af3ebbc4f86d0b94f63d3586afe4",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 5,
+          "wallMs": 69.19670799999949,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "3d5d04eb9e2d1b752442857cb691e06bd3e8af3ebbc4f86d0b94f63d3586afe4",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
+        },
+        {
+          "round": 6,
+          "wallMs": 69.92449999999735,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "3d5d04eb9e2d1b752442857cb691e06bd3e8af3ebbc4f86d0b94f63d3586afe4",
+            "revision": 63,
+            "headDigest": "15cd0be942b575b5011dde30622df8bd6ffeea19577d2e83fdc61c3140fa6a53"
+          },
+          "filesSynced": 64,
+          "directoriesSynced": 64,
+          "entriesEnumerated": 4160
         }
       ]
     },
@@ -5714,7 +6835,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 30.932416999999987,
+                "wallMs": 29.04675000000134,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -5742,7 +6863,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 81.1622499999994,
+                "wallMs": 76.6362500000032,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -5779,7 +6900,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 85.01225000000159,
+                "wallMs": 77.35962499999732,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -5807,7 +6928,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 32.56529199999932,
+                "wallMs": 29.012833999997383,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -5844,7 +6965,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 31.71283299999959,
+                "wallMs": 29.02312499999971,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -5872,7 +6993,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 80.1112919999996,
+                "wallMs": 77.2280000000028,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -5909,7 +7030,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 81.56091699999888,
+                "wallMs": 76.67141699999775,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -5937,7 +7058,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 31.866250000000946,
+                "wallMs": 29.274334000001545,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -5974,7 +7095,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 32.32579199999964,
+                "wallMs": 29.48595800000112,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -6002,7 +7123,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 85.80058399999871,
+                "wallMs": 77.0891249999986,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -6039,7 +7160,7 @@
               },
               "metrics": {
                 "mode": "F",
-                "wallMs": 120.332042,
+                "wallMs": 76.51850000000195,
                 "listCalls": 68,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -6067,7 +7188,7 @@
               },
               "metrics": {
                 "mode": "D",
-                "wallMs": 42.71220899999935,
+                "wallMs": 29.65125000000262,
                 "listCalls": 7,
                 "readCalls": 130,
                 "readBytes": 80840,
@@ -6087,6 +7208,86 @@
               }
             }
           ]
+        }
+      ],
+      "production": [
+        {
+          "round": 1,
+          "wallMs": 74.58420900000056,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "fd47f12f12f7fdb0acf2a769e7ba0257172a289895525354e0200dbbbaf8f109",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 2,
+          "wallMs": 70.98929200000202,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "fd47f12f12f7fdb0acf2a769e7ba0257172a289895525354e0200dbbbaf8f109",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 3,
+          "wallMs": 80.95449999999983,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "fd47f12f12f7fdb0acf2a769e7ba0257172a289895525354e0200dbbbaf8f109",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 4,
+          "wallMs": 91.14329200000066,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "fd47f12f12f7fdb0acf2a769e7ba0257172a289895525354e0200dbbbaf8f109",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 5,
+          "wallMs": 70.1649589999979,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "fd47f12f12f7fdb0acf2a769e7ba0257172a289895525354e0200dbbbaf8f109",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
+        },
+        {
+          "round": 6,
+          "wallMs": 71.86633300000176,
+          "head": {
+            "authorityId": "native-checkpoint",
+            "storeEpoch": "fd47f12f12f7fdb0acf2a769e7ba0257172a289895525354e0200dbbbaf8f109",
+            "revision": 64,
+            "headDigest": "2939bc8ca73570ddbb589967a8f2e95f4c9cab1c9d690383118965e22789bbcf"
+          },
+          "filesSynced": 65,
+          "directoriesSynced": 65,
+          "entriesEnumerated": 4290
         }
       ]
     }

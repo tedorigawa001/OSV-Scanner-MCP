@@ -97,10 +97,10 @@ export class S0bRoot implements JournalIO {
   }finally{if(open)this.#close(fd);}
  }
  /** Only the disk owner may use this, with full journal/checkpoint authentication in verify. */
- async recoverPublished<T>(verify:()=>Promise<T>):Promise<T>{
+ async recoverPublished<T>(verify:()=>Promise<T>,admit?:{maxFiles:number;maxBytes:number}):Promise<T>{
   this.#guard();journalAssert(this.#exclusive&&!this.busy,'recovery_lock_required');this.#recovering=true;
   try{
-   const names=this.#native.names(this.#fd,this.#maxEntries);journalAssert(names.length<=this.#maxEntries,'budget_exceeded');
+   const limit=admit?Math.min(this.#maxEntries,admit.maxFiles*2+1):this.#maxEntries,names=this.#native.names(this.#fd,limit);journalAssert(names.length<=limit,'budget_exceeded');
    const groups=new Map<string,{name:string;stat:Stats}[]>();let size=0;
    for(const name of names){
     this.#name(name);const fd=this.#open(name,C.O_RDONLY|C.O_NOFOLLOW|C.O_NONBLOCK);
@@ -112,6 +112,8 @@ export class S0bRoot implements JournalIO {
     journalAssert(group.length===2&&temp.length===1&&final.length===1&&group.every(e=>e.stat.nlink===2),'recovery_inventory_invalid');
     this.#pairs.set(key,{temp:temp[0]!.name,final:final[0]!.name});
    }
+   // Quotas count published files only: a pending name is a second link to one of them.
+   if(admit){const published=[...groups.values()].flat().filter(e=>!e.name.startsWith('pending-'));journalAssert(published.length<=admit.maxFiles&&published.reduce((n,e)=>n+e.stat.size,0)<=admit.maxBytes,'budget_exceeded');}
    this.#guard();const result=await verify();this.#guard();
    for(const [key,pair]of this.#pairs){
     journalAssert(pair.digest,'recovery_unauthenticated');const expected=pair.digest;
@@ -138,7 +140,7 @@ export class S0bRoot implements JournalIO {
  #meta(name:string,s:Stats):Meta{journalAssert([s.dev,s.ino,s.size,s.uid,s.gid].every(Number.isSafeInteger),'file_invalid');return {name,size:s.size,device:s.dev,inode:s.ino,mode:s.mode,uid:s.uid,gid:s.gid,mtime:s.mtimeMs,ctime:s.ctimeMs};}
  #rootMeta(){this.#guard();const s=fstatSync(this.#fd);return JSON.stringify([s.dev,s.ino,s.mode,s.uid,s.gid,s.mtimeMs,s.ctimeMs]);}
  #sameMeta(a:Meta,b:Meta){return JSON.stringify(a)===JSON.stringify(b);}
- async #snapshot(maxFiles:number,maxBytes:number){const root=this.#rootMeta(),files=await this.list(maxFiles);this.#guard();journalAssert(files.length>0&&files.length<=maxFiles&&files.reduce((n,e)=>n+e.size,0)<=maxBytes,'budget_exceeded');const entries:Meta[]=[];
+ async #snapshot(maxFiles:number,maxBytes:number){const root=this.#rootMeta();journalAssert(!this.#native.names(this.#fd,maxFiles).some(n=>n.startsWith('pending-')),'tail_unknown');const files=await this.list(maxFiles);this.#guard();journalAssert(files.length>0&&files.length<=maxFiles&&files.reduce((n,e)=>n+e.size,0)<=maxBytes,'budget_exceeded');const entries:Meta[]=[];
   for(const f of files){journalAssert(/^checkpoint-[0-9]{8}\.json$/.test(f.name),'checkpoint_invalid');const fd=this.#open(f.name,C.O_RDONLY|C.O_NOFOLLOW|C.O_NONBLOCK);try{const m=this.#meta(f.name,this.#file(fd));journalAssert(m.size===f.size,'file_changed');entries.push(m);}finally{this.#close(fd);}}
   entries.sort((a,b)=>a.name.localeCompare(b.name));journalAssert(new Set(entries.map(e=>e.name)).size===entries.length&&this.#rootMeta()===root,'inventory_changed');return {root,entries};
  }
@@ -200,9 +202,11 @@ export class S0bFixture {
    const genesis=journalGenesis(identity),records:{name:string;bytes:Buffer}[]=[],first=sealJournalValue({schema:'osv-mcp.gradle-owned-checkpoint-v1',authorityId:identity.authorityId,storeEpoch:identity.storeEpoch,head:genesis,previousSealDigest:genesis.headDigest},keyId,key);records.push({name:checkpointName(0),bytes:first});let previous=first;
    for(let i=1;i<count;i++){const body={schema:'osv-mcp.gradle-owned-checkpoint-v1',authorityId:identity.authorityId,storeEpoch:identity.storeEpoch,head:{authorityId:identity.authorityId,storeEpoch:identity.storeEpoch,revision:i,headDigest:ownedDigest({fixture:'s0b',revision:i})},previousSealDigest:ownedSha256(previous)},bytes=sealJournalValue(body,keyId,key);records.push({name:checkpointName(i),bytes});previous=bytes;}
    journalAssert(records.reduce((n,r)=>n+r.bytes.length,0)<=profile.maxBytes,'budget_exceeded');journalAssert((await io.list(profile.maxFiles)).length===0,'checkpoint_not_empty');for(const record of records){env.assertCurrent();await io.put(record.name,record.bytes);}
-  }
-   // Existing-only profile: pending/published-tail repair belongs to a separate recovery path.
+  }else{
+   // As in production, recovery runs before any context exists; a published file's pending link is removed only after full authentication.
    // Quotas and complete namespace are checked before full authentication/re-sync on every open.
+   await io.recoverPublished(()=>full.read(),{maxFiles:profile.maxFiles,maxBytes:profile.maxBytes});
+  }
    io.scope(SCOPE,{},()=>env.assertCurrent(),profile);let head:JournalHead;
    try{const inv=await io.beginInventory(SCOPE,profile.maxFiles,profile.maxBytes);head=await full.read();await io.checkInventory(inv,profile.maxFiles,profile.maxBytes);env.assertCurrent();}finally{io.endScope(SCOPE);}
    return new S0bFixture(FIXTURE_OPEN,io,full,new BatchCheckpoint(io,identity,keyId,key),profile,env,head!);

@@ -7710,40 +7710,60 @@ pure stage-prefixの限定実装と実disk対照は行ったが、generic parse�
 
 ### 9.108 CGP-S0b：checkpoint既存file再同期batchの限定実証
 #### 対象とcontract
-2026-11-06。§9.106のS0-Dをtest-only fixtureで実装した。productionの`RootedJournalIO`・`FileJournalCheckpoint`は変更しない。`src/test/fixtures/gradleOwnedS0b.ts`はrooted IOのforkを持ち、Fはproduction checkpoint readerのequal-put、Dは認証済みの既存file再同期batchを使う。両modeに同じprofile、入口／出口の完全inventory、現行性・期限gateを適用するため、Fのwallは未変更productionの時間そのものではない。
+2026-11-06。§9.106のS0-Dをtest-only fixtureで実装した。productionの`RootedJournalIO`・`FileJournalCheckpoint`は変更しない。`src/test/fixtures/gradleOwnedS0b.ts`はrooted IOのforkを持ち、Fはproduction checkpoint readerのequal-put、Dは認証済みの既存file再同期batchを使う。両modeに同じprofile、入口／出口の完全inventory、現行性・期限gateを適用するため、Fのwallは未変更productionの時間そのものではない。未変更の`RootedJournalIO`＋`FileJournalCheckpoint`も対照として同じroundで計測する（表の「本番」）。
 
 - strict profileはF／D、最大257 file・8 MiB、batch最大64 record、lease 5秒・margin 500 ms。skip flagは全てfalse。profile digestを独立したfixture設定値と照合する。
-- held directory FDとrootの実path／device／inodeを保持する。inventoryは名前・size・device／inode・mode・UID／GID・mtime／ctimeとroot metadataを含む。checkpoint以外、symlink、hardlink、pending tail、上限超過を拒否する。全scope内の列挙は上限＋1件以内。時刻やstatだけを不変性証拠として採用しない。
+- held directory FDとrootの実path／device／inodeを保持する。inventoryは名前・size・device／inode・mode・UID／GID・mtime／ctimeとroot metadataを含む。checkpoint以外、symlink、hardlink、上限超過を拒否し、pending tailは§9.106.4／SR41のとおり`tail_unknown`で拒否する。全scope内の列挙は上限＋1件以内。時刻やstatだけを不変性証拠として採用しない。
 - Dは全fileの全bytesを読み、MAC・strict schema・identity・ordinal・genesis・previous seal chainを検証してから、非公開tokenでcall／root／inventoryに束縛した一回限りの認証handleを発行する。途中の認証失敗では同期を始めない。
 - Dは各fileの全bytesをもう一度読み、認証済みprivate copyと一致を確認し、同じFDでfile同期する。名前とheld FDの対応・metadataを読取後と同期前後に検査する。各fileのdirectory同期も残し、まとめない。batch前後・最後、さらに共通出口で完全inventoryを再照合する。作成・置換・修復へのfallbackはない。
-- batch sizeはrecord数の上限で、処理は逐次。計測対象の同時file FDは最大2。held root FD・libc列挙FD・runtimeの他FDはこの計数に含まず、process全体のFD上限の実証ではない。
+- batch sizeはrecord数の上限で、処理は逐次。計測対象の同時file FDは最大2で、チェッカーもこの値を要求する。held root FD・libc列挙FD・runtimeの他FDはこの計数に含まず、process全体のFD上限の実証ではない。
 - callはmode／requestDigest・元のdeadline・2回の試行枠に束縛する。取消し／期限は読取と同期の境界、返却前にも確認する。IO・認証・同期・inventory故障はfail-stopとしheadを返さない。完全再同期後の純粋な要求拒否はcleanなownerを汚さない。
-- bootstrap作成は全checkpointを直列化して合計bytesを確認してから書く。再openはquota・namespaceを先に確認し、全認証・全file／directory再同期を行う。既存file同期の失敗は再openで再同期が成功するまで採用しない。pending／未公開tailの修復は本fixtureの対象外で、別のrecovery経路が必要。
+- bootstrap作成は全checkpointを直列化して合計bytesを確認してから書く。再openはquota・namespaceを先に確認し、全認証・全file／directory再同期を行う。既存file同期の失敗は再openで再同期が成功するまで採用しない。再openは本番と同じく`recoverPublished`で公開済みfileのpending linkを全認証後に片付けてからcontextを作る（§9.106.4）。公開済みfileのlinkではないpending fileは`tail_unknown`で拒否する。Dの修復は引き続きなく、通常readのpending linkも`tail_unknown`で拒否する。
 - 同一instanceの直前headより短いinventoryは同期前に拒否する。独立rollback防止・SGA・current journalとの一致の証明は含まない。
 
 #### 回帰確認
-unit 46件。全認証後の同期開始、最終fileのMAC不正、再MAC済みidentity／previous seal不正、missing tip、未知名・pending・symlink・hardlink、batch前後／最終の追加、in-place改変・同path inode交換・root差替え・同期後の削除／size変更、file／directory同期の前後故障、取消し・期限、再open、偽造handle／constructor・他owner・mode混同・並行call、profile再pinでもskip不可、容量超過の書込前拒否、F／D双方の増殖時の上限＋1列挙を確認した。65 recordは64＋1の2batchを通る。
+unit 80件と`node:fs`境界のtest 4件。全認証後の同期開始、最終fileのMAC不正、再MAC済みidentity／previous seal不正、missing tip、未知名・pending・symlink・hardlink、batch前後／最終の追加、in-place改変・同path inode交換・root差替え・同期後の削除／size変更、file／directory同期の前後故障、取消し・期限、再open、偽造handle／constructor・他owner・mode混同・並行call、profile再pinでもskip不可、容量超過の書込前拒否、F／D双方の増殖時の上限＋1列挙を確認した。65 recordは64＋1の2batchを通る。再MACしたrevision／genesis／同revision別head、floorの更新、期限上限・試行回数・予約上限・clock domain・profile pin、同metadataでのbytes変更、実際のfsync回数、root metadata、root外hardlink、pending linkの復旧と拒否、forkと本番のhead・同期数の一致も確認する。
 
-証拠checkerの28件は、計数・bytes・同期・FD・batch境界・列挙・順序・head・期限・adoption flag・profile pin・source receiptを改変した証拠を拒否する。SR17〜23とSR01／02／13／14の一部を対象とし、SR01〜36全体の完了とはしない。
+証拠checkerの44件は、計数・bytes・同期・FD・batch境界・列挙・順序・head・期限・adoption flag・profile pin・source receipt・本番対照を改変した証拠を拒否する。SR17〜23、SR38、SR41とSR01／02／13／14の一部を対象とし、SR01〜42全体の完了とはしない。
 
 #### 実disk比較
-macOS／arm64、実filesystemへのfile／directory fsyncを用いた。1 process、独立した15 root（3 cohort × 1／8／32／64／65 file）。各条件はF／Dを1回ずつwarm-upした後、交互順で6pair、合計90pair／180読取。warm-up・作成・open・bytes集計は比較wallに含めない。各modeは同じroot／key／bytes／headを使う。head digestはfixtureが生成する記号値で、MACは実鍵によるもの。実journal commitや5owner graphは構築しない。
+macOS／arm64、実filesystemへのfile／directory fsyncを用いた。1 process、独立した15 root（3 cohort × 1／8／32／64／65 file）。各条件は6 roundで、roundごとにF／Dを交互順で1 pair（合計90pair／180読取）、本番対照を1読取（合計90読取）測る。ownerごとに排他lockを取るので、fixtureと本番は開き直して交代し、順序も交互にする。各blockの最初の1読取はwarm-upとして除く。warm-up・作成・open・bytes集計は比較wallに含めない。各modeは同じroot／key／bytes／headを使う。head digestはfixtureが生成する記号値で、MACは実鍵によるもの。実journal commitや5owner graphは構築しない。
 
-| file数 | 全bytes | F中央値範囲 ms | D中央値範囲 ms | F／D列挙回数 | 各modeのfile／directory同期 |
-|---|---|---|---|---|---|
-| 1 | 621 | 0.58〜0.78 | 0.88〜1.13 | 4／5 | 1／1 |
-| 8 | 4,968 | 4.12〜4.60 | 3.97〜4.33 | 11／5 | 8／8 |
-| 32 | 19,894 | 25.94〜45.55 | 14.10〜17.27 | 35／5 | 32／32 |
-| 64 | 39,798 | 77.45〜80.93 | 27.79〜28.33 | 67／5 | 64／64 |
-| 65 | 40,420 | 79.42〜90.06 | 31.32〜32.10 | 68／7 | 65／65 |
+| file数 | 全bytes | 本番中央値範囲 ms | F中央値範囲 ms | D中央値範囲 ms | F／D列挙回数 | 各modeのfile／directory同期 |
+|---|---|---|---|---|---|---|
+| 1 | 621 | 0.25〜0.32 | 0.50〜0.61 | 0.77〜0.95 | 4／5 | 1／1 |
+| 8 | 4,968 | 2.57〜2.73 | 3.66〜3.73 | 3.35〜3.53 | 11／5 | 8／8 |
+| 32 | 19,894 | 20.92〜23.08 | 24.07〜24.41 | 12.62〜12.86 | 35／5 | 32／32 |
+| 64 | 39,798 | 68.37〜69.41 | 74.43〜75.44 | 25.02〜25.32 | 67／5 | 64／64 |
+| 65 | 40,420 | 69.91〜73.23 | 76.73〜79.25 | 29.08〜29.16 | 68／7 | 65／65 |
 
-全読取が4.5秒の使用可能予算内。各sampleはauth／resyncともN file・全bytes、file／directory同期各N回、書込0・修復0・残存file FD0を満たす。1 fileでは全cohortでDの中央値が大きく、8 fileの差も小さい。32 file以上では列挙削減とwall短縮を観測したが、cooperative・warm OS／JIT・単一processの限定比較であり、本番speedup、5ownerで8 graph read成功、独立storage隔離を実証したとはしない。S0aの傾きへこの時間を単純加算／差引きしない。§9.106の規則3はjournal／stageとの合成比較まで保留する。
+全読取が4.5秒の使用可能予算内。各sampleはauth／resyncともN file・全bytes、file／directory同期各N回、書込0・修復0・残存file FD0を満たす。本番対照もN file・directory同期とN×(N+1)件の列挙を満たす。FはDの比較相手として本番より遅く、Fとの差は本番との差より大きい。**本番と比べるとDは1 file・8 fileで全cohortの中央値が遅く**（8 fileでは18 round中16 roundでDが遅い）、32 file以上で速い。H0の深さ0〜1はhistory 2〜8行（3〜9 file）なので、Dが効くのは履歴がそれより深い範囲である。cooperative・warm OS／JIT・単一processの限定比較であり、本番speedup、5ownerで8 graph read成功、独立storage隔離を実証したとはしない。
+#### §9.106.7の規則3の判定
+S0aのMの中央値（行数に対し区間線形、最後の区間を延長）から、S0bの「本番－D」の中央値（file数に対し区間線形）を引き、H0の呼出し回数と行増加で換算した。Anchor＋registryだけで、他の3 ownerは含まない楽観的な算術で、合成readerの実測ではない。S0aのMにはfixtureの計数・copyが含まれるので、Mを半分にした感度も示す。再生に使える時間は1,426／1,615／1,865 ms。
 
+| read | M＋Dの再生 | Mの費用を半分にした場合 |
+|---|---|---|
+| 1 | 632 ms | 376 ms |
+| 2 | 1,808 ms | 961 ms |
+| 3 | 2,678 ms | 1,214 ms |
+| 4 | 3,629 ms | 1,507 ms |
+| 5 | 4,580 ms | 1,800 ms |
+| 6 | 5,531 ms | 2,093 ms |
+| 7 | 6,270 ms | 2,175 ms |
+| 8 | 6,510 ms | 1,757 ms |
+
+8 read目は全ての使える時間を超え、最大の1,865 ms以内は2 readまでである。Mを半分にした場合は5 readまでで、6〜7 read目は超える（8 read目だけ戻るのは、Dの削減が履歴の深さに対して速く増えるためで、継続8 readの成立ではない）。**規則3により、S0-M／S0-Dを製品統合へ進めない。** 合成fixtureも作らず、次はS0cのcompact recordによる行サイズ削減とCGP-I1の呼出し回数削減の見積りへ進む。どちらの効果も未計測で、結果が割れればI1〜I4の順序を未決定とする。
 #### 再現・判定
-rawは`docs/validation/gradle-c3b-cgp-s0b-2026-11-06.measurements.json`、summaryは同名`.json`。source閉包・profile・raw digest、分析script／checker・本節・回帰sourceのhashを保存し、`--check`で再照合する。
+rawは`docs/validation/gradle-c3b-cgp-s0b-2026-11-06.measurements.json`、summaryは同名`.json`。source閉包・profile・raw digest、分析script／checker・本節・回帰sourceのhashを保存し、`--check`で再照合する。実行source閉包は記録として残すが、`--check`が照合するのは計測器だけで、製品sourceやpackage manifestの更新では失敗しない。
 ```sh
 env OSV_S0B_NATIVE=1 OSV_S0B_OUTPUT=docs/validation/gradle-c3b-cgp-s0b-2026-11-06.measurements.json npx vitest run src/test/utils/gradleOwnedS0bNative.test.ts --maxWorkers=1
 node scripts/analyze-c3b-cgp-s0b.mjs
 node scripts/analyze-c3b-cgp-s0b.mjs --check
 ```
-S0b既存checkpoint batchの限定実装・実disk比較まで完了。S0a／journal／owner gateとの合成、scratch／peak RSS、S0c typed page・S0d 5owner比較・S0x独立storageは残る。CG0／CG3、backendEligible、profileApproved、nativeIsolationVerified、independentRegistryVerifiedはfalse、originalReadsSkippedは0を維持する。
+S0b既存checkpoint batchの限定実装・実disk比較まで完了し、規則3によりS0-M／S0-Dの製品統合は行わない。S0c compact record・CGP-I1の見積り、scratch／peak RSS、S0d 5owner比較、S0x独立storageは残る。CG0／CG3、backendEligible、profileApproved、nativeIsolationVerified、independentRegistryVerifiedはfalse、originalReadsSkippedは0を維持する。
+#### レビュー修正
+- `--check`が`package.json`・製品sourceまで照合し、依存更新やリリースで全テストが失敗する状態だったので、照合を計測器に限定した。
+- 規則3を保留としていたのを、S0a／S0bの保存値から判定するよう改め、記録の`next`をこの判定に従わせた。
+- 未変更の本番readerを対照に加えて再計測した。
+- openを`recoverPublished`経由にし、pendingの拒否理由を`tail_unknown`に揃え、未使用だった復旧経路を使うようにした。
+- 検査を1つずつ外す確認でfixture 45か所中18か所しか検出しなかったので負例を追加し、48か所中37か所を検出した。残る11か所は、次の検査と重複するもの、互いに補うもの、モジュール外から到達できないものである。証拠checkerは25条件すべて検出する。確認は使い捨てコピーでの手動実行で、リポジトリから再実行はできない。
