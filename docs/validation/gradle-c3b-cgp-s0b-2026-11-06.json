@@ -1,0 +1,273 @@
+{
+  "schema": "cgp.s0b.analysis.v1",
+  "groups": [
+    {
+      "cohort": 1,
+      "files": 1,
+      "checkpointBytes": 621,
+      "fullMedianMs": 0.776708499999998,
+      "batchMedianMs": 1.1278539999999992,
+      "pairedMedianDifferenceMs": -0.3437295000000091,
+      "fullLists": 4,
+      "batchLists": 5,
+      "fileSyncsPerMode": 1,
+      "directorySyncsPerMode": 1
+    },
+    {
+      "cohort": 1,
+      "files": 8,
+      "checkpointBytes": 4968,
+      "fullMedianMs": 4.5983540000000005,
+      "batchMedianMs": 4.334770999999989,
+      "pairedMedianDifferenceMs": 0.22231200000004492,
+      "fullLists": 11,
+      "batchLists": 5,
+      "fileSyncsPerMode": 8,
+      "directorySyncsPerMode": 8
+    },
+    {
+      "cohort": 1,
+      "files": 32,
+      "checkpointBytes": 19894,
+      "fullMedianMs": 27.502250000000004,
+      "batchMedianMs": 16.150666499999943,
+      "pairedMedianDifferenceMs": 10.740270499999951,
+      "fullLists": 35,
+      "batchLists": 5,
+      "fileSyncsPerMode": 32,
+      "directorySyncsPerMode": 32
+    },
+    {
+      "cohort": 1,
+      "files": 64,
+      "checkpointBytes": 39798,
+      "fullMedianMs": 78.83535450000011,
+      "batchMedianMs": 27.787500000000023,
+      "pairedMedianDifferenceMs": 50.555250000000115,
+      "fullLists": 67,
+      "batchLists": 5,
+      "fileSyncsPerMode": 64,
+      "directorySyncsPerMode": 64
+    },
+    {
+      "cohort": 1,
+      "files": 65,
+      "checkpointBytes": 40420,
+      "fullMedianMs": 79.4156875000001,
+      "batchMedianMs": 31.319999999999936,
+      "pairedMedianDifferenceMs": 48.06647850000013,
+      "fullLists": 68,
+      "batchLists": 7,
+      "fileSyncsPerMode": 65,
+      "directorySyncsPerMode": 65
+    },
+    {
+      "cohort": 2,
+      "files": 1,
+      "checkpointBytes": 621,
+      "fullMedianMs": 0.5766459999995277,
+      "batchMedianMs": 0.8790414999998575,
+      "pairedMedianDifferenceMs": -0.27872849999994287,
+      "fullLists": 4,
+      "batchLists": 5,
+      "fileSyncsPerMode": 1,
+      "directorySyncsPerMode": 1
+    },
+    {
+      "cohort": 2,
+      "files": 8,
+      "checkpointBytes": 4968,
+      "fullMedianMs": 4.118417000000136,
+      "batchMedianMs": 4.003062499999942,
+      "pairedMedianDifferenceMs": 0.19172949999983757,
+      "fullLists": 11,
+      "batchLists": 5,
+      "fileSyncsPerMode": 8,
+      "directorySyncsPerMode": 8
+    },
+    {
+      "cohort": 2,
+      "files": 32,
+      "checkpointBytes": 19894,
+      "fullMedianMs": 45.54558350000025,
+      "batchMedianMs": 17.271458500000335,
+      "pairedMedianDifferenceMs": 20.682229000000007,
+      "fullLists": 35,
+      "batchLists": 5,
+      "fileSyncsPerMode": 32,
+      "directorySyncsPerMode": 32
+    },
+    {
+      "cohort": 2,
+      "files": 64,
+      "checkpointBytes": 39798,
+      "fullMedianMs": 80.93437499999982,
+      "batchMedianMs": 28.33343700000023,
+      "pairedMedianDifferenceMs": 52.06529199999977,
+      "fullLists": 67,
+      "batchLists": 5,
+      "fileSyncsPerMode": 64,
+      "directorySyncsPerMode": 64
+    },
+    {
+      "cohort": 2,
+      "files": 65,
+      "checkpointBytes": 40420,
+      "fullMedianMs": 90.05608349999966,
+      "batchMedianMs": 31.659875000000284,
+      "pairedMedianDifferenceMs": 58.87327099999993,
+      "fullLists": 68,
+      "batchLists": 7,
+      "fileSyncsPerMode": 65,
+      "directorySyncsPerMode": 65
+    },
+    {
+      "cohort": 3,
+      "files": 1,
+      "checkpointBytes": 621,
+      "fullMedianMs": 0.5889375000015207,
+      "batchMedianMs": 0.8887500000000728,
+      "pairedMedianDifferenceMs": -0.29795799999919836,
+      "fullLists": 4,
+      "batchLists": 5,
+      "fileSyncsPerMode": 1,
+      "directorySyncsPerMode": 1
+    },
+    {
+      "cohort": 3,
+      "files": 8,
+      "checkpointBytes": 4968,
+      "fullMedianMs": 4.223270499999671,
+      "batchMedianMs": 3.967979000000014,
+      "pairedMedianDifferenceMs": 0.24931300000025658,
+      "fullLists": 11,
+      "batchLists": 5,
+      "fileSyncsPerMode": 8,
+      "directorySyncsPerMode": 8
+    },
+    {
+      "cohort": 3,
+      "files": 32,
+      "checkpointBytes": 19894,
+      "fullMedianMs": 25.93797949999862,
+      "batchMedianMs": 14.09997949999979,
+      "pairedMedianDifferenceMs": 11.787499499998376,
+      "fullLists": 35,
+      "batchLists": 5,
+      "fileSyncsPerMode": 32,
+      "directorySyncsPerMode": 32
+    },
+    {
+      "cohort": 3,
+      "files": 64,
+      "checkpointBytes": 39798,
+      "fullMedianMs": 77.45331249999981,
+      "batchMedianMs": 27.9774795000003,
+      "pairedMedianDifferenceMs": 49.93652099999872,
+      "fullLists": 67,
+      "batchLists": 5,
+      "fileSyncsPerMode": 64,
+      "directorySyncsPerMode": 64
+    },
+    {
+      "cohort": 3,
+      "files": 65,
+      "checkpointBytes": 40420,
+      "fullMedianMs": 83.28658350000023,
+      "batchMedianMs": 32.09602100000029,
+      "pairedMedianDifferenceMs": 51.33839550000084,
+      "fullLists": 68,
+      "batchLists": 7,
+      "fileSyncsPerMode": 65,
+      "directorySyncsPerMode": 65
+    }
+  ],
+  "decision": {
+    "allCheckpointBytesAuthenticatedAndReread": true,
+    "allFileAndDirectorySyncsMaintained": true,
+    "existingOnlyBatchVerified": true,
+    "productionSpeedupEstablished": false,
+    "eightGraphReadsEstablished": false,
+    "cg0Proceed": false,
+    "cg3Proceed": false,
+    "next": "integrate checkpoint batch with storage/owner fixtures or proceed to S0c typed pages only after review"
+  },
+  "limitations": [
+    "single-process cooperative native checkpoint root, not a full journal/owner graph or isolation backend",
+    "F is production FileJournalCheckpoint on the fixture adapter plus common entry/exit namespace guards; its wall time is not unmodified production latency",
+    "both modes retain per-file directory fsync; no durable-prefix or cross-call inventory cache",
+    "D uses the read FD for fsync and has additional per-batch namespace checks; differences are intentional and counted",
+    "bounded sequential FD use; batchSize limits records, not the number of simultaneously open file descriptors",
+    "roots are prewarmed and order alternates; raw signed bytes are identical, no causal five-owner throughput or eight graph read claim"
+  ],
+  "backendEligible": false,
+  "nativeIsolationVerified": false,
+  "originalReadsSkipped": 0,
+  "document": {
+    "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+    "heading": "### 9.108 ",
+    "sectionSha256": "55673f5a15b2787e5ab6e6042afe3fc3109b57caa0d0a5e4a35d138bbaba4085"
+  },
+  "measurement": {
+    "path": "docs/validation/gradle-c3b-cgp-s0b-2026-11-06.measurements.json",
+    "sha256": "8abca6feb983919be9def4e2825306787a3b7ac9158dff872e8546787248b68c"
+  },
+  "analysisSource": {
+    "path": "scripts/analyze-c3b-cgp-s0b.mjs",
+    "sha256": "04f92986b6297893c5f1d5ea7cba27485ec8c38920fb6788e41aa879f280b7aa"
+  },
+  "checkerSource": {
+    "path": "src/test/fixtures/gradleOwnedS0bReport.mjs",
+    "sha256": "ef9d00767d419f9fb6c7d9b872d767ab202d53839dd6f54ee836fab8ef8519cc"
+  },
+  "scope": "three cohorts x five checkpoint file counts; one process, standalone authenticated checkpoints, no full journal or five-owner claim",
+  "verification": {
+    "date": "2026-11-06",
+    "checks": [
+      {
+        "command": "npx vitest run src/test/utils/gradleOwnedS0b.test.ts src/test/utils/gradleOwnedS0bReport.test.ts src/test/docs/commandExamples.test.ts --maxWorkers=1",
+        "passed": 77
+      },
+      {
+        "command": "env OSV_S0B_NATIVE=1 OSV_S0B_OUTPUT=docs/validation/gradle-c3b-cgp-s0b-2026-11-06.measurements.json npx vitest run src/test/utils/gradleOwnedS0bNative.test.ts --maxWorkers=1",
+        "passed": 1,
+        "comparisonReads": 180,
+        "pairs": 90
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "exitCode": 0
+      },
+      {
+        "command": "npx vitest run src/test/utils/gradleOwnedS0b.test.ts src/test/utils/gradleOwnedS0bReport.test.ts src/test/utils/gradleOwnedS0a.test.ts src/test/utils/gradleOwnedS0aReport.test.ts src/test/utils/gradleOwnedS0aValidation.test.ts src/test/utils/gradleOwnedJournalDisk.test.ts src/test/utils/gradleOwnedCurrentDisk.test.ts --maxWorkers=1",
+        "passed": 247,
+        "note": "Before three additional S0b root/delete/resize cases; final 46-case S0b suite passed separately in the 77-test check."
+      },
+      {
+        "command": "npx vitest run src/test/utils/gradleOwnedS0bValidation.test.ts --maxWorkers=1",
+        "passed": 2
+      },
+      {
+        "command": "node scripts/analyze-c3b-cgp-s0a.mjs --check",
+        "exitCode": 0
+      },
+      {
+        "command": "node scripts/analyze-c3b-cgp-s0b.mjs --check",
+        "exitCode": 0
+      },
+      {
+        "command": "git diff --check",
+        "exitCode": 0
+      }
+    ],
+    "regressionSources": {
+      "src/test/utils/gradleOwnedS0b.test.ts": "a8a242dd5c9f323e2cb6df6701cf51d6823b9e03c8b7e300d42799b57d5966b7",
+      "src/test/utils/gradleOwnedS0bReport.test.ts": "d026e0f095eb73240ee4d81f21eb68d73fba1b3cc81329f038ff8a72781dbaae",
+      "src/test/utils/gradleOwnedS0bValidation.test.ts": "8ab709e514b8a6ef139747845d83a06b28f44c57944cb8b5571e86538d4d1c70"
+    }
+  }
+}

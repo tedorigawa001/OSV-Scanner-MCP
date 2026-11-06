@@ -7706,3 +7706,44 @@ node scripts/analyze-c3b-cgp-s0a.mjs
 node scripts/analyze-c3b-cgp-s0a.mjs --check
 ```
 pure stage-prefixの限定実装と実disk対照は行ったが、generic parse／MAC事実cache、実認証session／owner live gate接続、scratch／peak RSS計測、S0bのcheckpoint列挙削減、S0c page、S0dの5owner比較、S0xの独立storage証拠は残る。次はS0bの既存checkpoint再同期batchを、全bytes／認証／各file＋directory同期・境界検査を保ったfixtureで実証する。CG0／CG3、backendEligible、profileApproved、nativeIsolationVerified、independentRegistryVerifiedはfalse、originalReadsSkippedは0のまま。
+
+
+### 9.108 CGP-S0b：checkpoint既存file再同期batchの限定実証
+#### 対象とcontract
+2026-11-06。§9.106のS0-Dをtest-only fixtureで実装した。productionの`RootedJournalIO`・`FileJournalCheckpoint`は変更しない。`src/test/fixtures/gradleOwnedS0b.ts`はrooted IOのforkを持ち、Fはproduction checkpoint readerのequal-put、Dは認証済みの既存file再同期batchを使う。両modeに同じprofile、入口／出口の完全inventory、現行性・期限gateを適用するため、Fのwallは未変更productionの時間そのものではない。
+
+- strict profileはF／D、最大257 file・8 MiB、batch最大64 record、lease 5秒・margin 500 ms。skip flagは全てfalse。profile digestを独立したfixture設定値と照合する。
+- held directory FDとrootの実path／device／inodeを保持する。inventoryは名前・size・device／inode・mode・UID／GID・mtime／ctimeとroot metadataを含む。checkpoint以外、symlink、hardlink、pending tail、上限超過を拒否する。全scope内の列挙は上限＋1件以内。時刻やstatだけを不変性証拠として採用しない。
+- Dは全fileの全bytesを読み、MAC・strict schema・identity・ordinal・genesis・previous seal chainを検証してから、非公開tokenでcall／root／inventoryに束縛した一回限りの認証handleを発行する。途中の認証失敗では同期を始めない。
+- Dは各fileの全bytesをもう一度読み、認証済みprivate copyと一致を確認し、同じFDでfile同期する。名前とheld FDの対応・metadataを読取後と同期前後に検査する。各fileのdirectory同期も残し、まとめない。batch前後・最後、さらに共通出口で完全inventoryを再照合する。作成・置換・修復へのfallbackはない。
+- batch sizeはrecord数の上限で、処理は逐次。計測対象の同時file FDは最大2。held root FD・libc列挙FD・runtimeの他FDはこの計数に含まず、process全体のFD上限の実証ではない。
+- callはmode／requestDigest・元のdeadline・2回の試行枠に束縛する。取消し／期限は読取と同期の境界、返却前にも確認する。IO・認証・同期・inventory故障はfail-stopとしheadを返さない。完全再同期後の純粋な要求拒否はcleanなownerを汚さない。
+- bootstrap作成は全checkpointを直列化して合計bytesを確認してから書く。再openはquota・namespaceを先に確認し、全認証・全file／directory再同期を行う。既存file同期の失敗は再openで再同期が成功するまで採用しない。pending／未公開tailの修復は本fixtureの対象外で、別のrecovery経路が必要。
+- 同一instanceの直前headより短いinventoryは同期前に拒否する。独立rollback防止・SGA・current journalとの一致の証明は含まない。
+
+#### 回帰確認
+unit 46件。全認証後の同期開始、最終fileのMAC不正、再MAC済みidentity／previous seal不正、missing tip、未知名・pending・symlink・hardlink、batch前後／最終の追加、in-place改変・同path inode交換・root差替え・同期後の削除／size変更、file／directory同期の前後故障、取消し・期限、再open、偽造handle／constructor・他owner・mode混同・並行call、profile再pinでもskip不可、容量超過の書込前拒否、F／D双方の増殖時の上限＋1列挙を確認した。65 recordは64＋1の2batchを通る。
+
+証拠checkerの28件は、計数・bytes・同期・FD・batch境界・列挙・順序・head・期限・adoption flag・profile pin・source receiptを改変した証拠を拒否する。SR17〜23とSR01／02／13／14の一部を対象とし、SR01〜36全体の完了とはしない。
+
+#### 実disk比較
+macOS／arm64、実filesystemへのfile／directory fsyncを用いた。1 process、独立した15 root（3 cohort × 1／8／32／64／65 file）。各条件はF／Dを1回ずつwarm-upした後、交互順で6pair、合計90pair／180読取。warm-up・作成・open・bytes集計は比較wallに含めない。各modeは同じroot／key／bytes／headを使う。head digestはfixtureが生成する記号値で、MACは実鍵によるもの。実journal commitや5owner graphは構築しない。
+
+| file数 | 全bytes | F中央値範囲 ms | D中央値範囲 ms | F／D列挙回数 | 各modeのfile／directory同期 |
+|---|---|---|---|---|---|
+| 1 | 621 | 0.58〜0.78 | 0.88〜1.13 | 4／5 | 1／1 |
+| 8 | 4,968 | 4.12〜4.60 | 3.97〜4.33 | 11／5 | 8／8 |
+| 32 | 19,894 | 25.94〜45.55 | 14.10〜17.27 | 35／5 | 32／32 |
+| 64 | 39,798 | 77.45〜80.93 | 27.79〜28.33 | 67／5 | 64／64 |
+| 65 | 40,420 | 79.42〜90.06 | 31.32〜32.10 | 68／7 | 65／65 |
+
+全読取が4.5秒の使用可能予算内。各sampleはauth／resyncともN file・全bytes、file／directory同期各N回、書込0・修復0・残存file FD0を満たす。1 fileでは全cohortでDの中央値が大きく、8 fileの差も小さい。32 file以上では列挙削減とwall短縮を観測したが、cooperative・warm OS／JIT・単一processの限定比較であり、本番speedup、5ownerで8 graph read成功、独立storage隔離を実証したとはしない。S0aの傾きへこの時間を単純加算／差引きしない。§9.106の規則3はjournal／stageとの合成比較まで保留する。
+
+#### 再現・判定
+rawは`docs/validation/gradle-c3b-cgp-s0b-2026-11-06.measurements.json`、summaryは同名`.json`。source閉包・profile・raw digest、分析script／checker・本節・回帰sourceのhashを保存し、`--check`で再照合する。
+```sh
+env OSV_S0B_NATIVE=1 OSV_S0B_OUTPUT=docs/validation/gradle-c3b-cgp-s0b-2026-11-06.measurements.json npx vitest run src/test/utils/gradleOwnedS0bNative.test.ts --maxWorkers=1
+node scripts/analyze-c3b-cgp-s0b.mjs
+node scripts/analyze-c3b-cgp-s0b.mjs --check
+```
+S0b既存checkpoint batchの限定実装・実disk比較まで完了。S0a／journal／owner gateとの合成、scratch／peak RSS、S0c typed page・S0d 5owner比較・S0x独立storageは残る。CG0／CG3、backendEligible、profileApproved、nativeIsolationVerified、independentRegistryVerifiedはfalse、originalReadsSkippedは0を維持する。

@@ -3043,3 +3043,10 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - 3 cohort×3固定深さ×2 role、6 pair交互順の実disk比較を実施。全108 pairでreference digest・全IO／同期counterが一致、stageの再解析のみ削減。全深さで中央値は改善したが、pair単位の逆転は残る。H0の呼出し回数へ換算したAnchor＋registryの増加は深さごとに約1.65〜1.71秒→約1.24〜1.28秒（削減22〜27%、算術）で、理想上限（616〜706 ms）に届かない。単一process・warm比較で、本番speedup／8 graph read成立は未実証。
 - 次はS0b：checkpointの既存file再同期batchによる重複inventory列挙削減のfixture。generic parse／MAC cache・実session接続／peak RSS・S0c page・S0d 5owner比較・S0x独立providerも残る。CG0／CG3保留、原本読取省略0。
 - レビュー修正：openへstoreを含む全file再同期・tail拒否・stage再生を追加。journal完了後の期限・取消しは要求単位の拒否に変更（journal内はjournal自身のfail-stopのまま）。中核検査の負例を追加し再計測。`designSection`の空行の欠陥で§9.106の照合testが失敗していたのを修正。
+
+
+### CGP-S0b：checkpoint既存file再同期batch（§9.108）
+- [x] test-only F／D fixture。全bytes認証・再読取、各file／directory同期を維持し、batch前後・最終inventoryと同FD／名前対応を検査する。既存file専用で修復fallbackなし。
+- [x] 46 unit・28証拠checker回帰と保存証拠の再照合。容量・列挙上限・改変・同期故障・期限／取消し・再openを確認。
+- [x] 実disk、3cohort × 5file数 × 6pair＝90pair比較。64fileのF中央値77〜81 msに対しD約28 ms。1fileではDが遅い。全bytes・同期の計数は両mode同じ。
+- S0a／全journal／owner gateとの合成・規則3の再判断、scratch／RSS、S0c page・S0d 5owner比較・S0x独立storageが残る。CG0／CG3保留、原本読取省略0。単独checkpoint fixtureの結果を本番speedupへ換算しない。
