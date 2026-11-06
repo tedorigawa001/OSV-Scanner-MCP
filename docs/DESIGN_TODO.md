@@ -3060,3 +3060,13 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - 次はCGP-I1の呼出し回数削減の見積り。typed delta／incremental materializer・本番owner／新CAS接続、S0d 5owner比較、cold／churn／復旧・RSS、S0x独立storageも残る。単独表現fixtureから8read成立を主張しない。CG0／CG3保留、原本読取省略0。
 
 §9.109レビュー修正：parentをcatalogの直前同owner refへ束縛し、W／P・両ownerの4負例を追加。disk容量検査をIO前へ移し、件数・合計bytes・role別上限の8負例で列挙／読取0を確認。owner copy集計は検証済みround由来とし、warm-up／round間計数の不一致5件を拒否する。216読取を再計測し、速度改善未成立・CG0／CG3保留・原本読取省略0を維持する。
+
+
+### CGP-I1：同一callの検証事実共有・削減効果（§9.110）
+- [x] test-only SessionRuntime fork＋opaque VerifiedRequestFacts。exact wire／call／peer／server／policyを束縛し、deep-frozen envelopeだけを共有する。owner payload validation・current gate・pre／post・元guard期限を維持。
+- [x] 89回帰。偽造／別call／policy変更／Buffer alias、10境界の取消し・期限、remote取消し、unknown／definite retry、元期限・予算・slot、並行入場、broker origin・3種source kindを確認。
+- [x] 実署名付きin-process sessionで3cohort×2role×3identifier×6pair＝108pair／216要求。対象envelope parse 3→1、署名2→1。factsの生成・再照合費用を分離し、pair差は正負が混在するため速度改善未成立。
+- [x] H0 traceの34対象要求へ算術換算し、parse68回・署名34回削減、readCommitted削減0を記録。238回を実行／削減したとはしない。
+- 次はI2の取得batch候補の効果見積り。本番factory／SourceOwner接続・追加API coverage・実pin／保存／外側session故障、I3／I4・S0d 5owner・S0x／SGA・RSSは残る。I1本番採用・CG0／CG3保留、原本読取省略0。
+
+§9.110レビュー修正：guardの元期限をsession待機にも適用し、両modeの待機終了・遅配拒否2件を追加。独立承認manifest全体との一致で、digest更新後も未承認値・予算不足等9件を拒否。追加11件のRED→GREEN、108pair／216要求の再計測・表・検証記録を更新。速度改善・本番採用・8 readは未成立。

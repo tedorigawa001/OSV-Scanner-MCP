@@ -1,0 +1,787 @@
+{
+  "schema": "cgp.i1.analysis.v1",
+  "groups": [
+    {
+      "cohort": 1,
+      "role": "reader",
+      "identifierChars": 8,
+      "wireBytes": 3516,
+      "scalarMedianMs": 22.643520499999966,
+      "factsMedianMs": 21.641979500000048,
+      "pairedMedianDifferenceMs": 0.9860830000000078,
+      "removedOwnerWorkMedianMs": 0.7844789999999762,
+      "factsOverheadMedianMs": 1.3584369999999808,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 1,
+      "role": "reader",
+      "identifierChars": 64,
+      "wireBytes": 3628,
+      "scalarMedianMs": 20.02206250000006,
+      "factsMedianMs": 22.70183350000002,
+      "pairedMedianDifferenceMs": -2.791896000000065,
+      "removedOwnerWorkMedianMs": 0.6422709999998801,
+      "factsOverheadMedianMs": 1.5373749999999973,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 1,
+      "role": "reader",
+      "identifierChars": 128,
+      "wireBytes": 3756,
+      "scalarMedianMs": 20.164813000000095,
+      "factsMedianMs": 20.760625499999946,
+      "pairedMedianDifferenceMs": -0.3252499999999827,
+      "removedOwnerWorkMedianMs": 0.7733335000001489,
+      "factsOverheadMedianMs": 1.2877904999998009,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 1,
+      "role": "authority-broker",
+      "identifierChars": 8,
+      "wireBytes": 3754,
+      "scalarMedianMs": 25.890728999999965,
+      "factsMedianMs": 25.005021000000056,
+      "pairedMedianDifferenceMs": 1.187520500000005,
+      "removedOwnerWorkMedianMs": 1.050687499999981,
+      "factsOverheadMedianMs": 1.4628950000002305,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 1,
+      "role": "authority-broker",
+      "identifierChars": 64,
+      "wireBytes": 3866,
+      "scalarMedianMs": 23.13675000000012,
+      "factsMedianMs": 23.548645999999962,
+      "pairedMedianDifferenceMs": -1.0905624999998054,
+      "removedOwnerWorkMedianMs": 0.7986039999998411,
+      "factsOverheadMedianMs": 1.4133335000001352,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 1,
+      "role": "authority-broker",
+      "identifierChars": 128,
+      "wireBytes": 3994,
+      "scalarMedianMs": 18.89952049999988,
+      "factsMedianMs": 19.945645999999897,
+      "pairedMedianDifferenceMs": -0.8497915000000376,
+      "removedOwnerWorkMedianMs": 0.6212914999998702,
+      "factsOverheadMedianMs": 1.1802504999998291,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 2,
+      "role": "reader",
+      "identifierChars": 8,
+      "wireBytes": 3516,
+      "scalarMedianMs": 19.92664549999995,
+      "factsMedianMs": 21.811645500000168,
+      "pairedMedianDifferenceMs": -1.8302499999999782,
+      "removedOwnerWorkMedianMs": 0.7181250000001,
+      "factsOverheadMedianMs": 1.3119370000001709,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 2,
+      "role": "reader",
+      "identifierChars": 64,
+      "wireBytes": 3628,
+      "scalarMedianMs": 20.606229499999927,
+      "factsMedianMs": 20.497728999999936,
+      "pairedMedianDifferenceMs": -0.7088330000001406,
+      "removedOwnerWorkMedianMs": 0.5267499999999927,
+      "factsOverheadMedianMs": 1.4327290000003359,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 2,
+      "role": "reader",
+      "identifierChars": 128,
+      "wireBytes": 3756,
+      "scalarMedianMs": 21.658083499999975,
+      "factsMedianMs": 21.291229000000158,
+      "pairedMedianDifferenceMs": -0.532479000000194,
+      "removedOwnerWorkMedianMs": 0.7256870000001072,
+      "factsOverheadMedianMs": 1.2183534999996937,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 2,
+      "role": "authority-broker",
+      "identifierChars": 8,
+      "wireBytes": 3754,
+      "scalarMedianMs": 25.030729000000065,
+      "factsMedianMs": 25.00870850000001,
+      "pairedMedianDifferenceMs": -0.42000000000007276,
+      "removedOwnerWorkMedianMs": 0.9193534999999429,
+      "factsOverheadMedianMs": 1.5665629999996327,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 2,
+      "role": "authority-broker",
+      "identifierChars": 64,
+      "wireBytes": 3866,
+      "scalarMedianMs": 21.625312499999836,
+      "factsMedianMs": 24.082562500000222,
+      "pairedMedianDifferenceMs": -2.0435834999998406,
+      "removedOwnerWorkMedianMs": 0.8920419999999467,
+      "factsOverheadMedianMs": 1.4488954999997077,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 2,
+      "role": "authority-broker",
+      "identifierChars": 128,
+      "wireBytes": 3994,
+      "scalarMedianMs": 19.443895999999768,
+      "factsMedianMs": 20.529062500000236,
+      "pairedMedianDifferenceMs": -0.8837500000004184,
+      "removedOwnerWorkMedianMs": 0.5885620000003655,
+      "factsOverheadMedianMs": 1.1776044999996884,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 3,
+      "role": "reader",
+      "identifierChars": 8,
+      "wireBytes": 3516,
+      "scalarMedianMs": 24.04902099999981,
+      "factsMedianMs": 23.911604000000352,
+      "pairedMedianDifferenceMs": 0.3900004999995872,
+      "removedOwnerWorkMedianMs": 0.8565419999999904,
+      "factsOverheadMedianMs": 1.4037294999998267,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 3,
+      "role": "reader",
+      "identifierChars": 64,
+      "wireBytes": 3628,
+      "scalarMedianMs": 18.640520999999808,
+      "factsMedianMs": 19.893604000000323,
+      "pairedMedianDifferenceMs": -1.2790209999998297,
+      "removedOwnerWorkMedianMs": 0.5310829999998532,
+      "factsOverheadMedianMs": 1.4304790000010144,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 3,
+      "role": "reader",
+      "identifierChars": 128,
+      "wireBytes": 3756,
+      "scalarMedianMs": 20.427000000000135,
+      "factsMedianMs": 20.205249999999978,
+      "pairedMedianDifferenceMs": 0.4791250000007494,
+      "removedOwnerWorkMedianMs": 0.6471874999997453,
+      "factsOverheadMedianMs": 1.3328959999994368,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 3,
+      "role": "authority-broker",
+      "identifierChars": 8,
+      "wireBytes": 3754,
+      "scalarMedianMs": 22.806167000000187,
+      "factsMedianMs": 22.397707999999966,
+      "pairedMedianDifferenceMs": 0.21037500000056752,
+      "removedOwnerWorkMedianMs": 0.7765829999993912,
+      "factsOverheadMedianMs": 1.6883959999995568,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 3,
+      "role": "authority-broker",
+      "identifierChars": 64,
+      "wireBytes": 3866,
+      "scalarMedianMs": 19.474687500000073,
+      "factsMedianMs": 20.550896000000193,
+      "pairedMedianDifferenceMs": -0.058645500000238826,
+      "removedOwnerWorkMedianMs": 0.6709170000003724,
+      "factsOverheadMedianMs": 1.3058329999998932,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    },
+    {
+      "cohort": 3,
+      "role": "authority-broker",
+      "identifierChars": 128,
+      "wireBytes": 3994,
+      "scalarMedianMs": 19.138687499999833,
+      "factsMedianMs": 19.60412499999984,
+      "pairedMedianDifferenceMs": -0.0758335000000443,
+      "removedOwnerWorkMedianMs": 0.6030415000004723,
+      "factsOverheadMedianMs": 1.3429789999995592,
+      "envelopeParses": {
+        "scalar": 3,
+        "facts": 1
+      },
+      "requestSignatureChecks": {
+        "scalar": 2,
+        "facts": 1
+      },
+      "ownerBusinessValidations": 1,
+      "preLive": 1,
+      "postLive": 1,
+      "sourceAcquisitions": 1,
+      "readCommittedReduction": 0
+    }
+  ],
+  "estimates": [
+    {
+      "cohort": 1,
+      "identifierChars": 8,
+      "eligibleRequests": 34,
+      "fewerEnvelopeParses": 68,
+      "fewerRequestSignatureChecks": 34,
+      "referenceReadCommitted": 238,
+      "readCommittedReduction": 0,
+      "removedOwnerWorkProjectionMs": 31.19783049999927,
+      "factsOverheadMs": 47.96264400000359,
+      "scaledPairedWallDifferenceMs": 36.95125950000022,
+      "terms": [
+        {
+          "role": "reader",
+          "requests": 17,
+          "removedOwnerWorkMs": 13.336142999999595,
+          "factsOverheadMs": 23.093428999999674,
+          "scaledPairedWallDifferenceMs": 16.763411000000133
+        },
+        {
+          "role": "authority-broker",
+          "requests": 17,
+          "removedOwnerWorkMs": 17.861687499999675,
+          "factsOverheadMs": 24.86921500000392,
+          "scaledPairedWallDifferenceMs": 20.187848500000086
+        }
+      ]
+    },
+    {
+      "cohort": 1,
+      "identifierChars": 64,
+      "eligibleRequests": 34,
+      "fewerEnvelopeParses": 68,
+      "fewerRequestSignatureChecks": 34,
+      "referenceReadCommitted": 238,
+      "readCommittedReduction": 0,
+      "removedOwnerWorkProjectionMs": 24.49487499999526,
+      "factsOverheadMs": 50.16204450000225,
+      "scaledPairedWallDifferenceMs": -66.0017944999978,
+      "terms": [
+        {
+          "role": "reader",
+          "requests": 17,
+          "removedOwnerWorkMs": 10.918606999997962,
+          "factsOverheadMs": 26.135374999999954,
+          "scaledPairedWallDifferenceMs": -47.46223200000111
+        },
+        {
+          "role": "authority-broker",
+          "requests": 17,
+          "removedOwnerWorkMs": 13.576267999997299,
+          "factsOverheadMs": 24.0266695000023,
+          "scaledPairedWallDifferenceMs": -18.53956249999669
+        }
+      ]
+    },
+    {
+      "cohort": 1,
+      "identifierChars": 128,
+      "eligibleRequests": 34,
+      "fewerEnvelopeParses": 68,
+      "fewerRequestSignatureChecks": 34,
+      "referenceReadCommitted": 238,
+      "readCommittedReduction": 0,
+      "removedOwnerWorkProjectionMs": 23.708625000000325,
+      "factsOverheadMs": 41.95669699999371,
+      "scaledPairedWallDifferenceMs": -19.975705500000345,
+      "terms": [
+        {
+          "role": "reader",
+          "requests": 17,
+          "removedOwnerWorkMs": 13.146669500002531,
+          "factsOverheadMs": 21.892438499996615,
+          "scaledPairedWallDifferenceMs": -5.529249999999706
+        },
+        {
+          "role": "authority-broker",
+          "requests": 17,
+          "removedOwnerWorkMs": 10.561955499997794,
+          "factsOverheadMs": 20.064258499997095,
+          "scaledPairedWallDifferenceMs": -14.446455500000638
+        }
+      ]
+    },
+    {
+      "cohort": 2,
+      "identifierChars": 8,
+      "eligibleRequests": 34,
+      "fewerEnvelopeParses": 68,
+      "fewerRequestSignatureChecks": 34,
+      "referenceReadCommitted": 238,
+      "readCommittedReduction": 0,
+      "removedOwnerWorkProjectionMs": 27.83713450000073,
+      "factsOverheadMs": 48.93449999999666,
+      "scaledPairedWallDifferenceMs": -38.254250000000866,
+      "terms": [
+        {
+          "role": "reader",
+          "requests": 17,
+          "removedOwnerWorkMs": 12.2081250000017,
+          "factsOverheadMs": 22.302929000002905,
+          "scaledPairedWallDifferenceMs": -31.11424999999963
+        },
+        {
+          "role": "authority-broker",
+          "requests": 17,
+          "removedOwnerWorkMs": 15.629009499999029,
+          "factsOverheadMs": 26.631570999993755,
+          "scaledPairedWallDifferenceMs": -7.140000000001237
+        }
+      ]
+    },
+    {
+      "cohort": 2,
+      "identifierChars": 64,
+      "eligibleRequests": 34,
+      "fewerEnvelopeParses": 68,
+      "fewerRequestSignatureChecks": 34,
+      "referenceReadCommitted": 238,
+      "readCommittedReduction": 0,
+      "removedOwnerWorkProjectionMs": 24.11946399999897,
+      "factsOverheadMs": 48.98761650000074,
+      "scaledPairedWallDifferenceMs": -46.79108049999968,
+      "terms": [
+        {
+          "role": "reader",
+          "requests": 17,
+          "removedOwnerWorkMs": 8.954749999999876,
+          "factsOverheadMs": 24.35639300000571,
+          "scaledPairedWallDifferenceMs": -12.05016100000239
+        },
+        {
+          "role": "authority-broker",
+          "requests": 17,
+          "removedOwnerWorkMs": 15.164713999999094,
+          "factsOverheadMs": 24.63122349999503,
+          "scaledPairedWallDifferenceMs": -34.74091949999729
+        }
+      ]
+    },
+    {
+      "cohort": 2,
+      "identifierChars": 128,
+      "eligibleRequests": 34,
+      "fewerEnvelopeParses": 68,
+      "fewerRequestSignatureChecks": 34,
+      "referenceReadCommitted": 238,
+      "readCommittedReduction": 0,
+      "removedOwnerWorkProjectionMs": 22.342233000008036,
+      "factsOverheadMs": 40.731285999989495,
+      "scaledPairedWallDifferenceMs": -24.07589300001041,
+      "terms": [
+        {
+          "role": "reader",
+          "requests": 17,
+          "removedOwnerWorkMs": 12.336679000001823,
+          "factsOverheadMs": 20.712009499994792,
+          "scaledPairedWallDifferenceMs": -9.052143000003298
+        },
+        {
+          "role": "authority-broker",
+          "requests": 17,
+          "removedOwnerWorkMs": 10.005554000006214,
+          "factsOverheadMs": 20.019276499994703,
+          "scaledPairedWallDifferenceMs": -15.023750000007112
+        }
+      ]
+    },
+    {
+      "cohort": 3,
+      "identifierChars": 8,
+      "eligibleRequests": 34,
+      "fewerEnvelopeParses": 68,
+      "fewerRequestSignatureChecks": 34,
+      "referenceReadCommitted": 238,
+      "readCommittedReduction": 0,
+      "removedOwnerWorkProjectionMs": 27.763124999989486,
+      "factsOverheadMs": 52.56613349998952,
+      "scaledPairedWallDifferenceMs": 10.20638350000263,
+      "terms": [
+        {
+          "role": "reader",
+          "requests": 17,
+          "removedOwnerWorkMs": 14.561213999999836,
+          "factsOverheadMs": 23.863401499997053,
+          "scaledPairedWallDifferenceMs": 6.630008499992982
+        },
+        {
+          "role": "authority-broker",
+          "requests": 17,
+          "removedOwnerWorkMs": 13.20191099998965,
+          "factsOverheadMs": 28.702731999992466,
+          "scaledPairedWallDifferenceMs": 3.576375000009648
+        }
+      ]
+    },
+    {
+      "cohort": 3,
+      "identifierChars": 64,
+      "eligibleRequests": 34,
+      "fewerEnvelopeParses": 68,
+      "fewerRequestSignatureChecks": 34,
+      "referenceReadCommitted": 238,
+      "readCommittedReduction": 0,
+      "removedOwnerWorkProjectionMs": 20.434000000003834,
+      "factsOverheadMs": 46.51730400001543,
+      "scaledPairedWallDifferenceMs": -22.740330500001164,
+      "terms": [
+        {
+          "role": "reader",
+          "requests": 17,
+          "removedOwnerWorkMs": 9.028410999997504,
+          "factsOverheadMs": 24.318143000017244,
+          "scaledPairedWallDifferenceMs": -21.743356999997104
+        },
+        {
+          "role": "authority-broker",
+          "requests": 17,
+          "removedOwnerWorkMs": 11.40558900000633,
+          "factsOverheadMs": 22.199160999998185,
+          "scaledPairedWallDifferenceMs": -0.99697350000406
+        }
+      ]
+    },
+    {
+      "cohort": 3,
+      "identifierChars": 128,
+      "eligibleRequests": 34,
+      "fewerEnvelopeParses": 68,
+      "fewerRequestSignatureChecks": 34,
+      "referenceReadCommitted": 238,
+      "readCommittedReduction": 0,
+      "removedOwnerWorkProjectionMs": 21.2538930000037,
+      "factsOverheadMs": 45.48987499998293,
+      "scaledPairedWallDifferenceMs": 6.855955500011987,
+      "terms": [
+        {
+          "role": "reader",
+          "requests": 17,
+          "removedOwnerWorkMs": 11.00218749999567,
+          "factsOverheadMs": 22.659231999990425,
+          "scaledPairedWallDifferenceMs": 8.14512500001274
+        },
+        {
+          "role": "authority-broker",
+          "requests": 17,
+          "removedOwnerWorkMs": 10.251705500008029,
+          "factsOverheadMs": 22.830642999992506,
+          "scaledPairedWallDifferenceMs": -1.289169500000753
+        }
+      ]
+    }
+  ],
+  "decision": {
+    "productionSpeedupEstablished": false,
+    "eightReadsEstablished": false,
+    "cg0Proceed": false,
+    "cg3Proceed": false,
+    "readCommittedReduction": 0,
+    "next": "review I1 facts factory and extend measured API coverage or estimate I2 before any production adoption"
+  },
+  "limitations": [
+    "single-process SessionRuntime fork and real signatures; synthetic authenticated peer transport, not native UID isolation",
+    "mock source acquisition and pin liveness; no actual readCommitted/journal/checkpoint or use/ACK/finish path",
+    "envelope counters cover only SessionServer-to-owner inner request verification; handshake/client/reply checks remain outside these counters",
+    "owner payload validation, current local gates and distinct pre/post live checks remain",
+    "H0 scaling is arithmetic using different saved executions, not a graph-read timing measurement; removed-work projection excludes new facts overhead and is not a worst-case CPU bound",
+    "primary guard policy is shared across S*/A*, while intent digests intentionally differ by mode; no retry deadline/attempt reset"
+  ],
+  "backendEligible": false,
+  "originalReadsSkipped": 0,
+  "document": {
+    "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+    "heading": "### 9.110 ",
+    "sectionSha256": "dfcf2a5f831ba54bd6d623eda4a299d5a82fb3ec222197c28c4d80362363670b"
+  },
+  "measurement": {
+    "path": "docs/validation/gradle-c3b-cgp-i1-2026-11-06.measurements.json",
+    "sha256": "1c74cdb2fb9557068ffaf814702fe71c773e3d49f6474ec847235f765cd7ee20"
+  },
+  "analysisSource": {
+    "path": "scripts/analyze-c3b-cgp-i1.mjs",
+    "sha256": "153fdfd1610e4a49c0a294892692ca979e207879c2c8b78f5868c4a971266474"
+  },
+  "checkerSource": {
+    "path": "src/test/fixtures/gradleOwnedCgpI1Report.mjs",
+    "sha256": "f4177e1406de8347e8019abf692c9a70c1bdb4bdd63f93cad930b93ed9466728"
+  },
+  "scope": "three cohorts x two source roles x three identifier lengths; signed-session fixture with mock pin/source; no five-owner production throughput claim",
+  "verification": {
+    "date": "2026-11-06",
+    "checks": [
+      {
+        "command": "npx vitest run src/test/utils/gradleOwnedCgpI1.test.ts src/test/utils/gradleOwnedCgpI1Report.test.ts src/test/docs/commandExamples.test.ts --maxWorkers=1",
+        "passed": 137
+      },
+      {
+        "command": "env OSV_CGP_I1_NATIVE=1 OSV_CGP_I1_OUTPUT=docs/validation/gradle-c3b-cgp-i1-2026-11-06.measurements.json npx vitest run src/test/utils/gradleOwnedCgpI1Native.test.ts",
+        "passed": 1,
+        "pairs": 108,
+        "requests": 216
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "exitCode": 0
+      },
+      {
+        "command": "npx vitest run src/test/utils/gradleOwnedCgpI1Validation.test.ts src/test/utils/gradleOwnedCgpI0Guard.test.ts src/test/utils/gradleOwnedCgpI0ReviewFix.test.ts src/test/utils/gradleOwnedS0cValidation.test.ts --maxWorkers=1",
+        "passed": 46
+      },
+      {
+        "command": "git diff --check",
+        "exitCode": 0
+      }
+    ],
+    "regressionSources": {
+      "src/test/utils/gradleOwnedCgpI1.test.ts": "d3135474dc40b65c50b07464a17c1e8e3566e53521986dfb3136f9e1084faf47",
+      "src/test/utils/gradleOwnedCgpI1Report.test.ts": "94bc16af3e8a8f3da444f0eff34bd10aefd4bf60f92e2b06d360694d77c1e528",
+      "src/test/utils/gradleOwnedCgpI1Validation.test.ts": "fefe49552764884116da70ffdb152e4bb7b0fed0344f4f4ff977444d9a9399a4"
+    },
+    "implementation": "test-only SessionRuntime fork and mock source/pin owner; actual signatures and authenticated-call checks; no production registration",
+    "redGreenNotes": [
+      "Original guard/session deadline boundary: source acquisition was 1, corrected to 0 in both modes.",
+      "Concurrent client admission: guard entries were 2, corrected to 1 before additional reservation.",
+      "Definite pre refusal: unknown state incorrectly blocked retry; now ends the attempt while preserving original slots/deadline/budget."
+    ]
+  },
+  "reviewCorrections": {
+    "originalDeadline": "Private original deadline ledger bounds guard admission and SessionClient wait; 2 paused-source regressions, late responses rejected.",
+    "independentApproval": "Exact canonical comparison against independently fixed experiment manifest; 9 re-digested unapproved/budget mutations rejected.",
+    "red": {
+      "failed": 11,
+      "passed": 123
+    },
+    "green": {
+      "passed": 134
+    },
+    "remeasurement": {
+      "pairs": 108,
+      "requests": 216,
+      "positivePairedConditions": 5,
+      "negativePairedConditions": 13,
+      "speedupEstablished": false
+    }
+  }
+}
