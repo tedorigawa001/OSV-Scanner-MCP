@@ -7767,3 +7767,64 @@ S0b既存checkpoint batchの限定実装・実disk比較まで完了し、規則
 - 未変更の本番readerを対照に加えて再計測した。
 - openを`recoverPublished`経由にし、pendingの拒否理由を`tail_unknown`に揃え、未使用だった復旧経路を使うようにした。
 - 検査を1つずつ外す確認でfixture 45か所中18か所しか検出しなかったので負例を追加し、48か所中37か所を検出した。残る11か所は、次の検査と重複するもの、互いに補うもの、モジュール外から到達できないものである。証拠checkerは25条件すべて検出する。確認は使い捨てコピーでの手動実行で、リポジトリから再実行はできない。
+
+
+### 9.109 CGP-S0c：compact record・typed pageの限定試作
+#### 実装範囲と新しい信頼境界
+2026-11-06。`gradleOwnedS0c.ts`へF（全体image）、W（whole signed wireを保持するtyped page）、P（compact signed state-root recordを保持するtyped page）を実装した。production reader・owner・journalは変更していない。§9.108の停止判断は維持し、S0-M／S0-Dの製品統合や合成fixtureは行わない。
+
+入力は署名済みregistry recordと対応するAnchor CAS履歴。署名・identity role・revision・previous・attempt・expected／nextを検査し、F／W／Pから復元した全record／Anchor履歴の論理一致を確認する。元のregistry state全体（ledgerのoperation結果、expiry／失効情報など）を復元し、handoffsの未指定と明示emptyも区別する。ただし実APIの再試行・CAS・失効・delivery／ACKをこのmaterializerが実行するわけではない。
+
+Pは新しい`cgp.s0.compact-record.v1`／`cgp.s0.signed-record.v1`、固定profile `cgp.s0c.profile.v1`と独立したfixture Ed25519鍵を使う。旧wireを確認したconverterが、元ref・header・state root・compact previousへ署名し直す。旧refは変換元の出自で、旧wireが保存されたことを表すstorage refではない。元wireと同じ署名／digestを維持する契約ではない。検証側は別入力の公開鍵・key IDとprofileを固定する。旧`registryRecordSchema`と旧Anchor entry readerには実際のcompact body／entryを渡して拒否を確認した。旧形式へのfallbackはない。新owner runtime・認証envelope／CAS・承認registry・本番移行は未接続で、この鍵を本番の再発行権限と認めない。
+
+#### typed pageと保持閉包
+- rootはowner role・lineage・local storeEpoch・generation・format・revision、parent、全field directory、liveness、state digestを持つ。registryのpins／ledger／handoffsとAnchor entriesをtyped rowにし、registryの残りは既存state schemaをomitしたstrict livenessで保持する。新しい汎用unknown JSONやJSON pointerは追加しない（既存ledger resultの型はそのまま）。
+- keyはpin ref.id／ledger key／handoff operationKey／Anchor attemptId。key順と元ordinalを別に検査し、重複・欠落・不正bucket・count・bindingを拒否する。全fieldを列挙し、emptyは明示的なempty directoryとする。
+- 16 bucket・1 page／bucket、16 row／page、page／directory／root各64 KiB、object閉包4,096、canonical object bytes合計8 MiBを固定する。超過時はcapacity拒否で、別bucketへの移動や上限の自動拡張はない。保持objectのcanonical bytesと復元した論理履歴にそれぞれ8 MiBを適用する。これはserialized／decode対象bytesの制限で、JS heap／peak RSSの上限ではない。
+- refはschema／role／sha256／byteLengthを束縛する。全objectのfresh bytes・hashとtyped root→directory→pageの閉包を検査し、同じhashの異なる型、欠落、自己参照の改変、未記録objectを拒否する。parent・signed previousも辿る。選択履歴の各rootでは、parentがcatalog上の直前の同owner root refと完全一致することを要求し、先頭はnullに限定する。同じbinding／revisionの別stateを祖先として採用しない。
+- 全履歴rootとsigned recordを保持し、commit／stage／retry／checkpoint／holdのcatalogもcallerが事前に固定する。受信bundleから保持catalogを自己承認しない。過去のpageは保持閉包内として許容し、保持宣言を落としたbundle・到達不能なobjectは拒否する。このfixtureは全履歴を保持する保守的な方式で、物理GC・期限切れrefの削除を許可しない。外部serviceの証拠refや旧v1 wireのarchiveまで検証するものではない。
+- native IOは比較専用の単一object store。毎回全recorded objectを読み、前後の完全namespaceと全bytesを照合する。gateの後、catalogの件数・refのbyteLength合計・role別上限・schema／profileを純粋検査し、容量超過は列挙／読取0で拒否する。catalog metadataは最初のawait前にcopyし、gateをIO前後と返却前にも呼ぶ。cross-call IO省略0。writeは既存rooted IOのfile／directory同期を使うが、読取計時にjournal／checkpoint再同期は含めない。
+
+#### 回帰・容量確認
+materializer 53件＋実disk境界13件。3形式の論理一致、旧reader拒否、empty／未指定、保持catalog全種、未知／欠落／改変object、全ref更新・compact再署名後のkey／ordinal／bucket／count／binding／field／state digest不正、異なる検証鍵、重複key、17 row同bucket、64 KiB page、8 MiB合計、4,097 objects、self-ref改変、読取前取消し・同size改変・最終列挙前追加を確認した。容量試験は有効な大きい旧recordをFで受理し、Wのpage上限で拒否する対照を含む。追加の8件は、実在する10 MiB超のobject集合、4,097 objects、各roleの上限超過を列挙／読取0で拒否する。
+
+SR24／25／27〜29の形式・容量・保持閉包部分の限定実証であり、全条件完了とはしない。typed delta／expected-old-refによる更新、incremental／suffix materializer、実ownerのretry／CAS／ACK同値、GC／世代選択／移行、RSSは残る。
+
+#### 性能比較
+実owner fixtureでEnrollment／ActivateとAcquire／Releaseを行い、保存済みregistry／Anchor履歴を取得した。3 cohort × 4深さ（pin cycle 0／1／2／4、record 2／4／6／10）。F／W／Pを別disk rootへ同期保存し、warm-up後6 roundで読取順を回転させた。36 mode条件・216比較読取で、全論理digestが一致し、各回全object数・bytesの読取とhash／schema／署名・閉包検査を行った。作成／open／persist／warm-upは読取wall外、build時間は別記録で、Pの再署名も含む。
+
+表のbytesは単一比較store内のdistinct閉包。owner copy列はregistryとAnchorが各自の検証閉包を別保存すると仮定した重複込みのbytesで、共有objectを無料にしてowner分離後の削減を主張しない。PではAnchorが完全な論理stateを復元する検査のためregistry pageまで辿るので、この仮定では両ownerにcopyする。実分離配備の保存方式やIPC費用を測った値ではない。
+
+| pin cycle | record | mode | distinct bytes範囲 | owner copy bytes範囲 | wall中央値範囲 ms |
+|---|---|---|---|---|---|
+| 0 | 2 | F | 22034〜22034 | 22034〜22034 | 1.65〜1.74 |
+| 0 | 2 | W | 27944〜27947 | 27944〜27947 | 3.51〜3.91 |
+| 0 | 2 | P | 20773〜20776 | 35798〜35806 | 3.55〜3.69 |
+| 1 | 4 | F | 82413〜82413 | 82413〜82413 | 2.97〜3.23 |
+| 1 | 4 | W | 61039〜65072 | 61039〜65072 | 5.76〜6.10 |
+| 1 | 4 | P | 40626〜41030 | 68789〜69193 | 5.72〜5.86 |
+| 2 | 6 | F | 186548〜186548 | 186548〜186548 | 4.94〜5.17 |
+| 2 | 6 | W | 99840〜102676 | 99840〜102676 | 8.85〜9.22 |
+| 2 | 6 | P | 61677〜62487 | 103775〜105096 | 8.39〜8.72 |
+| 4 | 10 | F | 555739〜555739 | 555739〜555739 | 10.74〜10.99 |
+| 4 | 10 | W | 219479〜276114 | 219479〜276114 | 17.05〜17.13 |
+| 4 | 10 | P | 110660〜112856 | 183598〜187126 | 14.78〜15.03 |
+
+全比較が使用可能な4.5秒内に収まった。今回の実履歴は全modeが容量内で、capacity拒否は成功時の速度比較に混ぜていない。10 recordでPはdistinct bytesをFの約20%、owner copy込みでも約33.0〜33.7%へ減らした。一方、object数はF 20→P 82となり、wall中央値はF約10.74〜10.99 msに対しP約14.78〜15.03 msで遅い。materialize部分の中央値はF約8.52〜8.64 ms、P約6.93〜7.01 msである。全読取にはIO・catalog admission・copyなどの追加費用も含まれ、今回の全読取時間の改善は確認できない。Wはwhole wireの再保存を残す対照であり、Pと同じ削減とは扱わない。
+
+これはmacOS／arm64のwarm・単一process・表現専用object storeの比較である。Fも本番readerそのものではない。checkpoint／journal・session・SGA・別owner IPCの費用を含まず、本番speedupや継続8 graph readの成立へ換算しない。新署名対象／head／容量と論理同値を区別し、旧形式との署名digest一致を比較条件にしない。
+
+#### 再現と残課題
+rawは`docs/validation/gradle-c3b-cgp-s0c-2026-11-06.measurements.json`、summaryは同名`.json`。profile・計測source閉包・raw・本節・checkerと回帰sourceのdigestを保存し、照合scriptは計測器の変更を検知する。製品source／packageの将来更新を計測器と同じ強さでpinしない。
+```sh
+env OSV_S0C_NATIVE=1 OSV_S0C_OUTPUT=docs/validation/gradle-c3b-cgp-s0c-2026-11-06.measurements.json npx vitest run src/test/utils/gradleOwnedS0cNative.test.ts --maxWorkers=1
+node scripts/analyze-c3b-cgp-s0c.mjs
+node scripts/analyze-c3b-cgp-s0c.mjs --check
+```
+次はCGP-I1の呼出し回数削減の見積りと、S0cのtyped delta／incremental materializerの必要性を判断する。Pのbytes削減だけを根拠に製品採用せず、S0dの5owner比較、cold／churn／miss／復旧、scratch／RSS、S0xの独立storage・immutable prefixも残す。CG0／CG3、productionApproved、backendEligible、nativeIsolationVerifiedはfalse、originalReadsSkippedは0。
+
+#### レビュー修正
+- 選択rootのparentを、binding／revision一致だけでなくcatalog直前の同owner refへ束縛した。W／P・registry／Anchorの4回帰は、全ref更新・compact再署名とAnchor state digest更新後の別祖先を拒否する。guardだけを外した対照では4件とも不正な祖先を受理し、回帰が失敗することも確認した。
+- disk readerにpureなcatalog admissionを追加した。件数・宣言bytes合計・role別file上限をIO前に検査し、materializerでも同じ検査を再実行する。従来は8 MiBを超える集合を全読取後に拒否していたが、追加回帰では列挙／file読取が共に0となる。
+- 証拠checkerの集計元を検証済みroundへ変更した。warm-upと全roundの全resource counter一致を要求し、owner copy計数だけの改変4件、内部の和が正しいままのround間変化1件を拒否する。checkerは29件。
+- 修正したsourceで216比較読取を再実行し、表・raw・summary・回帰source hashを更新した。容量削減と速度改善未成立を区別し、本番採用／8 read成立の判定は引き続きfalseとする。

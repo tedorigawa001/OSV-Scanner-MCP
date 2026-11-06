@@ -3051,3 +3051,12 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - [x] 実disk、3cohort × 5file数 × 6pair＝90pair比較と本番対照90読取。64fileは本番約69 ms、F約75 ms、D約25 ms。本番と比べると1・8 fileではDが遅く、32 file以上で速い。全bytes・同期の計数は両mode同じ。
 - [x] 規則3の判定：M＋Dの8 read目は約6.5秒（算術）で使える時間1.4〜1.9秒を超え、最大予算内は2 readまで。S0-M／S0-Dは製品統合しない。
 - 次はS0c compact recordとCGP-I1の呼出し回数削減の見積り。scratch／RSS、S0d 5owner比較、S0x独立storageも残る。CG0／CG3保留、原本読取省略0。単独checkpoint fixtureの結果を本番speedupへ換算しない。
+
+
+### CGP-S0c：compact record・typed pageの限定試作（§9.109）
+- [x] test-only F／W／P。新しいcompact署名／profileと旧registry・Anchor reader拒否、typed root／directory／page／liveness、全保持catalogと参照閉包を実装。
+- [x] materializer 53件＋disk境界13件。64 KiB／16 row／bucket・8 MiB／4,096 objects、過去版保持・未記録object、再hash／再署名後の構造不正を検査。
+- [x] 実owner履歴を使う3cohort×4深さ×3形式×6round＝216 fresh disk読取。10recordでPのdistinct bytesはFの約20%、owner copy込み約33.0〜33.7%。wallはF約10.74〜10.99 msに対しP約14.78〜15.03 msで改善未成立。
+- 次はCGP-I1の呼出し回数削減の見積り。typed delta／incremental materializer・本番owner／新CAS接続、S0d 5owner比較、cold／churn／復旧・RSS、S0x独立storageも残る。単独表現fixtureから8read成立を主張しない。CG0／CG3保留、原本読取省略0。
+
+§9.109レビュー修正：parentをcatalogの直前同owner refへ束縛し、W／P・両ownerの4負例を追加。disk容量検査をIO前へ移し、件数・合計bytes・role別上限の8負例で列挙／読取0を確認。owner copy集計は検証済みround由来とし、warm-up／round間計数の不一致5件を拒否する。216読取を再計測し、速度改善未成立・CG0／CG3保留・原本読取省略0を維持する。
