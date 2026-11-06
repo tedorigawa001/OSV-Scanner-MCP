@@ -3064,9 +3064,11 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 
 ### CGP-I1：同一callの検証事実共有・削減効果（§9.110）
 - [x] test-only SessionRuntime fork＋opaque VerifiedRequestFacts。exact wire／call／peer／server／policyを束縛し、deep-frozen envelopeだけを共有する。owner payload validation・current gate・pre／post・元guard期限を維持。
-- [x] 89回帰。偽造／別call／policy変更／Buffer alias、10境界の取消し・期限、remote取消し、unknown／definite retry、元期限・予算・slot、並行入場、broker origin・3種source kindを確認。
-- [x] 実署名付きin-process sessionで3cohort×2role×3identifier×6pair＝108pair／216要求。対象envelope parse 3→1、署名2→1。factsの生成・再照合費用を分離し、pair差は正負が混在するため速度改善未成立。
+- [x] 112回帰。偽造／別call／policy変更／Buffer alias、10境界の取消し・期限、remote取消し、unknown／definite retry、元期限・予算・slot、並行入場、broker origin・3種source kindを確認。
+- [x] 実署名付きin-process sessionで3cohort×2role×3identifier×6pair＝108pair／216要求。対象envelope parse 3→1、署名2→1。factsの生成・再照合費用を分離した。fork内ではA*が短いが、1要求あたり1 ms未満で本番の速度改善は未成立。
 - [x] H0 traceの34対象要求へ算術換算し、parse68回・署名34回削減、readCommitted削減0を記録。238回を実行／削減したとはしない。
 - 次はI2の取得batch候補の効果見積り。本番factory／SourceOwner接続・追加API coverage・実pin／保存／外側session故障、I3／I4・S0d 5owner・S0x／SGA・RSSは残る。I1本番採用・CG0／CG3保留、原本読取省略0。
 
 §9.110レビュー修正：guardの元期限をsession待機にも適用し、両modeの待機終了・遅配拒否2件を追加。独立承認manifest全体との一致で、digest更新後も未承認値・予算不足等9件を拒否。追加11件のRED→GREEN、108pair／216要求の再計測・表・検証記録を更新。速度改善・本番採用・8 readは未成立。
+
+§9.110レビュー修正2：本番にないregistry全体digest（gate計20回＋facts 2回）がwallの約2/3とfacts費用の約9割を占めていたため、構築時のdeep-freezeと同一性照合へ置換した。再計測で18条件中18条件がA*優位、換算は1 readあたり約3〜11 ms。不採用の理由を効果の小ささへ改めた。client元期限台帳は重複のため削除し、元期限・偽造peer・registry差替え・verifier差分・checkerの回帰を追加した。本番採用・8 read・CG0／CG3は未成立のまま。

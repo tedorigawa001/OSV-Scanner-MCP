@@ -7841,7 +7841,7 @@ S*／A*は同じscalar v1 wireを送り、同じI0 manifest／共通intent guard
 #### factsの契約と残すgate
 - factsはserverがrequestの署名・envelope検査を終えた後にmodule-private WeakMapでmintする。serialized token・caller objectからは作れない。exact inner bytesのprivate copy、wire digestに束縛された実AuthenticatedSessionCall、peer／server identity・boot／keyEpoch、API／purpose、lineage、registry fingerprint、verifier schema ID／policy digestに束縛する。requestDigestはexact wireに含まれ、ownerで再検査する。
 - 出力envelopeはdeep-frozenで、Buffer aliasを返さない。`businessPayloadShared=false`を明示し、ownerの`validateSourceCommand`とscope・delegate／origin・API権限検査を毎回行う。server verifier内部でもbodyの検査は走るが、それをowner用のbusiness payload factoryの証拠にはしない。
-- facts取得時は実AuthenticatedSessionCallの生存、wire digest＋exact bytes、現在のcredential／API権限、session期限を再検査する。registry fingerprintとpolicy／schemaの不一致は拒否し、missとして再解釈しない。ownerの各IO／await／署名前後・応答前には別のlocal gateを維持し、元のguard deadlineも確認する。pure bodyが変わらないことを現在の認可として使わない。
+- facts取得時は実AuthenticatedSessionCallの生存、wire digest＋exact bytes、現在のcredential／API権限、session期限を再検査する。registry fingerprintとpolicy／schemaの不一致は拒否し、missとして再解釈しない。registryは構築時にdeep-freezeしてdigestを1回だけ計算し、以後はobject同一性で照合する（§9.103.2の非評価の判別）。要求ごとに再hashしない。これはこのforkの中の不変性で、本番SessionRuntimeには同じ凍結がない。ownerの各IO／await／署名前後・応答前には別のlocal gateを維持し、元のguard deadlineも確認する。pure bodyが変わらないことを現在の認可として使わない。
 - callのfinish finallyでfactsの保存bytes／bodyを破棄する。close／期限切れは残っているhandleでも現gateが拒否する。別call／retry／RPC／ownerのhandleに渡さず、retryでは新しいserver検証とfactsを発行する。payloadを持たない古いtokenだけを保持しても能力は復活しない。
 - 入力は既存inner 8 KiB・frame 16 KiB等の上限のまま、1callにつき1facts、同時session等の既存上限を維持する。original deadlineの補助台帳も共通guardのslot数以内に保持し、evictionしない。serialized量・件数の制限をJS heap／RSSの実測上限とは呼ばない。
 - callback骨格は独立したpre／post live確認と1回のprivate source取得を保つ。pre成功後のremote取消しでは、既入場の取得1回が進んでもpostが拒否してsource成功応答0となる。post成功後の取消しで遅配された結果は`live=false`であり、新しい許可にはならない。
@@ -7849,11 +7849,13 @@ S*／A*は同じscalar v1 wireを送り、同じI0 manifest／共通intent guard
 **実証範囲**：sessionの署名とcredential/API gateは実コードのforkを動かすが、pin／sourceはin-processの模擬状態とprivate dataである。物理保存・fresh readCommitted・root／checkpoint・registry→Anchor RPC・use／ACK／finish・最終公開は実行していない。sourceAcquisitionsは模擬取得開始、responsesは署名済みsource session reply生成、clientResultsはclient側の署名／期限・guard検査後の成功である。元のSourceOwnerとの本番接続や5process、独立隔離の成立とはしない。
 
 #### 回帰確認
-91件。主にCGI03・08〜13・22の限定部分を検証した。
+112件（本体111・ownerの検証呼出し計数1）と、証拠checkerの57件。主にCGI03・08〜13・22の限定部分を検証した。
 - opaque factsの偽造、別call／wire／schema／policy／peer／server／API／purpose／lineage、Buffer alias改変、深いbody改変、call終了／session close後の使用を拒否する。owner business validationはS*／A*とも1回。
 - owner enter、envelope取得後、pre await、source前／取得後、post前／await後、sign前／後、enqueue前の10境界でcredential取消しと期限到達を両modeへ注入し、source取得0又は既入場1、成功応答0を確認した。policy変更・owner停止も別に確認した。
 - pre前のpin取消しでは取得0、pre成功後の取消しでは取得1／post拒否、post成功後の取消しではlive=falseを確認した。broker originと3種のsource kindも通す。
 - same K別D、expired retry、元attempt枠・slot保持、unknown再試行拒否、終了が確定したpre拒否のfresh retryを確認した。fixture構築時のsession／guard期限が新しい認証callより短い場合も、元期限到達後の取得0を確認する。並行client入場は新intent予約前に拒否する。
+- 偽造peerの署名済みcommandは両modeともsource取得0で拒否する。registryのin-place変更はTypeError、object差替えはgateとfacts経路の両方で拒否する。元期限はclientが状態を失った場合もserver側で保持し、sessionの期限を上限とする。未失効のretryも元期限で待機を終える。
+- `i1Verify`は改変して再署名した18件を本番verifierと同じ理由で拒否する（historical経路の5件を含む）。A*でもownerの`validateSourceCommand`は残り、S*との差は重複verifierの1回だけである。
 - 現schemaのidentifier 128文字を使い、129文字は予約前に拒否する。共通guard／SessionBootQuota／既存の上限を拡張しない。
 
 CGI全項目の完了ではない。transport enqueue／Session frame署名中の故障、実registry失効／drain、保存・boot／世代移行、実broker準備・ACK以降のraceは残る。
@@ -7875,23 +7877,25 @@ CGI全項目の完了ではない。transport enqueue／Session frame署名中�
 
 | role | identifier文字数 | inner bytes | S*中央値範囲 ms | A*中央値範囲 ms | paired差 S*−A* ms |
 |---|---|---|---|---|---|
-| reader | 8 | 3516 | 19.93〜24.05 | 21.64〜23.91 | -1.83〜0.99 |
-| reader | 64 | 3628 | 18.64〜20.61 | 19.89〜22.70 | -2.79〜-0.71 |
-| reader | 128 | 3756 | 20.16〜21.66 | 20.21〜21.29 | -0.53〜0.48 |
-| authority-broker | 8 | 3754 | 22.81〜25.89 | 22.40〜25.01 | -0.42〜1.19 |
-| authority-broker | 64 | 3866 | 19.47〜23.14 | 20.55〜24.08 | -2.04〜-0.06 |
-| authority-broker | 128 | 3994 | 18.90〜19.44 | 19.60〜20.53 | -0.88〜-0.08 |
+| reader | 8 | 3516 | 2.46〜3.12 | 2.31〜2.87 | 0.13〜0.16 |
+| reader | 64 | 3628 | 2.53〜2.91 | 2.35〜2.54 | 0.16〜0.34 |
+| reader | 128 | 3756 | 2.58〜2.88 | 2.28〜2.46 | 0.22〜0.31 |
+| authority-broker | 8 | 3754 | 2.54〜2.61 | 2.34〜2.41 | 0.19〜0.27 |
+| authority-broker | 64 | 3866 | 2.52〜2.65 | 2.34〜2.42 | 0.17〜0.20 |
+| authority-broker | 128 | 3994 | 2.55〜2.66 | 2.36〜2.54 | 0.12〜0.19 |
 
 wallは入力作成・sign・共通guard・実署名付きsession往復・owner gateを含み、handshake warm-upは除く。A*固有のfacts生成・get／read（追加のregistry fingerprint等を含む）・破棄時間を分離し、S*のowner raw decode＋重複verifierと比較する。local gateの回数は同じでもfacts port独自の追加inspectは残り、その費用を隠さない。計時したcomponentは非重複で、inclusive session／owner wallへ足し合わせない。観測器は共通だが、S*のwallも未変更production readerの時間そのものではない。
 
-18 conditionのpaired差 S*−A* の中央値は13条件で負、5条件で正となった。個々のpairにも逆転があり、一律の改善／悪化とは扱わない。周辺中央値の差とpair差の中央値を区別する。S*で除去できたowner workの中央値は0.53〜1.05 ms、A*のfacts管理・再照合は1.18〜1.69 ms。回数削減は実証したが、正味の速度改善は未成立である。前回の計測とのwallの直接比較は採用判断に使わず、今回の同一実行内のpairを比較する。
+18 conditionのpaired差 S*−A* の中央値は18条件で正、0条件で負（0.12〜0.34 ms）。S*で除去できたowner workの中央値は0.23〜0.27 ms、A*のfacts管理・再照合は0.04〜0.05 ms。保存したrawの計測時のload averageは1分値3.68で、同じsourceの追加3回でも正の条件は18・18・17、pair差の範囲は-0.00〜0.47 msだった。個々のpairには逆転がある。
+
+この差はこのforkの中での短縮で、本番の速度改善の主張ではない。対象はin-process・模擬source・1 APIのcoverageで、registryの凍結も本番にはない。負荷でwallは大きく変わり（load約8の予備計測ではdigestなしのwallが約6 ms、pair差が約0.5 ms）、絶対値を他の実行と比較しない。
 
 #### 削減効果の見積り
 保存済みH0 rawを既存`validateHistoryReads`で再検証し、各完了readのprovider `aux.ReadSealedSource` 34要求（reader 17／broker 17）を抽出する。この34要求に今回の回数モデルを当てると、対象envelope parse 102→34（68減）、署名検証68→34（34減）。descriptor／namespaceの3要求や他domainへ外挿しない。H0のreadCommitted合計238は別counterであり、I1で減らす件数は0である。今回238回のgraphを再実行したという意味ではない。
 
-各roleの測定中央値×17を加えた9組の算術では、旧owner workの除去対象は20.43〜31.20 ms、facts費用は40.73〜52.57 ms。paired wall差の換算は-66.00〜36.95 msで、負値を0へclipしない。これは違う時点・入力のH0を使う計画値で、最大入力のCPU上界でもgraph readの実測短縮でもない。H0の4秒等から差し引いて5秒／8 read成立を推定しない。
+各roleの測定中央値×17を加えた9組の算術では、旧owner workの除去対象は8.01〜8.80 ms、facts費用は1.22〜1.45 ms。paired wall差の換算は5.66〜9.22 msで、追加3回を含めても約3〜11 msである。これは違う時点・入力のH0を使う計画値で、最大入力のCPU上界でもgraph readの実測短縮でもない。H0の4秒等から差し引いて5秒／8 read成立を推定しない。
 
-S0cまでの履歴増大費用と比べても、この測定からI1の製品統合を推奨する根拠は得られない。policyの不変性証拠による照合費用削減等は別契約・別実証が必要で、現在のgateを外して埋めない。
+不採用の理由はfacts費用ではなく、効果の小ささである。1 readあたりミリ秒一桁の差は、§9.106.7の再生以外の2.6〜3.1秒に対しても0.5%未満で、S0cまでの履歴増大費用とも桁が違う。この測定からI1の製品統合を推奨する根拠は得られない。
 
 #### 再現・検証記録・残課題
 rawは`docs/validation/gradle-c3b-cgp-i1-2026-11-06.measurements.json`、summaryは同名`.json`。計測source閉包、raw／H0参照trace／本節／分析器と回帰sourceのhashを保存し、`--check`で照合する。計測器は現在sourceへpinし、production／packageの将来更新を歴史的計測のsource一致とは扱わない。
@@ -7907,3 +7911,10 @@ node scripts/analyze-c3b-cgp-i1.mjs --check
 - 両modeで、構築から4400ms後にsourceを待機させ、元期限4500msに達した後、sourceを解放する前にclient待機が終了する回帰を追加した。遅れて戻るhandlerもgateで拒否し、source成功応答／client成功0を確認する。取得済みIO自体の取消しを保証するものではない。
 - 分析器は実験用の独立した承認manifest全体（schema・実装・coverage・profile・producer・observer・read plan・全予算）とcanonical一致を要求する。自己digestとmode間一致だけを承認証拠にしない。両modeを同時変更してdigestも更新した9負例（未承認値、未知field、serialized／work予算不足）を拒否する。
 - 追加11件は修正前に失敗、修正後に通過した。108pair／216要求を修正sourceで単独再計測し、raw・表・算術見積り・検証記録を更新した。本番採用・速度改善・8 read成立の判断は変更しない。
+
+#### レビュー修正：registry digestの混入と回帰の不足
+- 修正前のfixtureは本番の`#gate`にないregistry全体のdigest（53 KB）を、local gateごとに計20回、facts経路で2回実行していた。wallの約2/3とfacts費用の約9割を占め、修正前の「facts費用が除去分を上回る」「pair差は正負が混在（13／5）」はこの費用の結果だった。修正前のrawのSHA-256は`1c74cdb2fb9557068ffaf814702fe71c773e3d49f6474ec847235f765cd7ee20`で、Git履歴に残る。
+- 構築時のdeep-freezeとobject同一性へ置き換えた。上記digestを検出するテストはなかったが、置換後の同一性・不変性には回帰を追加した。
+- clientの元期限台帳は削除した。同じoperationの元期限はSessionBootQuotaと共通guardが既に保持し、台帳を外しても挙動が変わらなかった。未失効のretryの待機終了を回帰で固定する。前節の「clientのprivate台帳」はこの修正で置き換える。
+- 証拠の集計範囲を`aggregate`として算出し、本節の数値と照合する。`--check`の照合先にI0 fixture 6件を追加した。共有fixtureとproductionは引き続き照合しない。
+- 手動のmutation（repoから再実行不可）は93件中76件を検出した。残る17件は、相互に補う条件6件（facts経路のinspect／wire一致、API、purpose）、単一API・server検証済み・request経路で到達できない条件4件、外部から届かないownerの多層防御4件、fixtureの自己検査1件、fail-closedで結果が同じ変異2件（wire copy、input検査）である。

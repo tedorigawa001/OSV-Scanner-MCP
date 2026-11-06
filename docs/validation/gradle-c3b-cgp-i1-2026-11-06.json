@@ -6,11 +6,11 @@
       "role": "reader",
       "identifierChars": 8,
       "wireBytes": 3516,
-      "scalarMedianMs": 22.643520499999966,
-      "factsMedianMs": 21.641979500000048,
-      "pairedMedianDifferenceMs": 0.9860830000000078,
-      "removedOwnerWorkMedianMs": 0.7844789999999762,
-      "factsOverheadMedianMs": 1.3584369999999808,
+      "scalarMedianMs": 3.1216875000000073,
+      "factsMedianMs": 2.871582999999987,
+      "pairedMedianDifferenceMs": 0.1648125000000107,
+      "removedOwnerWorkMedianMs": 0.2713329999999985,
+      "factsOverheadMedianMs": 0.04866600000001142,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -30,11 +30,11 @@
       "role": "reader",
       "identifierChars": 64,
       "wireBytes": 3628,
-      "scalarMedianMs": 20.02206250000006,
-      "factsMedianMs": 22.70183350000002,
-      "pairedMedianDifferenceMs": -2.791896000000065,
-      "removedOwnerWorkMedianMs": 0.6422709999998801,
-      "factsOverheadMedianMs": 1.5373749999999973,
+      "scalarMedianMs": 2.9141249999999843,
+      "factsMedianMs": 2.543583500000011,
+      "pairedMedianDifferenceMs": 0.3386459999999829,
+      "removedOwnerWorkMedianMs": 0.2717284999999947,
+      "factsOverheadMedianMs": 0.04124950000002059,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -54,11 +54,11 @@
       "role": "reader",
       "identifierChars": 128,
       "wireBytes": 3756,
-      "scalarMedianMs": 20.164813000000095,
-      "factsMedianMs": 20.760625499999946,
-      "pairedMedianDifferenceMs": -0.3252499999999827,
-      "removedOwnerWorkMedianMs": 0.7733335000001489,
-      "factsOverheadMedianMs": 1.2877904999998009,
+      "scalarMedianMs": 2.8788125000000093,
+      "factsMedianMs": 2.455895499999997,
+      "pairedMedianDifferenceMs": 0.21877100000003225,
+      "removedOwnerWorkMedianMs": 0.25833299999999326,
+      "factsOverheadMedianMs": 0.03900050000007127,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -78,11 +78,11 @@
       "role": "authority-broker",
       "identifierChars": 8,
       "wireBytes": 3754,
-      "scalarMedianMs": 25.890728999999965,
-      "factsMedianMs": 25.005021000000056,
-      "pairedMedianDifferenceMs": 1.187520500000005,
-      "removedOwnerWorkMedianMs": 1.050687499999981,
-      "factsOverheadMedianMs": 1.4628950000002305,
+      "scalarMedianMs": 2.579812500000031,
+      "factsMedianMs": 2.4120209999999815,
+      "pairedMedianDifferenceMs": 0.1866455000000542,
+      "removedOwnerWorkMedianMs": 0.24329150000002642,
+      "factsOverheadMedianMs": 0.036915999999990845,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -102,11 +102,11 @@
       "role": "authority-broker",
       "identifierChars": 64,
       "wireBytes": 3866,
-      "scalarMedianMs": 23.13675000000012,
-      "factsMedianMs": 23.548645999999962,
-      "pairedMedianDifferenceMs": -1.0905624999998054,
-      "removedOwnerWorkMedianMs": 0.7986039999998411,
-      "factsOverheadMedianMs": 1.4133335000001352,
+      "scalarMedianMs": 2.6507080000000087,
+      "factsMedianMs": 2.424791500000026,
+      "pairedMedianDifferenceMs": 0.20347949999995762,
+      "removedOwnerWorkMedianMs": 0.24606249999999363,
+      "factsOverheadMedianMs": 0.03849950000000035,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -126,11 +126,11 @@
       "role": "authority-broker",
       "identifierChars": 128,
       "wireBytes": 3994,
-      "scalarMedianMs": 18.89952049999988,
-      "factsMedianMs": 19.945645999999897,
-      "pairedMedianDifferenceMs": -0.8497915000000376,
-      "removedOwnerWorkMedianMs": 0.6212914999998702,
-      "factsOverheadMedianMs": 1.1802504999998291,
+      "scalarMedianMs": 2.663312499999961,
+      "factsMedianMs": 2.539728999999994,
+      "pairedMedianDifferenceMs": 0.1197920000000181,
+      "removedOwnerWorkMedianMs": 0.24952100000001565,
+      "factsOverheadMedianMs": 0.03773000000009574,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -150,11 +150,11 @@
       "role": "reader",
       "identifierChars": 8,
       "wireBytes": 3516,
-      "scalarMedianMs": 19.92664549999995,
-      "factsMedianMs": 21.811645500000168,
-      "pairedMedianDifferenceMs": -1.8302499999999782,
-      "removedOwnerWorkMedianMs": 0.7181250000001,
-      "factsOverheadMedianMs": 1.3119370000001709,
+      "scalarMedianMs": 2.536916500000018,
+      "factsMedianMs": 2.4108340000000226,
+      "pairedMedianDifferenceMs": 0.12539550000002464,
+      "removedOwnerWorkMedianMs": 0.23370900000003303,
+      "factsOverheadMedianMs": 0.03666699999985212,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -174,11 +174,11 @@
       "role": "reader",
       "identifierChars": 64,
       "wireBytes": 3628,
-      "scalarMedianMs": 20.606229499999927,
-      "factsMedianMs": 20.497728999999936,
-      "pairedMedianDifferenceMs": -0.7088330000001406,
-      "removedOwnerWorkMedianMs": 0.5267499999999927,
-      "factsOverheadMedianMs": 1.4327290000003359,
+      "scalarMedianMs": 2.571395999999993,
+      "factsMedianMs": 2.3708124999999995,
+      "pairedMedianDifferenceMs": 0.19272949999998445,
+      "removedOwnerWorkMedianMs": 0.23379199999993716,
+      "factsOverheadMedianMs": 0.03564549999987321,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -198,11 +198,11 @@
       "role": "reader",
       "identifierChars": 128,
       "wireBytes": 3756,
-      "scalarMedianMs": 21.658083499999975,
-      "factsMedianMs": 21.291229000000158,
-      "pairedMedianDifferenceMs": -0.532479000000194,
-      "removedOwnerWorkMedianMs": 0.7256870000001072,
-      "factsOverheadMedianMs": 1.2183534999996937,
+      "scalarMedianMs": 2.5791664999999853,
+      "factsMedianMs": 2.333541999999966,
+      "pairedMedianDifferenceMs": 0.22293750000000045,
+      "removedOwnerWorkMedianMs": 0.23941699999994626,
+      "factsOverheadMedianMs": 0.03583399999996573,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -222,11 +222,11 @@
       "role": "authority-broker",
       "identifierChars": 8,
       "wireBytes": 3754,
-      "scalarMedianMs": 25.030729000000065,
-      "factsMedianMs": 25.00870850000001,
-      "pairedMedianDifferenceMs": -0.42000000000007276,
-      "removedOwnerWorkMedianMs": 0.9193534999999429,
-      "factsOverheadMedianMs": 1.5665629999996327,
+      "scalarMedianMs": 2.541499999999985,
+      "factsMedianMs": 2.344374500000015,
+      "pairedMedianDifferenceMs": 0.20727099999999155,
+      "removedOwnerWorkMedianMs": 0.23741649999993797,
+      "factsOverheadMedianMs": 0.03631199999989576,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -246,11 +246,11 @@
       "role": "authority-broker",
       "identifierChars": 64,
       "wireBytes": 3866,
-      "scalarMedianMs": 21.625312499999836,
-      "factsMedianMs": 24.082562500000222,
-      "pairedMedianDifferenceMs": -2.0435834999998406,
-      "removedOwnerWorkMedianMs": 0.8920419999999467,
-      "factsOverheadMedianMs": 1.4488954999997077,
+      "scalarMedianMs": 2.519833500000061,
+      "factsMedianMs": 2.38220849999999,
+      "pairedMedianDifferenceMs": 0.17239550000010695,
+      "removedOwnerWorkMedianMs": 0.24041649999998072,
+      "factsOverheadMedianMs": 0.03872849999987693,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -270,11 +270,11 @@
       "role": "authority-broker",
       "identifierChars": 128,
       "wireBytes": 3994,
-      "scalarMedianMs": 19.443895999999768,
-      "factsMedianMs": 20.529062500000236,
-      "pairedMedianDifferenceMs": -0.8837500000004184,
-      "removedOwnerWorkMedianMs": 0.5885620000003655,
-      "factsOverheadMedianMs": 1.1776044999996884,
+      "scalarMedianMs": 2.547728999999947,
+      "factsMedianMs": 2.368249999999989,
+      "pairedMedianDifferenceMs": 0.1730420000000663,
+      "removedOwnerWorkMedianMs": 0.24391650000006848,
+      "factsOverheadMedianMs": 0.03614549999991823,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -294,11 +294,11 @@
       "role": "reader",
       "identifierChars": 8,
       "wireBytes": 3516,
-      "scalarMedianMs": 24.04902099999981,
-      "factsMedianMs": 23.911604000000352,
-      "pairedMedianDifferenceMs": 0.3900004999995872,
-      "removedOwnerWorkMedianMs": 0.8565419999999904,
-      "factsOverheadMedianMs": 1.4037294999998267,
+      "scalarMedianMs": 2.463458000000003,
+      "factsMedianMs": 2.3060420000000477,
+      "pairedMedianDifferenceMs": 0.14395799999994097,
+      "removedOwnerWorkMedianMs": 0.22699950000003355,
+      "factsOverheadMedianMs": 0.035437500000000455,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -318,11 +318,11 @@
       "role": "reader",
       "identifierChars": 64,
       "wireBytes": 3628,
-      "scalarMedianMs": 18.640520999999808,
-      "factsMedianMs": 19.893604000000323,
-      "pairedMedianDifferenceMs": -1.2790209999998297,
-      "removedOwnerWorkMedianMs": 0.5310829999998532,
-      "factsOverheadMedianMs": 1.4304790000010144,
+      "scalarMedianMs": 2.52860400000003,
+      "factsMedianMs": 2.351291500000002,
+      "pairedMedianDifferenceMs": 0.16152049999999463,
+      "removedOwnerWorkMedianMs": 0.23356300000006058,
+      "factsOverheadMedianMs": 0.03745800000001509,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -342,11 +342,11 @@
       "role": "reader",
       "identifierChars": 128,
       "wireBytes": 3756,
-      "scalarMedianMs": 20.427000000000135,
-      "factsMedianMs": 20.205249999999978,
-      "pairedMedianDifferenceMs": 0.4791250000007494,
-      "removedOwnerWorkMedianMs": 0.6471874999997453,
-      "factsOverheadMedianMs": 1.3328959999994368,
+      "scalarMedianMs": 2.591542000000004,
+      "factsMedianMs": 2.2814789999999903,
+      "pairedMedianDifferenceMs": 0.3056670000000281,
+      "removedOwnerWorkMedianMs": 0.23710450000004357,
+      "factsOverheadMedianMs": 0.03545850000006112,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -366,11 +366,11 @@
       "role": "authority-broker",
       "identifierChars": 8,
       "wireBytes": 3754,
-      "scalarMedianMs": 22.806167000000187,
-      "factsMedianMs": 22.397707999999966,
-      "pairedMedianDifferenceMs": 0.21037500000056752,
-      "removedOwnerWorkMedianMs": 0.7765829999993912,
-      "factsOverheadMedianMs": 1.6883959999995568,
+      "scalarMedianMs": 2.6123750000001564,
+      "factsMedianMs": 2.3430829999999787,
+      "pairedMedianDifferenceMs": 0.2739795000001095,
+      "removedOwnerWorkMedianMs": 0.2466660000001184,
+      "factsOverheadMedianMs": 0.03662350000013248,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -390,11 +390,11 @@
       "role": "authority-broker",
       "identifierChars": 64,
       "wireBytes": 3866,
-      "scalarMedianMs": 19.474687500000073,
-      "factsMedianMs": 20.550896000000193,
-      "pairedMedianDifferenceMs": -0.058645500000238826,
-      "removedOwnerWorkMedianMs": 0.6709170000003724,
-      "factsOverheadMedianMs": 1.3058329999998932,
+      "scalarMedianMs": 2.5349999999998545,
+      "factsMedianMs": 2.336500000000001,
+      "pairedMedianDifferenceMs": 0.19849999999985357,
+      "removedOwnerWorkMedianMs": 0.24070850000020982,
+      "factsOverheadMedianMs": 0.035582999999860476,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -414,11 +414,11 @@
       "role": "authority-broker",
       "identifierChars": 128,
       "wireBytes": 3994,
-      "scalarMedianMs": 19.138687499999833,
-      "factsMedianMs": 19.60412499999984,
-      "pairedMedianDifferenceMs": -0.0758335000000443,
-      "removedOwnerWorkMedianMs": 0.6030415000004723,
-      "factsOverheadMedianMs": 1.3429789999995592,
+      "scalarMedianMs": 2.547249500000021,
+      "factsMedianMs": 2.364791500000024,
+      "pairedMedianDifferenceMs": 0.1880625000001146,
+      "removedOwnerWorkMedianMs": 0.24366650000001755,
+      "factsOverheadMedianMs": 0.037479499999903965,
       "envelopeParses": {
         "scalar": 3,
         "facts": 1
@@ -443,23 +443,23 @@
       "fewerRequestSignatureChecks": 34,
       "referenceReadCommitted": 238,
       "readCommittedReduction": 0,
-      "removedOwnerWorkProjectionMs": 31.19783049999927,
-      "factsOverheadMs": 47.96264400000359,
-      "scaledPairedWallDifferenceMs": 36.95125950000022,
+      "removedOwnerWorkProjectionMs": 8.748616500000423,
+      "factsOverheadMs": 1.4548940000000385,
+      "scaledPairedWallDifferenceMs": 5.974786000001103,
       "terms": [
         {
           "role": "reader",
           "requests": 17,
-          "removedOwnerWorkMs": 13.336142999999595,
-          "factsOverheadMs": 23.093428999999674,
-          "scaledPairedWallDifferenceMs": 16.763411000000133
+          "removedOwnerWorkMs": 4.612660999999974,
+          "factsOverheadMs": 0.8273220000001942,
+          "scaledPairedWallDifferenceMs": 2.8018125000001817
         },
         {
           "role": "authority-broker",
           "requests": 17,
-          "removedOwnerWorkMs": 17.861687499999675,
-          "factsOverheadMs": 24.86921500000392,
-          "scaledPairedWallDifferenceMs": 20.187848500000086
+          "removedOwnerWorkMs": 4.135955500000449,
+          "factsOverheadMs": 0.6275719999998444,
+          "scaledPairedWallDifferenceMs": 3.1729735000009214
         }
       ]
     },
@@ -471,23 +471,23 @@
       "fewerRequestSignatureChecks": 34,
       "referenceReadCommitted": 238,
       "readCommittedReduction": 0,
-      "removedOwnerWorkProjectionMs": 24.49487499999526,
-      "factsOverheadMs": 50.16204450000225,
-      "scaledPairedWallDifferenceMs": -66.0017944999978,
+      "removedOwnerWorkProjectionMs": 8.802446999999802,
+      "factsOverheadMs": 1.355733000000356,
+      "scaledPairedWallDifferenceMs": 9.216133499998989,
       "terms": [
         {
           "role": "reader",
           "requests": 17,
-          "removedOwnerWorkMs": 10.918606999997962,
-          "factsOverheadMs": 26.135374999999954,
-          "scaledPairedWallDifferenceMs": -47.46223200000111
+          "removedOwnerWorkMs": 4.61938449999991,
+          "factsOverheadMs": 0.70124150000035,
+          "scaledPairedWallDifferenceMs": 5.756981999999709
         },
         {
           "role": "authority-broker",
           "requests": 17,
-          "removedOwnerWorkMs": 13.576267999997299,
-          "factsOverheadMs": 24.0266695000023,
-          "scaledPairedWallDifferenceMs": -18.53956249999669
+          "removedOwnerWorkMs": 4.183062499999892,
+          "factsOverheadMs": 0.654491500000006,
+          "scaledPairedWallDifferenceMs": 3.4591514999992796
         }
       ]
     },
@@ -499,23 +499,23 @@
       "fewerRequestSignatureChecks": 34,
       "referenceReadCommitted": 238,
       "readCommittedReduction": 0,
-      "removedOwnerWorkProjectionMs": 23.708625000000325,
-      "factsOverheadMs": 41.95669699999371,
-      "scaledPairedWallDifferenceMs": -19.975705500000345,
+      "removedOwnerWorkProjectionMs": 8.633518000000151,
+      "factsOverheadMs": 1.3044185000028392,
+      "scaledPairedWallDifferenceMs": 5.755571000000856,
       "terms": [
         {
           "role": "reader",
           "requests": 17,
-          "removedOwnerWorkMs": 13.146669500002531,
-          "factsOverheadMs": 21.892438499996615,
-          "scaledPairedWallDifferenceMs": -5.529249999999706
+          "removedOwnerWorkMs": 4.3916609999998855,
+          "factsOverheadMs": 0.6630085000012116,
+          "scaledPairedWallDifferenceMs": 3.719107000000548
         },
         {
           "role": "authority-broker",
           "requests": 17,
-          "removedOwnerWorkMs": 10.561955499997794,
-          "factsOverheadMs": 20.064258499997095,
-          "scaledPairedWallDifferenceMs": -14.446455500000638
+          "removedOwnerWorkMs": 4.241857000000266,
+          "factsOverheadMs": 0.6414100000016276,
+          "scaledPairedWallDifferenceMs": 2.036464000000308
         }
       ]
     },
@@ -527,23 +527,23 @@
       "fewerRequestSignatureChecks": 34,
       "referenceReadCommitted": 238,
       "readCommittedReduction": 0,
-      "removedOwnerWorkProjectionMs": 27.83713450000073,
-      "factsOverheadMs": 48.93449999999666,
-      "scaledPairedWallDifferenceMs": -38.254250000000866,
+      "removedOwnerWorkProjectionMs": 8.009133499999507,
+      "factsOverheadMs": 1.240642999995714,
+      "scaledPairedWallDifferenceMs": 5.655330500000275,
       "terms": [
         {
           "role": "reader",
           "requests": 17,
-          "removedOwnerWorkMs": 12.2081250000017,
-          "factsOverheadMs": 22.302929000002905,
-          "scaledPairedWallDifferenceMs": -31.11424999999963
+          "removedOwnerWorkMs": 3.9730530000005615,
+          "factsOverheadMs": 0.6233389999974861,
+          "scaledPairedWallDifferenceMs": 2.131723500000419
         },
         {
           "role": "authority-broker",
           "requests": 17,
-          "removedOwnerWorkMs": 15.629009499999029,
-          "factsOverheadMs": 26.631570999993755,
-          "scaledPairedWallDifferenceMs": -7.140000000001237
+          "removedOwnerWorkMs": 4.0360804999989455,
+          "factsOverheadMs": 0.6173039999982279,
+          "scaledPairedWallDifferenceMs": 3.5236069999998563
         }
       ]
     },
@@ -555,23 +555,23 @@
       "fewerRequestSignatureChecks": 34,
       "referenceReadCommitted": 238,
       "readCommittedReduction": 0,
-      "removedOwnerWorkProjectionMs": 24.11946399999897,
-      "factsOverheadMs": 48.98761650000074,
-      "scaledPairedWallDifferenceMs": -46.79108049999968,
+      "removedOwnerWorkProjectionMs": 8.061544499998604,
+      "factsOverheadMs": 1.2643579999957524,
+      "scaledPairedWallDifferenceMs": 6.207125000001554,
       "terms": [
         {
           "role": "reader",
           "requests": 17,
-          "removedOwnerWorkMs": 8.954749999999876,
-          "factsOverheadMs": 24.35639300000571,
-          "scaledPairedWallDifferenceMs": -12.05016100000239
+          "removedOwnerWorkMs": 3.9744639999989317,
+          "factsOverheadMs": 0.6059734999978446,
+          "scaledPairedWallDifferenceMs": 3.2764014999997357
         },
         {
           "role": "authority-broker",
           "requests": 17,
-          "removedOwnerWorkMs": 15.164713999999094,
-          "factsOverheadMs": 24.63122349999503,
-          "scaledPairedWallDifferenceMs": -34.74091949999729
+          "removedOwnerWorkMs": 4.087080499999672,
+          "factsOverheadMs": 0.6583844999979078,
+          "scaledPairedWallDifferenceMs": 2.930723500001818
         }
       ]
     },
@@ -583,23 +583,23 @@
       "fewerRequestSignatureChecks": 34,
       "referenceReadCommitted": 238,
       "readCommittedReduction": 0,
-      "removedOwnerWorkProjectionMs": 22.342233000008036,
-      "factsOverheadMs": 40.731285999989495,
-      "scaledPairedWallDifferenceMs": -24.07589300001041,
+      "removedOwnerWorkProjectionMs": 8.21666950000025,
+      "factsOverheadMs": 1.2236514999980272,
+      "scaledPairedWallDifferenceMs": 6.731651500001135,
       "terms": [
         {
           "role": "reader",
           "requests": 17,
-          "removedOwnerWorkMs": 12.336679000001823,
-          "factsOverheadMs": 20.712009499994792,
-          "scaledPairedWallDifferenceMs": -9.052143000003298
+          "removedOwnerWorkMs": 4.070088999999086,
+          "factsOverheadMs": 0.6091779999994174,
+          "scaledPairedWallDifferenceMs": 3.7899375000000077
         },
         {
           "role": "authority-broker",
           "requests": 17,
-          "removedOwnerWorkMs": 10.005554000006214,
-          "factsOverheadMs": 20.019276499994703,
-          "scaledPairedWallDifferenceMs": -15.023750000007112
+          "removedOwnerWorkMs": 4.146580500001164,
+          "factsOverheadMs": 0.6144734999986099,
+          "scaledPairedWallDifferenceMs": 2.9417140000011273
         }
       ]
     },
@@ -611,23 +611,23 @@
       "fewerRequestSignatureChecks": 34,
       "referenceReadCommitted": 238,
       "readCommittedReduction": 0,
-      "removedOwnerWorkProjectionMs": 27.763124999989486,
-      "factsOverheadMs": 52.56613349998952,
-      "scaledPairedWallDifferenceMs": 10.20638350000263,
+      "removedOwnerWorkProjectionMs": 8.052313500002583,
+      "factsOverheadMs": 1.22503700000226,
+      "scaledPairedWallDifferenceMs": 7.104937500000858,
       "terms": [
         {
           "role": "reader",
           "requests": 17,
-          "removedOwnerWorkMs": 14.561213999999836,
-          "factsOverheadMs": 23.863401499997053,
-          "scaledPairedWallDifferenceMs": 6.630008499992982
+          "removedOwnerWorkMs": 3.8589915000005703,
+          "factsOverheadMs": 0.6024375000000077,
+          "scaledPairedWallDifferenceMs": 2.4472859999989964
         },
         {
           "role": "authority-broker",
           "requests": 17,
-          "removedOwnerWorkMs": 13.20191099998965,
-          "factsOverheadMs": 28.702731999992466,
-          "scaledPairedWallDifferenceMs": 3.576375000009648
+          "removedOwnerWorkMs": 4.193322000002013,
+          "factsOverheadMs": 0.6225995000022522,
+          "scaledPairedWallDifferenceMs": 4.657651500001862
         }
       ]
     },
@@ -639,23 +639,23 @@
       "fewerRequestSignatureChecks": 34,
       "referenceReadCommitted": 238,
       "readCommittedReduction": 0,
-      "removedOwnerWorkProjectionMs": 20.434000000003834,
-      "factsOverheadMs": 46.51730400001543,
-      "scaledPairedWallDifferenceMs": -22.740330500001164,
+      "removedOwnerWorkProjectionMs": 8.062615500004597,
+      "factsOverheadMs": 1.2416969999978846,
+      "scaledPairedWallDifferenceMs": 6.120348499997419,
       "terms": [
         {
           "role": "reader",
           "requests": 17,
-          "removedOwnerWorkMs": 9.028410999997504,
-          "factsOverheadMs": 24.318143000017244,
-          "scaledPairedWallDifferenceMs": -21.743356999997104
+          "removedOwnerWorkMs": 3.97057100000103,
+          "factsOverheadMs": 0.6367860000002565,
+          "scaledPairedWallDifferenceMs": 2.7458484999999087
         },
         {
           "role": "authority-broker",
           "requests": 17,
-          "removedOwnerWorkMs": 11.40558900000633,
-          "factsOverheadMs": 22.199160999998185,
-          "scaledPairedWallDifferenceMs": -0.99697350000406
+          "removedOwnerWorkMs": 4.092044500003567,
+          "factsOverheadMs": 0.6049109999976281,
+          "scaledPairedWallDifferenceMs": 3.3744999999975107
         }
       ]
     },
@@ -667,34 +667,70 @@
       "fewerRequestSignatureChecks": 34,
       "referenceReadCommitted": 238,
       "readCommittedReduction": 0,
-      "removedOwnerWorkProjectionMs": 21.2538930000037,
-      "factsOverheadMs": 45.48987499998293,
-      "scaledPairedWallDifferenceMs": 6.855955500011987,
+      "removedOwnerWorkProjectionMs": 8.173107000001039,
+      "factsOverheadMs": 1.2399459999994065,
+      "scaledPairedWallDifferenceMs": 8.393401500002426,
       "terms": [
         {
           "role": "reader",
           "requests": 17,
-          "removedOwnerWorkMs": 11.00218749999567,
-          "factsOverheadMs": 22.659231999990425,
-          "scaledPairedWallDifferenceMs": 8.14512500001274
+          "removedOwnerWorkMs": 4.030776500000741,
+          "factsOverheadMs": 0.6027945000010391,
+          "scaledPairedWallDifferenceMs": 5.196339000000478
         },
         {
           "role": "authority-broker",
           "requests": 17,
-          "removedOwnerWorkMs": 10.251705500008029,
-          "factsOverheadMs": 22.830642999992506,
-          "scaledPairedWallDifferenceMs": -1.289169500000753
+          "removedOwnerWorkMs": 4.142330500000298,
+          "factsOverheadMs": 0.6371514999983674,
+          "scaledPairedWallDifferenceMs": 3.197062500001948
         }
       ]
     }
   ],
+  "aggregate": {
+    "positivePairedConditions": 18,
+    "negativePairedConditions": 0,
+    "scalarMedianMs": [
+      2.463458000000003,
+      3.1216875000000073
+    ],
+    "factsMedianMs": [
+      2.2814789999999903,
+      2.871582999999987
+    ],
+    "pairedMedianDifferenceMs": [
+      0.1197920000000181,
+      0.3386459999999829
+    ],
+    "removedOwnerWorkMedianMs": [
+      0.22699950000003355,
+      0.2717284999999947
+    ],
+    "factsOverheadMedianMs": [
+      0.035437500000000455,
+      0.04866600000001142
+    ],
+    "projectedRemovedOwnerWorkMs": [
+      8.009133499999507,
+      8.802446999999802
+    ],
+    "projectedFactsOverheadMs": [
+      1.2236514999980272,
+      1.4548940000000385
+    ],
+    "projectedPairedWallDifferenceMs": [
+      5.655330500000275,
+      9.216133499998989
+    ]
+  },
   "decision": {
     "productionSpeedupEstablished": false,
     "eightReadsEstablished": false,
     "cg0Proceed": false,
     "cg3Proceed": false,
     "readCommittedReduction": 0,
-    "next": "review I1 facts factory and extend measured API coverage or estimate I2 before any production adoption"
+    "next": "estimate the CGP-I2 fetch batch effect and decide whether a limited demonstration is needed; no I1 production adoption"
   },
   "limitations": [
     "single-process SessionRuntime fork and real signatures; synthetic authenticated peer transport, not native UID isolation",
@@ -702,34 +738,35 @@
     "envelope counters cover only SessionServer-to-owner inner request verification; handshake/client/reply checks remain outside these counters",
     "owner payload validation, current local gates and distinct pre/post live checks remain",
     "H0 scaling is arithmetic using different saved executions, not a graph-read timing measurement; removed-work projection excludes new facts overhead and is not a worst-case CPU bound",
-    "primary guard policy is shared across S*/A*, while intent digests intentionally differ by mode; no retry deadline/attempt reset"
+    "primary guard policy is shared across S*/A*, while intent digests intentionally differ by mode; no retry deadline/attempt reset",
+    "registry immutability is a deep freeze and object identity inside this fork; the production session runtime has no such freeze, so adopting facts needs its own contract"
   ],
   "backendEligible": false,
   "originalReadsSkipped": 0,
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.110 ",
-    "sectionSha256": "dfcf2a5f831ba54bd6d623eda4a299d5a82fb3ec222197c28c4d80362363670b"
+    "sectionSha256": "a3dca757bf25fd09eacc9aae30dfcffa70de5a25dbf808b878e2503a6f20b834"
   },
   "measurement": {
     "path": "docs/validation/gradle-c3b-cgp-i1-2026-11-06.measurements.json",
-    "sha256": "1c74cdb2fb9557068ffaf814702fe71c773e3d49f6474ec847235f765cd7ee20"
+    "sha256": "88cc2e32eed1c67dc797143a6cf267b7fac291d6ae133ee0d3512d093f30ed66"
   },
   "analysisSource": {
     "path": "scripts/analyze-c3b-cgp-i1.mjs",
-    "sha256": "153fdfd1610e4a49c0a294892692ca979e207879c2c8b78f5868c4a971266474"
+    "sha256": "4f1d6e20e1138573c5600bd6bcb1d98720247a21db2f7f0f7e8d618915f793bc"
   },
   "checkerSource": {
     "path": "src/test/fixtures/gradleOwnedCgpI1Report.mjs",
-    "sha256": "f4177e1406de8347e8019abf692c9a70c1bdb4bdd63f93cad930b93ed9466728"
+    "sha256": "dce1ae530b7b42a8bb6ee7fd2b3703db58f5624c6f4561e11d8102b664ee8005"
   },
   "scope": "three cohorts x two source roles x three identifier lengths; signed-session fixture with mock pin/source; no five-owner production throughput claim",
   "verification": {
     "date": "2026-11-06",
     "checks": [
       {
-        "command": "npx vitest run src/test/utils/gradleOwnedCgpI1.test.ts src/test/utils/gradleOwnedCgpI1Report.test.ts src/test/docs/commandExamples.test.ts --maxWorkers=1",
-        "passed": 137
+        "command": "npx vitest run src/test/utils/gradleOwnedCgpI1.test.ts src/test/utils/gradleOwnedCgpI1OwnerValidation.test.ts src/test/utils/gradleOwnedCgpI1Report.test.ts src/test/docs/commandExamples.test.ts --maxWorkers=1",
+        "passed": 172
       },
       {
         "command": "env OSV_CGP_I1_NATIVE=1 OSV_CGP_I1_OUTPUT=docs/validation/gradle-c3b-cgp-i1-2026-11-06.measurements.json npx vitest run src/test/utils/gradleOwnedCgpI1Native.test.ts",
@@ -747,7 +784,7 @@
       },
       {
         "command": "npx vitest run src/test/utils/gradleOwnedCgpI1Validation.test.ts src/test/utils/gradleOwnedCgpI0Guard.test.ts src/test/utils/gradleOwnedCgpI0ReviewFix.test.ts src/test/utils/gradleOwnedS0cValidation.test.ts --maxWorkers=1",
-        "passed": 46
+        "passed": 47
       },
       {
         "command": "git diff --check",
@@ -755,9 +792,10 @@
       }
     ],
     "regressionSources": {
-      "src/test/utils/gradleOwnedCgpI1.test.ts": "d3135474dc40b65c50b07464a17c1e8e3566e53521986dfb3136f9e1084faf47",
-      "src/test/utils/gradleOwnedCgpI1Report.test.ts": "94bc16af3e8a8f3da444f0eff34bd10aefd4bf60f92e2b06d360694d77c1e528",
-      "src/test/utils/gradleOwnedCgpI1Validation.test.ts": "fefe49552764884116da70ffdb152e4bb7b0fed0344f4f4ff977444d9a9399a4"
+      "src/test/utils/gradleOwnedCgpI1.test.ts": "f003df76e717f78fea2881b09bad7b78441a05b7fe2eb9a3fd88434b699c4dd2",
+      "src/test/utils/gradleOwnedCgpI1OwnerValidation.test.ts": "968759df9c4d7322cb570137ed5f932653c746aa92cb0b05673a03aca4fa0fad",
+      "src/test/utils/gradleOwnedCgpI1Report.test.ts": "7039b94748e9ab98f4381a96804a68cbc643ae11b2d6b85d96ecb455780fe333",
+      "src/test/utils/gradleOwnedCgpI1Validation.test.ts": "ac794d4504f5ca02145e0076c7c14eab6bbc60f88e66efdc73508e98f256b99b"
     },
     "implementation": "test-only SessionRuntime fork and mock source/pin owner; actual signatures and authenticated-call checks; no production registration",
     "redGreenNotes": [
@@ -779,9 +817,66 @@
     "remeasurement": {
       "pairs": 108,
       "requests": 216,
-      "positivePairedConditions": 5,
-      "negativePairedConditions": 13,
+      "positivePairedConditions": 18,
+      "negativePairedConditions": 0,
       "speedupEstablished": false
+    },
+    "registryDigest": {
+      "previousMeasurementSha256": "1c74cdb2fb9557068ffaf814702fe71c773e3d49f6474ec847235f765cd7ee20",
+      "previousPairedConditions": {
+        "positive": 5,
+        "negative": 13
+      },
+      "cause": "A full registry digest absent from the production gate ran 20 times per request in both modes and twice on the facts path.",
+      "replacement": "Deep freeze at construction, one digest, then object identity."
+    },
+    "additionalRuns": [
+      {
+        "loadAverage1m": 3.18,
+        "positive": 18,
+        "negative": 0,
+        "pairedRangeMs": [
+          0.05,
+          0.3
+        ],
+        "projectedRangeMs": [
+          3.37,
+          8.92
+        ]
+      },
+      {
+        "loadAverage1m": 3.18,
+        "positive": 18,
+        "negative": 0,
+        "pairedRangeMs": [
+          0.11,
+          0.47
+        ],
+        "projectedRangeMs": [
+          5.5,
+          10.79
+        ]
+      },
+      {
+        "loadAverage1m": 3.08,
+        "positive": 17,
+        "negative": 1,
+        "pairedRangeMs": [
+          0,
+          0.29
+        ],
+        "projectedRangeMs": [
+          2.76,
+          7.88
+        ]
+      }
+    ],
+    "clientDeadlineLedger": "Removed: SessionBootQuota and the common guard already hold the original deadline for the same operation.",
+    "mutation": {
+      "repeatableFromRepository": false,
+      "total": 93,
+      "caught": 76,
+      "remaining": 17
     }
   }
 }
