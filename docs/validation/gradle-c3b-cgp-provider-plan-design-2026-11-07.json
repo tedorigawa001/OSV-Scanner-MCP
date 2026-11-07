@@ -1,0 +1,473 @@
+{
+  "schema": "cgp.provider-plan-design-record.v1",
+  "date": "2026-11-07",
+  "status": "design-only",
+  "document": {
+    "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+    "heading": "### 9.113 ",
+    "sectionSha256": "14a5f1a197244125dd79707f643f2d386b7c02cac1369109687fd8c9ff084af9"
+  },
+  "sourceBindings": {
+    "src/utils/gradleOwnedSourceOwner.ts": "4e008c25b1a78caa4870f18baf1d81cb0e261e50f673bfdd411af58ebb0fe3d0",
+    "src/utils/gradleOwnedSourceSchema.ts": "4a4b70982504fc1e275ab2c45cf6330136916dbeb0eb8ec2b8963cbdc1649cb9",
+    "src/utils/gradleOwnedSourceClient.ts": "0991b2c68cb5317bbb177be3fd82ef5c3d7c86578762cf7485ba55dab4afd773",
+    "src/utils/gradleOwnedServiceOwners.ts": "8c15621a5d12180f5cb855fe3b41438e3444f45fff577b250a264e684d8a22a4",
+    "src/utils/gradleOwnedStageStore.ts": "5df5d6595ac37ce76cb2573afc3e23d6e55553fed2425f0810ea57ebd9bbb77c",
+    "src/utils/gradleOwnedServiceStages.ts": "5e0dd5f8e122474d4da2af41687523a6e3ab908df75e04ee5f3d5eb5c47269cd",
+    "src/utils/gradleOwnedSessionRuntime.ts": "c7cdb85e33ef8f4b016857c07c87b1c9d48d52436a72e38ece98f37a4936601f",
+    "src/utils/gradleOwnedServiceSession.ts": "033426d57b207cf5f5cc1a183509bd77701a7b92fa5ae78a690d2124fc759115",
+    "src/utils/gradleOwnedRoleSigner.ts": "0e280b2fa6a4056dcd999f1fb13a02c22b069b786b8b2aebccfefdc5f00faa30",
+    "src/test/fixtures/gradleOwnedCgpI0Schema.ts": "a8afc49b44e8b9b8af53764cf87f32afaa77b04d09eccfbd30e5732076ddb9ed",
+    "src/test/fixtures/gradleOwnedCgpI0Planner.ts": "f1fa151fc25859400f34dcacde3d60297be156e9a5d0aec8c0c39a72f3ff2c7f",
+    "src/test/fixtures/gradleOwnedCgpI2PPlanner.ts": "f35466305e701180c1b4d3e7265f7d4af5eba2de01936bccb3ced7917a987eac",
+    "src/test/fixtures/gradleOwnedCgpI2PCase.ts": "e44f2e8958aaf8723b21e480a80072a982cdb30bb96d7d7bcdd3218d6c0b4905",
+    "src/test/fixtures/gradleOwnedCgpI0Guard.ts": "8012fce8fc9b18ad84df3f787946ac89e07ecadc509646a4228db525ef5caa94",
+    "src/test/fixtures/gradleOwnedCgpI0Authority.ts": "7a0a566379dd20b223c4b477e9d81e6aae99f6a7dea4c8d615ebf7f356149455"
+  },
+  "scope": {
+    "runtimeChanged": false,
+    "implementationCompleted": false,
+    "runtimeTestsExecuted": false,
+    "publicApiProven": false,
+    "realStorageValidated": false,
+    "nativeIsolationVerified": false,
+    "productionAdopted": false,
+    "eightReadsEstablished": false,
+    "originalReadsSkipped": 0,
+    "readCommittedReduction": 0
+  },
+  "decisions": [
+    "No client-owned inventory, sealed plan, authority handle or cross-RPC plan cache at the provider.",
+    "Proposed v3 command carries bounded seed and batch coordinates; non-cyclic planCore separates stable K, D_wire and D_guard.",
+    "Same semantic plannerSpec for binary/max-first; implementation approval and active mode are separate.",
+    "One fresh scoped store load per batch yields all inventory checks, independent provider plan and private parts.",
+    "I2P baseline is client initial+seal=2, provider=0; new no-cache path is client=2 and provider=N per transfer, total 2+N. A generic provider seal path has 2+2N under a separate profile.",
+    "Scoped storage/live RPC adapters must propagate cancellation and original deadline; unproven backend refuses before IO.",
+    "Remote remaining TTL alone is insufficient; an approved conservative clock-domain mapping is required.",
+    "New actual-codec wire bound and transfer reservations are checked before send/IO, with recovery/handshake counted separately.",
+    "Provider replan cost is paid per batch and counted separately from client planning; no projection of prior fixture throughput.",
+    "Admit an authenticated bounded read claim before IO without pretending it is a plan-verified dispatch; atomically promote the same row/attempt only after independent plan verification."
+  ],
+  "implementationStages": [
+    {
+      "id": "CPR-A",
+      "condition": "v3 command/result・非循環planCore／K/D・admission→verifiedの型／状態・semantic specと実codec-bound layout、strict予算contract。current serviceでは未登録のままunit／generative試験。CPR01〜16・25〜32を中心に確認",
+      "status": "not-started"
+    },
+    {
+      "id": "CPR-B",
+      "condition": "clientとproviderのauthority／inventory／mapを分離したin-process実署名session。providerがcall固有snapshotから計画再現。mock storage・pinのまま、その限定を明記してgate／完全性・no-readを検証",
+      "status": "not-started"
+    },
+    {
+      "id": "CPR-C",
+      "condition": "SourceOwnerとlocal実StageStoreのscoped adapter・実pre/post認証RPCへ接続。全IO境界・保存故障／期限・同期・root・履歴深さを実diskで検証。追加費用とscalar差を再判断",
+      "status": "not-started"
+    },
+    {
+      "id": "CPR-D",
+      "condition": "remote storage／実process・独立UIDは既存の認証・registry・fencing契約を満たした別backendで実証。5ownerのcold/warm・復旧・連続read／ACKを確認するまで本番gateを開放しない",
+      "status": "not-started"
+    }
+  ],
+  "regressionConditions": [
+    {
+      "id": "CPR01",
+      "condition": "clientのseal/mapと一致する偽inventoryをwireへ付けてもprovider自身のfresh inventoryと一致しなければ拒否。client opaque handleをportへ渡す経路がないことを確認",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR02",
+      "condition": "receipt／row／ownerId／storeEpoch／rootを別sourceと交換。own Savedとのexact照合で拒否し、成功reply 0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR03",
+      "condition": "正しいpartsでもsealのmetadata／inventory長・hash／件数・sourceBytes不一致、未対象entry欠落を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR04",
+      "condition": "reader／broker以外、issuer/checkpoint purpose、APIだけ追加した旧catalog、未承認v3 profileを予約／IO前に拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR05",
+      "condition": "broker originを別reader／providerへ交換・欠落、直接readerへorigin追加、selection／pin／checkpoint差替えを拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR06",
+      "condition": "queue入場前と実行開始時のcredential／API／policy取消し。source/store IO 0、別callへの権限移譲0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR07",
+      "condition": "queue／handshake／nested live RPCの待機中に親元期限へ到達。外側と内側の待機が終了し、遅い成功応答の採用0。delegation発行後の転送遅延・clock-domain不一致でもTTLを再起算しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR08",
+      "condition": "claimed batchCountを1にして予約を減らす、上限＋1・予算未予約・未対応admission adapterをfresh IO前に拒否。plan未検証でも認証済みclaimから限定AdmissionLeaseだけを作れ、estimate／偽dispatch intentを使わないこと、入場でslot・attemptを一度だけ消費することを確認",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR09",
+      "condition": "seed／transferId／batchOrdinalとoperationIdの関係、同K別payload／plan差替えを拒否。KへrequestDigestを混ぜてentry追加しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR10",
+      "condition": "planCoreへrequestDigest／署名／自身のdigestを入れないことを固定vectorで確認。binary/maxの同一contextで全計画値・specDigestが一致",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR11",
+      "condition": "planDigestだけ正しいがrange順・一部長・entry ref・byteBudgetを変更。全command membershipの不一致で拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR12",
+      "condition": "batchOrdinal範囲外／batchCount虚偽・ordinal重複・overlap・offset加算overflowを拒否。caller値で探索を省かない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR13",
+      "condition": "semantic spec／wire layout／implementation承認の版違いを拒否。wireでstrategyを選ぶことや途中mode切替は不可",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR14",
+      "condition": "admittedのlease／scopeだけでparts生成・成功署名／enqueueできないことを確認。全条件を満たす同じcall／K/D／attempt／snapshot／planでのみverifiedへ原子的に昇格。別call／peer／ownerBoot・snapshot差替え、serializeしたhandle、二重／並行昇格、旧permit再利用を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR15",
+      "condition": "同sourceの後続batch／exact retryでもfresh loadとprovider全計画再現を各1回。前回成功・pure planで原本省略0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR16",
+      "condition": "clientはinitial＋sealの2回、providerは新helperの導出1回／RPCを実計数。汎用sealによる再実行がある場合は隠さず別profileとして2回を記録",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR17",
+      "condition": "preのfresh pin確認が拒否・取消しになるとsource/store IO 0。pre成功をpostや別RPCへ使い回さない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR18",
+      "condition": "storage検証中に親取消し・期限到達。既入場IOの完了後は次のIO 0、返却値・旧応答採用0、actor全体の状態とcall拒否を区別",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR19",
+      "condition": "journal／MAC／checkpoint再同期・root境界・巻戻しをscalarと同じ実diskで故障注入。検証／fsync省略0、不正成功0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR20",
+      "condition": "要求していないentryを同長改変し、part hashは正しくする。全inventory検査が拒否し、成功reply 0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR21",
+      "condition": "fresh load後に外側storeのmutable値を改変。private snapshotへ混入0。次のRPCは再取得して改変を拒否する",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR22",
+      "condition": "取得後〜post間にpinを取り消す。fresh loadは既入場1回でもpostが拒否し、source成功reply 0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR23",
+      "condition": "parts生成／署名前後／最終entry再構成後にcredential・policy・期限を変更。最後のgateで成功採用0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR24",
+      "condition": "timeout後もunderlying IOを遅延し次callをqueueへ入れる。旧scopeでのIO追加・新admissionの借用・queueの早期解放を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR25",
+      "condition": "実v3 codecで4 parts・最大cid・sequence桁数／TTL境界・最小/最大dataを生成。actual inner/frameがbound以下、8192／16384＋1は送信前拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR26",
+      "condition": "wrapper／lineage／operationKey／live／plan fieldの見積り欠落、署名型／base64幅・count桁数を変えるとlayout不成立。hash長固定で循環計算が不要なことを確認",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR27",
+      "condition": "最大wire試行の超過ではbinaryへfallback、認可・期限・schema・保存例外では即拒否。文字列にwire超過名を含む非wire例外もfallbackしない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR28",
+      "condition": "署名済みreplyのpart欠落／重複／順序・offset・entry/hash・plan/spec／batch情報を変更。clientは部分成功を全sourceとして公開しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR29",
+      "condition": "各messageのwire／allocation消費、handshake／recovery分を上限ちょうど／＋1で確認。budget外の再送・送信後だけの上限検査を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR30",
+      "condition": "昇格・保守→exact縮約の前後でrow identity・K/D・originalDeadline・attemptが不変、spent保持・remaining非増加を実測。source／計画消費済みや残post／成功・拒否reply枠が不足すれば許可を発行しない。新row／leaseでの救済・二重加算・消費分返還を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR31",
+      "condition": "256 operation・512 message・512 retained guard slotの独立した上限と残量を確認。guard枠だけを見た入場や8 read成立の主張を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR32",
+      "condition": "計画probe・decode／copy量・最大保持bufferを構造上限＋1で拒否。binary最悪値とmax追加試行、client2回／provider各RPCの予約を確認",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR33",
+      "condition": "exact retry／reconnectで元期限・残attempt／wire／workを保持。新しい5秒や新transfer予約で旧要求を復活させない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR34",
+      "condition": "同K別D、admitted／verified／unknownの並行入場、retired再利用、evictionを拒否。fresh load後の計画不一致でpermit／parts／成功reply 0、費用・attempt・元期限を保持しcomplete-refusedまたはunknown／retiredを正しく記録。exact retryは新scopeで残予算のみ使用し、変更planの同K上書き・旧permit復活を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR35",
+      "condition": "応答紛失／再送でdefinite／unknownを実sessionで検証。回復が計量不能なadapterはunknownのまま止まり、同じ処理を無予算で再実行しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR36",
+      "condition": "restart・boot／namespace／generation／root変更で旧scope/plan失効。永続sourceは現ownerでfresh再検証した場合のみ新callへ利用",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR37",
+      "condition": "old providerのhistorical seal署名と現providerの認可を交換。署名が正しくてもcurrent actor／store bindingが不一致なら拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR38",
+      "condition": "保存失敗・receipt不正・破損と、純粋なcall期限／取消しを故障種別ごとに区別。ownerのfail-stop／復旧を弱めずpartial成功0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR39",
+      "condition": "post成功後のpin-only取消しによる遅配は非live観測のまま。credential／policy／元期限はenqueue前・client最終gateでも拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR40",
+      "condition": "batch readによる新stage commit／plan journal／use／ACKは0。既存のcheckpoint同期は実計数し、後続handoff／ACK／finishを統合しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR41",
+      "condition": "client initial／seal、provider再計画、pre/post、store内部historyをcall／phase別に照合。seal inclusiveの二重計上・provider費用のclientへの付替えを拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR42",
+      "condition": "計画／storage／転送の時間欠落・重複を境界timestampと全wallで拒否。observer bridgeとprimaryを混ぜず、費用分解に未計上を隠さない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR43",
+      "condition": "deadline／capacity／other-refused／unknown／partial／warm-up失敗を全保存。成功例だけを完了率や速度比較へ使わない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR44",
+      "condition": "observer／codec／spec／planner／全source閉包の追加・削除・hash変更を検出。未承認profile・sourceの片側だけ変更はinvalid experiment",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR45",
+      "condition": "独立processのcold/warm matched pairで論理source／サイズ・履歴深さ・actor生成規則を照合。rawの鍵／boot／署名／nonceを書き換えて揃えない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR46",
+      "condition": "最大entry数、小entry多数、大entry中心、wire制約で19 batchを超えるsourceを確認。B拒否を成功scalarへdowngradeしない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR47",
+      "condition": "総件数・連番・cost／RPC counterを維持したprobeの重複／欠落、全command検査の順序／digest差替えを拒否。初回とsealは別実行として同候補を許可",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CPR48",
+      "condition": "scoped gate未対応のlocal/remote adapter、未証明のclock写像、偽の対応flag、foreign callback／scopeを最初のstorage IO前に拒否。別backendの成立証拠で埋めない",
+      "status": "planned",
+      "executed": false
+    }
+  ],
+  "verification": {
+    "documentationChecks": [
+      {
+        "check": "48 unique consecutive CPR conditions and 4 ordered implementation stages",
+        "status": "passed",
+        "regressionCount": 48
+      },
+      {
+        "check": "Required scope/deadline/wire/budget contracts present in section",
+        "status": "passed"
+      },
+      {
+        "check": "Admission/promotion helpers, complete failure states, preserved row/deadline/spent, four targeted CPR updates and baseline/target plan counts",
+        "status": "passed"
+      },
+      {
+        "command": "npx vitest run src/test/utils/gradleOwnedCgpI2PValidation.test.ts src/test/utils/gradleOwnedCgpI2Validation.test.ts src/test/utils/gradleOwnedCgpI1Validation.test.ts src/test/docs/commandExamples.test.ts --maxWorkers=1",
+        "passed": 10
+      },
+      {
+        "command": "git diff --check",
+        "exitCode": 0
+      }
+    ],
+    "qualification": "Documentation and existing historical-record compatibility only; no implementation, native run or performance evidence is added."
+  },
+  "readAdmissionContract": {
+    "status": "proposed-not-implemented",
+    "reservation": "AdmissionLease",
+    "readScope": "ReadScope",
+    "promotedPermit": "DispatchPermit",
+    "stableRowFields": [
+      "rowIdentity",
+      "K",
+      "D_wire",
+      "D_guard",
+      "originalDeadline",
+      "ownerBoot",
+      "clockDomain",
+      "limit/spent/remaining"
+    ],
+    "attemptFields": [
+      "generation",
+      "call",
+      "exactWireDigest",
+      "phase",
+      "preConfirmed",
+      "loadStarted",
+      "permit"
+    ],
+    "admittedMay": [
+      "fresh pre check",
+      "one specified receipt load after pre success",
+      "private source validation and plan reconstruction"
+    ],
+    "admittedMayNot": [
+      "generate parts",
+      "sign/enqueue success result",
+      "commit stage effects"
+    ],
+    "promotionRequires": [
+      "same admitted row and current attempt/call/wire/context",
+      "current authorization/policy/original deadline",
+      "same pre-confirmed fresh snapshot and complete inventory integrity",
+      "independently derived plan and full current command membership",
+      "sufficient remaining post and success/refusal response budget"
+    ],
+    "promotionPreserves": [
+      "row identity",
+      "K/D",
+      "original deadline",
+      "attempt count",
+      "spent and nonincreasing remaining budget"
+    ],
+    "states": [
+      "admitted",
+      "verified",
+      "complete-success",
+      "complete-refused",
+      "unknown",
+      "retired"
+    ],
+    "planMismatch": "No DispatchPermit, parts or success reply; consumed costs and attempt retained. Typed definite refusal may end complete-refused while authorized and within deadline, otherwise use unknown/retired rules. Integrity/storage fail-stop remains independent.",
+    "scopeVsRowRetirement": "Closing a call invalidates its capabilities without deleting the retained row. An unresolved call closes into unknown; original deadline or permanent owner/context invalidation retires the row.",
+    "retry": "Only an authorized exact retry after confirmed completion/resolution can enter a new attempt with a new call scope and existing residual deadline/resources. Modified D at the same K conflicts; old permits never revive."
+  },
+  "reviewCorrections": {
+    "date": "2026-11-07",
+    "status": "design-only",
+    "findingsAddressed": [
+      "IO-before-plan guard bootstrap cycle",
+      "I2P baseline planning count"
+    ],
+    "sections": [
+      "9.113.3",
+      "9.113.3a",
+      "9.113.6",
+      "9.113.7",
+      "9.113.8",
+      "9.113.9"
+    ],
+    "updatedConditions": [
+      "CPR08",
+      "CPR14",
+      "CPR30",
+      "CPR34"
+    ],
+    "runtimeImplemented": false,
+    "runtimeRegressionConditionsExecuted": false
+  }
+}

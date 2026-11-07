@@ -8126,3 +8126,236 @@ node scripts/analyze-c3b-cgp-i2p.mjs --check
 - fallback試験では、planner実行ごとの`commandDigest`一意性と、最大値の拒否直後のbinary試行がそれより短いことを確認する。checkerには、B-binary／B-maxの計画digestだけを食い違わせる負例と、leaf費用を±0.02 msずらすcost partition境界の負例2件を追加した。
 - 一時コピーでのmutation（計測source閉包のhashを照合するValidationを除く4ファイルで判定）は、修正前13／21、修正後19／21。残る2件は、最大値の拒否後に上限を1つ下げない効率だけの変更（計画は同一）と、hook前gateの削除（直前のgateと重複）である。
 - productionコード・fork・計測source閉包は変更しないため、再計測しない。raw／表／source hashは不変で、更新したのは回帰source hashと本節hashだけである。rawは2空白インデントで52,897,160 B（GitHubの推奨上限50 MiB超）になり、無インデントなら約21 MBである。書き出し形式の変更は計測source閉包を変えて再計測が必要になるため、今回は行わない。次の実験のrawからは無インデントで保存する。
+
+### 9.113 CGP-provider：独立した計画再現・SourceOwner／実storage接続の契約
+
+2026-11-07。§9.112の次工程の**設計のみ**。以下のAPI・helper・profile・scoped storage portは未実装、回帰CPR01〜CPR48は未実施。本番採用・native隔離・継続8 read・CG0／CG3を開放しない。既存I2/I2Pの計測値を独立provider構成の成立証拠に流用しない。
+
+#### 9.113.1 現状との差と採用範囲
+
+| 現在の接続点 | 確認した現状 | 新経路の必須条件 |
+|---|---|---|
+| I2P Case／Authorityのplan・seal | client側で計画とseal再計算を実行し、同じfixtureのmap／simをserverへ渡す | wireのclaimだけを受け取り、providerが自分の保存receipt・seal・inventoryから再現。clientのopaque handle・map・scope・秘密鍵を受け取らない |
+| I0 range command | planDigest・ranges等はあるが、hash化済みoperationIdからoperationBase／batch位置を復元できない | seed／batch位置を含む新しいstrict commandを定義し、自己申告の位置・件数は再現結果と照合する |
+| SourceOwnerの#provider／#load | #live→readCommitted→sourceInventory→#live、#gateはowner／admissionを確認。source receiptとrowを照合する | 同じfresh loadから全inventory検査・計画再現・parts生成を行う。元の保存検証・pre/post・署名・最終gateを維持する |
+| OwnedStore／StageStore | readCommitted(ref)は履歴をfreshに再検証するが、現interfaceに親callのscoped gateはない | 内部待機・IO前後へ元期限と取消しを伝えるscoped adapterが必須。未対応を既存readCommittedへの無条件fallbackで隠さない |
+| SourceBindingPort／AuthenticatedOwnerRPC | check／rpcに親callの期限引数がない | live確認のRPC待機も親ReadScopeで終了。providerの外側だけtimeoutさせ、内側を新しい5秒で動かさない |
+| I0 wire見積り | 固定layoutで、実sessionのwrapper・lineage付き応答等との差がある | 実codecから新layoutの上界を算定し、actual wireと照合。古いI0見積りを本番予約に使わない |
+
+最初の採用候補はserving状態のreader／authority-broker→provider、purpose=read、commit／payloadのrangesに限定する。inventory取得・descriptor・issuer／checkpoint・delivery／use／ACK／finishは統合しない。brokerのoriginは現行と同じreaderで、直接readerのorigin指定は拒否する。brokerへReadSourceDescriptor等の新権限を便宜上追加しない。各clientが現行の許可経路で検証済みseal／inventoryを取得できないtupleはunsupportedとする。
+
+初期profileは既存の小workload上限（entry 9、source 41460 B、inventory 4096 B、4 ranges／batch、data 4096 B／batch、最大19 batch）を超えない。SourceSchema一般の192 KiB／256 entryをそのまま新profileへ拡大しない。新wireで19 batch以内に収まらないsourceは容量拒否とし、B modeの途中でscalarへdowngradeしない。既存v1サービスも既定では変更しない。
+
+#### 9.113.2 strict wire・計画値・digestの責任分離
+
+新commandの候補schemaは`osv-mcp.cgp.source-command.v3`、APIは`aux.ReadSourceRanges`、purposeはliteral read。以下の既存型は意味・文字数制限を維持する。未知field・旧v2との混合・未承認schemaは拒否する。
+
+```text
+command = {schema, api, purpose, operationId, peer, lineage, binding,
+ payload: {snapshot, checkpoint, pin, origin? /* brokerのみ */,
+   transferId, plan: {specDigest, seed, batchOrdinal, batchCount,
+                     planDigest, inventoryDigest},
+   ranges: [{ordinal, kind, index, offset, length,
+             entry: {sha256, byteLength}}], byteBudget}, requestDigest}
+```
+
+- seed／transferIdはcid（ASCII 1〜128文字）、digestは固定64 hex。ordinalは0始まり、batchCountは1〜19、range ordinalはbatch内0〜3。offset／length／entry indexは承認profile内の整数とし、和のoverflow、未整列、重複／overlap、欠落、entry範囲外を拒否する。callerのbatchCount等で予約・配列上限を小さく見積もらない。
+- `specDigest`は**意味上の計画規則**のdigest。inventory順、最大feasible prefixでのpacking、canonical化、wire-bound layout版、hard limitsを含む。同値を狙うbinaryとmax-firstは同じspecを実装する。実装strategy／source hashは独立した実験manifestへ束縛し、wireから選ばせない。semantic specまで変える実験は別profile／bridgeへ分離する。
+- planCoreは、specDigest、service catalog、peer／providerの現identity、origin、lineage、selected binding／snapshot／checkpoint／pin、検証済みinventoryDigest・metadataDigest、seed／transferId、再現した**全batchのrange列**にdomain分離して結ぶ。`planDigest=SHA256(canonical(planCore))`。planCoreへplanDigest自身・requestDigest・signature・wire digestを入れず、循環hashを作らない。
+- `operationId=SHA256(domain-v3, peer, provider, lineage, seed, transferId, batchOrdinal)`。planDigestやrange payloadを混ぜない。同じ論理batchでplanを差し替えてもKを変えない。seedを変えた新operationも共通slot／session予算を消費し、新しい権限にはならない。
+- Kはpeer・destination・API・operationId・lineage、D_wireは新commandの全意味fieldをdomain-v3で束縛する。D_guardはK／D_wireにactive-mode manifest・purpose・server側bootstrap contextを結ぶ。clock domain・実期限・authority handleはtrusted runtimeから得て、wire上の数値を権限として扱わない。exact retryは同K／D、別payloadは予約前のintent conflict、retained entryはevictしない。
+- 新result候補は`osv-mcp.cgp.range-result.v3`。bare api=ReadSourceRanges、lineage、requestDigest、operationKey、mode=observed、snapshot、inventoryDigest、transferId、specDigest、planDigest、batchOrdinal／batchCount、parts、`live=false`をstrictに持つ。partsはrangeと1対1でordinal・kind/index・entry ref・offset・totalBytes・canonical base64・part hashを検証する。clientは全entry再構成後にentry hash／長さを確認し、最後にも現認可・policy・元期限を確認する。成功replyはfreshな実行許可やdurable ACKではない。
+- 外側は実owner envelopeのidentity／keyId／direction／domain／APIと署名、さらに実auth frame。body.lineageを省略せず、RoleSigner／ServiceOwners／SourceSchema／SourcePeerClient／SessionRuntimeのschema・role・API・purposeを同じ承認catalogで更新する。単にendpointのAPI配列へ文字列を足しただけでは採用しない。
+
+#### 9.113.3 providerによる独立再現：1 RPC・1 fresh load・cacheなし
+
+新helperの概念契約は次のとおり。名称・型は実装予定であり、現在存在する公開APIではない。
+
+| helper／port | trusted入力 | 出力・寿命・禁止事項 |
+|---|---|---|
+| admitRangeRead | 実AuthenticatedSessionCall、exact wire、owner context、承認manifest／capability、親read予算 | plan検証を前提としないAdmissionLeaseを原子的に予約。K/D・元期限・残予算を固定し、権限は指定sourceの限定readだけ。parts／成功replyの許可ではない |
+| createReadScope | 同じcall／wire／ownerに属する有効なAdmissionLease | private brand付きReadScope。現credential/API/purpose・policy・close／drain・期限と予算を確認する。pre liveと指定receiptへのfresh load最大1回、内部検証・計画再現だけを許し、caller object／serializable tokenから再生成不可 |
+| loadFreshSource | 同じcall・selected sourceでpre確認済み、load未入場のReadScope、providerがindexから選んだSaved／StageReceipt、SourceReadPort | receipt・row・sealと照合したprivate SourceSnapshot。call／ownerBoot／storeEpoch／root identity／receipt／selected sourceに結ぶ。foreign bundle／path／鍵入力は禁止 |
+| deriveProviderPlan | ReadScope、SourceSnapshotから得た自身のinventory、承認spec、受信commandのbounded claim | 全計画と現在batchを再現・照合したprivate VerifiedProviderPlan。snapshot identityとcallへ束縛し、別call・retry・bootへの利用不可 |
+| promoteVerifiedRead | 同じAdmissionLease／ReadScope／SourceSnapshotと、同じcallで独立再現・照合したVerifiedProviderPlan | 同じguard row・attemptをadmitted→verifiedへ原子的に昇格し、private DispatchPermitを発行。新entry・attempt・期限・予算を追加しない |
+| sliceVerifiedBatch | 同じReadScope／SourceSnapshot／VerifiedProviderPlanと現在有効なDispatchPermit | 全partsのprivate copy。未昇格のAdmissionLease／ReadScopeだけでは呼べない。rangeごとのstore read／RPC／await、現在batch以外の返却を禁止 |
+| finishRead | 同じscope／DispatchPermit、parts、独立したpost live確認 | verified状態を含む実署名・サイズ確認・enqueue前gateを通った非liveな成功reply。拒否終了は別のfinishRefusedReadで行い、未昇格から成功replyを作らない。finallyでbundle／plan／bytesを解放する |
+
+処理順は以下を必須とする。
+
+1. sessionのparse／署名・credential／API認可、SourceOwnerのqueue入場、現在server identity・lineage・delegate／origin・selected refsを確認する。待機も元期限へ含める。新しいadmitRangeReadでK/Dと保守的な計画／source／成功・拒否応答予算を**IO前**に予約し、限定ReadScopeを作る。plan未検証を理由に既存I0のdispatch intentを偽造したりauthorizeEstimateで代用したりしない。stored sealはprovider自身のSavedから検証し、callerのseal／inventory／sealed planを採用しない。
+2. ReadScopeを通したfreshな`#live`のpre確認を行う。targetはread-pin、origin・snapshot・selection・namespaceを照合し、await後もscopeを確認する。成功を後続RPCへ持ち越さない。
+3. SourceReadPortから対象receiptを**一度だけ**fresh loadする。実StageStoreの全履歴認証・checkpoint再同期・root境界検査を維持し、返ったreceiptがSavedのreceiptとexact一致すること、rowのbundle以外の全fieldが保存済みrowと一致することを検証する。最終bundleをcall所有の不変な値／private bytesへcopyし、storeや他callのmutable aliasを返さない。
+4. その同じbundleの全entryをcanonical decodeし、全bytesのhash／長さ・順序・件数・合計、metadata、inventory bytesのhash／長さ、inventoryDigestを自身のsealと照合する。要求対象外entryも検査する。一度導出したentry table／bytesからinventoryとpartsを作り、単なる重複走査の除去を完全性検査の省略にしない。起動／復旧時のfullSourceReplay等も維持し、readCommittedを新たな全semantic replayそのものとは呼ばない。
+5. providerの承認spec／strategyとこのinventoryだけで全計画を再現する。受信claimを計画入力の上限・探索のshortcutにしない。seed／transferId等の非権限parameterはD_wireへ束縛し、peer／provider／origin／lineage／selectionはscopeから確認する。再現したplanDigest・inventoryDigest・batchCount・operationIdと、batchOrdinalのcommand意味全体、range列・byteBudgetが一致した場合だけ現在batchを許可する。
+6. private factoryがその再現結果からcall限定planをmintし、下記の全昇格条件を同時に確認して同じAdmissionLeaseからDispatchPermitを発行する。未昇格ではparts生成・成功署名・enqueueを行わない。client側は現行の「候補計画＋seal再計画」の2回を維持する。provider側はcallerの候補値をsealするのではなく、**自身が権威入力から導出した1回の全計画**を照合・brand化する新helperとする。既存の汎用sealPlanをadapterで使うなら追加の再計画が走るため、2回目を省略したと偽らず別profile・別counterで費用を記録する。
+7. 同じsnapshotからpartsを同期生成し、postのfresh live RPCを別に行う。entry／part検査、CPUの有界block、各await／IO／署名前後・enqueue前でscopeを確認する。post成功後にpinだけが変わった遅配は既存の非live観測の扱いを維持する一方、credential取消し・policy変更・元期限・owner closeは最終gateでも拒否する。
+8. actual sessionのreply検証とclientの全entry再構成までを完了条件にする。read-only batchから新しいstage commit／use／ACKを発生させない。保存層の既存fsyncはstage効果0と区別する。成功・拒否・timeoutの全経路でscopeをretireし、既入場IOのdrainが終わるまでSourceOwnerのserial admissionを別callへ付け替えない。
+
+初期版ではproviderの計画cache・inventory cache・cross-RPC handleを採用しない。後続batch／exact retryでもfresh loadとprovider再計画をやり直す。純粋な計画が同じであることと、現在の権限／source freshnessを混同しない。新たなPreparePlan RPCやplan保存journalも初期版には導入しない。
+
+#### 9.113.3a 限定入場から検証後許可への状態遷移
+
+現行I0IntentGuard.beginはi0DispatchIntentを要求し、rangesのdispatch intentにはverified planが必要である。そのAPIへ未検証claimを渡してこの順序を実現することはできない。新経路では、**admissionとplan-verified dispatchを別のbrand／状態に分ける新guard contract**を先に定義する。現行I0のチェックを削除・dispatch=trueへ上書き・estimate tokenを昇格扱いする変更は禁止する。
+
+新contractはversion付きの承認catalog／guard adapterへ登録し、primaryのS-scoped／B-independentで共通の入場・保持・予算規則を使う。G_expの512 slots・2 attempts・同K別D拒否・元期限保持・no evictionは維持する。現行v1 guardとの型・phase差はbridgeで明記し、未対応adapterは予約／IO前にunsupportedとする。
+
+**限定入場の成立条件**：実sessionによるexact wire・署名・credential／API／purpose・peer/provider／lineage／mode／specの認証、strict claim／operationId／K/Dの検証、ownerのopen／drain・backend capability・予算の確認を行う。これらはsource inventoryやplan membershipの検証済みを意味しない。K/Dを計算できない不正schema・認可違反は入場させない。同K別Dは新rowもIOも発生させず拒否する。新規／許可されたexact retryの入場は、既存rowを含むguard ledgerでslot・元期限・残attempt／資源枠を原子的に確認してから行う。
+
+AdmissionLeaseのprivate ledgerはrow identity、K／D_wire／D_guard、ownerBoot／clock domain、originalDeadline、limit／spent／remainingと、現在attemptのgeneration・call＋exact wire digest・phaseを保持する。stable rowとattempt固有recordは分け、exact retryでも前者のK/D・元期限・予算を保持し、後者だけを新しいattemptへ更新する。旧attemptの全capabilityは失効させる。新規rowだけが元期限を親read・実call・lease/marginのminとして固定する。retryは既存元期限とのminでさらに短縮することだけを許す。admissionでattemptを1つ消費し、IO前に資源枠を確保する。queue待機前にもこのleaseを確認し、実行開始／pre後／storeの各境界で再確認する。
+
+| phase／終了状態 | 許す処理と遷移 | 禁止・保存する事実 |
+|---|---|---|
+| admitted | ReadScopeによるpre live。同じcall／selected sourceのpre成功をprivateに記録した後だけ、Savedに結ぶfresh load最大1回と内部検証・計画再現を許可。条件が揃えばpromoteVerifiedReadへ | parts生成・成功result署名／enqueue・stage効果は禁止。claim内のreceipt／pathへ読取対象を変更しない |
+| verified | 同じrowの同じattemptでDispatchPermitを使い現在batchのpartsを作り、postと最終gateを経てfinishRead | admission時のscope／snapshot／plan以外へ許可を移さない。二重昇格・別RPC・retryでの古いpermit使用を拒否 |
+| complete-success | verifiedからのみ成功replyを確定。permitを失効させる | row・K/D・元期限・消費済み資源を保持。client側の全entry採用は別の最終gateを必要とする |
+| complete-refused | 未昇格も含め、確定した無効果拒否をfinishRefusedReadで終了。認証が有効ならpartsを含まない型付きbusiness refusalを返せる | 成功用finishRead／DispatchPermitを使わない。source load／計画の既消費分とattemptは返さず、rowを保持 |
+| unknown | 終了／応答の確実性が不明、call切断時に有効な確定結果がない、または有効な拒否応答を確定できない場合。旧attemptのscopeを失効させ、既存の認証済み解決手順のみ許可 | pending/unknownの並行再入・昇格・成功化・新leaseによる残量resetを禁止 |
+| retired | rowの元期限切れ、ownerBoot／profile等の恒久的なcontext失効で終了。既入場IOをdrainしてprivate値を破棄 | 旧admission／scope／plan／permitを全て無効化。retained rowを再利用・evictしない |
+
+fresh load入場はpre成功flag・scope・Saved/receipt・予約を同時に確認し、load-startedをIO前に一度だけ立てる。例外が出ても同attemptで再loadしない。pre成功flagやstore呼出し枠を別callへ渡すことを禁止する。
+
+complete-success／complete-refusedは台帳の終了種別であり、SourceOwnerに新しいdurable stageや外部ACKを追加するものではない。call終了時のscope退役とstable rowのretiredは別で、正常／確定拒否のcallを閉じるだけで保持rowを捨てたりretry権を増減したりしない。client/serverの応答紛失時の認識が違う場合、serverのcomplete-refusedをclientのunknown解除の根拠として無署名で流用しない。保存層自身のfatal／blockedはこの要求状態と独立に維持する。
+
+**昇格の全条件**：
+
+1. rowがadmittedの同一attempt generationで、lease／scopeのprivate brand、call・exact wire、K/D、ownerBoot・clock domain・元期限が一致し、現在のcredential/API/purpose・policy・owner状態が有効である。
+2. pre成功後のloadがそのscopeの指定Saved/receiptへ1回だけ行われ、receipt／row／seal・全source／inventoryの検証が完了している。SourceSnapshot identityを別callの同じdigestだけで代用しない。
+3. 同じsnapshot・scope・承認specから独立再現した全計画が、requestのplanDigest／count／ordinal／operationId／全range／byteBudgetと一致し、VerifiedProviderPlanがそのclaimの意味全体に結ばれている。
+4. 成功／拒否reply・post・署名／enqueueまでの残予約が足り、既消費source／計画量が入場時の上限を超えていない。store・scopeに未解決の失敗がない。
+
+昇格はawait／追加IOなしの原子的な状態遷移とし、guard ledgerの同じrow・K/D・attemptをadmitted→verifiedへ変えるだけにする。DispatchPermitをmintする処理はprivate factoryに限定する。deadlineの延長、attemptの再消費／返還、rowの再作成、limit／spentのreset、同時に2個の有効permitを作ることを禁止する。scalarの対応経路も自身の全検証完了前に成功permitを得ない。
+
+予算は入場時からlimit／spent／remainingを同じledgerで管理する。保守予約をexactへ縮約するときはlimitを下げることだけを許し、spentを保持し、`remaining_new = limit_new - spent <= remaining_old`を満たす。spent以下への縮約や不足なら拒否し、新規の大きいleaseで救済しない。昇格は資源の追加許可ではなく、その範囲内で実行可能な処理の変更である。成功だけでなく拒否replyの上界も予約し、結果確定前に成功replyだけの小さい見積りへ縮約して拒否を送れなくしない。
+
+**未昇格・計画不一致**：plan claim不一致、無効なsnapshot／receipt、予算不足、期限・取消しで昇格できない場合はDispatchPermitを発行しない。parts／成功replyは0、既に行ったloadと計画の費用は消費として残す。正しく確定した無効果のplan mismatchはcomplete-refusedにできるが、拒否を署名／送信する際も元期限と認可・予算を確認する。元期限切れ／owner context失効ならretired、その他のcall切断で確実性を証明できなければunknownの規則に従い、成功や確認済み拒否に偽装しない。integrity／storage不正は既存fail-stopを別途維持する。
+
+確定終了後のexact retryを許す場合も、同K/Dの残attemptと元期限内で新callのadmittedへ入る。fresh loadと計画照合をやり直し、旧snapshot／plan／permitを復活させない。planを修正してDが変わった同Kはintent conflictとし、終了済みrowを上書きしない。新seedの正当な別operationにも親read期限・総予算と共通slot制限を適用し、unknownの旧要求を解決した扱いにしない。
+
+#### 9.113.4 SourceReadPortと実storageの境界
+
+`OwnedStore.readCommitted(ref)`を呼ぶ前後の#gateだけでは、内部の待機／検証中の取消し後に次のIOを止める保証がない。新batch用には、概念上`readCommittedScoped(ref, ReadScope)`を持つcapabilityを明示する。一般OwnedStoreの既定実装をscoped対応済みとは扱わない。
+
+- local StageStore adapterはcheckOwnerStoreと同じownerId／storeEpoch／roots／key IDsへ結ぶ。store自身のassertOpen・actor失効・fail-stopと、SourceOwnerのcall固有gateを両方確認する。call gateはprivateにcaptureした元admission／wire／leaseから評価し、後で差し替わる#currentCallへの参照で別callの権限を借りない。
+- queueに入れる前／実行開始時、各journal／blob／checkpointのIO前後、認証・decode・replayの有界block間、応答返却前にgateと残予算を確認する。既にOSへ入場したIOが終わることは許すが、取消し／期限観測後の**次の**IOは0とする。callback gateは同期・非IOで、store lock中にregistry RPC等を呼ばせない。callを止めることとowner全体のdurable状態を壊れた扱いにすることを分ける。
+- 返却型はtrusted receiptとimageの組。opaqueな「検証済み」flagだけ、履歴headだけ、callerが供給したinventory bytesだけでは不可。readCommittedのprefix省略／cache／同期省略は別のS0x承認契約が成立するまで導入しない。保存障害・auth／receipt／root不正は既存fail-stop／復旧規則を維持し、単なるcall取消しは型付きrequest refusalとして区別する。分類できないadapterはunsupportedであり、例外messageの部分一致で正常化しない。
+- SourceBindingPortのpre/postと全nested authenticated RPCにも同じReadScopeを要求する。clientの外側Promiseだけをtimeoutさせず、内側queue・handshake・retry待機も残予算で終える。serverの期限は実pending sessionから算出し、clientの絶対clock値を信用しない。別processへlocal callbackや未検証の絶対時刻を送らず、認証されたdelegationと各側のprivate pending ledgerへ束縛する。remaining TTLだけでは転送遅延分の期限延長を防げないため、同一hostの検証済みkernel monotonic clock-domain対応、または承認したclock写像・不確実性上界で元の親期限を受信側期限へ保守的に写像し、受信時刻からTTLを丸ごと再起算しない。写像と取消し伝達を証明できないremote backendはscoped対応にしない。client自身の待機終了と、provider／storageがそれぞれの元期限で追加IOを止める保証を別に検証する。
+- remote storage adapterは、独立serviceの相互認証・role／owner／root・read scopeのbinding、元期限・再送／fencing・取消しの伝達を別途満たす。署名された過去receiptだけでlive scopeにしない。未実装なら**最初のstorage IO前にno-read拒否**し、unscoped読取をしてからunsupportedとしない。
+- provider再起動では全scope／planを失効させる。永続sourceの再利用は現ownerでreceipt・seal・inventoryをfresh再検証してからとし、historical sealの署名者と現在のprovider identityを区別する。新bootで古いclient/session/planを復活させない。namespace/root／generation変更は旧planを失効させる。
+
+初期の実storage実証はlocalの実StageStore／diskで行い、独立UIDやremote storageの成立と呼ばない。remote adapterのcapabilityが未成立でも、local adapterの結果を偽って全backend対応にはしない。
+
+#### 9.113.5 実sessionに基づくwire-bound layoutと予算
+
+wire見積りは新command／resultと実owner／auth codecを共通のlayout定義から生成する。inner request/reply 8192 B、auth frame 16384 Bを維持する。keyId／credential／instance等は現registryの実値とcidのASCII上限、nonce・digestは固定64 hex、Ed25519署名はbase64 88文字、part bytesは`4*ceil(length/3)`文字を使う。wrapper、body.lineage／operationKey／mode／live、plan field、全partsを省略しない。dummy値は長さ計算専用で、署名検証成功・authority receiptの証拠には使わない。
+
+batchCount自体がpacking結果に依存する循環は、計画試行でbatchOrdinal／batchCountの最大許可幅（上限18／19）を使って回避する。sequenceは実session上限512の桁数、TTLは許可範囲の最大幅を採る。未知のnonce／署名は固定長の型で上界を作り、実署名bytesをゼロへ書き換えて比較しない。同じspec・入力ならclientとproviderで同じ保守的boundを使う。planDigest・requestDigest等も固定長placeholderとして見積り、計画確定後の全command再見積り・actual wire照合を省略しない。
+
+| 予算 | 入場前の予約／検査 | 消費・超過時の扱い |
+|---|---|---|
+| 元期限 | 親read lease 5000 ms・margin 500 ms以内、実call・guardの元期限とのmin | queue・client plan／seal・provider計画・pre/post・store・署名・再構成の全てを含む。nested RPC／retryでresetしない |
+| 共通guard | G_expの512 retained slots／owner、2 attempts、同K別D拒否、evictionなし | client／providerで現contextを確認。guard-off scalarやmode別のquota緩和はinvalid experiment |
+| session／boot | 256 business operationと512 message等の実上限、pending上限、回復枠を確認 | guard枠512があってもsessionの256を超えない。8 read可否を保証しない |
+| wire | inventory前は承認上限による保守予約、計画後は全batchのboundでexactに縮約。全体64 MiB上限は**転送前**にも検査 | 各senderは実bytesを送信／allocation前に消費。receiverは長さ上限をparse前に検査。actualがboundを超えたらlayout不成立としてno-go、送ってから成功扱いにしない |
+| attempt／recovery | 81920 Bは1組のchallenge/channel 4 frame＋2 innerの上界であり、無制限の論理RPC枠ではない | handshake／recovery frameは別に予約・実計数。再送の各business exchangeも消費する。既存runtimeが再送を計上できないadapterではranges再送を無効にしてunknownを返し、予算外の2回目を通さない |
+| 計画／source | entry9／41460 B・inventory4096 B・batch19／range4／data4096 B、command全量・probe・decode／copy量の構造上限を先に予約 | callerの小さいcountを信用しない。binary最悪探索回数＋max試行1回分、client2回・provider各batch1回を別々に計数。非wire失敗はfallbackしない |
+| memory／所有 | 全bundle・inventory・全計画・現在batch・署名bufferの有界な同時保持を予約 | rangeごとにbundleをcopyしない。parse前の総bytes・件数上限を適用する。構造上限はCPU時間／RSSの実測保証とは別 |
+
+実装では一時的な「保守予約→exact予約」を二重加算せず、同じprivate lease内で縮約し、失敗／unknownでも元期限・残量を復活させない。client側だけの予約ではprovider保護にならない。providerはpre・store・再計画・replyの最悪上限を別に入場時に確保する。SourceReadPortもfile数／bytes・検証workを自分の承認上限で検査する。新layoutに適合しないsource／key ID／profileはB modeで拒否し、上限引上げやv1 dataへの暗黙fallbackをしない。
+
+#### 9.113.6 追加費用・比較と採用判定
+
+新経路の費用モデルは次を区別する。
+
+```text
+T_B = client inventory検証 + client plan + client seal再計画
+    + Σ_batch(queue + 認可/guard + pre live + 1 fresh readCommitted
+              + 全source/inventory検証 + provider全計画再現
+              + claim照合/parts生成 + post live + 実署名/session)
+    + client全entry再構成 + 最終gate
+```
+
+現行I2Pは**clientでinitial＋sealの2回、providerで0回**の計画実行であり、serverは共有sealed planを使用する。新方式はclientの2回を維持し、cacheなしで**providerが各batchに1回**全計画を再現する。dataがN batchなら総計画回数は2から2＋Nへ増える。仮にN=11なら2→13回（provider分11回追加）だが、新wireではbatch数自体も変わり得る。provider側にも汎用sealPlanを使う別profileでは再計画を隠さず2＋2N回として記録する。既存のB-max時間へ一定の値を足しただけで速度改善・8 read成立を推定しない。実際のfresh load／履歴増大、registry／Anchorのpre/post、CPUとqueueの追加費用を計測する。
+
+primaryは同じmulti-schema対応実験binary／SourceReadPort／source／profile／guard／actor topologyを使うS-scoped（scalar v1）、B-independent-binary、B-independent-max。Sにも同じscope-aware storageと元期限・予算の意味を適用する。変更前S_ref→S-scoped、共有plan fixture→独立providerは別bridgeで、意図したschema／profile／意味の差を列挙する。I1 facts共有、S0の表現・再生最適化を同時投入しない。
+
+- client initial／seal、provider inventory・plan・membership、storage readと内部履歴処理、pre/post RPC、sign/session、queue、client再構成をowner／call／phase／batch別に記録する。provider費用をclient計画時間へ移さず、seal inclusiveと内側planを二重加算しない。各leafの非重複区間・残り区間と全wallの閉包を確認し、計測器on/off bridgeも別に残す。
+- planCore／全range列・予算と、実署名wireのdigest・サイズ・codec版を照合する。同じcontextのunitではbinary/maxの全計画値・command列をexact比較する。独立deploymentではboot／鍵／nonce／root等は正規生成した値をそのまま保存し、署名bytesを書き換えて一致させない。事前pinした生成規則による論理source／サイズ／context対応を検証する。
+- 初期3 deploymentのscreeningと、cold／warm別の少なくとも10 matched pairを実施する。順序はseed付き交互順／ABBA等を事前固定する。実時間5秒を延長せず、成功・deadline・capacity・other refusal・unknown・partialを分け、全失敗と現在phase／plan実行番号／source・RPC counterを保存する。成功pairだけを方式の完了率にしない。
+- 無インデントraw、source閉包・schema／spec／codec・承認profile・observer・全entry digest、file／checkpoint／history bytes・同期回数、最大メモリ保持／RSS、計測時のhost条件を保存する。現instrumentとhistorical production sourceを区別する。
+
+採用には、現在の安全条件を全て満たす比較可能な完了転送での総時間・容量と、失敗時の安全性の両方が必要。smallだけの改善や回数の削減を全sourceへ一般化しない。real readCommittedの削減は全ownerの実counterを照合して初めて主張し、式だけで238から差し引かない。local diskの成立を独立UID／5process／継続8 readへ昇格させない。
+
+#### 9.113.7 拒否分類・実装順
+
+拒否は、未承認profile/spec／schema、scopeの取消し・期限・close、plan claim不一致、source／receipt／root不正、wire layout不成立、容量不足、scoped adapter未対応、保存障害／復旧必要、transport unknownを分ける。いずれもv1成功や小さいplanへの救済にしない。fallbackを許すのは、pureなwire試行が型付きlayout-bound超過を返した場合のbinary探索だけ。例外message内の文字列を理由に認可・保存・期限の失敗をwire超過へ変換しない。
+
+| 段階 | 実装／採用前の出口条件 |
+|---|---|
+| CPR-A | v3 command/result・非循環planCore／K/D・admission→verifiedの型／状態・semantic specと実codec-bound layout、strict予算contract。current serviceでは未登録のままunit／generative試験。CPR01〜16・25〜32を中心に確認 |
+| CPR-B | clientとproviderのauthority／inventory／mapを分離したin-process実署名session。providerがcall固有snapshotから計画再現。mock storage・pinのまま、その限定を明記してgate／完全性・no-readを検証 |
+| CPR-C | SourceOwnerとlocal実StageStoreのscoped adapter・実pre/post認証RPCへ接続。全IO境界・保存故障／期限・同期・root・履歴深さを実diskで検証。追加費用とscalar差を再判断 |
+| CPR-D | remote storage／実process・独立UIDは既存の認証・registry・fencing契約を満たした別backendで実証。5ownerのcold/warm・復旧・連続read／ACKを確認するまで本番gateを開放しない |
+
+各段階でコード・source閉包・承認catalogを実行前pinし、現行runtimeの拒否を弱めたpairはinvalid experimentにする。CPR-Aのpure型検査をCPR-Cのfresh IO証拠へ、CPR-CをCPR-Dの隔離証拠へ読み替えない。
+
+#### 9.113.8 回帰条件CPR01〜CPR48（全て未実施）
+
+| ID | 入力・故障条件と必須結果 |
+|---|---|
+| CPR01 | clientのseal/mapと一致する偽inventoryをwireへ付けてもprovider自身のfresh inventoryと一致しなければ拒否。client opaque handleをportへ渡す経路がないことを確認 |
+| CPR02 | receipt／row／ownerId／storeEpoch／rootを別sourceと交換。own Savedとのexact照合で拒否し、成功reply 0 |
+| CPR03 | 正しいpartsでもsealのmetadata／inventory長・hash／件数・sourceBytes不一致、未対象entry欠落を拒否 |
+| CPR04 | reader／broker以外、issuer/checkpoint purpose、APIだけ追加した旧catalog、未承認v3 profileを予約／IO前に拒否 |
+| CPR05 | broker originを別reader／providerへ交換・欠落、直接readerへorigin追加、selection／pin／checkpoint差替えを拒否 |
+| CPR06 | queue入場前と実行開始時のcredential／API／policy取消し。source/store IO 0、別callへの権限移譲0 |
+| CPR07 | queue／handshake／nested live RPCの待機中に親元期限へ到達。外側と内側の待機が終了し、遅い成功応答の採用0。delegation発行後の転送遅延・clock-domain不一致でもTTLを再起算しない |
+| CPR08 | claimed batchCountを1にして予約を減らす、上限＋1・予算未予約・未対応admission adapterをfresh IO前に拒否。plan未検証でも認証済みclaimから限定AdmissionLeaseだけを作れ、estimate／偽dispatch intentを使わないこと、入場でslot・attemptを一度だけ消費することを確認 |
+| CPR09 | seed／transferId／batchOrdinalとoperationIdの関係、同K別payload／plan差替えを拒否。KへrequestDigestを混ぜてentry追加しない |
+| CPR10 | planCoreへrequestDigest／署名／自身のdigestを入れないことを固定vectorで確認。binary/maxの同一contextで全計画値・specDigestが一致 |
+| CPR11 | planDigestだけ正しいがrange順・一部長・entry ref・byteBudgetを変更。全command membershipの不一致で拒否 |
+| CPR12 | batchOrdinal範囲外／batchCount虚偽・ordinal重複・overlap・offset加算overflowを拒否。caller値で探索を省かない |
+| CPR13 | semantic spec／wire layout／implementation承認の版違いを拒否。wireでstrategyを選ぶことや途中mode切替は不可 |
+| CPR14 | admittedのlease／scopeだけでparts生成・成功署名／enqueueできないことを確認。全条件を満たす同じcall／K/D／attempt／snapshot／planでのみverifiedへ原子的に昇格。別call／peer／ownerBoot・snapshot差替え、serializeしたhandle、二重／並行昇格、旧permit再利用を拒否 |
+| CPR15 | 同sourceの後続batch／exact retryでもfresh loadとprovider全計画再現を各1回。前回成功・pure planで原本省略0 |
+| CPR16 | clientはinitial＋sealの2回、providerは新helperの導出1回／RPCを実計数。汎用sealによる再実行がある場合は隠さず別profileとして2回を記録 |
+| CPR17 | preのfresh pin確認が拒否・取消しになるとsource/store IO 0。pre成功をpostや別RPCへ使い回さない |
+| CPR18 | storage検証中に親取消し・期限到達。既入場IOの完了後は次のIO 0、返却値・旧応答採用0、actor全体の状態とcall拒否を区別 |
+| CPR19 | journal／MAC／checkpoint再同期・root境界・巻戻しをscalarと同じ実diskで故障注入。検証／fsync省略0、不正成功0 |
+| CPR20 | 要求していないentryを同長改変し、part hashは正しくする。全inventory検査が拒否し、成功reply 0 |
+| CPR21 | fresh load後に外側storeのmutable値を改変。private snapshotへ混入0。次のRPCは再取得して改変を拒否する |
+| CPR22 | 取得後〜post間にpinを取り消す。fresh loadは既入場1回でもpostが拒否し、source成功reply 0 |
+| CPR23 | parts生成／署名前後／最終entry再構成後にcredential・policy・期限を変更。最後のgateで成功採用0 |
+| CPR24 | timeout後もunderlying IOを遅延し次callをqueueへ入れる。旧scopeでのIO追加・新admissionの借用・queueの早期解放を拒否 |
+| CPR25 | 実v3 codecで4 parts・最大cid・sequence桁数／TTL境界・最小/最大dataを生成。actual inner/frameがbound以下、8192／16384＋1は送信前拒否 |
+| CPR26 | wrapper／lineage／operationKey／live／plan fieldの見積り欠落、署名型／base64幅・count桁数を変えるとlayout不成立。hash長固定で循環計算が不要なことを確認 |
+| CPR27 | 最大wire試行の超過ではbinaryへfallback、認可・期限・schema・保存例外では即拒否。文字列にwire超過名を含む非wire例外もfallbackしない |
+| CPR28 | 署名済みreplyのpart欠落／重複／順序・offset・entry/hash・plan/spec／batch情報を変更。clientは部分成功を全sourceとして公開しない |
+| CPR29 | 各messageのwire／allocation消費、handshake／recovery分を上限ちょうど／＋1で確認。budget外の再送・送信後だけの上限検査を拒否 |
+| CPR30 | 昇格・保守→exact縮約の前後でrow identity・K/D・originalDeadline・attemptが不変、spent保持・remaining非増加を実測。source／計画消費済みや残post／成功・拒否reply枠が不足すれば許可を発行しない。新row／leaseでの救済・二重加算・消費分返還を拒否 |
+| CPR31 | 256 operation・512 message・512 retained guard slotの独立した上限と残量を確認。guard枠だけを見た入場や8 read成立の主張を拒否 |
+| CPR32 | 計画probe・decode／copy量・最大保持bufferを構造上限＋1で拒否。binary最悪値とmax追加試行、client2回／provider各RPCの予約を確認 |
+| CPR33 | exact retry／reconnectで元期限・残attempt／wire／workを保持。新しい5秒や新transfer予約で旧要求を復活させない |
+| CPR34 | 同K別D、admitted／verified／unknownの並行入場、retired再利用、evictionを拒否。fresh load後の計画不一致でpermit／parts／成功reply 0、費用・attempt・元期限を保持しcomplete-refusedまたはunknown／retiredを正しく記録。exact retryは新scopeで残予算のみ使用し、変更planの同K上書き・旧permit復活を拒否 |
+| CPR35 | 応答紛失／再送でdefinite／unknownを実sessionで検証。回復が計量不能なadapterはunknownのまま止まり、同じ処理を無予算で再実行しない |
+| CPR36 | restart・boot／namespace／generation／root変更で旧scope/plan失効。永続sourceは現ownerでfresh再検証した場合のみ新callへ利用 |
+| CPR37 | old providerのhistorical seal署名と現providerの認可を交換。署名が正しくてもcurrent actor／store bindingが不一致なら拒否 |
+| CPR38 | 保存失敗・receipt不正・破損と、純粋なcall期限／取消しを故障種別ごとに区別。ownerのfail-stop／復旧を弱めずpartial成功0 |
+| CPR39 | post成功後のpin-only取消しによる遅配は非live観測のまま。credential／policy／元期限はenqueue前・client最終gateでも拒否 |
+| CPR40 | batch readによる新stage commit／plan journal／use／ACKは0。既存のcheckpoint同期は実計数し、後続handoff／ACK／finishを統合しない |
+| CPR41 | client initial／seal、provider再計画、pre/post、store内部historyをcall／phase別に照合。seal inclusiveの二重計上・provider費用のclientへの付替えを拒否 |
+| CPR42 | 計画／storage／転送の時間欠落・重複を境界timestampと全wallで拒否。observer bridgeとprimaryを混ぜず、費用分解に未計上を隠さない |
+| CPR43 | deadline／capacity／other-refused／unknown／partial／warm-up失敗を全保存。成功例だけを完了率や速度比較へ使わない |
+| CPR44 | observer／codec／spec／planner／全source閉包の追加・削除・hash変更を検出。未承認profile・sourceの片側だけ変更はinvalid experiment |
+| CPR45 | 独立processのcold/warm matched pairで論理source／サイズ・履歴深さ・actor生成規則を照合。rawの鍵／boot／署名／nonceを書き換えて揃えない |
+| CPR46 | 最大entry数、小entry多数、大entry中心、wire制約で19 batchを超えるsourceを確認。B拒否を成功scalarへdowngradeしない |
+| CPR47 | 総件数・連番・cost／RPC counterを維持したprobeの重複／欠落、全command検査の順序／digest差替えを拒否。初回とsealは別実行として同候補を許可 |
+| CPR48 | scoped gate未対応のlocal/remote adapter、未証明のclock写像、偽の対応flag、foreign callback／scopeを最初のstorage IO前に拒否。別backendの成立証拠で埋めない |
+
+設計レビュー後はCPR-Aから進める。全48条件は計画段階であり、実装テスト・実時間比較の成功件数へ加算しない。長さ上限のunit試験と、到達可能なschemaを使った実wire試験は分ける。実schemaで上限ちょうどの有効messageを構成できない場合、padding等の非canonical bufferを成功例と呼ばず、共通長さgate自体の境界試験とschemaの到達範囲を記録する。64 MiB等の本profileで到達不能な上限はcontract用の明示した厳しいtest予算で単位試験し、本番サイズの実成功証拠とはしない。
+
+#### 9.113.9 設計レビュー修正
+- 既存dispatch guardとfresh plan導出の循環を解消するため、IO前のAdmissionLease／限定ReadScopeと、照合後のDispatchPermitを分離した。昇格条件・原子的遷移・未昇格／計画不一致の終了状態を§9.113.3aに規定した。
+- 昇格／縮約／retryで同じrow・K/D・元期限・attempt・spentを保持し、資源復活・新leaseへの置換・旧permit復活を禁止。CPR08／14／30／34へ対応条件を追加した。
+- 計画回数はI2Pのclient2／provider0から、新方式のclient2／provider N（合計2＋N）へ修正した。providerに汎用sealを使う場合の2＋2Nも別記録とした。
+- 設計のみ。新guard/helper・48回帰条件の実装／実接続は未実施のまま。設計section・source参照と検証記録を更新した。

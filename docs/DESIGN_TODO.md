@@ -3094,3 +3094,11 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 §9.112レビュー修正：planごとに候補commandDigestの重複を拒否。総件数・連番・cost／RPC counterを維持した重複／欠落8件と、sealによる同候補の独立再計算を許可する正常系1件を追加。checker43件に更新し、source閉包の整合性を保つ216組／864転送の再計測と検証記録の更新を行った。
 
 §9.112レビュー修正2：元I0との一致を計画値全体（wireBytes・workUnitsを含む）へ広げ、最終全command検査の件数・順序・digestを固定。probe内の非wire失敗をfallbackへ変換しない4件と、計画同値・cost partition境界のchecker負例3件を追加（専用84・checker46）。mutationは13／21→19／21。fork・計測source閉包は不変のため再計測なし。rawの無インデント保存は次の実験から。
+
+### CGP-provider：独立計画再現・実storage接続契約（§9.113、設計のみ）
+- [x] provider自身のreceipt／seal／fresh inventoryから、各batchで全計画を独立再現する方式を定義。共有client map・handle・cross-RPC cacheを禁止し、単一fresh load・pre/post・最終gateを維持する。
+- [x] 再現用seed／batch位置を含むv3 strict wire、非循環planCore、K／D_wire／D_guardとsemantic spec／実装variantの責任分離を具体化。実sessionの共通codec-bound layout、転送前の全体予算・attempt／recovery会計を定義。
+- [x] SourceOwner／SourceBindingPort／OwnedStoreの不足点を明示し、ReadScopeとscoped local/remote storage adapterのIO前後gate・no-read拒否・元期限伝達・失効／fail-stopを設計。provider各RPCの再計画費用を含む比較・計測器bridgeも定義。
+- [ ] CPR-A〜Dを順に実装・実証。回帰CPR01〜CPR48は全て未実施。まずstrict schema／spec／実codecのwire-bound contractから進める。実storage・独立UID・5process・継続8 read・本番採用・CG0／CG3は未成立。原本省略・実readCommitted削減0。
+
+§9.113設計レビュー修正：IO前の限定AdmissionLease／ReadScopeと、計画照合後のDispatchPermitへ型・状態を分離。昇格の全条件・原子的遷移、同じrow／K/D／元期限／attempt／spentの保持、未昇格・計画不一致・unknown／retiredとretryの扱いを具体化し、CPR08／14／30／34を更新。I2Pはclient2／provider0、新方式はclient2／provider N（合計2＋N）と計画回数を訂正。設計のみ、実装・実接続・48条件の回帰は未実施。
