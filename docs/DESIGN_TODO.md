@@ -3104,3 +3104,12 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 §9.113設計レビュー修正：IO前の限定AdmissionLease／ReadScopeと、計画照合後のDispatchPermitへ型・状態を分離。昇格の全条件・原子的遷移、同じrow／K/D／元期限／attempt／spentの保持、未昇格・計画不一致・unknown／retiredとretryの扱いを具体化し、CPR08／14／30／34を更新。I2Pはclient2／provider0、新方式はclient2／provider N（合計2＋N）と計画回数を訂正。設計のみ、実装・実接続・48条件の回帰は未実施。
 
 §9.113設計レビュー修正2：provider毎batch再現の着手前停止判定（I2P summaryから再計算、H0で1回の計画が上限の10.58〜11.65倍）を追加し、CPR-Aにlayout上界の算術packing、CPR-Bに実測の採用見送り条件を追加。T_Bへclientのseal／inventory取得を加え、inventory 4096 Bを新規制約と明記。client seal再計画の理由を追記し、設計記録の照合テストを追加。設計のみ。
+
+
+### CPR-A：v3静的contract・算術packing（§9.114）
+- [x] test-only strict v3 command/result・非循環planCore・K/D、限定入場から許可への昇格、元期限・attempt・spent／残予算保持を実装。
+- [x] 実codecの算術上界によるpacking。探索中のcommand／認可見積り／owner wire／frame生成0、最終N commandの全codec検査、低速referenceとの比較、16構成の署名付き静的記録を追加。
+- [ ] CPR-Bの実session・独立authority／provider接続と再計画込み性能比較。続いてCPR-CのSourceOwner／実storage、CPR-Dの独立UID／5process。CPR01〜48全体・本番採用・継続8 read・CG0／CG3は未成立。原本省略・実readCommitted削減0。
+
+
+§9.114レビュー修正：取得・計画・完了の保守work計222515をIO前に要求し、取得前／計画前も残量を確認する。計画156978は実行前に消費し、例外・不一致・元期限切れでも保持。同attemptの再計画を禁止し、新callのexact retryでもspentを保持する。専用11件・記録改変2件を追加し、16構成の静的記録を再生成。実session・実storage・本番採用は引き続き未成立。

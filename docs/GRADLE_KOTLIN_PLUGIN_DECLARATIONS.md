@@ -8383,3 +8383,63 @@ primaryは同じmulti-schema対応実験binary／SourceReadPort／source／profi
 - inventory 4096 Bは既存の上限ではないため、新profileで追加する制約と書き分けた。既存I0はinventoryをrangeで読まず、productionの長さ上限は256 KiBである。
 - client側のseal再計画を残す理由（署名前の自己検査であり、providerの再現とは役割が別）を§9.113.3に追記した。
 - 設計記録を照合するテスト`gradleOwnedCgpProviderDesign.test.ts`を追加した。節hash、source hash、CPRと段階の表とJSONの一致、未実施の状態、事前見積りの再計算と表を固定する。設計のみで、実装・実接続・48条件の回帰は未実施のまま。
+
+
+### 9.114 CPR-A：v3静的contract・算術packing・二段階昇格
+
+2026-11-07。§9.113のCPR-Aをtest-only fixtureへ実装した。v3 command/result、非循環planCore、K/D、AdmissionLeaseからDispatchPermitへの昇格と算術packingの静的契約を対象とする。本番APIは未登録。実AuthenticatedSessionCall・live pin・SourceOwner／OwnedStore・隔離IPC・durable ledger／再起動復旧の成立は主張しない。署名は実Ed25519だが、call authorityとfresh sourceは模擬であり、公開credential registryへの実Enrollmentを証明しない。
+
+#### schema・digestと状態
+
+`gradleOwnedCprASchema.ts`はstrict v3 schema、semantic specとcontextの整合を検査する。planCoreは実装variant／署名／command／自身のdigestを含まず、入力identity・metadata・inventory・seed・transfer・全range群からdigestを作る。全entryの順序・連続被覆・末尾、entry参照、総容量・batch数も検査する。operation IDとKは再試行を特定する安定したキーであり、DはrequestDigest・manifest・purpose・provider・catalogを束縛する。同じKの異なるDを拒否する。resultはrequest・K・lineage・plan・parts・bytes／digestと照合する。
+
+模擬callの署名とcontext検査後に、限定AdmissionLeaseとReadScopeを発行する。pre確認後の単一loadはfixture assemblyが渡すreceipt／metadata／inventoryの期待値と照合してprivate snapshotを保持する。これは実storageの保存receiptではない。そのsnapshotから計画を再導出して現在のcommandと一致した場合だけ、同じrow／attempt／call上でDispatchPermitへ原子的に昇格できる。parts取得にはpermitを必須とする。偽造・別call・再利用・二重load／昇格を拒否し、完了・unknown・retired時に保持データを解放する。
+
+昇格でK/D・元期限・attempt・spent・残予算をリセットしない。期限は親期限と4500 ms以内で固定し、再試行は新しいcallで最大2回、rowは追い出さない。予算は縮小のみ許可する。署名検査後・取得前後・計画・昇格・parts・最終署名後にも認可／元期限を確認する。容量不足は取得前に拒否する。session回復・message会計や永続的な台帳はCPR-B以降の対象である。
+
+#### 実codecからの算術packing
+
+`gradleOwnedCprAWire.ts`は既存owner envelopeとI2のtest-only認証frame schemaを使う。実session runtimeを実行したという意味ではない。layoutを一度だけ準備し、owner request/resultの定数部分、range／partの固定部分、数字幅、JSONの区切り、base64長から上界を求める。layout用の空配列skeletonは有効な業務commandや認可証明として使わない。
+
+候補探索中は数字の算術だけを実行し、command構築・文脈認可見積り・owner wire生成・認証frame生成を全て0にする。探索終了後は全N commandについて実schema／codecで検査する（command／context N回、owner 2N、frame 4N）。layout準備はowner 2・frame 4とdescriptor定数2件を別計上する。recordのarithmeticTrialsには最終上界確認も含み、探索だけの件数とは呼ばない。finalの実wireが算術上界以下であることとinner 8192 B／frame 16384 Bの上限を再検査する。seal時の全計画再現はpure plannerの反復同値として検証するが、実service間の独立authorityは未接続である。
+
+semantic profileはentry 9、source 41460 B、inventory 4096 B、batch 19、range 4／batch、data 4096 B／batch、wire／work各64 MiB。40件の決定的生成ケースでは、毎候補を実codecへ通す低速referenceとrange群を比較した。関数のspyでも探索中のcommand／context／codec呼出しが0であることを確認する。
+
+#### 検証範囲と再現
+
+4 workload × reader／broker × 通常／最大長identityの16構成を記録した。defaultは2、smallは3、H0同サイズは11、大entryは12 command。全構成で探索中の4 counterは0。実署名、request/result照合、全entry再構成、予算・期限を保持した昇格、反復計画の一致を記録から再照合する。記録の出力hashは固定workloadから独立に再計算し、source閉包も照合する。
+
+回帰はmalformed schema／context／result、K/D衝突、全entry被覆、偽造capability、別call、再試行／枠／予算保持、取得失敗、7境界の取消し／期限、算術と実codecの境界、記録の改変を対象とする。CPR01〜48の全体完了ではなく、CPR-Aの静的・模擬条件のみ実施した。実IOのno-read・保存・独立owner／実session・再送／回復・実時間の性能比較は未実施。速度改善・継続8 read・本番採用・CG0／CG3は未成立。原本読取省略0、実readCommitted削減0。
+
+再現用コマンド（プロジェクトroot、Nodeとlockfileの依存関係を使用）：
+
+```sh
+OSV_CPR_A_RECORD=1 OSV_CPR_A_OUTPUT=docs/validation/gradle-c3b-cpr-a-2026-11-07.record.json npx vitest run src/test/utils/gradleOwnedCprARecord.test.ts --maxWorkers=1
+npx vitest run src/test/utils/gradleOwnedCprA.test.ts src/test/utils/gradleOwnedCprAContract.test.ts src/test/utils/gradleOwnedCprAPacking.test.ts src/test/utils/gradleOwnedCprAValidation.test.ts --maxWorkers=1
+node scripts/check-cpr-a.mjs --check
+npm run typecheck
+npm run build
+```
+
+初回実行結果（レビュー修正前）：CPR-A専用142件・保存記録の正常／改変検査21件・既存§9.113設計4件の計167件、既存I1／I2／I2P記録・公開コマンド例10件、記録生成1件が通過した。typecheckとbuildも成功した。
+
+保存記録は`docs/validation/gradle-c3b-cpr-a-2026-11-07.record.json`、照合結果は同名の`.json`。後者の更新は`node scripts/check-cpr-a.mjs`を使用する。sourceと記録の一致は再現性の照合であり、外部の署名済みattestationではない。次はCPR-B：実session・独立providerでの再現、入場／許可のauthority、実wire／時間予算を接続し、provider各batchの再計画費用を含めて採否を判定する。
+
+
+#### 9.114.1 work予算の事前確保・失敗時保持（2026-11-08）
+
+レビューで、入場時のwork要求が取得分65536だけで、計画の消費をpack完了後に加算していた問題を確認した。残量0でも計画全体を繰り返してから拒否でき、拒否した計画の消費が残らなかった。source-only予約の拒否テストが旧実装で失敗すること、続いて取得前／計画前の残量検査・失敗時保持・再実行拒否等6件が旧経路で失敗することを確認して修正した。
+
+保守的な計画量は `19*(8192+4)+(19*4+19)*13+19 = 156978 work units`。最終request最大19件のbytes＋range数、最大76の採用rangeと最大19のgroup flush失敗それぞれのbinary試行最大13回、最終bound確認最大19回から求める。数字上の構造量でありCPU時間の保証ではない。取得65536・計画156978・完了1の合計222515を入場前に要求し、取得直前も残量を再検査する。取得後にconsume／shrinkされた場合は、計画156978＋完了1を再度要求する。
+
+計画は実行前に156978を消費し、成功・不一致・codec例外・計画中の取消し／期限到達でも返却しない。観測量が保守上界以下であることも検査するが、成功後に差額を返却する方式にはしない。計画開始flagは同じattemptでの再実行を拒否する。計画例外は残消費を保持してattemptを確定拒否にし、gateが既にunknown／retiredにした場合はその状態を保持する。別callのexact retryも同じrow・元期限・spentを引き継ぎ、残量不足なら新しい取得へ進めない。
+
+専用回帰11件：取得分だけ／総量−1の予約拒否、縮約後の取得0、計画直前不足時のpack0、開始前の消費照合、途中例外・最終codec例外・plan不一致・期限到達での消費保持と再実行拒否、成功後の二重計画拒否、総量ちょうどでの完了、exact retryによる消費reset拒否を検証する。記録validatorはwork方針と成功rowの222515を独立literalで照合し、spent／remainingを同時に更新した返却偽装と方針変更も拒否する。
+
+16構成の記録は修正sourceで再生成し、日付を2026-11-08へ更新した（ファイル名は既存記録のまま）。探索の生成counter・wire・計画内容・実証範囲は変えない。検証コマンドには次の専用回帰も加える。
+
+```sh
+npx vitest run src/test/utils/gradleOwnedCprAWorkBudget.test.ts --maxWorkers=1
+```
+
+修正後の確認結果：CPR-Aと記録・既存設計／I1／I2／I2P・公開コマンド例の10ファイル190件、記録生成1件が通過。typecheck・buildも成功した。記録・現在source閉包・検査script・専用回帰source・本節のdigestを照合するsummaryも更新した。

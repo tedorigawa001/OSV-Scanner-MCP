@@ -1,0 +1,13 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {cprSources,validateCprRecord} from '../src/test/fixtures/gradleOwnedCprARecord.mjs';
+import {designSection} from '../src/test/fixtures/gradleOwnedCgpS0Bound.mjs';
+const path='docs/validation/gradle-c3b-cpr-a-2026-11-07.record.json',summaryPath='docs/validation/gradle-c3b-cpr-a-2026-11-07.json';
+const sha=b=>createHash('sha256').update(b).digest('hex'),bytes=await readFile(path),raw=JSON.parse(bytes),result=validateCprRecord(raw);
+if(JSON.stringify(raw.sources)!==JSON.stringify(await cprSources()))throw Error('cpr_a_source_closure');
+const document={path:'docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md',heading:'### 9.114 CPR-A：v3静的contract・算術packing・二段階昇格'};
+document.sectionSha256=sha(designSection(await readFile(document.path,'utf8'),document.heading));
+const regressionSources={};for(const p of ['src/test/utils/gradleOwnedCprAWorkBudget.test.ts','src/test/utils/gradleOwnedCprA.test.ts','src/test/utils/gradleOwnedCprAContract.test.ts','src/test/utils/gradleOwnedCprAPacking.test.ts','src/test/utils/gradleOwnedCprAValidation.test.ts','scripts/check-cpr-a.mjs'])regressionSources[p]=sha(await readFile(p));
+const summary={schema:'cpr-a.validation.v1',record:{path,sha256:sha(bytes)},document,regressionSources,...result,workBudget:raw.workBudget,comparison:'Static codec equivalence only; native performance and production adoption not established.',cases:raw.samples.map(x=>({workload:x.workload,role:x.role,largeIds:x.largeIds,commands:x.commands,arithmeticTrials:x.stats.arithmeticTrials,packingCommands:x.stats.packingCommands,packingAuthorization:x.stats.packingAuthorization,packingOwners:x.stats.packingOwners,packingFrames:x.stats.packingFrames}))};
+if(process.argv.includes('--check')){if(JSON.stringify(JSON.parse(await readFile(summaryPath,'utf8')))!==JSON.stringify(summary))throw Error('cpr_a_summary_mismatch');}else await writeFile(summaryPath,JSON.stringify(summary,null,2)+'\n');
+console.log(JSON.stringify({samples:result.samples,zeroTrialCases:result.zeroTrialCases,sourceClosure:'matched',productionAdopted:false}));
