@@ -7960,3 +7960,69 @@ node scripts/analyze-c3b-cgp-i1.mjs --check
 - clientの元期限台帳は削除した。同じoperationの元期限はSessionBootQuotaと共通guardが既に保持し、台帳を外しても挙動が変わらなかった。未失効のretryの待機終了を回帰で固定する。前節の「clientのprivate台帳」はこの修正で置き換える。
 - 証拠の集計範囲を`aggregate`として算出し、本節の数値と照合する。`--check`の照合先にI0 fixture 6件を追加した。共有fixtureとproductionは引き続き照合しない。
 - 手動のmutation（repoから再実行不可）は93件中76件を検出した。残る17件は、相互に補う条件6件（facts経路のinspect／wire一致、API、purpose）、単一API・server検証済み・request経路で到達できない条件4件、外部から届かないownerの多層防御4件、fixtureの自己検査1件、fail-closedで結果が同じ変異2件（wire copy、input検査）である。
+
+### 9.111 CGP-I2：取得batch化・単一fresh取得の限定実証
+
+2026-11-07。§9.103の候補BをS*／B*で比較した。**要求数と転送部分は減ったが、計画作成を含む総時間は全36条件で悪化した。本番採用・速度改善・継続8 readは未成立。** I1のfacts共有を併用せず、元のenvelope署名検証をserverとownerで維持する。production source・API登録・公開schemaは変更していない。
+
+#### API・sessionの範囲
+- `gradleOwnedCgpI2Owners.ts`／`Protocol.ts`／`Signer.ts`／`Session.ts`／`Codec.ts`は検証専用fork。credential API registryに`aux.ReadSourceRanges`を明示追加し、reader／authority-broker→provider、purpose=readに限定した。未知APIや追加roleを許可しない。公開サービスへの導入や独立UIDの隔離証拠ではない。
+- I0のv2 command・range planner・inventory／plan handle・共通guardを利用する。応答は実sessionのlineage束縛を満たす検証専用`cgp.i2.range-reply.v1`とし、lineageと`live=false`を追加する。静的I0 wire見積りを実際の応答サイズと同一視しない。実署名・challenge／channel frame・server/client双方のschema／権限・元期限検査を通す。
+- S*は既存と同じ最大4096 Bのscalar chunk、B*は最大4 range／合計4096 B、順序・重複禁止・entry digest・transfer／plan／snapshot／inventoryの束縛を検査する。応答の各partを検証し、全entry再構成後にpinned entry digest・長さを照合する。途中partの成功を全sourceの完全性として採用しない。
+- guard／profile／producer／observerの条件はmode間共通。違いはscalar/ranges algorithmとcommand/reply schemaだけで、factsは両方false。独立した固定承認manifest全体とのcanonical一致を分析器で要求し、自己digest更新や両mode同時変更でも未承認値・予算不足を拒否する。
+
+#### 単一fresh取得と維持したgate
+1. 実AuthenticatedSessionCall・署名・peer／destination・API権限・lineage・planの現認可を検査し、両端の共通guardを予約する。stable operationのprivate台帳でcaller／session／元guard期限を束縛し、session待機にも同じ期限を渡す。再試行のattempt・slot・残予算をリセットしない。
+2. 別々のpre／post pin確認を維持する。1 RPCにつきsource全entryを一度だけprivate Bufferへcopyし、全bytesのdigest・長さを検証する。このsnapshotから全partsを同期生成し、rangeごとのsource再取得やawaitを入れない。source取得counterはcopy開始、validatedBytesは実際の全entry検査量を数える。
+3. 各IO／await／署名前後・enqueue前の10境界でlocal gateを検査する。pre成功後の取消しは既入場の取得1回が進んでもpostで拒否する。post成功後の遅配は`live=false`であり、新しい許可を発行しない。元期限で待機が終了し、遅れて完了したhandlerの成功応答も拒否する。
+4. 新しいRPC／retryは新しいsnapshotを取得する。署名済みの過去の成功やsnapshotを持ち越して原本を省略しない。拒否時はdefinite／unknownに応じてguardを終了／unknownにし、期限・取消しにより終了できない状態を成功へ戻さない。
+
+ここでのsourceはprivateな合成Buffer、pin・policyは模擬状態である。実disk・readCommitted・registry→Anchor RPC・use／ACK／finishを呼んでいない。fresh取得回数はこのfixture境界の計数で、実保存層のIOや認証journal再生回数ではない。
+
+#### サイズ・予算・回帰
+- 実sessionのinner request／reply上限8192 B、auth frame上限16384 Bを維持する。challenge request／reply・channel request／replyとinnerの実bytesを転送ごとに記録し、合計wire量を再加算する。固定の保守予約81920 B／attempt、構造的work units、全transferの64 MiB wire/work上限を検査する。handshake warm-upは別で、回復handshakeやCPU／RSSの上限保証に読み替えない。
+- entry最大9・source最大41460 B、最大19 batch、共有512 guard slots・2 attempts、元5000 ms lease／500 ms marginを維持する。容量・work／wire予約不足はsource取得前に拒否する。B*のchunk数減少を理由にquotaや保持条件を緩和しない。
+- 106件のruntime回帰：両mode×10境界の取消し・期限・policy変更、pre／post race、元期限での待機終了、source改変、再取得・exact retryと残予算、署名済みpart欠落／重複／offset／hash／snapshot／inventory／plan／lineage／live改変、予算不足、entry／source／identifier上限＋1、応答cap拒否を確認した。8192／8193 Bへの空白paddingはcanonical違反で拒否されるため、有効な最大サイズ応答の成功例とは数えない。
+- fork差分5件では、production／I1由来のsession・認可・署名検証が、明示したAPI/schema用import変更以外に変わっていないことを照合する。証拠checkerの33件では、承認manifest、mode・workload・event連番／call／phase・pre／post／fresh／全bytes・署名counter、frame数／実kind・サイズ・合計wire・guard予算・結果digestの改変を拒否する。
+- CGI02・04〜20・23〜25の限定部分。実kernel getterの追跡、実storage race／故障、外側transportの全故障、独立隔離、最終ACK等のCGI全条件は未達である。
+
+#### 実時間比較
+3 cohort × 3 workload × reader／authority-broker × identifier 8／128文字 × 6 pair＝216 pair／432比較転送。各pairは独立fixture内でwarm-up＋1測定転送を実行する。全pairでentry再構成結果digestが一致し、各RPCでfresh／pre／post／owner明示署名検証が各1回である。warm-upは計測外、request作成・plan生成／seal・認可・guard・署名付きsession転送・再構成を総wallに含める。planとdispatch／再構成を非重複で別記録し、mode順は交互にする。OS peerはsynthetic in-processであり、native UID隔離や5processではない。
+
+`small`は9個・合計4500 B。`h0Sizes`はH0検証済みtraceと同じ9 entryサイズ・41460 Bだがbytesは合成である。`singleLarge`は41456 Bの大entryと必須4 payloadの各1 B（合計41460 B）。I0のinventory契約はcommit＋4 payload以上を要求するため、単一entry workloadはこのprofileでは未対応である。
+
+下表は各workloadの12条件（3 cohort×2 role×2 identifier）の中央値範囲。paired差は同じpairのS*−B*であり、周辺中央値同士の差ではない。
+
+| workload | S*要求 | B*要求 | S*総時間 ms | B*総時間 ms | paired差 ms |
+|---|---|---|---|---|---|
+| small | 9 | 3 | 22.75〜24.55 | 56.59〜59.49 | -35.81〜-33.83 |
+| h0Sizes | 16 | 11 | 42.06〜46.36 | 152.03〜171.84 | -124.39〜-109.98 |
+| singleLarge | 15 | 12 | 39.69〜43.17 | 116.52〜128.61 | -85.55〜-76.23 |
+
+| workload | S*計画 ms | B*計画 ms | S*転送・再構成 ms | B*転送・再構成 ms |
+|---|---|---|---|---|
+| small | 0.39〜0.42 | 47.76〜50.23 | 22.35〜24.13 | 8.80〜9.50 |
+| h0Sizes | 0.67〜0.74 | 120.59〜134.10 | 41.40〜45.61 | 31.45〜35.88 |
+| singleLarge | 0.63〜0.70 | 82.74〜91.81 | 39.04〜42.47 | 33.64〜37.00 |
+
+実inner最大は7909 B、実auth frame最大は1506 B。全比較要求は上限内で、wire合計と全work予算を照合した。転送部分の短縮だけを採用根拠にしない。I0 plannerは最大wireを探すbinary searchと見積り署名layoutの再構築を含み、その費用が今回の削減を上回った。planを無料にしたり過去のplanをlive許可として再利用したりせず、現在の実装で速度改善未成立とする。
+
+#### 効果見積り・失敗記録・残課題
+H0の全完了traceを既存checkerで再検証し、両経路のinventory各1要求＋data各16要求、entryサイズの連続したoffsetを照合する。同じサイズを合成sourceに使った場合、dataは片経路16→11、両経路のsource要求はinventoryを維持して34→24（10減）。模擬fresh取得10回・pre/post確認20回分と、全source再検証bytesは両経路計414600 Bを減らせる算術である。descriptor／namespace等の不変APIへ外挿しない。H0の238回のreadCommittedは今回再実行しておらず、実readCommitted削減は0として記録する。238からの差引きや継続8 readの成立を主張しない。
+
+複数の完全転送を1fixtureで繰り返した予備runは、固定元期限へ到達し`current_control_request_expired`で停止した。`gradle-c3b-cgp-i2-2026-11-07.diagnostic.json`にsource hash・診断を保存し、raw transfer trace未保存・比較不採用を明示する。これは最終pair比較と別のsetupであり、成功例へ混ぜない。最終runnerは独立したwarm-up＋測定のfixtureを使い、期限延長はしない。今後の失敗もcompleted sampleとevent／counter／frameを`.failure.json`へ保存して失敗させる。
+
+rawは`docs/validation/gradle-c3b-cgp-i2-2026-11-07.measurements.json`、summaryは同名`.json`。計測source閉包、H0参照、document section、分析器・checker・回帰source hashを照合する。現instrumentの一致とhistorical production sourceを区別する。
+```sh
+env OSV_CGP_I2_NATIVE=1 OSV_CGP_I2_OUTPUT=docs/validation/gradle-c3b-cgp-i2-2026-11-07.measurements.json npx vitest run src/test/utils/gradleOwnedCgpI2Native.test.ts --maxWorkers=1
+node scripts/analyze-c3b-cgp-i2.mjs
+node scripts/analyze-c3b-cgp-i2.mjs --check
+```
+次はplanner費用の内訳と、同じ認可・wire上限・完全性を保つ計画生成の改善余地を見積もる。本番SourceOwner／実storageへの接続、I1との併用、I3／I4とS0dの5process、S0x／独立SGA、cold／churn／復旧・最大RSSは残る。今回の限定実証を本番I2全面採用と呼ばず、CG0／CG3・backendEligible・独立隔離・継続8 readは保留、原本読取省略0を維持する。
+
+検証記録更新：追加回帰146件（runtime106・fork5・checker33・記録照合2）、関連する既存317件、型検査・build・差分検査が通過。実時間比較1件は216 pair／432転送を保存した。
+
+#### レビュー修正：最終再構成後のgateと計時の完全性
+- 全entry再構成と結果digest作成が終わった後、transferの結果を返す直前にも現認可・policy・元期限を確認する。最後のRPC成功を全転送の最終認可として使わない。S*／B*の双方で、最終entryのdigest照合時に期限到達・credential取消し・policy変更を注入する6件を追加し、全RPCが成功していても転送結果を返さないことを確認した。pre／post pin確認と、post成功後の非liveな遅配の扱いは維持する。
+- 計画終了と転送開始に同じ境界時刻を使い、最終gate後の終了時刻を一度だけ取得する。planMs＋dispatchMsはwallMsを完全に分割し、結果digest作成と最終gateの費用も含む。checkerは双方の差の絶対値を0.01 ms以下に制限する（浮動小数点誤差の許容であり、未計上費用の枠ではない）。
+- 両modeのplanMs／dispatchMsを過小計上した4件と、内訳を変えずwallMsを水増しした1件を拒否する。追加11件は修正前に失敗、修正後に通過。修正sourceで216 pair／432転送を再計測し、表・raw・summary・回帰source hashを更新した。

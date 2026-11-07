@@ -3074,3 +3074,11 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 §9.110レビュー修正：guardの元期限をsession待機にも適用し、両modeの待機終了・遅配拒否2件を追加。独立承認manifest全体との一致で、digest更新後も未承認値・予算不足等9件を拒否。追加11件のRED→GREEN、108pair／216要求の再計測・表・検証記録を更新。速度改善・本番採用・8 readは未成立。
 
 §9.110レビュー修正2：本番にないregistry全体digest（gate計20回＋facts 2回）がwallの約2/3とfacts費用の約9割を占めていたため、構築時のdeep-freezeと同一性照合へ置換した。再計測で18条件中18条件がA*優位、換算は1 readあたり約3〜11 ms。不採用の理由を効果の小ささへ改めた。client元期限台帳は重複のため削除し、元期限・偽造peer・registry差替え・verifier差分・checkerの回帰を追加した。本番採用・8 read・CG0／CG3は未成立のまま。
+
+### CGP-I2：取得batch化・単一fresh取得（§9.111）
+- [x] test-only S*／B*。元の署名・現認可・元期限・共通guardを維持し、単一snapshotからpartsを生成。独立pre／post、実session用lineage／live=false応答、実wire／work予算を検証。本番APIは未登録。
+- [x] runtime106件＋fork差分5件＋checker33件。10境界の取消し／期限／policy、遅配、signed part改変、source改変／再取得、予算・上限、repin後の未承認manifest、event閉包等を検証。
+- [x] 216 pair／432転送。H0同サイズで片経路16→11要求、両経路34→24の算術。dispatchは短縮したがplanner費用を含む総時間は全36条件で悪化し、速度改善未成立。繰返しfixtureの期限拒否は別診断で保持。
+- 次はplannerの費用分解と改善余地の見積り。本番SourceOwner／実storage接続・I1併用・I3／I4／S0d 5process・S0x／SGA・cold／churn／復旧・RSSは残る。限定fixtureから8 readを主張せず、CG0／CG3保留・原本読取省略0・実readCommitted削減0を維持。
+
+§9.111レビュー修正：全entry再構成・結果digest作成後の最終認可／policy／元期限gateを追加。両modeの最終期限到達・取消し・policy変更6件と、計画／転送の過小計上・未計上wall5件をRED→GREENで確認。共有境界時刻と単一終了時刻で総時間を完全分割し、計時誤差0.01 msで双方向照合する。修正sourceで216 pair／432転送を再計測して検証記録を更新。
