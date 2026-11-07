@@ -1,0 +1,4241 @@
+{
+  "schema": "cgp.i2p.analysis.v1",
+  "groups": [
+    {
+      "cohort": 1,
+      "workload": "small",
+      "role": "reader",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 24.061500000000024,
+          "planMs": 0.4073959999999488,
+          "dispatchMs": 23.63760400000001,
+          "requests": 9,
+          "wireBytes": 104911,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 57.671875,
+          "planMs": 48.63039600000002,
+          "dispatchMs": 9.0546875,
+          "requests": 3,
+          "wireBytes": 42195,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 61.102750000000015,
+          "planMs": 51.61581250000006,
+          "dispatchMs": 9.503541999999982,
+          "requests": 3,
+          "wireBytes": 42195,
+          "profile": {
+            "initialPlanMs": 25.84104149999996,
+            "sealPlanMs": 25.56002100000012,
+            "inventoryMs": 0.07429150000007212,
+            "sealInclusiveMs": 25.676895500000114,
+            "costs": {
+              "gate": {
+                "ms": 2.7130055000003495,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.04610400000018444,
+                "count": 2
+              },
+              "command": {
+                "ms": 12.458031999999946,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 18.479019499998913,
+                "count": 170
+              },
+              "wire": {
+                "ms": 17.58231049999921,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.04939599999988786,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.12156250000003865,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 17.087853999999993,
+          "planMs": 7.906520999999998,
+          "dispatchMs": 9.20464549999997,
+          "requests": 3,
+          "wireBytes": 42195,
+          "profile": {
+            "initialPlanMs": 3.7804784999999583,
+            "sealPlanMs": 3.757395499999973,
+            "inventoryMs": 0.08202049999999872,
+            "sealInclusiveMs": 3.8713334999999347,
+            "costs": {
+              "gate": {
+                "ms": 0.41873450000002777,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.04056249999996453,
+                "count": 2
+              },
+              "command": {
+                "ms": 1.74691700000011,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 2.6388975000000983,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.4957074999999804,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.045000000000015916,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.1185005000000956,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 44.180438000000095,
+      "instrumentationDifferenceMs": 2.9051664999998366,
+      "maxVsScalarDifferenceMs": 7.085896000000048
+    },
+    {
+      "cohort": 1,
+      "workload": "small",
+      "role": "reader",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 23.871646000000283,
+          "planMs": 0.4091249999999036,
+          "dispatchMs": 23.46293750000018,
+          "requests": 9,
+          "wireBytes": 107071,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 58.1050624999998,
+          "planMs": 48.8576250000001,
+          "dispatchMs": 9.213645999999699,
+          "requests": 3,
+          "wireBytes": 42915,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 60.93383350000022,
+          "planMs": 51.48260450000021,
+          "dispatchMs": 9.281416499999978,
+          "requests": 3,
+          "wireBytes": 42915,
+          "profile": {
+            "initialPlanMs": 25.810646000000133,
+            "sealPlanMs": 25.66520800000012,
+            "inventoryMs": 0.07489549999991141,
+            "sealInclusiveMs": 25.782292000000098,
+            "costs": {
+              "gate": {
+                "ms": 2.663143500003116,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.043520999999827836,
+                "count": 2
+              },
+              "command": {
+                "ms": 12.284417500002064,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 18.460039999996525,
+                "count": 170
+              },
+              "wire": {
+                "ms": 17.58761099999697,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.04970799999978226,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.1206460000005336,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 16.735041499999852,
+          "planMs": 7.95591649999983,
+          "dispatchMs": 8.7612294999999,
+          "requests": 3,
+          "wireBytes": 42915,
+          "profile": {
+            "initialPlanMs": 3.7939369999999144,
+            "sealPlanMs": 3.9158334999999624,
+            "inventoryMs": 0.07595850000006976,
+            "sealInclusiveMs": 4.028333500000144,
+            "costs": {
+              "gate": {
+                "ms": 0.4064815000017461,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.04093749999992724,
+                "count": 2
+              },
+              "command": {
+                "ms": 1.729855000000498,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 2.8154765000006137,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.5503544999994574,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.04520800000000236,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.12172900000041409,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 43.94037500000036,
+      "instrumentationDifferenceMs": 2.887146000000257,
+      "maxVsScalarDifferenceMs": 6.9278960000003735
+    },
+    {
+      "cohort": 1,
+      "workload": "small",
+      "role": "authority-broker",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 23.863312500000575,
+          "planMs": 0.43320800000037707,
+          "dispatchMs": 23.430104500000198,
+          "requests": 9,
+          "wireBytes": 107593,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 58.53954150000027,
+          "planMs": 49.40129200000047,
+          "dispatchMs": 9.178291499999887,
+          "requests": 3,
+          "wireBytes": 43089,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 62.90714549999984,
+          "planMs": 53.55993699999999,
+          "dispatchMs": 9.210458000000017,
+          "requests": 3,
+          "wireBytes": 43089,
+          "profile": {
+            "initialPlanMs": 26.482437499999833,
+            "sealPlanMs": 26.621020999999928,
+            "inventoryMs": 0.07308299999976953,
+            "sealInclusiveMs": 26.744604000000436,
+            "costs": {
+              "gate": {
+                "ms": 2.6876415000074303,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.04389600000013161,
+                "count": 2
+              },
+              "command": {
+                "ms": 12.979646499999035,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 19.738686000001508,
+                "count": 170
+              },
+              "wire": {
+                "ms": 17.55426799999941,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.0492709999998624,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.1257914999996501,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 17.010645500000464,
+          "planMs": 8.051437499999793,
+          "dispatchMs": 8.996874999999818,
+          "requests": 3,
+          "wireBytes": 43089,
+          "profile": {
+            "initialPlanMs": 4.009312500000306,
+            "sealPlanMs": 3.8039579999995112,
+            "inventoryMs": 0.0750834999998915,
+            "sealInclusiveMs": 3.9214790000000903,
+            "costs": {
+              "gate": {
+                "ms": 0.4119004999997742,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.04068749999987631,
+                "count": 2
+              },
+              "command": {
+                "ms": 1.7977925000013784,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 2.729708500001834,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.520606000000953,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.044957999999951426,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.1257074999998622,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 45.78149949999943,
+      "instrumentationDifferenceMs": 4.286833499999375,
+      "maxVsScalarDifferenceMs": 6.85266700000011
+    },
+    {
+      "cohort": 1,
+      "workload": "small",
+      "role": "authority-broker",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 24.519624999999905,
+          "planMs": 0.4307499999999891,
+          "dispatchMs": 24.085791499999686,
+          "requests": 9,
+          "wireBytes": 109753,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 60.16575049999983,
+          "planMs": 50.62477099999978,
+          "dispatchMs": 9.347709000000123,
+          "requests": 3,
+          "wireBytes": 43809,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 63.07464600000003,
+          "planMs": 53.82914599999958,
+          "dispatchMs": 9.245500000000447,
+          "requests": 3,
+          "wireBytes": 43809,
+          "profile": {
+            "initialPlanMs": 26.750562499999887,
+            "sealPlanMs": 26.84887500000059,
+            "inventoryMs": 0.0752914999998211,
+            "sealInclusiveMs": 26.972979499999838,
+            "costs": {
+              "gate": {
+                "ms": 2.695071000016469,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.04464549999920564,
+                "count": 2
+              },
+              "command": {
+                "ms": 12.825092499996117,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 19.713121999998748,
+                "count": 170
+              },
+              "wire": {
+                "ms": 17.87946300001113,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.049249999999574356,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.12895899999966787,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 17.339145499999177,
+          "planMs": 8.162833499999579,
+          "dispatchMs": 9.15099949999967,
+          "requests": 3,
+          "wireBytes": 43809,
+          "profile": {
+            "initialPlanMs": 3.9620629999999437,
+            "sealPlanMs": 3.873645499999384,
+            "inventoryMs": 0.07677099999955317,
+            "sealInclusiveMs": 3.9916250000001128,
+            "costs": {
+              "gate": {
+                "ms": 0.4115200000001096,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.04129150000107984,
+                "count": 2
+              },
+              "command": {
+                "ms": 1.8348744999984774,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 2.7550830000000133,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.537812000000031,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.045666999999866675,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.1279795000004924,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 45.79158350000034,
+      "instrumentationDifferenceMs": 2.908895500000199,
+      "maxVsScalarDifferenceMs": 7.105396500000097
+    },
+    {
+      "cohort": 1,
+      "workload": "h0Sizes",
+      "role": "reader",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 42.809979500000736,
+          "planMs": 0.6915215000008175,
+          "dispatchMs": 42.11889549999978,
+          "requests": 16,
+          "wireBytes": 231231,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 154.16956299999947,
+          "planMs": 122.35133349999978,
+          "dispatchMs": 31.8397915000005,
+          "requests": 11,
+          "wireBytes": 182175,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 161.8556254999994,
+          "planMs": 129.8862294999999,
+          "dispatchMs": 31.97425000000021,
+          "requests": 11,
+          "wireBytes": 182175,
+          "profile": {
+            "initialPlanMs": 64.84539599999971,
+            "sealPlanMs": 64.41008349999993,
+            "inventoryMs": 0.07579200000145647,
+            "sealInclusiveMs": 64.76468750000004,
+            "costs": {
+              "gate": {
+                "ms": 6.8723960000443185,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.046749500000260014,
+                "count": 2
+              },
+              "command": {
+                "ms": 29.915768000016215,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 46.176899000007325,
+                "count": 444
+              },
+              "wire": {
+                "ms": 45.669034500017915,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.081312500000422,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.38152050000007875,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 50.35747899999933,
+          "planMs": 18.7627494999997,
+          "dispatchMs": 31.633312499999192,
+          "requests": 11,
+          "wireBytes": 182175,
+          "profile": {
+            "initialPlanMs": 9.093312499999229,
+            "sealPlanMs": 9.15960399999949,
+            "inventoryMs": 0.07850000000053114,
+            "sealInclusiveMs": 9.51043750000008,
+            "costs": {
+              "gate": {
+                "ms": 0.9537074999952893,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.041249500000958506,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.9839179999989938,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 6.254809999999452,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.485877499995695,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.07400000000052387,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.3760835000002771,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 111.72012600000016,
+      "instrumentationDifferenceMs": 7.816854999998213,
+      "maxVsScalarDifferenceMs": -7.407623999999487
+    },
+    {
+      "cohort": 1,
+      "workload": "h0Sizes",
+      "role": "reader",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 43.308813000000555,
+          "planMs": 0.7063125000013315,
+          "dispatchMs": 42.608187999999245,
+          "requests": 16,
+          "wireBytes": 235071,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 157.32716600000003,
+          "planMs": 124.5476875000004,
+          "dispatchMs": 32.818354,
+          "requests": 11,
+          "wireBytes": 184815,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 164.71291699999892,
+          "planMs": 132.41816700000163,
+          "dispatchMs": 32.42993699999897,
+          "requests": 11,
+          "wireBytes": 184815,
+          "profile": {
+            "initialPlanMs": 65.93077100000119,
+            "sealPlanMs": 65.75433350000094,
+            "inventoryMs": 0.08006249999925785,
+            "sealInclusiveMs": 66.14291699999922,
+            "costs": {
+              "gate": {
+                "ms": 6.961456499993801,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.04674999999861029,
+                "count": 2
+              },
+              "command": {
+                "ms": 30.32286049999857,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 47.296167499977855,
+                "count": 444
+              },
+              "wire": {
+                "ms": 46.46543650001877,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.08360450000054698,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.3851039999972272,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 52.12410400000044,
+          "planMs": 19.311249500000486,
+          "dispatchMs": 32.68304199999966,
+          "requests": 11,
+          "wireBytes": 184815,
+          "profile": {
+            "initialPlanMs": 9.487333000000945,
+            "sealPlanMs": 9.397354500000802,
+            "inventoryMs": 0.07849999999962165,
+            "sealInclusiveMs": 9.753708000001097,
+            "costs": {
+              "gate": {
+                "ms": 0.9747115000027406,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.04337549999854673,
+                "count": 2
+              },
+              "command": {
+                "ms": 4.20350400001189,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 6.637647000003199,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.502580999996098,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.0764789999993809,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.38689549999980954,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 112.5197715000013,
+      "instrumentationDifferenceMs": 7.035500500001035,
+      "maxVsScalarDifferenceMs": -8.800457499999538
+    },
+    {
+      "cohort": 1,
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 44.5664584999995,
+          "planMs": 0.7265209999986837,
+          "dispatchMs": 43.846042000001034,
+          "requests": 16,
+          "wireBytes": 235999,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 163.2853750000013,
+          "planMs": 129.3568335,
+          "dispatchMs": 34.19883300000038,
+          "requests": 11,
+          "wireBytes": 185453,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 170.12887499999852,
+          "planMs": 136.76433349999934,
+          "dispatchMs": 33.63977049999994,
+          "requests": 11,
+          "wireBytes": 185453,
+          "profile": {
+            "initialPlanMs": 68.31764549999934,
+            "sealPlanMs": 68.00899949999985,
+            "inventoryMs": 0.07795850000184146,
+            "sealInclusiveMs": 68.39024999999856,
+            "costs": {
+              "gate": {
+                "ms": 6.912211000055322,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.047062499999810825,
+                "count": 2
+              },
+              "command": {
+                "ms": 31.731246999970608,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 49.48014600000715,
+                "count": 444
+              },
+              "wire": {
+                "ms": 47.1809870000252,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.0839994999969349,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.4087500000023283,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 52.679167000000234,
+          "planMs": 20.057458000001134,
+          "dispatchMs": 32.66968799999995,
+          "requests": 11,
+          "wireBytes": 185453,
+          "profile": {
+            "initialPlanMs": 9.934478999999556,
+            "sealPlanMs": 9.74285349999991,
+            "inventoryMs": 0.08639549999861629,
+            "sealInclusiveMs": 10.119000000000597,
+            "costs": {
+              "gate": {
+                "ms": 0.979047000004357,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.0492709999998624,
+                "count": 2
+              },
+              "command": {
+                "ms": 4.4510429999882035,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 7.248831499997323,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.503503499990984,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.07572849999814935,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.40877050000017334,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 116.8863119999969,
+      "instrumentationDifferenceMs": 7.369645499999024,
+      "maxVsScalarDifferenceMs": -8.784771000000546
+    },
+    {
+      "cohort": 1,
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 44.096771000000444,
+          "planMs": 0.7495415000012144,
+          "dispatchMs": 43.359958499999266,
+          "requests": 16,
+          "wireBytes": 239839,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 162.25802099999964,
+          "planMs": 129.33939549999923,
+          "dispatchMs": 32.85737549999976,
+          "requests": 11,
+          "wireBytes": 188093,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 170.88679199999933,
+          "planMs": 136.7168959999999,
+          "dispatchMs": 33.33400000000074,
+          "requests": 11,
+          "wireBytes": 188093,
+          "profile": {
+            "initialPlanMs": 68.33843750000051,
+            "sealPlanMs": 67.88010399999985,
+            "inventoryMs": 0.07845799999995506,
+            "sealInclusiveMs": 68.26243799999975,
+            "costs": {
+              "gate": {
+                "ms": 7.079314500088003,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.046895499997845036,
+                "count": 2
+              },
+              "command": {
+                "ms": 31.411769500025912,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 49.628358999980264,
+                "count": 444
+              },
+              "wire": {
+                "ms": 47.15925349997087,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.08285500000056345,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.409853999997722,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 52.69100049999906,
+          "planMs": 19.753375499998583,
+          "dispatchMs": 32.69139550000182,
+          "requests": 11,
+          "wireBytes": 188093,
+          "profile": {
+            "initialPlanMs": 9.693853999999192,
+            "sealPlanMs": 9.605250000000524,
+            "inventoryMs": 0.0774584999999206,
+            "sealInclusiveMs": 9.988604500000292,
+            "costs": {
+              "gate": {
+                "ms": 0.9644804999898042,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.04358299999694282,
+                "count": 2
+              },
+              "command": {
+                "ms": 4.340688499996759,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 6.881247500008612,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.489540000004126,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.07675000000017462,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.41075050000108604,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 117.71958350000023,
+      "instrumentationDifferenceMs": 8.347811999999976,
+      "maxVsScalarDifferenceMs": -8.56885400000283
+    },
+    {
+      "cohort": 1,
+      "workload": "singleLarge",
+      "role": "reader",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 40.125208499999644,
+          "planMs": 0.6382704999978159,
+          "dispatchMs": 39.460604500000045,
+          "requests": 15,
+          "wireBytes": 220239,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 117.51439600000231,
+          "planMs": 83.42868799999997,
+          "dispatchMs": 34.12041650000174,
+          "requests": 12,
+          "wireBytes": 191215,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 122.91341649999958,
+          "planMs": 89.19520799999918,
+          "dispatchMs": 33.73041699999703,
+          "requests": 12,
+          "wireBytes": 191215,
+          "profile": {
+            "initialPlanMs": 44.24570849999873,
+            "sealPlanMs": 44.353916500000196,
+            "inventoryMs": 0.05897899999945366,
+            "sealInclusiveMs": 44.783541500000865,
+            "costs": {
+              "gate": {
+                "ms": 4.848670999966998,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.0430209999994986,
+                "count": 2
+              },
+              "command": {
+                "ms": 19.955664500004787,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 31.719150499968237,
+                "count": 310
+              },
+              "wire": {
+                "ms": 31.032103499974255,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.0672709999998915,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.39810400000169466,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 50.611832999999024,
+          "planMs": 17.022895999998582,
+          "dispatchMs": 33.50587499999892,
+          "requests": 12,
+          "wireBytes": 191215,
+          "profile": {
+            "initialPlanMs": 8.237687499999083,
+            "sealPlanMs": 8.226395499998034,
+            "inventoryMs": 0.060770500000217,
+            "sealInclusiveMs": 8.662124500000573,
+            "costs": {
+              "gate": {
+                "ms": 0.8740160000470496,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.04112549999990733,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.530309000010675,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 5.799870999991981,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.55200099999638,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.06681250000110595,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.4073744999986957,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 72.06306249999943,
+      "instrumentationDifferenceMs": 5.072813000000679,
+      "maxVsScalarDifferenceMs": -10.623333499997898
+    },
+    {
+      "cohort": 1,
+      "workload": "singleLarge",
+      "role": "reader",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 40.11133300000074,
+          "planMs": 0.6542289999997593,
+          "dispatchMs": 39.35552099999768,
+          "requests": 15,
+          "wireBytes": 223839,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 118.52462500000183,
+          "planMs": 84.49614649999785,
+          "dispatchMs": 34.164583000001585,
+          "requests": 12,
+          "wireBytes": 194095,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 124.15360399999918,
+          "planMs": 90.23291700000118,
+          "dispatchMs": 34.053625000000466,
+          "requests": 12,
+          "wireBytes": 194095,
+          "profile": {
+            "initialPlanMs": 44.85206200000175,
+            "sealPlanMs": 44.766270500000246,
+            "inventoryMs": 0.060500499999761814,
+            "sealInclusiveMs": 45.14264550000007,
+            "costs": {
+              "gate": {
+                "ms": 4.855299999911949,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.043208499995671446,
+                "count": 2
+              },
+              "command": {
+                "ms": 20.210587500059773,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 32.468772499974875,
+                "count": 310
+              },
+              "wire": {
+                "ms": 31.374125000023923,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.06812449999415549,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.40362499999901047,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 51.57585449999897,
+          "planMs": 17.069875500001217,
+          "dispatchMs": 34.669583499999135,
+          "requests": 12,
+          "wireBytes": 194095,
+          "profile": {
+            "initialPlanMs": 8.331708500001696,
+            "sealPlanMs": 8.29529150000235,
+            "inventoryMs": 0.06112500000017462,
+            "sealInclusiveMs": 8.672917000003508,
+            "costs": {
+              "gate": {
+                "ms": 0.8706114999840793,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.039729000000079395,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.61627399997451,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 5.8654589999969176,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.573710500004381,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.06624949999968521,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.40670850000242353,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 72.54845750000095,
+      "instrumentationDifferenceMs": 5.357458500002394,
+      "maxVsScalarDifferenceMs": -10.893917000001238
+    },
+    {
+      "cohort": 1,
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 40.33145850000437,
+          "planMs": 0.6819795000010345,
+          "dispatchMs": 39.64947900000334,
+          "requests": 15,
+          "wireBytes": 224709,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 121.03843699999925,
+          "planMs": 86.57891650000602,
+          "dispatchMs": 34.463457999998354,
+          "requests": 12,
+          "wireBytes": 194791,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 126.884083500001,
+          "planMs": 92.54985450000095,
+          "dispatchMs": 34.442291999999725,
+          "requests": 12,
+          "wireBytes": 194791,
+          "profile": {
+            "initialPlanMs": 45.98302049999984,
+            "sealPlanMs": 45.96064549999937,
+            "inventoryMs": 0.05906200000026729,
+            "sealInclusiveMs": 46.357937499997206,
+            "costs": {
+              "gate": {
+                "ms": 4.836072500111186,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.04214549999960582,
+                "count": 2
+              },
+              "command": {
+                "ms": 20.919956999965507,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 33.472101999977895,
+                "count": 310
+              },
+              "wire": {
+                "ms": 31.775648000009824,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.06893800000034389,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.42389600000024075,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 51.4217084999982,
+          "planMs": 17.365749999997206,
+          "dispatchMs": 34.10081250000076,
+          "requests": 12,
+          "wireBytes": 194791,
+          "profile": {
+            "initialPlanMs": 8.572958499997185,
+            "sealPlanMs": 8.403395999997883,
+            "inventoryMs": 0.05883399999947869,
+            "sealInclusiveMs": 8.794228999999177,
+            "costs": {
+              "gate": {
+                "ms": 0.8712279999745078,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.03908350000347127,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.7290444999925967,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 5.9155830000236165,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.707606499992835,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.06541700000161654,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.4217709999938961,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 75.260167000004,
+      "instrumentationDifferenceMs": 5.60547950000182,
+      "maxVsScalarDifferenceMs": -11.057770999996137
+    },
+    {
+      "cohort": 1,
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 42.020228999997926,
+          "planMs": 0.7183544999970763,
+          "dispatchMs": 41.25585400000273,
+          "requests": 15,
+          "wireBytes": 228309,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 125.31702099999893,
+          "planMs": 88.9641879999981,
+          "dispatchMs": 36.35283300000083,
+          "requests": 12,
+          "wireBytes": 197671,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 131.92645849999826,
+          "planMs": 95.86902099999861,
+          "dispatchMs": 36.06237500000134,
+          "requests": 12,
+          "wireBytes": 197671,
+          "profile": {
+            "initialPlanMs": 46.75356250000186,
+            "sealPlanMs": 48.1662084999989,
+            "inventoryMs": 0.06018749999930151,
+            "sealInclusiveMs": 48.57908300000054,
+            "costs": {
+              "gate": {
+                "ms": 4.95941849988958,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.043438000000605825,
+                "count": 2
+              },
+              "command": {
+                "ms": 21.557675999996718,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 34.756965999993554,
+                "count": 310
+              },
+              "wire": {
+                "ms": 33.12018950003403,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.07060450000062701,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.44362449999607634,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 52.11479150000014,
+          "planMs": 17.588020499999402,
+          "dispatchMs": 34.65556250000009,
+          "requests": 12,
+          "wireBytes": 197671,
+          "profile": {
+            "initialPlanMs": 8.684895499998674,
+            "sealPlanMs": 8.544646000005741,
+            "inventoryMs": 0.06035449999762932,
+            "sealInclusiveMs": 8.942749499998172,
+            "costs": {
+              "gate": {
+                "ms": 0.8862715000213939,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.039625000001251465,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.7983964999875752,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 6.009162000009383,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.694959499989636,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.06812550000176998,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.4483334999968065,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 79.4060414999949,
+      "instrumentationDifferenceMs": 7.833187499996711,
+      "maxVsScalarDifferenceMs": -11.053479000001971
+    },
+    {
+      "cohort": 2,
+      "workload": "small",
+      "role": "reader",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 26.69945849999931,
+          "planMs": 0.39358350000111386,
+          "dispatchMs": 26.30327099999704,
+          "requests": 9,
+          "wireBytes": 104911,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 62.44362550000005,
+          "planMs": 51.984708500000124,
+          "dispatchMs": 10.212541999997484,
+          "requests": 3,
+          "wireBytes": 42195,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 64.1708749999998,
+          "planMs": 54.608666500000254,
+          "dispatchMs": 10.04804200000217,
+          "requests": 3,
+          "wireBytes": 42195,
+          "profile": {
+            "initialPlanMs": 27.394374999999854,
+            "sealPlanMs": 26.934291500001564,
+            "inventoryMs": 0.07537500000034925,
+            "sealInclusiveMs": 27.053854500001762,
+            "costs": {
+              "gate": {
+                "ms": 2.8338814998642192,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.045666000001801876,
+                "count": 2
+              },
+              "command": {
+                "ms": 12.751854000016465,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 19.40644049997718,
+                "count": 170
+              },
+              "wire": {
+                "ms": 18.595126500014885,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.052709000003233086,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.125292000000627,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 18.181187000001955,
+          "planMs": 8.139812500001426,
+          "dispatchMs": 10.010645999998815,
+          "requests": 3,
+          "wireBytes": 42195,
+          "profile": {
+            "initialPlanMs": 3.9958330000044953,
+            "sealPlanMs": 3.9483750000035798,
+            "inventoryMs": 0.07852099999945494,
+            "sealInclusiveMs": 4.063936999998987,
+            "costs": {
+              "gate": {
+                "ms": 0.41564699997979915,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.041604499998356914,
+                "count": 2
+              },
+              "command": {
+                "ms": 1.9088549999978568,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 2.687437000007776,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.5521669999834558,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.04693800000313786,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.12206299999525072,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 46.293000000001484,
+      "instrumentationDifferenceMs": 3.4182289999989734,
+      "maxVsScalarDifferenceMs": 8.490187499999593
+    },
+    {
+      "cohort": 2,
+      "workload": "small",
+      "role": "reader",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 26.377708499996515,
+          "planMs": 0.418395499997132,
+          "dispatchMs": 25.952229499998793,
+          "requests": 9,
+          "wireBytes": 107071,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 60.830291500002204,
+          "planMs": 50.92656249999709,
+          "dispatchMs": 9.761167000000569,
+          "requests": 3,
+          "wireBytes": 42915,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 65.4276250000039,
+          "planMs": 55.78966650000075,
+          "dispatchMs": 10.346770500000275,
+          "requests": 3,
+          "wireBytes": 42915,
+          "profile": {
+            "initialPlanMs": 28.097750000000815,
+            "sealPlanMs": 27.17595799999981,
+            "inventoryMs": 0.07620849999875645,
+            "sealInclusiveMs": 27.314979000002495,
+            "costs": {
+              "gate": {
+                "ms": 2.8232795000076294,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.048020499994891,
+                "count": 2
+              },
+              "command": {
+                "ms": 13.318060500005231,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 20.38175200000478,
+                "count": 170
+              },
+              "wire": {
+                "ms": 18.551078499942378,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.05556300000171177,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.12760350000462495,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 18.676854000001185,
+          "planMs": 8.329166499999701,
+          "dispatchMs": 10.2813750000023,
+          "requests": 3,
+          "wireBytes": 42915,
+          "profile": {
+            "initialPlanMs": 3.9563750000015716,
+            "sealPlanMs": 4.023520499998995,
+            "inventoryMs": 0.08579150000150548,
+            "sealInclusiveMs": 4.139249500000005,
+            "costs": {
+              "gate": {
+                "ms": 0.4186299999928451,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.04406199999357341,
+                "count": 2
+              },
+              "command": {
+                "ms": 1.840624000000389,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 2.710145500004728,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.5726045000155864,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.04779200000120909,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.12793750000128057,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 46.783791500005464,
+      "instrumentationDifferenceMs": 5.177479500001937,
+      "maxVsScalarDifferenceMs": 7.749125499994989
+    },
+    {
+      "cohort": 2,
+      "workload": "small",
+      "role": "authority-broker",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 27.54089549999844,
+          "planMs": 0.4328960000020743,
+          "dispatchMs": 27.10472899999877,
+          "requests": 9,
+          "wireBytes": 107593,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 67.03412499999831,
+          "planMs": 55.14822899999854,
+          "dispatchMs": 11.326520999999047,
+          "requests": 3,
+          "wireBytes": 43089,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 70.54702050000196,
+          "planMs": 59.18347899999935,
+          "dispatchMs": 11.019686999999976,
+          "requests": 3,
+          "wireBytes": 43089,
+          "profile": {
+            "initialPlanMs": 29.42943699999887,
+            "sealPlanMs": 29.9519790000013,
+            "inventoryMs": 0.07960449999882258,
+            "sealInclusiveMs": 30.224541500003397,
+            "costs": {
+              "gate": {
+                "ms": 2.9141789998466265,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.04710349999368191,
+                "count": 2
+              },
+              "command": {
+                "ms": 13.99908550001419,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 21.691584500018507,
+                "count": 170
+              },
+              "wire": {
+                "ms": 19.904125000026397,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.055146499995316844,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.14306249999572174,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 19.247708500002773,
+          "planMs": 8.75164550000045,
+          "dispatchMs": 10.122333500003151,
+          "requests": 3,
+          "wireBytes": 43089,
+          "profile": {
+            "initialPlanMs": 4.425041499995132,
+            "sealPlanMs": 4.312416499997198,
+            "inventoryMs": 0.07847949999995762,
+            "sealInclusiveMs": 4.444541500000923,
+            "costs": {
+              "gate": {
+                "ms": 0.4388994999899296,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.04452149999633548,
+                "count": 2
+              },
+              "command": {
+                "ms": 2.025058999988687,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 3.03889550000531,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.882894000005763,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.04783350000070641,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.13214599999628263,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 50.907624499999656,
+      "instrumentationDifferenceMs": 3.5128955000036513,
+      "maxVsScalarDifferenceMs": 7.8630210000010266
+    },
+    {
+      "cohort": 2,
+      "workload": "small",
+      "role": "authority-broker",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 24.912625000000844,
+          "planMs": 0.4271664999978384,
+          "dispatchMs": 24.489791500003776,
+          "requests": 9,
+          "wireBytes": 109753,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 61.959937499999796,
+          "planMs": 52.79210400000011,
+          "dispatchMs": 9.66441649999615,
+          "requests": 3,
+          "wireBytes": 43809,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 65.29060399999798,
+          "planMs": 55.27431250000154,
+          "dispatchMs": 9.883062499997322,
+          "requests": 3,
+          "wireBytes": 43809,
+          "profile": {
+            "initialPlanMs": 27.526374499997473,
+            "sealPlanMs": 27.50195850000091,
+            "inventoryMs": 0.07941650000066147,
+            "sealInclusiveMs": 27.62708300000304,
+            "costs": {
+              "gate": {
+                "ms": 2.7414880000433186,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.046000499998626765,
+                "count": 2
+              },
+              "command": {
+                "ms": 12.929792999984784,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 20.418077500034997,
+                "count": 170
+              },
+              "wire": {
+                "ms": 18.691455499978474,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.051354499999433756,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.13025000000197906,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 18.167458500000066,
+          "planMs": 8.436749999997119,
+          "dispatchMs": 9.458833499997127,
+          "requests": 3,
+          "wireBytes": 43809,
+          "profile": {
+            "initialPlanMs": 4.060437500000262,
+            "sealPlanMs": 3.9684584999995423,
+            "inventoryMs": 0.07862499999828287,
+            "sealInclusiveMs": 4.093666500000836,
+            "costs": {
+              "gate": {
+                "ms": 0.41753750000862055,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.042895999999018386,
+                "count": 2
+              },
+              "command": {
+                "ms": 1.9286464999859163,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 2.819210000005114,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.591792000006535,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.04758399999991525,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.1304580000032729,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 47.34735400000136,
+      "instrumentationDifferenceMs": 4.003416999996261,
+      "maxVsScalarDifferenceMs": 6.934249500001897
+    },
+    {
+      "cohort": 2,
+      "workload": "h0Sizes",
+      "role": "reader",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 42.352833500001,
+          "planMs": 0.6731870000003255,
+          "dispatchMs": 41.67968800000381,
+          "requests": 16,
+          "wireBytes": 231231,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 153.8716459999996,
+          "planMs": 122.64441699999952,
+          "dispatchMs": 31.283541500000865,
+          "requests": 11,
+          "wireBytes": 182175,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 162.24935449999975,
+          "planMs": 130.29254199999923,
+          "dispatchMs": 31.996437499998137,
+          "requests": 11,
+          "wireBytes": 182175,
+          "profile": {
+            "initialPlanMs": 65.18437500000073,
+            "sealPlanMs": 64.51745799999844,
+            "inventoryMs": 0.07625050000206102,
+            "sealInclusiveMs": 64.87770850000015,
+            "costs": {
+              "gate": {
+                "ms": 6.928487000015593,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.04595849999168422,
+                "count": 2
+              },
+              "command": {
+                "ms": 29.67700300006254,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 46.66826150001725,
+                "count": 444
+              },
+              "wire": {
+                "ms": 45.64187649996893,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.08162499999889405,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.3829995000050985,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 50.19354149999708,
+          "planMs": 18.862937499998225,
+          "dispatchMs": 31.37458300000071,
+          "requests": 11,
+          "wireBytes": 182175,
+          "profile": {
+            "initialPlanMs": 9.286520499998005,
+            "sealPlanMs": 9.173062499998196,
+            "inventoryMs": 0.07829150000179652,
+            "sealInclusiveMs": 9.518458499998815,
+            "costs": {
+              "gate": {
+                "ms": 0.96754249994774,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.04172949999701814,
+                "count": 2
+              },
+              "command": {
+                "ms": 4.080646000045817,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 6.568542000004527,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.2402709999914805,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.07627150000189431,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.3769994999966002,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 112.0215840000019,
+      "instrumentationDifferenceMs": 9.07002100000318,
+      "maxVsScalarDifferenceMs": -7.927561999997124
+    },
+    {
+      "cohort": 2,
+      "workload": "h0Sizes",
+      "role": "reader",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 42.93372900000031,
+          "planMs": 0.6949375000040163,
+          "dispatchMs": 42.24241599999732,
+          "requests": 16,
+          "wireBytes": 235071,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 155.87425000000076,
+          "planMs": 124.15481250000084,
+          "dispatchMs": 32.05225049999717,
+          "requests": 11,
+          "wireBytes": 184815,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 163.93114549999154,
+          "planMs": 132.16347900000255,
+          "dispatchMs": 31.941541499993036,
+          "requests": 11,
+          "wireBytes": 184815,
+          "profile": {
+            "initialPlanMs": 66.13093700000172,
+            "sealPlanMs": 65.45406250000087,
+            "inventoryMs": 0.07489549999445444,
+            "sealInclusiveMs": 65.81860399999641,
+            "costs": {
+              "gate": {
+                "ms": 6.911148499824776,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.04591699999946286,
+                "count": 2
+              },
+              "command": {
+                "ms": 30.236980500019854,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 47.312164000042685,
+                "count": 444
+              },
+              "wire": {
+                "ms": 46.13896849992307,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.08464550000644522,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.38870850000239443,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 51.26929150000433,
+          "planMs": 18.95324999999866,
+          "dispatchMs": 32.055583000004845,
+          "requests": 11,
+          "wireBytes": 184815,
+          "profile": {
+            "initialPlanMs": 9.319520999997621,
+            "sealPlanMs": 9.357292000004236,
+            "inventoryMs": 0.07774999999674037,
+            "sealInclusiveMs": 9.709000000002561,
+            "costs": {
+              "gate": {
+                "ms": 0.957695999983116,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.04193700000178069,
+                "count": 2
+              },
+              "command": {
+                "ms": 4.1101255000030505,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 6.62083249999705,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.277189000004,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.07606250000389991,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.38354149999577203,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 112.97497899999144,
+      "instrumentationDifferenceMs": 9.007811999992555,
+      "maxVsScalarDifferenceMs": -8.279104500004905
+    },
+    {
+      "cohort": 2,
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 43.62241649999487,
+          "planMs": 0.7176249999974971,
+          "dispatchMs": 42.74362499999552,
+          "requests": 16,
+          "wireBytes": 235999,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 158.81514600000082,
+          "planMs": 126.7335210000092,
+          "dispatchMs": 32.44522950000828,
+          "requests": 11,
+          "wireBytes": 185453,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 166.34510449999652,
+          "planMs": 134.79660399999557,
+          "dispatchMs": 32.0098749999961,
+          "requests": 11,
+          "wireBytes": 185453,
+          "profile": {
+            "initialPlanMs": 67.4072914999997,
+            "sealPlanMs": 66.77014600000257,
+            "inventoryMs": 0.07600000000093132,
+            "sealInclusiveMs": 67.3246874999968,
+            "costs": {
+              "gate": {
+                "ms": 6.9164259998942725,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.0448960000067018,
+                "count": 2
+              },
+              "command": {
+                "ms": 31.251519999954326,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 48.8866915001272,
+                "count": 444
+              },
+              "wire": {
+                "ms": 46.328813500011165,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.08279149999725632,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.40058300000964664,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 51.70400000000518,
+          "planMs": 19.712604000000283,
+          "dispatchMs": 31.991750000008324,
+          "requests": 11,
+          "wireBytes": 185453,
+          "profile": {
+            "initialPlanMs": 9.682187500009604,
+            "sealPlanMs": 9.547479000000749,
+            "inventoryMs": 0.07629150000138907,
+            "sealInclusiveMs": 9.935896000002685,
+            "costs": {
+              "gate": {
+                "ms": 0.9698539999735658,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.04212499999994179,
+                "count": 2
+              },
+              "command": {
+                "ms": 4.442272999956913,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 6.804042000017944,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.4542274998966604,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.07556250000197906,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.40056250000634464,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 114.91116650000913,
+      "instrumentationDifferenceMs": 7.521748999999545,
+      "maxVsScalarDifferenceMs": -8.379437499999767
+    },
+    {
+      "cohort": 2,
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 43.45533350000915,
+          "planMs": 0.7321874999979627,
+          "dispatchMs": 42.723417000001064,
+          "requests": 16,
+          "wireBytes": 239839,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 168.59649999999237,
+          "planMs": 130.51447900000494,
+          "dispatchMs": 34.97060449999117,
+          "requests": 11,
+          "wireBytes": 188093,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 170.12547849999828,
+          "planMs": 136.86431250000896,
+          "dispatchMs": 32.76391650000005,
+          "requests": 11,
+          "wireBytes": 188093,
+          "profile": {
+            "initialPlanMs": 68.44289549999667,
+            "sealPlanMs": 68.33462499999587,
+            "inventoryMs": 0.07872950000455603,
+            "sealInclusiveMs": 68.71458349999739,
+            "costs": {
+              "gate": {
+                "ms": 6.9945160004499485,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.04627099999197526,
+                "count": 2
+              },
+              "command": {
+                "ms": 32.431413999911456,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 49.54735199987044,
+                "count": 444
+              },
+              "wire": {
+                "ms": 46.96212750001723,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.08472949999850243,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.41110399999888614,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 52.5803539999979,
+          "planMs": 19.943875499993737,
+          "dispatchMs": 32.58522900000389,
+          "requests": 11,
+          "wireBytes": 188093,
+          "profile": {
+            "initialPlanMs": 9.745457999997598,
+            "sealPlanMs": 9.710500000001048,
+            "inventoryMs": 0.07856250000622822,
+            "sealInclusiveMs": 10.090312499996799,
+            "costs": {
+              "gate": {
+                "ms": 0.9894399999029702,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.04343699999299133,
+                "count": 2
+              },
+              "command": {
+                "ms": 4.344043499993859,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 6.670816499994544,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.759834999946179,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.0771454999994603,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.40687449999677483,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 117.26893700000801,
+      "instrumentationDifferenceMs": 3.5106870000017807,
+      "maxVsScalarDifferenceMs": -8.72466649999842
+    },
+    {
+      "cohort": 2,
+      "workload": "singleLarge",
+      "role": "reader",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 39.72289599999203,
+          "planMs": 0.6365414999963832,
+          "dispatchMs": 39.09529150000162,
+          "requests": 15,
+          "wireBytes": 220239,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 116.59710449999693,
+          "planMs": 83.02606250000099,
+          "dispatchMs": 33.57104199999594,
+          "requests": 12,
+          "wireBytes": 191215,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 122.5358750000014,
+          "planMs": 88.54316699999617,
+          "dispatchMs": 33.81289550000656,
+          "requests": 12,
+          "wireBytes": 191215,
+          "profile": {
+            "initialPlanMs": 44.19235400000616,
+            "sealPlanMs": 43.89366699999664,
+            "inventoryMs": 0.05806250000023283,
+            "sealInclusiveMs": 44.26491650000389,
+            "costs": {
+              "gate": {
+                "ms": 4.805816999825765,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.04158349999488564,
+                "count": 2
+              },
+              "command": {
+                "ms": 19.62045199997374,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 31.650831499850028,
+                "count": 310
+              },
+              "wire": {
+                "ms": 30.938044999886188,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.0665830000070855,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.39508349999960046,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 50.322937499993714,
+          "planMs": 16.80783299999166,
+          "dispatchMs": 33.526396000001114,
+          "requests": 12,
+          "wireBytes": 191215,
+          "profile": {
+            "initialPlanMs": 8.322625000000698,
+            "sealPlanMs": 8.004770999999892,
+            "inventoryMs": 0.059479499999724794,
+            "sealInclusiveMs": 8.36791649999941,
+            "costs": {
+              "gate": {
+                "ms": 0.8748684998645331,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.04068750000442378,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.579543499989086,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 5.678251499964972,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.532064500039269,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.06535400000575464,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.3915210000050138,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 71.86687500000698,
+      "instrumentationDifferenceMs": 5.501208000001498,
+      "maxVsScalarDifferenceMs": -10.367229000003135
+    },
+    {
+      "cohort": 2,
+      "workload": "singleLarge",
+      "role": "reader",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 42.98316650000925,
+          "planMs": 0.6612085000087973,
+          "dispatchMs": 42.32195800000045,
+          "requests": 15,
+          "wireBytes": 223839,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 121.29831199999171,
+          "planMs": 86.16727049999463,
+          "dispatchMs": 35.58620850000443,
+          "requests": 12,
+          "wireBytes": 194095,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 126.07479199999943,
+          "planMs": 91.49495849999948,
+          "dispatchMs": 34.57983349999995,
+          "requests": 12,
+          "wireBytes": 194095,
+          "profile": {
+            "initialPlanMs": 45.752082999992126,
+            "sealPlanMs": 45.23674949999986,
+            "inventoryMs": 0.061313000005611684,
+            "sealInclusiveMs": 45.74316649999673,
+            "costs": {
+              "gate": {
+                "ms": 5.152177999865671,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.04404049998993287,
+                "count": 2
+              },
+              "command": {
+                "ms": 20.796270000064396,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 32.41021200006071,
+                "count": 310
+              },
+              "wire": {
+                "ms": 32.03737900017586,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.07052000000112457,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.41127099999721395,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 51.82008350000251,
+          "planMs": 17.38381300000765,
+          "dispatchMs": 34.51170850000199,
+          "requests": 12,
+          "wireBytes": 194095,
+          "profile": {
+            "initialPlanMs": 8.641479000005347,
+            "sealPlanMs": 8.439958499999193,
+            "inventoryMs": 0.06493750000663567,
+            "sealInclusiveMs": 8.815728999994462,
+            "costs": {
+              "gate": {
+                "ms": 0.8893995000325958,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.042458500000066124,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.588166499932413,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 6.0750990000669844,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.842000500029826,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.06962550000025658,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.41227050000452437,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 74.2776664999983,
+      "instrumentationDifferenceMs": 4.225084000005154,
+      "maxVsScalarDifferenceMs": -10.679375000006985
+    },
+    {
+      "cohort": 2,
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 42.2298959999971,
+          "planMs": 0.7093960000056541,
+          "dispatchMs": 41.55747949999932,
+          "requests": 15,
+          "wireBytes": 224709,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 120.76689649999753,
+          "planMs": 86.27758349999203,
+          "dispatchMs": 34.486375500004215,
+          "requests": 12,
+          "wireBytes": 194791,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 127.94166650000261,
+          "planMs": 92.88889550000022,
+          "dispatchMs": 34.79522850000649,
+          "requests": 12,
+          "wireBytes": 194791,
+          "profile": {
+            "initialPlanMs": 46.531125000008615,
+            "sealPlanMs": 46.10152100000414,
+            "inventoryMs": 0.05868749999353895,
+            "sealInclusiveMs": 46.50158299999748,
+            "costs": {
+              "gate": {
+                "ms": 4.8482620002905605,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.043832999996084254,
+                "count": 2
+              },
+              "command": {
+                "ms": 20.957414500058803,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 33.88014450004266,
+                "count": 310
+              },
+              "wire": {
+                "ms": 32.14760000001115,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.06795799999963492,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.43039600000338396,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 54.02568749999773,
+          "planMs": 17.80314549999457,
+          "dispatchMs": 36.22254200000316,
+          "requests": 12,
+          "wireBytes": 194791,
+          "profile": {
+            "initialPlanMs": 8.789083000003302,
+            "sealPlanMs": 8.560499999999593,
+            "inventoryMs": 0.06445850000454811,
+            "sealInclusiveMs": 8.944208000000799,
+            "costs": {
+              "gate": {
+                "ms": 0.8789984999530134,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.040374999996856786,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.8367290000169305,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 6.19264299995848,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.924169000078109,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.06829199999629054,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.42683300000499,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 74.69981250001729,
+      "instrumentationDifferenceMs": 6.624979000014719,
+      "maxVsScalarDifferenceMs": -10.986999499989906
+    },
+    {
+      "cohort": 2,
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 40.87524999999732,
+          "planMs": 0.6906040000030771,
+          "dispatchMs": 40.17987500000163,
+          "requests": 15,
+          "wireBytes": 228309,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 122.68708350000088,
+          "planMs": 87.97275050000462,
+          "dispatchMs": 34.9372499999954,
+          "requests": 12,
+          "wireBytes": 197671,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 127.7240834999975,
+          "planMs": 93.10349999999744,
+          "dispatchMs": 34.48022900000069,
+          "requests": 12,
+          "wireBytes": 197671,
+          "profile": {
+            "initialPlanMs": 46.65277100000094,
+            "sealPlanMs": 45.963353999999526,
+            "inventoryMs": 0.05837500000052387,
+            "sealInclusiveMs": 46.35781250000582,
+            "costs": {
+              "gate": {
+                "ms": 4.834194999872125,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.04204149999713991,
+                "count": 2
+              },
+              "command": {
+                "ms": 21.151308000044082,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 33.49327350008389,
+                "count": 310
+              },
+              "wire": {
+                "ms": 32.227875500124355,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.06712500000139698,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.42635349999181926,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 52.309166999999434,
+          "planMs": 17.872541500000807,
+          "dispatchMs": 34.43662549999863,
+          "requests": 12,
+          "wireBytes": 197671,
+          "profile": {
+            "initialPlanMs": 8.754103999992367,
+            "sealPlanMs": 8.598333499998262,
+            "inventoryMs": 0.06066649999411311,
+            "sealInclusiveMs": 8.9863744999966,
+            "costs": {
+              "gate": {
+                "ms": 0.8817954998739879,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.04147949999605771,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.927540000004228,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 6.104998999995587,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.735748000028252,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.06687499999679858,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.43170900001132395,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 75.25983350000752,
+      "instrumentationDifferenceMs": 5.441041499994753,
+      "maxVsScalarDifferenceMs": -11.397438000007241
+    },
+    {
+      "cohort": 3,
+      "workload": "small",
+      "role": "reader",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 22.704791499993007,
+          "planMs": 0.3896249999961583,
+          "dispatchMs": 22.31524999999965,
+          "requests": 9,
+          "wireBytes": 104911,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 56.45547900001111,
+          "planMs": 47.72491649999574,
+          "dispatchMs": 8.669083000007959,
+          "requests": 3,
+          "wireBytes": 42195,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 59.854083499994886,
+          "planMs": 50.91225000000122,
+          "dispatchMs": 8.949062500003492,
+          "requests": 3,
+          "wireBytes": 42195,
+          "profile": {
+            "initialPlanMs": 25.291021500008355,
+            "sealPlanMs": 25.51158349999605,
+            "inventoryMs": 0.07204200000705896,
+            "sealInclusiveMs": 25.624729499999376,
+            "costs": {
+              "gate": {
+                "ms": 2.668359000032069,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.04235450000123819,
+                "count": 2
+              },
+              "command": {
+                "ms": 11.963460500010115,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 18.498233000005712,
+                "count": 170
+              },
+              "wire": {
+                "ms": 17.362125499974354,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.048770999994303565,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.11983399999735411,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 16.45845800000825,
+          "planMs": 7.852166500000749,
+          "dispatchMs": 8.632667000005313,
+          "requests": 3,
+          "wireBytes": 42195,
+          "profile": {
+            "initialPlanMs": 3.799749999998312,
+            "sealPlanMs": 3.7539374999978463,
+            "inventoryMs": 0.07381249999889405,
+            "sealInclusiveMs": 3.871520500004408,
+            "costs": {
+              "gate": {
+                "ms": 0.41476999994483776,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.04064549999748124,
+                "count": 2
+              },
+              "command": {
+                "ms": 1.7174165000178618,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 2.623271000040404,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.478394500038121,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.04572899999766378,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.11939550000533927,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 43.39181299999473,
+      "instrumentationDifferenceMs": 3.086041499998828,
+      "maxVsScalarDifferenceMs": 6.263458499997796
+    },
+    {
+      "cohort": 3,
+      "workload": "small",
+      "role": "reader",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 23.230854000001273,
+          "planMs": 0.39585400000214577,
+          "dispatchMs": 22.83647899999778,
+          "requests": 9,
+          "wireBytes": 107071,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 57.11420850000286,
+          "planMs": 48.273854000006395,
+          "dispatchMs": 8.930853999998362,
+          "requests": 3,
+          "wireBytes": 42915,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 60.436291499994695,
+          "planMs": 51.57993749999878,
+          "dispatchMs": 8.844833499999368,
+          "requests": 3,
+          "wireBytes": 42915,
+          "profile": {
+            "initialPlanMs": 25.673687000002246,
+            "sealPlanMs": 25.7075205000001,
+            "inventoryMs": 0.07368750000023283,
+            "sealInclusiveMs": 25.821416500009946,
+            "costs": {
+              "gate": {
+                "ms": 2.6863284999490133,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.042792000000190455,
+                "count": 2
+              },
+              "command": {
+                "ms": 12.33264699998108,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 18.740106000019296,
+                "count": 170
+              },
+              "wire": {
+                "ms": 17.285124500092934,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.04879150000488153,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.12043749999429565,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 16.579312499998196,
+          "planMs": 7.743854000000283,
+          "dispatchMs": 8.802770499998587,
+          "requests": 3,
+          "wireBytes": 42915,
+          "profile": {
+            "initialPlanMs": 3.768604000004416,
+            "sealPlanMs": 3.74368800000957,
+            "inventoryMs": 0.0740419999929145,
+            "sealInclusiveMs": 3.857750000002852,
+            "costs": {
+              "gate": {
+                "ms": 0.4088540000229841,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.040457999995851424,
+                "count": 2
+              },
+              "command": {
+                "ms": 1.7465414999969653,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 2.6453980000005686,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.459791999986919,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.046104000000923406,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.12118750000809086,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 43.86572899999737,
+      "instrumentationDifferenceMs": 3.2374164999928325,
+      "maxVsScalarDifferenceMs": 6.543582999998762
+    },
+    {
+      "cohort": 3,
+      "workload": "small",
+      "role": "authority-broker",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 23.230750499998976,
+          "planMs": 0.4146455000009155,
+          "dispatchMs": 22.80247899999813,
+          "requests": 9,
+          "wireBytes": 107593,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 58.69054199999664,
+          "planMs": 49.661417000002984,
+          "dispatchMs": 8.989083499996923,
+          "requests": 3,
+          "wireBytes": 43089,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 61.66847950000374,
+          "planMs": 52.82833350000146,
+          "dispatchMs": 8.819645499999751,
+          "requests": 3,
+          "wireBytes": 43089,
+          "profile": {
+            "initialPlanMs": 26.296708499990928,
+            "sealPlanMs": 26.251228999994055,
+            "inventoryMs": 0.07095850000041537,
+            "sealInclusiveMs": 26.366875000006985,
+            "costs": {
+              "gate": {
+                "ms": 2.6964039997474174,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.04258300000219606,
+                "count": 2
+              },
+              "command": {
+                "ms": 12.689508000003116,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 19.47131549997721,
+                "count": 170
+              },
+              "wire": {
+                "ms": 17.199373000090418,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.052104500005953014,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.12358350000431528,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 16.848458499996923,
+          "planMs": 7.992521000000124,
+          "dispatchMs": 8.762708499998553,
+          "requests": 3,
+          "wireBytes": 43089,
+          "profile": {
+            "initialPlanMs": 3.9017705000005662,
+            "sealPlanMs": 3.7886250000010477,
+            "inventoryMs": 0.07356250000884756,
+            "sealInclusiveMs": 3.907833000004757,
+            "costs": {
+              "gate": {
+                "ms": 0.4129159999283729,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.0408750000060536,
+                "count": 2
+              },
+              "command": {
+                "ms": 1.8182710000182851,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 2.7708950000087498,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.4797059999982594,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.04510450000088895,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.12472849999903701,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 44.896604500005196,
+      "instrumentationDifferenceMs": 2.9824790000056964,
+      "maxVsScalarDifferenceMs": 6.457208500003617
+    },
+    {
+      "cohort": 3,
+      "workload": "small",
+      "role": "authority-broker",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 23.625708500003384,
+          "planMs": 0.4285835000046063,
+          "dispatchMs": 23.19604149999941,
+          "requests": 9,
+          "wireBytes": 109753,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 59.42477100000542,
+          "planMs": 50.411438000010094,
+          "dispatchMs": 9.123853999997664,
+          "requests": 3,
+          "wireBytes": 43809,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 62.81168749999779,
+          "planMs": 53.61564599999838,
+          "dispatchMs": 9.198124999995343,
+          "requests": 3,
+          "wireBytes": 43809,
+          "profile": {
+            "initialPlanMs": 26.802770499998587,
+            "sealPlanMs": 26.645687500007625,
+            "inventoryMs": 0.07275050000316696,
+            "sealInclusiveMs": 26.766271000000415,
+            "costs": {
+              "gate": {
+                "ms": 2.707739999794285,
+                "count": 1034
+              },
+              "setup": {
+                "ms": 0.04477050000423333,
+                "count": 2
+              },
+              "command": {
+                "ms": 12.736292999928992,
+                "count": 170
+              },
+              "authorization": {
+                "ms": 19.851632499900006,
+                "count": 170
+              },
+              "wire": {
+                "ms": 17.865521499988972,
+                "count": 170
+              },
+              "digest": {
+                "ms": 0.04997899999580113,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.1290625000037835,
+                "count": 2
+              }
+            },
+            "probes": 170
+          }
+        },
+        "B-max": {
+          "wallMs": 17.09960449999926,
+          "planMs": 7.933812499999476,
+          "dispatchMs": 9.056228999994346,
+          "requests": 3,
+          "wireBytes": 43809,
+          "profile": {
+            "initialPlanMs": 3.886396000001696,
+            "sealPlanMs": 3.799937499992666,
+            "inventoryMs": 0.07368750000023283,
+            "sealInclusiveMs": 3.917583000002196,
+            "costs": {
+              "gate": {
+                "ms": 0.4098325000377372,
+                "count": 158
+              },
+              "setup": {
+                "ms": 0.039895500005513895,
+                "count": 2
+              },
+              "command": {
+                "ms": 1.8056860000069719,
+                "count": 24
+              },
+              "authorization": {
+                "ms": 2.742083500015724,
+                "count": 24
+              },
+              "wire": {
+                "ms": 2.5104580000261194,
+                "count": 24
+              },
+              "digest": {
+                "ms": 0.04585450000013225,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.12612449999869568,
+                "count": 2
+              }
+            },
+            "probes": 24
+          }
+        }
+      },
+      "pairedImprovementMs": 45.65435399999842,
+      "instrumentationDifferenceMs": 2.936812000007194,
+      "maxVsScalarDifferenceMs": 6.496687999999267
+    },
+    {
+      "cohort": 3,
+      "workload": "h0Sizes",
+      "role": "reader",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 41.83466650000628,
+          "planMs": 0.6749165000001085,
+          "dispatchMs": 41.15975000000617,
+          "requests": 16,
+          "wireBytes": 231231,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 152.64712500000314,
+          "planMs": 121.21356299999752,
+          "dispatchMs": 31.436791499996616,
+          "requests": 11,
+          "wireBytes": 182175,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 160.6132915000053,
+          "planMs": 129.19639599999937,
+          "dispatchMs": 31.558021000004373,
+          "requests": 11,
+          "wireBytes": 182175,
+          "profile": {
+            "initialPlanMs": 64.72658299999603,
+            "sealPlanMs": 64.16389550000167,
+            "inventoryMs": 0.07485400000587106,
+            "sealInclusiveMs": 64.51237499999843,
+            "costs": {
+              "gate": {
+                "ms": 6.86530300033337,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.044625500006077345,
+                "count": 2
+              },
+              "command": {
+                "ms": 29.66368150006747,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 46.14022399995156,
+                "count": 444
+              },
+              "wire": {
+                "ms": 45.619641000099364,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.08293700000649551,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.37568749998899875,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 50.056917000001704,
+          "planMs": 18.67500000000291,
+          "dispatchMs": 31.378021000004082,
+          "requests": 11,
+          "wireBytes": 182175,
+          "profile": {
+            "initialPlanMs": 9.29408350000449,
+            "sealPlanMs": 8.8627290000004,
+            "inventoryMs": 0.07452049999847077,
+            "sealInclusiveMs": 9.262354500002402,
+            "costs": {
+              "gate": {
+                "ms": 0.9566225000016857,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.041396000000531785,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.94983400003548,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 6.457083499939472,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.1842075000095065,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.07493699999758974,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.37485449998348486,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 110.7581455000036,
+      "instrumentationDifferenceMs": 7.905437000008533,
+      "maxVsScalarDifferenceMs": -8.210166999997455
+    },
+    {
+      "cohort": 3,
+      "workload": "h0Sizes",
+      "role": "reader",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 42.75775000000431,
+          "planMs": 0.6910005000027013,
+          "dispatchMs": 41.927395999999135,
+          "requests": 16,
+          "wireBytes": 235071,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 155.48281299999508,
+          "planMs": 123.53245899999456,
+          "dispatchMs": 31.950354000000516,
+          "requests": 11,
+          "wireBytes": 184815,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 163.5021459999989,
+          "planMs": 130.96529200000077,
+          "dispatchMs": 32.125,
+          "requests": 11,
+          "wireBytes": 184815,
+          "profile": {
+            "initialPlanMs": 65.38797899999918,
+            "sealPlanMs": 65.08231299999898,
+            "inventoryMs": 0.07487500000570435,
+            "sealInclusiveMs": 65.43927099999564,
+            "costs": {
+              "gate": {
+                "ms": 6.997106500370137,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.04572899999038782,
+                "count": 2
+              },
+              "command": {
+                "ms": 30.063942499880795,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 46.68984050005383,
+                "count": 444
+              },
+              "wire": {
+                "ms": 45.95347549989674,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.08437499999854481,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.3843330000017886,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 51.06872900000599,
+          "planMs": 19.16827049999847,
+          "dispatchMs": 31.900458500007517,
+          "requests": 11,
+          "wireBytes": 184815,
+          "profile": {
+            "initialPlanMs": 9.323604500001238,
+            "sealPlanMs": 9.297874999996566,
+            "inventoryMs": 0.07835399999748915,
+            "sealInclusiveMs": 9.646333500000765,
+            "costs": {
+              "gate": {
+                "ms": 0.9712765000149375,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.04277149999688845,
+                "count": 2
+              },
+              "command": {
+                "ms": 4.0715609999751905,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 6.462290000003122,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.516084999988379,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.07720850000623614,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.38531249999505235,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 112.33879149999848,
+      "instrumentationDifferenceMs": 7.99616649998643,
+      "maxVsScalarDifferenceMs": -8.205041500004882
+    },
+    {
+      "cohort": 3,
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 43.48895849999826,
+          "planMs": 0.7108124999940628,
+          "dispatchMs": 42.78450000000157,
+          "requests": 16,
+          "wireBytes": 235999,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 159.2851459999947,
+          "planMs": 127.34054149999429,
+          "dispatchMs": 32.02954150000005,
+          "requests": 11,
+          "wireBytes": 185453,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 167.18522900000244,
+          "planMs": 134.83018699999957,
+          "dispatchMs": 32.542145500003244,
+          "requests": 11,
+          "wireBytes": 185453,
+          "profile": {
+            "initialPlanMs": 67.2624375000014,
+            "sealPlanMs": 67.20599999999831,
+            "inventoryMs": 0.07422899999073707,
+            "sealInclusiveMs": 67.59185399999842,
+            "costs": {
+              "gate": {
+                "ms": 6.978230999891821,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.044957999991311226,
+                "count": 2
+              },
+              "command": {
+                "ms": 31.15392400007113,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 48.72723550005321,
+                "count": 444
+              },
+              "wire": {
+                "ms": 46.5441254999314,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.08370799999829615,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.4016669999982696,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 51.55487500000163,
+          "planMs": 19.482021000003442,
+          "dispatchMs": 32.01462549999269,
+          "requests": 11,
+          "wireBytes": 185453,
+          "profile": {
+            "initialPlanMs": 9.578957999998238,
+            "sealPlanMs": 9.53868749999674,
+            "inventoryMs": 0.07764599999791244,
+            "sealInclusiveMs": 9.907061999998405,
+            "costs": {
+              "gate": {
+                "ms": 0.9651030000241008,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.04162499999074498,
+                "count": 2
+              },
+              "command": {
+                "ms": 4.225397000060184,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 6.833726500022749,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.48706549993949,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.07537600000068778,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.4003745000009076,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 116.0157285000023,
+      "instrumentationDifferenceMs": 8.212500000001455,
+      "maxVsScalarDifferenceMs": -8.318083500002103
+    },
+    {
+      "cohort": 3,
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 43.314895999996224,
+          "planMs": 0.7416460000022198,
+          "dispatchMs": 42.525270999991335,
+          "requests": 16,
+          "wireBytes": 239839,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 164.64918749999924,
+          "planMs": 131.4539369999984,
+          "dispatchMs": 32.82945849999669,
+          "requests": 11,
+          "wireBytes": 188093,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 168.1811044999995,
+          "planMs": 135.4686875000043,
+          "dispatchMs": 32.72683350000443,
+          "requests": 11,
+          "wireBytes": 188093,
+          "profile": {
+            "initialPlanMs": 67.90133350000542,
+            "sealPlanMs": 67.13637500000186,
+            "inventoryMs": 0.07635399998980574,
+            "sealInclusiveMs": 67.5097289999976,
+            "costs": {
+              "gate": {
+                "ms": 6.913019499887014,
+                "count": 2678
+              },
+              "setup": {
+                "ms": 0.0451875000144355,
+                "count": 2
+              },
+              "command": {
+                "ms": 31.220045500034757,
+                "count": 444
+              },
+              "authorization": {
+                "ms": 49.30672900008358,
+                "count": 444
+              },
+              "wire": {
+                "ms": 46.41921449989604,
+                "count": 444
+              },
+              "digest": {
+                "ms": 0.08441649999440415,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.4068749999933061,
+                "count": 2
+              }
+            },
+            "probes": 444
+          }
+        },
+        "B-max": {
+          "wallMs": 52.262666499998886,
+          "planMs": 19.849812499996915,
+          "dispatchMs": 32.30766649999714,
+          "requests": 11,
+          "wireBytes": 188093,
+          "profile": {
+            "initialPlanMs": 9.682520500005921,
+            "sealPlanMs": 9.700729000003776,
+            "inventoryMs": 0.07685399999900255,
+            "sealInclusiveMs": 10.07552100000612,
+            "costs": {
+              "gate": {
+                "ms": 0.9766104999289382,
+                "count": 374
+              },
+              "setup": {
+                "ms": 0.04172950000065612,
+                "count": 2
+              },
+              "command": {
+                "ms": 4.34285299997282,
+                "count": 60
+              },
+              "authorization": {
+                "ms": 6.939191500030574,
+                "count": 60
+              },
+              "wire": {
+                "ms": 6.52472849998594,
+                "count": 60
+              },
+              "digest": {
+                "ms": 0.07972899999731453,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.4119790000040666,
+                "count": 2
+              }
+            },
+            "probes": 60
+          }
+        }
+      },
+      "pairedImprovementMs": 115.71000000001368,
+      "instrumentationDifferenceMs": 3.9244795000049635,
+      "maxVsScalarDifferenceMs": -8.600104499993904
+    },
+    {
+      "cohort": 3,
+      "workload": "singleLarge",
+      "role": "reader",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 39.659416500006046,
+          "planMs": 0.6385830000072019,
+          "dispatchMs": 39.01152100000036,
+          "requests": 15,
+          "wireBytes": 220239,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 117.04662450000615,
+          "planMs": 83.08704099999886,
+          "dispatchMs": 33.959583500007284,
+          "requests": 12,
+          "wireBytes": 191215,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 123.52427099999477,
+          "planMs": 89.71004199999152,
+          "dispatchMs": 33.81422900000325,
+          "requests": 12,
+          "wireBytes": 191215,
+          "profile": {
+            "initialPlanMs": 44.76049950000015,
+            "sealPlanMs": 44.47525000000314,
+            "inventoryMs": 0.05849999999918509,
+            "sealInclusiveMs": 44.84364600000117,
+            "costs": {
+              "gate": {
+                "ms": 4.818280000152299,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.043791999989480246,
+                "count": 2
+              },
+              "command": {
+                "ms": 20.042444000049727,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 31.98445799989713,
+                "count": 310
+              },
+              "wire": {
+                "ms": 31.046507500097505,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.06812499999796273,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.4051249999902211,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 50.528666500002146,
+          "planMs": 16.779146000000765,
+          "dispatchMs": 33.76872900000308,
+          "requests": 12,
+          "wireBytes": 191215,
+          "profile": {
+            "initialPlanMs": 8.117853999996441,
+            "sealPlanMs": 8.200457999999344,
+            "inventoryMs": 0.058833499999309424,
+            "sealInclusiveMs": 8.561562499999127,
+            "costs": {
+              "gate": {
+                "ms": 0.8754139999728068,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.03800050000427291,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.560999500004982,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 5.893685000024561,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.424919500059332,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.06524999999965075,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.39904050000041025,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 72.61527049999131,
+      "instrumentationDifferenceMs": 5.986687000004167,
+      "maxVsScalarDifferenceMs": -10.800166500004707
+    },
+    {
+      "cohort": 3,
+      "workload": "singleLarge",
+      "role": "reader",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 39.60643749999144,
+          "planMs": 0.6453959999998915,
+          "dispatchMs": 38.801895999997214,
+          "requests": 15,
+          "wireBytes": 223839,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 118.92099949998374,
+          "planMs": 84.22574949999398,
+          "dispatchMs": 34.41327099999762,
+          "requests": 12,
+          "wireBytes": 194095,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 123.84362549999787,
+          "planMs": 89.59956250000687,
+          "dispatchMs": 34.16189600000507,
+          "requests": 12,
+          "wireBytes": 194095,
+          "profile": {
+            "initialPlanMs": 44.74064549999457,
+            "sealPlanMs": 44.204312499998196,
+            "inventoryMs": 0.0591874999954598,
+            "sealInclusiveMs": 44.57368750000751,
+            "costs": {
+              "gate": {
+                "ms": 4.8238679997302825,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.04129149999789661,
+                "count": 2
+              },
+              "command": {
+                "ms": 20.04559399990103,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 31.9795784998787,
+                "count": 310
+              },
+              "wire": {
+                "ms": 31.477027000219095,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.06714599998667836,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.40231300000596093,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 50.401291500005755,
+          "planMs": 16.959333999984665,
+          "dispatchMs": 33.52847900001507,
+          "requests": 12,
+          "wireBytes": 194095,
+          "profile": {
+            "initialPlanMs": 8.30095849999634,
+            "sealPlanMs": 8.179270999993605,
+            "inventoryMs": 0.05987500000628643,
+            "sealInclusiveMs": 8.543521000006876,
+            "costs": {
+              "gate": {
+                "ms": 0.8739344999848981,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.038333000004058704,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.7381039999454515,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 5.597960500039335,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.542353500015452,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.06522899999981746,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.40197949999856064,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 73.07504200001131,
+      "instrumentationDifferenceMs": 4.425938500018674,
+      "maxVsScalarDifferenceMs": -10.394291500007967
+    },
+    {
+      "cohort": 3,
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "chars": 8,
+      "variants": {
+        "S": {
+          "wallMs": 40.06339600001229,
+          "planMs": 0.6709374999918509,
+          "dispatchMs": 39.382792000003974,
+          "requests": 15,
+          "wireBytes": 224709,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 120.21345850000216,
+          "planMs": 86.20375000000058,
+          "dispatchMs": 34.13356300001033,
+          "requests": 12,
+          "wireBytes": 194791,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 126.5096244999877,
+          "planMs": 92.12516649998724,
+          "dispatchMs": 34.34658350000973,
+          "requests": 12,
+          "wireBytes": 194791,
+          "profile": {
+            "initialPlanMs": 46.114728500004276,
+            "sealPlanMs": 45.52193749998696,
+            "inventoryMs": 0.058666500000981614,
+            "sealInclusiveMs": 45.912520499987295,
+            "costs": {
+              "gate": {
+                "ms": 4.819658499924117,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.04189550000592135,
+                "count": 2
+              },
+              "command": {
+                "ms": 20.88966150028864,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 33.23544000009133,
+                "count": 310
+              },
+              "wire": {
+                "ms": 31.774624500030768,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.0666040000069188,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.424354000002495,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 51.31874999999127,
+          "planMs": 17.142687500003376,
+          "dispatchMs": 33.914520999998786,
+          "requests": 12,
+          "wireBytes": 194791,
+          "profile": {
+            "initialPlanMs": 8.391834000009112,
+            "sealPlanMs": 8.359625000011874,
+            "inventoryMs": 0.05920799999148585,
+            "sealInclusiveMs": 8.745062499991036,
+            "costs": {
+              "gate": {
+                "ms": 0.8668335004185792,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.03837499997462146,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.6672485000744928,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 5.783126500042272,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.616227000122308,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.06497949999175034,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.4255420000117738,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 75.41372849998879,
+      "instrumentationDifferenceMs": 5.969936999987112,
+      "maxVsScalarDifferenceMs": -10.988042000011774
+    },
+    {
+      "cohort": 3,
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "chars": 128,
+      "variants": {
+        "S": {
+          "wallMs": 41.001041999988956,
+          "planMs": 0.7025419999990845,
+          "dispatchMs": 40.28862500000105,
+          "requests": 15,
+          "wireBytes": 228309,
+          "profile": null
+        },
+        "B-ref": {
+          "wallMs": 124.54581300001882,
+          "planMs": 88.5749375000014,
+          "dispatchMs": 35.70960450000712,
+          "requests": 12,
+          "wireBytes": 197671,
+          "profile": null
+        },
+        "B-binary": {
+          "wallMs": 128.52137449999282,
+          "planMs": 94.06412499998987,
+          "dispatchMs": 34.60250000000815,
+          "requests": 12,
+          "wireBytes": 197671,
+          "profile": {
+            "initialPlanMs": 46.95614599999681,
+            "sealPlanMs": 46.585499999986496,
+            "inventoryMs": 0.059083499989355914,
+            "sealInclusiveMs": 46.98570849998214,
+            "costs": {
+              "gate": {
+                "ms": 4.874465999819222,
+                "count": 1874
+              },
+              "setup": {
+                "ms": 0.04283350001787767,
+                "count": 2
+              },
+              "command": {
+                "ms": 21.63458699999319,
+                "count": 310
+              },
+              "authorization": {
+                "ms": 34.015146500154515,
+                "count": 310
+              },
+              "wire": {
+                "ms": 32.257276499818545,
+                "count": 310
+              },
+              "digest": {
+                "ms": 0.06814599999052007,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.43100050001521595,
+                "count": 2
+              }
+            },
+            "probes": 310
+          }
+        },
+        "B-max": {
+          "wallMs": 52.94006300000183,
+          "planMs": 17.627208499994595,
+          "dispatchMs": 35.21827100000519,
+          "requests": 12,
+          "wireBytes": 197671,
+          "profile": {
+            "initialPlanMs": 8.587750000006054,
+            "sealPlanMs": 8.609041500007152,
+            "inventoryMs": 0.06045849999645725,
+            "sealInclusiveMs": 9.005791500007035,
+            "costs": {
+              "gate": {
+                "ms": 0.8875590002571698,
+                "count": 338
+              },
+              "setup": {
+                "ms": 0.04045850000693463,
+                "count": 2
+              },
+              "command": {
+                "ms": 3.782794000013382,
+                "count": 54
+              },
+              "authorization": {
+                "ms": 6.13255999989633,
+                "count": 54
+              },
+              "wire": {
+                "ms": 5.623707000006107,
+                "count": 54
+              },
+              "digest": {
+                "ms": 0.0676040000107605,
+                "count": 2
+              },
+              "outputDigest": {
+                "ms": 0.43510399997467175,
+                "count": 2
+              }
+            },
+            "probes": 54
+          }
+        }
+      },
+      "pairedImprovementMs": 76.49364499999501,
+      "instrumentationDifferenceMs": 5.6745205000042915,
+      "maxVsScalarDifferenceMs": -11.970958499994595
+    }
+  ],
+  "matchedRounds": 216,
+  "transfers": 864,
+  "decision": {
+    "productionAdopted": false,
+    "eightReadsEstablished": false,
+    "cg0Proceed": false,
+    "cg3Proceed": false,
+    "readCommittedReduction": 0
+  },
+  "scope": "instrumented test-only planner forks; exact baseline plan and signed inner wire preserved; two planner invocations retained, shared client/server plan; mock source/pin, no real storage or five-process evidence",
+  "measurement": {
+    "path": "docs/validation/gradle-c3b-cgp-i2p-2026-11-07.measurements.json",
+    "sha256": "caef209ee6f09047ef525f4d5f7d06aa75db1211ac14b6c114c23ad5600a02fc"
+  },
+  "document": {
+    "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+    "heading": "### 9.112 ",
+    "sectionSha256": "26eb0531a96af525c5d15b0546a00083ceceac82f8056e0328ef401c83f64ade"
+  },
+  "analysisSource": {
+    "path": "scripts/analyze-c3b-cgp-i2p.mjs",
+    "sha256": "3df83f8de5d30b697bef29d44a6bbcde5a8b545306c41843adbfe39306add986"
+  },
+  "checkerSource": {
+    "path": "src/test/fixtures/gradleOwnedCgpI2PReport.mjs",
+    "sha256": "bc4d4d373f486ea66d2c9a146b8a1dff7fbe6036178381ce118170701778a34f"
+  },
+  "verification": {
+    "date": "2026-11-07",
+    "scope": "test-only real-clock signed-session comparison; not independent UID isolation or real storage",
+    "checks": [
+      {
+        "command": "npx vitest run src/test/utils/gradleOwnedCgpI2P.test.ts src/test/utils/gradleOwnedCgpI2PRegression.test.ts src/test/utils/gradleOwnedCgpI2PFork.test.ts src/test/utils/gradleOwnedCgpI2PReport.test.ts src/test/utils/gradleOwnedCgpI2PValidation.test.ts --maxWorkers=1",
+        "passed": 279
+      },
+      {
+        "command": "env OSV_CGP_I2P_NATIVE=1 OSV_CGP_I2P_OUTPUT=docs/validation/gradle-c3b-cgp-i2p-2026-11-07.measurements.json npx vitest run src/test/utils/gradleOwnedCgpI2PNative.test.ts --maxWorkers=1",
+        "passed": 1,
+        "matchedRounds": 216,
+        "transfers": 864,
+        "warmupTransfers": 864
+      },
+      {
+        "command": "npx vitest run src/test/utils/gradleOwnedCgpI2.test.ts src/test/utils/gradleOwnedCgpI2Fork.test.ts src/test/utils/gradleOwnedCgpI2Report.test.ts src/test/utils/gradleOwnedCgpI2Validation.test.ts src/test/utils/gradleOwnedCgpI0Contract.test.ts src/test/utils/gradleOwnedCgpI0Manifest.test.ts src/test/utils/gradleOwnedCgpI0Guard.test.ts src/test/utils/gradleOwnedCgpI0Regression.test.ts src/test/utils/gradleOwnedCgpI0ReviewFix.test.ts src/test/utils/gradleOwnedCgpI1.test.ts src/test/utils/gradleOwnedCgpI1Report.test.ts src/test/utils/gradleOwnedCgpI1Validation.test.ts src/test/utils/gradleOwnedCgpI1OwnerValidation.test.ts src/test/docs/commandExamples.test.ts --maxWorkers=1",
+        "passed": 529
+      },
+      {
+        "command": "npm run typecheck",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "exitCode": 0
+      },
+      {
+        "command": "git diff --check",
+        "exitCode": 0
+      }
+    ],
+    "regressionSources": {
+      "src/test/utils/gradleOwnedCgpI2P.test.ts": "d1fc8a61124d38d9f5abc8c32426b385e6e55e7a1c41de90a7e4b467949ad53b",
+      "src/test/utils/gradleOwnedCgpI2PRegression.test.ts": "274d79f2a7b0e679655d98439efd5f019e50d169d277f59f647be1115c37e6c7",
+      "src/test/utils/gradleOwnedCgpI2PFork.test.ts": "10a4455b3d44c56fa567af2b48ab2e18564268acf817255a5b79ad044150359d",
+      "src/test/utils/gradleOwnedCgpI2PReport.test.ts": "3a70c4a0876c2bab4094f76d86c872c27610953d2db76af9ea8f053ca2e125b0",
+      "src/test/utils/gradleOwnedCgpI2PValidation.test.ts": "43a777ba63133ad24c6ad7e63374e723d9e3fb16d993b5abdb4a1ae4e31fe267",
+      "src/test/utils/gradleOwnedCgpI2.test.ts": "d927eaa472c3b6c198a90a9b6e01a676f5a6d956e42014bdf24fccfe80f45f6b"
+    },
+    "limitations": [
+      "Profiling plus extra leaf gates has measured overhead: compare B-ref to B-binary separately.",
+      "Authority independently recomputes at seal, but client/server still share that plan; no independent provider replan RPC.",
+      "All primary maximum probes fit; lower-cap fallback is tested separately.",
+      "No real storage/readCommitted, five-process throughput, eight-read success or production adoption."
+    ],
+    "reviewCorrections": {
+      "probeUniqueness": "Require unique commandDigest per planner invocation, including both search and final probes; independent seal invocation may repeat the same candidates.",
+      "regressions": {
+        "negative": 8,
+        "positive": 1,
+        "redFailed": 8,
+        "redPassed": 35,
+        "greenPassed": 43,
+        "preserved": [
+          "total events",
+          "ordinals",
+          "cost counters and times",
+          "RPC counters"
+        ]
+      },
+      "remeasurement": {
+        "matchedRounds": 216,
+        "transfers": 864,
+        "maxFasterThanBinary": 36,
+        "maxFasterThanScalar": 12
+      }
+    }
+  }
+}

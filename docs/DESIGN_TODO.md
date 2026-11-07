@@ -3084,3 +3084,11 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 §9.111レビュー修正：全entry再構成・結果digest作成後の最終認可／policy／元期限gateを追加。両modeの最終期限到達・取消し・policy変更6件と、計画／転送の過小計上・未計上wall5件をRED→GREENで確認。共有境界時刻と単一終了時刻で総時間を完全分割し、計時誤差0.01 msで双方向照合する。修正sourceで216 pair／432転送を再計測して検証記録を更新。
 
 §9.111レビュー修正2：`--check`の照合先を計測source閉包の`src/test/`全体へ広げ、I0 plannerの変更も検出する。snapshot隔離・全entry検査・拒否時のguard状態・S*／B*応答改ざん・checker条件の回帰を追加し、重複した元期限台帳を削除した。診断の原因を未確定へ改め、`sealPlan`による計画2回実行、serverのplan共有、256 operation上限を明記した。修正sourceで216 pair／432転送を再計測。
+
+### CGP-I2P：planner費用分解・最大サイズ優先（§9.112）
+- [x] historical I0／I2を維持したtest-only fork。最大lengthをexact wireへ先に通し、失敗時は元のbinaryへfallback。2回の計画とseal全体一致、全認可・元期限・完全性・予算を維持。
+- [x] 80専用回帰＋現I2 runtime150件の再適用、fork4件・checker43件。plan／実signed wireとworkの一致、計画中の取消し・期限、fallback・cap・seal改変、snapshot／再試行／最終gate等を確認。
+- [x] 216組・864転送の4構成比較。未変更B-refで計測器bridgeも分離。probeは2回合計small170→24、H0サイズ444→60、大entry310→54。計画込みでbinaryより全36条件で短縮。scalarより速いのはsmall12条件のみで、大きい24条件ではまだ遅い。
+- 次はprovider側の独立計画再現とSourceOwner／実storage接続の契約・費用見積り。共有planのfixtureから本番効果を主張しない。I1併用・5process・S0x／SGA・復旧／RSSは残り、本番採用・継続8 read・CG0／CG3は保留。原本省略・実readCommitted削減0。
+
+§9.112レビュー修正：planごとに候補commandDigestの重複を拒否。総件数・連番・cost／RPC counterを維持した重複／欠落8件と、sealによる同候補の独立再計算を許可する正常系1件を追加。checker43件に更新し、source閉包の整合性を保つ216組／864転送の再計測と検証記録の更新を行った。

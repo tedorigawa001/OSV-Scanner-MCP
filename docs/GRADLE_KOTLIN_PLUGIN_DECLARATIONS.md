@@ -8039,3 +8039,83 @@ node scripts/analyze-c3b-cgp-i2.mjs --check
 - 全entry再構成と結果digest作成が終わった後、transferの結果を返す直前にも現認可・policy・元期限を確認する。最後のRPC成功を全転送の最終認可として使わない。S*／B*の双方で、最終entryのdigest照合時に期限到達・credential取消し・policy変更を注入する6件を追加し、全RPCが成功していても転送結果を返さないことを確認した。pre／post pin確認と、post成功後の非liveな遅配の扱いは維持する。
 - 計画終了と転送開始に同じ境界時刻を使い、最終gate後の終了時刻を一度だけ取得する。planMs＋dispatchMsはwallMsを完全に分割し、結果digest作成と最終gateの費用も含む。checkerは双方の差の絶対値を0.01 ms以下に制限する（浮動小数点誤差の許容であり、未計上費用の枠ではない）。
 - 両modeのplanMs／dispatchMsを過小計上した4件と、内訳を変えずwallMsを水増しした1件を拒否する。追加11件は修正前に失敗、修正後に通過。修正sourceで216 pair／432転送を再計測し、表・raw・summary・回帰source hashを更新した。
+
+### 9.112 CGP-I2P：planner費用分解と最大サイズ優先の限定実証
+
+2026-11-07。§9.111の手動比較を、source閉包を保存する再現可能なハーネスへ移した。既存I0／I2と過去のraw／summaryは変更せず、新しいtest-only forkを使う。最大サイズ優先は計画作成込みで計測付きbinaryより全36条件で短縮した。ただしscalarより速いのはsmallの12条件だけで、H0サイズと大entry中心の24条件ではまだ遅い。本番採用・継続8 read・CG0／CG3は成立していない。
+
+#### 変更範囲と比較の契約
+- `gradleOwnedCgpI2PPlanner.ts`では、許容する最大lengthを最初にexact wireへ通す。収まればそのlengthを採用し、収まらなければ最大値を除いた区間で元のbinary searchへ戻る。wire-budget以外のschema・認可・期限等の失敗はfallbackへ変換せず拒否する。4 range・合計4096 B・inner8192 B／frame16384 B、entry9・source41460 B、19 batch、wire/work・guardの上限を緩和しない。
+- 今回のworkloadで、command列・plan digest・wire見積り・work unitsが元のplannerと完全一致することを確認する。nativeでも3種のB*の実signed inner request digest列、wire総bytes、構造的work units、全entry再構成結果を照合する。probe削減のためにentry検査・署名検証・再取得を省かない。
+- `sealPlan`による独立した計画再実行と全体一致検査は維持する。計画とsealの両方に同じstrategyを使い、**2回のplanner実行を1回へ省略しない**。再計算した値と異なるplanのsealは拒否する。未評価のplanや以前のlive許可をcacheしない。
+- 現認可・policy・元期限のgateを各計測leafの前後、計画操作の入口／出口に置く。wire-budget以外の失敗を握りつぶさない。固定元期限は構築時＋4500 msで、計画費用もその範囲に入る。source／pre／post・session・guard・最終再構成後のgateはI2から維持する。
+- Authority／Case／Guard／Wireは明示fork。import差分・計測stage・厳しい方向のテスト用cap追加以外を元sourceへ照合する4回帰を置く。productionコード・公開API・信頼設定は変更しない。
+
+#### 計測器の費用と時間の完全性
+構成はS（未変更scalar）、B-ref（未変更I2 binary）、B-binary（計測付きbinary）、B-max（計測付き最大サイズ優先）の4種。B-binary→B-maxが改善案のprimary比較で、B-ref→B-binaryは計測器・追加gateの費用を把握するbridge、S→B-maxは最終的な方式比較である。同じentry bytes・identity template・scope・profile・guard・input ID・予算を使い、facts共有は全構成で無効にする。
+
+plannerの2回を個別に記録し、それぞれでsetup、command構築／digest、authorizeEstimate、exact wire生成／検査、plan digest、出力照合用digest、gateの回数とwallを分ける。leaf費用は非重複で、loop・計時／記録等の残りをotherMsとして残す。leaf合計＋otherMsとplanner wallを双方向照合する。元のcommand／wire処理自体もschema検査やhashを含むため、表を純粋なSHA／CPU時間とは呼ばない。
+
+inventory検証とseal全体も別stageとして記録する。sealは2回目のplannerを含むinclusive時間であり、そのplanner wallへ加算しない。plan1＋plan2＋inventory、plan1＋seal inclusive＋inventoryが操作wallを超えないことを検査する。transfer全体は共有境界時刻と単一終了時刻でplanMs／dispatchMsに分割し、差の絶対値0.01 ms以内を要求する。profile採取／gateの費用は隠さずbridgeで示す。
+
+#### 実時間比較
+3 cohort×3 workload×2 role×identifier 8／128文字×6 round＝216組、4構成で864比較転送（別に864 warm-up）。各組は独立fixture内でwarm-up＋測定転送を行い、元期限を延長しない。cohortごとに順序をrotateし、roundごとにその逆順へ切り替えることで、各2構成の先後を3回ずつにする。warm-upも同じ順序を使う。実署名付きsessionをin-processのsynthetic peer transportで動かし、実wire・counter・event連番／call／phaseと両guardの消費を保存する。失敗はwarm-upも含めてpartial traceを`.failure.json`へ保存して試験を失敗させ、完了例だけを選ばない。
+
+下表は各workloadの12条件の中央値範囲（ms）。差は各roundのpaired差の中央値で、周辺中央値の差ではない。request作成・2回の計画・seal・実session・再構成・最終gateを総時間へ含める。
+
+| workload | S総時間 | B-ref総時間 | B-binary総時間 | B-max総時間 | binary−max paired差 |
+|---|---|---|---|---|---|
+| small | 22.70〜27.54 | 56.46〜67.03 | 59.85〜70.55 | 16.46〜19.25 | 43.39〜50.91 |
+| h0Sizes | 41.83〜44.57 | 152.65〜168.60 | 160.61〜170.89 | 50.06〜52.69 | 110.76〜117.72 |
+| singleLarge | 39.61〜42.98 | 116.60〜125.32 | 122.54〜131.93 | 50.32〜54.03 | 71.87〜79.41 |
+
+| workload | B-binary計画 | B-max計画 | binary probe数 | max probe数 | 計測器bridge paired差 |
+|---|---|---|---|---|---|
+| small | 50.91〜59.18 | 7.74〜8.75 | 170 | 24 | 2.89〜5.18 |
+| h0Sizes | 129.20〜136.86 | 18.68〜20.06 | 444 | 60 | 3.51〜9.07 |
+| singleLarge | 88.54〜95.87 | 16.78〜17.87 | 310 | 54 | 4.23〜7.83 |
+
+probe数は2回のplannerの合計で、最後の全command再検査も含む。改善案はこの再検査を維持したまま、検索用の試行を減らした。主計測の8192 B capでは最大試行が全て収まり、fallbackは厳しい方向の5200／6000 B capの回帰で別確認した。capを8192より増やす／無効化する設定は拒否する。
+
+| H0サイズのstage | inventory ms | 初回plan ms | seal内plan ms | seal全体 ms（inclusive） |
+|---|---|---|---|---|
+| B-binary | 0.07〜0.08 | 64.73〜68.44 | 64.16〜68.33 | 64.51〜68.71 |
+| B-max | 0.07〜0.09 | 9.09〜9.93 | 8.86〜9.74 | 9.26〜10.12 |
+
+H0サイズの2回合計のleaf費用は次のとおり。各欄は12条件の中央値範囲で、medianを足して総時間にしない。
+
+| leaf | binary回数 | max回数 | binary ms | max ms |
+|---|---|---|---|---|
+| setup | 2 | 2 | 0.04〜0.05 | 0.04〜0.05 |
+| command | 444 | 60 | 29.66〜32.43 | 3.95〜4.45 |
+| authorization | 444 | 60 | 46.14〜49.63 | 6.25〜7.25 |
+| wire | 444 | 60 | 45.62〜47.18 | 6.18〜6.76 |
+| digest | 2 | 2 | 0.08〜0.08 | 0.07〜0.08 |
+| outputDigest | 2 | 2 | 0.38〜0.41 | 0.37〜0.41 |
+| gate | 2678 | 374 | 6.87〜7.08 | 0.95〜0.99 |
+
+主にcommand構築・認可・wire再構築とそれらを囲むgateの反復を減らせた。計測器bridge自体の費用も観測されており、B-binaryの絶対時間をそのままproduction binaryの時間とは扱わない。B-maxとSのpaired差はsmallで正、H0サイズ／大entry中心で負だった。したがってplanner改善の限定成立と、全workloadでの方式採用は区別する。
+
+#### 回帰・証跡・残課題
+- 改善案専用80件：元plannerとのexact plan・transfer一致16条件、9つの計画境界×2 strategy×期限／取消し／policy、wire fallback、予算不足・source改変・post取消し・最終gate、seal改変拒否、cap上限を確認する。
+- 現行I2のruntime150件を最大サイズ優先へ再適用し、元期限での待機終了、snapshot隔離・全entry検査、拒否／unknown・再試行、署名済み応答改変、最終gateを維持する。fork照合4件、証拠checker43件も実行する。
+- checkerは固定profile／manifest・全36条件・実行順、exact signed wire、全entry結果、source/pre/post・署名counter、wire/work・guard、planner2回・seal・cost／probe回数、非重複時間の閉包・失敗混入を検査する。計測source閉包の`src/test/`全体、raw・summary・本節・分析器・回帰sourceのhashを保存・再照合する。元I2のhistorical測定は書き換えない。
+
+rawは`docs/validation/gradle-c3b-cgp-i2p-2026-11-07.measurements.json`、summaryは同名`.json`。
+```sh
+env OSV_CGP_I2P_NATIVE=1 OSV_CGP_I2P_OUTPUT=docs/validation/gradle-c3b-cgp-i2p-2026-11-07.measurements.json npx vitest run src/test/utils/gradleOwnedCgpI2PNative.test.ts --maxWorkers=1
+node scripts/analyze-c3b-cgp-i2p.mjs
+node scripts/analyze-c3b-cgp-i2p.mjs --check
+```
+
+**実証範囲**：Buffer sourceと模擬pin、既存と同じclient/server共有のsealed plan・simulated authorityである。sealの再計画はclientの計画時間へ入り、実providerが自身のinventoryからwire planを独立再現する構成ではない。実storage/readCommitted・独立UID・5process・最終ACKは未実施。H0サイズと同じ合成bytesであり、H0 graphの実readCommitted削減や8 read成立を計測したものではない。exact wire試行は既存I0の固定見積りlayoutに対するもので、lineage追加応答を含む実sessionの先行予測とは同一でない。実sessionのサイズ検査は別に維持し、今回の実wireを照合するが、全許可entryサイズの組合せでの容量成立を証明したものではない。64 MiB transfer上限は現workloadで到達せず、事後検査のまま。CPU上限やRSSも未実証。
+
+次はprovider側の独立した計画再現を含む費用と、本番SourceOwner／実storage接続の採用条件を具体化する。H0サイズで残るscalarとの差を、現在の認可・元期限・完全性を弱めず埋められるか見積もる。I1併用・I3／I4／S0dの5process、S0x／SGA・cold／churn／復旧・最大RSSも残る。本番採用・継続8 read・CG0／CG3は保留、原本読取省略・実readCommitted削減は0。
+
+検証結果：今回279件（専用80・既存runtimeの最適化版への再適用150・fork4・checker43・記録2）と関連既存529件、型検査・build・差分検査が通過した。実時間比較1件は216組／864転送を保存した。
+
+#### レビュー修正：同一plan内の候補重複・欠落の拒否
+- probeの連番だけでなく、同一plan実行内の`commandDigest`の一意性を検査する。候補1件を欠落させ、別候補の記録を複製して連番だけを維持しても拒否する。検索と最終全command検査の両方を対象にする。
+- B-binary／B-max、初回／sealの2実行、検索／最終検査の組合せ8負例を追加。総件数・全ordinal・全cost counterと時間・RPC counterが不変であることをテスト中にも確認し、それでも重複として拒否する。修正前は8件とも受理、修正後は拒否した。
+- 一意性のscopeは各plan実行に限定し、sealが初回と同じ候補列を独立再計算する正常系を別の1件で確認する。初回とsealをまたいだ同じdigestは重複扱いしない。
+- checkerを含むsource閉包を新しい実行証拠へ束縛するため、216組／864転送を再計測し、raw・summary・表・source hashを更新した。planner／runtimeの手順と予算は変更しない。
