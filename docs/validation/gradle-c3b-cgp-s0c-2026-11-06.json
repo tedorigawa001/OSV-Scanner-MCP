@@ -12,9 +12,9 @@
       "registryClosureBytes": 6621,
       "anchorClosureBytes": 15413,
       "objects": 4,
-      "medianWallMs": 1.6545204999999896,
-      "medianMaterializeMs": 1.0386455000001433,
-      "buildMs": 1.66862500000002
+      "medianWallMs": 1.6603959999999915,
+      "medianMaterializeMs": 1.1592709999999897,
+      "buildMs": 2.1351250000000164
     },
     {
       "cohort": 1,
@@ -22,14 +22,14 @@
       "records": 2,
       "mode": "W",
       "status": "success",
-      "bytes": 27947,
-      "ownerBytesWithCopies": 27947,
-      "registryClosureBytes": 12134,
+      "bytes": 27945,
+      "ownerBytesWithCopies": 27945,
+      "registryClosureBytes": 12132,
       "anchorClosureBytes": 15813,
       "objects": 16,
-      "medianWallMs": 3.914583500000049,
-      "medianMaterializeMs": 1.903645499999925,
-      "buildMs": 3.524791999999934
+      "medianWallMs": 3.241374999999948,
+      "medianMaterializeMs": 1.628520999999978,
+      "buildMs": 4.327125000000024
     },
     {
       "cohort": 1,
@@ -37,14 +37,14 @@
       "records": 2,
       "mode": "P",
       "status": "success",
-      "bytes": 20776,
-      "ownerBytesWithCopies": 35806,
-      "registryClosureBytes": 15030,
-      "anchorClosureBytes": 20776,
+      "bytes": 20774,
+      "ownerBytesWithCopies": 35802,
+      "registryClosureBytes": 15028,
+      "anchorClosureBytes": 20774,
       "objects": 18,
-      "medianWallMs": 3.6359165000000075,
-      "medianMaterializeMs": 1.460375499999941,
-      "buildMs": 5.573958999999945
+      "medianWallMs": 3.0340419999998858,
+      "medianMaterializeMs": 1.312833499999897,
+      "buildMs": 4.90462500000001
     },
     {
       "cohort": 1,
@@ -57,9 +57,9 @@
       "registryClosureBytes": 18019,
       "anchorClosureBytes": 64394,
       "objects": 8,
-      "medianWallMs": 3.2258119999999053,
-      "medianMaterializeMs": 2.228978999999981,
-      "buildMs": 1.8274159999998574
+      "medianWallMs": 4.261437500000056,
+      "medianMaterializeMs": 3.170958000000155,
+      "buildMs": 2.5625
     },
     {
       "cohort": 1,
@@ -67,14 +67,14 @@
       "records": 4,
       "mode": "W",
       "status": "success",
-      "bytes": 65072,
-      "ownerBytesWithCopies": 65072,
-      "registryClosureBytes": 22037,
-      "anchorClosureBytes": 43035,
+      "bytes": 62000,
+      "ownerBytesWithCopies": 62000,
+      "registryClosureBytes": 22998,
+      "anchorClosureBytes": 39002,
       "objects": 30,
-      "medianWallMs": 6.1007290000002286,
-      "medianMaterializeMs": 2.9539790000001176,
-      "buildMs": 3.9782910000001266
+      "medianWallMs": 8.152145500000188,
+      "medianMaterializeMs": 4.31985399999985,
+      "buildMs": 4.432624999999916
     },
     {
       "cohort": 1,
@@ -82,14 +82,14 @@
       "records": 4,
       "mode": "P",
       "status": "success",
-      "bytes": 41030,
-      "ownerBytesWithCopies": 69191,
-      "registryClosureBytes": 28161,
-      "anchorClosureBytes": 41030,
+      "bytes": 41587,
+      "ownerBytesWithCopies": 70709,
+      "registryClosureBytes": 29122,
+      "anchorClosureBytes": 41587,
       "objects": 34,
-      "medianWallMs": 5.721937000000025,
-      "medianMaterializeMs": 2.3192290000001776,
-      "buildMs": 9.899332999999842
+      "medianWallMs": 6.6380830000000515,
+      "medianMaterializeMs": 2.7441460000000006,
+      "buildMs": 4.000750000000153
     },
     {
       "cohort": 1,
@@ -102,9 +102,9 @@
       "registryClosureBytes": 32197,
       "anchorClosureBytes": 154351,
       "objects": 12,
-      "medianWallMs": 5.013354000000163,
-      "medianMaterializeMs": 3.6568539999998393,
-      "buildMs": 4.124291999999514
+      "medianWallMs": 6.381061999999474,
+      "medianMaterializeMs": 5.031125500000144,
+      "buildMs": 5.039708000000246
     },
     {
       "cohort": 1,
@@ -112,14 +112,14 @@
       "records": 6,
       "mode": "W",
       "status": "success",
-      "bytes": 102676,
-      "ownerBytesWithCopies": 102676,
-      "registryClosureBytes": 32746,
-      "anchorClosureBytes": 69930,
+      "bytes": 104959,
+      "ownerBytesWithCopies": 104959,
+      "registryClosureBytes": 34342,
+      "anchorClosureBytes": 70617,
       "objects": 44,
-      "medianWallMs": 9.224832999999762,
-      "medianMaterializeMs": 4.834353999999621,
-      "buildMs": 6.3411660000001575
+      "medianWallMs": 10.42783350000036,
+      "medianMaterializeMs": 6.077437500000542,
+      "buildMs": 7.029417000000649
     },
     {
       "cohort": 1,
@@ -127,14 +127,14 @@
       "records": 6,
       "mode": "P",
       "status": "success",
-      "bytes": 61677,
-      "ownerBytesWithCopies": 103775,
-      "registryClosureBytes": 42098,
-      "anchorClosureBytes": 61677,
+      "bytes": 63965,
+      "ownerBytesWithCopies": 107659,
+      "registryClosureBytes": 43694,
+      "anchorClosureBytes": 63965,
       "objects": 50,
-      "medianWallMs": 8.697666499999741,
-      "medianMaterializeMs": 3.677312499999971,
-      "buildMs": 10.090416000000005
+      "medianWallMs": 8.832750000000033,
+      "medianMaterializeMs": 4.052686999999878,
+      "buildMs": 7.637291000000005
     },
     {
       "cohort": 1,
@@ -147,9 +147,9 @@
       "registryClosureBytes": 68897,
       "anchorClosureBytes": 486842,
       "objects": 20,
-      "medianWallMs": 10.744479499999215,
-      "medianMaterializeMs": 8.523812500000531,
-      "buildMs": 4.8223330000000715
+      "medianWallMs": 16.22618750000038,
+      "medianMaterializeMs": 13.707333500000459,
+      "buildMs": 6.908374999999069
     },
     {
       "cohort": 1,
@@ -157,14 +157,14 @@
       "records": 10,
       "mode": "W",
       "status": "success",
-      "bytes": 276114,
-      "ownerBytesWithCopies": 276114,
-      "registryClosureBytes": 55871,
-      "anchorClosureBytes": 220243,
+      "bytes": 206069,
+      "ownerBytesWithCopies": 206069,
+      "registryClosureBytes": 56429,
+      "anchorClosureBytes": 149640,
       "objects": 72,
-      "medianWallMs": 17.134188000000904,
-      "medianMaterializeMs": 9.923916499998995,
-      "buildMs": 17.992541999999958
+      "medianWallMs": 22.00610400000005,
+      "medianMaterializeMs": 14.139166500000101,
+      "buildMs": 10.76300000000083
     },
     {
       "cohort": 1,
@@ -172,14 +172,121 @@
       "records": 10,
       "mode": "P",
       "status": "success",
-      "bytes": 111915,
-      "ownerBytesWithCopies": 183598,
-      "registryClosureBytes": 71683,
-      "anchorClosureBytes": 111915,
+      "bytes": 109038,
+      "ownerBytesWithCopies": 181279,
+      "registryClosureBytes": 72241,
+      "anchorClosureBytes": 109038,
       "objects": 82,
-      "medianWallMs": 15.029374499999903,
-      "medianMaterializeMs": 6.986021500000788,
-      "buildMs": 17.240458000000217
+      "medianWallMs": 17.354707999999846,
+      "medianMaterializeMs": 8.547187499999382,
+      "buildMs": 11.587625000000116
+    },
+    {
+      "cohort": 1,
+      "cycles": 8,
+      "records": 18,
+      "mode": "F",
+      "status": "success",
+      "bytes": 2145959,
+      "ownerBytesWithCopies": 2145959,
+      "registryClosureBytes": 175717,
+      "anchorClosureBytes": 1970242,
+      "objects": 36,
+      "medianWallMs": 38.78074999999808,
+      "medianMaterializeMs": 34.29560400000082,
+      "buildMs": 17.11670899999808
+    },
+    {
+      "cohort": 1,
+      "cycles": 8,
+      "records": 18,
+      "mode": "W",
+      "status": "success",
+      "bytes": 534973,
+      "ownerBytesWithCopies": 534973,
+      "registryClosureBytes": 108629,
+      "anchorClosureBytes": 426344,
+      "objects": 128,
+      "medianWallMs": 45.40949949999958,
+      "medianMaterializeMs": 33.020541500001855,
+      "buildMs": 45.98154099999738
+    },
+    {
+      "cohort": 1,
+      "cycles": 8,
+      "records": 18,
+      "mode": "P",
+      "status": "success",
+      "bytes": 216875,
+      "ownerBytesWithCopies": 354252,
+      "registryClosureBytes": 137377,
+      "anchorClosureBytes": 216875,
+      "objects": 146,
+      "medianWallMs": 31.29364600000008,
+      "medianMaterializeMs": 17.138458500001434,
+      "buildMs": 31.01629099999991
+    },
+    {
+      "cohort": 1,
+      "cycles": 16,
+      "records": 34,
+      "mode": "F",
+      "status": "capacity",
+      "reason": "current_control_capacity_exhausted"
+    },
+    {
+      "cohort": 1,
+      "cycles": 16,
+      "records": 34,
+      "mode": "W",
+      "status": "capacity",
+      "reason": "owned_manifest_budget_exceeded"
+    },
+    {
+      "cohort": 1,
+      "cycles": 16,
+      "records": 34,
+      "mode": "P",
+      "status": "success",
+      "bytes": 457749,
+      "ownerBytesWithCopies": 746983,
+      "registryClosureBytes": 289234,
+      "anchorClosureBytes": 457749,
+      "objects": 274,
+      "medianWallMs": 69.66547899999932,
+      "medianMaterializeMs": 43.185083500000474,
+      "buildMs": 137.27945800000452
+    },
+    {
+      "cohort": 1,
+      "cycles": 20,
+      "records": 42,
+      "mode": "F",
+      "status": "capacity",
+      "reason": "current_control_capacity_exhausted"
+    },
+    {
+      "cohort": 1,
+      "cycles": 20,
+      "records": 42,
+      "mode": "W",
+      "status": "capacity",
+      "reason": "owned_manifest_budget_exceeded"
+    },
+    {
+      "cohort": 1,
+      "cycles": 20,
+      "records": 42,
+      "mode": "P",
+      "status": "success",
+      "bytes": 596850,
+      "ownerBytesWithCopies": 967769,
+      "registryClosureBytes": 370919,
+      "anchorClosureBytes": 596850,
+      "objects": 338,
+      "medianWallMs": 93.58524999999645,
+      "medianMaterializeMs": 60.04454149999947,
+      "buildMs": 85.97120800000266
     },
     {
       "cohort": 2,
@@ -192,9 +299,9 @@
       "registryClosureBytes": 6621,
       "anchorClosureBytes": 15413,
       "objects": 4,
-      "medianWallMs": 1.673521000000619,
-      "medianMaterializeMs": 1.0324165000001813,
-      "buildMs": 0.6775420000012673
+      "medianWallMs": 1.7419169999920996,
+      "medianMaterializeMs": 1.1681879999960074,
+      "buildMs": 0.8865000000077998
     },
     {
       "cohort": 2,
@@ -202,14 +309,14 @@
       "records": 2,
       "mode": "W",
       "status": "success",
-      "bytes": 27944,
-      "ownerBytesWithCopies": 27944,
-      "registryClosureBytes": 12131,
-      "anchorClosureBytes": 15813,
+      "bytes": 27945,
+      "ownerBytesWithCopies": 27945,
+      "registryClosureBytes": 12129,
+      "anchorClosureBytes": 15816,
       "objects": 16,
-      "medianWallMs": 3.5557294999998703,
-      "medianMaterializeMs": 1.5016665000002831,
-      "buildMs": 1.1776669999999285
+      "medianWallMs": 3.193249999996624,
+      "medianMaterializeMs": 1.613916499998595,
+      "buildMs": 1.922999999995227
     },
     {
       "cohort": 2,
@@ -217,14 +324,14 @@
       "records": 2,
       "mode": "P",
       "status": "success",
-      "bytes": 20773,
-      "ownerBytesWithCopies": 35800,
-      "registryClosureBytes": 15027,
-      "anchorClosureBytes": 20773,
+      "bytes": 20774,
+      "ownerBytesWithCopies": 35799,
+      "registryClosureBytes": 15025,
+      "anchorClosureBytes": 20774,
       "objects": 18,
-      "medianWallMs": 3.6880210000008447,
-      "medianMaterializeMs": 1.3945629999998346,
-      "buildMs": 2.5548330000001442
+      "medianWallMs": 3.062187499999709,
+      "medianMaterializeMs": 1.251854000001913,
+      "buildMs": 2.797166999996989
     },
     {
       "cohort": 2,
@@ -237,9 +344,9 @@
       "registryClosureBytes": 18019,
       "anchorClosureBytes": 64394,
       "objects": 8,
-      "medianWallMs": 2.9735204999988127,
-      "medianMaterializeMs": 2.0122920000003433,
-      "buildMs": 1.419625000000451
+      "medianWallMs": 4.004645499997423,
+      "medianMaterializeMs": 3.106895999997505,
+      "buildMs": 2.090083000002778
     },
     {
       "cohort": 2,
@@ -247,209 +354,316 @@
       "records": 4,
       "mode": "W",
       "status": "success",
-      "bytes": 61039,
-      "ownerBytesWithCopies": 61039,
-      "registryClosureBytes": 22039,
-      "anchorClosureBytes": 39000,
+      "bytes": 61040,
+      "ownerBytesWithCopies": 61040,
+      "registryClosureBytes": 22037,
+      "anchorClosureBytes": 39003,
       "objects": 30,
-      "medianWallMs": 6.071667000000161,
-      "medianMaterializeMs": 3.0141045000000304,
+      "medianWallMs": 6.883229500002926,
+      "medianMaterializeMs": 3.8419579999972484,
+      "buildMs": 3.6031249999941792
+    },
+    {
+      "cohort": 2,
+      "cycles": 1,
+      "records": 4,
+      "mode": "P",
+      "status": "success",
+      "bytes": 40627,
+      "ownerBytesWithCopies": 68788,
+      "registryClosureBytes": 28161,
+      "anchorClosureBytes": 40627,
+      "objects": 34,
+      "medianWallMs": 5.726708000001963,
+      "medianMaterializeMs": 2.42731300000014,
+      "buildMs": 9.066500000000815
+    },
+    {
+      "cohort": 2,
+      "cycles": 2,
+      "records": 6,
+      "mode": "F",
+      "status": "success",
+      "bytes": 186548,
+      "ownerBytesWithCopies": 186548,
+      "registryClosureBytes": 32197,
+      "anchorClosureBytes": 154351,
+      "objects": 12,
+      "medianWallMs": 6.928374999995867,
+      "medianMaterializeMs": 5.600437000000966,
+      "buildMs": 3.4249589999963064
+    },
+    {
+      "cohort": 2,
+      "cycles": 2,
+      "records": 6,
+      "mode": "W",
+      "status": "success",
+      "bytes": 106322,
+      "ownerBytesWithCopies": 106322,
+      "registryClosureBytes": 32923,
+      "anchorClosureBytes": 73399,
+      "objects": 44,
+      "medianWallMs": 11.317520499993407,
+      "medianMaterializeMs": 6.693791500008956,
+      "buildMs": 8.406583000003593
+    },
+    {
+      "cohort": 2,
+      "cycles": 2,
+      "records": 6,
+      "mode": "P",
+      "status": "success",
+      "bytes": 62517,
+      "ownerBytesWithCopies": 104792,
+      "registryClosureBytes": 42275,
+      "anchorClosureBytes": 62517,
+      "objects": 50,
+      "medianWallMs": 8.817750000001979,
+      "medianMaterializeMs": 4.039478999999119,
+      "buildMs": 12.807500000009895
+    },
+    {
+      "cohort": 2,
+      "cycles": 4,
+      "records": 10,
+      "mode": "F",
+      "status": "success",
+      "bytes": 555739,
+      "ownerBytesWithCopies": 555739,
+      "registryClosureBytes": 68897,
+      "anchorClosureBytes": 486842,
+      "objects": 20,
+      "medianWallMs": 16.522125000003143,
+      "medianMaterializeMs": 13.998812500001804,
+      "buildMs": 7.25604100000055
+    },
+    {
+      "cohort": 2,
+      "cycles": 4,
+      "records": 10,
+      "mode": "W",
+      "status": "success",
+      "bytes": 201149,
+      "ownerBytesWithCopies": 201149,
+      "registryClosureBytes": 55669,
+      "anchorClosureBytes": 145480,
+      "objects": 72,
+      "medianWallMs": 21.914916499990795,
+      "medianMaterializeMs": 14.626958500004548,
+      "buildMs": 16.403917000003275
+    },
+    {
+      "cohort": 2,
+      "cycles": 4,
+      "records": 10,
+      "mode": "P",
+      "status": "success",
+      "bytes": 108611,
+      "ownerBytesWithCopies": 180092,
+      "registryClosureBytes": 71481,
+      "anchorClosureBytes": 108611,
+      "objects": 82,
+      "medianWallMs": 17.901020999997854,
+      "medianMaterializeMs": 8.671270999999251,
+      "buildMs": 16.775166999999783
+    },
+    {
+      "cohort": 2,
+      "cycles": 8,
+      "records": 18,
+      "mode": "F",
+      "status": "success",
+      "bytes": 2145959,
+      "ownerBytesWithCopies": 2145959,
+      "registryClosureBytes": 175717,
+      "anchorClosureBytes": 1970242,
+      "objects": 36,
+      "medianWallMs": 40.283936999992875,
+      "medianMaterializeMs": 35.74420850000024,
+      "buildMs": 17.475084000005154
+    },
+    {
+      "cohort": 2,
+      "cycles": 8,
+      "records": 18,
+      "mode": "W",
+      "status": "success",
+      "bytes": 507309,
+      "ownerBytesWithCopies": 507309,
+      "registryClosureBytes": 109104,
+      "anchorClosureBytes": 398205,
+      "objects": 128,
+      "medianWallMs": 47.083979500006535,
+      "medianMaterializeMs": 33.70835399999487,
+      "buildMs": 44.559333999990486
+    },
+    {
+      "cohort": 2,
+      "cycles": 8,
+      "records": 18,
+      "mode": "P",
+      "status": "success",
+      "bytes": 215120,
+      "ownerBytesWithCopies": 352972,
+      "registryClosureBytes": 137852,
+      "anchorClosureBytes": 215120,
+      "objects": 146,
+      "medianWallMs": 32.085249500007194,
+      "medianMaterializeMs": 17.325958499997796,
+      "buildMs": 29.921291999999085
+    },
+    {
+      "cohort": 2,
+      "cycles": 16,
+      "records": 34,
+      "mode": "F",
+      "status": "capacity",
+      "reason": "current_control_capacity_exhausted"
+    },
+    {
+      "cohort": 2,
+      "cycles": 16,
+      "records": 34,
+      "mode": "W",
+      "status": "capacity",
+      "reason": "owned_manifest_budget_exceeded"
+    },
+    {
+      "cohort": 2,
+      "cycles": 16,
+      "records": 34,
+      "mode": "P",
+      "status": "success",
+      "bytes": 459883,
+      "ownerBytesWithCopies": 746993,
+      "registryClosureBytes": 287110,
+      "anchorClosureBytes": 459883,
+      "objects": 274,
+      "medianWallMs": 69.47074950000388,
+      "medianMaterializeMs": 42.78518750000512,
+      "buildMs": 59.87345899999491
+    },
+    {
+      "cohort": 2,
+      "cycles": 20,
+      "records": 42,
+      "mode": "F",
+      "status": "capacity",
+      "reason": "current_control_capacity_exhausted"
+    },
+    {
+      "cohort": 2,
+      "cycles": 20,
+      "records": 42,
+      "mode": "W",
+      "status": "capacity",
+      "reason": "owned_manifest_budget_exceeded"
+    },
+    {
+      "cohort": 2,
+      "cycles": 20,
+      "records": 42,
+      "mode": "P",
+      "status": "success",
+      "bytes": 608298,
+      "ownerBytesWithCopies": 985309,
+      "registryClosureBytes": 377011,
+      "anchorClosureBytes": 608298,
+      "objects": 338,
+      "medianWallMs": 92.83924950000073,
+      "medianMaterializeMs": 60.37739549999242,
+      "buildMs": 118.35720900000888
+    },
+    {
+      "cohort": 3,
+      "cycles": 0,
+      "records": 2,
+      "mode": "F",
+      "status": "success",
+      "bytes": 22034,
+      "ownerBytesWithCopies": 22034,
+      "registryClosureBytes": 6621,
+      "anchorClosureBytes": 15413,
+      "objects": 4,
+      "medianWallMs": 1.752458499991917,
+      "medianMaterializeMs": 1.2104794999904698,
+      "buildMs": 0.8669170000066515
+    },
+    {
+      "cohort": 3,
+      "cycles": 0,
+      "records": 2,
+      "mode": "W",
+      "status": "success",
+      "bytes": 27946,
+      "ownerBytesWithCopies": 27946,
+      "registryClosureBytes": 12131,
+      "anchorClosureBytes": 15815,
+      "objects": 16,
+      "medianWallMs": 3.3256875000079162,
+      "medianMaterializeMs": 1.7178125000064028,
+      "buildMs": 1.8977500000037253
+    },
+    {
+      "cohort": 3,
+      "cycles": 0,
+      "records": 2,
+      "mode": "P",
+      "status": "success",
+      "bytes": 20775,
+      "ownerBytesWithCopies": 35802,
+      "registryClosureBytes": 15027,
+      "anchorClosureBytes": 20775,
+      "objects": 18,
+      "medianWallMs": 3.061979000005522,
+      "medianMaterializeMs": 1.2286664999992354,
+      "buildMs": 2.702208000002429
+    },
+    {
+      "cohort": 3,
+      "cycles": 1,
+      "records": 4,
+      "mode": "F",
+      "status": "success",
+      "bytes": 82413,
+      "ownerBytesWithCopies": 82413,
+      "registryClosureBytes": 18019,
+      "anchorClosureBytes": 64394,
+      "objects": 8,
+      "medianWallMs": 4.189312500006054,
+      "medianMaterializeMs": 3.2088745000073686,
+      "buildMs": 2.305458999995608
+    },
+    {
+      "cohort": 3,
+      "cycles": 1,
+      "records": 4,
+      "mode": "W",
+      "status": "success",
+      "bytes": 64720,
+      "ownerBytesWithCopies": 64720,
+      "registryClosureBytes": 22037,
+      "anchorClosureBytes": 42683,
+      "objects": 30,
+      "medianWallMs": 7.0133124999993015,
+      "medianMaterializeMs": 3.8678130000043893,
       "buildMs": 3.680666000000201
     },
     {
-      "cohort": 2,
+      "cohort": 3,
       "cycles": 1,
       "records": 4,
       "mode": "P",
       "status": "success",
-      "bytes": 40626,
-      "ownerBytesWithCopies": 68789,
-      "registryClosureBytes": 28163,
-      "anchorClosureBytes": 40626,
+      "bytes": 40676,
+      "ownerBytesWithCopies": 68837,
+      "registryClosureBytes": 28161,
+      "anchorClosureBytes": 40676,
       "objects": 34,
-      "medianWallMs": 5.7543544999989535,
-      "medianMaterializeMs": 2.2676039999996647,
-      "buildMs": 6.959833000000799
-    },
-    {
-      "cohort": 2,
-      "cycles": 2,
-      "records": 6,
-      "mode": "F",
-      "status": "success",
-      "bytes": 186548,
-      "ownerBytesWithCopies": 186548,
-      "registryClosureBytes": 32197,
-      "anchorClosureBytes": 154351,
-      "objects": 12,
-      "medianWallMs": 4.941479000000072,
-      "medianMaterializeMs": 3.6266454999995403,
-      "buildMs": 3.625625000000582
-    },
-    {
-      "cohort": 2,
-      "cycles": 2,
-      "records": 6,
-      "mode": "W",
-      "status": "success",
-      "bytes": 99840,
-      "ownerBytesWithCopies": 99840,
-      "registryClosureBytes": 33252,
-      "anchorClosureBytes": 66588,
-      "objects": 44,
-      "medianWallMs": 8.854958000000806,
-      "medianMaterializeMs": 4.513688000000911,
-      "buildMs": 5.866833000000042
-    },
-    {
-      "cohort": 2,
-      "cycles": 2,
-      "records": 6,
-      "mode": "P",
-      "status": "success",
-      "bytes": 62474,
-      "ownerBytesWithCopies": 105078,
-      "registryClosureBytes": 42604,
-      "anchorClosureBytes": 62474,
-      "objects": 50,
-      "medianWallMs": 8.38945849999891,
-      "medianMaterializeMs": 3.5282914999997956,
-      "buildMs": 10.762709000000541
-    },
-    {
-      "cohort": 2,
-      "cycles": 4,
-      "records": 10,
-      "mode": "F",
-      "status": "success",
-      "bytes": 555739,
-      "ownerBytesWithCopies": 555739,
-      "registryClosureBytes": 68897,
-      "anchorClosureBytes": 486842,
-      "objects": 20,
-      "medianWallMs": 10.779875000000175,
-      "medianMaterializeMs": 8.545312500000364,
-      "buildMs": 4.936499999999796
-    },
-    {
-      "cohort": 2,
-      "cycles": 4,
-      "records": 10,
-      "mode": "W",
-      "status": "success",
-      "bytes": 233666,
-      "ownerBytesWithCopies": 233666,
-      "registryClosureBytes": 58458,
-      "anchorClosureBytes": 175208,
-      "objects": 72,
-      "medianWallMs": 17.10852049999994,
-      "medianMaterializeMs": 9.977375000002212,
-      "buildMs": 16.213332999999693
-    },
-    {
-      "cohort": 2,
-      "cycles": 4,
-      "records": 10,
-      "mode": "P",
-      "status": "success",
-      "bytes": 112856,
-      "ownerBytesWithCopies": 187126,
-      "registryClosureBytes": 74270,
-      "anchorClosureBytes": 112856,
-      "objects": 82,
-      "medianWallMs": 14.94281299999966,
-      "medianMaterializeMs": 7.0137494999999035,
-      "buildMs": 16.843790999999328
-    },
-    {
-      "cohort": 3,
-      "cycles": 0,
-      "records": 2,
-      "mode": "F",
-      "status": "success",
-      "bytes": 22034,
-      "ownerBytesWithCopies": 22034,
-      "registryClosureBytes": 6621,
-      "anchorClosureBytes": 15413,
-      "objects": 4,
-      "medianWallMs": 1.7418125000021973,
-      "medianMaterializeMs": 1.0618960000010702,
-      "buildMs": 0.6612920000006852
-    },
-    {
-      "cohort": 3,
-      "cycles": 0,
-      "records": 2,
-      "mode": "W",
-      "status": "success",
-      "bytes": 27944,
-      "ownerBytesWithCopies": 27944,
-      "registryClosureBytes": 12129,
-      "anchorClosureBytes": 15815,
-      "objects": 16,
-      "medianWallMs": 3.50999949999823,
-      "medianMaterializeMs": 1.5674794999995356,
-      "buildMs": 1.245375000002241
-    },
-    {
-      "cohort": 3,
-      "cycles": 0,
-      "records": 2,
-      "mode": "P",
-      "status": "success",
-      "bytes": 20773,
-      "ownerBytesWithCopies": 35798,
-      "registryClosureBytes": 15025,
-      "anchorClosureBytes": 20773,
-      "objects": 18,
-      "medianWallMs": 3.5509374999983265,
-      "medianMaterializeMs": 1.3015414999990753,
-      "buildMs": 2.4876659999972617
-    },
-    {
-      "cohort": 3,
-      "cycles": 1,
-      "records": 4,
-      "mode": "F",
-      "status": "success",
-      "bytes": 82413,
-      "ownerBytesWithCopies": 82413,
-      "registryClosureBytes": 18019,
-      "anchorClosureBytes": 64394,
-      "objects": 8,
-      "medianWallMs": 3.082437500001106,
-      "medianMaterializeMs": 2.0716875000016444,
-      "buildMs": 2.7682500000009895
-    },
-    {
-      "cohort": 3,
-      "cycles": 1,
-      "records": 4,
-      "mode": "W",
-      "status": "success",
-      "bytes": 65068,
-      "ownerBytesWithCopies": 65068,
-      "registryClosureBytes": 22043,
-      "anchorClosureBytes": 43025,
-      "objects": 30,
-      "medianWallMs": 5.755478999999468,
-      "medianMaterializeMs": 2.7204584999999497,
-      "buildMs": 3.1005000000004657
-    },
-    {
-      "cohort": 3,
-      "cycles": 1,
-      "records": 4,
-      "mode": "P",
-      "status": "success",
-      "bytes": 41026,
-      "ownerBytesWithCopies": 69193,
-      "registryClosureBytes": 28167,
-      "anchorClosureBytes": 41026,
-      "objects": 34,
-      "medianWallMs": 5.855437500000335,
-      "medianMaterializeMs": 2.390604500000336,
-      "buildMs": 6.80712499999936
+      "medianWallMs": 5.843312500001048,
+      "medianMaterializeMs": 2.5269999999873107,
+      "buildMs": 7.007125000003725
     },
     {
       "cohort": 3,
@@ -462,9 +676,9 @@
       "registryClosureBytes": 32197,
       "anchorClosureBytes": 154351,
       "objects": 12,
-      "medianWallMs": 5.171666500000356,
-      "medianMaterializeMs": 3.7492290000009234,
-      "buildMs": 2.3157090000022436
+      "medianWallMs": 7.176770999998553,
+      "medianMaterializeMs": 5.743333000005805,
+      "buildMs": 3.820417000009911
     },
     {
       "cohort": 3,
@@ -472,14 +686,14 @@
       "records": 6,
       "mode": "W",
       "status": "success",
-      "bytes": 99853,
-      "ownerBytesWithCopies": 99853,
-      "registryClosureBytes": 33257,
-      "anchorClosureBytes": 66596,
+      "bytes": 109039,
+      "ownerBytesWithCopies": 109039,
+      "registryClosureBytes": 34059,
+      "anchorClosureBytes": 74980,
       "objects": 44,
-      "medianWallMs": 9.106312500000058,
-      "medianMaterializeMs": 4.607104500002606,
-      "buildMs": 6.147375000000466
+      "medianWallMs": 11.537333499989472,
+      "medianMaterializeMs": 7.053916500008199,
+      "buildMs": 6.155540999985533
     },
     {
       "cohort": 3,
@@ -487,14 +701,14 @@
       "records": 6,
       "mode": "P",
       "status": "success",
-      "bytes": 62487,
-      "ownerBytesWithCopies": 105096,
-      "registryClosureBytes": 42609,
-      "anchorClosureBytes": 62487,
+      "bytes": 63483,
+      "ownerBytesWithCopies": 106894,
+      "registryClosureBytes": 43411,
+      "anchorClosureBytes": 63483,
       "objects": 50,
-      "medianWallMs": 8.718708500000503,
-      "medianMaterializeMs": 3.7062915000005887,
-      "buildMs": 10.940834000000905
+      "medianWallMs": 9.077396000007866,
+      "medianMaterializeMs": 4.023832999999286,
+      "buildMs": 12.115374999993946
     },
     {
       "cohort": 3,
@@ -507,9 +721,9 @@
       "registryClosureBytes": 68897,
       "anchorClosureBytes": 486842,
       "objects": 20,
-      "medianWallMs": 10.988291499998013,
-      "medianMaterializeMs": 8.641333499999746,
-      "buildMs": 5.083333999999013
+      "medianWallMs": 15.73670849998598,
+      "medianMaterializeMs": 13.164812999995775,
+      "buildMs": 7.105000000010477
     },
     {
       "cohort": 3,
@@ -517,14 +731,14 @@
       "records": 10,
       "mode": "W",
       "status": "success",
-      "bytes": 219479,
-      "ownerBytesWithCopies": 219479,
-      "registryClosureBytes": 57500,
-      "anchorClosureBytes": 161979,
+      "bytes": 237151,
+      "ownerBytesWithCopies": 237151,
+      "registryClosureBytes": 59167,
+      "anchorClosureBytes": 177984,
       "objects": 72,
-      "medianWallMs": 17.046416999999565,
-      "medianMaterializeMs": 9.880103999999847,
-      "buildMs": 17.102374999998574
+      "medianWallMs": 20.355937500004075,
+      "medianMaterializeMs": 13.39839600000414,
+      "buildMs": 12.824499999987893
     },
     {
       "cohort": 3,
@@ -532,14 +746,454 @@
       "records": 10,
       "mode": "P",
       "status": "success",
-      "bytes": 110660,
-      "ownerBytesWithCopies": 183972,
-      "registryClosureBytes": 73312,
-      "anchorClosureBytes": 110660,
+      "bytes": 112526,
+      "ownerBytesWithCopies": 187505,
+      "registryClosureBytes": 74979,
+      "anchorClosureBytes": 112526,
       "objects": 82,
-      "medianWallMs": 14.776686999999583,
-      "medianMaterializeMs": 6.930187500000102,
-      "buildMs": 16.379666000000725
+      "medianWallMs": 15.609562999990885,
+      "medianMaterializeMs": 7.747292000000016,
+      "buildMs": 19.59504200000083
+    },
+    {
+      "cohort": 3,
+      "cycles": 8,
+      "records": 18,
+      "mode": "F",
+      "status": "success",
+      "bytes": 2145959,
+      "ownerBytesWithCopies": 2145959,
+      "registryClosureBytes": 175717,
+      "anchorClosureBytes": 1970242,
+      "objects": 36,
+      "medianWallMs": 38.751541499994346,
+      "medianMaterializeMs": 34.34031249998952,
+      "buildMs": 16.430832999991253
+    },
+    {
+      "cohort": 3,
+      "cycles": 8,
+      "records": 18,
+      "mode": "W",
+      "status": "success",
+      "bytes": 522281,
+      "ownerBytesWithCopies": 522281,
+      "registryClosureBytes": 115575,
+      "anchorClosureBytes": 406706,
+      "objects": 128,
+      "medianWallMs": 46.14752049998788,
+      "medianMaterializeMs": 33.45675050000136,
+      "buildMs": 44.789749999996275
+    },
+    {
+      "cohort": 3,
+      "cycles": 8,
+      "records": 18,
+      "mode": "P",
+      "status": "success",
+      "bytes": 219775,
+      "ownerBytesWithCopies": 364098,
+      "registryClosureBytes": 144323,
+      "anchorClosureBytes": 219775,
+      "objects": 146,
+      "medianWallMs": 31.113083000003826,
+      "medianMaterializeMs": 16.881166500010295,
+      "buildMs": 32.3267909999995
+    },
+    {
+      "cohort": 3,
+      "cycles": 16,
+      "records": 34,
+      "mode": "F",
+      "status": "capacity",
+      "reason": "current_control_capacity_exhausted"
+    },
+    {
+      "cohort": 3,
+      "cycles": 16,
+      "records": 34,
+      "mode": "W",
+      "status": "capacity",
+      "reason": "owned_manifest_budget_exceeded"
+    },
+    {
+      "cohort": 3,
+      "cycles": 16,
+      "records": 34,
+      "mode": "P",
+      "status": "success",
+      "bytes": 463236,
+      "ownerBytesWithCopies": 748177,
+      "registryClosureBytes": 284941,
+      "anchorClosureBytes": 463236,
+      "objects": 274,
+      "medianWallMs": 70.14849999999569,
+      "medianMaterializeMs": 43.58520799998951,
+      "buildMs": 62.320332999981474
+    },
+    {
+      "cohort": 3,
+      "cycles": 20,
+      "records": 42,
+      "mode": "F",
+      "status": "capacity",
+      "reason": "current_control_capacity_exhausted"
+    },
+    {
+      "cohort": 3,
+      "cycles": 20,
+      "records": 42,
+      "mode": "W",
+      "status": "capacity",
+      "reason": "owned_manifest_budget_exceeded"
+    },
+    {
+      "cohort": 3,
+      "cycles": 20,
+      "records": 42,
+      "mode": "P",
+      "status": "success",
+      "bytes": 611786,
+      "ownerBytesWithCopies": 990959,
+      "registryClosureBytes": 379173,
+      "anchorClosureBytes": 611786,
+      "objects": 338,
+      "medianWallMs": 94.09316699998453,
+      "medianMaterializeMs": 61.43310399999609,
+      "buildMs": 86.09766699999454
+    }
+  ],
+  "baselines": [
+    {
+      "cohort": 1,
+      "cycles": 0,
+      "records": 2,
+      "imageBytes": 28843,
+      "anchorImageBytes": 11259,
+      "registryImageBytes": 17584,
+      "diskBytes": 78669,
+      "diskFiles": 30,
+      "medianReadMs": 6.979249999999979
+    },
+    {
+      "cohort": 1,
+      "cycles": 1,
+      "records": 4,
+      "imageBytes": 63809,
+      "anchorImageBytes": 29069,
+      "registryImageBytes": 34740,
+      "diskBytes": 172459,
+      "diskFiles": 50,
+      "medianReadMs": 15.8520410000001
+    },
+    {
+      "cohort": 1,
+      "cycles": 2,
+      "records": 6,
+      "imageBytes": 106191,
+      "anchorImageBytes": 50587,
+      "registryImageBytes": 55604,
+      "diskBytes": 283569,
+      "diskFiles": 70,
+      "medianReadMs": 16.99089550000008
+    },
+    {
+      "cohort": 1,
+      "cycles": 4,
+      "records": 10,
+      "imageBytes": 213203,
+      "anchorImageBytes": 104749,
+      "registryImageBytes": 108454,
+      "diskBytes": 557696,
+      "diskFiles": 110,
+      "medianReadMs": 37.62666700000045
+    },
+    {
+      "cohort": 1,
+      "cycles": 8,
+      "records": 18,
+      "imageBytes": 516379,
+      "anchorImageBytes": 257661,
+      "registryImageBytes": 258718,
+      "diskBytes": 1314016,
+      "diskFiles": 190,
+      "medianReadMs": 59.18554149999909
+    },
+    {
+      "cohort": 1,
+      "cycles": 16,
+      "records": 34,
+      "imageBytes": 1479083,
+      "anchorImageBytes": 741661,
+      "registryImageBytes": 737422,
+      "diskBytes": 3658152,
+      "diskFiles": 350,
+      "medianReadMs": 141.51033350000216
+    },
+    {
+      "cohort": 1,
+      "cycles": 20,
+      "records": 42,
+      "imageBytes": 2138611,
+      "anchorImageBytes": 1072749,
+      "registryImageBytes": 1065862,
+      "diskBytes": 5245960,
+      "diskFiles": 430,
+      "medianReadMs": 202.40079200000764
+    },
+    {
+      "cohort": 2,
+      "cycles": 0,
+      "records": 2,
+      "imageBytes": 28843,
+      "anchorImageBytes": 11259,
+      "registryImageBytes": 17584,
+      "diskBytes": 78669,
+      "diskFiles": 30,
+      "medianReadMs": 7.693375499999092
+    },
+    {
+      "cohort": 2,
+      "cycles": 1,
+      "records": 4,
+      "imageBytes": 63809,
+      "anchorImageBytes": 29069,
+      "registryImageBytes": 34740,
+      "diskBytes": 172459,
+      "diskFiles": 50,
+      "medianReadMs": 13.09437450000405
+    },
+    {
+      "cohort": 2,
+      "cycles": 2,
+      "records": 6,
+      "imageBytes": 106191,
+      "anchorImageBytes": 50587,
+      "registryImageBytes": 55604,
+      "diskBytes": 283569,
+      "diskFiles": 70,
+      "medianReadMs": 17.851645499998995
+    },
+    {
+      "cohort": 2,
+      "cycles": 4,
+      "records": 10,
+      "imageBytes": 213203,
+      "anchorImageBytes": 104749,
+      "registryImageBytes": 108454,
+      "diskBytes": 557696,
+      "diskFiles": 110,
+      "medianReadMs": 43.6750624999986
+    },
+    {
+      "cohort": 2,
+      "cycles": 8,
+      "records": 18,
+      "imageBytes": 516379,
+      "anchorImageBytes": 257661,
+      "registryImageBytes": 258718,
+      "diskBytes": 1314016,
+      "diskFiles": 190,
+      "medianReadMs": 60.60247900000104
+    },
+    {
+      "cohort": 2,
+      "cycles": 16,
+      "records": 34,
+      "imageBytes": 1479083,
+      "anchorImageBytes": 741661,
+      "registryImageBytes": 737422,
+      "diskBytes": 3658152,
+      "diskFiles": 350,
+      "medianReadMs": 138.36025000001246
+    },
+    {
+      "cohort": 2,
+      "cycles": 20,
+      "records": 42,
+      "imageBytes": 2138611,
+      "anchorImageBytes": 1072749,
+      "registryImageBytes": 1065862,
+      "diskBytes": 5245960,
+      "diskFiles": 430,
+      "medianReadMs": 193.54512499998964
+    },
+    {
+      "cohort": 3,
+      "cycles": 0,
+      "records": 2,
+      "imageBytes": 28843,
+      "anchorImageBytes": 11259,
+      "registryImageBytes": 17584,
+      "diskBytes": 78669,
+      "diskFiles": 30,
+      "medianReadMs": 7.269062999999733
+    },
+    {
+      "cohort": 3,
+      "cycles": 1,
+      "records": 4,
+      "imageBytes": 63809,
+      "anchorImageBytes": 29069,
+      "registryImageBytes": 34740,
+      "diskBytes": 172459,
+      "diskFiles": 50,
+      "medianReadMs": 13.684437500007334
+    },
+    {
+      "cohort": 3,
+      "cycles": 2,
+      "records": 6,
+      "imageBytes": 106191,
+      "anchorImageBytes": 50587,
+      "registryImageBytes": 55604,
+      "diskBytes": 283569,
+      "diskFiles": 70,
+      "medianReadMs": 18.04283299999952
+    },
+    {
+      "cohort": 3,
+      "cycles": 4,
+      "records": 10,
+      "imageBytes": 213203,
+      "anchorImageBytes": 104749,
+      "registryImageBytes": 108454,
+      "diskBytes": 557696,
+      "diskFiles": 110,
+      "medianReadMs": 32.929750000010245
+    },
+    {
+      "cohort": 3,
+      "cycles": 8,
+      "records": 18,
+      "imageBytes": 516379,
+      "anchorImageBytes": 257661,
+      "registryImageBytes": 258718,
+      "diskBytes": 1314016,
+      "diskFiles": 190,
+      "medianReadMs": 62.509875000003376
+    },
+    {
+      "cohort": 3,
+      "cycles": 16,
+      "records": 34,
+      "imageBytes": 1479083,
+      "anchorImageBytes": 741661,
+      "registryImageBytes": 737422,
+      "diskBytes": 3658152,
+      "diskFiles": 350,
+      "medianReadMs": 141.6384379999945
+    },
+    {
+      "cohort": 3,
+      "cycles": 20,
+      "records": 42,
+      "imageBytes": 2138611,
+      "anchorImageBytes": 1072749,
+      "registryImageBytes": 1065862,
+      "diskBytes": 5245960,
+      "diskFiles": 430,
+      "medianReadMs": 197.69647900000564
+    }
+  ],
+  "ratios": [
+    {
+      "cycles": 0,
+      "records": 2,
+      "pDistinctToProductionImage": {
+        "min": 0.7202440800194154,
+        "max": 0.7202787504767187
+      },
+      "pOwnerCopyToProductionImage": {
+        "min": 1.2411677010019762,
+        "max": 1.2412717123738861
+      },
+      "fSuccess": 3,
+      "wSuccess": 3
+    },
+    {
+      "cycles": 1,
+      "records": 4,
+      "pDistinctToProductionImage": {
+        "min": 0.6366970176620853,
+        "max": 0.6517419172843956
+      },
+      "pOwnerCopyToProductionImage": {
+        "min": 1.078029745020295,
+        "max": 1.1081352160353555
+      },
+      "fSuccess": 3,
+      "wSuccess": 3
+    },
+    {
+      "cycles": 2,
+      "records": 6,
+      "pDistinctToProductionImage": {
+        "min": 0.5887222080967314,
+        "max": 0.6023580152743642
+      },
+      "pOwnerCopyToProductionImage": {
+        "min": 0.9868256255238202,
+        "max": 1.013824147055777
+      },
+      "fSuccess": 3,
+      "wSuccess": 3
+    },
+    {
+      "cycles": 4,
+      "records": 10,
+      "pDistinctToProductionImage": {
+        "min": 0.5094252895128117,
+        "max": 0.527788070524336
+      },
+      "pOwnerCopyToProductionImage": {
+        "min": 0.8446973072611549,
+        "max": 0.8794669868622862
+      },
+      "fSuccess": 3,
+      "wSuccess": 3
+    },
+    {
+      "cycles": 8,
+      "records": 18,
+      "pDistinctToProductionImage": {
+        "min": 0.41659323868708836,
+        "max": 0.4256079352568559
+      },
+      "pOwnerCopyToProductionImage": {
+        "min": 0.6835521971265291,
+        "max": 0.7050983870374279
+      },
+      "fSuccess": 3,
+      "wSuccess": 3
+    },
+    {
+      "cycles": 16,
+      "records": 34,
+      "pDistinctToProductionImage": {
+        "min": 0.3094816180025056,
+        "max": 0.3131913489641893
+      },
+      "pOwnerCopyToProductionImage": {
+        "min": 0.5050311578187295,
+        "max": 0.5058384147475159
+      },
+      "fSuccess": 0,
+      "wSuccess": 0
+    },
+    {
+      "cycles": 20,
+      "records": 42,
+      "pDistinctToProductionImage": {
+        "min": 0.2790830122916229,
+        "max": 0.2860669845988822
+      },
+      "pOwnerCopyToProductionImage": {
+        "min": 0.4525222211987126,
+        "max": 0.46336570792911846
+      },
+      "fSuccess": 0,
+      "wSuccess": 0
     }
   ],
   "decision": {
@@ -549,7 +1203,7 @@
     "originalReadsSkipped": 0,
     "cg0Proceed": false,
     "cg3Proceed": false,
-    "next": "estimate CGP-I1 call reduction; S0c delta/incremental materialization and five-owner comparison remain"
+    "next": "P is compared with production images, not F; delta/incremental materialization, restoring wire/transaction and the five-owner comparison remain; no production adoption"
   },
   "limitations": [
     "isolated representation object store, no owner session or live authorization",
@@ -557,41 +1211,45 @@
     "new compact signature/profile is test-only; no old-reader downgrade",
     "checkpoint/journal resync not included in timed materializer",
     "all historical roots are retained; no physical GC or migration authorization",
-    "warm rotating order, three independent cohorts; no five-owner throughput claim"
+    "warm rotating order, three independent cohorts; no five-owner throughput claim",
+    "P holds neither the original wire nor the registry image transaction, so P and production images do not hold the same content",
+    "production read excludes record signature verification and includes journal and checkpoint work, so its time is not comparable with F/W/P",
+    "F/W registry closures depend on the Anchor wire for verification; only P closures verify on their own"
   ],
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.109 ",
-    "sectionSha256": "060c87d4e2dd51a14c165b46244cc84641121887f3f63f502537747e8ba4629e"
+    "sectionSha256": "2da0cc24a510eb6da1764d4d0aee8f39389f112ce546df30a4b1fd71c258f9c9"
   },
   "measurement": {
     "path": "docs/validation/gradle-c3b-cgp-s0c-2026-11-06.measurements.json",
-    "sha256": "ffec854f626eb4f38e22a9b3d780d224306727ce2b2b2aab6224898495a1adb8"
+    "sha256": "ec33e685c87aab680921de6bcb4249a647e7afed46ec8692a46d496dc1f1405d"
   },
   "analysisSource": {
     "path": "scripts/analyze-c3b-cgp-s0c.mjs",
-    "sha256": "c3aaf4722b476574c726657d825eef94de00a737d17e318f49ef487806bb2c3d"
+    "sha256": "a80fa3dec92ad1d58c5e989d3b791cbf0010a21082bbf03e704a4eb0dd1a84cb"
   },
   "checkerSource": {
     "path": "src/test/fixtures/gradleOwnedS0cReport.mjs",
-    "sha256": "e2fef8af6c4b86916734a863f835e300c80e8f758c2cb08186293deb0958e71c"
+    "sha256": "ce7397af96ae2ca0329f147d6f527b363578ce7b89b156317cea54c86f1d2a62"
   },
-  "scope": "three cohorts x four real owner-history depths x F/W/P; standalone fresh object-store reads, not journal/session or five-owner throughput",
+  "scope": "three cohorts x seven real owner-history depths x production stores and F/W/P; standalone fresh object-store reads, not session or five-owner throughput",
   "verification": {
-    "date": "2026-11-06",
+    "date": "2026-11-07",
     "checks": [
       {
-        "command": "npx vitest run src/test/utils/gradleOwnedS0c.test.ts src/test/utils/gradleOwnedS0cDisk.test.ts src/test/utils/gradleOwnedS0cReport.test.ts src/test/docs/commandExamples.test.ts --maxWorkers=1",
-        "passed": 98
+        "command": "npx vitest run src/test/utils/gradleOwnedS0c.test.ts src/test/utils/gradleOwnedS0cGuards.test.ts src/test/utils/gradleOwnedS0cDisk.test.ts src/test/utils/gradleOwnedS0cReport.test.ts --maxWorkers=1",
+        "passed": 214
       },
       {
         "command": "env OSV_S0C_NATIVE=1 OSV_S0C_OUTPUT=docs/validation/gradle-c3b-cgp-s0c-2026-11-06.measurements.json npx vitest run src/test/utils/gradleOwnedS0cNative.test.ts --maxWorkers=1",
         "passed": 1,
-        "comparisonReads": 216,
+        "comparisonReads": 612,
+        "productionBaselineReads": 252,
         "cohorts": 3,
-        "depths": 4,
+        "depths": 7,
         "formats": 3,
-        "rounds": 6
+        "rounds": 12
       },
       {
         "command": "npm run typecheck",
@@ -602,22 +1260,20 @@
         "exitCode": 0
       },
       {
-        "command": "npx vitest run src/test/utils/gradleOwnedS0cValidation.test.ts src/test/utils/gradleOwnedS0aValidation.test.ts src/test/utils/gradleOwnedS0bValidation.test.ts --maxWorkers=1",
-        "passed": 9
-      },
-      {
         "command": "git diff --check",
         "exitCode": 0
       }
     ],
     "regressionSources": {
-      "src/test/utils/gradleOwnedS0c.test.ts": "7ef5fc35cd7b9d000ae94978fb7797b302e489da3d028dd1f4a75d999ead6baa",
-      "src/test/utils/gradleOwnedS0cDisk.test.ts": "dc7d8b95fd9ff71399ac8964e89cf4d16950597ba5ec6114ee27f9cfa6eafc34",
-      "src/test/utils/gradleOwnedS0cReport.test.ts": "0f640849f9cf7c3573940148e795cf6f4ab6e2409cd50e034f5632a079ce75ec",
-      "src/test/utils/gradleOwnedS0cValidation.test.ts": "d5475edd613abf41f26d581ba0328203fb4105413aee75c0433930745e333ee9",
-      "src/test/fixtures/gradleOwnedS0cData.ts": "9cd8731983a3eae298a79c7cc2131a1658fb27eddaa93862e65b1b99ec120ac9"
+      "src/test/utils/gradleOwnedS0c.test.ts": "5d1cb4471446dcf4cc7c98d917ca7eb0c1a9bce972b35e665c4d7e2ec66117e2",
+      "src/test/utils/gradleOwnedS0cGuards.test.ts": "d1f78358c6d3f0cf82cfe0f2fa617f6c7394d04e76bb3e76d0296a1cbcf9104a",
+      "src/test/utils/gradleOwnedS0cDisk.test.ts": "7246794e65b514e6c540fd4574eb84dbc25d77e5572aa4a5709fa92f140ae879",
+      "src/test/utils/gradleOwnedS0cReport.test.ts": "69b4811f547428d74f80b478dfc12657bcd63f01fac5456172327152f254458a",
+      "src/test/utils/gradleOwnedS0cValidation.test.ts": "f3d04e3aeb1f24826f75b50f8220be99860c3856b6fb261ab2cc9ea38034d677",
+      "src/test/fixtures/gradleOwnedS0cData.ts": "10364440db5e4a56e403ecfbb383e37cb718094387a657e61fe08ae7559f678e",
+      "src/test/fixtures/gradleOwnedS0cRewrite.ts": "f7b034c99020c8728502686fd307812bdc951fffb71ccb89ddd587dbb3c8f8b3"
     },
-    "scope": "test-only representation, no native owner isolation/session/CAS or full journal/checkpoint read performance claim"
+    "scope": "test-only representation compared with production stores; no native owner isolation, session or CAS, and no production speedup claim"
   },
   "reviewCorrections": {
     "selectedParentBinding": {
@@ -667,6 +1323,54 @@
     },
     "nativeReexecuted": true,
     "productionApproved": false,
-    "eightReadsEstablished": false
+    "eightReadsEstablished": false,
+    "secondReview": {
+      "sourceVerifier": "verifyPublicRegistryRecord",
+      "forgedRecordsRepresentedBeforeFix": 10,
+      "comparisonBase": {
+        "before": "cumulative F image",
+        "after": "production images"
+      },
+      "retractedClaims": [
+        "P distinct about 20% of F at 10 records",
+        "P owner copy 33.0-33.7% of F at 10 records"
+      ],
+      "depths": {
+        "before": [
+          2,
+          4,
+          6,
+          10
+        ],
+        "after": [
+          2,
+          4,
+          6,
+          10,
+          18,
+          34,
+          42
+        ]
+      },
+      "mutation": {
+        "manual": true,
+        "before": {
+          "total": 123,
+          "caught": 30
+        },
+        "after": {
+          "total": 130,
+          "caught": 113
+        },
+        "remaining": {
+          "mutualVerifiedByCombinedRemoval": 9,
+          "unreachableOrEquivalent": 7,
+          "defenceInDepth": 1
+        }
+      },
+      "nativeReexecuted": true,
+      "productionApproved": false,
+      "eightReadsEstablished": false
+    }
   }
 }

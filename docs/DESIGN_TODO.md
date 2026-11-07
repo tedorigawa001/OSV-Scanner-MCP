@@ -3055,11 +3055,13 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 
 ### CGP-S0c：compact record・typed pageの限定試作（§9.109）
 - [x] test-only F／W／P。新しいcompact署名／profileと旧registry・Anchor reader拒否、typed root／directory／page／liveness、全保持catalogと参照閉包を実装。
-- [x] materializer 53件＋disk境界13件。64 KiB／16 row／bucket・8 MiB／4,096 objects、過去版保持・未記録object、再hash／再署名後の構造不正を検査。
-- [x] 実owner履歴を使う3cohort×4深さ×3形式×6round＝216 fresh disk読取。10recordでPのdistinct bytesはFの約20%、owner copy込み約33.0〜33.7%。wallはF約10.74〜10.99 msに対しP約14.78〜15.03 msで改善未成立。
-- 次はCGP-I1の呼出し回数削減の見積り。typed delta／incremental materializer・本番owner／新CAS接続、S0d 5owner比較、cold／churn／復旧・RSS、S0x独立storageも残る。単独表現fixtureから8read成立を主張しない。CG0／CG3保留、原本読取省略0。
+- [x] materializer 53件＋個別検査87件＋disk境界18件。64 KiB／16 row／bucket・8 MiB／4,096 objects、過去版保持・未記録object、再hash／再署名後の構造不正を検査。
+- [x] 実owner履歴を使う3cohort×7深さ（2〜42record）×12roundでF／W／P 612読取、本番対照252読取。owner copy込みのPは本番image比で2recordが124%、10recordが84〜88%、42recordが45〜46%。F・Wは34recordで容量超過。Pは元wireと`transaction`を持たず同じ内容の比較ではない。本番での速度改善は未成立。
+- typed delta／incremental materializer・元wireと`transaction`の保持・本番owner／新CAS接続、S0d 5owner比較、cold／churn／復旧・RSS、S0x独立storageも残る。単独表現fixtureから8read成立を主張しない。CG0／CG3保留、原本読取省略0。
 
 §9.109レビュー修正：parentをcatalogの直前同owner refへ束縛し、W／P・両ownerの4負例を追加。disk容量検査をIO前へ移し、件数・合計bytes・role別上限の8負例で列挙／読取0を確認。owner copy集計は検証済みround由来とし、warm-up／round間計数の不一致5件を拒否する。216読取を再計測し、速度改善未成立・CG0／CG3保留・原本読取省略0を維持する。
+
+§9.109 2回目のレビュー修正：元record検証を本番verifierへ揃え、比較基準をFから本番imageへ変更。本番対照を加えて42recordまで再計測。検査を外す確認は130か所中113か所を検出し、残る17か所を分類。CG0／CG3保留、原本読取省略0を維持する。
 
 
 ### CGP-I1：同一callの検証事実共有・削減効果（§9.110）

@@ -7773,12 +7773,12 @@ S0b既存checkpoint batchの限定実装・実disk比較まで完了し、規則
 #### 実装範囲と新しい信頼境界
 2026-11-06。`gradleOwnedS0c.ts`へF（全体image）、W（whole signed wireを保持するtyped page）、P（compact signed state-root recordを保持するtyped page）を実装した。production reader・owner・journalは変更していない。§9.108の停止判断は維持し、S0-M／S0-Dの製品統合や合成fixtureは行わない。
 
-入力は署名済みregistry recordと対応するAnchor CAS履歴。署名・identity role・revision・previous・attempt・expected／nextを検査し、F／W／Pから復元した全record／Anchor履歴の論理一致を確認する。元のregistry state全体（ledgerのoperation結果、expiry／失効情報など）を復元し、handoffsの未指定と明示emptyも区別する。ただし実APIの再試行・CAS・失効・delivery／ACKをこのmaterializerが実行するわけではない。
+入力は署名済みregistry recordと対応するAnchor CAS履歴。変換前の元recordは本番の`verifyPublicRegistryRecord`で検証し（domain・api・identity・key・lineage・owner・attempt digestを含む）、続いてrevision・previous・attempt・expected／nextを検査して、F／W／Pから復元した全record／Anchor履歴の論理一致を確認する。元のregistry state全体（ledgerのoperation結果、expiry／失効情報など）を復元し、handoffsの未指定と明示emptyも区別する。論理一致の範囲はrecord本体とAnchor entryで、元のenvelope・wireと、本番の復旧が使うregistry imageの`transaction`は含まない。ただし実APIの再試行・CAS・失効・delivery／ACKをこのmaterializerが実行するわけではない。
 
 Pは新しい`cgp.s0.compact-record.v1`／`cgp.s0.signed-record.v1`、固定profile `cgp.s0c.profile.v1`と独立したfixture Ed25519鍵を使う。旧wireを確認したconverterが、元ref・header・state root・compact previousへ署名し直す。旧refは変換元の出自で、旧wireが保存されたことを表すstorage refではない。元wireと同じ署名／digestを維持する契約ではない。検証側は別入力の公開鍵・key IDとprofileを固定する。旧`registryRecordSchema`と旧Anchor entry readerには実際のcompact body／entryを渡して拒否を確認した。旧形式へのfallbackはない。新owner runtime・認証envelope／CAS・承認registry・本番移行は未接続で、この鍵を本番の再発行権限と認めない。
 
 #### typed pageと保持閉包
-- rootはowner role・lineage・local storeEpoch・generation・format・revision、parent、全field directory、liveness、state digestを持つ。registryのpins／ledger／handoffsとAnchor entriesをtyped rowにし、registryの残りは既存state schemaをomitしたstrict livenessで保持する。新しい汎用unknown JSONやJSON pointerは追加しない（既存ledger resultの型はそのまま）。
+- rootはowner role・lineage・storeEpoch（Anchor rootもregistry recordの値を持つ）・generation・format・revision、parent、全field directory、liveness、state digestを持つ。registryのpins／ledger／handoffsとAnchor entriesをtyped rowにし、registryの残りは既存state schemaをomitしたstrict livenessで保持する。新しい汎用unknown JSONやJSON pointerは追加しない（既存ledger resultの型はそのまま）。
 - keyはpin ref.id／ledger key／handoff operationKey／Anchor attemptId。key順と元ordinalを別に検査し、重複・欠落・不正bucket・count・bindingを拒否する。全fieldを列挙し、emptyは明示的なempty directoryとする。
 - 16 bucket・1 page／bucket、16 row／page、page／directory／root各64 KiB、object閉包4,096、canonical object bytes合計8 MiBを固定する。超過時はcapacity拒否で、別bucketへの移動や上限の自動拡張はない。保持objectのcanonical bytesと復元した論理履歴にそれぞれ8 MiBを適用する。これはserialized／decode対象bytesの制限で、JS heap／peak RSSの上限ではない。
 - refはschema／role／sha256／byteLengthを束縛する。全objectのfresh bytes・hashとtyped root→directory→pageの閉包を検査し、同じhashの異なる型、欠落、自己参照の改変、未記録objectを拒否する。parent・signed previousも辿る。選択履歴の各rootでは、parentがcatalog上の直前の同owner root refと完全一致することを要求し、先頭はnullに限定する。同じbinding／revisionの別stateを祖先として採用しない。
@@ -7786,48 +7786,90 @@ Pは新しい`cgp.s0.compact-record.v1`／`cgp.s0.signed-record.v1`、固定prof
 - native IOは比較専用の単一object store。毎回全recorded objectを読み、前後の完全namespaceと全bytesを照合する。gateの後、catalogの件数・refのbyteLength合計・role別上限・schema／profileを純粋検査し、容量超過は列挙／読取0で拒否する。catalog metadataは最初のawait前にcopyし、gateをIO前後と返却前にも呼ぶ。cross-call IO省略0。writeは既存rooted IOのfile／directory同期を使うが、読取計時にjournal／checkpoint再同期は含めない。
 
 #### 回帰・容量確認
-materializer 53件＋実disk境界13件。3形式の論理一致、旧reader拒否、empty／未指定、保持catalog全種、未知／欠落／改変object、全ref更新・compact再署名後のkey／ordinal／bucket／count／binding／field／state digest不正、異なる検証鍵、重複key、17 row同bucket、64 KiB page、8 MiB合計、4,097 objects、self-ref改変、読取前取消し・同size改変・最終列挙前追加を確認した。容量試験は有効な大きい旧recordをFで受理し、Wのpage上限で拒否する対照を含む。追加の8件は、実在する10 MiB超のobject集合、4,097 objects、各roleの上限超過を列挙／読取0で拒否する。
+materializer 53件、境界の個別検査87件、実disk境界18件、証拠checker 56件。3形式の論理一致、旧reader拒否、empty／未指定、保持catalog全種、未知／欠落／改変object、全ref更新・compact再署名後のkey／ordinal／bucket／count／binding／field／state digest不正、異なる検証鍵、重複key、17 row同bucket、64 KiB page、8 MiB合計、4,097 objects、読取前取消し・同size改変・最終列挙前追加を確認した。容量試験は有効な大きい旧recordをFで受理し、Wのpage上限で拒否する対照を含む。実在する10 MiB超のobject集合、4,097 objects、各roleの上限超過は列挙／読取0で拒否する。
+
+正しいregistry鍵で署名し直した元record 13種の改変は、本番verifierと同じ理由で拒否し、古いbootは本番と同じく受理する。gateは全位置の呼出し回数と、各位置で取り消したときに以後のIOが起きないことを確認する。
 
 SR24／25／27〜29の形式・容量・保持閉包部分の限定実証であり、全条件完了とはしない。typed delta／expected-old-refによる更新、incremental／suffix materializer、実ownerのretry／CAS／ACK同値、GC／世代選択／移行、RSSは残る。
 
 #### 性能比較
-実owner fixtureでEnrollment／ActivateとAcquire／Releaseを行い、保存済みregistry／Anchor履歴を取得した。3 cohort × 4深さ（pin cycle 0／1／2／4、record 2／4／6／10）。F／W／Pを別disk rootへ同期保存し、warm-up後6 roundで読取順を回転させた。36 mode条件・216比較読取で、全論理digestが一致し、各回全object数・bytesの読取とhash／schema／署名・閉包検査を行った。作成／open／persist／warm-upは読取wall外、build時間は別記録で、Pの再署名も含む。
+実owner fixtureでEnrollment／ActivateとAcquire／Releaseを行い、保存済みregistry／Anchor履歴を取得した。3 cohort × 7深さ（pin cycle 0〜20、record 2〜42）。42 recordは本番の通常処理が容量で止まる直前の深さである。warm-up後12 roundで読取順を回転させ、F／W／Pの比較読取612回と本番reader対照252回を行った。全論理digestが本番から復元した値と一致し、F／W／Pは各回全object数・bytesの読取とhash／schema／署名・閉包検査を行った。作成／open／persist／warm-upは読取wall外で、build時間は別記録、Pの再署名も含む。
 
-表のbytesは単一比較store内のdistinct閉包。owner copy列はregistryとAnchorが各自の検証閉包を別保存すると仮定した重複込みのbytesで、共有objectを無料にしてowner分離後の削減を主張しない。PではAnchorが完全な論理stateを復元する検査のためregistry pageまで辿るので、この仮定では両ownerにcopyする。実分離配備の保存方式やIPC費用を測った値ではない。
+本番の行は、両ownerの`readCommitted`のimage bytes（canonical JSON）とその読取wallである。F／W／Pのbytes列は単一比較store内のdistinct閉包、owner copy列はregistryとAnchorが閉包を別保存すると仮定した重複込みのbytesで、実分離配備の保存方式やIPC費用を測った値ではない。
 
-| pin cycle | record | mode | distinct bytes範囲 | owner copy bytes範囲 | wall中央値範囲 ms |
-|---|---|---|---|---|---|
-| 0 | 2 | F | 22034〜22034 | 22034〜22034 | 1.65〜1.74 |
-| 0 | 2 | W | 27944〜27947 | 27944〜27947 | 3.51〜3.91 |
-| 0 | 2 | P | 20773〜20776 | 35798〜35806 | 3.55〜3.69 |
-| 1 | 4 | F | 82413〜82413 | 82413〜82413 | 2.97〜3.23 |
-| 1 | 4 | W | 61039〜65072 | 61039〜65072 | 5.76〜6.10 |
-| 1 | 4 | P | 40626〜41030 | 68789〜69193 | 5.72〜5.86 |
-| 2 | 6 | F | 186548〜186548 | 186548〜186548 | 4.94〜5.17 |
-| 2 | 6 | W | 99840〜102676 | 99840〜102676 | 8.85〜9.22 |
-| 2 | 6 | P | 61677〜62487 | 103775〜105096 | 8.39〜8.72 |
-| 4 | 10 | F | 555739〜555739 | 555739〜555739 | 10.74〜10.99 |
-| 4 | 10 | W | 219479〜276114 | 219479〜276114 | 17.05〜17.13 |
-| 4 | 10 | P | 110660〜112856 | 183598〜187126 | 14.78〜15.03 |
+| record | mode | distinct bytes範囲 | owner copy bytes範囲 | wall中央値範囲 ms |
+|---|---|---|---|---|
+| 2 | 本番 | 28843〜28843 | 28843〜28843 | 6.98〜7.69 |
+| 2 | F | 22034〜22034 | 22034〜22034 | 1.66〜1.75 |
+| 2 | W | 27945〜27946 | 27945〜27946 | 3.19〜3.33 |
+| 2 | P | 20774〜20775 | 35799〜35802 | 3.03〜3.06 |
+| 4 | 本番 | 63809〜63809 | 63809〜63809 | 13.09〜15.85 |
+| 4 | F | 82413〜82413 | 82413〜82413 | 4.00〜4.26 |
+| 4 | W | 61040〜64720 | 61040〜64720 | 6.88〜8.15 |
+| 4 | P | 40627〜41587 | 68788〜70709 | 5.73〜6.64 |
+| 6 | 本番 | 106191〜106191 | 106191〜106191 | 16.99〜18.04 |
+| 6 | F | 186548〜186548 | 186548〜186548 | 6.38〜7.18 |
+| 6 | W | 104959〜109039 | 104959〜109039 | 10.43〜11.54 |
+| 6 | P | 62517〜63965 | 104792〜107659 | 8.82〜9.08 |
+| 10 | 本番 | 213203〜213203 | 213203〜213203 | 32.93〜43.68 |
+| 10 | F | 555739〜555739 | 555739〜555739 | 15.74〜16.52 |
+| 10 | W | 201149〜237151 | 201149〜237151 | 20.36〜22.01 |
+| 10 | P | 108611〜112526 | 180092〜187505 | 15.61〜17.90 |
+| 18 | 本番 | 516379〜516379 | 516379〜516379 | 59.19〜62.51 |
+| 18 | F | 2145959〜2145959 | 2145959〜2145959 | 38.75〜40.28 |
+| 18 | W | 507309〜534973 | 507309〜534973 | 45.41〜47.08 |
+| 18 | P | 215120〜219775 | 352972〜364098 | 31.11〜32.09 |
+| 34 | 本番 | 1479083〜1479083 | 1479083〜1479083 | 138.36〜141.64 |
+| 34 | F | 容量超過 | 容量超過 | － |
+| 34 | W | 容量超過 | 容量超過 | － |
+| 34 | P | 457749〜463236 | 746983〜748177 | 69.47〜70.15 |
+| 42 | 本番 | 2138611〜2138611 | 2138611〜2138611 | 193.55〜202.40 |
+| 42 | F | 容量超過 | 容量超過 | － |
+| 42 | W | 容量超過 | 容量超過 | － |
+| 42 | P | 596850〜611786 | 967769〜990959 | 92.84〜94.09 |
 
-全比較が使用可能な4.5秒内に収まった。今回の実履歴は全modeが容量内で、capacity拒否は成功時の速度比較に混ぜていない。10 recordでPはdistinct bytesをFの約20%、owner copy込みでも約33.0〜33.7%へ減らした。一方、object数はF 20→P 82となり、wall中央値はF約10.74〜10.99 msに対しP約14.78〜15.03 msで遅い。materialize部分の中央値はF約8.52〜8.64 ms、P約6.93〜7.01 msである。全読取にはIO・catalog admission・copyなどの追加費用も含まれ、今回の全読取時間の改善は確認できない。Wはwhole wireの再保存を残す対照であり、Pと同じ削減とは扱わない。
+#### 本番imageとの比較
+以前はFを基準に「10 recordでPはFの約20%、owner copy込み約33.0〜33.7%」と記録した。この比較は使わない。Fは各revisionにAnchor履歴全体を持つ累積imageだが、本番のAnchor imageは1 revisionにつき1 entryなので、10 recordのFは本番imageの約2.6倍になる。本番imageを基準にすると次のとおりである。
 
-これはmacOS／arm64のwarm・単一process・表現専用object storeの比較である。Fも本番readerそのものではない。checkpoint／journal・session・SGA・別owner IPCの費用を含まず、本番speedupや継続8 graph readの成立へ換算しない。新署名対象／head／容量と論理同値を区別し、旧形式との署名digest一致を比較条件にしない。
+| record | P distinct／本番image | P owner copy／本番image |
+|---|---|---|
+| 2 | 72%〜72% | 124%〜124% |
+| 4 | 64%〜65% | 108%〜111% |
+| 6 | 59%〜60% | 99%〜101% |
+| 10 | 51%〜53% | 84%〜88% |
+| 18 | 42%〜43% | 68%〜71% |
+| 34 | 31%〜31% | 51%〜51% |
+| 42 | 28%〜29% | 45%〜46% |
+
+owner copy込みでは、Pは4 record以下で本番より大きく、6 recordでほぼ同じ、10 recordで84〜88%、42 recordで45〜46%である。ただし同じ内容の比較ではない。Pは元のwireとregistry imageの`transaction`を持たないので、この比率だけで本番を置き換えられるとは言えない。本番のdisk全体はjournal・checkpointを含み、10 recordで557,696 bytes、42 recordで5,245,960 bytesである。
+
+FとWのregistry閉包は署名を持たず、検証にAnchor側のwireが必要である。各自で検証できる閉包を持つのはPだけなので、F／Wのowner copy列は参考値とする。
+
+F・Wは34 recordで容量を超える（F：8 MiB、W：64 KiB page）。本番の通常処理は42 recordまで進むので、§9.109の全mode比較は本番の到達範囲を覆わない。この深さの比較相手は本番imageだけである。
+
+#### 速度の読み方
+wall中央値は、6 record以下ではFが短く、10 recordではほぼ同じ（F 15.74〜16.52 ms、P 15.61〜17.90 ms）、18 recordではPが短い（F 38.75〜40.28 ms、P 31.11〜32.09 ms）。F・Wは毎回すべての元recordを本番verifierで検証し、Pはcompact署名を検証するので、この差には検証内容の違いが含まれる。本番readerはrecord署名を検証せずjournal／checkpointの処理を含むので、F／W／Pのwallとは比較しない。したがって、Pの速度改善は本番について成立していない。
+
+これはmacOS／arm64のwarm・単一process・表現専用object storeの比較である。session・SGA・別owner IPCの費用を含まず、本番speedupや継続8 graph readの成立へ換算しない。新署名対象／head／容量と論理同値を区別し、旧形式との署名digest一致を比較条件にしない。
 
 #### 再現と残課題
-rawは`docs/validation/gradle-c3b-cgp-s0c-2026-11-06.measurements.json`、summaryは同名`.json`。profile・計測source閉包・raw・本節・checkerと回帰sourceのdigestを保存し、照合scriptは計測器の変更を検知する。製品source／packageの将来更新を計測器と同じ強さでpinしない。
+rawは`docs/validation/gradle-c3b-cgp-s0c-2026-11-06.measurements.json`、summaryは同名`.json`。profile・計測source閉包・raw・本節・checkerと回帰sourceのdigestを保存し、照合scriptは計測器とowner fixtureの変更を検知する。製品source／packageの将来更新を計測器と同じ強さでpinしない。
 ```sh
 env OSV_S0C_NATIVE=1 OSV_S0C_OUTPUT=docs/validation/gradle-c3b-cgp-s0c-2026-11-06.measurements.json npx vitest run src/test/utils/gradleOwnedS0cNative.test.ts --maxWorkers=1
 node scripts/analyze-c3b-cgp-s0c.mjs
 node scripts/analyze-c3b-cgp-s0c.mjs --check
 ```
-次はCGP-I1の呼出し回数削減の見積りと、S0cのtyped delta／incremental materializerの必要性を判断する。Pのbytes削減だけを根拠に製品採用せず、S0dの5owner比較、cold／churn／miss／復旧、scratch／RSS、S0xの独立storage・immutable prefixも残す。CG0／CG3、productionApproved、backendEligible、nativeIsolationVerifiedはfalse、originalReadsSkippedは0。
+CGP-I1の結果は§9.110にある。S0cのtyped delta／incremental materializerの必要性は、元wireと`transaction`の保持方法を含めて本番imageを基準に判断する。Pのbytes削減だけを根拠に製品採用せず、S0dの5owner比較、cold／churn／miss／復旧、scratch／RSS、S0xの独立storage・immutable prefixも残す。CG0／CG3、productionApproved、backendEligible、nativeIsolationVerifiedはfalse、originalReadsSkippedは0。
 
 #### レビュー修正
 - 選択rootのparentを、binding／revision一致だけでなくcatalog直前の同owner refへ束縛した。W／P・registry／Anchorの4回帰は、全ref更新・compact再署名とAnchor state digest更新後の別祖先を拒否する。guardだけを外した対照では4件とも不正な祖先を受理し、回帰が失敗することも確認した。
 - disk readerにpureなcatalog admissionを追加した。件数・宣言bytes合計・role別file上限をIO前に検査し、materializerでも同じ検査を再実行する。従来は8 MiBを超える集合を全読取後に拒否していたが、追加回帰では列挙／file読取が共に0となる。
 - 証拠checkerの集計元を検証済みroundへ変更した。warm-upと全roundの全resource counter一致を要求し、owner copy計数だけの改変4件、内部の和が正しいままのround間変化1件を拒否する。checkerは29件。
 - 修正したsourceで216比較読取を再実行し、表・raw・summary・回帰source hashを更新した。容量削減と速度改善未成立を区別し、本番採用／8 read成立の判定は引き続きfalseとする。
+- 2回目のレビューで次を修正した。元recordの検証を本番verifierに揃えた。以前は署名・direction・roleしか見ておらず、本番が拒否する10種の改変をPへ再署名していた。テストデータも本番形式に直した。
+- 本番imageと本番readerを対照に加え、深さを42 recordまで広げて再計測した。容量超過のF／Wも記録できるようにし、結論の基準をFから本番imageへ変えた。
+- 検査を1つずつ外す確認で、130か所中113か所を検出した（修正前は123か所中30か所）。残る17か所は、他の検査と補い合う9か所（同時に外すと検出することを確認）、admissionやhashのため到達できない・等価な7か所、署名済みrecordの重複keyに対する多層防御1か所である。確認は使い捨てコピーでの手動実行で、リポジトリから再実行はできない。
+- checkerはhost、recordと深さの対応、本番対照の各値、F／Wの閉包を自己検証と偽る記録を拒否する。
 
 
 ### 9.110 CGP-I1：同一callの検証事実共有と削減効果の限定実証
