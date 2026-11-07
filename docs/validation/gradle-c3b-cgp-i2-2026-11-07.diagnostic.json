@@ -76,5 +76,31 @@
   "setup": "six complete source transfers plus warm-up reused one fixture with a factory-time 4500ms session deadline",
   "acceptedComparison": false,
   "rawTransferTraceSaved": false,
-  "resolution": "use an independent fixture per warm-up plus measured transfer; keep the same fixed original deadline without renewal; do not treat this as eight-read proof"
+  "resolution": "use an independent fixture per warm-up plus measured transfer; keep the same fixed original deadline without renewal; do not treat this as eight-read proof",
+  "causeEstablished": false,
+  "reviewNote": {
+    "date": "2026-11-07",
+    "repeatability": "manual and not re-runnable from the repository",
+    "sameSetupOnReviewedSource": {
+      "runs": 2,
+      "transfersPerRun": 432,
+      "failures": 0,
+      "maxFixtureMs": [
+        1702,
+        2784
+      ]
+    },
+    "repeatUntilStop": {
+      "S*": {
+        "transfers": 16,
+        "stop": "current_control_capacity_exhausted"
+      },
+      "B*": {
+        "transfers": 23,
+        "elapsedMs": 3879,
+        "stop": "current_control_capacity_exhausted"
+      }
+    },
+    "conclusion": "Repetition alone is not established as the cause; the original source was not saved and host load cannot be separated."
+  }
 }

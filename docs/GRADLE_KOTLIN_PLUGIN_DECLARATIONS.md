@@ -7972,7 +7972,7 @@ node scripts/analyze-c3b-cgp-i1.mjs --check
 - guard／profile／producer／observerの条件はmode間共通。違いはscalar/ranges algorithmとcommand/reply schemaだけで、factsは両方false。独立した固定承認manifest全体とのcanonical一致を分析器で要求し、自己digest更新や両mode同時変更でも未承認値・予算不足を拒否する。
 
 #### 単一fresh取得と維持したgate
-1. 実AuthenticatedSessionCall・署名・peer／destination・API権限・lineage・planの現認可を検査し、両端の共通guardを予約する。stable operationのprivate台帳でcaller／session／元guard期限を束縛し、session待機にも同じ期限を渡す。再試行のattempt・slot・残予算をリセットしない。
+1. 実AuthenticatedSessionCall・署名・peer／destination・API権限・lineage・planの現認可を検査し、両端の共通guardを予約する。同じoperationの元期限はSessionBootQuotaと共通guardが保持し、再試行で長い期限を要求しても待機は最初の期限で終わる。再試行のattempt・slot・残予算をリセットしない。
 2. 別々のpre／post pin確認を維持する。1 RPCにつきsource全entryを一度だけprivate Bufferへcopyし、全bytesのdigest・長さを検証する。このsnapshotから全partsを同期生成し、rangeごとのsource再取得やawaitを入れない。source取得counterはcopy開始、validatedBytesは実際の全entry検査量を数える。
 3. 各IO／await／署名前後・enqueue前の10境界でlocal gateを検査する。pre成功後の取消しは既入場の取得1回が進んでもpostで拒否する。post成功後の遅配は`live=false`であり、新しい許可を発行しない。元期限で待機が終了し、遅れて完了したhandlerの成功応答も拒否する。
 4. 新しいRPC／retryは新しいsnapshotを取得する。署名済みの過去の成功やsnapshotを持ち越して原本を省略しない。拒否時はdefinite／unknownに応じてguardを終了／unknownにし、期限・取消しにより終了できない状態を成功へ戻さない。
@@ -7995,22 +7995,22 @@ node scripts/analyze-c3b-cgp-i1.mjs --check
 
 | workload | S*要求 | B*要求 | S*総時間 ms | B*総時間 ms | paired差 ms |
 |---|---|---|---|---|---|
-| small | 9 | 3 | 22.75〜24.55 | 56.59〜59.49 | -35.81〜-33.83 |
-| h0Sizes | 16 | 11 | 42.06〜46.36 | 152.03〜171.84 | -124.39〜-109.98 |
-| singleLarge | 15 | 12 | 39.69〜43.17 | 116.52〜128.61 | -85.55〜-76.23 |
+| small | 9 | 3 | 22.30〜23.71 | 55.57〜58.86 | -35.43〜-33.21 |
+| h0Sizes | 16 | 11 | 41.56〜42.98 | 151.19〜158.52 | -115.70〜-109.51 |
+| singleLarge | 15 | 12 | 38.87〜40.27 | 115.03〜120.18 | -80.23〜-76.04 |
 
 | workload | S*計画 ms | B*計画 ms | S*転送・再構成 ms | B*転送・再構成 ms |
 |---|---|---|---|---|
-| small | 0.39〜0.42 | 47.76〜50.23 | 22.35〜24.13 | 8.80〜9.50 |
-| h0Sizes | 0.67〜0.74 | 120.59〜134.10 | 41.40〜45.61 | 31.45〜35.88 |
-| singleLarge | 0.63〜0.70 | 82.74〜91.81 | 39.04〜42.47 | 33.64〜37.00 |
+| small | 0.38〜0.43 | 47.12〜49.88 | 21.91〜23.29 | 8.42〜9.16 |
+| h0Sizes | 0.66〜0.73 | 120.09〜126.48 | 40.89〜42.20 | 31.20〜32.28 |
+| singleLarge | 0.63〜0.69 | 81.71〜86.19 | 38.23〜39.60 | 33.12〜34.23 |
 
-実inner最大は7909 B、実auth frame最大は1506 B。全比較要求は上限内で、wire合計と全work予算を照合した。転送部分の短縮だけを採用根拠にしない。I0 plannerは最大wireを探すbinary searchと見積り署名layoutの再構築を含み、その費用が今回の削減を上回った。planを無料にしたり過去のplanをlive許可として再利用したりせず、現在の実装で速度改善未成立とする。
+実inner最大は7909 B、実auth frame最大は1506 B。全比較要求は上限内で、wire合計と全work予算を照合した。転送部分の短縮だけを採用根拠にしない。I0 plannerは最大wireを探すbinary searchと見積り署名layoutの再構築を含み、その費用が今回の削減を上回った。さらに`sealPlan`が確認のため`i0Plan`をもう一度実行するので、計画費用の約半分は2回目の実行である（h0Sizesは見積り1回の計画につき222回、計444回。inventory検証は約0.06 ms）。planを無料にしたり過去のplanをlive許可として再利用したりせず、現在の実装で速度改善未成立とする。
 
 #### 効果見積り・失敗記録・残課題
 H0の全完了traceを既存checkerで再検証し、両経路のinventory各1要求＋data各16要求、entryサイズの連続したoffsetを照合する。同じサイズを合成sourceに使った場合、dataは片経路16→11、両経路のsource要求はinventoryを維持して34→24（10減）。模擬fresh取得10回・pre/post確認20回分と、全source再検証bytesは両経路計414600 Bを減らせる算術である。descriptor／namespace等の不変APIへ外挿しない。H0の238回のreadCommittedは今回再実行しておらず、実readCommitted削減は0として記録する。238からの差引きや継続8 readの成立を主張しない。
 
-複数の完全転送を1fixtureで繰り返した予備runは、固定元期限へ到達し`current_control_request_expired`で停止した。`gradle-c3b-cgp-i2-2026-11-07.diagnostic.json`にsource hash・診断を保存し、raw transfer trace未保存・比較不採用を明示する。これは最終pair比較と別のsetupであり、成功例へ混ぜない。最終runnerは独立したwarm-up＋測定のfixtureを使い、期限延長はしない。今後の失敗もcompleted sampleとevent／counter／frameを`.failure.json`へ保存して失敗させる。
+複数の完全転送を1fixtureで繰り返した予備runは、固定元期限へ到達し`current_control_request_expired`で停止した。`gradle-c3b-cgp-i2-2026-11-07.diagnostic.json`にsource hash・診断を保存し、raw transfer trace未保存・比較不採用を明示する。これは最終pair比較と別のsetupであり、成功例へ混ぜない。**繰り返し自体が原因とは確定していない。** レビュー時に確定sourceで同じ構成を2回実行すると432転送がすべて成功し、1 fixtureの最大は1.7 sと2.8 sだった（手動、repoから再実行不可）。当時のsourceは未保存で、負荷の影響も切り分けられない。単独の繰返しは実時間でS*が16回、B*が23回（3.9 s）まで成功し、次の転送は期限ではなく`capacity_exhausted`で止まる。上限はSessionBootQuotaの256 operationで、完了後も解放していない。継続8 readの見積りにはこの上限も含める。最終runnerは独立したwarm-up＋測定のfixtureを使い、期限延長はしない。今後の失敗もcompleted sampleとevent／counter／frameを`.failure.json`へ保存して失敗させる。
 
 rawは`docs/validation/gradle-c3b-cgp-i2-2026-11-07.measurements.json`、summaryは同名`.json`。計測source閉包、H0参照、document section、分析器・checker・回帰source hashを照合する。現instrumentの一致とhistorical production sourceを区別する。
 ```sh
@@ -8021,6 +8021,19 @@ node scripts/analyze-c3b-cgp-i2.mjs --check
 次はplanner費用の内訳と、同じ認可・wire上限・完全性を保つ計画生成の改善余地を見積もる。本番SourceOwner／実storageへの接続、I1との併用、I3／I4とS0dの5process、S0x／独立SGA、cold／churn／復旧・最大RSSは残る。今回の限定実証を本番I2全面採用と呼ばず、CG0／CG3・backendEligible・独立隔離・継続8 readは保留、原本読取省略0を維持する。
 
 検証記録更新：追加回帰146件（runtime106・fork5・checker33・記録照合2）、関連する既存317件、型検査・build・差分検査が通過。実時間比較1件は216 pair／432転送を保存した。
+
+#### この実証の限定（レビューで明記）
+- serverはclientが作ったsealed planを同じfixtureの`planned`から受け取り、`sim`も共有して認可する。実際のproviderは`planDigest`をwireから受け取り、自身のinventoryから計画を再現する必要がある。今回その費用は`sealPlan`の再実行として計画時間に1回だけ入り、server側の転送時間には入らない。したがって「転送部分の短縮」は実server構成へそのまま読み替えない。
+- `ownerSignatureChecks`は検証呼び出しの回数であり、検証結果の証明ではない。owner側の署名検証は、session層の後ろにある多層防御で、外部からの改ざんはsession層が先に拒否する。
+- transfer全体の`maxWireBytes`／`maxWorkUnits`（64 MiB）は転送後に確認する事後検査で、このworkloadでは到達せず回帰もない。送信前の拒否はguard予約で行う。
+
+#### レビュー修正2：証跡の固定と回帰の補強
+- `--check`が`gradleOwnedCgpI2`を含むファイルだけを照合し、結論を左右するI0 plannerが対象外だった。`checkI2Instruments`で計測source閉包の`src/test/`全体（I0 fixture・共有fixture）を照合する。production sourceはfork差分テストに任せ、記録のみとする。
+- runtime回帰を追加した。`private snapshot`の隔離（取得後のsource変更が応答へ混ざらない）、全entry検査（どのentryの改変でも拒否）、拒否時のguard状態（definiteは両guardがcomplete、unknownは両guardがunknownで再試行拒否）、S*応答の改ざん12種、B*応答の改ざん8種、再試行の待機終了。
+- checker回帰を追加した。結果digest不一致、要求数、parts、counter key、frame方向／inner、guardの状態・attempt・wire・work、原本省略・readCommitted削減の主張。計測器の変更検出を9ファイルで確認する。
+- §9.110で削除した元期限台帳がI2で復活していたため削除した。guardと共有していて重複し、変異しても挙動が変わらなかった。
+- 回帰は計212件（runtime150・fork5・checker55・記録照合2）。手動mutation（repoから再実行不可）は修正前の69件中18件検出から67件中52件検出へ改善した。残る15件は他の層と重複する条件（session／guardのgate、schema固定の`live`、ownerの多層防御）と到達不能な64 MiB上限などである。修正sourceで216 pair／432転送を再計測し、表・raw・summaryを更新した。
+- planner改善の目安（手動・load 4〜6で変動大、repoから再実行不可、採用判断に使わない）：最大サイズを先に試すと計画時間は約1/4、wire合計は同じ。B*／S*総時間比はsmall 2.4→0.66倍、h0Sizes 3.4→1.14倍、singleLarge 2.5→1.2倍。H0サイズではまだ逆転しない。
 
 #### レビュー修正：最終再構成後のgateと計時の完全性
 - 全entry再構成と結果digest作成が終わった後、transferの結果を返す直前にも現認可・policy・元期限を確認する。最後のRPC成功を全転送の最終認可として使わない。S*／B*の双方で、最終entryのdigest照合時に期限到達・credential取消し・policy変更を注入する6件を追加し、全RPCが成功していても転送結果を返さないことを確認した。pre／post pin確認と、post成功後の非liveな遅配の扱いは維持する。

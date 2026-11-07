@@ -3078,7 +3078,9 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 ### CGP-I2：取得batch化・単一fresh取得（§9.111）
 - [x] test-only S*／B*。元の署名・現認可・元期限・共通guardを維持し、単一snapshotからpartsを生成。独立pre／post、実session用lineage／live=false応答、実wire／work予算を検証。本番APIは未登録。
 - [x] runtime106件＋fork差分5件＋checker33件。10境界の取消し／期限／policy、遅配、signed part改変、source改変／再取得、予算・上限、repin後の未承認manifest、event閉包等を検証。
-- [x] 216 pair／432転送。H0同サイズで片経路16→11要求、両経路34→24の算術。dispatchは短縮したがplanner費用を含む総時間は全36条件で悪化し、速度改善未成立。繰返しfixtureの期限拒否は別診断で保持。
+- [x] 216 pair／432転送。H0同サイズで片経路16→11要求、両経路34→24の算術。dispatchは短縮したがplanner費用を含む総時間は全36条件で悪化し、速度改善未成立。繰返しfixtureの期限拒否は別診断で保持（確定sourceでは再現せず、原因は未確定）。
 - 次はplannerの費用分解と改善余地の見積り。本番SourceOwner／実storage接続・I1併用・I3／I4／S0d 5process・S0x／SGA・cold／churn／復旧・RSSは残る。限定fixtureから8 readを主張せず、CG0／CG3保留・原本読取省略0・実readCommitted削減0を維持。
 
 §9.111レビュー修正：全entry再構成・結果digest作成後の最終認可／policy／元期限gateを追加。両modeの最終期限到達・取消し・policy変更6件と、計画／転送の過小計上・未計上wall5件をRED→GREENで確認。共有境界時刻と単一終了時刻で総時間を完全分割し、計時誤差0.01 msで双方向照合する。修正sourceで216 pair／432転送を再計測して検証記録を更新。
+
+§9.111レビュー修正2：`--check`の照合先を計測source閉包の`src/test/`全体へ広げ、I0 plannerの変更も検出する。snapshot隔離・全entry検査・拒否時のguard状態・S*／B*応答改ざん・checker条件の回帰を追加し、重複した元期限台帳を削除した。診断の原因を未確定へ改め、`sealPlan`による計画2回実行、serverのplan共有、256 operation上限を明記した。修正sourceで216 pair／432転送を再計測。
