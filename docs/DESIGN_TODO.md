@@ -3102,3 +3102,5 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - [ ] CPR-A〜Dを順に実装・実証。回帰CPR01〜CPR48は全て未実施。まずstrict schema／spec／実codecのwire-bound contractから進める。実storage・独立UID・5process・継続8 read・本番採用・CG0／CG3は未成立。原本省略・実readCommitted削減0。
 
 §9.113設計レビュー修正：IO前の限定AdmissionLease／ReadScopeと、計画照合後のDispatchPermitへ型・状態を分離。昇格の全条件・原子的遷移、同じrow／K/D／元期限／attempt／spentの保持、未昇格・計画不一致・unknown／retiredとretryの扱いを具体化し、CPR08／14／30／34を更新。I2Pはclient2／provider0、新方式はclient2／provider N（合計2＋N）と計画回数を訂正。設計のみ、実装・実接続・48条件の回帰は未実施。
+
+§9.113設計レビュー修正2：provider毎batch再現の着手前停止判定（I2P summaryから再計算、H0で1回の計画が上限の10.58〜11.65倍）を追加し、CPR-Aにlayout上界の算術packing、CPR-Bに実測の採用見送り条件を追加。T_Bへclientのseal／inventory取得を加え、inventory 4096 Bを新規制約と明記。client seal再計画の理由を追記し、設計記録の照合テストを追加。設計のみ。

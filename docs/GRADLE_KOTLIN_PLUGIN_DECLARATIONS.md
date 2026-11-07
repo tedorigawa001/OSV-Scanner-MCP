@@ -8144,7 +8144,7 @@ node scripts/analyze-c3b-cgp-i2p.mjs --check
 
 最初の採用候補はserving状態のreader／authority-broker→provider、purpose=read、commit／payloadのrangesに限定する。inventory取得・descriptor・issuer／checkpoint・delivery／use／ACK／finishは統合しない。brokerのoriginは現行と同じreaderで、直接readerのorigin指定は拒否する。brokerへReadSourceDescriptor等の新権限を便宜上追加しない。各clientが現行の許可経路で検証済みseal／inventoryを取得できないtupleはunsupportedとする。
 
-初期profileは既存の小workload上限（entry 9、source 41460 B、inventory 4096 B、4 ranges／batch、data 4096 B／batch、最大19 batch）を超えない。SourceSchema一般の192 KiB／256 entryをそのまま新profileへ拡大しない。新wireで19 batch以内に収まらないsourceは容量拒否とし、B modeの途中でscalarへdowngradeしない。既存v1サービスも既定では変更しない。
+初期profileは既存の小workload上限（entry 9、source 41460 B、4 ranges／batch、data 4096 B／batch、最大19 batch）を超えない。既存I0のB*はinventoryをrangeで読まず、productionのinventory長は`SOURCE_LIMITS.bundleBytes`（256 KiB）までである。新profileではinventory 4096 B（1 chunk）を**新たな制約**として追加する。SourceSchema一般の192 KiB／256 entryをそのまま新profileへ拡大しない。新wireで19 batch以内に収まらないsourceは容量拒否とし、B modeの途中でscalarへdowngradeしない。既存v1サービスも既定では変更しない。
 
 #### 9.113.2 strict wire・計画値・digestの責任分離
 
@@ -8188,7 +8188,7 @@ command = {schema, api, purpose, operationId, peer, lineage, binding,
 3. SourceReadPortから対象receiptを**一度だけ**fresh loadする。実StageStoreの全履歴認証・checkpoint再同期・root境界検査を維持し、返ったreceiptがSavedのreceiptとexact一致すること、rowのbundle以外の全fieldが保存済みrowと一致することを検証する。最終bundleをcall所有の不変な値／private bytesへcopyし、storeや他callのmutable aliasを返さない。
 4. その同じbundleの全entryをcanonical decodeし、全bytesのhash／長さ・順序・件数・合計、metadata、inventory bytesのhash／長さ、inventoryDigestを自身のsealと照合する。要求対象外entryも検査する。一度導出したentry table／bytesからinventoryとpartsを作り、単なる重複走査の除去を完全性検査の省略にしない。起動／復旧時のfullSourceReplay等も維持し、readCommittedを新たな全semantic replayそのものとは呼ばない。
 5. providerの承認spec／strategyとこのinventoryだけで全計画を再現する。受信claimを計画入力の上限・探索のshortcutにしない。seed／transferId等の非権限parameterはD_wireへ束縛し、peer／provider／origin／lineage／selectionはscopeから確認する。再現したplanDigest・inventoryDigest・batchCount・operationIdと、batchOrdinalのcommand意味全体、range列・byteBudgetが一致した場合だけ現在batchを許可する。
-6. private factoryがその再現結果からcall限定planをmintし、下記の全昇格条件を同時に確認して同じAdmissionLeaseからDispatchPermitを発行する。未昇格ではparts生成・成功署名・enqueueを行わない。client側は現行の「候補計画＋seal再計画」の2回を維持する。provider側はcallerの候補値をsealするのではなく、**自身が権威入力から導出した1回の全計画**を照合・brand化する新helperとする。既存の汎用sealPlanをadapterで使うなら追加の再計画が走るため、2回目を省略したと偽らず別profile・別counterで費用を記録する。
+6. private factoryがその再現結果からcall限定planをmintし、下記の全昇格条件を同時に確認して同じAdmissionLeaseからDispatchPermitを発行する。未昇格ではparts生成・成功署名・enqueueを行わない。client側は現行の「候補計画＋seal再計画」の2回を維持する。これはclient authorityが署名前に自分の計画値をspecから再計算する自己検査であり、providerの独立再現の代わりにはならない。逆にproviderが再現することはclient側の検査を省く根拠にならない。1回化は別profile／bridgeの実験とし、本設計の比較へ混ぜない。provider側はcallerの候補値をsealするのではなく、**自身が権威入力から導出した1回の全計画**を照合・brand化する新helperとする。既存の汎用sealPlanをadapterで使うなら追加の再計画が走るため、2回目を省略したと偽らず別profile・別counterで費用を記録する。
 7. 同じsnapshotからpartsを同期生成し、postのfresh live RPCを別に行う。entry／part検査、CPUの有界block、各await／IO／署名前後・enqueue前でscopeを確認する。post成功後にpinだけが変わった遅配は既存の非live観測の扱いを維持する一方、credential取消し・policy変更・元期限・owner closeは最終gateでも拒否する。
 8. actual sessionのreply検証とclientの全entry再構成までを完了条件にする。read-only batchから新しいstage commit／use／ACKを発生させない。保存層の既存fsyncはstage効果0と区別する。成功・拒否・timeoutの全経路でscopeをretireし、既入場IOのdrainが終わるまでSourceOwnerのserial admissionを別callへ付け替えない。
 
@@ -8258,7 +8258,7 @@ batchCount自体がpacking結果に依存する循環は、計画試行でbatchO
 | session／boot | 256 business operationと512 message等の実上限、pending上限、回復枠を確認 | guard枠512があってもsessionの256を超えない。8 read可否を保証しない |
 | wire | inventory前は承認上限による保守予約、計画後は全batchのboundでexactに縮約。全体64 MiB上限は**転送前**にも検査 | 各senderは実bytesを送信／allocation前に消費。receiverは長さ上限をparse前に検査。actualがboundを超えたらlayout不成立としてno-go、送ってから成功扱いにしない |
 | attempt／recovery | 81920 Bは1組のchallenge/channel 4 frame＋2 innerの上界であり、無制限の論理RPC枠ではない | handshake／recovery frameは別に予約・実計数。再送の各business exchangeも消費する。既存runtimeが再送を計上できないadapterではranges再送を無効にしてunknownを返し、予算外の2回目を通さない |
-| 計画／source | entry9／41460 B・inventory4096 B・batch19／range4／data4096 B、command全量・probe・decode／copy量の構造上限を先に予約 | callerの小さいcountを信用しない。binary最悪探索回数＋max試行1回分、client2回・provider各batch1回を別々に計数。非wire失敗はfallbackしない |
+| 計画／source | entry9／41460 B・batch19／range4／data4096 B（既存）、inventory4096 B（新規制約）、command全量・probe・decode／copy量の構造上限を先に予約 | callerの小さいcountを信用しない。binary最悪探索回数＋max試行1回分、client2回・provider各batch1回を別々に計数。非wire失敗はfallbackしない |
 | memory／所有 | 全bundle・inventory・全計画・現在batch・署名bufferの有界な同時保持を予約 | rangeごとにbundleをcopyしない。parse前の総bytes・件数上限を適用する。構造上限はCPU時間／RSSの実測保証とは別 |
 
 実装では一時的な「保守予約→exact予約」を二重加算せず、同じprivate lease内で縮約し、失敗／unknownでも元期限・残量を復活させない。client側だけの予約ではprovider保護にならない。providerはpre・store・再計画・replyの最悪上限を別に入場時に確保する。SourceReadPortもfile数／bytes・検証workを自分の承認上限で検査する。新layoutに適合しないsource／key ID／profileはB modeで拒否し、上限引上げやv1 dataへの暗黙fallbackをしない。
@@ -8268,7 +8268,8 @@ batchCount自体がpacking結果に依存する循環は、計画試行でbatchO
 新経路の費用モデルは次を区別する。
 
 ```text
-T_B = client inventory検証 + client plan + client seal再計画
+T_B = client seal／inventory取得（descriptor・inventory chunk RPC。各RPCのprovider fresh load・pre/post live・署名を含む）
+    + client inventory検証 + client plan + client seal再計画
     + Σ_batch(queue + 認可/guard + pre live + 1 fresh readCommitted
               + 全source/inventory検証 + provider全計画再現
               + claim照合/parts生成 + post live + 実署名/session)
@@ -8276,6 +8277,22 @@ T_B = client inventory検証 + client plan + client seal再計画
 ```
 
 現行I2Pは**clientでinitial＋sealの2回、providerで0回**の計画実行であり、serverは共有sealed planを使用する。新方式はclientの2回を維持し、cacheなしで**providerが各batchに1回**全計画を再現する。dataがN batchなら総計画回数は2から2＋Nへ増える。仮にN=11なら2→13回（provider分11回追加）だが、新wireではbatch数自体も変わり得る。provider側にも汎用sealPlanを使う別profileでは再計画を隠さず2＋2N回として記録する。既存のB-max時間へ一定の値を足しただけで速度改善・8 read成立を推定しない。実際のfresh load／履歴増大、registry／Anchorのpre/post、CPUとqueueの追加費用を計測する。
+
+seal／inventoryの取得はbatch化の対象外だが、総時間の比較ではS-scoped・B-independentの両armに同じ取得経路を含める。I2Pはfixtureからinventoryを直接渡しており、この取得費用を含まない。下の事前見積りも同様である。
+
+**着手前の停止判定**：I2P summary（§9.112）だけから、次の値を各workloadの12条件で求める。改善の推定ではなく、進めない条件の確認にだけ使う。
+
+- 単純加算＝各条件のB-max総時間＋N×B-max初回plan時間。providerの毎batch再現だけを足し、新wire・provider全検証・取得経路の追加費用を含まないため、下限寄りの値である。
+- 計画に使える時間＝S総時間−B-max dispatch時間。計画以外を現B-maxのままとした場合に、client2回＋provider N回の計画全体へ使える上限である。
+- 1回の上限＝計画に使える時間÷(2＋N)。
+- 現在／上限＝条件ごとのB-max初回plan時間÷1回の上限。各欄は12条件の範囲で、同じ条件の値どうしから求める。
+
+| workload | N | S総時間 | B-max初回plan／回 | 単純加算 | 計画に使える時間 | 1回の上限 | 現在／上限 |
+|---|---|---|---|---|---|---|---|
+| small | 3 | 22.70〜27.54 | 3.77〜4.43 | 27.86〜32.52 | 14.07〜17.42 | 2.81〜3.48 | 1.20〜1.35 |
+| h0Sizes | 11 | 41.83〜44.57 | 9.09〜9.93 | 150.38〜161.96 | 10.46〜11.90 | 0.80〜0.92 | 10.58〜11.65 |
+| singleLarge | 12 | 39.61〜42.98 | 8.12〜8.79 | 147.94〜159.49 | 5.44〜8.47 | 0.39〜0.61 | 14.28〜21.44 |
+現在の1回の計画費用は、条件ごとの比でsmallでも上限の1.20〜1.35倍、H0サイズで10.58〜11.65倍、大entry中心で14.28〜21.44倍である。試行ごとにcommand構築・認可見積り・wire生成を行う現在の方式のまま、provider側の毎batch再現を入れればscalarに勝てない。そのため、CPR-Aの出口にlayout上界の算術だけで決まるpackingを置く。CPR-Bでは同じharnessのS-scoped／B-independentで計画合計を実測し、それがS-scoped総時間−B-independent dispatch時間を超えるworkloadでは採用を見送ってCPR-Cへ進まない。上の値は着手前の目安であり、CPR-Bの判定は実測値で行う。
 
 primaryは同じmulti-schema対応実験binary／SourceReadPort／source／profile／guard／actor topologyを使うS-scoped（scalar v1）、B-independent-binary、B-independent-max。Sにも同じscope-aware storageと元期限・予算の意味を適用する。変更前S_ref→S-scoped、共有plan fixture→独立providerは別bridgeで、意図したschema／profile／意味の差を列挙する。I1 facts共有、S0の表現・再生最適化を同時投入しない。
 
@@ -8292,8 +8309,8 @@ primaryは同じmulti-schema対応実験binary／SourceReadPort／source／profi
 
 | 段階 | 実装／採用前の出口条件 |
 |---|---|
-| CPR-A | v3 command/result・非循環planCore／K/D・admission→verifiedの型／状態・semantic specと実codec-bound layout、strict予算contract。current serviceでは未登録のままunit／generative試験。CPR01〜16・25〜32を中心に確認 |
-| CPR-B | clientとproviderのauthority／inventory／mapを分離したin-process実署名session。providerがcall固有snapshotから計画再現。mock storage・pinのまま、その限定を明記してgate／完全性・no-readを検証 |
+| CPR-A | v3 command/result・非循環planCore／K/D・admission→verifiedの型／状態・semantic specと実codec-bound layout、strict予算contract。current serviceでは未登録のままunit／generative試験。CPR01〜16・25〜32を中心に確認。packingはlayout上界の算術だけで決め、最終の全command検査を除く試行ごとのcommand構築・認可見積り・wire生成が0であることを構造counterで確認する |
+| CPR-B | clientとproviderのauthority／inventory／mapを分離したin-process実署名session。providerがcall固有snapshotから計画再現。mock storage・pinのまま、その限定を明記してgate／完全性・no-readを検証。同じharnessのS-scoped／B-independentで計画合計を実測し、S-scoped総時間−B-independent dispatch時間を超えるworkloadは採用を見送ってCPR-Cへ進まない |
 | CPR-C | SourceOwnerとlocal実StageStoreのscoped adapter・実pre/post認証RPCへ接続。全IO境界・保存故障／期限・同期・root・履歴深さを実diskで検証。追加費用とscalar差を再判断 |
 | CPR-D | remote storage／実process・独立UIDは既存の認証・registry・fencing契約を満たした別backendで実証。5ownerのcold/warm・復旧・連続read／ACKを確認するまで本番gateを開放しない |
 
@@ -8359,3 +8376,10 @@ primaryは同じmulti-schema対応実験binary／SourceReadPort／source／profi
 - 昇格／縮約／retryで同じrow・K/D・元期限・attempt・spentを保持し、資源復活・新leaseへの置換・旧permit復活を禁止。CPR08／14／30／34へ対応条件を追加した。
 - 計画回数はI2Pのclient2／provider0から、新方式のclient2／provider N（合計2＋N）へ修正した。providerに汎用sealを使う場合の2＋2Nも別記録とした。
 - 設計のみ。新guard/helper・48回帰条件の実装／実接続は未実施のまま。設計section・source参照と検証記録を更新した。
+
+#### 9.113.10 設計レビュー修正2
+- provider側の毎batch再現について、I2P summaryだけから求める着手前の停止判定を§9.113.6に追加した。現在の方式のまま入れるとH0サイズ・大entry中心ではscalarに勝てないため、CPR-Aの出口にlayout上界の算術によるpacking（試行ごとのcommand構築・認可見積り・wire生成0）、CPR-Bの出口に実測の計画合計による採用見送り条件を加えた。
+- 費用モデルT_Bにclientのseal／inventory取得を加え、総時間の比較では両armに同じ取得経路を含めると明記した。I2Pと事前見積りはこの費用を含まない。
+- inventory 4096 Bは既存の上限ではないため、新profileで追加する制約と書き分けた。既存I0はinventoryをrangeで読まず、productionの長さ上限は256 KiBである。
+- client側のseal再計画を残す理由（署名前の自己検査であり、providerの再現とは役割が別）を§9.113.3に追記した。
+- 設計記録を照合するテスト`gradleOwnedCgpProviderDesign.test.ts`を追加した。節hash、source hash、CPRと段階の表とJSONの一致、未実施の状態、事前見積りの再計算と表を固定する。設計のみで、実装・実接続・48条件の回帰は未実施のまま。

@@ -5,7 +5,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.113 ",
-    "sectionSha256": "14a5f1a197244125dd79707f643f2d386b7c02cac1369109687fd8c9ff084af9"
+    "sectionSha256": "20114697904c1fed17286d726ae12c19ae1525d9723e35603f62eff468f91c6c"
   },
   "sourceBindings": {
     "src/utils/gradleOwnedSourceOwner.ts": "4e008c25b1a78caa4870f18baf1d81cb0e261e50f673bfdd411af58ebb0fe3d0",
@@ -46,17 +46,19 @@
     "Remote remaining TTL alone is insufficient; an approved conservative clock-domain mapping is required.",
     "New actual-codec wire bound and transfer reservations are checked before send/IO, with recovery/handshake counted separately.",
     "Provider replan cost is paid per batch and counted separately from client planning; no projection of prior fixture throughput.",
-    "Admit an authenticated bounded read claim before IO without pretending it is a plan-verified dispatch; atomically promote the same row/attempt only after independent plan verification."
+    "Admit an authenticated bounded read claim before IO without pretending it is a plan-verified dispatch; atomically promote the same row/attempt only after independent plan verification.",
+    "Before CPR-A, a stop check from the I2P summary alone shows per-run planning 10.58-11.65x (H0 sizes) and 14.28-21.44x (large entry) above the budget; packing must be decided by layout-bound arithmetic and CPR-B stops on measured planning cost.",
+    "Total-time comparison includes client seal/inventory acquisition in both arms; I2P and the stop check exclude it."
   ],
   "implementationStages": [
     {
       "id": "CPR-A",
-      "condition": "v3 command/result・非循環planCore／K/D・admission→verifiedの型／状態・semantic specと実codec-bound layout、strict予算contract。current serviceでは未登録のままunit／generative試験。CPR01〜16・25〜32を中心に確認",
+      "condition": "v3 command/result・非循環planCore／K/D・admission→verifiedの型／状態・semantic specと実codec-bound layout、strict予算contract。current serviceでは未登録のままunit／generative試験。CPR01〜16・25〜32を中心に確認。packingはlayout上界の算術だけで決め、最終の全command検査を除く試行ごとのcommand構築・認可見積り・wire生成が0であることを構造counterで確認する",
       "status": "not-started"
     },
     {
       "id": "CPR-B",
-      "condition": "clientとproviderのauthority／inventory／mapを分離したin-process実署名session。providerがcall固有snapshotから計画再現。mock storage・pinのまま、その限定を明記してgate／完全性・no-readを検証",
+      "condition": "clientとproviderのauthority／inventory／mapを分離したin-process実署名session。providerがcall固有snapshotから計画再現。mock storage・pinのまま、その限定を明記してgate／完全性・no-readを検証。同じharnessのS-scoped／B-independentで計画合計を実測し、S-scoped総時間−B-independent dispatch時間を超えるworkloadは採用を見送ってCPR-Cへ進まない",
       "status": "not-started"
     },
     {
@@ -382,6 +384,23 @@
       {
         "command": "git diff --check",
         "exitCode": 0
+      },
+      {
+        "command": "npx vitest run src/test/utils/gradleOwnedCgpProviderDesign.test.ts --maxWorkers=1",
+        "passed": 4,
+        "pins": [
+          "section hash",
+          "sourceBindings hashes",
+          "CPR01-48 and CPR-A-D rows equal to the record",
+          "design-only scope and unexecuted conditions",
+          "stop check recomputed from the I2P summary and printed in the section"
+        ]
+      },
+      {
+        "check": "Six drift edits (section text, CPR05, CPR-A, executed flag, stop-check value, scope flag) each fail the design record test",
+        "status": "passed",
+        "caught": 6,
+        "total": 6
       }
     ],
     "qualification": "Documentation and existing historical-record compatibility only; no implementation, native run or performance evidence is added."
@@ -469,5 +488,135 @@
     ],
     "runtimeImplemented": false,
     "runtimeRegressionConditionsExecuted": false
+  },
+  "reviewCorrections2": {
+    "date": "2026-11-07",
+    "status": "design-only",
+    "findingsAddressed": [
+      "no pre-implementation cost stop check for per-batch provider replan",
+      "T_B omitted client seal/inventory acquisition",
+      "inventory 4096 B presented as an existing limit",
+      "client seal replan rationale",
+      "design record had no checker"
+    ],
+    "sections": [
+      "9.113.1",
+      "9.113.3",
+      "9.113.5",
+      "9.113.6",
+      "9.113.7",
+      "9.113.10"
+    ],
+    "updatedStages": [
+      "CPR-A",
+      "CPR-B"
+    ],
+    "runtimeImplemented": false,
+    "runtimeRegressionConditionsExecuted": false
+  },
+  "feasibilityEstimate": {
+    "status": "stop-check-only",
+    "source": {
+      "path": "docs/validation/gradle-c3b-cgp-i2p-2026-11-07.json",
+      "sha256": "73a4ad0bd4f02ae33b8a0491abe780c0cfe2170fc547d9a14f82415a7d3daac0"
+    },
+    "helper": "src/test/fixtures/gradleOwnedCgpProviderFeasibility.mjs",
+    "definitions": {
+      "naiveTotalMs": "B-max wall + N x B-max initial plan per condition",
+      "planAllowanceMs": "S wall - B-max dispatch per condition",
+      "perRunLimitMs": "planAllowanceMs / (2 + N)",
+      "runToLimitRatio": "B-max initial plan / perRunLimitMs per condition"
+    },
+    "excludes": [
+      "new v3 wire",
+      "provider full verification",
+      "seal/inventory acquisition"
+    ],
+    "rows": [
+      {
+        "workload": "small",
+        "batches": 3,
+        "scalarWallMs": {
+          "min": 22.7,
+          "max": 27.54
+        },
+        "planRunMs": {
+          "min": 3.77,
+          "max": 4.43
+        },
+        "naiveTotalMs": {
+          "min": 27.86,
+          "max": 32.52
+        },
+        "planAllowanceMs": {
+          "min": 14.07,
+          "max": 17.42
+        },
+        "perRunLimitMs": {
+          "min": 2.81,
+          "max": 3.48
+        },
+        "runToLimitRatio": {
+          "min": 1.2,
+          "max": 1.35
+        }
+      },
+      {
+        "workload": "h0Sizes",
+        "batches": 11,
+        "scalarWallMs": {
+          "min": 41.83,
+          "max": 44.57
+        },
+        "planRunMs": {
+          "min": 9.09,
+          "max": 9.93
+        },
+        "naiveTotalMs": {
+          "min": 150.38,
+          "max": 161.96
+        },
+        "planAllowanceMs": {
+          "min": 10.46,
+          "max": 11.9
+        },
+        "perRunLimitMs": {
+          "min": 0.8,
+          "max": 0.92
+        },
+        "runToLimitRatio": {
+          "min": 10.58,
+          "max": 11.65
+        }
+      },
+      {
+        "workload": "singleLarge",
+        "batches": 12,
+        "scalarWallMs": {
+          "min": 39.61,
+          "max": 42.98
+        },
+        "planRunMs": {
+          "min": 8.12,
+          "max": 8.79
+        },
+        "naiveTotalMs": {
+          "min": 147.94,
+          "max": 159.49
+        },
+        "planAllowanceMs": {
+          "min": 5.44,
+          "max": 8.47
+        },
+        "perRunLimitMs": {
+          "min": 0.39,
+          "max": 0.61
+        },
+        "runToLimitRatio": {
+          "min": 14.28,
+          "max": 21.44
+        }
+      }
+    ]
   }
 }
