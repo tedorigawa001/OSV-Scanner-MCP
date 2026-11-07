@@ -3092,3 +3092,5 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - 次はprovider側の独立計画再現とSourceOwner／実storage接続の契約・費用見積り。共有planのfixtureから本番効果を主張しない。I1併用・5process・S0x／SGA・復旧／RSSは残り、本番採用・継続8 read・CG0／CG3は保留。原本省略・実readCommitted削減0。
 
 §9.112レビュー修正：planごとに候補commandDigestの重複を拒否。総件数・連番・cost／RPC counterを維持した重複／欠落8件と、sealによる同候補の独立再計算を許可する正常系1件を追加。checker43件に更新し、source閉包の整合性を保つ216組／864転送の再計測と検証記録の更新を行った。
+
+§9.112レビュー修正2：元I0との一致を計画値全体（wireBytes・workUnitsを含む）へ広げ、最終全command検査の件数・順序・digestを固定。probe内の非wire失敗をfallbackへ変換しない4件と、計画同値・cost partition境界のchecker負例3件を追加（専用84・checker46）。mutationは13／21→19／21。fork・計測source閉包は不変のため再計測なし。rawの無インデント保存は次の実験から。

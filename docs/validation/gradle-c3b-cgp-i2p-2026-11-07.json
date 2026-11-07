@@ -4159,7 +4159,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.112 ",
-    "sectionSha256": "26eb0531a96af525c5d15b0546a00083ceceac82f8056e0328ef401c83f64ade"
+    "sectionSha256": "15ff8a467a7d877454ebba67fde17cd530f24d664f321b4c205b30027516faba"
   },
   "analysisSource": {
     "path": "scripts/analyze-c3b-cgp-i2p.mjs",
@@ -4175,7 +4175,7 @@
     "checks": [
       {
         "command": "npx vitest run src/test/utils/gradleOwnedCgpI2P.test.ts src/test/utils/gradleOwnedCgpI2PRegression.test.ts src/test/utils/gradleOwnedCgpI2PFork.test.ts src/test/utils/gradleOwnedCgpI2PReport.test.ts src/test/utils/gradleOwnedCgpI2PValidation.test.ts --maxWorkers=1",
-        "passed": 279
+        "passed": 286
       },
       {
         "command": "env OSV_CGP_I2P_NATIVE=1 OSV_CGP_I2P_OUTPUT=docs/validation/gradle-c3b-cgp-i2p-2026-11-07.measurements.json npx vitest run src/test/utils/gradleOwnedCgpI2PNative.test.ts --maxWorkers=1",
@@ -4202,10 +4202,10 @@
       }
     ],
     "regressionSources": {
-      "src/test/utils/gradleOwnedCgpI2P.test.ts": "d1fc8a61124d38d9f5abc8c32426b385e6e55e7a1c41de90a7e4b467949ad53b",
+      "src/test/utils/gradleOwnedCgpI2P.test.ts": "d1577b9e94fc83d3d27bec54f2a450a4e35914f8d99e70419121defb5f33e957",
       "src/test/utils/gradleOwnedCgpI2PRegression.test.ts": "274d79f2a7b0e679655d98439efd5f019e50d169d277f59f647be1115c37e6c7",
       "src/test/utils/gradleOwnedCgpI2PFork.test.ts": "10a4455b3d44c56fa567af2b48ab2e18564268acf817255a5b79ad044150359d",
-      "src/test/utils/gradleOwnedCgpI2PReport.test.ts": "3a70c4a0876c2bab4094f76d86c872c27610953d2db76af9ea8f053ca2e125b0",
+      "src/test/utils/gradleOwnedCgpI2PReport.test.ts": "6dc8c8a15847ffde5c4004d7f703f58279deef023ddfb044c03a683648f752d4",
       "src/test/utils/gradleOwnedCgpI2PValidation.test.ts": "43a777ba63133ad24c6ad7e63374e723d9e3fb16d993b5abdb4a1ae4e31fe267",
       "src/test/utils/gradleOwnedCgpI2.test.ts": "d927eaa472c3b6c198a90a9b6e01a676f5a6d956e42014bdf24fccfe80f45f6b"
     },
@@ -4213,7 +4213,8 @@
       "Profiling plus extra leaf gates has measured overhead: compare B-ref to B-binary separately.",
       "Authority independently recomputes at seal, but client/server still share that plan; no independent provider replan RPC.",
       "All primary maximum probes fit; lower-cap fallback is tested separately.",
-      "No real storage/readCommitted, five-process throughput, eight-read success or production adoption."
+      "No real storage/readCommitted, five-process throughput, eight-read success or production adoption.",
+      "Raw measurements are stored with two-space indentation (52,897,160 B, above the 50 MiB push recommendation); later experiments store raw without indentation."
     ],
     "reviewCorrections": {
       "probeUniqueness": "Require unique commandDigest per planner invocation, including both search and final probes; independent seal invocation may repeat the same candidates.",
@@ -4236,6 +4237,37 @@
         "maxFasterThanBinary": 36,
         "maxFasterThanScalar": 12
       }
+    },
+    "reviewCorrections2": {
+      "exactOriginalPlan": "Compare the whole plan value (planDigest, commands, wireBytes, workUnits, sourceBytes) with the original I0 planner for both strategies, and pin each invocation final re-check by count, order and commandDigest.",
+      "nonWireFailure": "A non-wire failure injected once at wire:before or wire:after fails the plan at its first probe; it is never converted into a smaller range.",
+      "checkerBoundaries": [
+        "equivalent_plan alone",
+        "cost partition +0.02 ms",
+        "cost partition -0.02 ms"
+      ],
+      "regressions": {
+        "dedicatedAdded": 4,
+        "checkerAdded": 3,
+        "dedicated": 84,
+        "checker": 46
+      },
+      "mutation": {
+        "scope": "disposable copy; four test files excluding the hash-pinning validation",
+        "before": {
+          "caught": 13,
+          "total": 21
+        },
+        "after": {
+          "caught": 19,
+          "total": 21
+        },
+        "remaining": [
+          "max-first does not lower hi after a rejected maximum (efficiency only; same plan)",
+          "gate before the planner hook removed (redundant with the preceding gate)"
+        ]
+      },
+      "remeasurement": "none; forks and the measured source closure are unchanged"
     }
   }
 }

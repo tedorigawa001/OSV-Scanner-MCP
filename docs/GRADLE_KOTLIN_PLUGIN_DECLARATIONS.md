@@ -8097,8 +8097,8 @@ H0サイズの2回合計のleaf費用は次のとおり。各欄は12条件の�
 主にcommand構築・認可・wire再構築とそれらを囲むgateの反復を減らせた。計測器bridge自体の費用も観測されており、B-binaryの絶対時間をそのままproduction binaryの時間とは扱わない。B-maxとSのpaired差はsmallで正、H0サイズ／大entry中心で負だった。したがってplanner改善の限定成立と、全workloadでの方式採用は区別する。
 
 #### 回帰・証跡・残課題
-- 改善案専用80件：元plannerとのexact plan・transfer一致16条件、9つの計画境界×2 strategy×期限／取消し／policy、wire fallback、予算不足・source改変・post取消し・最終gate、seal改変拒否、cap上限を確認する。
-- 現行I2のruntime150件を最大サイズ優先へ再適用し、元期限での待機終了、snapshot隔離・全entry検査、拒否／unknown・再試行、署名済み応答改変、最終gateを維持する。fork照合4件、証拠checker43件も実行する。
+- 改善案専用84件：元plannerとのexact plan・transfer一致16条件、9つの計画境界×2 strategy×期限／取消し／policy、wire fallback、予算不足・source改変・post取消し・最終gate、seal改変拒否、cap上限を確認する。
+- 現行I2のruntime150件を最大サイズ優先へ再適用し、元期限での待機終了、snapshot隔離・全entry検査、拒否／unknown・再試行、署名済み応答改変、最終gateを維持する。fork照合4件、証拠checker46件も実行する。
 - checkerは固定profile／manifest・全36条件・実行順、exact signed wire、全entry結果、source/pre/post・署名counter、wire/work・guard、planner2回・seal・cost／probe回数、非重複時間の閉包・失敗混入を検査する。計測source閉包の`src/test/`全体、raw・summary・本節・分析器・回帰sourceのhashを保存・再照合する。元I2のhistorical測定は書き換えない。
 
 rawは`docs/validation/gradle-c3b-cgp-i2p-2026-11-07.measurements.json`、summaryは同名`.json`。
@@ -8112,10 +8112,17 @@ node scripts/analyze-c3b-cgp-i2p.mjs --check
 
 次はprovider側の独立した計画再現を含む費用と、本番SourceOwner／実storage接続の採用条件を具体化する。H0サイズで残るscalarとの差を、現在の認可・元期限・完全性を弱めず埋められるか見積もる。I1併用・I3／I4／S0dの5process、S0x／SGA・cold／churn／復旧・最大RSSも残る。本番採用・継続8 read・CG0／CG3は保留、原本読取省略・実readCommitted削減は0。
 
-検証結果：今回279件（専用80・既存runtimeの最適化版への再適用150・fork4・checker43・記録2）と関連既存529件、型検査・build・差分検査が通過した。実時間比較1件は216組／864転送を保存した。
+検証結果：今回286件（専用84・既存runtimeの最適化版への再適用150・fork4・checker46・記録2）と関連既存529件、型検査・build・差分検査が通過した。実時間比較1件は216組／864転送を保存した。
 
 #### レビュー修正：同一plan内の候補重複・欠落の拒否
 - probeの連番だけでなく、同一plan実行内の`commandDigest`の一意性を検査する。候補1件を欠落させ、別候補の記録を複製して連番だけを維持しても拒否する。検索と最終全command検査の両方を対象にする。
 - B-binary／B-max、初回／sealの2実行、検索／最終検査の組合せ8負例を追加。総件数・全ordinal・全cost counterと時間・RPC counterが不変であることをテスト中にも確認し、それでも重複として拒否する。修正前は8件とも受理、修正後は拒否した。
 - 一意性のscopeは各plan実行に限定し、sealが初回と同じ候補列を独立再計算する正常系を別の1件で確認する。初回とsealをまたいだ同じdigestは重複扱いしない。
 - checkerを含むsource閉包を新しい実行証拠へ束縛するため、216組／864転送を再計測し、raw・summary・表・source hashを更新した。planner／runtimeの手順と予算は変更しない。
+
+#### レビュー修正2：元plannerとの完全一致・非wire失敗・checker境界
+- 元I0との一致試験は、これまでcommand列だけを比べていた。計画値全体（planDigest・command列・wireBytes・workUnits・sourceBytes）を、両strategyのforkで元I0と`toEqual`で照合する。各planner実行の最終全command検査について、件数・順序・`commandDigest`が全commandと一致し、末尾に連続し、wireBytes合計が計画値と一致することも確認する。B-binaryは`max`試行を持たず、B-maxの検索試行は全て`max`であることも確認する。
+- probe内で起きたwire-budget以外の失敗をfallbackへ変換しないことを、`wire:before`／`wire:after`に非wire例外を1回だけ注入する4件で確認する。最初の試行で計画が`failed`となり、試行は1件のまま、sourceとguardに到達しないことを要求する。注入した失敗が後続gateで再発しない条件にしたため、握りつぶすと別の短い計画が完成して失敗する。
+- fallback試験では、planner実行ごとの`commandDigest`一意性と、最大値の拒否直後のbinary試行がそれより短いことを確認する。checkerには、B-binary／B-maxの計画digestだけを食い違わせる負例と、leaf費用を±0.02 msずらすcost partition境界の負例2件を追加した。
+- 一時コピーでのmutation（計測source閉包のhashを照合するValidationを除く4ファイルで判定）は、修正前13／21、修正後19／21。残る2件は、最大値の拒否後に上限を1つ下げない効率だけの変更（計画は同一）と、hook前gateの削除（直前のgateと重複）である。
+- productionコード・fork・計測source閉包は変更しないため、再計測しない。raw／表／source hashは不変で、更新したのは回帰source hashと本節hashだけである。rawは2空白インデントで52,897,160 B（GitHubの推奨上限50 MiB超）になり、無インデントなら約21 MBである。書き出し形式の変更は計測source閉包を変えて再計測が必要になるため、今回は行わない。次の実験のrawからは無インデントで保存する。
