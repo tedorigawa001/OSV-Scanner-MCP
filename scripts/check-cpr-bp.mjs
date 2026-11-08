@@ -1,0 +1,11 @@
+import {readFile,writeFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
+import {cprBPSources,analyzeCprBP} from '../src/test/fixtures/gradleOwnedCprBPRecord.mjs';import {designSection} from '../src/test/fixtures/gradleOwnedCgpS0Bound.mjs';
+const rawPath='docs/validation/gradle-c3b-cpr-bp-2026-11-08.record.json',output='docs/validation/gradle-c3b-cpr-bp-2026-11-08.json',sha=b=>createHash('sha256').update(b).digest('hex'),bytes=await readFile(rawPath),raw=JSON.parse(bytes),result=analyzeCprBP(raw);
+if(JSON.stringify(raw.sources)!==JSON.stringify(await cprBPSources()))throw Error('cpr_bp_source_closure');
+const document={path:'docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md',heading:'### 9.116 CPR-BP：計画費用分解・最大サイズ優先・重複検査の除去'};
+document.sectionSha256=sha(designSection(await readFile(document.path,'utf8'),document.heading));
+const regressionSources={};for(const p of ['src/test/utils/gradleOwnedCprBPDocument.test.ts','src/test/utils/gradleOwnedCprBP.test.ts','src/test/utils/gradleOwnedCprBPFork.test.ts','src/test/utils/gradleOwnedCprBPRuntime.test.ts','src/test/utils/gradleOwnedCprBPReviewFix.test.ts','src/test/utils/gradleOwnedCprBPValidation.test.ts','scripts/check-cpr-bp.mjs'])regressionSources[p]=sha(await readFile(p));
+const profiles=result.profiles.map((p,i)=>{const ts=raw.diagnostics[i].traces.filter(t=>t.actor==='provider');return {...p,providerWallMs:ts.reduce((n,t)=>n+t.wallMs,0),otherMs:ts.reduce((n,t)=>n+t.otherMs,0),inclusiveMs:Object.fromEntries(Object.keys(p.exclusiveMs).map(k=>[k,ts.reduce((n,t)=>n+t.buckets[k].inclusiveMs,0)]))};});
+const summary={schema:'cpr-bp.validation.v1',raw:{path:rawPath,sha256:sha(bytes)},document,regressionSources,...result,profiles,scope:raw.scope};
+if(process.argv.includes('--check')){if(JSON.stringify(JSON.parse(await readFile(output,'utf8')))!==JSON.stringify(summary))throw Error('cpr_bp_summary_mismatch');}else await writeFile(output,JSON.stringify(summary,null,2)+'\n');
+console.log(JSON.stringify({blocks:result.blocks,primaryTransfers:result.primaryTransfers,originalBridgeTransfers:result.originalBridgeTransfers,diagnosticTransfers:result.diagnosticTransfers,proceedToCprC:result.proceedToCprC,sourceClosure:'matched',productionAdopted:false}));

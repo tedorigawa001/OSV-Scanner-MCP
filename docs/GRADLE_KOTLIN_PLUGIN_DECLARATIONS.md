@@ -8538,3 +8538,97 @@ summaryの更新は`node scripts/check-cpr-b.mjs`。原本のparse／署名・cu
 2026-11-08。§9.115.3・§9.115.5では、H0同サイズ・大entryの48 pairすべてでBが遅いと書いていたが、記録では47 pairだった。§9.115.3の表と本文の数字はsummaryと照合されておらず、節hashだけを固定していた。本文を47／48と外れ値の説明に直した。許容額の判定が各pairでは総時間の比較と同じ条件であることと、provider計画時間に試行ごとの認可gateが含まれることも追記した。
 
 `gradleOwnedCprBDocument.test.ts`を追加した。summaryの`comparison`から、workloadごとの表の行（4条件の中央値の範囲と判定）と、H0同サイズ・大entryでBが遅かったpair数を再計算し、本文がそれを含むことを検査する。計測と記録は変更していない。
+
+
+### 9.116 CPR-BP：計画費用分解・最大サイズ優先・重複検査の除去
+
+2026-11-08。§9.115を変更せず、plannerとclient／provider assemblyをtest-only forkした限定実証。毎batchのfresh取得・独立した全計画再現は維持する。本番reader／SourceOwner／StageStore／隔離backendへは接続しない。
+
+#### 9.116.1 費用分解の対象と観測の分離
+
+providerの実SessionCallに結ぶ各packをrootとし、client initial／sealを別actorで記録する。診断用wrapperはparsed、ownedDigest、ownedSha256、canonicalOwnedJsonの実関数を必ず実行し、root内だけで件数・時間を観測する。command検査／wire codecの上位span、schema、canonical digest、bytes hash、canonical JSON、現在認可gateを入れ子で記録し、inclusiveとexclusiveを分ける。exclusiveの合計＋otherがroot wallと一致することを0.01 ms以内で検査する。inclusive同士を足して総時間としない。
+
+`hash.digest`はownedDigest内部のcanonical化とSHAを合わせた費用であり、SHAだけの費用とは呼ばない。`hash.bytes`は明示的なbytes hash、`codec.json`はwire生成だけでなくcontext／permissionのcanonical比較も含む。codec上位spanはlayout準備と各commandのactual codec検査、command上位spanは完全なcommand構築・検査を指す。分類外の構築／算術／観測器の費用はotherへ残し、省略しない。
+
+診断は4 workload × reader／broker × 4 variantの32構成。それぞれ観測付き1転送とwrapper未導入1転送を新fixtureで実行し、順序を交互にして計64転送を保存する。全てsessionだけを事前接続したwarm条件で、inventory／planは持ち越さない。診断時間はprimary比較へ混ぜず、観測時間から未観測時間を引いて真の部品時間を推定しない。単一pairの負差も保存する。wrapperの時間やscheduler／GCの揺れを無視した精密なCPU原価の証明ではない。
+
+provider traceはcall番号・実requestDigest・batchOrdinalをownerのplan記録へ照合する。client initial／sealは別root、providerはbatchごとに1rootとなる。総件数・連番・costを維持したtraceの重複・差替えも、このrequest対応で拒否する。source閉包と測定前後の同一性を保存するが、外部署名attestationではない。
+
+#### 9.116.2 2つの削減案と保つ検査
+
+- reference：CPR-Aのbinary探索と重複command検査をそのまま再現する。元CPR-Bとの別bridgeで値・wire・実時間を照合する。
+- max-first：算術上界で最大lengthを先に試し、入る場合だけbinaryを省く。入らなければupper−1を上限にbinaryへ戻す。同じ単調なlayout上界から同じ最大prefixを得る。command構築・認可見積り・wire生成を試行中に行わない。各算術試行のgateは維持し、試行自体が減る分だけgateとbinding wire hashが減る。
+- single-check：privateなparsed context／numeric rangeから組み立てたcommandを、既存の完全なcheckCommandへ1回通す。schema・wire intent・operation ID・context／refs・originの述語は変更しない。元のmakeCommand内の検査とcheckCommand内の同じ検査の重複を除く。返却はstructuredCloneして、各command・core・caller入力のmutable aliasを共有しない。
+- combined：上記2つを組み合わせる。
+
+semantic spec、全planCore／planDigest、全command、range被覆、wire bound、wire／work見積りはreferenceと同一である。final command N件、owner 2N・auth frame 4Nのactual codec検査を省かない。schema／digest検査はsingle-checkでN回ずつ減るが、codec検査数は変わらない。providerのwire-binding hash減少はgate数の減少に対応し、clientのlocal current gateはwire hashを行わないため同じ関係を適用しない。
+
+各batchのreceipt／inventory検証・fresh load・provider全計画は毎回実行する。client map・plan handleの共有、cross-call cache、検証事実の後続RPCへの持越しをしない。K/D・元期限・attempt・work／wireの入場予約と消費保持、pre/post、実session署名／認可・recovery、最終digestとclient最終gateを変更しない。workは減った観測値へ返金せず既存の保守予約を保つ。variantはfixture assemblyで固定し、wireで選択させない。
+
+#### 9.116.3 比較方法と判定
+
+primaryはscalar／reference／combinedの3arm。4 workload × 2 role × cold／warm × 6反復の96 block、288転送。3armの開始順は回転と反転により各位置が2回ずつになるようにする。各blockに元CPR-Bを別途1回入れ、前後を交互にして96 bridge転送を保存する。各条件・4経路のwarm-upは64転送として別保存する。primary／original bridgeでは低水準の診断wrapperを導入せずroot収集も無効にする。fork内のspanのno-op分岐費用はprimaryにも残るため、元CPR-Bとのbridgeで保持する。sourceとmock pin／storage、実署名session、出力、計画digest・実wire量、pre/post／fresh load／plan件数を照合する。
+
+総時間はdescriptor／inventoryの署名取得からclient initial／seal、provider各batchの独立計画・転送、全entry再構成・最終digest／wire集計・最終認可まで。factoryは両armとも範囲外。coldはhandshake込み、warmはsession接続だけを範囲外とする。4500 msの元期限を延長しない。失敗・warm-upのstatus／reason／partialも保存し、失敗を抜いた比較を成功として受理しない。
+
+比較は各条件の6反復の中央値とpair件数を使用する。計画合計はclient initial＋seal＋provider全packで、dispatchの内数をwallへ再加算しない。scalar wall−combined非計画時間を許容額とし、総時間と計画合計の双方でCPR-C判定を行う。新旧fixture bridgeや観測付き診断をprimaryに混ぜない。個別max-first／single-checkは診断・構造counterで比較し、primary総時間の採用判定はcombinedだけを対象とする。
+
+#### 9.116.4 回帰と再現
+
+全4 variantの固定vector・最大identity／2role、40生成例について全plan値を元plannerへ照合する。締まった診断layout capによるbinary fallback、非wire失敗の即拒否、gate途中の停止、入力／commandコピー独立性を検証する。完全検査をまとめた初期実装でcommand間のaliasが残ることをREDで確認し、private copyを維持するよう修正した。
+
+combinedへCPR-Bのruntime96件とレビュー修正20件を再適用する。fork差分検査でclient／providerの認可・元期限・保存・retry／wire・最終化経路の変更を禁止する。新規差分は固定variant、planner呼出し、観測用request対応だけである。record checkerはroot／request閉包、費用partition、counter削減の関係、full codec件数、原本bytes、wire・状態・予算、最終timestamp、source変更等を検査する。
+
+```sh
+OSV_CPR_BP_RECORD=1 OSV_CPR_BP_OUTPUT=docs/validation/gradle-c3b-cpr-bp-2026-11-08.record.json npx vitest run src/test/utils/gradleOwnedCprBPBenchmark.test.ts --maxWorkers=1
+npx vitest run src/test/utils/gradleOwnedCprBP.test.ts src/test/utils/gradleOwnedCprBPFork.test.ts src/test/utils/gradleOwnedCprBPRuntime.test.ts src/test/utils/gradleOwnedCprBPReviewFix.test.ts src/test/utils/gradleOwnedCprBPValidation.test.ts --maxWorkers=1
+node scripts/check-cpr-bp.mjs --check
+npm run typecheck
+npm run build
+```
+
+rawは`docs/validation/gradle-c3b-cpr-bp-2026-11-08.record.json`（無インデント）、summaryは同名`.json`。更新は`node scripts/check-cpr-bp.mjs`。旧CPR-A／Bのコード・記録を上書きせず、本節と新しいsource閉包で再現する。実storage・native隔離・本番承認registry・継続8 read・CG0／CG3の成立を主張しない。原本読取省略0、実readCommitted削減0を維持する。
+
+
+#### 9.116.5 検証結果と次段階の判定
+
+以下は各role・cold/warm条件の6反復中央値の範囲（ms）。別条件の最小／最大同士を引き算しない。
+
+| workload | scalar総時間 | reference総時間 | combined総時間 | combined計画合計 | 許容額 |
+|---|---|---|---|---|---|
+| default | 37.52〜87.88 | 34.39〜83.71 | 35.30〜85.88 | 8.61〜16.75 | 12.40〜27.73 |
+| small | 37.23〜80.44 | 32.38〜62.81 | 29.02〜68.38 | 8.07〜17.56 | 17.33〜32.10 |
+| h0Sizes | 62.67〜170.60 | 142.86〜400.74 | 123.38〜225.56 | 65.80〜120.51 | 7.36〜37.34 |
+| singleLarge | 128.58〜187.94 | 315.65〜424.46 | 297.55〜422.47 | 159.64〜225.86 | -9.28〜-4.39 |
+
+combinedの中央値は11条件でreferenceより小さく、pair単位では83/96で短縮した。ただしdefaultの一部条件の差は小さく、scheduler／GCのばらつきも残る。統計的有意性・全環境への速度保証を主張しない。H0／大entryの8条件では、今回も計画が許容額を超えている。**CPR-Cの全workload接続は見送りのまま**であり、今回の短縮を本番採用や8 read成立へ読み替えない。
+
+H0同サイズ・readerのprovider全11計画の診断を例示する。時間は観測付き1転送のexclusive合計（ms）で、primary時間ではない。
+
+| 分類 | reference件数 | combined件数 | reference ms | combined ms |
+|---|---|---|---|---|
+| command | 121 | 121 | 0.815 | 6.268 |
+| codec | 132 | 132 | 9.842 | 33.822 |
+| gate | 2805 | 693 | 11.008 | 9.932 |
+| schema | 1034 | 913 | 6.567 | 24.191 |
+| hash.digest | 858 | 737 | 10.611 | 19.873 |
+| hash.bytes | 3278 | 1166 | 6.466 | 6.938 |
+| codec.json | 19888 | 7216 | 34.371 | 49.232 |
+| other | — | — | 1.034 | 2.321 |
+
+認可gate 2805→693、bindingを含むbytes hash 3278→1166、canonical比較19888→7216が主な件数削減である。これは最大lengthが入る場合の算術試行を減らした結果であり、gateをcache／無効化した結果ではない。single-checkではschema 1034→913・canonical digest 858→737（いずれも121件削減）。command 121・codec 132は変わらず、残るcodec生成やJSON／digest費用も記録に残る。commandのdeep copy費用はcommand exclusiveに含める。
+
+観測対照の差には正負があり、診断費用を精密な一定値として差し引けない。元CPR-Bとのbridge差・cold/warm・全失敗statusもrawへ保持し、都合のよいpairだけを選ばない。今回は全warm-up／primary／bridge／診断armが完了した。次の課題は、残る全command codec／canonical処理を独立再現・完全性を保ってさらに減らせる契約、または適用範囲の限定である。CPR-Cへ先に接続して不足する性能を補った扱いにはしない。
+
+レビュー修正前の確認結果：新規の単体／生成／fork／runtime／レビュー修正／記録／文書照合245件を含む21ファイル597件、最終sourceでの実時間計測runner 1件が通過した。typecheck・buildとCPR-A／B／BPのsource／記録照合も成功。計測は288 primary・96元CPR-B bridge・64診断対照・64 warm-upを全保存した。旧CPR-Bの見送り判定を、本実証の部分的な速度改善だけで解除していない。
+
+
+#### 9.116.6 レビュー修正：費用traceと外側実測の照合
+
+providerの各traceをwitnessで対応するowner plans[i].msへ、client initial／sealはそれぞれ観測armのclientPlanMs／sealMsへ結び、trace wallが対応する外側時間＋0.01 msを超えればtrace_enclosing_timeで拒否する。transfer全体や全planの合計を代わりの上限にしない。wall・other・全bucketを同じ倍率で増やしてpartitionを保っても、外側の独立した実測を超える過大計上は受理しない。既存のexclusive partition、root／request閉包、有限値・非負の費用検査も維持する。
+
+provider・client initial／sealの3件で、transfer全体のwallより小さいまま対応parentだけを超える過大計上を旧checkerが受理するREDを確認し、修正後は拒否した。各actorの＋0.005 msは許容し＋0.02 msは拒否する境界3件も追加（既存と共通の0.01 ms許容幅）。source／計画／認可処理は変更せず、checkerを含む現在のsource閉包で288 primary＋96元CPR-B bridge＋64診断対照＋64 warm-upを再実行して記録を更新した。
+
+再計測には環境変動があり、referenceより速いcombined中央値は16→11条件、pair件数は91→83/96となった。このchecker修正を性能改善・退行の原因とは結び付けず、今回の測定値で表とsummaryを更新した。H0／大entryは今回もCPR-C条件を満たさず、全workload接続の見送りを維持する。実storage・隔離・本番採用・8 readの未成立も変わらない。
+
+修正後の確認結果：追加6件を含む21ファイル603件と、更新したsource閉包での実時間計測runner 1件が通過した。typecheck・build、CPR-A／B／BPのsource・raw／summary照合も成功。CPR-BP専用は251件（従来245＋外側時間照合6）。

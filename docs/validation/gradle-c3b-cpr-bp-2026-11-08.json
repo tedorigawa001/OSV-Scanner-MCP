@@ -1,0 +1,1454 @@
+{
+  "schema": "cpr-bp.validation.v1",
+  "raw": {
+    "path": "docs/validation/gradle-c3b-cpr-bp-2026-11-08.record.json",
+    "sha256": "3ccdd03a393705a3d138f0f9fe6c75ae962ba3056c3001c8def76b392a8153aa"
+  },
+  "document": {
+    "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+    "heading": "### 9.116 CPR-BP：計画費用分解・最大サイズ優先・重複検査の除去",
+    "sectionSha256": "7ffa5e39bbfee7c66a19b61ceee6756a8fb417119576920053b8201a6e4ff58d"
+  },
+  "regressionSources": {
+    "src/test/utils/gradleOwnedCprBPDocument.test.ts": "56e2508bf7047ccd528bb495971d94e2dd0565c12cafc81b0aff62f9bb4c25bc",
+    "src/test/utils/gradleOwnedCprBP.test.ts": "5d7324416476ac6d36f6afcd6e9b8892f0f7b69255d883667c0ffe3b0e38010c",
+    "src/test/utils/gradleOwnedCprBPFork.test.ts": "4846976be6995391501fcd63eba341a60988619c5023db9a4c5d80d11ecdb710",
+    "src/test/utils/gradleOwnedCprBPRuntime.test.ts": "5f2e0d2530d8852a7ebebb65ee930c42ebce6e7722a61965fb3f830b90119629",
+    "src/test/utils/gradleOwnedCprBPReviewFix.test.ts": "d238b91cf4415a7b4023987328d00c30e43afdb40fae718238285355b54b75cc",
+    "src/test/utils/gradleOwnedCprBPValidation.test.ts": "be2936b93c5e789903f47fd7f561cb77308355b5c6e627df54d1b533c2cf022c",
+    "scripts/check-cpr-bp.mjs": "b0bc5a6a15c8cb5ba11dfede1d4291b9203914a0816e9c174d3e08a23acd55bc"
+  },
+  "blocks": 96,
+  "primaryTransfers": 288,
+  "originalBridgeTransfers": 96,
+  "diagnosticTransfers": 64,
+  "warmups": 64,
+  "comparisons": [
+    {
+      "condition": "default/reader/cold",
+      "scalarMs": 85.44691649999993,
+      "referenceMs": 74.11189599999989,
+      "combinedMs": 71.94739550000008,
+      "planMs": 12.60997899999984,
+      "headroomMs": 27.733436999999867,
+      "bridgeDeltaMs": 1.9646875000000819,
+      "combinedBeatsScalar": 6,
+      "combinedBeatsReference": 5,
+      "proceedToCprC": true
+    },
+    {
+      "condition": "default/reader/warm",
+      "scalarMs": 42.10466700000006,
+      "referenceMs": 42.43981249999979,
+      "combinedMs": 35.43079200000011,
+      "planMs": 8.751895999999306,
+      "headroomMs": 14.983582000000752,
+      "bridgeDeltaMs": -0.7601875000004839,
+      "combinedBeatsScalar": 6,
+      "combinedBeatsReference": 6,
+      "proceedToCprC": true
+    },
+    {
+      "condition": "default/authority-broker/cold",
+      "scalarMs": 87.8790210000002,
+      "referenceMs": 83.71337449999965,
+      "combinedMs": 85.88106249999964,
+      "planMs": 16.749999999999545,
+      "headroomMs": 17.285645999999815,
+      "bridgeDeltaMs": 4.053875000000517,
+      "combinedBeatsScalar": 3,
+      "combinedBeatsReference": 4,
+      "proceedToCprC": true
+    },
+    {
+      "condition": "default/authority-broker/warm",
+      "scalarMs": 37.516625000000204,
+      "referenceMs": 34.39018750000014,
+      "combinedMs": 35.3017504999998,
+      "planMs": 8.609895999999935,
+      "headroomMs": 12.404020000000855,
+      "bridgeDeltaMs": -3.067208500000561,
+      "combinedBeatsScalar": 6,
+      "combinedBeatsReference": 3,
+      "proceedToCprC": true
+    },
+    {
+      "condition": "small/reader/cold",
+      "scalarMs": 39.5536045000008,
+      "referenceMs": 33.94239600000037,
+      "combinedMs": 30.375083499999164,
+      "planMs": 8.067583500000183,
+      "headroomMs": 17.38027150000198,
+      "bridgeDeltaMs": -0.13491599999906612,
+      "combinedBeatsScalar": 6,
+      "combinedBeatsReference": 6,
+      "proceedToCprC": true
+    },
+    {
+      "condition": "small/reader/warm",
+      "scalarMs": 60.41402050000033,
+      "referenceMs": 57.62139550000029,
+      "combinedMs": 48.36212499999965,
+      "planMs": 15.060312499999782,
+      "headroomMs": 26.533458499998233,
+      "bridgeDeltaMs": 1.4583335000006628,
+      "combinedBeatsScalar": 6,
+      "combinedBeatsReference": 6,
+      "proceedToCprC": true
+    },
+    {
+      "condition": "small/authority-broker/cold",
+      "scalarMs": 80.44154199999866,
+      "referenceMs": 62.80556250000154,
+      "combinedMs": 68.37822949999827,
+      "planMs": 17.56329199999891,
+      "headroomMs": 32.09666549999565,
+      "bridgeDeltaMs": 0.13197950000176206,
+      "combinedBeatsScalar": 6,
+      "combinedBeatsReference": 4,
+      "proceedToCprC": true
+    },
+    {
+      "condition": "small/authority-broker/warm",
+      "scalarMs": 37.22612450000088,
+      "referenceMs": 32.37831249999908,
+      "combinedMs": 29.021583500001725,
+      "planMs": 8.836270999998305,
+      "headroomMs": 17.333458000002793,
+      "bridgeDeltaMs": -0.03970850000041537,
+      "combinedBeatsScalar": 6,
+      "combinedBeatsReference": 6,
+      "proceedToCprC": true
+    },
+    {
+      "condition": "h0Sizes/reader/cold",
+      "scalarMs": 66.34789599999931,
+      "referenceMs": 145.776167,
+      "combinedMs": 126.48027100000036,
+      "planMs": 66.59441649999644,
+      "headroomMs": 8.628562499998225,
+      "bridgeDeltaMs": -0.31995850000203063,
+      "combinedBeatsScalar": 0,
+      "combinedBeatsReference": 6,
+      "proceedToCprC": false
+    },
+    {
+      "condition": "h0Sizes/reader/warm",
+      "scalarMs": 78.23379199999908,
+      "referenceMs": 170.57229200000074,
+      "combinedMs": 158.2879789999988,
+      "planMs": 86.80372900000475,
+      "headroomMs": 8.12393499999962,
+      "bridgeDeltaMs": -12.51929150000069,
+      "combinedBeatsScalar": 0,
+      "combinedBeatsReference": 6,
+      "proceedToCprC": false
+    },
+    {
+      "condition": "h0Sizes/authority-broker/cold",
+      "scalarMs": 62.6652920000015,
+      "referenceMs": 142.86443800000052,
+      "combinedMs": 123.38354149999941,
+      "planMs": 65.79887450000024,
+      "headroomMs": 7.359478500002297,
+      "bridgeDeltaMs": -5.021770499999548,
+      "combinedBeatsScalar": 0,
+      "combinedBeatsReference": 6,
+      "proceedToCprC": false
+    },
+    {
+      "condition": "h0Sizes/authority-broker/warm",
+      "scalarMs": 170.5979789999983,
+      "referenceMs": 400.73756250000224,
+      "combinedMs": 225.5621460000002,
+      "planMs": 120.5069160000021,
+      "headroomMs": 37.339936999986094,
+      "bridgeDeltaMs": -59.80552049999824,
+      "combinedBeatsScalar": 1,
+      "combinedBeatsReference": 5,
+      "proceedToCprC": false
+    },
+    {
+      "condition": "singleLarge/reader/cold",
+      "scalarMs": 128.5840419999986,
+      "referenceMs": 315.64906249999694,
+      "combinedMs": 346.6897284999977,
+      "planMs": 178.0068969999993,
+      "headroomMs": -9.27685349999956,
+      "bridgeDeltaMs": 5.897374999996828,
+      "combinedBeatsScalar": 0,
+      "combinedBeatsReference": 4,
+      "proceedToCprC": false
+    },
+    {
+      "condition": "singleLarge/reader/warm",
+      "scalarMs": 168.81633350000266,
+      "referenceMs": 424.46120849999716,
+      "combinedMs": 406.4011879999998,
+      "planMs": 224.03227050000714,
+      "headroomMs": -5.250605000004725,
+      "bridgeDeltaMs": -36.04214550000688,
+      "combinedBeatsScalar": 0,
+      "combinedBeatsReference": 5,
+      "proceedToCprC": false
+    },
+    {
+      "condition": "singleLarge/authority-broker/cold",
+      "scalarMs": 133.11699950000184,
+      "referenceMs": 340.20672950000153,
+      "combinedMs": 297.5547499999957,
+      "planMs": 159.6393545000028,
+      "headroomMs": -7.868103999986488,
+      "bridgeDeltaMs": 2.3249999999898137,
+      "combinedBeatsScalar": 0,
+      "combinedBeatsReference": 6,
+      "proceedToCprC": false
+    },
+    {
+      "condition": "singleLarge/authority-broker/warm",
+      "scalarMs": 187.93652049999946,
+      "referenceMs": 403.09029149999697,
+      "combinedMs": 422.4709789999979,
+      "planMs": 225.86137450000388,
+      "headroomMs": -4.388437000023259,
+      "bridgeDeltaMs": -17.962604000000283,
+      "combinedBeatsScalar": 0,
+      "combinedBeatsReference": 5,
+      "proceedToCprC": false
+    }
+  ],
+  "profiles": [
+    {
+      "workload": "default",
+      "role": "reader",
+      "variant": "reference",
+      "observedWallMs": 39.295375000000604,
+      "quietWallMs": 39.33208299999933,
+      "plans": 4,
+      "providerPlans": 2,
+      "exclusiveMs": {
+        "command": 0.0913749999981519,
+        "codec": 0.9520360000042274,
+        "gate": 1.476660000002994,
+        "schema": 0.7559989999963364,
+        "hash.digest": 0.6863759999987451,
+        "hash.bytes": 0.6913309999954436,
+        "codec.json": 2.9435950000079174
+      },
+      "calls": {
+        "command": 4,
+        "codec": 6,
+        "gate": 154,
+        "schema": 54,
+        "hash.digest": 30,
+        "hash.bytes": 178,
+        "codec.json": 1048
+      },
+      "providerWallMs": 7.846499000000222,
+      "otherMs": 0.24912699999640608,
+      "inclusiveMs": {
+        "command": 0.9640840000001845,
+        "codec": 2.31224900000052,
+        "gate": 3.9760830000022906,
+        "schema": 0.7559989999963364,
+        "hash.digest": 0.6863759999987451,
+        "hash.bytes": 0.6913309999954436,
+        "codec.json": 2.9435950000079174
+      }
+    },
+    {
+      "workload": "default",
+      "role": "reader",
+      "variant": "max-first",
+      "observedWallMs": 40.09295900000052,
+      "quietWallMs": 37.62883299999976,
+      "plans": 4,
+      "providerPlans": 2,
+      "exclusiveMs": {
+        "command": 0.1409140000023399,
+        "codec": 1.2132510000019465,
+        "gate": 0.4698380000036195,
+        "schema": 1.0830820000010135,
+        "hash.digest": 2.004374999999527,
+        "hash.bytes": 0.25374299999566574,
+        "codec.json": 1.9813049999947907
+      },
+      "calls": {
+        "command": 4,
+        "codec": 6,
+        "gate": 38,
+        "schema": 54,
+        "hash.digest": 30,
+        "hash.bytes": 62,
+        "codec.json": 352
+      },
+      "providerWallMs": 7.306749999999738,
+      "otherMs": 0.1602420000008351,
+      "inclusiveMs": {
+        "command": 2.542583999999806,
+        "codec": 3.0525840000000244,
+        "gate": 1.1762550000003102,
+        "schema": 1.0830820000010135,
+        "hash.digest": 2.004374999999527,
+        "hash.bytes": 0.25374299999566574,
+        "codec.json": 1.9813049999947907
+      }
+    },
+    {
+      "workload": "default",
+      "role": "reader",
+      "variant": "single-check",
+      "observedWallMs": 49.064916999999696,
+      "quietWallMs": 39.74241700000039,
+      "plans": 4,
+      "providerPlans": 2,
+      "exclusiveMs": {
+        "command": 0.2518320000026506,
+        "codec": 1.079505000003337,
+        "gate": 1.6881419999835998,
+        "schema": 0.871210000001156,
+        "hash.digest": 0.7692080000006172,
+        "hash.bytes": 0.8352819999963685,
+        "codec.json": 4.685529000016686
+      },
+      "calls": {
+        "command": 4,
+        "codec": 6,
+        "gate": 154,
+        "schema": 50,
+        "hash.digest": 26,
+        "hash.bytes": 178,
+        "codec.json": 1048
+      },
+      "providerWallMs": 10.439250000000357,
+      "otherMs": 0.2585419999959413,
+      "inclusiveMs": {
+        "command": 1.1839589999990494,
+        "codec": 2.7189589999998134,
+        "gate": 5.851540000004206,
+        "schema": 0.871210000001156,
+        "hash.digest": 0.7692080000006172,
+        "hash.bytes": 0.8352819999963685,
+        "codec.json": 4.685529000016686
+      }
+    },
+    {
+      "workload": "default",
+      "role": "reader",
+      "variant": "combined",
+      "observedWallMs": 60.27949999999964,
+      "quietWallMs": 41.73949999999968,
+      "plans": 4,
+      "providerPlans": 2,
+      "exclusiveMs": {
+        "command": 0.2658320000027743,
+        "codec": 2.1820069999939733,
+        "gate": 0.7105829999982234,
+        "schema": 1.2844580000009955,
+        "hash.digest": 0.7388300000011441,
+        "hash.bytes": 0.4779160000043703,
+        "codec.json": 2.610916999998153
+      },
+      "calls": {
+        "command": 4,
+        "codec": 6,
+        "gate": 38,
+        "schema": 50,
+        "hash.digest": 26,
+        "hash.bytes": 62,
+        "codec.json": 352
+      },
+      "providerWallMs": 8.546332999999322,
+      "otherMs": 0.275789999999688,
+      "inclusiveMs": {
+        "command": 1.0963339999998425,
+        "codec": 4.91241699999955,
+        "gate": 1.662625000000844,
+        "schema": 1.2844580000009955,
+        "hash.digest": 0.7388300000011441,
+        "hash.bytes": 0.4779160000043703,
+        "codec.json": 2.610916999998153
+      }
+    },
+    {
+      "workload": "default",
+      "role": "authority-broker",
+      "variant": "reference",
+      "observedWallMs": 27.047582999999577,
+      "quietWallMs": 25.41883400000006,
+      "plans": 4,
+      "providerPlans": 2,
+      "exclusiveMs": {
+        "command": 0.04746000000159256,
+        "codec": 0.6661709999971208,
+        "gate": 0.8272980000128882,
+        "schema": 0.4629990000030375,
+        "hash.digest": 0.5459969999992609,
+        "hash.bytes": 0.4999889999980951,
+        "codec.json": 2.146169999976337
+      },
+      "calls": {
+        "command": 4,
+        "codec": 6,
+        "gate": 154,
+        "schema": 54,
+        "hash.digest": 30,
+        "hash.bytes": 178,
+        "codec.json": 1056
+      },
+      "providerWallMs": 5.299041999998735,
+      "otherMs": 0.10295800001040334,
+      "inclusiveMs": {
+        "command": 0.7601250000025175,
+        "codec": 1.664000999999189,
+        "gate": 2.571916999993846,
+        "schema": 0.4629990000030375,
+        "hash.digest": 0.5459969999992609,
+        "hash.bytes": 0.4999889999980951,
+        "codec.json": 2.146169999976337
+      }
+    },
+    {
+      "workload": "default",
+      "role": "authority-broker",
+      "variant": "max-first",
+      "observedWallMs": 24.60716599999978,
+      "quietWallMs": 23.731125000000247,
+      "plans": 4,
+      "providerPlans": 2,
+      "exclusiveMs": {
+        "command": 0.07445299999744748,
+        "codec": 0.7194969999964087,
+        "gate": 0.22466900001018075,
+        "schema": 0.582747999993444,
+        "hash.digest": 0.5516289999923174,
+        "hash.bytes": 0.17245899999761605,
+        "codec.json": 1.2059980000067299
+      },
+      "calls": {
+        "command": 4,
+        "codec": 6,
+        "gate": 38,
+        "schema": 54,
+        "hash.digest": 30,
+        "hash.bytes": 62,
+        "codec.json": 360
+      },
+      "providerWallMs": 3.589000000001761,
+      "otherMs": 0.05754700000761659,
+      "inclusiveMs": {
+        "command": 0.8005419999990409,
+        "codec": 1.8669990000016696,
+        "gate": 0.6694530000004306,
+        "schema": 0.582747999993444,
+        "hash.digest": 0.5516289999923174,
+        "hash.bytes": 0.17245899999761605,
+        "codec.json": 1.2059980000067299
+      }
+    },
+    {
+      "workload": "default",
+      "role": "authority-broker",
+      "variant": "single-check",
+      "observedWallMs": 26.470166999999492,
+      "quietWallMs": 24.674166999999215,
+      "plans": 4,
+      "providerPlans": 2,
+      "exclusiveMs": {
+        "command": 0.11250300000938296,
+        "codec": 0.6447510000016337,
+        "gate": 0.7911650000205555,
+        "schema": 0.4139199999972334,
+        "hash.digest": 0.44441700000061246,
+        "hash.bytes": 0.505420999998023,
+        "codec.json": 2.170276999988346
+      },
+      "calls": {
+        "command": 4,
+        "codec": 6,
+        "gate": 154,
+        "schema": 50,
+        "hash.digest": 26,
+        "hash.bytes": 178,
+        "codec.json": 1056
+      },
+      "providerWallMs": 5.181083999999828,
+      "otherMs": 0.0986299999840412,
+      "inclusiveMs": {
+        "command": 0.637458000001061,
+        "codec": 1.6577500000021246,
+        "gate": 2.5652030000110244,
+        "schema": 0.4139199999972334,
+        "hash.digest": 0.44441700000061246,
+        "hash.bytes": 0.505420999998023,
+        "codec.json": 2.170276999988346
+      }
+    },
+    {
+      "workload": "default",
+      "role": "authority-broker",
+      "variant": "combined",
+      "observedWallMs": 22.32604199999878,
+      "quietWallMs": 21.093415999999706,
+      "plans": 4,
+      "providerPlans": 2,
+      "exclusiveMs": {
+        "command": 0.0960849999992206,
+        "codec": 0.5901770000054967,
+        "gate": 0.19317699998282478,
+        "schema": 0.3657030000031227,
+        "hash.digest": 0.40345699999488716,
+        "hash.bytes": 0.15521100000478327,
+        "codec.json": 1.0748960000091756
+      },
+      "calls": {
+        "command": 4,
+        "codec": 6,
+        "gate": 38,
+        "schema": 50,
+        "hash.digest": 26,
+        "hash.bytes": 62,
+        "codec.json": 360
+      },
+      "providerWallMs": 2.932415999999648,
+      "otherMs": 0.05371000000013737,
+      "inclusiveMs": {
+        "command": 0.5740420000001905,
+        "codec": 1.5080009999983304,
+        "gate": 0.5985419999979058,
+        "schema": 0.3657030000031227,
+        "hash.digest": 0.40345699999488716,
+        "hash.bytes": 0.15521100000478327,
+        "codec.json": 1.0748960000091756
+      }
+    },
+    {
+      "workload": "small",
+      "role": "reader",
+      "variant": "reference",
+      "observedWallMs": 126.60704199999964,
+      "quietWallMs": 91.24412499999926,
+      "plans": 5,
+      "providerPlans": 3,
+      "exclusiveMs": {
+        "command": 0.8234219999903871,
+        "codec": 6.009931999988112,
+        "gate": 4.915210999983174,
+        "schema": 3.908279000002949,
+        "hash.digest": 4.773458999998184,
+        "hash.bytes": 2.740908000019772,
+        "codec.json": 11.44498599999497
+      },
+      "calls": {
+        "command": 9,
+        "codec": 12,
+        "gate": 300,
+        "schema": 114,
+        "hash.digest": 66,
+        "hash.bytes": 351,
+        "codec.json": 2046
+      },
+      "providerWallMs": 35.35116599999856,
+      "otherMs": 0.7349690000210103,
+      "inclusiveMs": {
+        "command": 6.882417999997415,
+        "codec": 12.737290999999459,
+        "gate": 13.503865999990012,
+        "schema": 3.908279000002949,
+        "hash.digest": 4.773458999998184,
+        "hash.bytes": 2.740908000019772,
+        "codec.json": 11.44498599999497
+      }
+    },
+    {
+      "workload": "small",
+      "role": "reader",
+      "variant": "max-first",
+      "observedWallMs": 116.71812499999942,
+      "quietWallMs": 99.80537499999991,
+      "plans": 5,
+      "providerPlans": 3,
+      "exclusiveMs": {
+        "command": 0.3943309999849589,
+        "codec": 5.9823579999883805,
+        "gate": 2.4068349999997736,
+        "schema": 4.474498000010499,
+        "hash.digest": 3.3548720000089816,
+        "hash.bytes": 1.335996999996496,
+        "codec.json": 7.407359000018914
+      },
+      "calls": {
+        "command": 9,
+        "codec": 12,
+        "gate": 81,
+        "schema": 114,
+        "hash.digest": 66,
+        "hash.bytes": 132,
+        "codec.json": 732
+      },
+      "providerWallMs": 26.297332999998616,
+      "otherMs": 0.9410829999906127,
+      "inclusiveMs": {
+        "command": 4.874834000000192,
+        "codec": 13.06408300000112,
+        "gate": 5.457872999999381,
+        "schema": 4.474498000010499,
+        "hash.digest": 3.3548720000089816,
+        "hash.bytes": 1.335996999996496,
+        "codec.json": 7.407359000018914
+      }
+    },
+    {
+      "workload": "small",
+      "role": "reader",
+      "variant": "single-check",
+      "observedWallMs": 124.48400000000038,
+      "quietWallMs": 142.13137500000084,
+      "plans": 5,
+      "providerPlans": 3,
+      "exclusiveMs": {
+        "command": 0.7143770000147924,
+        "codec": 4.732702000004792,
+        "gate": 5.512786999977834,
+        "schema": 4.109998999996606,
+        "hash.digest": 2.4228319999911037,
+        "hash.bytes": 3.2287099999994098,
+        "codec.json": 11.824641000017436
+      },
+      "calls": {
+        "command": 9,
+        "codec": 12,
+        "gate": 300,
+        "schema": 105,
+        "hash.digest": 57,
+        "hash.bytes": 351,
+        "codec.json": 2046
+      },
+      "providerWallMs": 33.5629990000034,
+      "otherMs": 1.016951000001427,
+      "inclusiveMs": {
+        "command": 3.5884600000008504,
+        "codec": 11.814793000003192,
+        "gate": 15.37467299999662,
+        "schema": 4.109998999996606,
+        "hash.digest": 2.4228319999911037,
+        "hash.bytes": 3.2287099999994098,
+        "codec.json": 11.824641000017436
+      }
+    },
+    {
+      "workload": "small",
+      "role": "reader",
+      "variant": "combined",
+      "observedWallMs": 96.7103330000009,
+      "quietWallMs": 159.87754099999984,
+      "plans": 5,
+      "providerPlans": 3,
+      "exclusiveMs": {
+        "command": 0.9153760000026523,
+        "codec": 3.6872479999838106,
+        "gate": 1.516449000018838,
+        "schema": 3.1074200000039127,
+        "hash.digest": 2.1846690000002127,
+        "hash.bytes": 0.9949540000015986,
+        "codec.json": 5.383624999984022
+      },
+      "calls": {
+        "command": 9,
+        "codec": 12,
+        "gate": 81,
+        "schema": 105,
+        "hash.digest": 57,
+        "hash.bytes": 132,
+        "codec.json": 732
+      },
+      "providerWallMs": 18.27862500000265,
+      "otherMs": 0.48888400000760157,
+      "inclusiveMs": {
+        "command": 3.91516700000102,
+        "codec": 8.899914999996327,
+        "gate": 3.822824999993827,
+        "schema": 3.1074200000039127,
+        "hash.digest": 2.1846690000002127,
+        "hash.bytes": 0.9949540000015986,
+        "codec.json": 5.383624999984022
+      }
+    },
+    {
+      "workload": "small",
+      "role": "authority-broker",
+      "variant": "reference",
+      "observedWallMs": 45.08629099999962,
+      "quietWallMs": 37.51916600000186,
+      "plans": 5,
+      "providerPlans": 3,
+      "exclusiveMs": {
+        "command": 0.14169499998752144,
+        "codec": 1.777503000033903,
+        "gate": 2.0003390000129,
+        "schema": 1.3081229999770585,
+        "hash.digest": 1.6979209999990417,
+        "hash.bytes": 1.093661000017164,
+        "codec.json": 5.4785419999934675
+      },
+      "calls": {
+        "command": 9,
+        "codec": 12,
+        "gate": 300,
+        "schema": 114,
+        "hash.digest": 66,
+        "hash.bytes": 351,
+        "codec.json": 2064
+      },
+      "providerWallMs": 13.780249999999796,
+      "otherMs": 0.28246599997874,
+      "inclusiveMs": {
+        "command": 2.351499000000331,
+        "codec": 4.530458000008366,
+        "gate": 6.155032000009669,
+        "schema": 1.3081229999770585,
+        "hash.digest": 1.6979209999990417,
+        "hash.bytes": 1.093661000017164,
+        "codec.json": 5.4785419999934675
+      }
+    },
+    {
+      "workload": "small",
+      "role": "authority-broker",
+      "variant": "max-first",
+      "observedWallMs": 42.59524999999849,
+      "quietWallMs": 35.21679199999926,
+      "plans": 5,
+      "providerPlans": 3,
+      "exclusiveMs": {
+        "command": 0.2013279999846418,
+        "codec": 1.3798850000166567,
+        "gate": 0.5127559999673394,
+        "schema": 1.2809200000083365,
+        "hash.digest": 1.4584129999893776,
+        "hash.bytes": 0.3425390000011248,
+        "codec.json": 2.4557500000446453
+      },
+      "calls": {
+        "command": 9,
+        "codec": 12,
+        "gate": 81,
+        "schema": 114,
+        "hash.digest": 66,
+        "hash.bytes": 132,
+        "codec.json": 750
+      },
+      "providerWallMs": 7.808333000000857,
+      "otherMs": 0.1767419999887352,
+      "inclusiveMs": {
+        "command": 2.226165999996738,
+        "codec": 3.5719610000014654,
+        "gate": 1.4533810000029916,
+        "schema": 1.2809200000083365,
+        "hash.digest": 1.4584129999893776,
+        "hash.bytes": 0.3425390000011248,
+        "codec.json": 2.4557500000446453
+      }
+    },
+    {
+      "workload": "small",
+      "role": "authority-broker",
+      "variant": "single-check",
+      "observedWallMs": 46.29595800000243,
+      "quietWallMs": 44.20275000000038,
+      "plans": 5,
+      "providerPlans": 3,
+      "exclusiveMs": {
+        "command": 0.36628400003974093,
+        "codec": 1.5944560000025376,
+        "gate": 2.116664000095625,
+        "schema": 1.186329999989539,
+        "hash.digest": 1.2134599999917555,
+        "hash.bytes": 1.1738710000208812,
+        "codec.json": 6.000766999888583
+      },
+      "calls": {
+        "command": 9,
+        "codec": 12,
+        "gate": 300,
+        "schema": 105,
+        "hash.digest": 57,
+        "hash.bytes": 351,
+        "codec.json": 2064
+      },
+      "providerWallMs": 13.96900000000096,
+      "otherMs": 0.3171679999722983,
+      "inclusiveMs": {
+        "command": 1.8512080000036804,
+        "codec": 5.036541000004945,
+        "gate": 6.212461000024632,
+        "schema": 1.186329999989539,
+        "hash.digest": 1.2134599999917555,
+        "hash.bytes": 1.1738710000208812,
+        "codec.json": 6.000766999888583
+      }
+    },
+    {
+      "workload": "small",
+      "role": "authority-broker",
+      "variant": "combined",
+      "observedWallMs": 42.89466700000048,
+      "quietWallMs": 39.72733299999891,
+      "plans": 5,
+      "providerPlans": 3,
+      "exclusiveMs": {
+        "command": 0.41713100002743886,
+        "codec": 1.4869899999794143,
+        "gate": 0.7126490000373451,
+        "schema": 1.2081750000070315,
+        "hash.digest": 1.3457089999756136,
+        "hash.bytes": 0.4570910000038566,
+        "codec.json": 2.9950469999894267
+      },
+      "calls": {
+        "command": 9,
+        "codec": 12,
+        "gate": 81,
+        "schema": 105,
+        "hash.digest": 57,
+        "hash.bytes": 132,
+        "codec.json": 750
+      },
+      "providerWallMs": 8.846708000000945,
+      "otherMs": 0.22391599998081801,
+      "inclusiveMs": {
+        "command": 2.165874000005715,
+        "codec": 3.7566680000018096,
+        "gate": 2.108752000000095,
+        "schema": 1.2081750000070315,
+        "hash.digest": 1.3457089999756136,
+        "hash.bytes": 0.4570910000038566,
+        "codec.json": 2.9950469999894267
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "reader",
+      "variant": "reference",
+      "observedWallMs": 134.08116700000028,
+      "quietWallMs": 117.88154199999917,
+      "plans": 13,
+      "providerPlans": 11,
+      "exclusiveMs": {
+        "command": 0.8148710001150903,
+        "codec": 9.841961999958585,
+        "gate": 11.007912000117358,
+        "schema": 6.566663999976299,
+        "hash.digest": 10.610750999996526,
+        "hash.bytes": 6.466348000001744,
+        "codec.json": 34.370894999734446
+      },
+      "calls": {
+        "command": 121,
+        "codec": 132,
+        "gate": 2805,
+        "schema": 1034,
+        "hash.digest": 858,
+        "hash.bytes": 3278,
+        "codec.json": 19888
+      },
+      "providerWallMs": 80.71358400000463,
+      "otherMs": 1.0341810001045815,
+      "inclusiveMs": {
+        "command": 15.452364000015223,
+        "codec": 26.674669000018184,
+        "gate": 36.26079499993648,
+        "schema": 6.566663999976299,
+        "hash.digest": 10.610750999996526,
+        "hash.bytes": 6.466348000001744,
+        "codec.json": 34.370894999734446
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "reader",
+      "variant": "max-first",
+      "observedWallMs": 123.61375000000044,
+      "quietWallMs": 95.06708399999843,
+      "plans": 13,
+      "providerPlans": 11,
+      "exclusiveMs": {
+        "command": 1.2328130000787496,
+        "codec": 12.856403000048886,
+        "gate": 3.125963999718806,
+        "schema": 8.465438999966864,
+        "hash.digest": 11.540513999982068,
+        "hash.bytes": 2.578283999919222,
+        "codec.json": 20.817921000205388
+      },
+      "calls": {
+        "command": 121,
+        "codec": 132,
+        "gate": 693,
+        "schema": 1034,
+        "hash.digest": 858,
+        "hash.bytes": 1166,
+        "codec.json": 7216
+      },
+      "providerWallMs": 61.40066599999773,
+      "otherMs": 0.783328000077745,
+      "inclusiveMs": {
+        "command": 17.52962400000979,
+        "codec": 31.80825099998401,
+        "gate": 9.834420999944996,
+        "schema": 8.465438999966864,
+        "hash.digest": 11.540513999982068,
+        "hash.bytes": 2.578283999919222,
+        "codec.json": 20.817921000205388
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "reader",
+      "variant": "single-check",
+      "observedWallMs": 152.89233299999978,
+      "quietWallMs": 159.1047499999986,
+      "plans": 13,
+      "providerPlans": 11,
+      "exclusiveMs": {
+        "command": 2.403818000046158,
+        "codec": 11.88267399995675,
+        "gate": 12.365424999774405,
+        "schema": 6.600491000019247,
+        "hash.digest": 9.594998999964446,
+        "hash.bytes": 7.246401000065816,
+        "codec.json": 36.957625000020926
+      },
+      "calls": {
+        "command": 121,
+        "codec": 132,
+        "gate": 2805,
+        "schema": 913,
+        "hash.digest": 737,
+        "hash.bytes": 3278,
+        "codec.json": 19888
+      },
+      "providerWallMs": 89.39833199999703,
+      "otherMs": 2.3468990001492784,
+      "inclusiveMs": {
+        "command": 15.203169999975216,
+        "codec": 30.447712999997748,
+        "gate": 39.648891999902844,
+        "schema": 6.600491000019247,
+        "hash.digest": 9.594998999964446,
+        "hash.bytes": 7.246401000065816,
+        "codec.json": 36.957625000020926
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "reader",
+      "variant": "combined",
+      "observedWallMs": 342.3389590000006,
+      "quietWallMs": 274.1857089999976,
+      "plans": 13,
+      "providerPlans": 11,
+      "exclusiveMs": {
+        "command": 6.2680430000255,
+        "codec": 33.82179499998165,
+        "gate": 9.932318000090163,
+        "schema": 24.191173999970488,
+        "hash.digest": 19.873077000105695,
+        "hash.bytes": 6.938228000024537,
+        "codec.json": 49.23195499983922
+      },
+      "calls": {
+        "command": 121,
+        "codec": 132,
+        "gate": 693,
+        "schema": 913,
+        "hash.digest": 737,
+        "hash.bytes": 1166,
+        "codec.json": 7216
+      },
+      "providerWallMs": 152.57762699999876,
+      "otherMs": 2.321036999961507,
+      "inclusiveMs": {
+        "command": 37.5922909999972,
+        "codec": 83.48988200001259,
+        "gate": 25.060205000008864,
+        "schema": 24.191173999970488,
+        "hash.digest": 19.873077000105695,
+        "hash.bytes": 6.938228000024537,
+        "codec.json": 49.23195499983922
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "variant": "reference",
+      "observedWallMs": 630.2412500000064,
+      "quietWallMs": 495.0257500000007,
+      "plans": 13,
+      "providerPlans": 11,
+      "exclusiveMs": {
+        "command": 7.5843210000384715,
+        "codec": 52.91249500009144,
+        "gate": 54.90411499952461,
+        "schema": 45.724163000064436,
+        "hash.digest": 60.4805950000009,
+        "hash.bytes": 25.451476999893202,
+        "codec.json": 133.18964100038284
+      },
+      "calls": {
+        "command": 121,
+        "codec": 132,
+        "gate": 2805,
+        "schema": 1034,
+        "hash.digest": 858,
+        "hash.bytes": 3278,
+        "codec.json": 20130
+      },
+      "providerWallMs": 391.8408759999875,
+      "otherMs": 11.594068999991578,
+      "inclusiveMs": {
+        "command": 94.76679399996647,
+        "codec": 124.13266800002748,
+        "gate": 153.32995800000208,
+        "schema": 45.724163000064436,
+        "hash.digest": 60.4805950000009,
+        "hash.bytes": 25.451476999893202,
+        "codec.json": 133.18964100038284
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "variant": "max-first",
+      "observedWallMs": 332.11220799999865,
+      "quietWallMs": 352.2881249999991,
+      "plans": 13,
+      "providerPlans": 11,
+      "exclusiveMs": {
+        "command": 2.9363509999748203,
+        "codec": 32.27584899991052,
+        "gate": 9.784546000075352,
+        "schema": 22.248702999997477,
+        "hash.digest": 28.229171999941173,
+        "hash.bytes": 6.7608739999486716,
+        "codec.json": 54.22934700026963
+      },
+      "calls": {
+        "command": 121,
+        "codec": 132,
+        "gate": 693,
+        "schema": 1034,
+        "hash.digest": 858,
+        "hash.bytes": 1166,
+        "codec.json": 7458
+      },
+      "providerWallMs": 158.42508399998042,
+      "otherMs": 1.9602419998627738,
+      "inclusiveMs": {
+        "command": 44.01662400001078,
+        "codec": 81.60433499999635,
+        "gate": 27.10305200008588,
+        "schema": 22.248702999997477,
+        "hash.digest": 28.229171999941173,
+        "hash.bytes": 6.7608739999486716,
+        "codec.json": 54.22934700026963
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "variant": "single-check",
+      "observedWallMs": 356.81429200000275,
+      "quietWallMs": 329.5156659999993,
+      "plans": 13,
+      "providerPlans": 11,
+      "exclusiveMs": {
+        "command": 5.392719999916153,
+        "codec": 26.59221300009085,
+        "gate": 29.456220000734902,
+        "schema": 15.036297999868111,
+        "hash.digest": 19.008389000002353,
+        "hash.bytes": 16.18496599962964,
+        "codec.json": 79.60815699983505
+      },
+      "calls": {
+        "command": 121,
+        "codec": 132,
+        "gate": 2805,
+        "schema": 913,
+        "hash.digest": 737,
+        "hash.bytes": 3278,
+        "codec.json": 20130
+      },
+      "providerWallMs": 193.9902089999814,
+      "otherMs": 2.7112459999043494,
+      "inclusiveMs": {
+        "command": 33.636921000041184,
+        "codec": 67.43533000000025,
+        "gate": 86.34403400009614,
+        "schema": 15.036297999868111,
+        "hash.digest": 19.008389000002353,
+        "hash.bytes": 16.18496599962964,
+        "codec.json": 79.60815699983505
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "variant": "combined",
+      "observedWallMs": 235.64737500000047,
+      "quietWallMs": 257.8229580000043,
+      "plans": 13,
+      "providerPlans": 11,
+      "exclusiveMs": {
+        "command": 5.299640000339423,
+        "codec": 21.05985199987481,
+        "gate": 6.912287000202923,
+        "schema": 16.138067000014416,
+        "hash.digest": 18.09461500000907,
+        "hash.bytes": 5.187968999882287,
+        "codec.json": 38.36237099968275
+      },
+      "calls": {
+        "command": 121,
+        "codec": 132,
+        "gate": 693,
+        "schema": 913,
+        "hash.digest": 737,
+        "hash.bytes": 1166,
+        "codec.json": 7458
+      },
+      "providerWallMs": 112.6957499999844,
+      "otherMs": 1.6409489999787183,
+      "inclusiveMs": {
+        "command": 30.290506999997888,
+        "codec": 57.337673000016366,
+        "gate": 19.106835000013234,
+        "schema": 16.138067000014416,
+        "hash.digest": 18.09461500000907,
+        "hash.bytes": 5.187968999882287,
+        "codec.json": 38.36237099968275
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "reader",
+      "variant": "reference",
+      "observedWallMs": 896.708249999996,
+      "quietWallMs": 503.2693330000038,
+      "plans": 14,
+      "providerPlans": 12,
+      "exclusiveMs": {
+        "command": 11.966597999751684,
+        "codec": 67.17369899983169,
+        "gate": 64.00864799892588,
+        "schema": 55.11456900033227,
+        "hash.digest": 58.470202000055,
+        "hash.bytes": 27.15566699982446,
+        "codec.json": 177.25003400071
+      },
+      "calls": {
+        "command": 144,
+        "codec": 156,
+        "gate": 2220,
+        "schema": 1164,
+        "hash.digest": 1020,
+        "hash.bytes": 2712,
+        "codec.json": 16920
+      },
+      "providerWallMs": 471.2174180000293,
+      "otherMs": 10.078001000598306,
+      "inclusiveMs": {
+        "command": 95.6952509998955,
+        "codec": 177.32628800009843,
+        "gate": 179.1431719998509,
+        "schema": 55.11456900033227,
+        "hash.digest": 58.470202000055,
+        "hash.bytes": 27.15566699982446,
+        "codec.json": 177.25003400071
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "reader",
+      "variant": "max-first",
+      "observedWallMs": 447.73649999999907,
+      "quietWallMs": 423.6606249999895,
+      "plans": 14,
+      "providerPlans": 12,
+      "exclusiveMs": {
+        "command": 4.140400999793201,
+        "codec": 52.96867899992503,
+        "gate": 15.073533999820938,
+        "schema": 31.541391000311705,
+        "hash.digest": 36.77814000021317,
+        "hash.bytes": 8.317274999804795,
+        "codec.json": 68.64756400001352
+      },
+      "calls": {
+        "command": 144,
+        "codec": 156,
+        "gate": 684,
+        "schema": 1164,
+        "hash.digest": 1020,
+        "hash.bytes": 1176,
+        "codec.json": 7704
+      },
+      "providerWallMs": 220.21299999995972,
+      "otherMs": 2.7460160000773612,
+      "inclusiveMs": {
+        "command": 58.47562399999879,
+        "codec": 121.9701329999516,
+        "gate": 32.33165199989162,
+        "schema": 31.541391000311705,
+        "hash.digest": 36.77814000021317,
+        "hash.bytes": 8.317274999804795,
+        "codec.json": 68.64756400001352
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "reader",
+      "variant": "single-check",
+      "observedWallMs": 711.9314169999998,
+      "quietWallMs": 837.3656249999913,
+      "plans": 14,
+      "providerPlans": 12,
+      "exclusiveMs": {
+        "command": 13.403933000256075,
+        "codec": 86.71918400045251,
+        "gate": 40.26206900064426,
+        "schema": 60.129962999752024,
+        "hash.digest": 50.515328999827034,
+        "hash.bytes": 24.020123999885982,
+        "codec.json": 145.49438499912503
+      },
+      "calls": {
+        "command": 144,
+        "codec": 156,
+        "gate": 2220,
+        "schema": 1020,
+        "hash.digest": 876,
+        "hash.bytes": 2712,
+        "codec.json": 16920
+      },
+      "providerWallMs": 426.8972059999651,
+      "otherMs": 6.35221900002216,
+      "inclusiveMs": {
+        "command": 78.3813670000236,
+        "codec": 212.6758719999052,
+        "gate": 119.24679099991044,
+        "schema": 60.129962999752024,
+        "hash.digest": 50.515328999827034,
+        "hash.bytes": 24.020123999885982,
+        "codec.json": 145.49438499912503
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "reader",
+      "variant": "combined",
+      "observedWallMs": 516.7029579999944,
+      "quietWallMs": 728.3072079999984,
+      "plans": 14,
+      "providerPlans": 12,
+      "exclusiveMs": {
+        "command": 11.5649070001964,
+        "codec": 58.532574000404566,
+        "gate": 16.878947999386583,
+        "schema": 47.82011200003035,
+        "hash.digest": 32.85086700000102,
+        "hash.bytes": 10.077244999978575,
+        "codec.json": 73.40774799995415
+      },
+      "calls": {
+        "command": 144,
+        "codec": 156,
+        "gate": 684,
+        "schema": 1020,
+        "hash.digest": 876,
+        "hash.bytes": 1176,
+        "codec.json": 7704
+      },
+      "providerWallMs": 254.65691700000025,
+      "otherMs": 3.5245160000486067,
+      "inclusiveMs": {
+        "command": 58.16083700001764,
+        "codec": 147.93184600006498,
+        "gate": 40.2560059998068,
+        "schema": 47.82011200003035,
+        "hash.digest": 32.85086700000102,
+        "hash.bytes": 10.077244999978575,
+        "codec.json": 73.40774799995415
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "variant": "reference",
+      "observedWallMs": 625.546542000011,
+      "quietWallMs": 527.8162080000038,
+      "plans": 14,
+      "providerPlans": 12,
+      "exclusiveMs": {
+        "command": 4.9443210002209526,
+        "codec": 54.19828200008487,
+        "gate": 42.69462199964619,
+        "schema": 45.312539000369725,
+        "hash.digest": 40.24722499999916,
+        "hash.bytes": 21.34540900007414,
+        "codec.json": 123.5026090000465
+      },
+      "calls": {
+        "command": 144,
+        "codec": 156,
+        "gate": 2220,
+        "schema": 1164,
+        "hash.digest": 1020,
+        "hash.bytes": 2712,
+        "codec.json": 17208
+      },
+      "providerWallMs": 339.2849159999896,
+      "otherMs": 7.039908999548061,
+      "inclusiveMs": {
+        "command": 67.21288200000708,
+        "codec": 144.24465800001053,
+        "gate": 113.51414000026125,
+        "schema": 45.312539000369725,
+        "hash.digest": 40.24722499999916,
+        "hash.bytes": 21.34540900007414,
+        "codec.json": 123.5026090000465
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "variant": "max-first",
+      "observedWallMs": 474.0907499999885,
+      "quietWallMs": 405.1912500000035,
+      "plans": 14,
+      "providerPlans": 12,
+      "exclusiveMs": {
+        "command": 5.023221000054036,
+        "codec": 51.14187599980505,
+        "gate": 12.535461999606923,
+        "schema": 36.79863199988904,
+        "hash.digest": 37.87919699981285,
+        "hash.bytes": 7.879045000358019,
+        "codec.json": 71.14820800021698
+      },
+      "calls": {
+        "command": 144,
+        "codec": 156,
+        "gate": 684,
+        "schema": 1164,
+        "hash.digest": 1020,
+        "hash.bytes": 1176,
+        "codec.json": 7992
+      },
+      "providerWallMs": 226.24124999999185,
+      "otherMs": 3.835609000248951,
+      "inclusiveMs": {
+        "command": 66.06042699990212,
+        "codec": 122.15963299982832,
+        "gate": 29.38049200004025,
+        "schema": 36.79863199988904,
+        "hash.digest": 37.87919699981285,
+        "hash.bytes": 7.879045000358019,
+        "codec.json": 71.14820800021698
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "variant": "single-check",
+      "observedWallMs": 492.8677500000049,
+      "quietWallMs": 389.3776249999937,
+      "plans": 14,
+      "providerPlans": 12,
+      "exclusiveMs": {
+        "command": 10.477778000218677,
+        "codec": 44.98741300002439,
+        "gate": 32.36498100006429,
+        "schema": 27.533825999620603,
+        "hash.digest": 34.843109999914304,
+        "hash.bytes": 17.356088999891654,
+        "codec.json": 92.72795899945777
+      },
+      "calls": {
+        "command": 144,
+        "codec": 156,
+        "gate": 2220,
+        "schema": 1020,
+        "hash.digest": 876,
+        "hash.bytes": 2712,
+        "codec.json": 17208
+      },
+      "providerWallMs": 265.86249999998836,
+      "otherMs": 5.571344000796671,
+      "inclusiveMs": {
+        "command": 60.188169000073685,
+        "codec": 108.8663769999257,
+        "gate": 85.31708199944114,
+        "schema": 27.533825999620603,
+        "hash.digest": 34.843109999914304,
+        "hash.bytes": 17.356088999891654,
+        "codec.json": 92.72795899945777
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "variant": "combined",
+      "observedWallMs": 269.17116699999315,
+      "quietWallMs": 269.4992079999938,
+      "plans": 14,
+      "providerPlans": 12,
+      "exclusiveMs": {
+        "command": 6.042839999703574,
+        "codec": 26.1833880001941,
+        "gate": 7.248287000256823,
+        "schema": 15.98423599988746,
+        "hash.digest": 21.409171000108472,
+        "hash.bytes": 5.5437959999690065,
+        "codec.json": 50.270653000086895
+      },
+      "calls": {
+        "command": 144,
+        "codec": 156,
+        "gate": 684,
+        "schema": 1020,
+        "hash.digest": 876,
+        "hash.bytes": 1176,
+        "codec.json": 7992
+      },
+      "providerWallMs": 134.38866399999824,
+      "otherMs": 1.7062929997919127,
+      "inclusiveMs": {
+        "command": 37.10970199997246,
+        "codec": 72.15932999993674,
+        "gate": 20.279497000214178,
+        "schema": 15.98423599988746,
+        "hash.digest": 21.409171000108472,
+        "hash.bytes": 5.5437959999690065,
+        "codec.json": 50.270653000086895
+      }
+    }
+  ],
+  "proceedToCprC": false,
+  "productionAdopted": false,
+  "realStorageVerified": false,
+  "scope": {
+    "inProcess": true,
+    "signedSessionRuntime": true,
+    "mockStorage": true,
+    "mockPin": true,
+    "independentPlans": true,
+    "realStorageVerified": false,
+    "nativeIsolationVerified": false,
+    "productionAdopted": false,
+    "eightReadsEstablished": false,
+    "originalReadsSkipped": 0,
+    "readCommittedReduction": 0
+  }
+}

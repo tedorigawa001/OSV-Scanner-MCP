@@ -3128,3 +3128,13 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 §9.115レビュー修正2：H0同サイズ・大entryでBが遅かったのは48 pair中47（「すべて」を訂正。残る1件はSの外れ値）。許容額の判定は各pairで総時間比較と同値であること、provider計画時間に試行ごとの認可gateを含むことを追記。表と本文をsummaryから再計算して照合するテストを追加。計測は変更なし。
 
 実時間process診断の分離：Source／Authority／Consumerのprocessテストは、固定の5秒leaseとホスト負荷に左右される（並列5本では15回すべてが準備段階の`grant_revoked`で失敗、CIのNode 26で`service_unavailable`）。`OSV_REALTIME_PROCESS=1`のときだけ実行し、CIは専用ジョブ（Node 26）で単独実行する。成功の契約は偽の時計のテストが担う。`npm publish`の事前テストからは外れる。偽の時計で動く`gradleOwnedCurrentDisk.test.ts`は単独でも1件5〜10秒かかり、負荷のある全件実行で既定の30秒を超えたため、このファイルだけ上限を120秒にした（時間は結果に影響しない）。
+
+
+### CPR-BP：毎batch計画費用の分解・削減（§9.116）
+- [x] test-onlyのreference／最大サイズ優先／完全検査1回／combinedを実装。plan値・全command・boundの一致、caller／command間のコピー独立性、最終全codec検査と元期限・認可・予約・fresh取得を維持。
+- [x] 7分類のexclusive／inclusive・other、actor／call／request／batchを記録。288 primary＋96元CPR-B bridge＋64診断対照＋64 warm-upを実行し、観測付き費用と未観測primaryの総時間を分離。
+- [x] combinedは更新後の今回11条件でreferenceより中央値を短縮したが、H0／大entryはscalarと計画許容額の条件を満たさずCPR-C見送りを維持。
+- [ ] 残る全command codec・canonical処理の費用削減、または限定採用の適用／拒否条件を設計。CPR-C実storage、CPR-D独立UID／5process、本番採用・継続8 read・CG0／CG3は未成立。原本省略・実readCommitted削減0。
+
+
+§9.116レビュー修正：provider traceを対応owner plan時間へ、client initial／sealを各外側実測へ照合し、partitionを保った過大計上を拒否。3 actorの拒否3件・0.01 ms許容幅の境界3件を追加。現在sourceで全512転送を再実行し、変動を含む今回の性能表・summaryを更新。H0／大entryのCPR-C見送りを維持する。
