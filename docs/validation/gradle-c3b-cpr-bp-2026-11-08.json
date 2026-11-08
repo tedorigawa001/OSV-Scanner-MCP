@@ -7,10 +7,10 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.116 CPR-BP：計画費用分解・最大サイズ優先・重複検査の除去",
-    "sectionSha256": "7ffa5e39bbfee7c66a19b61ceee6756a8fb417119576920053b8201a6e4ff58d"
+    "sectionSha256": "bdde8db656db6c21c12faa8d66e75bbcdb5cf5e26c64e5a3d0fa6b7e61bb3999"
   },
   "regressionSources": {
-    "src/test/utils/gradleOwnedCprBPDocument.test.ts": "56e2508bf7047ccd528bb495971d94e2dd0565c12cafc81b0aff62f9bb4c25bc",
+    "src/test/utils/gradleOwnedCprBPDocument.test.ts": "8c0db082d4a1110362d5e0409df7c96ea7d8111f947e465925c1a4f38f620955",
     "src/test/utils/gradleOwnedCprBP.test.ts": "5d7324416476ac6d36f6afcd6e9b8892f0f7b69255d883667c0ffe3b0e38010c",
     "src/test/utils/gradleOwnedCprBPFork.test.ts": "4846976be6995391501fcd63eba341a60988619c5023db9a4c5d80d11ecdb710",
     "src/test/utils/gradleOwnedCprBPRuntime.test.ts": "5f2e0d2530d8852a7ebebb65ee930c42ebce6e7722a61965fb3f830b90119629",

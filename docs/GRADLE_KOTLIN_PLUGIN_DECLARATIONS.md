@@ -8618,6 +8618,8 @@ H0同サイズ・readerのprovider全11計画の診断を例示する。時間�
 
 認可gate 2805→693、bindingを含むbytes hash 3278→1166、canonical比較19888→7216が主な件数削減である。これは最大lengthが入る場合の算術試行を減らした結果であり、gateをcache／無効化した結果ではない。single-checkではschema 1034→913・canonical digest 858→737（いずれも121件削減）。command 121・codec 132は変わらず、残るcodec生成やJSON／digest費用も記録に残る。commandのdeep copy費用はcommand exclusiveに含める。
 
+この例は件数の削減を示すもので、時間の短縮を示すものではない。provider trace wallの合計はreference 80.7 ms、combined 152.6 msで、件数が減った分類でもcombinedの時間が大きい。4 workload × 2 roleの8組のうち、combinedがreferenceより長かったのは、この組とdefault・reader（7.8→8.5 ms）の2組である。残る6組では短い（例：H0同サイズ・broker 391.8→112.7 ms、大entry・reader 471.2→254.7 ms）。いずれも観測付き1転送の値で、反復による中央値ではない。この2組の増加を、残る費用の原因の特定や削減の効果としては扱わない。
+
 観測対照の差には正負があり、診断費用を精密な一定値として差し引けない。元CPR-Bとのbridge差・cold/warm・全失敗statusもrawへ保持し、都合のよいpairだけを選ばない。今回は全warm-up／primary／bridge／診断armが完了した。次の課題は、残る全command codec／canonical処理を独立再現・完全性を保ってさらに減らせる契約、または適用範囲の限定である。CPR-Cへ先に接続して不足する性能を補った扱いにはしない。
 
 レビュー修正前の確認結果：新規の単体／生成／fork／runtime／レビュー修正／記録／文書照合245件を含む21ファイル597件、最終sourceでの実時間計測runner 1件が通過した。typecheck・buildとCPR-A／B／BPのsource／記録照合も成功。計測は288 primary・96元CPR-B bridge・64診断対照・64 warm-upを全保存した。旧CPR-Bの見送り判定を、本実証の部分的な速度改善だけで解除していない。
