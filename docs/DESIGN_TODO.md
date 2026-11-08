@@ -3145,4 +3145,5 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 ### CWC：owner／auth codec・canonical処理の削減契約（§9.117、設計のみ）
 - [x] 閉じたfamilyのPlanLayout／canonical fact、actor別のprivate root・client seal child寿命、共有／非共有境界、実codec bytes照合、読取前承認・current gate・予算／失効を具体化。
 - [x] CWC-A〜Dの出口、CWC01〜40の回帰条件、scalar／共通reference／composed＋BP bridge・oracle対照、計画込み総時間とpaired許容額の責任を設計。
-- [ ] CWC-Aのstrict helper／fact contractから実装。閉じたfamily proofが成立するまで全N reference codecを省略したprimaryを採用しない。現時点で実装・runtime回帰・実時間比較は未実施。CPR-C、本番採用・実storage・隔離・8 read・CG0／CG3の保留を維持する。
+- [x] CWC-Aのstrict helper／fact contractをfixtureへ実装（§9.118）。actor／call／domain・private copy・child移管・current gate・寿命／失効・事前予算と非返還をCWA01〜41で検証。同一scopeのroot発行前再入を拒否し、initial証拠と同じ親readへ結んだseal一致確認をchild移管の条件へ追加。模擬owner scopeのみ、全N reference codecを維持し、composition／閉じたfamily proof・実session接続・性能改善は未成立。
+- [ ] 次はCWC-B：独立oracleとの全N bytes照合・閉じたfamily proofと構造／長さ式・mutation検査。続いてCWC-Cの実session接続、CWC-Dの総時間比較。proof成立まで全N reference codecを省略したprimaryを採用しない。CPR-C、本番採用・実storage・隔離・8 read・CG0／CG3の保留を維持する。

@@ -8783,3 +8783,45 @@ npx vitest run src/test/utils/gradleOwnedCwcDesign.test.ts --maxWorkers=1
 ```
 
 設計の整合性確認：本節・40条件・4段階・source／baseline pinと設計のみのstatus、CWC10の入力挿入順と生成bytes順序の区別を検査する6件、既存文書／設計／公開コマンド例を含む計21件が通過し、typecheckも成功した。既存canonical codecで挿入順を変えた入力のbytes／digest一致と、非canonicalな生成bytesとの差異も確認した。この確認はCWC compositionの拒否実装の実証ではない。これはCWC01〜40のruntime回帰を実行した件数ではなく、CWCの実装・実codec一致・実時間比較は未実施である。
+
+### 9.118 CWC-A：private helper・fact・予算／寿命のfixture contract
+
+2026-11-09。§9.117のCWC-Aを`src/test/fixtures/gradleOwnedCwcA.ts`へ実装した。サービス未登録のメモリ内contractであり、scopeの発行はtrusted fixture ownerによる模擬組立である。実AuthenticatedSessionCall／ReadScope／SourceSnapshot・独立したapproval配備・SourceOwnerにはまだ接続していない。scopeのactor／callId／scopeId／clock domain／元期限／完全context fingerprintはownerが登録し、公開ラベルが同じでもWeakMap上のprivate identityが違えば使えない。呼出元がwireから任意にscopeを登録できる本番APIではない。
+
+#### 9.118.1 実装したhelperと境界
+
+- `preflightCodecProfile`はstrictなImplementationApprovalのfamily／版／actor／制限・semantic specと、別引数のtrusted expected pinを検査する。提示approval自身のdigestを更新しただけでは採用できない。fixtureのexpected pinはテスト組立用であり、独立controllerによるsource承認を配備した証拠ではない。
+- `openScope`は模擬owner専用。actor・完全context・4500 ms以内の元期限・clock domainを束縛し、親予約からbytes／fragment／workの下位枠を全量予約する。scope／call IDの重複、512 scope超過、親の残予約不足を拒否する。終了・失敗で予約や消費を返還せず、同じscope／callを作り直して予算や期限をresetできない。これは保守的なfixture運用であり、メモリ解放を再利用可能な予約へ戻す運用は実装していない。
+- `openCodecRoot`はscopeごとに1回だけ発行する。最初のcurrent callbackより前にunused→openingを予約し、同一scopeからの再入はscopeを失効させる。callbackが再入の拒否を捕捉しても外側の発行を成功させず、root 0・消費0・親予約保持で終了する。失敗後もusedとし再発行しない。コピー／planCore検証前に262144 B／64 fragment／156978 workを予約消費し、全range被覆・context・plan digestの検査に必要なprivate coreを保存する。入力getter／toJSON／prototype／cycle／過深depth／過大stringは追加評価せず拒否する。fresh inventoryとの実対応・独立計画の由来はCWC-Cで接続すべき条件であり、coreの自己表明から認可は作らない。
+- `compilePlanLayout`は固定6 familyの既存reference layoutを作る。81920 B／6 fragment／81920 workを先に消費し、template上界と8192 B／16384 B境界を検査する。caller template／offset tableの受付口はない。実際にはowner 2／auth 4の計画用生成を残す。
+- `encodeCheckedCommand`は`command.full`だけを受け付け、全schema／wireIntent／operationとcontextを検査する。private coreから再構築した期待commandと全fieldを照合し、ordinal順に全N件を検査する。各回8192 B／16 fragment／24576 workを先に消費し、canonical bytesはprivate Bufferに保管する。別domainの生成はまだ実装せず拒否する。
+- `provePlannedOwnerAndAuth`は各commandを順序どおり既存の`exact`で検査し、保守layout上界との関係を検査する。各回24576 B／8 fragment／32768 workを先に消費する。receiptは`referenceOnly=true／compositionProven=false／authorityGranted=false`であり、閉じたfamily proof・実署名・実消費receiptではない。各commandのowner 2／auth 4の計画用生成を省略していない。
+- `readCommandFact`は同じroot／domainへ結び、Bufferのコピーだけを返す。読取ごと8192 B／1 fragment／8192 workを先に消費する。caller入力・返却Buffer・slice／subarray／ArrayBuffer・diagnostics変更はprivate factへ波及しない。
+- `retainClientCommandFact`は全N commandの検査・reference proofを終え、同じ親readのinitial計画との一致を確認したclient-sealだけが同じcommandをchildへ移管できる。initial／provider／不完全seal・別owner／scope／ordinal／domainを拒否する。rootをdisposeしてもchildは同じ親readの元期限まで保持できるが、親終了／取消し／期限／owner closeでは全childを無効化する。
+
+root状態はopened→compiled→all-commands-proved→disposed。各実行の前後でcurrent callbackと元期限を確認し、callbackをrootに固定して外側currentCallへ依存しない。context／approval pin変更・取消し・期限・時計逆行はscope全体を失効させる。検査失敗はrootをterminalにし、消費済みworkを保持して同root再実行を拒否する。current callback経由の再入・処理中closeも成功factを返せない。dispose時は非移管Bufferをzero化し、layout・core・factへの所有参照を外す。parent終了時は移管済みBufferもzero化する。外部に返却済みのコピーを遠隔消去する保証はない。
+
+bytesは論理会計、fragmentはrecord数、workはfixtureの保守単位であり、JS heap／RSS保証や実elapsed timeではない。保持・作業用に保守的な領域を先取りし、bytes／fragmentの消費も返金しないため、読取を繰り返せば拒否される。1 MiB／4096／67108864の上限や親予約を引き上げて救済しない。実observerのallocation overhead・本番ownerのmemory reservation内への収容はまだ実証していない。現行CPR-A/BPのwork予約やwire gateを変更せず、本fixtureの消費を本番の既存予約へ接続したとは主張しない。
+
+initial側は`registerInitialPlan`で、全N件の検査後にだけprivateなinitial証拠を発行する。証拠はinitial owner／scope、完全context fingerprint、clock domain、元期限、private coreのdigestへ結び、factやBufferはsealへ渡さない。initial rootをdisposeしても親scopeが有効なら証拠は利用できる。seal scopeの模擬owner組立では`openScope`の第三引数でこの証拠を親readとして登録し、1つの証拠から複数seal scopeを作らない。親binding開始を親current callbackより先に予約し、binding失敗・後続scopeの予算不足でもこの予約を巻き戻して再使用しない。
+
+seal側は別rootで全N件を独立検査した後、`verifyClientSeal`へ同じprivate証拠を提示する。証拠の実体identityとscopeへの登録先・context／clock／元期限を一致させ、core digestも一致した場合だけchild移管条件を成立させる。initial登録・seal比較はそれぞれ8192 B／1 fragment／8192 workを先に消費し、比較不一致でも返還しない。未登録・初期計画との不一致・別readの証拠・serialized clone・別actor／不完全initialは拒否する。child読取時もinitial ownerのcurrent gate／scope寿命を確認し、親のclose／取消し／期限到達はseal childを無効化する。これはfixture内の親read束縛の実証であり、実ClientReadLeaseや本番の共同memory reservationへの接続は未成立である。
+
+#### 9.118.2 回帰と検証結果
+
+`src/test/utils/gradleOwnedCwcA.test.ts`のCWA01〜CWA41を実行し、41件通過した。対象はapproval strict検査・独立expected pin、private identity／actor／call／context／domain、全command意味検査・順序・欠落／重複、alias隔離、client child移管、dispose／close／取消し／元期限／時計逆行、work事前確保・親予約の非返還、失敗再実行・再入の拒否である。CWC10は入力キー挿入順変更でcanonical bytesが同一になる正例と、通常JSONの非canonical生成bytesがoracleと異なることを確認する。新compositionによる非canonical生成の拒否実装はCWC-Bで検証する条件のままである。
+
+全N検査の正例では、実際のcommand件数Nからreceipt数と計測counterを照合し、reference owner生成2＋2N／auth生成4＋4N／layout1が残ることを確認した。この試験はcodec削減の成功件数ではない。fixtureのstorage読取は0で、実storageを省略できることを示す値でもない。CWC01〜40全体の完了、実codec compositionのbytes一致、実session、性能改善、CPR-C採用、独立UID、継続8 read・CG0／CG3は引き続き未成立。
+
+再現と検証記録：
+
+```sh
+node scripts/check-cwc-a.mjs
+node scripts/check-cwc-a.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcA.test.ts src/test/utils/gradleOwnedCwcDesign.test.ts --maxWorkers=1
+npm run typecheck
+```
+
+`docs/validation/gradle-cwc-a-2026-11-09.json`はrunnerが実際のVitest JSON結果から41件のID・title・passedを抽出して保存する。回帰テストとそのlocal import閉包、本runner、本節のdigestを束縛し、実行前後でsource不変を照合する。`--check`は保存済み記録の整合性検査であり、テスト再実行は通常起動で行う。メモリ内fixtureの検証記録であり、独立署名されたnative隔離証拠や性能比較ではない。
+
+レビュー修正ではCWA33〜41を追加した。同一scopeのroot発行時再入（拒否をcallbackが捕捉する場合も含む）、initial欠落、異なるplan digest、同じdigestでも別readの証拠、serialized clone、不完全initial、親の失効、clock／元期限の不一致、親証拠の二重seal登録を拒否した。CWA33／34は修正前に失敗することを確認してから修正し、child移管の正例もinitial登録→sealの独立検査→一致確認を通る形へ更新した。
