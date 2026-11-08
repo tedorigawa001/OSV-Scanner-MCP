@@ -8486,6 +8486,8 @@ credential・policy取消しと元期限はawait後・parts後・署名前後・
 
 providerのplan時間・input digest・event記録だけを抑えたquiet対照を96転送追加した。primaryの前後を交互に配置し、出力・件数・認可・wire／work・fresh load・計画実行回数が同じことを検査する。これはprovider plan event観測のbridgeであり、全計測器を除いた本番runtimeの証明ではない。quietの時間をprimaryや計画合計へ混ぜない。
 
+許容額はS−(B−計画合計)なので、各pairでは「計画合計≦許容額」と「B総時間≦S総時間」は同じ条件である。中央値を取る位置が違うだけで、計画合計は独立した2つ目の判定根拠ではない。Bが遅い理由を示す内訳として扱う。providerの計画時間には、binary searchの試行ごとに呼ぶ認可gate（`inspectAuthenticatedCall`とpeer／serverの`same()`照合）も含まれる。レビュー時の記録外の参考計測（h0Sizes）では、gateなしのpackが約3.9 ms、client計画が約4.1 ms、provider計画が約6.5〜8.5 ms／回だった。gateを除いてもBはSより遅く、判定は変わらない。ただし、毎batchの計画費用を削減する次の検討で最初に見る箇所とする。
+
 各条件のS/B総時間・計画合計・許容額の中央値で停止条件を判定する。bootstrapによる信頼区間や多processの統計的優位は評価していない。6反復の限定結果で本番採用を決めない。原本読取省略0、実readCommitted削減0を維持する。
 
 | workload | S総時間 ms | B総時間 ms | B計画合計 ms | 許容額 ms | CPR-C判定 |
@@ -8495,7 +8497,7 @@ providerのplan時間・input digest・event記録だけを抑えたquiet対照�
 | h0Sizes | 51.00〜66.27 | 120.49〜157.88 | 77.67〜94.97 | 4.94〜8.85 | 見送り |
 | singleLarge | 45.64〜52.29 | 118.80〜128.42 | 75.43〜77.98 | 0.80〜2.49 | 見送り |
 
-各欄はrole／cold-warmの4条件の中央値の範囲であり、別条件の最小／最大を引き算しない。default／smallの8条件は今回の限定判定を通過したが、H0同サイズ・大entryの8条件は全48 pairでBが遅く、計画が許容額を超えた。quiet対照でもこの大きい差は解消しなかった。**全workloadへのCPR-C接続はno-go**とし、採用範囲の限定や毎batchの計画費用をさらに削減する契約を再検討する。provider再計画を省略・client map共有・cross-RPC cacheへ暗黙に戻す変更は行わない。
+各欄はrole／cold-warmの4条件の中央値の範囲であり、別条件の最小／最大を引き算しない。default／smallの8条件は今回の限定判定を通過した。H0同サイズ・大entryの8条件は、48 pair中47 pairでBが遅く、中央値でも計画が許容額を超えた。残る1 pair（H0同サイズ・reader・warmの反復3）でBが速かったのは、Sが161.02 msと同条件の他5回（約51〜53 ms）の3倍になった外れ値のためである。quiet対照でもこの大きい差は解消しなかった。**全workloadへのCPR-C接続はno-go**とし、採用範囲の限定や毎batchの計画費用をさらに削減する契約を再検討する。provider再計画を省略・client map共有・cross-RPC cacheへ暗黙に戻す変更は行わない。
 
 #### 9.115.4 回帰・保存証拠・残る範囲
 
@@ -8507,7 +8509,7 @@ rawは`docs/validation/gradle-c3b-cpr-b-2026-11-08.record.json`（無インデ�
 
 ```sh
 OSV_CPR_B_RECORD=1 OSV_CPR_B_OUTPUT=docs/validation/gradle-c3b-cpr-b-2026-11-08.record.json npx vitest run src/test/utils/gradleOwnedCprBBenchmark.test.ts --maxWorkers=1
-npx vitest run src/test/utils/gradleOwnedCprB.test.ts src/test/utils/gradleOwnedCprBFork.test.ts src/test/utils/gradleOwnedCprBValidation.test.ts src/test/utils/gradleOwnedCprBReviewFix.test.ts --maxWorkers=1
+npx vitest run src/test/utils/gradleOwnedCprB.test.ts src/test/utils/gradleOwnedCprBFork.test.ts src/test/utils/gradleOwnedCprBValidation.test.ts src/test/utils/gradleOwnedCprBReviewFix.test.ts src/test/utils/gradleOwnedCprBDocument.test.ts --maxWorkers=1
 node scripts/check-cpr-b.mjs --check
 npm run typecheck
 npm run build
@@ -8526,6 +8528,13 @@ summaryの更新は`node scripts/check-cpr-b.mjs`。原本のparse／署名・cu
 
 追加のruntime回帰20件：scalar本文不正の成功確定抑止、descriptor／inventory／scalarの9種類の署名済み改変、本文検証中の元期限到達（両mode）、最終output／input digest中の元期限到達4件、最終digestの1000 ms相当の模擬処理時間がwall／再構成／finalizationへ入る2件、part hashを更新しても全entry hashと異なる2件を確認。初回のscalar再現1件と最終期限・計時6件は旧コードで失敗することを確認した。保存記録の過小計上検査も、旧checkerがwall／partitionの同時変更を受理するREDを確認してから修正した。1000 msは決定的な時計注入であり、native性能値へ混ぜていない。
 
-修正sourceで96 pair／192 primary転送＋96 quiet対照・32 warm-upを再測定し、全armが完了した記録と上表・summaryを更新した。修正前の計測値を含めず、前後の差を速度改善とは呼ばない。default／smallの8条件は今回も限定判定を通過。H0同サイズ・大entryの8条件は全48 pairでbatchが遅く、計画込み総時間と許容額の判定でCPR-C見送りを維持する。実storage・隔離・本番採用・継続8 readの未成立は変わらない。
+修正sourceで96 pair／192 primary転送＋96 quiet対照・32 warm-upを再測定し、全armが完了した記録と上表・summaryを更新した。修正前の計測値を含めず、前後の差を速度改善とは呼ばない。default／smallの8条件は今回も限定判定を通過。H0同サイズ・大entryの8条件は48 pair中47 pairでbatchが遅く（残る1件はSの外れ値）、計画込み総時間と許容額の判定でCPR-C見送りを維持する。実storage・隔離・本番採用・継続8 readの未成立は変わらない。
 
 レビュー修正後の確認結果：runtime追加20件・保存記録追加4件を含む14ファイル348件と、修正sourceでの実時間計測runner 1件が通過。typecheck・build、CPR-A／Bのsource／記録照合も成功。CPR-B専用は153件（runtime96＋修正20、fork差分5、記録32）。summaryの本節・script・回帰sourceのpinを更新した。
+
+
+#### 9.115.6 レビュー修正2：本文の比較主張と記録の照合
+
+2026-11-08。§9.115.3・§9.115.5では、H0同サイズ・大entryの48 pairすべてでBが遅いと書いていたが、記録では47 pairだった。§9.115.3の表と本文の数字はsummaryと照合されておらず、節hashだけを固定していた。本文を47／48と外れ値の説明に直した。許容額の判定が各pairでは総時間の比較と同じ条件であることと、provider計画時間に試行ごとの認可gateが含まれることも追記した。
+
+`gradleOwnedCprBDocument.test.ts`を追加した。summaryの`comparison`から、workloadごとの表の行（4条件の中央値の範囲と判定）と、H0同サイズ・大entryでBが遅かったpair数を再計算し、本文がそれを含むことを検査する。計測と記録は変更していない。

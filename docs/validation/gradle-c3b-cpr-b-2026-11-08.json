@@ -8,14 +8,15 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.115 CPR-B：独立authority・実署名session・総時間比較",
-    "sectionSha256": "83cb8d1b0f7b52112089ff7d911772110117acce964e5fd3d619a843ab1a092e"
+    "sectionSha256": "eb2302e6140135052b6337c04ef9ad1bfff3231b42aafd84c7431abda9fa0b7a"
   },
   "regressionSources": {
     "src/test/utils/gradleOwnedCprBReviewFix.test.ts": "ff038252a6e4555469a6e532a926cf1ccd921f47bb402371d5ebc709f3304ec3",
+    "src/test/utils/gradleOwnedCprBDocument.test.ts": "35a317de4a4216c579f8c09316f03e889864f4a86b7ba8ac73bb25761a072c96",
     "src/test/utils/gradleOwnedCprB.test.ts": "295d6b93b5077b695a61ffac6361709d8fa344b790e44cda71f9a2db9a1f5eb7",
     "src/test/utils/gradleOwnedCprBFork.test.ts": "21f3cf51d72e7f7b7e329d3d2b0b2366c5cb19d347d01cd6beb6caa6effda339",
     "src/test/utils/gradleOwnedCprBValidation.test.ts": "2acb55072b08f670301fbc1f1c50018f99281a8668e36a3e4358be62b7d7e723",
-    "scripts/check-cpr-b.mjs": "07344e4a0ce426a4065af235470f91c87d51a278cd836031eb35b2a1f91e0552"
+    "scripts/check-cpr-b.mjs": "e3d3447700a53e187997f89a55ca8e9beea5d2e551d92be258eccdd7a2447c55"
   },
   "pairs": 96,
   "primaryTransfers": 192,
