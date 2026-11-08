@@ -8634,3 +8634,152 @@ provider・client initial／sealの3件で、transfer全体のwallより小さ�
 再計測には環境変動があり、referenceより速いcombined中央値は16→11条件、pair件数は91→83/96となった。このchecker修正を性能改善・退行の原因とは結び付けず、今回の測定値で表とsummaryを更新した。H0／大entryは今回もCPR-C条件を満たさず、全workload接続の見送りを維持する。実storage・隔離・本番採用・8 readの未成立も変わらない。
 
 修正後の確認結果：追加6件を含む21ファイル603件と、更新したsource閉包での実時間計測runner 1件が通過した。typecheck・build、CPR-A／B／BPのsource・raw／summary照合も成功。CPR-BP専用は251件（従来245＋外側時間照合6）。
+
+
+### 9.117 CWC：owner／auth codec・canonical処理の削減契約（設計）
+
+2026-11-09。§9.116の次段階。対象は全commandについて繰り返している計画用owner／auth wire生成とcanonical処理であり、実装・公開API実証・性能改善の成立はまだない。CPR-Cの見送りを解除しない。wire v3・semantic spec／最大prefix・上限・K/Dの意味を維持する。以下のhelper／private型は予定名で、現行APIには存在しない。
+
+#### 9.117.1 対象と採用単位
+
+現行packは、layout準備でowner 2／auth 4を生成した後、N commandの各exactでowner 2／auth 4を再生成し、schemaと長さを検査する。これらはdummy署名・zero partsを用いた計画検査であり、実sessionの署名／認証ではない。削減案は、閉じたcodec familyの構造・canonical規則・固定長領域を同じ計画内で検証し、全commandの意味検査を維持したまま、計画用のdummy wire buffer／JSON生成を構造化したcompositionと長さ証明へ置き換えることである。
+
+初期契約ではcheckCommandの全schema／wireIntent／operation検査、planCore／planDigest、K/Dの計算・比較、contextの現認可確認は減らさない。受信した実owner／auth wireのdecode・署名・schema・request/result照合も減らさない。hashの一致を理由に未知schemaを採用したり、cached current=trueを使うことは禁止する。callerのJSON fragment／offset table／templateをcodec入力として受理しない。
+
+採用単位は独立pinされたImplementationApproval（codecVariantDigest・実装source閉包・schema family・canonical codec版・semanticSpecDigest・layout版・制限・対象actor）。同じwireの意味を保つ実装variantであり、callerのwireから選択しない。service catalog／lineage.profileDigestと実装承認digestを混同しない。初期familyはReadSourceRanges v3のowner request／resultと既存authのchallenge-request／challenge／channel(request/reply)のみ。descriptor／inventory／scalar・その他APIは初期の削減対象外で、既存の完全なcodec経路を維持する。
+
+#### 9.117.2 共有可能な事実・共有禁止の境界
+
+| 事実 | 共有範囲／成立条件 | 共有してはいけないもの |
+|---|---|---|
+| 固定field名・canonical key順・JSON punctuation | 承認済みfamilyを同一actorの同一packでcompileしたprivate PlanLayout内。未知fieldなし、strict schema、変換／coercionなし | 異なるschema／codec版・未承認family。code内のschema定義以外からtemplateをロードしない |
+| public contextのcanonical fragment | parsed後にcopyしたpeer/provider/origin・lineage・binding／refs・key ID／epoch・endpoint・registry／catalog digestを含む完全なcontext。全消費fieldをfingerprintへ結ぶ | 同長の別ID・別root／namespace／boot・別registry／profile・別ownerへの付替え。長さ一致だけでは共有不可 |
+| validated commandのcanonical bytes | complete checkCommand通過後のprivate copyだけ。command ordinal・requestDigest・canonical domainへ結ぶ | 未検査builder値の自己表明、別command／planのbytes、wireIntent preimageとfull commandの混同 |
+| authの構造・長さ上界 | 同じPlanLayoutの6種family表。固定長digest／Ed25519署名・数字幅を型ごとに扱う | 実nonce・sessionId・challenge・sequence・TTL・鍵・署名・pending状態・両端認証の成功を共有しない |
+| resultのbytes長の式 | 同じfresh inventoryと検証済みrangesから導いたlength。base64長・SHAの固定幅等を型から証明 | zero partsのhashを実partsのhashとして使うこと、未対象entryの検証省略、parts／reply bytesの先取り |
+| 計画receipt／長さ証明 | 同一packのprivate rootへ結ぶ。client initialとsealはそれぞれ新root、providerは実callごとに新root | client→provider、providerの後続batch／exact retry、新boot・新readへの流用。証明を権限・read／DispatchPermitと扱わない |
+
+providerは各batchでSaved／receiptに結ぶfresh load・全inventory検証・全計画をやり直す。同じdigestのsnapshotでもprivate identityを別callのものへ代用できない。providerのPlanLayout／CanonicalFactはcall終了・失敗・取消し・期限・owner closeで破棄する。plan検証後に残せるのは同じcallの現在command用の非権限factだけで、後続RPC用cacheを作らない。
+
+clientはinitialのfactをsealへ渡さず、sealで独立再計算する。seal成功後の各command用immutable factだけは、既存のapproved command mapと同じ親read寿命で保持できる。これはclientの複数commandの準備であってproviderのfreshness証拠ではない。実使用ごとにown credential／policy・親元期限・contextとcurrent signing scopeへrebindし、別read／別commandに使えない。既存SessionRuntimeが自分のpending ledgerで認めるexact signed request bytesのrecoveryは別契約のまま維持し、codec factによって新しいretry権限や期限を作らない。providerのretryは新callのfactを作る。
+
+Buffer／TypedArrayのfreezeをbytesの不変性と呼ばない。factの文字列はimmutable、bufferはprivate ownership＋外部返却copyとし、slice／subarray／ArrayBuffer経由のaliasを禁止する。command間・core・caller入力も独立したcopyを維持する。digestを比較するだけのserialize可能なcaller tokenではmintできない。
+
+#### 9.117.3 helperの入出力・状態・読取前gate
+
+| helper | trusted入力 | 出力と必須検査 |
+|---|---|---|
+| preflightCodecProfile | local ImplementationApproval／独立したpin、既存の認証済みcontext、親readの残予約 | supported family／source／版／制限の一致。未対応はpre live／storage IO前にcodec_profile_unsupported。plan claimは認証するがmembership検証済みとはしない |
+| openCodecRoot | clientのprivate parent-read＋verified inventory（initial／seal別）、またはproviderの実AuthenticatedSessionCall＋exact wire＋ReadScope＋own fresh SourceSnapshot | actorPhase・scope identity・clock domain・originalDeadline・context fingerprint・approvalを持つprivate root。current gateをclosureへcaptureし、後のcurrentCallに依存しない |
+| compilePlanLayout | 同じ有効root、strict parsed context、builtin family記述、非権限の長さ型 | private PlanLayout。固定fragment・field path／型・canonical順・数字／base64式とroot-bound validation receipt。compile前後にcurrent gate。実nonce生成・supplier追加評価・外部IO・秘密鍵読取は0 |
+| encodeCheckedCommand | 同じroot/layoutとcheckCommand通過済みprivate command copy | CommandCanonicalFactとbound receipt。全field・domain・requestDigest・ordinal・schema／codec版へ結ぶ。全N commandを検査し、欠落／重複／並べ替えを拒否 |
+| provePlannedOwnerAndAuth | 同じlayout・各command fact・fresh inventoryから得たranges | plan用request/reply/authの長さ上界とfamily検証receipt。実署名・nonce・bytes内容の証明ではない。unsupportedなfieldが1つでもあれば未検証receiptを返さない |
+| retainClientCommandFact | sealが独立再現して一致した同じclient root・command・親read予約 | そのcommand専用のprivate child fact。initial factの昇格／caller factの取込を禁止。rootの資源所有権を明示的にchildへ移す |
+| encodeCurrentRequest／encodeCurrentReply | own validated signing intent、同じcommandのchild factまたはproviderの同call fact、実署名owner・current gate／予算、replyはDispatchPermit・実parts・post成功 | 実unsigned canonical bytes→実署名→実owner envelope。factsはsigning intentを代用しない。実bytesのhash／lenを検査し、署名前後・enqueue前に現認可／元期限を確認 |
+| disposeCodecRoot | 成功・refused・unknown／retired・例外の全経路 | 未移管のfact／buffer／layoutを解放。lease／attempt／spentを返還しない。codec失敗を理由に新scopeで再生成して予算をresetしない |
+
+状態はopened→compiled→all-commands-proved→disposed。正しいclient sealだけがchild factをretainでき、providerでは同じcallのverified段階で現在commandの非権限factを使える。状態を進めることは認可の追加ではない。元のAdmissionLease→DispatchPermitの全条件・pre/post・parts取得禁止・plan membership照合をそのまま維持する。
+
+clientのplan時にはserverのAuthenticatedSessionCallも実nonceも存在しない。request署名は既存のClientReadLease／approved command／owner signing gateに基づいて行い、その後prepareBusinessがexact wireへpending operationを結ぶ。prepareBusinessより前にSessionOperationを要求する循環を作らない。auth frameはその後の実SessionRuntimeだけが生成する。現行signBusinessCommandは自分でcanonical化するため、初期CWC-Cは実送信emitterを変えず、計画用生成の削減だけを測る。actual emitterへfactを渡すprivate拡張は別subvariantで署名preimage／権限を実証してから採用し、caller任意bytesを署名する公開APIを作らない。この差はmanifest・bridgeに明記する。provider rootはserverがmintした実callの受信後にのみ開く。
+
+#### 9.117.4 canonical compositionと実codecの照合契約
+
+Compositionは汎用string置換や固定byte offsetのpatchではなく、承認済みfield path／型からなる閉じたtreeを使う。各fragmentはfield境界とcanonical domainを含めてprivateに束縛する。key順は実canonicalOwnedJsonの順序で、localeCompare等へ変更しない。入力objectのキー挿入順は各階層で正規化するため、挿入順だけが異なる同値入力は同一canonical bytes／digestとして受理する。これと、compositionが非canonicalなキー順で生成したbytesの拒否を区別する。strict schemaが許さない余剰field、undefined、欠落、prototype／getter／toJSON、Unicode／escape未対応値は共有前に拒否し、別のencodingへ黙ってfallbackしない。
+
+domainはcommand.full、wireIntent.preimage、owner.request.unsigned／signed、owner.reply.unsigned／signed、auth.<kind>.<direction>.unsigned／signedを区別する。wireIntentはrequestDigestを含まない独自domain、署名は署名fieldを含まないpayload、auth署名は既存のdomain付きpayloadを使う。同長であってもこれらを交換しない。初期版ではwireIntent／operation／K/Dの検証hashや実wire-binding hashの計算回数を減らさず、検証後のencoding重複だけを対象にする。
+
+全commandの完全な意味検査はN件のまま残し、現在の2N owner／4N authのdummy materializationを、1回のlayout compileとN件のtyped proofへ置換する。authは同じpublic context・固定長domainの構造を一度検査し、commandごとのinnerWireDigestは64 hexの長さ証明として扱う。ownerはcommandごとに検証済みcanonical fragmentをcompositionし、resultの未知な実bytesは長さ型で扱う。実partsのbase64化・hash／全entry検証と実reply生成は送信段階で必ず行う。
+
+長さはUTF-8 bytesで数え、JSの文字数をbyte数として使わない。CIDは既存ASCII制約を維持する。base64は4*ceil(length/3)、hashは64 hex、署名は既存Ed25519の88 ASCII文字を前提とし、alphabet／paddingの検証を省かない。lineageやkeyEpoch等の固定context数値は実値をencodeし、sequenceは最大512・TTLは親readの上限4500の幅で上界を作る。planのcount／ordinalは18／19の最大幅を使い、countがpacking結果へ依存する循環を作らない。
+
+same-specの採用条件は、全planCore／planDigest・全command・range被覆・保守bound・wire/work見積りがCPR-BPと一致すること。actual countを使ってboundを狭め、chunkを大きくして別planになった場合は不適合であり、primaryに混ぜない。semantic spec変更を伴う案は別設計・別bridgeとする。
+
+実codec oracleは既存owner／auth schemaとcanonicalOwnedJsonから独立にmaterializeする。command／結果の全shape、unsigned署名preimage・signed envelopeについて、compositionのbytesを完全一致で照合する。長さだけ・JSON decode結果だけの一致では不可。計画用zero parts／dummy署名はsyntax／長さだけのoracleとし、crypto成功や実消費receiptとは呼ばない。実署名sessionの送受信では実part bytes・署名・nonceをoracleで検査し、rawを書き換えて比較しない。
+
+CWC-A／CWC-Bでは全N commandを独立oracleで照合する。その費用をCWC-Cの最適化primaryに隠して含めたり除いたりしない。CWC-Cではruntimeで自己検査できる閉じたfamily proofとsource承認が成立した範囲だけtyped proofへ置換し、全N oracleは別の診断実行で行う。閉じたfamilyの検証を単なるfuzz成功数で代用できなければ未対応であり、全materializationを維持して速度改善未成立とする。実送信されたowner／auth bytesの照合と完全な受信検証はprimaryでも残す。
+
+#### 9.117.5 制限・予算・失効・拒否
+
+既存のentry9／source41460 B／inventory4096 B、batch19／range4／data4096 B、inner8192 B／frame16384 B、全wire64 MiB／work67108864 units、guard512 slots・2 attempts、256 business operation・sequence512を維持する。4500 msの元期限はcompile・全N検査・canonical／hash・sign／verify・pre/post・source取得・最終再構成まで含む。client initial＋sealの2回とprovider各RPC1回を減らさない。
+
+PlanLayoutの固定templateは最大6 family、保存されたtemplate bytes合計81920 Bまで。各commandのfactはN≤19・各canonical owner request≤8192 Bから上限を導き、private clone・domain別fragment・N receiptsを含むcodec作業領域は初期1 MiB／4096 fragment以下とする。1 MiBは保持・一時canonical bytes／bufferの論理会計、4096はfragment record数の上限であり、JS heap／RSSの1 MiB保証ではない。initialとsealのsemantic planの同時保持、client child全N件、domain別コピー・allocation overheadも別に見積もる。これは新たに無条件で割当可能な枠ではない。既存の親read／ownerのmemory予約内にそれら全体をcompile前から確保できることを実装前に証明し、無理ならbudget_exceeded／unsupportedとする。既存メモリ上限やwork予約を黙って拡張しない。新しいmemory下位枠・共通preflightはprimaryのscalar／reference／composed全armに共通化し、旧BPとの意図した強化はbridgeへ分離する。
+
+wireは全体の保守予約とhandshake／recovery枠を先に確保し、actual bytesを送信前に消費する。compile・clone・schema／hash・proof・oracle・失敗分のworkを記録する。構造上限の新proofが未成立なら既存の保守work（source65536／plan156978／finish1）を下げず、余った観測量を返金しない。失敗したcompile／encode／proofも消費を保持し、同attemptで無予算の再実行を許可しない。未対応familyが初めから分かるときはsource IO前に拒否する。検証途中で新たに判明した不正は成功reply 0で終了し、行ったfresh取得をなかったことにしない。
+
+拒否分類はcodec_profile_unsupported（family／版／承認／pin未対応）、codec_fact_binding_mismatch（root／actor／domain／command／context違い）、codec_layout_mismatch（bytes／長さ／shape・actual>bound）、codec_budget_exceeded（下位枠不足）、request_expired／permission_denied／policy_changed／owner_closed（既存current gate）。layout mismatchはfamilyの採用を止めるno-goであり、現行codecへ暗黙fallbackして成功数へ数えない。refused／unknown／retired・fail-stopは既存scopeの終了規則へ従い、codec factがそれを変更しない。
+
+#### 9.117.6 実装順と出口
+
+| ID | 条件・出口 |
+|---|---|
+| CWC-A | helper／private root／approval・fact・familyのstrict contract、domain分離、コピー・budget・失効を実装。現service未登録で固定vectorと負例を実施。型／状態だけで実codec一致や速度改善を主張しない |
+| CWC-B | 実canonical／owner／auth oracleとの全N照合、長さ式・構造proof・mutation・実署名bytesの照合を限定実証。oracleの追加評価・二重serialize・秘密鍵／nonceへの干渉を計数。自己検査できないfamilyはunsupportedで止める |
+| CWC-C | CPR-BPの独立client／provider・実sessionへ接続。source／pinは模擬のまま、全gate・予算・unknown／recovery・全entry再構成を再適用。primaryにoracle費用を隠して持ち込まない |
+| CWC-D | 同じsource pinと共通preflightでscalar／BP-reference／composedの計画込み総時間を比較。BP bridgeと観測／oracle対照を別保存し、費用・完了率・中央値／paired差で採否を判定。効果不足のworkloadはCPR-Cへ進まない |
+
+#### 9.117.7 回帰テスト条件（全て予定・未実施）
+
+| ID | 入力・故障条件と必須結果 |
+|---|---|
+| CWC01 | 未承認source／schema／canonical codec／family／semanticSpec／layout版をpreflightで拒否し、pre live・source IO 0 |
+| CWC02 | caller template／offset table／serialized fact・他actorのfactを渡してもprivate root／receiptをmintできない |
+| CWC03 | 同長のpeer／provider／origin／key ID・epoch／endpoint交換をcontext fingerprintとown signing scopeで拒否 |
+| CWC04 | registry／catalog／implementation pin・lineage／selected refs／root／namespace／bootを変更し、旧factを拒否 |
+| CWC05 | client initialのfactをsealに流用して2回目の独立再現を省く経路を拒否。rootと計画実行数を別に記録 |
+| CWC06 | clientのfact／map／inventoryをproviderに渡す、他provider call・後続batch・exact retryのfactを使う経路を拒否 |
+| CWC07 | sealの同command childだけを親read寿命で使え、別command／別read／別clock domainへ移せない |
+| CWC08 | fixed fragmentのcopy元・返却Buffer・slice／subarray／ArrayBufferを変更。private bytes・他command・coreへ波及0 |
+| CWC09 | domainをwireIntent／full command／owner unsigned／signed／auth unsigned／signedで交換し、長さが同じでも拒否 |
+| CWC10 | extra／欠落／undefined・getter／toJSON／prototype／coercionをstrict schema／共有前検査で拒否。各階層の入力キーの挿入順変更は同一canonical bytesとして受理し、digestも同一。生成した非canonicalなキー順は独立oracleとの完全bytes照合で拒否し、JSON decode結果の一致だけでは受理しない |
+| CWC11 | ASCII CIDの上限・上限＋1、Unicode／surrogate・quote／backslashを含む未対応値を拒否し、文字数とUTF-8長を混同しない |
+| CWC12 | 0/1/2/3/4/4095/4096 bytesに対するbase64長・padding、SHA64・署名88の型境界を検証。署名型変更は未対応 |
+| CWC13 | epoch／generation等の数字幅、sequence 9/10/99/100/512・TTL幅、ordinal／count幅を正しい箇所へ反映 |
+| CWC14 | count依存の循環・実countでのbound縮小・wire claimによるlayout選択を拒否し、same-spec plan全体一致を維持 |
+| CWC15 | 全N commandをstrict検査し、command検査／proofの欠落・重複・順序差を拒否。最大19 batch／4 rangesも検証 |
+| CWC16 | 構造が正しいがwireIntent／operation／K/Dが違うcommandを拒否。cached computed digestだけで再検証済みにしない |
+| CWC17 | owner request／replyのunsigned preimageとsigned envelopeを独立oracleのcanonical bytesへ完全一致で照合 |
+| CWC18 | challenge-request／challenge／request/reply channelの各familyを独立oracleへ照合。API／direction／keyId違いを拒否 |
+| CWC19 | 同長の実part改変・hash更新、未対象entry欠落を全inventory／entry／part検査で拒否。長さproofを内容証拠に使わない |
+| CWC20 | zero parts／dummy署名・固定nonceを実認証・実消費receiptへ昇格する経路を拒否。実nonce生成・追加supplier読取は計画中0 |
+| CWC21 | compositionは正しい長さだが1 byte違う、またはJSON値だけ同じ非canonical bytesを拒否。actual>boundもno-go |
+| CWC22 | schema／codec実装を片側だけ変更・hashも更新し、独立approvalがない場合は拒否。source閉包の追加／削除も検出 |
+| CWC23 | compile前後・command/proof間・serialize／hash／署名前後・enqueue前でcredential／policy取消し・元期限到達を拒否 |
+| CWC24 | fact作成後にkey epoch・pending session・challenge／sequence／TTL・routeを変更。実SessionRuntimeが旧成功／旧factに頼らず拒否 |
+| CWC25 | 実call未生成のclient計画をprovider call扱いしない。request署名→prepareBusiness→pending sessionの順を保ち、循環APIを作らない |
+| CWC26 | admitted scope／codec receiptだけでparts・成功署名・DispatchPermitを作る経路を拒否。元の全昇格条件を維持 |
+| CWC27 | 予約不足・compile／proof失敗で消費・attemptを保持し、同attemptの無予算再実行・新leaseによるrefundを拒否 |
+| CWC28 | template合計81920 B／codec下位枠1 MiB／fragment4096、親予約・wire／workの上限と＋1を検証。上限を上げて救済しない |
+| CWC29 | reply紛失／recoveryで実frame／owner bytesを全計数し、元期限・K/D・spent保持。providerは新callでfresh取得・新layout・全計画 |
+| CWC30 | complete／refused／unknown／retired・owner close／restart後のfact使用を拒否し、bufferを解放。既存signed request recoveryとfact再利用を区別 |
+| CWC31 | pre live失敗でsource IO 0、post失敗で成功reply 0。post後のpin-only変更とcredential／元期限の失効を従来どおり区別 |
+| CWC32 | 最終entry再構成・output/input digest・wire集計中の期限到達を拒否し、成功確定と終了時刻をその後に置く |
+| CWC33 | 各provider RPCはfresh load 1回・全inventory検査・全計画1回、client initial／sealは2回。旧plan digest一致でも省略0 |
+| CWC34 | referenceと全planCore／command／bound／wire/workを照合。scalarへの暗黙fallbackや異なるsemantic specをprimaryへ混ぜない |
+| CWC35 | CWC-Bの全N oracleとCWC-Cのstructural proofを別counterで記録。oracleをprimaryで実行した費用やfact compile費用を隠さない |
+| CWC36 | actual encode・canonicalization・clone／copy・hash／schema・gate・proofをinclusive/exclusive＋otherへ分解し、二重計上／未計上を拒否 |
+| CWC37 | rootをactor／call／request／batchへ結び、partitionを保った過大計上を対応外側plan時間で拒否。全transferを代用上限にしない |
+| CWC38 | mode順・条件・source・温度・出力・完了率・意図したapproval／下位枠の差を照合。片側だけ強化／費用省略はinvalid experiment |
+| CWC39 | deadline／capacity／other-refused／unknown／partial／warm-up失敗を全保存。CPU負荷・負差も残し、都合のよい成功例だけで採用しない |
+| CWC40 | H0／大entryの計画込み総時間を再比較し、効果不足ならCPR-C見送り。模擬store／pin・in-processの結果を実storage・独立UID・8 read成立へ読み替えない |
+
+#### 9.117.8 計画込み総時間の比較・停止条件
+
+基準はCPR-BP combined。新primaryはS-cwc（scalar）、B-cwc-reference（同じcommon preflight／下位枠、現行の全N codec検査）、B-cwc-composed（新proof／composition）の3armとする。support-domain・schema／semantic spec・親元期限・現在認可・guard・source／pin・copy・最終検証を共通化する。元BP combinedは別bridgeで共通preflight・承認・observerの意図した強化を測り、primaryと混ぜない。codec承認／variant digestはmode manifestに明記し、primary内で異なるwire spec／公開service profileが必要になったら比較を止めて別bridgeへ分ける。nonce・署名・bootを揃えるためのraw書換えは禁止する。
+
+4 workload・2 role・cold/warm・6反復の96 block／288 primaryを初期計画とし、3armは回転／反転して各位置2回。元BP bridgeは96転送、warm-upは別保存。CWC-B oracle／計測器ありとなしの対照も別実行にし、一次判定へ混ぜない。coldは実handshake、warmはsession接続だけを範囲外とし、inventory／layout／plan cacheはwarm化しない。別CPU作業を並行実行せず、host／Node／依存lock・負荷・全source pin・失敗statusを保存する。少数反復で統計的優位や全環境への保証を主張しない。
+
+Tはdescriptor／inventory取得からclient initial＋seal（compile・全N検査・canonical/proofを含む）、Σ(provider admission/pre＋fresh load＋全inventory検査＋compile／全計画/proof＋current command照合＋parts/post＋実署名/session)、client全entry再構成・最終digest／wire集計・最終gateまで。setup＋dispatch/reconstructionを単一timestamp境界で分割する。provider plan・codec・gate等はTの内数で、inclusiveを再加算しない。各traceのexclusive＋otherとroot wall、rootと対応外側client initial／seal／owner plan時間を従来の0.01 ms許容幅で照合する。
+
+pairedな許容額H = T_scalar − (T_composed − P_composed)、計画合計P = client initial＋seal＋Σprovider全pack（その中の現認可gateも含む）。各pairでP≤HはT_composed≤T_scalarと代数的に同じであり、独立した2つの性能証拠とは呼ばない。条件ごとの中央値とpaired差／勝敗件数を併記し、中央値同士の許容額は保守的な補助表示にとどめる。診断のexclusive費用を未観測Tから単純に引いた仮想高速値や、8 readの推計でgoにしない。
+
+採用には全semantic／bytes／bound照合と認可・元期限・予算・失敗回帰を先に満たし、その上で実測の条件別総時間と計画費用を判定する。source／profile不一致、oracle不一致・actual>boundは性能に関係なくno-go。H0／大entryを含め効果不足のworkloadはCPR-Cへ進めず、限定採用の適用／拒否条件を別途設計する。現在は設計のみでCWC01〜40は未実施、本番採用・実storage・隔離・継続8 read・CG0／CG3は引き続き未成立である。
+
+
+設計記録は`docs/validation/gradle-cwc-design-2026-11-09.json`。本節・参照source・CPR-BP baselineのhashを結び、CWC-A〜D／CWC01〜40をplanned・executed=falseで保存する。仕様整合の記録であり、外部署名attestationではない。設計の整合性テストはruntime回帰・実codec実証とは区別する。
+
+```sh
+node scripts/check-cwc-design.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcDesign.test.ts --maxWorkers=1
+```
+
+設計の整合性確認：本節・40条件・4段階・source／baseline pinと設計のみのstatus、CWC10の入力挿入順と生成bytes順序の区別を検査する6件、既存文書／設計／公開コマンド例を含む計21件が通過し、typecheckも成功した。既存canonical codecで挿入順を変えた入力のbytes／digest一致と、非canonicalな生成bytesとの差異も確認した。この確認はCWC compositionの拒否実装の実証ではない。これはCWC01〜40のruntime回帰を実行した件数ではなく、CWCの実装・実codec一致・実時間比較は未実施である。

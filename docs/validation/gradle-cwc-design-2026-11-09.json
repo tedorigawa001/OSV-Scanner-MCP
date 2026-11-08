@@ -1,0 +1,330 @@
+{
+  "schema": "cwc.design-record.v1",
+  "date": "2026-11-09",
+  "status": "design-only",
+  "document": {
+    "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+    "heading": "### 9.117 CWC：owner／auth codec・canonical処理の削減契約（設計）",
+    "sectionSha256": "2c7a03eef895c6813838fcf8e8ad21b87683e1155b725d686ac7900789da9849"
+  },
+  "sourceBindings": {
+    "src/test/fixtures/gradleOwnedCprAWire.ts": "f15e3bc9a8c46b257bdd40d597cd188a96f54b1f28d389a583fedac1c36a3bf9",
+    "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
+    "src/test/fixtures/gradleOwnedCprBPPlanner.ts": "85595545a7fd9cfbc3281dc1d6016b3c77e3a9a35cda1c3260af08755e008b52",
+    "src/test/fixtures/gradleOwnedCprBPProvider.ts": "991491abd1dddf1f1219ec1c502b88a9a32855ff98de3cfb4499afc7bd13cfd4",
+    "src/test/fixtures/gradleOwnedCprBP.ts": "c04a7dd252cc3f566524aa2260bac303eef8b0f8a5c7a5d3abfa6521ef6ad301",
+    "src/test/fixtures/gradleOwnedCprBSession.ts": "62c372ab12a1068eda15b0bcab845da8ac4398900e680b5828171330926dda2d",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+    "scripts/check-cwc-design.mjs": "1795413f0ffecdee4507128d32bacb103e4af6e164be0305afd0a36338686036",
+    "src/test/utils/gradleOwnedCwcDesign.test.ts": "c65daa01b1f09f95cb8ab42147adead5a394444794addf34dcf2221f4d807995"
+  },
+  "baseline": {
+    "path": "docs/validation/gradle-c3b-cpr-bp-2026-11-08.json",
+    "sha256": "a90c6673ee54e6d12dc5eaa2878ce73de29b8368d070abf4ec068eecc4728d38",
+    "proceedToCprC": false,
+    "productionAdopted": false
+  },
+  "scope": {
+    "runtimeChanged": false,
+    "implementationCompleted": false,
+    "runtimeTestsExecuted": false,
+    "codecEquivalenceProven": false,
+    "performanceImprovementEstablished": false,
+    "realStorageVerified": false,
+    "nativeIsolationVerified": false,
+    "productionAdopted": false,
+    "eightReadsEstablished": false,
+    "originalReadsSkipped": 0,
+    "readCommittedReduction": 0
+  },
+  "sharing": {
+    "provider": "same authenticated call and fresh snapshot only",
+    "client": "initial and seal separate; seal command child bound to parent read",
+    "authorityFactsShared": false,
+    "sessionNonceOrSignatureShared": false,
+    "crossProviderCallCache": false
+  },
+  "primary": {
+    "arms": [
+      "S-cwc",
+      "B-cwc-reference",
+      "B-cwc-composed"
+    ],
+    "blocks": 96,
+    "transfers": 288,
+    "originalBpBridgeTransfers": 96,
+    "fullOracleInOptimizedPrimary": false,
+    "actualEmitterInitiallyUnchanged": true,
+    "existingLimitsUnchanged": true,
+    "newCodecSubbudgetApprovalRequired": true
+  },
+  "implementationStages": [
+    {
+      "id": "CWC-A",
+      "condition": "helper／private root／approval・fact・familyのstrict contract、domain分離、コピー・budget・失効を実装。現service未登録で固定vectorと負例を実施。型／状態だけで実codec一致や速度改善を主張しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC-B",
+      "condition": "実canonical／owner／auth oracleとの全N照合、長さ式・構造proof・mutation・実署名bytesの照合を限定実証。oracleの追加評価・二重serialize・秘密鍵／nonceへの干渉を計数。自己検査できないfamilyはunsupportedで止める",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC-C",
+      "condition": "CPR-BPの独立client／provider・実sessionへ接続。source／pinは模擬のまま、全gate・予算・unknown／recovery・全entry再構成を再適用。primaryにoracle費用を隠して持ち込まない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC-D",
+      "condition": "同じsource pinと共通preflightでscalar／BP-reference／composedの計画込み総時間を比較。BP bridgeと観測／oracle対照を別保存し、費用・完了率・中央値／paired差で採否を判定。効果不足のworkloadはCPR-Cへ進まない",
+      "status": "planned",
+      "executed": false
+    }
+  ],
+  "regressionConditions": [
+    {
+      "id": "CWC01",
+      "condition": "未承認source／schema／canonical codec／family／semanticSpec／layout版をpreflightで拒否し、pre live・source IO 0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC02",
+      "condition": "caller template／offset table／serialized fact・他actorのfactを渡してもprivate root／receiptをmintできない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC03",
+      "condition": "同長のpeer／provider／origin／key ID・epoch／endpoint交換をcontext fingerprintとown signing scopeで拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC04",
+      "condition": "registry／catalog／implementation pin・lineage／selected refs／root／namespace／bootを変更し、旧factを拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC05",
+      "condition": "client initialのfactをsealに流用して2回目の独立再現を省く経路を拒否。rootと計画実行数を別に記録",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC06",
+      "condition": "clientのfact／map／inventoryをproviderに渡す、他provider call・後続batch・exact retryのfactを使う経路を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC07",
+      "condition": "sealの同command childだけを親read寿命で使え、別command／別read／別clock domainへ移せない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC08",
+      "condition": "fixed fragmentのcopy元・返却Buffer・slice／subarray／ArrayBufferを変更。private bytes・他command・coreへ波及0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC09",
+      "condition": "domainをwireIntent／full command／owner unsigned／signed／auth unsigned／signedで交換し、長さが同じでも拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC10",
+      "condition": "extra／欠落／undefined・getter／toJSON／prototype／coercionをstrict schema／共有前検査で拒否。各階層の入力キーの挿入順変更は同一canonical bytesとして受理し、digestも同一。生成した非canonicalなキー順は独立oracleとの完全bytes照合で拒否し、JSON decode結果の一致だけでは受理しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC11",
+      "condition": "ASCII CIDの上限・上限＋1、Unicode／surrogate・quote／backslashを含む未対応値を拒否し、文字数とUTF-8長を混同しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC12",
+      "condition": "0/1/2/3/4/4095/4096 bytesに対するbase64長・padding、SHA64・署名88の型境界を検証。署名型変更は未対応",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC13",
+      "condition": "epoch／generation等の数字幅、sequence 9/10/99/100/512・TTL幅、ordinal／count幅を正しい箇所へ反映",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC14",
+      "condition": "count依存の循環・実countでのbound縮小・wire claimによるlayout選択を拒否し、same-spec plan全体一致を維持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC15",
+      "condition": "全N commandをstrict検査し、command検査／proofの欠落・重複・順序差を拒否。最大19 batch／4 rangesも検証",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC16",
+      "condition": "構造が正しいがwireIntent／operation／K/Dが違うcommandを拒否。cached computed digestだけで再検証済みにしない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC17",
+      "condition": "owner request／replyのunsigned preimageとsigned envelopeを独立oracleのcanonical bytesへ完全一致で照合",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC18",
+      "condition": "challenge-request／challenge／request/reply channelの各familyを独立oracleへ照合。API／direction／keyId違いを拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC19",
+      "condition": "同長の実part改変・hash更新、未対象entry欠落を全inventory／entry／part検査で拒否。長さproofを内容証拠に使わない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC20",
+      "condition": "zero parts／dummy署名・固定nonceを実認証・実消費receiptへ昇格する経路を拒否。実nonce生成・追加supplier読取は計画中0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC21",
+      "condition": "compositionは正しい長さだが1 byte違う、またはJSON値だけ同じ非canonical bytesを拒否。actual>boundもno-go",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC22",
+      "condition": "schema／codec実装を片側だけ変更・hashも更新し、独立approvalがない場合は拒否。source閉包の追加／削除も検出",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC23",
+      "condition": "compile前後・command/proof間・serialize／hash／署名前後・enqueue前でcredential／policy取消し・元期限到達を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC24",
+      "condition": "fact作成後にkey epoch・pending session・challenge／sequence／TTL・routeを変更。実SessionRuntimeが旧成功／旧factに頼らず拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC25",
+      "condition": "実call未生成のclient計画をprovider call扱いしない。request署名→prepareBusiness→pending sessionの順を保ち、循環APIを作らない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC26",
+      "condition": "admitted scope／codec receiptだけでparts・成功署名・DispatchPermitを作る経路を拒否。元の全昇格条件を維持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC27",
+      "condition": "予約不足・compile／proof失敗で消費・attemptを保持し、同attemptの無予算再実行・新leaseによるrefundを拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC28",
+      "condition": "template合計81920 B／codec下位枠1 MiB／fragment4096、親予約・wire／workの上限と＋1を検証。上限を上げて救済しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC29",
+      "condition": "reply紛失／recoveryで実frame／owner bytesを全計数し、元期限・K/D・spent保持。providerは新callでfresh取得・新layout・全計画",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC30",
+      "condition": "complete／refused／unknown／retired・owner close／restart後のfact使用を拒否し、bufferを解放。既存signed request recoveryとfact再利用を区別",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC31",
+      "condition": "pre live失敗でsource IO 0、post失敗で成功reply 0。post後のpin-only変更とcredential／元期限の失効を従来どおり区別",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC32",
+      "condition": "最終entry再構成・output/input digest・wire集計中の期限到達を拒否し、成功確定と終了時刻をその後に置く",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC33",
+      "condition": "各provider RPCはfresh load 1回・全inventory検査・全計画1回、client initial／sealは2回。旧plan digest一致でも省略0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC34",
+      "condition": "referenceと全planCore／command／bound／wire/workを照合。scalarへの暗黙fallbackや異なるsemantic specをprimaryへ混ぜない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC35",
+      "condition": "CWC-Bの全N oracleとCWC-Cのstructural proofを別counterで記録。oracleをprimaryで実行した費用やfact compile費用を隠さない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC36",
+      "condition": "actual encode・canonicalization・clone／copy・hash／schema・gate・proofをinclusive/exclusive＋otherへ分解し、二重計上／未計上を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC37",
+      "condition": "rootをactor／call／request／batchへ結び、partitionを保った過大計上を対応外側plan時間で拒否。全transferを代用上限にしない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC38",
+      "condition": "mode順・条件・source・温度・出力・完了率・意図したapproval／下位枠の差を照合。片側だけ強化／費用省略はinvalid experiment",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC39",
+      "condition": "deadline／capacity／other-refused／unknown／partial／warm-up失敗を全保存。CPU負荷・負差も残し、都合のよい成功例だけで採用しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CWC40",
+      "condition": "H0／大entryの計画込み総時間を再比較し、効果不足ならCPR-C見送り。模擬store／pin・in-processの結果を実storage・独立UID・8 read成立へ読み替えない",
+      "status": "planned",
+      "executed": false
+    }
+  ]
+}
