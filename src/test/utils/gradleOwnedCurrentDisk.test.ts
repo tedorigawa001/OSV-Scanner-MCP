@@ -1,4 +1,4 @@
-import {it,expect,afterEach} from 'vitest';
+import {it,expect,afterEach,vi} from 'vitest';
 import {mkdtemp,realpath,mkdir,rm,readdir,readFile,writeFile,cp} from 'node:fs/promises';
 import path from 'node:path';import os from 'node:os';import {generateKeyPairSync} from 'node:crypto';
 import {OwnedCurrentDisk,type CurrentDiskOptions} from '../fixtures/gradleOwnedCurrentDisk.js';
@@ -61,6 +61,8 @@ it('keeps frozen state closed across disk reopen',async()=>{
 });
 
 import {execFile,execFileSync} from 'node:child_process';
+// Fake-clock disk tests: several take 5-10 s alone (fsync, actual SIGKILL), so a loaded full run can pass the default 30 s. Time cannot change their outcome.
+vi.setConfig({testTimeout:120_000});
 async function childRuntime(f:Awaited<ReturnType<typeof fixture>>){
  const out=path.join(f.root,'runtime');await mkdir(out,{mode:0o700});await writeFile(path.join(out,'package.json'),JSON.stringify({type:'module'}));
  const project=path.join(f.root,'child-tsconfig.json');await writeFile(project,JSON.stringify({extends:path.resolve('tsconfig.json'),compilerOptions:{outDir:out,rootDir:path.resolve('src'),typeRoots:[path.resolve('node_modules/@types')]},include:[path.resolve('src/test/fixtures/gradleOwnedCurrentDisk.ts'),path.resolve('src/test/fixtures/gradleOwnedCurrentSource.ts')],exclude:[]}));

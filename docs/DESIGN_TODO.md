@@ -3126,3 +3126,5 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 §9.115レビュー修正：descriptor／inventory／scalar本文を成功確定前に検査し、検査後も元期限・認可を確認。最終digestとwire集計を最終gate・計時内へ移し、境界timestampとfinalizationを保存して過小計上を拒否。runtime20件・checker4件を追加し、96 pair／288転送＋32 warm-upを修正sourceで再実行。default／smallは限定判定通過、H0／大entryのCPR-C見送りを維持。本番採用・実storage・隔離の成立は主張しない。
 
 §9.115レビュー修正2：H0同サイズ・大entryでBが遅かったのは48 pair中47（「すべて」を訂正。残る1件はSの外れ値）。許容額の判定は各pairで総時間比較と同値であること、provider計画時間に試行ごとの認可gateを含むことを追記。表と本文をsummaryから再計算して照合するテストを追加。計測は変更なし。
+
+実時間process診断の分離：Source／Authority／Consumerのprocessテストは、固定の5秒leaseとホスト負荷に左右される（並列5本では15回すべてが準備段階の`grant_revoked`で失敗、CIのNode 26で`service_unavailable`）。`OSV_REALTIME_PROCESS=1`のときだけ実行し、CIは専用ジョブ（Node 26）で単独実行する。成功の契約は偽の時計のテストが担う。`npm publish`の事前テストからは外れる。偽の時計で動く`gradleOwnedCurrentDisk.test.ts`は単独でも1件5〜10秒かかり、負荷のある全件実行で既定の30秒を超えたため、このファイルだけ上限を120秒にした（時間は結果に影響しない）。

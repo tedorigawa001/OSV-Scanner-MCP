@@ -932,6 +932,8 @@ npm run typecheck         # type check
 npm run build             # build into dist/
 ```
 
+The real-time child-process diagnostics (`gradleOwnedSourceProcess`, `gradleOwnedAuthorityProcess` and `gradleOwnedConsumerProcess`) depend on host load, so `npm test` skips them. Run them on an otherwise idle machine with `OSV_REALTIME_PROCESS=1 npm test -- --project real-time-process`. CI runs them in a separate job.
+
 Design notes and open items are in [docs/DESIGN_TODO.md](docs/DESIGN_TODO.md) (in Japanese). Release notes are in [docs/releases](docs/releases).
 
 ## Roadmap

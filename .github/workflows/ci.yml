@@ -31,6 +31,22 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  realtime-process:
+    # 実時間で子プロセスを動かす研究用の診断テスト。ホストの負荷と固定の5秒リースに
+    # 左右されるため、既定の npm test からは外し、ここで単独に実行する
+    name: Real-time process diagnostics (Node 26)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - run: npm test -- --project real-time-process
+        env:
+          OSV_REALTIME_PROCESS: "1"
+
   native-boundary:
     name: Native file boundary (${{ matrix.os }}, Node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}

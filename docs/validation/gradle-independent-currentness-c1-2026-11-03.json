@@ -21,7 +21,7 @@
     "src/test/fixtures/gradleOwnedJournalDisk.ts": "cc16330bbbde29b2d52a6c14e90d9f83a9638894c8c7087662c21af9f83162d7",
     "src/test/fixtures/gradleOwnedJournalFs.ts": "481389a0fc5ebd5eb234d7b0f25daef7f3e1898419c28dc379e2d628ce0002ef",
     "src/test/fixtures/gradleOwnedJournalV2.ts": "e4860481e0dacd227d42ff65cb56e8b80fc521492ccb2375a73622a3b2293af2",
-    "src/test/utils/gradleOwnedCurrentDisk.test.ts": "d98c3c9a812821764f43d2fbe90705edaedb555f618afcd3b23f02da9e7f44fe",
+    "src/test/utils/gradleOwnedCurrentDisk.test.ts": "3fe2c2299d0b46fcfeaac744578fc49d45a64819c7085c6a1ce66cfbd84cb642",
     "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
     "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
     "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
