@@ -3,8 +3,8 @@
   "date": "2026-11-04",
   "scope": "diagnostic-session-only",
   "sourceSha256": {
-    "package-lock.json": "f5c49fae5832996ce2922e2b999f8267026421d489eaa18a235dbd523ca5fba1",
-    "package.json": "4802602cd85563baaafdc2a38b616b1002db520e4719adcd6e35f4feff4bc0d9",
+    "package-lock.json": "85a6b29a0a19e5399874571faa2cf98ccde6ab1b81dd353607263e18e6866c24",
+    "package.json": "d2e426c515bfc7917cfb8dcac947dc7f5913858d3958ed9a324522648cdef110",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_session_child.mjs": "f240d8b49614de13e0f9f06dee82c4343081d2cd63167013cabc36e44f5f19bb",
     "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
@@ -133,8 +133,8 @@
     }
   },
   "beforeC3b2SourceSha256": {
-    "package-lock.json": "f5c49fae5832996ce2922e2b999f8267026421d489eaa18a235dbd523ca5fba1",
-    "package.json": "4802602cd85563baaafdc2a38b616b1002db520e4719adcd6e35f4feff4bc0d9",
+    "package-lock.json": "85a6b29a0a19e5399874571faa2cf98ccde6ab1b81dd353607263e18e6866c24",
+    "package.json": "d2e426c515bfc7917cfb8dcac947dc7f5913858d3958ed9a324522648cdef110",
     "src/test/fixtures/c3b_session_child.mjs": "f240d8b49614de13e0f9f06dee82c4343081d2cd63167013cabc36e44f5f19bb",
     "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
     "src/test/utils/gradleOwnedSessionProcess.test.ts": "7a6909b9636fc4ed125275e17456b359dafedd2b46c651dbb7196a4b9aeb674c",
@@ -157,8 +157,8 @@
     "build": "passed"
   },
   "beforeC3b3SourceSha256": {
-    "package-lock.json": "f5c49fae5832996ce2922e2b999f8267026421d489eaa18a235dbd523ca5fba1",
-    "package.json": "4802602cd85563baaafdc2a38b616b1002db520e4719adcd6e35f4feff4bc0d9",
+    "package-lock.json": "85a6b29a0a19e5399874571faa2cf98ccde6ab1b81dd353607263e18e6866c24",
+    "package.json": "d2e426c515bfc7917cfb8dcac947dc7f5913858d3958ed9a324522648cdef110",
     "src/test/fixtures/c3b_session_child.mjs": "f240d8b49614de13e0f9f06dee82c4343081d2cd63167013cabc36e44f5f19bb",
     "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
     "src/test/utils/gradleOwnedSessionProcess.test.ts": "7a6909b9636fc4ed125275e17456b359dafedd2b46c651dbb7196a4b9aeb674c",
@@ -180,8 +180,8 @@
     "sourceReceiptsUpdated": true
   },
   "beforeC3b4SourceSha256": {
-    "package-lock.json": "f5c49fae5832996ce2922e2b999f8267026421d489eaa18a235dbd523ca5fba1",
-    "package.json": "4802602cd85563baaafdc2a38b616b1002db520e4719adcd6e35f4feff4bc0d9",
+    "package-lock.json": "85a6b29a0a19e5399874571faa2cf98ccde6ab1b81dd353607263e18e6866c24",
+    "package.json": "d2e426c515bfc7917cfb8dcac947dc7f5913858d3958ed9a324522648cdef110",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_session_child.mjs": "f240d8b49614de13e0f9f06dee82c4343081d2cd63167013cabc36e44f5f19bb",
     "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
@@ -224,8 +224,8 @@
     "sourceFingerprintCount": 40
   },
   "beforeC3b5SourceSha256": {
-    "package-lock.json": "f5c49fae5832996ce2922e2b999f8267026421d489eaa18a235dbd523ca5fba1",
-    "package.json": "4802602cd85563baaafdc2a38b616b1002db520e4719adcd6e35f4feff4bc0d9",
+    "package-lock.json": "85a6b29a0a19e5399874571faa2cf98ccde6ab1b81dd353607263e18e6866c24",
+    "package.json": "d2e426c515bfc7917cfb8dcac947dc7f5913858d3958ed9a324522648cdef110",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_session_child.mjs": "f240d8b49614de13e0f9f06dee82c4343081d2cd63167013cabc36e44f5f19bb",
     "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",

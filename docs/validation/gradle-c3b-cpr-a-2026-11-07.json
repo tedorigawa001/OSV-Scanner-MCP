@@ -2,7 +2,7 @@
   "schema": "cpr-a.validation.v1",
   "record": {
     "path": "docs/validation/gradle-c3b-cpr-a-2026-11-07.record.json",
-    "sha256": "afcddb22843976a50655ab758909880d8735ee45769543136e24e2020d9151d5"
+    "sha256": "fb591a6d903bfa83eb173d3fe044b726d3a61de4f482cca90d1622548f241b71"
   },
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
