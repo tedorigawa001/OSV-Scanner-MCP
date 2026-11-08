@@ -8443,3 +8443,12 @@ npx vitest run src/test/utils/gradleOwnedCprAWorkBudget.test.ts --maxWorkers=1
 ```
 
 修正後の確認結果：CPR-Aと記録・既存設計／I1／I2／I2P・公開コマンド例の10ファイル190件、記録生成1件が通過。typecheck・buildも成功した。記録・現在source閉包・検査script・専用回帰source・本節のdigestを照合するsummaryも更新した。
+
+
+#### 9.114.2 取得・完了失敗の終了状態と完了直前の残量検査（2026-11-08）
+
+レビューで2点を確認した。(1) `finish`は昇格後のconsume／shrinkを考慮せず、post・返信署名の後で残量不足になっていた。attemptは`verified`のまま残り、postと署名を繰り返せた。(2) 取得中の失敗（source_integrity・読取callbackの例外）では、attemptが`admitted`のまま残った。そのためexact retryは`operation_busy`になり、call終了後は`unknown`のまま固定された。計画失敗が`complete-refused`になるのと一致しなかった。
+
+修正：`finish`はpostの前に、返信の算術上界と完了1の残量を再検査する。実返信が上界を超えた場合も拒否する。post失敗・残量不足・codec例外のいずれでも、gateがunknown／retiredにしていなければ、attemptを`complete-refused`で終了する。消費は返却しない。`load`もfresh load開始後の失敗を同じ規則で終了する。取得分65536の消費とload-started flagは保持し、同じattemptでは再loadしない。row・元期限・spentを引き継ぐ新しいcallのexact retryは許可する。
+
+専用回帰5件を追加し、旧実装で5件とも失敗することを確認した。対象は、完了直前の返信予約不足（署名0）、完了1の不足、source_integrity失敗後の拒否とexact retry、読取callback例外、post失敗後の再post拒否である。16構成の正常経路の記録はsource閉包を更新するために再生成した。計画内容・wire・counterは変わらない。実session・実storage・本番採用は引き続き未成立。

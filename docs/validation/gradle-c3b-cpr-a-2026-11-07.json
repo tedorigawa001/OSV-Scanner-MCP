@@ -2,15 +2,15 @@
   "schema": "cpr-a.validation.v1",
   "record": {
     "path": "docs/validation/gradle-c3b-cpr-a-2026-11-07.record.json",
-    "sha256": "d25944435925526ec1b7da4dc58b312b948ef6a027e597add9fb7ef3a7bfd63f"
+    "sha256": "524ad33bd0f2e11eb42a0e9c4b9978d7b207d46dc351404033a4596a708e2216"
   },
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.114 CPR-A：v3静的contract・算術packing・二段階昇格",
-    "sectionSha256": "236634603666d39bf6b2e6f3bfbc67eb5b8a3a9eea4d6e0b0744af19f2179930"
+    "sectionSha256": "f767875a3486080ed812f6a6677fc185cf3012c6d6084d876a4e625916f026ec"
   },
   "regressionSources": {
-    "src/test/utils/gradleOwnedCprAWorkBudget.test.ts": "3008087c9b3a1247813a33f20e6e719508ad8b711845d7a5e1c1bd07079120ac",
+    "src/test/utils/gradleOwnedCprAWorkBudget.test.ts": "a943d450909311fc844d5ce56feeb95352e20b7b23060b6f4bbc2918d2893896",
     "src/test/utils/gradleOwnedCprA.test.ts": "4a260b342301a4a65ae77ce9dea475af2e1238e814510621fe55a3edaa2af1e7",
     "src/test/utils/gradleOwnedCprAContract.test.ts": "c09581281207bcfff7cbddd13b4f19df53f72c90a55b269baa9473be90d8a168",
     "src/test/utils/gradleOwnedCprAPacking.test.ts": "0739f1f9c63b5b5e346056a504b6204d8c1c31b0cd86e59b4c34f8c259f37c26",

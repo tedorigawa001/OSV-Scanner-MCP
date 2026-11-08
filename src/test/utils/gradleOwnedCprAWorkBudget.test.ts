@@ -94,3 +94,37 @@ it('does not reset work by starting a fresh exact retry after failure',()=>{
  expect(()=>f.api.admit(f.api.openCall(wire),wire)).toThrow('operation_budget');
  expect(f.api.diagnostics).toEqual(before);expect(f.reads).toBe(1);expect(f.api.metrics.plans).toBe(1);
 });
+
+it('rechecks the reply reservation before post or signing and ends a short finish as refused',()=>{
+ const f=cprFixture(),v=f.verified();f.api.parts(v.permit);const d=f.api.diagnostics[0]!;
+ f.api.shrink(v.scope,{wire:d.spent.wire,work:d.spent.work+CPR_WORK.finish});
+ const sign=vi.spyOn(codec,'owner');
+ try{expect(()=>f.api.finish(v.permit)).toThrow('operation_budget');expect(sign).not.toHaveBeenCalled();}finally{vi.restoreAllMocks();}
+ const before=f.api.diagnostics;expect(before[0]).toMatchObject({state:'complete-refused',spent:d.spent});
+ expect(()=>f.api.finish(v.permit)).toThrow();expect(f.api.diagnostics).toEqual(before);expect(f.api.metrics.replies).toBe(0);
+});
+it('keeps the work unit for finish reserved after promotion',()=>{
+ const f=cprFixture(),v=f.verified();f.api.parts(v.permit);const d=f.api.diagnostics[0]!;
+ f.api.shrink(v.scope,{wire:d.limit.wire,work:d.spent.work});
+ expect(()=>f.api.finish(v.permit)).toThrow('operation_budget');
+ expect(f.api.diagnostics[0]).toMatchObject({state:'complete-refused',spent:d.spent});expect(f.api.metrics.replies).toBe(0);
+});
+it('ends a failed source load as refused, retains the source charge and permits an exact retry',()=>{
+ const f=cprFixture(),a=f.admitted();f.api.pre(a.scope);const good=f.source.payloads[3]!;f.source.payloads[3]=Buffer.from('changed').toString('base64');
+ expect(()=>f.api.load(a.scope)).toThrow('source_integrity');const before=f.api.diagnostics;
+ expect(before[0]).toMatchObject({state:'complete-refused',attempt:1,remainingAttempts:1,spent:{work:CPR_WORK.source}});
+ expect(()=>f.api.load(a.scope)).toThrow();expect(f.reads).toBe(1);expect(f.api.diagnostics).toEqual(before);
+ f.api.closeCall(a.call);expect(f.api.diagnostics[0]!.state).toBe('complete-refused');
+ f.source.payloads[3]=good;const b=f.admitted(a.q);f.api.pre(b.scope);f.api.load(b.scope);
+ expect(f.api.diagnostics[0]).toMatchObject({k:before[0]!.k,deadline:before[0]!.deadline,attempt:2,spent:{work:2*CPR_WORK.source}});
+});
+it('ends a failed source read callback as refused without a snapshot',()=>{
+ const f=cprFixture(),a=f.admitted();f.api.pre(a.scope);(f.source as any).commits=null;
+ expect(()=>f.api.load(a.scope)).toThrow();expect(f.api.diagnostics[0]).toMatchObject({state:'complete-refused',spent:{work:CPR_WORK.source}});
+ expect(f.api.metrics).toMatchObject({loads:1,plans:0});
+});
+it('ends a post failure as refused and does not repeat post',()=>{
+ const f=cprFixture(),v=f.verified();f.api.parts(v.permit);f.cancelPost();
+ expect(()=>f.api.finish(v.permit)).toThrow('pin_revoked');const before=f.api.diagnostics;
+ expect(before[0]!.state).toBe('complete-refused');expect(()=>f.api.finish(v.permit)).toThrow();expect(f.api.diagnostics).toEqual(before);expect(f.api.metrics.replies).toBe(0);
+});
