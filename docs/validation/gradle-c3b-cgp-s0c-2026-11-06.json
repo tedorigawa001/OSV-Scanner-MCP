@@ -1266,7 +1266,7 @@
     ],
     "regressionSources": {
       "src/test/utils/gradleOwnedS0c.test.ts": "5d1cb4471446dcf4cc7c98d917ca7eb0c1a9bce972b35e665c4d7e2ec66117e2",
-      "src/test/utils/gradleOwnedS0cGuards.test.ts": "d1f78358c6d3f0cf82cfe0f2fa617f6c7394d04e76bb3e76d0296a1cbcf9104a",
+      "src/test/utils/gradleOwnedS0cGuards.test.ts": "86a7227bcc8273195a9b30c2566cb878967bdcf68016c405ed4a5dc28a169ced",
       "src/test/utils/gradleOwnedS0cDisk.test.ts": "7246794e65b514e6c540fd4574eb84dbc25d77e5572aa4a5709fa92f140ae879",
       "src/test/utils/gradleOwnedS0cReport.test.ts": "69b4811f547428d74f80b478dfc12657bcd63f01fac5456172327152f254458a",
       "src/test/utils/gradleOwnedS0cValidation.test.ts": "f3d04e3aeb1f24826f75b50f8220be99860c3856b6fb261ab2cc9ea38034d677",
@@ -1371,6 +1371,27 @@
       "nativeReexecuted": true,
       "productionApproved": false,
       "eightReadsEstablished": false
+    },
+    "forkedRowLayoutIndependence": {
+      "date": "2026-11-08",
+      "cause": "forkAnchorRow assumed the forked page is shared with an older revision; with generated keys the newest row can share its bucket, leaving the replaced page unreferenced",
+      "rejectedFirstBeforeFix": [
+        "current_control_unrecorded_object",
+        "current_control_key_or_bucket"
+      ],
+      "failedRunsBeforeFix": {
+        "runs": 30,
+        "failed": 6
+      },
+      "fix": [
+        "drop objects no root or retained ref reaches after the fork",
+        "keep page rows in key order after the change"
+      ],
+      "failedRunsAfterFix": {
+        "runs": 100,
+        "failed": 0
+      },
+      "productionChanged": false
     }
   }
 }
