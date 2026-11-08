@@ -30,8 +30,8 @@
     }
   ],
   "sourceSha256": {
-    "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
-    "package.json": "5a0ff34ffcd644bbefaa713dcd8e65782b719bc01be52cd8f26672bcc123ec9b",
+    "package-lock.json": "f5c49fae5832996ce2922e2b999f8267026421d489eaa18a235dbd523ca5fba1",
+    "package.json": "4802602cd85563baaafdc2a38b616b1002db520e4719adcd6e35f4feff4bc0d9",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_authority_child.mjs": "f389c8d8c7b441c71610ff52622885ff2ac9f0bc2542bce86d878482cc3621bd",
     "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
@@ -355,8 +355,8 @@
     "originOSProof": false
   },
   "beforeC3b5SourceSha256": {
-    "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
-    "package.json": "5a0ff34ffcd644bbefaa713dcd8e65782b719bc01be52cd8f26672bcc123ec9b",
+    "package-lock.json": "f5c49fae5832996ce2922e2b999f8267026421d489eaa18a235dbd523ca5fba1",
+    "package.json": "4802602cd85563baaafdc2a38b616b1002db520e4719adcd6e35f4feff4bc0d9",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_authority_child.mjs": "f389c8d8c7b441c71610ff52622885ff2ac9f0bc2542bce86d878482cc3621bd",
     "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
@@ -435,8 +435,8 @@
     "sourceFingerprintCount": 78
   },
   "beforeStageReplaySourceSha256": {
-    "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
-    "package.json": "5a0ff34ffcd644bbefaa713dcd8e65782b719bc01be52cd8f26672bcc123ec9b",
+    "package-lock.json": "f5c49fae5832996ce2922e2b999f8267026421d489eaa18a235dbd523ca5fba1",
+    "package.json": "4802602cd85563baaafdc2a38b616b1002db520e4719adcd6e35f4feff4bc0d9",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_authority_child.mjs": "f389c8d8c7b441c71610ff52622885ff2ac9f0bc2542bce86d878482cc3621bd",
     "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",

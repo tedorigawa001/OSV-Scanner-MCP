@@ -5,8 +5,8 @@
   "tests": 225,
   "command": "npx vitest run src/test/utils/gradleOwnedCurrentAuxiliary.test.ts src/test/utils/gradleOwnedCurrentDeployment.test.ts",
   "sourceSha256": {
-    "package.json": "5a0ff34ffcd644bbefaa713dcd8e65782b719bc01be52cd8f26672bcc123ec9b",
-    "package-lock.json": "9b26175b8e6458d768eb4e4e39d43dfa9792de02aab19e487bd3a067fca94124",
+    "package.json": "4802602cd85563baaafdc2a38b616b1002db520e4719adcd6e35f4feff4bc0d9",
+    "package-lock.json": "f5c49fae5832996ce2922e2b999f8267026421d489eaa18a235dbd523ca5fba1",
     "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
