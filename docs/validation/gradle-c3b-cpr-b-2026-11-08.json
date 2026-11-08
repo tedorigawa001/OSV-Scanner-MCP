@@ -3,7 +3,7 @@
   "date": "2026-11-08",
   "raw": {
     "path": "docs/validation/gradle-c3b-cpr-b-2026-11-08.record.json",
-    "sha256": "b52911a72429170f056d7124dc379c13e50211b0001082174df9db14fe3e3fe1"
+    "sha256": "9e7bc9c887fae7e2540b0bc09d0277e366646b5e57c47b6e0e744d26b4325200"
   },
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",

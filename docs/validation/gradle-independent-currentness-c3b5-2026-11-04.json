@@ -8,8 +8,8 @@
   "independentRegistryVerified": false,
   "originalReadsSkipped": 0,
   "sourceSha256": {
-    "package-lock.json": "85a6b29a0a19e5399874571faa2cf98ccde6ab1b81dd353607263e18e6866c24",
-    "package.json": "d2e426c515bfc7917cfb8dcac947dc7f5913858d3958ed9a324522648cdef110",
+    "package-lock.json": "77c7e48101598ea9e662974676b7d04acb8d65d09832f9c0f7dff5c2856c78d7",
+    "package.json": "716d0b74f1b14b211f6add3b22272e16fe64e701e6e6b28fd2a656b75692e69a",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_delivery_child.mjs": "35833090efc8192d27ec12a0688d845700a65ebf11385d7bd267f69c2d3992bf",
     "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
@@ -356,8 +356,8 @@
     "fixture": "fake clock, default limits"
   },
   "beforeStageReplaySourceSha256": {
-    "package-lock.json": "85a6b29a0a19e5399874571faa2cf98ccde6ab1b81dd353607263e18e6866c24",
-    "package.json": "d2e426c515bfc7917cfb8dcac947dc7f5913858d3958ed9a324522648cdef110",
+    "package-lock.json": "77c7e48101598ea9e662974676b7d04acb8d65d09832f9c0f7dff5c2856c78d7",
+    "package.json": "716d0b74f1b14b211f6add3b22272e16fe64e701e6e6b28fd2a656b75692e69a",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_delivery_child.mjs": "35833090efc8192d27ec12a0688d845700a65ebf11385d7bd267f69c2d3992bf",
     "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
