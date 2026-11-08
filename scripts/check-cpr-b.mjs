@@ -1,0 +1,12 @@
+import {readFile,writeFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
+import {cprBSources,analyzeCprB} from '../src/test/fixtures/gradleOwnedCprBRecord.mjs';
+import {designSection} from '../src/test/fixtures/gradleOwnedCgpS0Bound.mjs';
+const rawPath='docs/validation/gradle-c3b-cpr-b-2026-11-08.record.json',output='docs/validation/gradle-c3b-cpr-b-2026-11-08.json',sha=b=>createHash('sha256').update(b).digest('hex');
+const bytes=await readFile(rawPath),raw=JSON.parse(bytes),analysis=analyzeCprB(raw);
+if(JSON.stringify(raw.sources)!==JSON.stringify(await cprBSources()))throw Error('cpr_b_source_closure');
+const document={path:'docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md',heading:'### 9.115 CPR-B：独立authority・実署名session・総時間比較'};
+document.sectionSha256=sha(designSection(await readFile(document.path,'utf8'),document.heading));
+const regressionSources={};for(const p of ['src/test/utils/gradleOwnedCprBReviewFix.test.ts','src/test/utils/gradleOwnedCprB.test.ts','src/test/utils/gradleOwnedCprBFork.test.ts','src/test/utils/gradleOwnedCprBValidation.test.ts','scripts/check-cpr-b.mjs'])regressionSources[p]=sha(await readFile(p));
+const summary={schema:'cpr-b.validation.v1',date:'2026-11-08',raw:{path:rawPath,sha256:sha(bytes)},document,regressionSources,...analysis,scope:raw.scope};
+if(process.argv.includes('--check')){if(JSON.stringify(JSON.parse(await readFile(output,'utf8')))!==JSON.stringify(summary))throw Error('cpr_b_summary_mismatch');}else await writeFile(output,JSON.stringify(summary,null,2)+'\n');
+console.log(JSON.stringify({pairs:analysis.pairs,transfers:analysis.transfers,proceedToCprC:analysis.proceedToCprC,sourceClosure:'matched',productionAdopted:false}));

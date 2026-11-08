@@ -1,0 +1,18 @@
+/** I1 measurement verifier: same checks as production verifyOwnerValue, with explicit operation counters. */
+import {AsyncLocalStorage} from 'node:async_hooks';import {verify} from 'node:crypto';
+import {ownerEnvelopeSchema,sameRegistryValue as same} from '../../utils/gradleOwnedRegistrySchema.js';
+import {publicCredentialKey,type CredentialRegistry} from '../../utils/gradleOwnedServiceOwners.js';
+import {need,parsed,decodeCurrent} from '../../utils/gradleOwnedCurrentSchema.js';
+import {canonicalOwnedJson} from '../../utils/gradleOwnedJson.js';
+import {checkOwnerBody,verifyOwnerValue} from './gradleOwnedCprBSigner.js';
+export type I1Metrics={serverParses:number;serverSignatures:number;ownerRawParses:number;ownerParses:number;ownerSignatures:number;serverBodyChecks:number;ownerBodyChecks:number;ownerCommandValidations:number;serverCodecMs:number;ownerCodecMs:number;factsMs:number;factsCreateMs:number;factsReleaseMs:number;ownerRawParseMs:number;ownerCommandMs:number;factsReads:number;localGates:number;preLive:number;postLive:number;sourceAcquisitions:number;responses:number;clientResults:number};
+export const newI1Metrics=():I1Metrics=>({serverParses:0,serverSignatures:0,ownerRawParses:0,ownerParses:0,ownerSignatures:0,serverBodyChecks:0,ownerBodyChecks:0,ownerCommandValidations:0,serverCodecMs:0,ownerCodecMs:0,factsMs:0,factsCreateMs:0,factsReleaseMs:0,ownerRawParseMs:0,ownerCommandMs:0,factsReads:0,localGates:0,preLive:0,postLive:0,sourceAcquisitions:0,responses:0,clientResults:0});
+const scope=new AsyncLocalStorage<I1Metrics>();export const i1Probe=<T>(metrics:I1Metrics,f:()=>T):T=>scope.run(metrics,f);
+export function i1Note(key:keyof I1Metrics,value=1){const m=scope.getStore();if(m)m[key]+=value;}
+export function i1Verify(bytes:Buffer,registry:CredentialRegistry,expected:Parameters<typeof verifyOwnerValue>[2],side:'server'|'owner'){
+ const started=performance.now();try{i1Note(side==='server'?'serverParses':'ownerParses');const envelope=parsed(ownerEnvelopeSchema,decodeCurrent(bytes,65536)),{signature,...body}=envelope,c=registry.credentials.find(c=>c.identity.credentialId===envelope.identity.credentialId);
+ need(c&&c.keyId===envelope.keyId&&c.direction===expected.direction&&envelope.direction===expected.direction&&c.identity.role===expected.role&&envelope.identity.role===expected.role&&c.identity.instanceId===expected.instanceId&&envelope.identity.instanceId===expected.instanceId&&envelope.domain===expected.domain&&envelope.api===expected.api,'peer_mismatch');
+ need(c.identity.keyEpoch===envelope.identity.keyEpoch&&(expected.historical||same(c.identity,envelope.identity)),'peer_mismatch');const sig=Buffer.from(signature,'base64');need(sig.toString('base64')===signature,'signature_invalid');const message=Buffer.from(canonicalOwnedJson(body,65536)),key=publicCredentialKey(c);i1Note(side==='server'?'serverSignatures':'ownerSignatures');need(verify(null,message,key,sig),'signature_invalid');i1Note(side==='server'?'serverBodyChecks':'ownerBodyChecks');checkOwnerBody(envelope.body,envelope.direction,envelope.api,envelope.domain);const content:any=envelope.body;if(content.schema==='osv-mcp.q2.c3b.source-seal.v1')need(same(content.provider,envelope.identity),'peer_mismatch');if(content.schema==='osv-mcp.q2.c3b.provider-use.v1')need(same(content.provider,envelope.identity),'peer_mismatch');if(content.schema==='osv-mcp.q2.c3b.authority-gate.v1')need(same(content.broker,envelope.identity),'peer_mismatch');return envelope;
+ }finally{i1Note(side==='server'?'serverCodecMs':'ownerCodecMs',performance.now()-started);}
+}
+export const I1_ENVELOPE_SCHEMA='owner-envelope.v1/verifyOwnerValue/i1.v1';

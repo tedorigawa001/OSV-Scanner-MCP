@@ -3115,3 +3115,12 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 §9.114レビュー修正：取得・計画・完了の保守work計222515をIO前に要求し、取得前／計画前も残量を確認する。計画156978は実行前に消費し、例外・不一致・元期限切れでも保持。同attemptの再計画を禁止し、新callのexact retryでもspentを保持する。専用11件・記録改変2件を追加し、16構成の静的記録を再生成。実session・実storage・本番採用は引き続き未成立。
 
 §9.114レビュー修正2：finishはpost・署名の前に返信予約と完了1を再検査し、post失敗・残量不足では確定拒否で終了する。取得中の失敗も計画失敗と同じく消費を保持して確定拒否で終了し、exact retryを許可する（`admitted`のまま止まってcall終了後に`unknown`へ固定される問題を修正）。専用5件を追加し、記録を再生成。
+
+
+### CPR-B：独立authority・実署名session・比較（§9.115）
+- [x] clientの署名RPC inventory／2回の計画・private mapと、providerの模擬Saved／fresh snapshot／各batch独立計画を分離。v3対応の限定SessionRuntime forkを追加し、実call・認可・元期限・pre/post・K/D・予算保持を検証。
+- [x] 96組／192 primary転送＋96 plan-event bridge・32 warm-upを保存。descriptor／inventory取得・seal・provider計画・全entry再構成込みの総時間を比較。default／smallは限定判定通過、H0同サイズ・大entryは計画費用が許容額を超えCPR-C見送り。
+- [ ] 採用範囲の限定、または毎batch計画費用をさらに削減する契約・比較を検討。効果不足のworkloadへCPR-Cを先行接続しない。CPR-C実storage、CPR-D隔離／復旧・5process、本番採用・8 read・CG0／CG3は未成立。原本省略・実readCommitted削減0。
+
+
+§9.115レビュー修正：descriptor／inventory／scalar本文を成功確定前に検査し、検査後も元期限・認可を確認。最終digestとwire集計を最終gate・計時内へ移し、境界timestampとfinalizationを保存して過小計上を拒否。runtime20件・checker4件を追加し、96 pair／288転送＋32 warm-upを修正sourceで再実行。default／smallは限定判定通過、H0／大entryのCPR-C見送りを維持。本番採用・実storage・隔離の成立は主張しない。

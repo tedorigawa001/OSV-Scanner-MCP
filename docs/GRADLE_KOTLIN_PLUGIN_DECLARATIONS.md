@@ -8452,3 +8452,80 @@ npx vitest run src/test/utils/gradleOwnedCprAWorkBudget.test.ts --maxWorkers=1
 修正：`finish`はpostの前に、返信の算術上界と完了1の残量を再検査する。実返信が上界を超えた場合も拒否する。post失敗・残量不足・codec例外のいずれでも、gateがunknown／retiredにしていなければ、attemptを`complete-refused`で終了する。消費は返却しない。`load`もfresh load開始後の失敗を同じ規則で終了する。取得分65536の消費とload-started flagは保持し、同じattemptでは再loadしない。row・元期限・spentを引き継ぐ新しいcallのexact retryは許可する。
 
 専用回帰5件を追加し、旧実装で5件とも失敗することを確認した。対象は、完了直前の返信予約不足（署名0）、完了1の不足、source_integrity失敗後の拒否とexact retry、読取callback例外、post失敗後の再post拒否である。16構成の正常経路の記録はsource閉包を更新するために再生成した。計画内容・wire・counterは変わらない。実session・実storage・本番採用は引き続き未成立。
+
+
+### 9.115 CPR-B：独立authority・実署名session・総時間比較
+
+2026-11-08。CPR-Aのpure packingを、clientとproviderが別々の状態を持つin-process署名sessionへ接続した限定実証。本番API／SourceOwner／実保存層へは未登録。mock Saved・模擬store／live pinを使う。実時間計測（record名のnative）はhostのNode実行を指し、kernel IPC・独立UID・native隔離・独立したregistry serviceの成立を意味しない。
+
+#### 9.115.1 actorごとの入力・認証
+
+`gradleOwnedCprB.ts`のfixture assemblyはpublic context／credential registryと模擬Savedの期待値を配布した後、client contextとprovider contextをcopyする。client側は自分の秘密鍵、署名RPCで受け取ったdescriptor／inventory、自分のapproved command mapを所有する。provider側は自分の秘密鍵・public registry・独自にcopyしたSaved期待値と模擬store portを所有する。providerへclientの秘密鍵、map、計画handle、inventory tableを渡す経路はない。
+
+両経路とも最初にReadSourceDescriptorとReadSealedSource(kind=inventory)の2署名RPCを行い、metadata・inventory bytesの長さ／hash・件数・総bytes・inventoryDigestをclientのpublic pinへ照合する。この取得経路も比較総時間へ含める。これらのpinはfixture assemblyの信頼入力であり、実StageStoreのseal／署名済みSavedを検証した証拠ではない。
+
+clientのbatch計画はinitialとsealの2回を別に実行し、全計画値が一致したcommandだけをprivate mapへ登録する。各batchを受けたproviderは、実SessionServerがmintしたAuthenticatedSessionCallとexact wireを検査する。偽call、別wire、peer／server／API・lineage／selected refs・origin不一致は取得へ進めない。単一loadのprivate snapshotを全entryのhash／長さ・metadata／inventory pinと照合した後、自分のinventoryから全計画を1回再現する。現在batchのcommand全体が一致した場合のみadmitted→verifiedへ移り、parts・post・署名・enqueueへ進む。前callのplan／snapshotをcacheしない。
+
+SessionRuntime forkは既存I2の認証・nonce／challenge・sequence・権限・期限・recovery・quotaを保持する。変更はv3 command/result検査への置換と対応import、brokerのdescriptor取得を許す検証用role契約だけ。後者は両armで共通にfixture registryへ明示登録し、purpose=read・lineage・destinationの検査を保持する。旧runtimeと差分を機械照合する5件を追加した。mode／observerごとのmanifestは固定assemblyで作り、registryとsourceを測定前後にpinする。本番承認profileや独立registryへの登録を主張しない。
+
+#### 9.115.2 scope・期限・失敗・wire
+
+clientとproviderに別のretained K/D台帳を持たせ、同K別D・active／unknown再入・残attempt不足を拒否する。元期限はfactory開始から4500 ms以内で固定し、actual call deadlineとのminをproviderでも使う。exact retryは同じrowのdeadline・spent・残attemptを保持する。署名済みrefusedは確定拒否、応答を2回失った要求はunknownとして再実行を止める。reply紛失後の1回の実session回復で、providerがfresh loadと全計画を改めて行うことも確認した。
+
+入場時にCPR-Aと同じsource＋plan＋finishのwork 222515を要求する。batchの計画156978を実行前に消費し、計画不一致でも返却しない。scalar／descriptor／inventoryは同じ入場枠を要求し、計画を実行しないため成功消費は65537となる。双方でsource取得・pre/post・認可・deadlineを省略しない。模擬readは同期callbackであり、実store内部の複数IO・await中の取消し保証とは区別する。
+
+最初の送信前に2 attempt分のbusiness wireと回復handshake分を保守的に要求し、data転送前に全command分も検査する。transportはhandshake／challenge／request／replyを含む実bytesを送信／受領前に同じ累積wire枠へ計上し、retryでresetしない。inner 8192 B・frame 16384 B、全体64 MiB、business operation 256・sequence 512、guard slot 512・attempt 2の既存制約を保持する。batchのactual owner/auth wireを実registryのkey／endpoint IDに基づく算術boundと照合する。実endpoint IDとplaceholderの取り違えでlayout検査が失敗したため、実registry値を使用するよう修正した。
+
+credential・policy取消しと元期限はawait後・parts後・署名前後・enqueue前・client最終採用で再確認する。pre live失敗なら取得0、post live失敗なら成功reply 0。post成功後のpin-only変更はlive=falseの観測として許す一方、credential／policy／元期限の失効は許可しない。
+
+#### 9.115.3 実時間比較・計測範囲
+
+4 workload × reader／broker × cold／warm × 6反復の96 matched pair、192 primary転送。各条件で両modeを1回ずつwarm-upし、計32 warm-upを別保存する。primaryの順序はS→B／B→Sを交互にし、各armは新しいfixtureを使う。warmは署名handshakeだけを計測前に完了し、source／inventory／planはwarm化しない。coldはhandshakeを総時間へ含める。各transferは元の4500 ms以内であり、期限を伸ばして計測しない。
+
+総時間はtransfer入口からdescriptor／inventory取得、client計画とseal、全data RPC、全entry再構成・hashと最終gateまで。factory／registry assemblyは両armとも範囲外。setup＋client計画とdata dispatch＋再構成を単一境界で分割し、wallとの一致を0.01 ms以内で検査する。providerのpack時間はdispatch内の内数であり、wallへ再加算しない。計画合計はclient initial＋seal＋各provider pack。許容額は各pairのS総時間−Bの非計画時間から求める。
+
+providerのplan時間・input digest・event記録だけを抑えたquiet対照を96転送追加した。primaryの前後を交互に配置し、出力・件数・認可・wire／work・fresh load・計画実行回数が同じことを検査する。これはprovider plan event観測のbridgeであり、全計測器を除いた本番runtimeの証明ではない。quietの時間をprimaryや計画合計へ混ぜない。
+
+各条件のS/B総時間・計画合計・許容額の中央値で停止条件を判定する。bootstrapによる信頼区間や多processの統計的優位は評価していない。6反復の限定結果で本番採用を決めない。原本読取省略0、実readCommitted削減0を維持する。
+
+| workload | S総時間 ms | B総時間 ms | B計画合計 ms | 許容額 ms | CPR-C判定 |
+|---|---|---|---|---|---|
+| default | 18.41〜22.62 | 17.15〜21.36 | 5.24〜5.38 | 6.62〜6.83 | 限定条件の判定通過 |
+| small | 28.19〜31.64 | 23.84〜27.30 | 8.81〜9.44 | 13.34〜13.83 | 限定条件の判定通過 |
+| h0Sizes | 51.00〜66.27 | 120.49〜157.88 | 77.67〜94.97 | 4.94〜8.85 | 見送り |
+| singleLarge | 45.64〜52.29 | 118.80〜128.42 | 75.43〜77.98 | 0.80〜2.49 | 見送り |
+
+各欄はrole／cold-warmの4条件の中央値の範囲であり、別条件の最小／最大を引き算しない。default／smallの8条件は今回の限定判定を通過したが、H0同サイズ・大entryの8条件は全48 pairでBが遅く、計画が許容額を超えた。quiet対照でもこの大きい差は解消しなかった。**全workloadへのCPR-C接続はno-go**とし、採用範囲の限定や毎batchの計画費用をさらに削減する契約を再検討する。provider再計画を省略・client map共有・cross-RPC cacheへ暗黙に戻す変更は行わない。
+
+#### 9.115.4 回帰・保存証拠・残る範囲
+
+実sessionの成功、各境界のcredential／policy・元期限、held await、模擬pin、無許可API、source／pin差替え、要求外entryの同長改変、private snapshot、plan不一致、2回のexact retry・unknown保持、wire／work不足、過大inner、channel再送、signed part改変、偽callを回帰で確認する。CPR01／03〜06／08〜16／17／20〜23／25〜35／39／41〜44等の**in-process・模擬条件の一部**を確認するもので、ID全体の完了とは呼ばない。
+
+回帰／record validatorは計画数・provider inventory／plan対応・全source bytes、phase別wireの順序・operationへの束縛・rowの消費、wall／partition・plan合計、温度・実行順・出力hash・source閉包を照合する。benchmarkはwarm-upと全armのstatus／失敗reason・partial状態も保存してから判定し、失敗例を除いた成功例だけの比較を受理しない。checkerの改変試験でfailed arm／warm-up、時間の欠落・provider計画省略・wire付替え・source変更等を拒否する。
+
+rawは`docs/validation/gradle-c3b-cpr-b-2026-11-08.record.json`（無インデント）、summaryは同名`.json`。source pinは再現性照合であり外部署名attestationではない。
+
+```sh
+OSV_CPR_B_RECORD=1 OSV_CPR_B_OUTPUT=docs/validation/gradle-c3b-cpr-b-2026-11-08.record.json npx vitest run src/test/utils/gradleOwnedCprBBenchmark.test.ts --maxWorkers=1
+npx vitest run src/test/utils/gradleOwnedCprB.test.ts src/test/utils/gradleOwnedCprBFork.test.ts src/test/utils/gradleOwnedCprBValidation.test.ts src/test/utils/gradleOwnedCprBReviewFix.test.ts --maxWorkers=1
+node scripts/check-cpr-b.mjs --check
+npm run typecheck
+npm run build
+```
+
+summaryの更新は`node scripts/check-cpr-b.mjs`。原本のparse／署名・current認可を省くI1併用、本番reader／SourceOwner、scoped StageStore／実live RPC、保存故障・journal／checkpoint再同期、root・actor失効・boot／復旧、remote clock写像・独立UID／5process・継続read／ACKは未実証。CPR-C／D、本番採用・継続8 read・CG0／CG3は引き続き保留する。
+
+確認結果：レビュー修正前のCPR-B専用129件（runtime96・fork差分5・保存記録28）と既存回帰／設計／記録／公開コマンド例を合わせた13ファイル324件、実時間計測runner 1件が通過した。typecheck・build、CPR-A／Bのsource・記録照合、差分の空白検査も成功した。計測には失敗arm／warm-upがなく、全96 pairを判定に使用した。
+
+
+#### 9.115.5 レビュー修正：成功確定と最終計時の境界
+
+2026-11-08。scalarのrunは外側envelope照合だけでclient rowをcompleteにし、chunkの検査はtransferの後段だった。署名済みでもbytesを変更したscalar応答を成功扱いする回帰を旧実装で再現した。descriptorのmetadata／inventory pin、inventory／scalar chunkのentry／offset／bytes／part hashをsendの成功確定前に検査し、検査後に現認可と元期限を再確認するよう修正した。全entryを1 chunkで受ける場合のentry hashも両modeで確認する。不正・期限切れはunknownのまま同じoperationの再入を拒否し、既に消費したwire／attemptを返却しない。transfer全体の最終source照合も維持する。
+
+最終outputDigest・inputDigestとwire集計が最終gate／終了時刻の後だった問題も修正した。全entry再構成開始、digest／wire集計、最終gate、終了時刻の順にし、返却時にdigestを再計算しない。timing.start／planned／reconstructionStarted／endとfinalizationMsを記録し、wall・setup・dispatch／再構成・finalizationを各境界の差分に照合する。wallとdispatchを同時に減らしてpartitionだけを保った過小計上、quiet対照での同様の変更、境界欠落・finalization省略を拒否する。
+
+追加のruntime回帰20件：scalar本文不正の成功確定抑止、descriptor／inventory／scalarの9種類の署名済み改変、本文検証中の元期限到達（両mode）、最終output／input digest中の元期限到達4件、最終digestの1000 ms相当の模擬処理時間がwall／再構成／finalizationへ入る2件、part hashを更新しても全entry hashと異なる2件を確認。初回のscalar再現1件と最終期限・計時6件は旧コードで失敗することを確認した。保存記録の過小計上検査も、旧checkerがwall／partitionの同時変更を受理するREDを確認してから修正した。1000 msは決定的な時計注入であり、native性能値へ混ぜていない。
+
+修正sourceで96 pair／192 primary転送＋96 quiet対照・32 warm-upを再測定し、全armが完了した記録と上表・summaryを更新した。修正前の計測値を含めず、前後の差を速度改善とは呼ばない。default／smallの8条件は今回も限定判定を通過。H0同サイズ・大entryの8条件は全48 pairでbatchが遅く、計画込み総時間と許容額の判定でCPR-C見送りを維持する。実storage・隔離・本番採用・継続8 readの未成立は変わらない。
+
+レビュー修正後の確認結果：runtime追加20件・保存記録追加4件を含む14ファイル348件と、修正sourceでの実時間計測runner 1件が通過。typecheck・build、CPR-A／Bのsource／記録照合も成功。CPR-B専用は153件（runtime96＋修正20、fork差分5、記録32）。summaryの本節・script・回帰sourceのpinを更新した。
