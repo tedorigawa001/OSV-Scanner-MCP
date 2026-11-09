@@ -3187,3 +3187,9 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュ�
 修正後の各条件中央値の範囲（ms、計測負荷を含む観測値、2回目のレビュー修正後の再測定）：private-context.rehash 3.4〜38.0、current.hash 3.5〜38.3、current.input 15.8〜192.7、command.validation 10.3〜195.5、content.validation 2.0〜8.3、gate.validation 68.8〜1176.1。祖先による分類漏れを修正した値であり、過去の分類値と性能改善として比較しない。
 
 §9.123 2回目のレビュー修正：位置計測の負担（1回4.21〜4.86 µs）が呼出し数に比例してgroupへ入るため、較正値と推定計測負担を記録し、9.123.1に表と解釈を追加（gate.validationはexclusiveの45〜50%、private-context.rehashは14〜17%が推定負担。推定は実測増加の44〜50%しか説明しない下限）。記録をインデントなし・class証跡1回保持にして37 MB→約19 MB。
+
+### CWC-FP：constructor所有contextの固定fingerprint契約（§9.124、設計のみ）
+- [x] private copy／完全parse／deep-freeze／F生成と実grant・承認の照合、actor／owner／scope／root／callの束縛、毎回のcurrent取得・copy・schema・hash／live gateを分離。
+- [x] grant単位の初期化claim、ownerの再入・generation／terminal状態、callback中のclose／失効・元期限到達、予算と非返還、CFP01〜28とCFP-0〜3の採用gateを具体化。
+- [x] CFP10を観測済み不一致・記録済み失効・検査前に変更と復元が完了した未観測の一時変更へ分離。最後のケースの検出は保証せず、全live検査成功時の継続を両比較modeで許容する。履歴検出を要求するadapterは独立した失効記録の証拠なしではunsupported。
+- [ ] CFP-0のstrict fixture contractを実装する。今回runtime・hash省略・cacheは未実装。grant側hash、command／内容検査、source承認／認可・取消し・元期限の省略は認めない。

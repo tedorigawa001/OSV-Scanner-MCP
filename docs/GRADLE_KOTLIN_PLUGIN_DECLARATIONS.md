@@ -9073,3 +9073,121 @@ CWC-Sitesレビュー修正：(1) site keyへ直近祖先と、各呼出しの�
 分類の補足：owner検査の祖先があっても、その手前にgrant／scope／registryのgate frameがある費用はgate.validationへ分離し、current.inputのcopy／parse費用と混ぜない。CST12でこの境界を確認する。
 
 CWC-Sites 2回目のレビュー修正：(1) 位置計測の負担が呼出し回数に比例してgroupのexclusiveへ入り、group間の比較に偏りがあることを本文で示していなかった。各転送の直後に同じobserve経路を空の関数で1000回実行して1回あたりの負担を較正し、記録の各行に保存する。summaryはgroupごとに呼出し数×1回あたり負担の推定を持ち、9.123.1に12条件の範囲の表と解釈を追加した。runnerは表の行を保存summaryから再生成して本文と照合する。推定はexclusiveから差し引かない。(2) 記録はインデント付きで37 MBあり、実行版class全文を位置計測の48行すべてに重複保存していた。インデントなしで保存し、同一のclass証跡は1回だけ保持する（照合時に各行へ戻して検査する）。記録は約19 MBになった。再現は`node scripts/check-cwc-sites.mjs --measure-only`（再測定）→表の更新→`node scripts/check-cwc-sites.mjs --rebind-document`→`--check`。144転送を実時計で再実行し、全て期限内に完了した。
+
+### 9.124 CWC-FP：constructor所有contextの固定fingerprint契約（設計）
+
+#### 9.124.1 採用範囲と非目標
+
+設計のみ。runtime・公開helper・承認済みprofileは未変更であり、CFP01〜28は未実行の回帰条件である。最初の実装対象はconnected CWC-CのA ownerで、`#checkOwner`にある比較の右辺`hash(this.#c)`をconstructor所有の`expectedContextFingerprint`へ置換する1か所に限定する。左辺のcurrent入力の取得・copy・`currentSchema`／`context`検査・hashは毎回実行する。`grant.assert(actor, privateContext)`内の入力hashも維持する。openScope／initial登録の自己hash、B codec、ReadScope、command／wireIntent／内容hashへ置換を拡張しない。これらは別の実証・承認対象である。
+
+固定fingerprintは「所有する不変contextの期待値」であり、現在の認可・内容の鮮度・grantの有効性を証明するreceiptではない。callerからfingerprintやvalidフラグを受け取って代用しない。位置計測の時間から削減見積りを作らず、constructor費用を含む実比較で効果を判定する。計測でprivate/currentのhash件数が等しかった事実も、両方を省ける証拠ではない。
+
+#### 9.124.2 所有権・snapshot・constructorの完了条件
+
+適格入力は、信頼するfixture／driverのデータ境界で構築した通常のJSONデータ、またはサイズを先に制限してstrict decoderから得たデータである。任意のin-process objectをProxyでないと一般判定できる契約ではない。object入力の出自を証明できないadapterはunsupportedとし、caller objectをJSON.stringifyして適格化しない。trusted intrinsicsが維持される実行profileを前提とし、prototype／loaderの外部改変へのattestationは別課題とする。
+
+constructorは次の順で完了する。
+
+1. 信頼するfactoryが保持するgrant実参照をkeyに、module-privateなowner作成claimを最初に確保する。このlookup／claimではcaller getter・current／now・grant gate等のcallbackを呼ばない。claim後に親の元期限・source承認・actorと実grant／ReadScopeの有効性を確認し、既存の実work／memory予約の内側で初期化枠を確保する。同じgrantへの並行・再入constructorを拒否する。失敗時もclaim・既に消費したworkを返還しない。
+2. 有界のplain-data検査を行い、accessor・toJSON・関数・symbol・異常prototype・循環・非対応型を拒否する。入力objectと共有しない深いコピーを作り、strictな`cprContext`と`context()`のsemantic検査を完全に実行する。Buffer／ArrayBuffer・Map／Set・Dateなど、通常のdeep-freezeで内容不変性を保証できない型はこのcontext表現に採用しない。
+3. parser出力を含む全子nodeをprivateに所有し、bottom-upのdeep-freezeを完了する。parserが別objectを返す場合は、その出力の非共有性も確認する。callerやcurrent callbackへprivate nodeを返さず、診断はコピーまたはprimitiveのみとする。caller入力自体はfreezeしない。
+4. freeze後のprivate context全体を既存canonical版／digest版で1回hashし、64桁の期待値Fをprivate fieldへ保存する。object keyの挿入順を識別に使わず、canonicalで等価な入力は同じFになる。contextの全field（manifest、registry／deployment、identity、lineage／binding、snapshot／checkpoint／pin、metadata／inventory等）を含め、pick／省略／正規化の変更はしない。
+5. 実grantとのactor・context完全照合、grantが独立registryから選んだ承認／pinとの照合、codecとの実参照の一致を従来どおり行う。コピーやfreezeの前後でcallbackがcaller入力を変更しても、私有snapshotへ波及させない。途中の失効は§9.124.4の観測・通知条件に従い、期限到達・予算不足とともにpost確認で拒否する。
+6. constructorでも新規のlive検査を完了し、同じowner参照・generation・実grant／scope・actor・元期限が維持されることを確認して初めてreadyを公開する。部分初期化したowner／Fを公開せず、失敗時はterminalに破棄する。
+
+新しい一律の容量拡大は認めない。F・generation・状態／guardの小さな追加領域も既存1 MiB論理共存枠に含めて再計算し、初期化workは既存の構造work予約内で事前確保する。この構造単位をCPU上限とは呼ばない。余裕が証明できなければ実装を採用しない。後からFを計算し直すfallbackや、予算外のlazy初期化を設けない。
+
+#### 9.124.3 private bindingと寿命
+
+候補の内部recordは`{ownerRef, ownerGeneration, privateContextRef, F, actor, grantRef, scopeRef, callIdentity, approvalPin, originalDeadline, canonicalVersion, state}`。これは非公開の実参照で保持する。Fが一致してもowner／grant／scope／callが違えば再利用できない。rootは生成時にowner・generation・scope・actor・call・F・承認pin・元期限へ結び、fact／receipt／childは既存のroot実参照への束縛を維持する。文字列のscopeId／callIdだけを実参照の代わりにしない。
+
+このprofileでは1 owner＝1 connected grant＝1 scope＝1 rootとし、ownerの再bind・grant交換・root再open・call再利用を禁止する。一般の非connected A fixtureの複数scopeへ暗黙に適用しない。providerの各batchは別call／fresh snapshot／新ownerとしてconstructorからやり直す。client initialとsealも別owner・別F recordとし、値が同じでも記録を移管しない。既存のinitial evidence→seal一致確認→限定child保持だけを維持する。親initialの失効・元期限到達はseal／childにも反映する。
+
+Fとprivate nodeはreadyの間に変更しない。close・検査で観測した失効／不一致・信頼する経路から通知済みの失効・reentry拒否・検査失敗でgenerationを進め、recordをterminalにする。一度terminalになったrecordはhash一致・pin復元・同じ入力の再提示でも復活しない。検査前に完了した未観測の変更・復元は§9.124.4の扱いと区別する。新しい元期限が必要な場合は新たな認可されたcall／grantから開始する。
+
+#### 9.124.4 毎回のlive検査と再入対策
+
+各公開操作は、current callbackやgrantのgateなど外部コードを呼ぶ前に、ownerの操作予約と検査中latchを立てる。状態は`constructing → ready ↔ checking → invalid/closed`で、invalid／closedからreadyへ戻らない。rootのbusy／openingと所有者のgenerationも併用し、rootをまだ持たないopenScope／constructor段階も保護する。
+
+同じownerへ公開操作が再入したら拒否してownerをinvalidにする。callbackがその例外を捕捉して正常な値を返しても、外側のpost確認がgeneration／terminal状態の変更を検出して成功を拒否する。closeはcallback中でも許す取消し操作であり、先にterminal化してからroot／factを無効化する。finallyでbusyを解除してもclosed／invalidをreadyへ書き戻さない。内部メソッドの正規の呼び出しは公開操作の再入と区別する。sealから別ownerである親initialのgateを検査する経路は維持し、global busyで正当な親検査を阻害しない。逆向きのcallback再入は双方の予約／generation検査で拒否する。
+
+readyからの各検査で、少なくとも以下を従来のpre/post境界ごとに行う。
+
+- owner／root／scopeの実参照、generation、状態、actor／call、親evidenceの有効性を確認する。
+- grant.assertの完全照合とgateを実行する。ReadScopeのregistry current確認、認証済みcallと元wireのbinding、permission／policy／credentialの現在性、ledgerの消費下限・残予算・時計・元期限の検査を省略しない。
+- current callbackを新たに1回呼び、callbackの返却後すぐに状態・generationを確認する。返却値は毎回plain検査・独立コピー・strict currentSchema／context検査を行う。object identity、freeze済みという自己申告、前回と同じ参照、caller提供のdigest／versionだけでは省略しない。
+- `current.approvalPin === constructorPin`を検査し、独立registryの失効はlive grant／scope gateで検出する。pinの変更をFの再基準化で受け入れない。
+- `hash(validatedCurrent.context) === F`を毎回検査する。期待値の自己再hashのみを省く。mutableなcurrent objectの前回hashを保持して使い回さない。
+- callback・copy／parse／hash後にも状態・generationとlive gateを確認する。時計を新たに読み、単調性とcall／scope／親の元期限の最小値を検査する。callbackやhashに時間がかかって期限を越えた場合も拒否する。呼出し開始時の時刻や前回の認可を再利用しない。
+
+**失効の観測境界。** 既存の`CwcCApprovalRegistry.assertCurrent()`は検査時のpin一致を確認し、不一致を観測した場合にregistryをclosedへ固定する。前後のpin一致だけから、検査間の全変更履歴は復元できない。callback中の変更を一律に検出する保証は置かず、次の3ケースを明確に分ける。
+
+- 検査時にcurrent pin／registry pinの不一致、またはregistryのclosedを観測した場合は拒否してownerをterminalにする。後からpinを戻しても同じowner／root／factを採用しない。
+- callback中に信頼する取消し経路がowner／scope／registryをcloseするなど、terminalな失効状態を記録した場合は、その後のpin一致にかかわらずpost gateで拒否する。callbackが例外を捕捉しても失効記録を消さず、成功結果を公開しない。
+- callback内でpinの変更と復元が両方とも次の検査前に完了し、検査が不一致を観測せず、信頼する失効通知・terminal状態も記録されていない場合は、未観測の一時変更とする。既存のgateでは検出を保証しない。全ての現認可・current内容・元期限・予算検査を満たすなら継続を許容し得る。これはterminalからの復活でも、変更履歴が存在しなかった証明でもない。固定F版と共通full-hash baselineに同じ観測条件を適用する。
+
+未観測の変更・復元も必ず拒否するadapterには、pinの現在値とは独立した、信頼するauthority所有の単調な失効世代または取消し履歴が必要である。全ての権威ある変更を復元前に記録し、caller／callbackが巻き戻せず、constructorから各post gateまで同じ実authorityに束縛して検査できる契約を別途実証する。その保証を要求するのに証拠を持たないadapterはunsupportedとする。今回の単一自己hash置換ではその仕組みを追加せず、caller提供のepochやownerのgenerationを未観測の外部失効の証拠へ転用しない。
+
+Fに合うcurrent入力でも、失効した資格・scope、取消し済みowner、期限到達、予算巻戻しを採用しない。成功するpre gateの後も、操作・callback・IO・署名・enqueueの各既存post gateを維持する。今回の契約でgateの回数や位置を統合しない。post検査が失敗したらhandle／parts／成功replyを公開せず、消費済みwork・attempt・wire枠を巻き戻さない。
+
+#### 9.124.5 mutation・失効の拒否分類
+
+callerの元入力を変更する行為自体は許されるが、private snapshotとFへ影響してはならない。その変更がcurrent入力として返された場合は内容不一致を拒否する。private nodeは公開しないので、外部書込試行を万能に検出する契約ではない。内部の通常JS書込が凍結nodeを変更できないことをfault-injectionで検証する。凍結失敗・alias残存・非対応型を初期化完了と扱わない。debugger／任意のin-process侵害に対する耐改変証明は含まない。
+
+| 原因 | 拒否理由／処理 |
+|---|---|
+| 入力schema／accessor／型が非対応 | schema_invalid または codec_profile_unsupported、readyを発行しない |
+| 初期化・copy・F領域の予約不足 | codec_budget_exceeded、原本入力の追加評価やroot生成を開始しない |
+| actor／owner／grant／scope／call／rootの不一致・再bind | codec_fact_binding_mismatch、当該ownerはterminal |
+| current内容の変更・元Fとの不一致 | codec_fact_binding_mismatch、再hashによるF更新は禁止 |
+| source承認・pinの失効／変更を検査で観測、または信頼する失効経路が記録 | codec_profile_unsupported、terminal化後はpin復元でも復活しない |
+| 検査前にpinの変更・復元が完了し、未観測かつ失効記録なし | 検出を保証しない。全live検査を満たせば継続可能。履歴検出を必須とするadapterは別途証拠がなければunsupported |
+| permission／credential取消し | permission_denied等の既存authority理由を保持して拒否 |
+| 再入・callback中のclose／generation変更 | codec_fact_binding_mismatch または owner_closed、外側成功も禁止 |
+| 時計逆行／非整数時刻・元期限到達 | clock_invalid／request_expired、期限の再設定は禁止 |
+
+理由は既存のauthorityエラーを隠さず、最初の根本理由を残す。例外がError以外の値でも、失敗を成功と区別し状態をterminalにする。
+
+#### 9.124.6 回帰テスト条件（未実行）
+
+| ID | 条件・必須結果 |
+|---|---|
+| CFP01 | constructorで完全copy／parse→deep-freeze→F生成→実grant／approval照合→新規current／post gateを順に実行。全成功前のF／owner／root公開は0 |
+| CFP02 | caller入力と全子nodeをconstructor後に変更。private snapshot／Fは不変。元値を返すcurrentは継続可能、変更値を返すcurrentは拒否 |
+| CFP03 | getter／toJSON／関数／symbol／循環／異常prototype／非対応Buffer等を拒否。出自不明のProxyを安全に無評価検出したとは主張しない |
+| CFP04 | parser出力のalias、浅いfreeze、凍結失敗をfault-injection。ready発行を拒否し、標準JSの私有node書込で内容が変わらないことを確認 |
+| CFP05 | canonical key順だけ異なるcontextは同じFとして受理。値・型・field集合の変更は拒否 |
+| CFP06 | manifest／registry／deployment／key ID／peer／provider／originを各々変更したcurrentを拒否 |
+| CFP07 | lineage／binding／snapshot／checkpoint／pin／metadataDigest／inventoryDigestを各々変更したcurrentを拒否 |
+| CFP08 | 同じmutable current参照を返し、2回目だけ子fieldを書き換える。毎回copy／schema／hashを実行し拒否 |
+| CFP09 | currentが前回のF／versionだけを提示、追加fieldを提示、contextを欠落。strict schemaで拒否 |
+| CFP10 | (a) callbackの前・途中・返却直後のcurrent／registry pin不一致を実gateで観測して拒否し、その後pinを復元してもownerはterminal。(b) callback中に信頼する経路でowner／scope／registryの失効を記録し、次の検査前にpinを復元しても外側結果を公開せず拒否。(c) callback中に変更と復元を完了し、次の検査まで不一致の観測も失効記録もない対照は、他の全live検査が成功する共通baseline／固定F版の双方で継続可能。検出成功とは記録しない。未観測履歴の拒否を必須とするadapterは独立した失効履歴の証拠なしではunsupported |
+| CFP11 | actorだけ違うgrant、別owner／scope／callの同一Fを流用。実参照照合で拒否 |
+| CFP12 | 同じgrantへの同時・再入constructor、失敗後の再claimを拒否。初期化claim／前払い消費を維持 |
+| CFP13 | callbackがopenScope／root生成／fact読取を同じownerへ再入。内側例外を捕捉しても外側を拒否 |
+| CFP14 | current／now／grant gate callback中のclose・失効を検出。finally後もterminalで、handleや成功replyは0 |
+| CFP15 | initial→sealの正当な別owner親gateは成功。同じFの別read・別親evidence・逆向きcallback再入は拒否 |
+| CFP16 | callback中、copy／parse／hash中、操作完了後の元期限到達を拒否。処理時間を理由に期限を延長しない |
+| CFP17 | nowの逆行・非整数・未来への期限再設定を拒否。親initial期限でchildも失効 |
+| CFP18 | Fとcurrentが一致してもpermission／credential／policyの失効を拒否。pre/postの既存境界で故障を注入 |
+| CFP19 | 同じproject／入力でも次batchのcall／fresh snapshotに旧recordを流用できない。新constructorで照合する |
+| CFP20 | F・guard・freeze用の論理memory／workが不足する境界で先に拒否。親の消費・attempt／wire枠を返還しない |
+| CFP21 | external入力・診断コピー・返却bufferの変更でF／private contextを改変できない。private参照の外部公開は0 |
+| CFP22 | root／fact／receipt／childを別owner／generation／actor／scopeへ移動、root再open・二重移管を拒否 |
+| CFP23 | 成功経路でcurrent callback・取得／copy／schema／current hash・grant.assert／live gateの件数／境界を共通baselineと照合。自己hash削減以外の省略0 |
+| CFP24 | command／wireIntent／plan／K/D・full content・実wire署名／受信hashを従来どおり検査。requested／unrequested byte改変をともに拒否 |
+| CFP25 | 初期化失敗・再入・失効・callbackの偽値／非Error例外でFを再生成して復活させない。後続操作も拒否 |
+| CFP26 | client initial／seal・providerごとにF生成を実測し、対象自己hashだけがconstructorへ移ったことを位置／件数で照合。grant側hashを誤って減らさない |
+| CFP27 | 新しいclaim／busy guardをbaselineと最適化版の共通条件にする。旧baselineとの強化差は別bridgeへ分離 |
+| CFP28 | scalar／共通full-hash reference／固定F版でconstructor込みT、完了率、観測あり／なし、論理memoryと実workを比較。計測時間を引いた仮想goや8 read成立を主張しない |
+
+#### 9.124.7 実装順と採用gate
+
+| 段階 | 内容と出口 |
+|---|---|
+| CFP-0 | strictなprivate record／所有権／状態機械・共通guardのfixture contract。CFP01〜05／11〜14／20〜22／25を先行し、深いalias・再入・terminal性を確認 |
+| CFP-1 | constructor Fを対象1か所へ接続。CFP06〜10／15〜19／23／24／26でcurrentとgrantの全検査を維持し、固定clockの故障試験を実行 |
+| CFP-2 | 実署名session・fresh snapshotへ接続し、全command／出力／wire、取消し・retry・元期限を独立対照へ照合。未対応adapterは採用しない |
+| CFP-3 | CFP27／28の共通条件で実時間比較。source approval／profileとcanonical版を明示し、計画・constructor・最終検証をTへ含めて判断 |
+
+初期化を含む共通baselineとの同値性・失敗時の拒否・予算内動作が示せてから性能判断へ進む。現時点では4段階とも未実装であり、CWC-D／DP／Sitesの測定結果を固定F版の性能証拠へ転用しない。CWC-FPの設計完了は本番採用やCPR-C／CG0／CG3の保留解除を意味しない。

@@ -1,0 +1,239 @@
+{
+  "schema": "cwc-fp.design-record.v1",
+  "date": "2026-11-09",
+  "status": "design-only",
+  "document": {
+    "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+    "heading": "### 9.124 CWC-FP：constructor所有contextの固定fingerprint契約（設計）",
+    "sectionSha256": "c1f2346b9b37de25c600175d58cf5465bf2e507544f7008c7bbc74c00f105667"
+  },
+  "sourceBindings": {
+    "src/test/fixtures/gradleOwnedCwcA.ts": "170e42a899e2fde350e9407f0cced17fd288094c2a65b841c499391cb5708ebe",
+    "src/test/fixtures/gradleOwnedCwcC.ts": "709dddc41c6d657789e531b2463e00f5c196adc0907e3528d88c4ca80d099e39",
+    "src/test/fixtures/gradleOwnedCwcB.ts": "bf0e0839ebccede38a1a7db06a19a19041dac006caca4adcaef887a24764d270",
+    "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "scripts/check-cwc-fp-design.mjs": "8577224856e59493af1ac844c9caf29151caf2a66ac33247578befd204d5538d",
+    "src/test/utils/gradleOwnedCwcFingerprintDesign.test.ts": "e501d6f7312833a411d051b3bdd989bfb232a56841c538ee4afca78a6b0f208b"
+  },
+  "target": {
+    "owner": "connected CWC-C A owner",
+    "site": "CwcAContract.#checkOwner hash(this.#c)",
+    "replacementSites": 1,
+    "currentInputHashEveryCheck": true,
+    "grantAssertHashPreserved": true,
+    "authorityGatesPreserved": true
+  },
+  "scope": {
+    "runtimeChanged": false,
+    "cacheImplemented": false,
+    "runtimeRegressionExecuted": false,
+    "performanceImprovementEstablished": false,
+    "productionAdopted": false
+  },
+  "revocationObservation": {
+    "conditionId": "CFP10",
+    "observedMismatch": "reject-terminal-even-after-pin-restoration",
+    "recordedRevocation": "reject-even-if-pin-restored-before-next-check",
+    "unobservedChangeAndRestoration": "may-continue-if-all-live-checks-pass",
+    "baselineAndFixedFingerprintSameContract": true,
+    "historyDetectionRequiredWithoutIndependentEvidence": "unsupported",
+    "independentRevocationHistoryImplemented": false
+  },
+  "regressionConditions": [
+    {
+      "id": "CFP01",
+      "condition": "constructorで完全copy／parse→deep-freeze→F生成→実grant／approval照合→新規current／post gateを順に実行。全成功前のF／owner／root公開は0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP02",
+      "condition": "caller入力と全子nodeをconstructor後に変更。private snapshot／Fは不変。元値を返すcurrentは継続可能、変更値を返すcurrentは拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP03",
+      "condition": "getter／toJSON／関数／symbol／循環／異常prototype／非対応Buffer等を拒否。出自不明のProxyを安全に無評価検出したとは主張しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP04",
+      "condition": "parser出力のalias、浅いfreeze、凍結失敗をfault-injection。ready発行を拒否し、標準JSの私有node書込で内容が変わらないことを確認",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP05",
+      "condition": "canonical key順だけ異なるcontextは同じFとして受理。値・型・field集合の変更は拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP06",
+      "condition": "manifest／registry／deployment／key ID／peer／provider／originを各々変更したcurrentを拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP07",
+      "condition": "lineage／binding／snapshot／checkpoint／pin／metadataDigest／inventoryDigestを各々変更したcurrentを拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP08",
+      "condition": "同じmutable current参照を返し、2回目だけ子fieldを書き換える。毎回copy／schema／hashを実行し拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP09",
+      "condition": "currentが前回のF／versionだけを提示、追加fieldを提示、contextを欠落。strict schemaで拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP10",
+      "condition": "(a) callbackの前・途中・返却直後のcurrent／registry pin不一致を実gateで観測して拒否し、その後pinを復元してもownerはterminal。(b) callback中に信頼する経路でowner／scope／registryの失効を記録し、次の検査前にpinを復元しても外側結果を公開せず拒否。(c) callback中に変更と復元を完了し、次の検査まで不一致の観測も失効記録もない対照は、他の全live検査が成功する共通baseline／固定F版の双方で継続可能。検出成功とは記録しない。未観測履歴の拒否を必須とするadapterは独立した失効履歴の証拠なしではunsupported",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP11",
+      "condition": "actorだけ違うgrant、別owner／scope／callの同一Fを流用。実参照照合で拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP12",
+      "condition": "同じgrantへの同時・再入constructor、失敗後の再claimを拒否。初期化claim／前払い消費を維持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP13",
+      "condition": "callbackがopenScope／root生成／fact読取を同じownerへ再入。内側例外を捕捉しても外側を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP14",
+      "condition": "current／now／grant gate callback中のclose・失効を検出。finally後もterminalで、handleや成功replyは0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP15",
+      "condition": "initial→sealの正当な別owner親gateは成功。同じFの別read・別親evidence・逆向きcallback再入は拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP16",
+      "condition": "callback中、copy／parse／hash中、操作完了後の元期限到達を拒否。処理時間を理由に期限を延長しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP17",
+      "condition": "nowの逆行・非整数・未来への期限再設定を拒否。親initial期限でchildも失効",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP18",
+      "condition": "Fとcurrentが一致してもpermission／credential／policyの失効を拒否。pre/postの既存境界で故障を注入",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP19",
+      "condition": "同じproject／入力でも次batchのcall／fresh snapshotに旧recordを流用できない。新constructorで照合する",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP20",
+      "condition": "F・guard・freeze用の論理memory／workが不足する境界で先に拒否。親の消費・attempt／wire枠を返還しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP21",
+      "condition": "external入力・診断コピー・返却bufferの変更でF／private contextを改変できない。private参照の外部公開は0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP22",
+      "condition": "root／fact／receipt／childを別owner／generation／actor／scopeへ移動、root再open・二重移管を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP23",
+      "condition": "成功経路でcurrent callback・取得／copy／schema／current hash・grant.assert／live gateの件数／境界を共通baselineと照合。自己hash削減以外の省略0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP24",
+      "condition": "command／wireIntent／plan／K/D・full content・実wire署名／受信hashを従来どおり検査。requested／unrequested byte改変をともに拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP25",
+      "condition": "初期化失敗・再入・失効・callbackの偽値／非Error例外でFを再生成して復活させない。後続操作も拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP26",
+      "condition": "client initial／seal・providerごとにF生成を実測し、対象自己hashだけがconstructorへ移ったことを位置／件数で照合。grant側hashを誤って減らさない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP27",
+      "condition": "新しいclaim／busy guardをbaselineと最適化版の共通条件にする。旧baselineとの強化差は別bridgeへ分離",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP28",
+      "condition": "scalar／共通full-hash reference／固定F版でconstructor込みT、完了率、観測あり／なし、論理memoryと実workを比較。計測時間を引いた仮想goや8 read成立を主張しない",
+      "status": "planned",
+      "executed": false
+    }
+  ],
+  "stages": [
+    {
+      "id": "CFP-0",
+      "condition": "strictなprivate record／所有権／状態機械・共通guardのfixture contract。CFP01〜05／11〜14／20〜22／25を先行し、深いalias・再入・terminal性を確認",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP-1",
+      "condition": "constructor Fを対象1か所へ接続。CFP06〜10／15〜19／23／24／26でcurrentとgrantの全検査を維持し、固定clockの故障試験を実行",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP-2",
+      "condition": "実署名session・fresh snapshotへ接続し、全command／出力／wire、取消し・retry・元期限を独立対照へ照合。未対応adapterは採用しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CFP-3",
+      "condition": "CFP27／28の共通条件で実時間比較。source approval／profileとcanonical版を明示し、計画・constructor・最終検証をTへ含めて判断",
+      "status": "planned",
+      "executed": false
+    }
+  ]
+}
