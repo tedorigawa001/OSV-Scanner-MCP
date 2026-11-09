@@ -8,6 +8,9 @@ import {CwcCApprovalRegistry,CwcCWorkLedger,CwcCReadScope,CwcConnectedGrant,cwcC
 import {CPR_WORK} from '../fixtures/gradleOwnedCprAAdmission.js';
 import * as wire from '../fixtures/gradleOwnedCprAWire.js';
 import {ownedDigest as hash,ownedSha256 as sha} from '../../utils/gradleOwnedJson.js';
+// The 4500 ms parent deadline on the real clock depends on host load, so the default suite uses the fixed clock.
+// The evidence runner (CWC_C_EVIDENCE_PATH) opts in; OSV_REALTIME_PROCESS=1 also enables it for a local real-clock run.
+const realClock=process.env.OSV_REALTIME_PROCESS==='1'||process.env.CWC_C_EVIDENCE_PATH!==undefined;
 it('CWC-C01: approved connected session replaces final planned owner/auth wires with root-bound proof',async()=>{
  const a=cwcCApprovalFixture(),f=cwcCCase('B-independent',{codeApproval:a.view,variant:'combined'});
  try{const result=await f.transfer();expect(result.clientPlans).toBe(2);expect(result.providerPlans).toBe(result.requests);expect(f.clientWork).toBe(2*CPR_WORK.plan);expect(f.codecPlans).toHaveLength(2);expect(f.provider.codecPlans).toHaveLength(result.requests);
@@ -25,7 +28,7 @@ it('CWC-C04: insufficient shared memory refuses before provider storage IO',asyn
  const a=cwcCApprovalFixture(),f=cwcCCase('B-independent',{codeApproval:a.view,memory:1});try{await expect(f.transfer()).rejects.toThrow('codec_budget_exceeded');expect(f.provider.metrics.loads).toBe(0);}finally{f.close();}
 });
 it('CWC-C05: all workloads and both roles preserve exact structural work and one fresh source per RPC',async()=>{
- for(const role of ['reader','authority-broker'] as const)for(const sizes of [[600,800,900,1100,1300],[3061,1250,20810,5057,949,635,2072,6745,881],[41456,1,1,1,1]]){const a=cwcCApprovalFixture(),f=cwcCCase('B-independent',{codeApproval:a.view,variant:'combined',role,sizes,realClock:true});
+ for(const role of ['reader','authority-broker'] as const)for(const sizes of [[600,800,900,1100,1300],[3061,1250,20810,5057,949,635,2072,6745,881],[41456,1,1,1,1]]){const a=cwcCApprovalFixture(),f=cwcCCase('B-independent',{codeApproval:a.view,variant:'combined',role,sizes,realClock});
  try{const r=await f.transfer();expect(r.clientPlans).toBe(2);expect(r.providerPlans).toBe(r.requests);expect(f.provider.metrics.loads).toBe(r.requests+2);expect(f.provider.rows.every(row=>row.spent.work===(row.spent.work>CPR_WORK.source+1?CPR_WORK.total:CPR_WORK.source+1))).toBe(true);expect([...f.codecPlans,...f.provider.codecPlans].every(p=>p.grant.memory.reserved<=1048576)).toBe(true);}finally{f.close();}}
 },15000);
 it('CWC-C06: final reference materialization is absent, with a positive reference control',async()=>{
@@ -82,7 +85,7 @@ it('CWC-C22: scalar control keeps the same output and does not construct connect
 });
 
 it('CWC-C23: recorded matrix derives resources and positive controls from actual signed sessions',async()=>{
- const samples=await runCwcCMatrix();expect(samples).toHaveLength(12);expect(new Set(samples.map(s=>s.workload+':'+s.role)).size).toBe(12);for(const s of samples){expect(s.memoryPeak).toBeLessThanOrEqual(1048576);expect(s.remainingDeadlineMs).toBeGreaterThan(0);expect(s.probes.finalOracleCalls).toBe(0);expect(s.probes.referenceOracleCalls).toBe(s.requests*(s.requests+2));}
+ const samples=await runCwcCMatrix({realClock});expect(samples).toHaveLength(12);expect(new Set(samples.map(s=>s.workload+':'+s.role)).size).toBe(12);for(const s of samples){expect(s.memoryPeak).toBeLessThanOrEqual(1048576);expect(s.remainingDeadlineMs).toBeGreaterThan(0);expect(s.probes.finalOracleCalls).toBe(0);expect(s.probes.referenceOracleCalls).toBe(s.requests*(s.requests+2));}
  if(process.env.CWC_C_EVIDENCE_PATH)writeFileSync(process.env.CWC_C_EVIDENCE_PATH,JSON.stringify(samples));
 },30000);
 it('CWC-C24: maximum fixture IDs fit the same shared memory cap without enlarging a reservation',()=>{

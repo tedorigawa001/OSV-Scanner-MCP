@@ -3153,3 +3153,5 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 §9.118 2回目のレビュー修正：CWC-Aのprivate bytesと返却コピーが`Buffer.from`の共有poolに載り、返却コピーの`.buffer`全体の書換えがprivate factへ波及していた。`Buffer.alloc`の専用領域へ変更し、CWA07・CWA18でArrayBuffer全体の書換えを検査する。
 
 §9.119レビュー修正：CWC-B matrixの`h0`がCPR-BPの`h0Sizes`と別workloadだったため`mid-2048`へ改名し、CPR-BPの`h0Sizes`・`singleLarge`を追加（16→24 sample）。計画中の生成数4項目が常に0の固定値だったため削除し、`planProof`中のowner／frames／exact／result／layout／ownedSha256呼出しをspyで実測（全0）、oracle側owner 2N回を陽性対照とした。
+
+§9.120 2回目のレビュー修正：CWC-C05・C23が通常の`npm test`で実時間の4500 ms期限に依存していたため固定clockへ変更。記録runner（`CWC_C_EVIDENCE_PATH`）と`OSV_REALTIME_PROCESS=1`のときだけ実clockにし、記録は各sampleの`clock: real`を必須とする。

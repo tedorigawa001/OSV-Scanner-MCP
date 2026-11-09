@@ -8918,7 +8918,7 @@ primaryの計画中は全N oracleを実行しない。独立署名された実�
 
 `gradleOwnedCwcC.test.ts`のCWC-C01〜36で、独立pin／署名・source差替え／再署名・欠落source・runtime／鍵不正、偽call／grant／ticket、snapshotのcall間移動、コピー／ArrayBuffer、前払い残高・容量不足・元期限・全provider境界の取消し、全entry改変・更新済みhash・source過大・post区別・exact retry・source承認の失効を検証する。実work残高の巻戻しや一回限りのticket再使用も拒否する。
 
-再現matrixは6 workload（small／mid-2048／large-commit／large-payload／CPR-BPのh0Sizes／singleLarge）×reader/brokerの12 sample。元の4500 ms期限を実clockで維持し、client2計画・provider各RPC1 fresh snapshot／計画、実rowのwork消費・1 MiB以内の予約・child使用数を記録する。named-export probeで最終`exact`が0であることと、別referenceでは`N*(N+2)`回を観測する正例を照合する。layout内部のlexical owner/auth呼出しはexport spyの件数とは混同せず、既存codecの実Stats（layout owner2/auth4、final0）で記録する。これは正当性／予約の比較であり、T全体の性能比較ではない。
+再現matrixは6 workload（small／mid-2048／large-commit／large-payload／CPR-BPのh0Sizes／singleLarge）×reader/brokerの12 sample。記録runner（`CWC_C_EVIDENCE_PATH`を設定）では元の4500 ms期限を実clockで維持し、各sampleに`clock: real`と残り時間を保存する。通常の`npm test`ではCWC-C05／C23を固定clockで実行し、同じ全条件・probe・予約を検査する（`OSV_REALTIME_PROCESS=1`でも実clockになる）。client2計画・provider各RPC1 fresh snapshot／計画、実rowのwork消費・1 MiB以内の予約・child使用数を記録する。named-export probeで最終`exact`が0であることと、別referenceでは`N*(N+2)`回を観測する正例を照合する。layout内部のlexical owner/auth呼出しはexport spyの件数とは混同せず、既存codecの実Stats（layout owner2/auth4、final0）で記録する。これは正当性／予約の比較であり、T全体の性能比較ではない。
 
 ```sh
 node scripts/check-cwc-c.mjs
@@ -8932,3 +8932,5 @@ npm run typecheck
 成立したのはin-processの実認証callとprivateな模擬storage snapshotへの接続、独立pin／署名のsource承認契約、論理memory／既存構造work予約、計画用wireのproof置換である。本番MCP採用・実storage・独立UID／認証IPCでの配備・外部承認service・loaded moduleのnative attestation・heap／RSS保証・速度改善は未成立。次はCWC-Dの共通承認／gateを持つscalar・reference・composedによる計画込み総時間比較であり、CPR-Cの見送り・継続8 read・CG0／CG3の保留は解除しない。
 
 CWC-Cレビュー修正：connected ownerは提示されたapproval／pinの自己整合だけでなく、grantのregistryが選んだactor別承認と完全一致することを要求する。CWC-C35はsourceClosureDigestとpinを同時に変更した差替えをowner作成時に拒否する。相対source参照の探索には`import './dependency.js'`形式の副作用importも含め、operator側の一覧作成とruntime検査、検証runnerのsource束縛で共通に追跡する。CWC-C36はsource digest・署名・独立pinを更新しても、一覧にない副作用importを拒否する。両回帰テストは修正前の失敗を確認した。動的ロード一般の解析やloaded moduleのnative attestationを成立させたものではない。
+
+CWC-C 2回目のレビュー修正：CWC-C05とC23は`realClock: true`で、通常の`npm test`の中でも実時間の4500 ms期限に依存していた（単独で約2.1秒・4.4秒）。固定5秒リースの実時間テストがCIの負荷で失敗したのと同じ種類の危険があるため、通常は固定clockで実行し、記録runnerと`OSV_REALTIME_PROCESS=1`のときだけ実clockにした。記録の各sampleは`clock: real`を持ち、runnerの`--check`はそれ以外を拒否する。
