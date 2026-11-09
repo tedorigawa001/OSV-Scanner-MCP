@@ -9191,3 +9191,58 @@ callerの元入力を変更する行為自体は許されるが、private snapsh
 | CFP-3 | CFP27／28の共通条件で実時間比較。source approval／profileとcanonical版を明示し、計画・constructor・最終検証をTへ含めて判断 |
 
 初期化を含む共通baselineとの同値性・失敗時の拒否・予算内動作が示せてから性能判断へ進む。現時点では4段階とも未実装であり、CWC-D／DP／Sitesの測定結果を固定F版の性能証拠へ転用しない。CWC-FPの設計完了は本番採用やCPR-C／CG0／CG3の保留解除を意味しない。
+
+### 9.125 CWC-Gate：接続費用の軽量分解と優先順位の変更
+
+CWC-FPのCFP-0着手より先に、CWC-Dで旧BPより遅くなった接続費用を調べる。固定fingerprint設計は保持するが、対象1か所の自己hashだけで差の大部分を解消できるとは仮定しない。旧BP bridgeはsource承認・scope・grant・前払いの強化を含まないため、差は問題規模の参考であり、同じ安全条件での最適化効果ではない。
+
+**ソース上の増幅経路。** providerのgate Pはcurrent認可と`inspectAuthenticatedCall`、peer／serverのcanonical一致、元期限を検査する。ticket取得後の通常経路で`ReadScope.gate` SはPを呼び、自身でも実callを検査し、ticketの`ledger.check`がさらにPを呼ぶため、実call検査のexport入口は計3回になる。`grant.gate` GはSの後にもう1回ledgerを検査し計4回。`grant.assert`はG→context hash→Gで計8回。Aの`#checkOwner`はそのassertとcurrent callback内のPを合わせて計9回になる。これはcallbackなしの理想化された通常経路のソース上の展開であり、全操作の固定回数でもCPU時間の証拠でもない。clientには実provider callがなく、sealから親initialへの検査もあるため別扱いとする。
+
+新しいtest-only observerはstack／source座標を毎回取得せず、実prototype methodとexport入口へ同期call-throughする。scope、grant、ledger、source registry、sessionの実call検査、Endpointのgate／now／permitAPI、その内側／外側のJSON hash・canonical・structuredCloneを閉じたラベルで分解する。元のthis／引数・戻り値・例外を維持し、終了時に復元する。私有methodや同module内lexical呼出しを全て観測したとは主張しない。category名は動的なwrapper祖先の範囲を表し、完全なsource call graphや純粋な認可CPUではない。
+
+scalar／未計測composed／件数のみcomposed／時間計測composed／旧BP bridgeの5 armを6 workload×2 role×（warm-up 1＋測定3 round）で順序回転して比較する。計240転送。primaryのsource承認・4500 ms元期限・1 MiB論理memory・現在認可・全entry再構成・wire／work予算は変更しない。bridgeの承認pin／memory条件／非公開のclient workはnullとし、同条件を満たした証拠へ偽装しない。通常の回帰は固定clock、保存記録は実clockとする。
+
+総時間Tは既存transferと同じく、計画・descriptor／inventory・fresh load・session・全entry再構成・最終digestとgateを含む外側実測。observer設置は別保存する。件数のみ−未計測を計数費用、時間計測−件数のみをタイマー追加費用、時間計測−未計測を総計測費用としてpaired差で保存し、負値も残す。exclusive合計＋otherはobserver wallに照合し、wallはT以下を必須とする。inclusiveは入れ子を含むため合算しない。計測値をTから引いた仮想高速値や、gate時間をそのまま削減可能額として使わない。
+
+CWG01〜15は、出力・plan／wire・fresh load・client work、arm閉包、計数のみと時間計測の全operation件数一致、未観測operation・時間の不正・partitionを保った必須gate欠落の拒否、失敗を完了率へ残すこと、false等の例外・実handle参照・復元、source承認失効／permission取消し／元期限／内容改変の拒否を検証する。計測器も侵害された場合の独立attestationではない。
+
+レビュー修正：旧BPもscalar以外のbatch群へ含め、requests・planDigest・wireBytes・inputDigest・inventoryDigestを照合する。source承認・memoryの条件差は別bridgeのまま維持するが、異なる計画・転送量による時間差を接続費用へ混入させない。
+
+件数は各wrapper入口で`entryCalls`を別カウンターへ記録し、費用集計のfinallyで加算するcallsと閉包・全件数を照合する。両armが同じ集計漏れを持っても相互一致だけで受理しない。さらに、このsourceに束縛された再試行なしの正常完了matrixでは、実call検査I回に対してgate内SHAがI回、identity cloneが2I回、Endpointのpermission検査がI＋3×（requests＋2）回であることを検査する。追加の3回は各RPCのchallenge・channel・同module内の最終実call検査に対応する。入口カウンターも変更された記録はこの関係で検査する。失敗・retry・別protocolへこの係数を一般化せず、source／呼出し構造を変更する際は契約を再検証する。計測器全体の協調した偽装を検出する独立authorityではない。
+
+文字列／Bufferを扱いcallbackも観測childも持たない`gate.ownedSha256`／`outside.ownedSha256`は非再入leafとして、inclusive合計をwall以下、inclusiveとexclusiveの差を丸め幅1e-6 ms以下に制限する。callbackを持ち得る他のoperationへ一律適用しない。CWG10〜12で旧BPの不一致・両arm共通の観測欠落・件数とpartitionを保持したSHA時間過大計上の修正前の失敗を確認。CWG13〜15で入口カウンターも変えた欠落、全operation共通の欠落／witness不備、SHAの上限境界・架空childの拒否を追加した。
+
+**次の削減候補。** 接続費用の内訳を根拠に、実callとowner所有wire／identityの不変な対応付けを検査する費用と、session状態・permission・credential・source承認・取消し・元期限のlive検査を分ける契約を先に具体化する。安いlive専用入口を新設するなら、session自身が発行する実call・scope専用の非公開bindingが必要であり、callerのdigest一致やvalidフラグへ置換しない。新call／batch／scope間の流用、Buffer alias・callback中の改変、close／取消し後の採用を拒否する証拠が必要である。現段階ではwire hash・identity照合・live検査を一切省かず、同じscope内だからという理由でG／S／Pの前後gateを統合しない。特にpermission判定やmutable registryの現在性を単なる固定fingerprintへ置換しない。
+
+判断はdiagnostic-only。CFP-0は後順位とし、CPR-C／本番採用・実storage・独立UID／5process・継続8 read・CG0／CG3の保留を維持する。次の接続費用削減版は同じ承認・live境界・元期限・memory条件のcomposed対照と比較し、旧BPとの安全条件差は別bridgeへ残す。
+
+```sh
+node scripts/check-cwc-gate.mjs
+node scripts/check-cwc-gate.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcGate.test.ts --maxWorkers=1
+```
+
+#### 9.125.1 実時間の検証結果
+
+240転送は全て期限内に完了。各条件3 roundの中央値（ms）と、実call検査export入口の件数を示す。旧BPとの差と計測費用はpaired差の中央値であり、時間中央値同士の単純差とは限らない。gate列は時間計測版のexclusiveで、未計測composedと同じ条件の純粋CPU費用でも、その差の説明率でもない。件数のみ／時間計測の全operation件数は一致した。
+
+| workload | role | scalar | composed | 旧BP bridge | BPとの差 | gate観測 | 実call検査回数 | 計測追加費用 |
+|---|---|---|---|---|---|---|---|---|
+| small | reader | 25.9 | 48.0 | 19.0 | 29.0 | 17.5 | 1127 | 8.1 |
+| small | authority-broker | 26.3 | 51.2 | 21.3 | 30.2 | 18.4 | 1127 | 6.1 |
+| mid-2048 | reader | 25.6 | 71.7 | 24.4 | 46.9 | 29.7 | 1991 | 10.6 |
+| mid-2048 | authority-broker | 26.0 | 75.8 | 24.4 | 51.5 | 30.3 | 1991 | 8.8 |
+| large-commit | reader | 39.3 | 312.8 | 73.1 | 238.2 | 172.4 | 11705 | 65.7 |
+| large-commit | authority-broker | 40.1 | 319.3 | 72.7 | 247.9 | 174.7 | 11705 | 60.1 |
+| large-payload | reader | 51.9 | 373.4 | 72.0 | 301.4 | 169.6 | 11705 | 1.2 |
+| large-payload | authority-broker | 61.1 | 356.7 | 83.5 | 266.7 | 187.5 | 11705 | 67.4 |
+| h0Sizes | reader | 69.8 | 473.0 | 104.8 | 365.2 | 257.3 | 16979 | 79.3 |
+| h0Sizes | authority-broker | 68.4 | 476.2 | 105.2 | 371.0 | 261.3 | 16979 | 90.6 |
+| singleLarge | reader | 66.5 | 542.6 | 110.9 | 432.4 | 295.9 | 19457 | 88.3 |
+| singleLarge | authority-broker | 69.2 | 760.6 | 114.2 | 535.9 | 293.9 | 19457 | 61.4 |
+
+全条件でgate内のcanonical処理が大きい候補として残った。h0Sizes／singleLargeでは実call検査が16979／19457回に達し、その周囲でwireのSHA256、identityのcanonical照合とコピー、permission lineageのcanonical照合が反復される。一方でsource registryの失効確認自体は比較的小さい。実call検査のexclusiveは、子operationのhash・clone等を除いた残差なので、呼出し全体の費用ではない。全operationの内訳・件数と計数のみ／タイマー追加費用は検証記録へ保存する。
+
+今回の計測追加費用はpaired中央値1.2〜90.6 msと条件で大きく変動した。これを引いて高速版を推定せず、既存Sitesの重いstack計測値との比率も性能改善へ読み替えない。実証したのは接続gateの増幅と内訳、認可・期限・完全性を維持した観測器の限定対照であり、削減実装や速度改善の成立ではない。次はこの大きい接続費用を対象にした実call binding／live検査の責任分離を優先する。
+
+レビュー修正後の再検証：CWG01〜15と記録の再検証を実施し、source hash・入口計数witness・件数関係・旧BPのbatch同値性を照合した。実clockの240転送は全完了し、本表とraw／summaryを更新した。入口計数の費用も計数のみ／時間計測の両armへ含むため、旧記録との時間差を高速化と解釈しない。認可・取消し・元期限・内容検証の省略は0、判断はdiagnostic-onlyを維持する。

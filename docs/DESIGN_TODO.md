@@ -3192,4 +3192,11 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュ�
 - [x] private copy／完全parse／deep-freeze／F生成と実grant・承認の照合、actor／owner／scope／root／callの束縛、毎回のcurrent取得・copy・schema・hash／live gateを分離。
 - [x] grant単位の初期化claim、ownerの再入・generation／terminal状態、callback中のclose／失効・元期限到達、予算と非返還、CFP01〜28とCFP-0〜3の採用gateを具体化。
 - [x] CFP10を観測済み不一致・記録済み失効・検査前に変更と復元が完了した未観測の一時変更へ分離。最後のケースの検出は保証せず、全live検査成功時の継続を両比較modeで許容する。履歴検出を要求するadapterは独立した失効記録の証拠なしではunsupported。
-- [ ] CFP-0のstrict fixture contractを実装する。今回runtime・hash省略・cacheは未実装。grant側hash、command／内容検査、source承認／認可・取消し・元期限の省略は認めない。
+- [ ] CFP-0のstrict fixture contractを実装する。§9.125の優先順位変更により接続費用の調査・削減契約を先行する。今回runtime・hash省略・cacheは未実装。grant側hash、command／内容検査、source承認／認可・取消し・元期限の省略は認めない。
+
+### CWC-Gate：接続費用の軽量分解（§9.125）
+- [x] CWC-FPの単一自己hash置換より、CWC-Dで旧BPとの大きな差になった接続費用の調査を優先。scope／grant／ledgerから実call検査へ至る増幅経路を整理した。
+- [x] stack取得を使わないcall-through observer、件数のみ対照、scalar／composed／旧BP bridgeを比較する再現ハーネスとCWG01〜09を追加。現認可・取消し・元期限・完全性の検査は変更しない。
+- [x] 実clockで240転送を再検証し全完了。h0Sizes／singleLargeの実call検査16979／19457回とgate内canonical・wire hash・identityコピーの反復を記録。費用・計測追加費用は診断値として保存し、削減可能額や採用成立へ読み替えない。
+- [x] レビュー3件を修正。旧BPのbatch同値性、wrapper入口の独立計数とSHA／clone／permission件数関係、非再入SHAのwall上限・leaf性を検査。CWG10〜12の修正前失敗を確認し、CWG13〜15の共通欠落・witness不備・上限境界も追加。15件の回帰を通したsourceで実時間比較を再実行し240転送が全完了。表・記録を更新し、診断限定・採用保留を維持。
+- [ ] 接続費用の測定結果に沿って、session所有の不変な実call／wire bindingと毎回のlive検査を分ける削減契約を具体化する。実証・採用は別工程。CFP-0・CPR-C／本番・実storage・隔離・8 read・CG0／CG3の保留を維持。
