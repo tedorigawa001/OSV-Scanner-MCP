@@ -16,7 +16,7 @@ export const CPR_B_PHASES=['admission','pre-before','pre-after','load-before','l
 export type CprBPhase=typeof CPR_B_PHASES[number];
 export type CprBMode='S-scoped'|'B-independent';
 import {type PlannerVariant} from './gradleOwnedCwcCPlanner.js';
-export type ProviderOptions={codeApproval:CwcCApprovalRegistry;memory?:number;variant:PlannerVariant;mode:CprBMode;context:CprContext;registry:CredentialRegistry;privateKey:KeyObject;
+export type ProviderOptions={codeApproval:CwcCApprovalRegistry;memory?:number;referenceOracle?:boolean;variant:PlannerVariant;mode:CprBMode;context:CprContext;registry:CredentialRegistry;privateKey:KeyObject;
  now:()=>number;deadline:number;current:()=>void;live:()=>void;read:()=>SourceBundle;
  expected:{metadataDigest:string;inventoryDigest:string;inventorySha256:string;inventoryBytes:number;sourceBytes:number;entries:number};
  planEvents?:boolean;mutateResult?:(body:any)=>void;hook?:(phase:CprBPhase)=>void|Promise<void>;work?:number;slots?:number};
@@ -66,11 +66,11 @@ export class CwcCProvider {
    if(batch){
     await step('plan-before');this.metrics.plans++;
     const start=o.planEvents===false?0:performance.now();
-    const p=pack(c,inventory.rows,q.payload.plan.seed,q.payload.transferId,gate,undefined,{variant:o.variant,actor:'provider',witness:{call:this.metrics.calls,requestDigest:q.requestDigest,batchOrdinal:q.payload.plan.batchOrdinal}},{grant:grant!,...(()=>{const a=scope!.approval('provider');return {approval:a.approval,pin:a.pin};})(),now:o.now});connection=p.connection;
+    const p=pack(c,inventory.rows,q.payload.plan.seed,q.payload.transferId,gate,undefined,{variant:o.variant,actor:'provider',witness:{call:this.metrics.calls,requestDigest:q.requestDigest,batchOrdinal:q.payload.plan.batchOrdinal}},{referenceOracle:o.referenceOracle,grant:grant!,...(()=>{const a=scope!.approval('provider');return {approval:a.approval,pin:a.pin};})(),now:o.now});connection=p.connection;
     const ms=o.planEvents===false?0:performance.now()-start;this.metrics.planMs+=ms;
     if(o.planEvents!==false)this.plans.push({requestDigest:q.requestDigest,batchOrdinal:q.payload.plan.batchOrdinal,call:this.metrics.calls,inventoryDigest:inventory.digest,inputDigest:digest(inventory.rows),planDigest:p.planDigest,commands:p.commands.length,work:p.workUnits+p.stats.arithmeticTrials,ms});
     need(p.workUnits+p.stats.arithmeticTrials<=CPR_WORK.plan,'planner_work_bound');
-    need(same(p.commands[q.payload.plan.batchOrdinal],q),'plan_mismatch');await step('plan-after');row.state='verified';permit=scope.promote(grant!,p.connection.owner,p.connection.root);this.codecPlans.push({requestDigest:q.requestDigest,grant:grant!.diagnostics,codec:p.connection.codec.diagnostics,helper:p.connection.owner.metrics,stats:p.stats});
+    need(same(p.commands[q.payload.plan.batchOrdinal],q),'plan_mismatch');await step('plan-after');row.state='verified';permit=scope.promote(grant!,p.connection.owner,p.connection.root);this.codecPlans.push({referenceOracleCalls:p.connection.referenceOracleCalls,requestDigest:q.requestDigest,grant:grant!.diagnostics,codec:p.connection.codec.diagnostics,helper:p.connection.owner.metrics,stats:p.stats});
    }else if(q.api==='aux.ReadSourceDescriptor'){
     row.state='verified';body={metadata,inventory:{sha256:sha(ib),byteLength:ib.length},inventoryDigest:inventory.digest,entries:inventory.rows.length,sourceBytes:inventory.size};
    }else{

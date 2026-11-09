@@ -3,7 +3,7 @@ import {parsed,need,cid} from '../../utils/gradleOwnedCurrentSchema.js';
 import {ownedDigest as hash} from '../../utils/gradleOwnedJson.js';
 import {cprEntry,context,checkCommand,operation,wireIntent,CPR_SPEC,CPR_SPEC_DIGEST,type CprContext,type CprRange,type CprCommand} from './gradleOwnedCprASchema.js';
 import {planCore,CPR_PLAN_WORK_BOUND} from './gradleOwnedCprAPlanner.js';
-import {makeTracked,newStats,type Stats} from './gradleOwnedCprAWire.js';
+import {makeTracked,newStats,exact,type Stats} from './gradleOwnedCprAWire.js';
 import {CwcAContract} from './gradleOwnedCwcA.js';
 import {ClosedCwcBCodec} from './gradleOwnedCwcB.js';
 import {type CwcConnectedGrant} from './gradleOwnedCwcC.js';
@@ -21,7 +21,7 @@ function built(c:CprContext,seed:string,transferId:string,ordinal:number,count:n
   q.requestDigest=wireIntent(q);s.finalAuthorization++;checkCommand(c,q);return structuredClone(q);
  });
 }
-export function pack(input:unknown,entriesInput:unknown[],seedInput:string,transferInput:string,gate:()=>void=()=>{},s:Stats=newStats(),config:PlannerConfig={variant:'reference',actor:'unit'},connection?:{grant:CwcConnectedGrant;approval:unknown;pin:string;now:()=>number;initial?:Readonly<{kind:string}>}){
+export function pack(input:unknown,entriesInput:unknown[],seedInput:string,transferInput:string,gate:()=>void=()=>{},s:Stats=newStats(),config:PlannerConfig={variant:'reference',actor:'unit'},connection?:{referenceOracle?:boolean;grant:CwcConnectedGrant;approval:unknown;pin:string;now:()=>number;initial?:Readonly<{kind:string}>}){
  need(connection,'codec_profile_unsupported');
  need(['reference','max-first','single-check','combined'].includes(config.variant),'configuration_invalid');
  if(config.actor==='provider')need(config.witness&&Number.isSafeInteger(config.witness.call)&&config.witness.call>0&&/^[a-f0-9]{64}$/.test(config.witness.requestDigest)&&Number.isSafeInteger(config.witness.batchOrdinal)&&config.witness.batchOrdinal>=0&&config.witness.batchOrdinal<19,'configuration_invalid');
@@ -50,13 +50,14 @@ export function pack(input:unknown,entriesInput:unknown[],seedInput:string,trans
   let owner:CwcAContract|undefined;
   try{owner=new CwcAContract({context:c,approval:connection.approval,approvalPin:connection.pin,actor:grant.actor,now:connection.now,current:()=>{check();return {context:c,approvalPin:connection.pin};},parentReservation:{bytes:1048576,fragments:4096,work:156978},connected:grant,codec});
   const scope=owner.openScope(grant.identity,{bytes:1048576,fragments:4096,work:156978},connection.initial),root=owner.openCodecRoot(scope,core),aLayout=owner.compilePlanLayout(root),facts:Readonly<{kind:string}>[]=[];
-  let wireBytes=0,workUnits=0;
+  let wireBytes=0,workUnits=0,referenceOracleCalls=0;
    const bounds=commands.map(q=>{check();const fact=owner!.encodeCheckedCommand(root,aLayout,q);facts.push(fact);const receipt=owner!.provePlannedOwnerAndAuth(root,aLayout,fact);const actual=owner!.connectedWidths(root,receipt,grant);const bound=sizing.bound(q.payload.ranges);
     // Widths come only from the same A-root-bound B proof; no owner/auth wire materialization.
+    if(connection.referenceOracle){check();const oracle=exact(c,q,newStats());referenceOracleCalls++;need(oracle.request===actual.request&&oracle.reply===actual.reply&&oracle.frames.every((n,i)=>n===actual.frames[i])&&oracle.total<=81920,'codec_layout_mismatch');check();}
     const requestBytes=actual.request;wireBytes+=bound.total;workUnits+=requestBytes+q.payload.ranges.length;return bound;
    });
    need(wireBytes<=CPR_SPEC.wireBytes&&workUnits+s.arithmeticTrials<=CPR_PLAN_WORK_BOUND,'capacity_exhausted');check();
-   return {core,planDigest:digest,commands,bounds,wireBytes,workUnits,stats:s,connection:{owner,scope,root,facts,codec,grant}};
+   return {core,planDigest:digest,commands,bounds,wireBytes,workUnits,stats:s,connection:{owner,scope,root,facts,codec,grant,referenceOracleCalls}};
   }catch(e){owner?.close();codec.close();throw e;}
 
  },config.witness);

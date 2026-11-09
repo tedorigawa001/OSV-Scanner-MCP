@@ -8934,3 +8934,25 @@ npm run typecheck
 CWC-Cレビュー修正：connected ownerは提示されたapproval／pinの自己整合だけでなく、grantのregistryが選んだactor別承認と完全一致することを要求する。CWC-C35はsourceClosureDigestとpinを同時に変更した差替えをowner作成時に拒否する。相対source参照の探索には`import './dependency.js'`形式の副作用importも含め、operator側の一覧作成とruntime検査、検証runnerのsource束縛で共通に追跡する。CWC-C36はsource digest・署名・独立pinを更新しても、一覧にない副作用importを拒否する。両回帰テストは修正前の失敗を確認した。動的ロード一般の解析やloaded moduleのnative attestationを成立させたものではない。
 
 CWC-C 2回目のレビュー修正：CWC-C05とC23は`realClock: true`で、通常の`npm test`の中でも実時間の4500 ms期限に依存していた（単独で約2.1秒・4.4秒）。固定5秒リースの実時間テストがCIの負荷で失敗したのと同じ種類の危険があるため、通常は固定clockで実行し、記録runnerと`OSV_REALTIME_PROCESS=1`のときだけ実clockにした。記録の各sampleは`clock: real`を持ち、runnerの`--check`はそれ以外を拒否する。
+
+### 9.121 CWC-D：共通条件での計画込み総時間・観測費用・完了率の限定比較
+
+primaryはS-scoped scalar、CWC-C reference、CWC-C composed。同じ独立source承認registry・current認可・4500 msの元期限・1 MiB論理memory条件で実署名sessionを実行する。referenceは同じroot／fact／fresh snapshot／前払い検査に加えて、各commandを既存実codecのexactで照合する。composedはその追加oracleを省く。実送受信の署名・schema・全entry digest・最終gateは全armで維持する。追加reference scratchの81920 Bを含めて1 MiBへ収まることをprimary全armの構築時に検査する。これは論理共存予約でありheap／RSS保証ではない。referenceはproof経路を共有したoracle追加対照であり、過去のreference実装そのものではない。
+
+6 workload×2 role×quiet／observed×4 arm×（warm-up 1＋測定3 round）を順序回転して記録する。4番目の旧CPR-BP combinedは承認・gate強化の異なるbridgeでありprimaryの採用条件へ混ぜない。observedではplanEventsとexclusive trace収集を有効にし、quietでは両方を無効にする。traceのpartition合計だけでなく対応するclient initial／seal／provider planの外側時間にも照合する。観測費用はpairedな総時間差であり、負値も保持し、計測器だけの純粋CPU費用とは解釈しない。非同期sessionの待機・GC・実行順の変動を含む少数のローカル測定である。
+
+計画込み総時間はtransfer開始直前から最終全entry再構成・digest・現在認可／元期限確認後までの外側実測。fixture構築時間はassemblyMsとして別に残す。client initial／seal・provider再計画、descriptor／inventory取得、署名session転送を含む。内側wall・setupAndClientPlan・dispatchAndReconstructionの整合を検査し、外側時間を下回る過小計上は拒否する。失敗した転送も行を保存し完了率の分母から除外しない。warm-upは保存し、中央値・採用候補判定から除く。
+
+採用候補はprimary全測定が完了しquiet composedの総時間中央値がscalarとreferenceの両方を下回り全paired差でも優位となったworkload／roleだけ。それ以外はdefer。candidate-onlyもCPR-C／本番採用の許可ではない。独立storage・UID隔離・cold／churn／復旧・5 process・継続8 read、CG0／CG3の保留は維持する。observerが非干渉であるとの一般保証や統計的な速度改善の確定は主張しない。
+
+CWD01〜15で比較の閉包、出力／batchの一致、oracleの実呼出し件数、計画・finalizationを含む外側時間、失敗の完了率反映、全primaryのsource失効・memory不足・取消し・元期限拒否を検証する。実行記録はraw rowとpaired summary、source hashと本節hashを保持する。
+
+```sh
+node scripts/check-cwc-d.mjs
+node scripts/check-cwc-d.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcD.test.ts --maxWorkers=1
+```
+
+quietのpaired差と勝敗を記録する。observed scalar対composedではP＝client initial＋seal＋provider plan、H＝T_scalar−(T_composed−P)を各pairで計算する。P≤HはT_composed≤T_scalarと同じ条件であり独立証拠とは数えない。trace内のinclusive費用を総時間へ再加算しない。
+
+CWC-Dレビュー修正：setup／dispatch-reconstruction／finalizationを、それぞれplanned−start／end−planned／end−reconstructionStartedに1e-6 ms以内で照合する。client initial＋sealはsetup区間、provider計画はplannedからreconstructionStartedまでの区間を超えてはならない。全duration・timestamp・trace内のinclusive／exclusive／other時間は有限かつ非負を必須とする。paired差・観測差・許容額Hは差分なので負値を保持し、durationの検査とは区別する。CWD12〜15で計画費用の過大計上、時間内訳の過小計上、NaN／±Infinity／負値を拒否する。4テストの修正前の失敗を確認した上で実時間matrixを再実行する。

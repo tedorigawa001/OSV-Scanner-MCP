@@ -66,7 +66,7 @@
     "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
     "src/test/fixtures/gradleOwnedCwcA.ts": "170e42a899e2fde350e9407f0cced17fd288094c2a65b841c499391cb5708ebe",
     "src/test/fixtures/gradleOwnedCwcB.ts": "bf0e0839ebccede38a1a7db06a19a19041dac006caca4adcaef887a24764d270",
-    "src/test/fixtures/gradleOwnedCwcCCase.ts": "2db435b71670530b3137a4dddbc6969f2ac5601d34ca1663c3050566d905cbbd",
+    "src/test/fixtures/gradleOwnedCwcCCase.ts": "a8adfb1dfde7a113f528a8aa73f7405eb8248aaaf5a37ad715aa260c2e27f97e",
     "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
     "src/test/fixtures/gradleOwnedCgpI0Case.ts": "b35cb70e79373acea7e8dd80b0c147b693ee872e3aedf99d01e7028865b03ab5",
     "src/test/fixtures/gradleOwnedRegistryFixture.ts": "b526f4b13d5455f40721f251a58088f0abcd4f388768431b3641505e99ff6599",
@@ -81,8 +81,8 @@
     "src/utils/gradleOwnedRecovery.ts": "5666924978ddf0cba75ae0fe87ae38b5c2111a1f5946662f03cc3f56a1b9380a",
     "src/utils/gradleOwnedSessionRuntime.ts": "c7cdb85e33ef8f4b016857c07c87b1c9d48d52436a72e38ece98f37a4936601f",
     "src/utils/gradleOwnedServiceSession.ts": "033426d57b207cf5f5cc1a183509bd77701a7b92fa5ae78a690d2124fc759115",
-    "src/test/fixtures/gradleOwnedCwcCProvider.ts": "d2ff01b23e222fcbddc5af1403405ea81f50aad92968b53ebd52c82ebed64556",
-    "src/test/fixtures/gradleOwnedCwcCPlanner.ts": "76b1bcef30cb34fe0148a306245ae9a70fbedf3f6c635123124488c5ea8689b1",
+    "src/test/fixtures/gradleOwnedCwcCProvider.ts": "fffd95626f95dd8386dce65379a653125f5adbb69ecfdb0ddb9d0f76786002ee",
+    "src/test/fixtures/gradleOwnedCwcCPlanner.ts": "cac50e5eae4ec646f4ba313755fd9aea0eae9dedba16a272334107e6575639f4",
     "src/test/fixtures/gradleOwnedCprBPProfile.ts": "2e961f3191188f954bc507d79a75f445d80dc97cdb860f770d807142d28d7269",
     "src/test/fixtures/gradleOwnedCprAAdmission.ts": "1da1e1997bfc0232130d56856368e91c46e53f4913b968dd26fb09c757d8ec44",
     "src/test/fixtures/gradleOwnedCprBP.ts": "c04a7dd252cc3f566524aa2260bac303eef8b0f8a5c7a5d3abfa6521ef6ad301",
@@ -303,20 +303,20 @@
   ],
   "samples": [
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "sourceApprovalEvidence": {
         "registry": {
           "schema": "cwc-c.approval-registry.v1",
-          "approvedManifest": "7b5691586ec01e635f9a113ea8ce4fc896419aed3f4de78f8f7259a733513c43",
-          "operatorSpki": "MCowBQYDK2VwAyEAit7JEk1uLk/DkBAZLxZVzFQNy2x0nBNEphzAVHJcxNQ="
+          "approvedManifest": "db297e32554706d4678316c666bacf78766caadc1ffd65e2225dd107c8e4edb3",
+          "operatorSpki": "MCowBQYDK2VwAyEA/Iqp1VIvXyvdRPSP2HIBOvbedC3JBbwQPb9/f1ac+JQ="
         },
-        "independentPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+        "independentPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
         "envelope": {
           "manifest": {
             "schema": "cwc-c.source-approval.v1",
             "policyDigest": "ee5a8ec148c25104e5bde79ea0ba64e247b0bb25a1dcb78a063957b14852f6ab",
             "sourceClosure": {
-              "src/test/fixtures/gradleOwnedCwcCCase.ts": "2db435b71670530b3137a4dddbc6969f2ac5601d34ca1663c3050566d905cbbd",
+              "src/test/fixtures/gradleOwnedCwcCCase.ts": "a8adfb1dfde7a113f528a8aa73f7405eb8248aaaf5a37ad715aa260c2e27f97e",
               "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
               "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
               "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
@@ -374,9 +374,9 @@
               "src/utils/gradleOwnedRecovery.ts": "5666924978ddf0cba75ae0fe87ae38b5c2111a1f5946662f03cc3f56a1b9380a",
               "src/utils/gradleOwnedSessionRuntime.ts": "c7cdb85e33ef8f4b016857c07c87b1c9d48d52436a72e38ece98f37a4936601f",
               "src/utils/gradleOwnedServiceSession.ts": "033426d57b207cf5f5cc1a183509bd77701a7b92fa5ae78a690d2124fc759115",
-              "src/test/fixtures/gradleOwnedCwcCProvider.ts": "d2ff01b23e222fcbddc5af1403405ea81f50aad92968b53ebd52c82ebed64556",
+              "src/test/fixtures/gradleOwnedCwcCProvider.ts": "fffd95626f95dd8386dce65379a653125f5adbb69ecfdb0ddb9d0f76786002ee",
               "src/test/fixtures/gradleOwnedCgpI2Owners.ts": "0b4319a767a7d2b94a2037b98ed4ec3d8bc06a149f04b85fbcdfaf4ab0ff8cfb",
-              "src/test/fixtures/gradleOwnedCwcCPlanner.ts": "76b1bcef30cb34fe0148a306245ae9a70fbedf3f6c635123124488c5ea8689b1",
+              "src/test/fixtures/gradleOwnedCwcCPlanner.ts": "cac50e5eae4ec646f4ba313755fd9aea0eae9dedba16a272334107e6575639f4",
               "src/test/fixtures/gradleOwnedCprAPlanner.ts": "b587875fd944dff95a35d26f3550e636fbe476d6968a9defc51ebe470c5c8117",
               "src/test/fixtures/gradleOwnedCprAWire.ts": "f15e3bc9a8c46b257bdd40d597cd188a96f54b1f28d389a583fedac1c36a3bf9",
               "src/test/fixtures/gradleOwnedCgpI2Protocol.ts": "de027b29a417d599a8509f8912e4a7b85bd1c472ff52100dfd31338844d76b3b",
@@ -394,7 +394,7 @@
               "vitest": "5.1.0"
             }
           },
-          "signature": "9jgDeiw11tlXkgjTmpmM+JtMwu1A8ZJJ3k58It6asHqMmItZDy9Be752YHW3I4l0regVqd77kxvJLh9+YGidCQ=="
+          "signature": "ZbK2h9OtSjlIV18yyS7WhuarGayzFFpTkWTbERYqGpqxgBnX3Ni0GR9lPVjqvd66ztF6NeD8wS/aWjxiO/WOCg=="
         }
       },
       "workload": "small",
@@ -419,7 +419,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 4434,
+      "remainingDeadlineMs": 4439,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 4,
@@ -430,11 +430,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "7989848cb372395497739b8f5c4bdc0414338910f27c50d4011ee5a86db7fba4",
             "callId": "1ad3390c1250290b854b35959bdd56883fa06671eda181f64fbc626ca4d753e4",
-            "originalDeadline": 8366,
+            "originalDeadline": 9266,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -501,11 +502,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "40e6ef15befb332794b278452c3bc02eedee5b91285ab429f09428743feb93cf",
             "callId": "d55365beb3d8ea19a0348831eeee0e9bc96019d6171f045b747441371f9089b6",
-            "originalDeadline": 8366,
+            "originalDeadline": 9266,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -571,12 +573,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "a6fa480edcbbcad1069a33b04d0c0235ac09aad1b44d22ee266592f94b4da98c",
           "grant": {
             "actor": "provider",
             "scopeId": "72f90935a68d834c01d328b7a6254c158552323ba10cc93a99bbe41bb860f888",
             "callId": "34395fc87ae6a2b6ed9fada87431760a79ed09586f47f28b42f01971d7292f8e",
-            "originalDeadline": 8366,
+            "originalDeadline": 9266,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -641,12 +644,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "783fbbc22b1a6c3e1fafdfe4db4ffeb1cbd0209f59916075546e73a53a5538c5",
           "grant": {
             "actor": "provider",
             "scopeId": "9436061eb260dc0386c1aaf1a099104a854346a86de36d8304bb1e099a70849b",
             "callId": "30b610954caa55082108b3e07694b44226e65839849074a7b338bf84a5e7b2f2",
-            "originalDeadline": 8366,
+            "originalDeadline": 9266,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -716,7 +720,7 @@
           "actor": "client-initial",
           "scopeId": "7989848cb372395497739b8f5c4bdc0414338910f27c50d4011ee5a86db7fba4",
           "callId": "1ad3390c1250290b854b35959bdd56883fa06671eda181f64fbc626ca4d753e4",
-          "originalDeadline": 8366,
+          "originalDeadline": 9266,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -745,7 +749,7 @@
           "actor": "client-seal",
           "scopeId": "40e6ef15befb332794b278452c3bc02eedee5b91285ab429f09428743feb93cf",
           "callId": "d55365beb3d8ea19a0348831eeee0e9bc96019d6171f045b747441371f9089b6",
-          "originalDeadline": 8366,
+          "originalDeadline": 9266,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -775,8 +779,8 @@
       "rows": [
         {
           "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-          "d": "e94e84e24b465b09a231842f71b58674d45b8feb7e5cf8c0e50ee3d1e1281757",
-          "deadline": 8366,
+          "d": "cf82cefbe5f9f8c395be4dab792bbe298f7882c2c112f9bcadfaa0c5e03085e6",
+          "deadline": 9266,
           "attempts": 1,
           "spent": {
             "wire": 5336,
@@ -786,8 +790,8 @@
         },
         {
           "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-          "d": "ba592d03656f2891efdde95d2bcb2399ca9390b8cb9d6bcbc9766b2fd31d2208",
-          "deadline": 8366,
+          "d": "59319ef48a38e4751f4273529632b988376c200ef53e6e9966756886ec7ef1d8",
+          "deadline": 9266,
           "attempts": 1,
           "spent": {
             "wire": 6142,
@@ -797,8 +801,8 @@
         },
         {
           "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-          "d": "9b436d30e16daffad058cf3d1796e15c8f67bbcde07f747833a56dd7e6e20ce6",
-          "deadline": 8366,
+          "d": "49fc16f53085ac9f194ecd0343194ab5087c8fc3856054991f76c9069074842a",
+          "deadline": 9266,
           "attempts": 1,
           "spent": {
             "wire": 11610,
@@ -808,8 +812,8 @@
         },
         {
           "k": "8f82d2c0ff939ec9eeea82d67e398507f83b77c24039335ed9b33ed66ceb77a2",
-          "d": "ed8bb96544e74418a059dca7adbe3ae1093e021347367a1284db949649768b14",
-          "deadline": 8366,
+          "d": "d4f9cabb56d1a9f57cc2a7c60be12c31997761131062677eb4f47111fb6b1788",
+          "deadline": 9266,
           "attempts": 1,
           "spent": {
             "wire": 7531,
@@ -820,7 +824,7 @@
       ]
     },
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "workload": "small",
       "role": "authority-broker",
       "requests": 2,
@@ -843,7 +847,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 4433,
+      "remainingDeadlineMs": 4438,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 4,
@@ -854,11 +858,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "880d47648aa0243efed3dbc5f003fcd19d3521184199fa674ba0171507c9be93",
             "callId": "a49c55c16ecebed8f74dc44a48727e2fcb8acfe2b204499d155699115ba62289",
-            "originalDeadline": 8464,
+            "originalDeadline": 9355,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -925,11 +930,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "a339416ff5cb48933eaa8e84e1f2b0030a7c7da5b6c701cb62b28b328e0fcec8",
             "callId": "dd15015ed531126de7724e0dde0859d12e2698b7edbeb0a5c1543b5b9b21b0a9",
-            "originalDeadline": 8464,
+            "originalDeadline": 9355,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -995,12 +1001,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "46f67865baef3ec31972b1b7ea0cfce1645a84490bff3b02288defb9324c0310",
           "grant": {
             "actor": "provider",
             "scopeId": "f112ccaacd2ddfdf1db956b6d33c1d922c5bd0be7b6e320fa3bc21fd84f6116e",
             "callId": "2ba0b5dbc7308bd673d5451ec8dec0e4d78278745a17f339b45640b7364c0240",
-            "originalDeadline": 8464,
+            "originalDeadline": 9355,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -1065,12 +1072,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "c935a1dead2598025682cfbe43c81ceed878ad77cc55d998a86d2fa7b712d10e",
           "grant": {
             "actor": "provider",
             "scopeId": "718f47dec044ff422123da1b7023c97d0c5ccad824a2464b96932831c3b7dba4",
             "callId": "8df6903d67447e06fb3472783b5ae11569563748005363b5f5681eed83296513",
-            "originalDeadline": 8464,
+            "originalDeadline": 9355,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -1140,7 +1148,7 @@
           "actor": "client-initial",
           "scopeId": "880d47648aa0243efed3dbc5f003fcd19d3521184199fa674ba0171507c9be93",
           "callId": "a49c55c16ecebed8f74dc44a48727e2fcb8acfe2b204499d155699115ba62289",
-          "originalDeadline": 8464,
+          "originalDeadline": 9355,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -1169,7 +1177,7 @@
           "actor": "client-seal",
           "scopeId": "a339416ff5cb48933eaa8e84e1f2b0030a7c7da5b6c701cb62b28b328e0fcec8",
           "callId": "dd15015ed531126de7724e0dde0859d12e2698b7edbeb0a5c1543b5b9b21b0a9",
-          "originalDeadline": 8464,
+          "originalDeadline": 9355,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -1199,8 +1207,8 @@
       "rows": [
         {
           "k": "3dfd7b18b3a08287c15aebe86f6d38b7ace3d933bf1d43430d5185cc9811fd49",
-          "d": "78cedd225a8c8d9d7fe27c8bd9cce0db0bb31833b2bab9a6c44372f24f98444f",
-          "deadline": 8464,
+          "d": "f6e98f2b1f36b21d174ecd2b4a2cbd43088fadbad9e5939bb60e3baee027bc7c",
+          "deadline": 9355,
           "attempts": 1,
           "spent": {
             "wire": 5406,
@@ -1210,8 +1218,8 @@
         },
         {
           "k": "f928c3aaa7949b63a17c5ff5b8f0e624f67aa6b92261d38d6b52083bfb0bdbea",
-          "d": "fa081d91159b7e1098928fe31be3e80a402610537fced8b843e1cdd12c002af3",
-          "deadline": 8464,
+          "d": "37e4f05064098d62c8ed8d69b32b7ed608cd7c00cb3da9837479c2072f9d3cb5",
+          "deadline": 9355,
           "attempts": 1,
           "spent": {
             "wire": 6380,
@@ -1221,8 +1229,8 @@
         },
         {
           "k": "90e2f143d3a7cfc5657b1d069c313fbced48dd14b3e0a66ca0997feb1d48501e",
-          "d": "2134ef9c760064ecf54b5bbbb128f9bbf3f8f895b742352880c278c29f8ba205",
-          "deadline": 8464,
+          "d": "b5b4aaf04fea7e885f637b3453abd09c8963a2f53663fe82531e729d7455c01d",
+          "deadline": 9355,
           "attempts": 1,
           "spent": {
             "wire": 11848,
@@ -1232,8 +1240,8 @@
         },
         {
           "k": "cab150d1674ecf98e620d92f241d2664da13c3c6aa4402063f81666feebe1f57",
-          "d": "5887495c8dbfe38e23112ae882f43bc695017dcc4371230d6e12bca3207bc1c2",
-          "deadline": 8464,
+          "d": "f431b1cce29b438630ae076b29bd4a535cabd558168c90b3cf0a88b52049a173",
+          "deadline": 9355,
           "attempts": 1,
           "spent": {
             "wire": 7769,
@@ -1244,7 +1252,7 @@
       ]
     },
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "workload": "mid-2048",
       "role": "reader",
       "requests": 3,
@@ -1267,7 +1275,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 4410,
+      "remainingDeadlineMs": 4414,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 5,
@@ -1278,11 +1286,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "38c5ddf51f42553d68d6f17ed22c58d2885901824263fb1496577b0241bf91ef",
             "callId": "eaa7f0b1c36a020fa0c8006de0d512cd5c1a0ef363f7bde78eb90e575c494118",
-            "originalDeadline": 8560,
+            "originalDeadline": 9445,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -1349,11 +1358,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "bed1347d397ba1cd7859b347c63d14651a3f3e2e53ebdf0dd02aa481abdb1b32",
             "callId": "dc25ceed582e314b32eaa2b15c129af44e436b26d4a3132be2e234be7f2ab88a",
-            "originalDeadline": 8560,
+            "originalDeadline": 9445,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -1419,12 +1429,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "d9ed485b9298f95bd9c53127bc72ab3d52e538abf817aafd4ddd9b7436415951",
           "grant": {
             "actor": "provider",
             "scopeId": "5dbc3654c7764ac49fb6f78f8e09b6a35153c6e0fe861fc46e3f3a3515286024",
             "callId": "fc14207f583f642d14e300ece1bc5e585dd9cca39bc0913a87b49bad6e1fa6f3",
-            "originalDeadline": 8560,
+            "originalDeadline": 9445,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -1489,12 +1500,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "de59bf42bd64cba1362ec3e641165d478ab1901c8d359cebd5c2254a304caeb4",
           "grant": {
             "actor": "provider",
             "scopeId": "2fab266101e1ad9cff22dbbec0acd223b5707bcb34cf02a1b0f39e68c5f17d3a",
             "callId": "a33fe3e4d8a145fafe733742b6d22de169af8a10523ffff0fb4207718dee6d3d",
-            "originalDeadline": 8560,
+            "originalDeadline": 9445,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -1559,12 +1571,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "0e09c41ca8316e05d8020ff805ad66b573a4cc9ba219100611efe817ca6cde58",
           "grant": {
             "actor": "provider",
             "scopeId": "929b74d5f0faa0457f485f268bd552c873476fd5d7adc92c567141c3d5814b92",
             "callId": "427bce570078d4b5667eec3a58534b4b97a74eec4e05b93046be9d2c0fc6d62f",
-            "originalDeadline": 8560,
+            "originalDeadline": 9445,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -1634,7 +1647,7 @@
           "actor": "client-initial",
           "scopeId": "38c5ddf51f42553d68d6f17ed22c58d2885901824263fb1496577b0241bf91ef",
           "callId": "eaa7f0b1c36a020fa0c8006de0d512cd5c1a0ef363f7bde78eb90e575c494118",
-          "originalDeadline": 8560,
+          "originalDeadline": 9445,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -1663,7 +1676,7 @@
           "actor": "client-seal",
           "scopeId": "bed1347d397ba1cd7859b347c63d14651a3f3e2e53ebdf0dd02aa481abdb1b32",
           "callId": "dc25ceed582e314b32eaa2b15c129af44e436b26d4a3132be2e234be7f2ab88a",
-          "originalDeadline": 8560,
+          "originalDeadline": 9445,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -1693,8 +1706,8 @@
       "rows": [
         {
           "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-          "d": "e94e84e24b465b09a231842f71b58674d45b8feb7e5cf8c0e50ee3d1e1281757",
-          "deadline": 8560,
+          "d": "cf82cefbe5f9f8c395be4dab792bbe298f7882c2c112f9bcadfaa0c5e03085e6",
+          "deadline": 9445,
           "attempts": 1,
           "spent": {
             "wire": 5336,
@@ -1704,8 +1717,8 @@
         },
         {
           "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-          "d": "21286c9978ef0e36724540dd14438c37c97636743842e2a18ff3926f6b1175d8",
-          "deadline": 8560,
+          "d": "7486f7c23ce4e15b18ba907ebda712b3af9d60a7043532a9261125b596a55502",
+          "deadline": 9445,
           "attempts": 1,
           "spent": {
             "wire": 6142,
@@ -1715,8 +1728,8 @@
         },
         {
           "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-          "d": "8acd41df5d5b97ced9fcc45cffce2fe73e463c0590c329be893c19cd02fe300f",
-          "deadline": 8560,
+          "d": "64b314f3c96e5ed96ce747bd59a83e18f40c0e21da489bbe6f67a52ba4833f2a",
+          "deadline": 9445,
           "attempts": 1,
           "spent": {
             "wire": 12115,
@@ -1726,8 +1739,8 @@
         },
         {
           "k": "8f82d2c0ff939ec9eeea82d67e398507f83b77c24039335ed9b33ed66ceb77a2",
-          "d": "b0089cdd29be74b27349a88a823eb5fec272cf7c683c3f4a64f34948ba9eda72",
-          "deadline": 8560,
+          "d": "d44bd4b749d34c2a0a55d6c94012d63fd2230f25083e1fe38bb70e487e8ba902",
+          "deadline": 9445,
           "attempts": 1,
           "spent": {
             "wire": 12126,
@@ -1737,8 +1750,8 @@
         },
         {
           "k": "c528432ed0b3e3ee71ab39c7dc6054a18d68b5231bd485b90e13b482be238000",
-          "d": "b841395a5bc6ef8728facd37dc610a65743e8d938db9a9706d7168088b96939c",
-          "deadline": 8560,
+          "d": "0c6d3475b8d7b16b9bd09ad1d517d3d49895de7023791673320bd7f1fe4d52b8",
+          "deadline": 9445,
           "attempts": 1,
           "spent": {
             "wire": 6599,
@@ -1749,7 +1762,7 @@
       ]
     },
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "workload": "mid-2048",
       "role": "authority-broker",
       "requests": 3,
@@ -1772,7 +1785,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 4409,
+      "remainingDeadlineMs": 4412,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 5,
@@ -1783,11 +1796,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "c07e57374b911436d2982d59436951a2774acce1d8a584c8571a3386b2ab2222",
             "callId": "4a01a0927bb884ce130681e6baebf5671dcdd43adfee032e326a0aef6b9ec736",
-            "originalDeadline": 8688,
+            "originalDeadline": 9565,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -1854,11 +1868,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "5cd8f6cfd96b8a2f06af49a3b1e087781a4d0e8b161a01e619fe212fe97ea2ee",
             "callId": "eef7486bf908e67640eadc1e9ff1d7e5a7a8b591e330b9d7ff008156dfd33dca",
-            "originalDeadline": 8688,
+            "originalDeadline": 9565,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -1924,12 +1939,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "0cc215596b377cae6ce9c00c9f9b690beb99de3e32529556a99eb6b3ea870e90",
           "grant": {
             "actor": "provider",
             "scopeId": "707b777159764ff8b51f45b3f63c43f6a71d9887d8144b6b4f2ca4075c7bfba7",
             "callId": "24104e63c48a1328def0e7cff2858254f93ce8674b779b59c18221705053e982",
-            "originalDeadline": 8688,
+            "originalDeadline": 9565,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -1994,12 +2010,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "c47167894787ead5e30568ab3fce9b35359d415d0f446dc6caf4b28cc5e5ac24",
           "grant": {
             "actor": "provider",
             "scopeId": "ed10571959fe1ef62010bc23bf72ccea1d11ff0452e69819e3f074d844aed9b4",
             "callId": "efc2a71c38272066a41c7d0558ac2185605c36d2d0613d3636c97d6432d99c11",
-            "originalDeadline": 8688,
+            "originalDeadline": 9565,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2064,12 +2081,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "b1aa2f4907fd2ab1ca05d147513434e8a790d823a2ba7e35a82b679ec98a096a",
           "grant": {
             "actor": "provider",
             "scopeId": "d4e31d7789855d6c0149e2b3bcbbfcfeab5e41873edba318841ad6325810413c",
             "callId": "98b0f5aa6b63a60fde23de3fe79c58a7fcab987275098aa69024d6c91efd8f17",
-            "originalDeadline": 8688,
+            "originalDeadline": 9565,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2139,7 +2157,7 @@
           "actor": "client-initial",
           "scopeId": "c07e57374b911436d2982d59436951a2774acce1d8a584c8571a3386b2ab2222",
           "callId": "4a01a0927bb884ce130681e6baebf5671dcdd43adfee032e326a0aef6b9ec736",
-          "originalDeadline": 8688,
+          "originalDeadline": 9565,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -2168,7 +2186,7 @@
           "actor": "client-seal",
           "scopeId": "5cd8f6cfd96b8a2f06af49a3b1e087781a4d0e8b161a01e619fe212fe97ea2ee",
           "callId": "eef7486bf908e67640eadc1e9ff1d7e5a7a8b591e330b9d7ff008156dfd33dca",
-          "originalDeadline": 8688,
+          "originalDeadline": 9565,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -2198,8 +2216,8 @@
       "rows": [
         {
           "k": "3dfd7b18b3a08287c15aebe86f6d38b7ace3d933bf1d43430d5185cc9811fd49",
-          "d": "78cedd225a8c8d9d7fe27c8bd9cce0db0bb31833b2bab9a6c44372f24f98444f",
-          "deadline": 8688,
+          "d": "f6e98f2b1f36b21d174ecd2b4a2cbd43088fadbad9e5939bb60e3baee027bc7c",
+          "deadline": 9565,
           "attempts": 1,
           "spent": {
             "wire": 5406,
@@ -2209,8 +2227,8 @@
         },
         {
           "k": "f928c3aaa7949b63a17c5ff5b8f0e624f67aa6b92261d38d6b52083bfb0bdbea",
-          "d": "3e9c3e41ef93c1dbd202374d296874e54845fd6007f846266586cbf95bcf3156",
-          "deadline": 8688,
+          "d": "0aef2f054116e0ae4f8401fb9b12fc294acb43d4f14c34a50e6f0ce0ad85abec",
+          "deadline": 9565,
           "attempts": 1,
           "spent": {
             "wire": 6380,
@@ -2220,8 +2238,8 @@
         },
         {
           "k": "90e2f143d3a7cfc5657b1d069c313fbced48dd14b3e0a66ca0997feb1d48501e",
-          "d": "64fb54448ebe7fb91044e153d7d8c1032fe8f5f524575313d1b250fa9c8a84e2",
-          "deadline": 8688,
+          "d": "7e8ec90d54a64e1247861ee644dc230f5569788546679e1ad1d60262b1ff3cf8",
+          "deadline": 9565,
           "attempts": 1,
           "spent": {
             "wire": 12353,
@@ -2231,8 +2249,8 @@
         },
         {
           "k": "cab150d1674ecf98e620d92f241d2664da13c3c6aa4402063f81666feebe1f57",
-          "d": "fae2afd392b49a63d73bc55755cf79202be4ba4936616108c9613e52297fb5e6",
-          "deadline": 8688,
+          "d": "dc257276b45e15bbfd355fb884c5ff5917ea6ab07abbdd8094ff86d19269b7cb",
+          "deadline": 9565,
           "attempts": 1,
           "spent": {
             "wire": 12364,
@@ -2242,8 +2260,8 @@
         },
         {
           "k": "fe0a395b1504e3929508fb8ff7196c67e87fe2bb53ef67ebc7bd6c6b695e711d",
-          "d": "161d9c7ea2ae39fbbc892cbfa7288907555b2088bba0f360c374a380a356f58e",
-          "deadline": 8688,
+          "d": "598ddec6c21c92922955dd2a7e500fa2a726aadfd33323db5006150a6f9a3752",
+          "deadline": 9565,
           "attempts": 1,
           "spent": {
             "wire": 6837,
@@ -2254,7 +2272,7 @@
       ]
     },
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "workload": "large-commit",
       "role": "reader",
       "requests": 9,
@@ -2277,7 +2295,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 4146,
+      "remainingDeadlineMs": 4162,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 11,
@@ -2288,11 +2306,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "f4aa910902332ddaae5b93c87c16bb8425f7f0f6f3ba655e62d6830fffcf6e69",
             "callId": "48ea703bba8db325449d91026cd1c0ec91bc55a3d03f231a1b6ab0384f8eeb5e",
-            "originalDeadline": 8814,
+            "originalDeadline": 9688,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2359,11 +2378,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "f2c4a2e218053d6a404c7563bee7ed90c9ae5fd38cafc547f6b6363c1d82480b",
             "callId": "949583308165119aa8b883d766c601bc3b6b02c278742fef50b48804b882abfb",
-            "originalDeadline": 8814,
+            "originalDeadline": 9688,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2429,12 +2449,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "4c5b596be76f2039d44bfbc20f5b9c0ab220f78f6bea04e9e670dea0671ba9bc",
           "grant": {
             "actor": "provider",
             "scopeId": "092ed1ec6403300f76f2f78b993c10933833abd4dc7b9b9fe74ae2ffdcd77258",
             "callId": "2e9d2fc80267645fbff1d65d23da465e90e35e467e572b472c769f0ca7b74841",
-            "originalDeadline": 8814,
+            "originalDeadline": 9688,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2499,12 +2520,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "b86959ad4acb7780c7788d0d60fbd2669e826e6a06fcfc1e3b377de5bea8a2dd",
           "grant": {
             "actor": "provider",
             "scopeId": "e7fa954bcef328e59e4c198e23b009dd827a48e27b4acbbd2ec9429651e3ddb9",
             "callId": "bed6446fa71e241fff4b100892474c7646bda65d8fa5076576c72afa13f35ad5",
-            "originalDeadline": 8814,
+            "originalDeadline": 9688,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2569,12 +2591,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "812bbcaaad4289bf69c8974ac1cd4bfc342f5b1ba5e6559f1943e18dda80eda0",
           "grant": {
             "actor": "provider",
             "scopeId": "1abb9d1ff42f45980cdf02c5bebf9a11f7aefede6b7694081b0e9d50f3489273",
             "callId": "8f5beef184d6c3d62bc501e4d2d21ca5a4e831c707353cf36240967290d0f6c9",
-            "originalDeadline": 8814,
+            "originalDeadline": 9688,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2639,12 +2662,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "3708e7fcfa57018b53c3b8ccbd1e9611f0294de71a2f602274af7220ac00856f",
           "grant": {
             "actor": "provider",
             "scopeId": "15540e65cef3e071a5467ec1ac30a556a61b47256334d52c58efad3cf66e67dd",
             "callId": "9c006ef6db43459abd07632d8eb46ba51a809acdf204a8dde7daae8adffdcfe6",
-            "originalDeadline": 8814,
+            "originalDeadline": 9688,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2709,12 +2733,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "3264d29e8d67b9eca43b57d2e6b4cb8dc625493d1c030e0894c2ceee4703197e",
           "grant": {
             "actor": "provider",
             "scopeId": "8eb7784d9b2944ac2ce9257821ccf0d14173998613a7ab6ac7e3924df61f424c",
             "callId": "9325b01ad678d284a1bbc8b256234132a0b31245be873ebae80970ace202d2bf",
-            "originalDeadline": 8814,
+            "originalDeadline": 9688,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2779,12 +2804,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "3fdf381cf2e6b4674df97ea83f4d2798725ab02ce0705f4130cdd37958efd5bf",
           "grant": {
             "actor": "provider",
             "scopeId": "0a4f7f0a2b28ac1a3f2225e5d2998b51b32d5ca2809b5a1b8f399ef39d33203c",
             "callId": "4b7e39d37b4773d9c3025cbb797e68da98d50f015f46ad71735876913d2a09a8",
-            "originalDeadline": 8814,
+            "originalDeadline": 9688,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2849,12 +2875,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "32688bc3a992f7793bb435e35726704ba83e8850c3d43d9468ef4128ea1d3e5d",
           "grant": {
             "actor": "provider",
             "scopeId": "95064d6d935eba65e6f36a17c61b1ed6b8e00aa3d0797d863722c3bf84dc4a94",
             "callId": "8b133371075c6c8f71c4dd83ef357d42728e2131eba2c92d985702585c5d4405",
-            "originalDeadline": 8814,
+            "originalDeadline": 9688,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2919,12 +2946,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "52e089c4ffcc6ea34d4d7c40eca4671461e8e9acaa26970c6116bff917ef7115",
           "grant": {
             "actor": "provider",
             "scopeId": "bdfc7eaca9a1b01c6fd2433caabff1138d9b5180f4313b3340fd351d3219944b",
             "callId": "3b46eb16f271769c2070cf96b76905d43482bf574b0507e1f19d5999572b5c25",
-            "originalDeadline": 8814,
+            "originalDeadline": 9688,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -2989,12 +3017,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "a282687fe74eb09c93e0410e569d10f11a6d01e07856070f4e35b0f1bac240ff",
           "grant": {
             "actor": "provider",
             "scopeId": "f649c031a2466071748be1f8a0f53a32ee8a72d548f124b4ad7b0bee37ac8afa",
             "callId": "223e2915b3c27ad80777c72c5c8fa81d983e7afa49d7c4d45375b7ed477fd6fe",
-            "originalDeadline": 8814,
+            "originalDeadline": 9688,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -3064,7 +3093,7 @@
           "actor": "client-initial",
           "scopeId": "f4aa910902332ddaae5b93c87c16bb8425f7f0f6f3ba655e62d6830fffcf6e69",
           "callId": "48ea703bba8db325449d91026cd1c0ec91bc55a3d03f231a1b6ab0384f8eeb5e",
-          "originalDeadline": 8814,
+          "originalDeadline": 9688,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -3093,7 +3122,7 @@
           "actor": "client-seal",
           "scopeId": "f2c4a2e218053d6a404c7563bee7ed90c9ae5fd38cafc547f6b6363c1d82480b",
           "callId": "949583308165119aa8b883d766c601bc3b6b02c278742fef50b48804b882abfb",
-          "originalDeadline": 8814,
+          "originalDeadline": 9688,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -3123,8 +3152,8 @@
       "rows": [
         {
           "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-          "d": "e94e84e24b465b09a231842f71b58674d45b8feb7e5cf8c0e50ee3d1e1281757",
-          "deadline": 8814,
+          "d": "cf82cefbe5f9f8c395be4dab792bbe298f7882c2c112f9bcadfaa0c5e03085e6",
+          "deadline": 9688,
           "attempts": 1,
           "spent": {
             "wire": 5337,
@@ -3134,8 +3163,8 @@
         },
         {
           "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-          "d": "c296c47cff873bd14ba1799e6b1df04c085f014158a79d8098d2163425f3343a",
-          "deadline": 8814,
+          "d": "93d57bf4a30de03ab46ff13eb5762a3ed0ceda80d4902294779c649d30866dc0",
+          "deadline": 9688,
           "attempts": 1,
           "spent": {
             "wire": 6146,
@@ -3145,8 +3174,8 @@
         },
         {
           "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-          "d": "36ad70e282da254ba8bde2d1bcdc35ad8ae83fe6b4259525ff0affb82f3cfd71",
-          "deadline": 8814,
+          "d": "16080a239373e0536ea948aeb58c1bc5764f7a27e2c836fbe3128a3c4bcc6535",
+          "deadline": 9688,
           "attempts": 1,
           "spent": {
             "wire": 11260,
@@ -3156,8 +3185,8 @@
         },
         {
           "k": "8f82d2c0ff939ec9eeea82d67e398507f83b77c24039335ed9b33ed66ceb77a2",
-          "d": "748fed2e4bcca17ff4d569459a24cb4e154de7e683877283853681c3829a83ed",
-          "deadline": 8814,
+          "d": "5d2ae345ceaa4f514a6bb150298d35120db02d4fe49a6954e0664390d5c5e1f9",
+          "deadline": 9688,
           "attempts": 1,
           "spent": {
             "wire": 11266,
@@ -3167,8 +3196,8 @@
         },
         {
           "k": "c528432ed0b3e3ee71ab39c7dc6054a18d68b5231bd485b90e13b482be238000",
-          "d": "06cdef235476e8a5da45d37525685a12bacdd60816525eebf1095ab0db908136",
-          "deadline": 8814,
+          "d": "e11ec678caf5d2ae5fe99871d4a4e043304c1c65d9b869511bd164b98e7fa973",
+          "deadline": 9688,
           "attempts": 1,
           "spent": {
             "wire": 11266,
@@ -3178,8 +3207,8 @@
         },
         {
           "k": "7396b1fc1cd0a8cb138ba651548d03dae3f7dccc79591a821770ed77a8d49f4a",
-          "d": "9a508c1e185dfff03aab10264e3a67a643b60486781c60b018d1c3a8b4b40746",
-          "deadline": 8814,
+          "d": "610e75fe157494fd4ec979e9e79e42f1876871a9746f7053e59e24d3c86ae752",
+          "deadline": 9688,
           "attempts": 1,
           "spent": {
             "wire": 11268,
@@ -3189,8 +3218,8 @@
         },
         {
           "k": "4c136b468992057c34ce6888e7d18579a41dd365b9e7ef96f26af225f8e7be9b",
-          "d": "dae5d490f411bdf8dabb0efb3d99a9d8b6f2aa58d22e3795bfb89efeee7a1e65",
-          "deadline": 8814,
+          "d": "b4fee97b6e2a983ec676ae2e03107cd354b2fbfa086810e9096f7432bf7854b9",
+          "deadline": 9688,
           "attempts": 1,
           "spent": {
             "wire": 11699,
@@ -3200,8 +3229,8 @@
         },
         {
           "k": "306a479a24e955011259432ecb6ad43ceebb758315466e57d2a1df8ff293e936",
-          "d": "2e673694a9b4d0404a435ecc6426c3ab2adc7dd1d3f85040bf52ec04665a24bf",
-          "deadline": 8814,
+          "d": "abe7c0fd06e27791bbcb6d6a75149b88b651567d25d125201e8df09292e91cdb",
+          "deadline": 9688,
           "attempts": 1,
           "spent": {
             "wire": 11696,
@@ -3211,8 +3240,8 @@
         },
         {
           "k": "3a11288c6c49073d00dd0ea43a8e68f6d854fb2dc658404258b938286ec9a75f",
-          "d": "97b7c671eb4c069a114decb6164533783f7d33d9bc72a0e56ee9697e3e476a99",
-          "deadline": 8814,
+          "d": "249b7291601e300553c7e3f4eadc1b7961fe02b1a48f17f6533f42b204bdc575",
+          "deadline": 9688,
           "attempts": 1,
           "spent": {
             "wire": 11696,
@@ -3222,8 +3251,8 @@
         },
         {
           "k": "c9b873fe69f0d9fc6573452b826b112ce08c5b7a252bccda7d70fd57cc7cf483",
-          "d": "476f0cbaddfd5814c2286326e70fe9a19f9eb2490a27b73c24fe1513808b9910",
-          "deadline": 8814,
+          "d": "84bf1403b8093e54a79d3e677b08efcedcf013dcf407cdcf75564839918fdbaf",
+          "deadline": 9688,
           "attempts": 1,
           "spent": {
             "wire": 11696,
@@ -3233,8 +3262,8 @@
         },
         {
           "k": "892385479a23d5a529fd4ab76a424276a2d91c49971684c76915eaca661c3e23",
-          "d": "526e39b324dba93a7f70b1e89de10077f4062e75862e1ab29c922a332f291035",
-          "deadline": 8814,
+          "d": "6794e1916713025d9ff6866c826f5e805288051d367b9b2bd19488f1605baa74",
+          "deadline": 9688,
           "attempts": 1,
           "spent": {
             "wire": 7957,
@@ -3245,7 +3274,7 @@
       ]
     },
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "workload": "large-commit",
       "role": "authority-broker",
       "requests": 9,
@@ -3268,7 +3297,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 4125,
+      "remainingDeadlineMs": 4141,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 11,
@@ -3279,11 +3308,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "33b4efe7eeb476df0727b507a9c3c1461ad91f5dc146936842f7a29d198833f5",
             "callId": "2ae16ff6d8590e43c941584a1c647fa0ebd02f38c49d943fd0d0be34e3e0ad2d",
-            "originalDeadline": 9260,
+            "originalDeadline": 10111,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -3350,11 +3380,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "9a6f0c922295a39ee3fd08546a4396961313ebb3c681bca0c49a8d91531dd2cb",
             "callId": "8099d6b0ce2d0cbba398a588529afc285c2afc53613dce44a947347dcf7ef5f5",
-            "originalDeadline": 9260,
+            "originalDeadline": 10111,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -3420,12 +3451,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "849a880bd46a09fbcd3a78a9ca362115643d68c3d2a4f942da9ff300c015c311",
           "grant": {
             "actor": "provider",
             "scopeId": "84b85e52747fd5a0576fbd96c7956d017aeb7eaa78e2ce301465cb6831246406",
             "callId": "121c6dbb6dc38a85859c3fbb1ac2bc4d2871bef6771dde88ce8abf2bc460e975",
-            "originalDeadline": 9260,
+            "originalDeadline": 10111,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -3490,12 +3522,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "3cc6c5ba9e0a091b2978c0be3170ec56a05c6e286115b838a18969eb6364871d",
           "grant": {
             "actor": "provider",
             "scopeId": "62f79fcc52679c2421a9f94ddd41eb3de71604ebf4d5c0c4b9e8027ce6785223",
             "callId": "e1bd09f3052daec25ac052095a180d6196911b04a3417ba05735381e41bbb365",
-            "originalDeadline": 9260,
+            "originalDeadline": 10111,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -3560,12 +3593,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "7157072708b7772a6f694faf5c22becd01408ef980a989e1d04349fe564d20ab",
           "grant": {
             "actor": "provider",
             "scopeId": "d23b5f77ab02f78dbcf869528b04a777d614069399bf70ae4128f502c8389790",
             "callId": "bb2fbb6254985286455654d137d9de2cae47c972756859e833c8a6cf3c2289cb",
-            "originalDeadline": 9260,
+            "originalDeadline": 10111,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -3630,12 +3664,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "58b1d3237749eac0fabfd74dd31c05ddfabac8a569ad345fb3bc6a74dec74ca2",
           "grant": {
             "actor": "provider",
             "scopeId": "165dd91c4729c14d07fead703c2795b35d972d99235b2a89558d8e4bfb32a3ab",
             "callId": "1117d7ba3de1d534a6dbe2ad0605748a05601e1b2db7c5dd8195c0c7d6e03f72",
-            "originalDeadline": 9260,
+            "originalDeadline": 10111,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -3700,12 +3735,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "9a545b6730352bef7cf3aa4aa026ae660588663fdeb69b46eda0d28fed676e95",
           "grant": {
             "actor": "provider",
             "scopeId": "21e621ac2c66d657a8236ba7caae5eb588570a59fc380c9b6e3954153e1024ab",
             "callId": "62c930f42788b18db7c08c67c30fb12771fba7bdcffcc0bce17ec22063e6b31e",
-            "originalDeadline": 9260,
+            "originalDeadline": 10111,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -3770,12 +3806,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "1553c8b09537bf9f30b19dba02b905010d3457cbfb7f2fd2a76930969db8080f",
           "grant": {
             "actor": "provider",
             "scopeId": "1665114b9ee8fce7c3da4fab2555062e998599a7a317a9a0f85f0ebab1317430",
             "callId": "ea3d512a27ab86a848c94246b7747041cfb888a52a14062adbb40f3ad094153f",
-            "originalDeadline": 9260,
+            "originalDeadline": 10111,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -3840,12 +3877,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "25d534d0494d211b5a64080d32b3983eaf6e9c3a6bc89dd45e865d41f4902442",
           "grant": {
             "actor": "provider",
             "scopeId": "27783f743dd42d7b87bbbc9a2703d5b7f0fd180306dca461301b7ccdf72441b0",
             "callId": "a361f7b4bdf1713d5ac3d952f477f16e888f1b05316106c51145d0e22907d636",
-            "originalDeadline": 9260,
+            "originalDeadline": 10111,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -3910,12 +3948,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "184d29186e634b2fb576e83ea83ff3ae27de6be99092f96275905bdab4b1de39",
           "grant": {
             "actor": "provider",
             "scopeId": "f4f860e7deaac7c253eb0754a39178d3389e01cb90116290571d1a5dbb1a26a4",
             "callId": "39c1fd792bb37dcc1aff288181c30a08225b58fd08b721329e718fc7a019fd6c",
-            "originalDeadline": 9260,
+            "originalDeadline": 10111,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -3980,12 +4019,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "64b89ec94ec84c0fcb09e7ce91e20eee5d135dafd8c1ef9f6420d42bd7ce35f8",
           "grant": {
             "actor": "provider",
             "scopeId": "94d29cd66c9a544d709d509a5dd2b8dede64fc3322077cb6233f087be1520430",
             "callId": "9fedb1abea4d75bccc1ed57e0ef3f85a34ea7a781f6e3e938df5b0d48d030d9d",
-            "originalDeadline": 9260,
+            "originalDeadline": 10111,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -4055,7 +4095,7 @@
           "actor": "client-initial",
           "scopeId": "33b4efe7eeb476df0727b507a9c3c1461ad91f5dc146936842f7a29d198833f5",
           "callId": "2ae16ff6d8590e43c941584a1c647fa0ebd02f38c49d943fd0d0be34e3e0ad2d",
-          "originalDeadline": 9260,
+          "originalDeadline": 10111,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -4084,7 +4124,7 @@
           "actor": "client-seal",
           "scopeId": "9a6f0c922295a39ee3fd08546a4396961313ebb3c681bca0c49a8d91531dd2cb",
           "callId": "8099d6b0ce2d0cbba398a588529afc285c2afc53613dce44a947347dcf7ef5f5",
-          "originalDeadline": 9260,
+          "originalDeadline": 10111,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -4114,8 +4154,8 @@
       "rows": [
         {
           "k": "3dfd7b18b3a08287c15aebe86f6d38b7ace3d933bf1d43430d5185cc9811fd49",
-          "d": "78cedd225a8c8d9d7fe27c8bd9cce0db0bb31833b2bab9a6c44372f24f98444f",
-          "deadline": 9260,
+          "d": "f6e98f2b1f36b21d174ecd2b4a2cbd43088fadbad9e5939bb60e3baee027bc7c",
+          "deadline": 10111,
           "attempts": 1,
           "spent": {
             "wire": 5407,
@@ -4125,8 +4165,8 @@
         },
         {
           "k": "f928c3aaa7949b63a17c5ff5b8f0e624f67aa6b92261d38d6b52083bfb0bdbea",
-          "d": "f4d7db936a9ff85022160d48beb0282d0af0fba45c5b6d4125bd7c73292e6e6e",
-          "deadline": 9260,
+          "d": "598b5d2f9f1cacc91f72f15047769691326958e6c9103f7fcaff01ebfde82cc4",
+          "deadline": 10111,
           "attempts": 1,
           "spent": {
             "wire": 6384,
@@ -4136,8 +4176,8 @@
         },
         {
           "k": "90e2f143d3a7cfc5657b1d069c313fbced48dd14b3e0a66ca0997feb1d48501e",
-          "d": "5df74162a392b935e42bc3cfd58f4bee2cf6512891a0e0fc1d5d72f1e67d6352",
-          "deadline": 9260,
+          "d": "c116e6221b768c79db3a3e76e1df57a9f4d86585f583395a97159c0b2db289b6",
+          "deadline": 10111,
           "attempts": 1,
           "spent": {
             "wire": 11498,
@@ -4147,8 +4187,8 @@
         },
         {
           "k": "cab150d1674ecf98e620d92f241d2664da13c3c6aa4402063f81666feebe1f57",
-          "d": "c8f681998e7df77c5bbd8e195908a2ed1c8bff3d02ab0a279b4b9c3b13493c1e",
-          "deadline": 9260,
+          "d": "e9235478eefbb8ba10c0d1292bd586dccd37be07a3a818352bca8efaca5b96ce",
+          "deadline": 10111,
           "attempts": 1,
           "spent": {
             "wire": 11504,
@@ -4158,8 +4198,8 @@
         },
         {
           "k": "fe0a395b1504e3929508fb8ff7196c67e87fe2bb53ef67ebc7bd6c6b695e711d",
-          "d": "d3cbc6b46803c0e29511ffc5f8f17429089b278fa14876218c138b4b342c37cb",
-          "deadline": 9260,
+          "d": "d16e35228f2fe28451efa12adaf237c6eb5bf9fa21e1401f69d6a44b0d0b0617",
+          "deadline": 10111,
           "attempts": 1,
           "spent": {
             "wire": 11504,
@@ -4169,8 +4209,8 @@
         },
         {
           "k": "da701fa17bd23131c9e92a32af678ecca3ceea2823c6a945f03f16a980a686f5",
-          "d": "2b14c83fb69965dc75c3c3f6bc914a063928ce5676bca9fba0b855ea0bb3d284",
-          "deadline": 9260,
+          "d": "0542f33e803a14e416c5dce8da083007a5c22c8b847e5b5891b2850b0c3e7305",
+          "deadline": 10111,
           "attempts": 1,
           "spent": {
             "wire": 11506,
@@ -4180,8 +4220,8 @@
         },
         {
           "k": "05dacee58fb50222f53b4c5d2a38509b622ec01e258cdd0de504f985f6e0cbbb",
-          "d": "798d23525585a94e490e9acb041fb40e161a3feaa037280ef46fa57bde499014",
-          "deadline": 9260,
+          "d": "a56337387c68dc4e76254d2aceb4d25ef113c6145c4867025994fc274cfbe139",
+          "deadline": 10111,
           "attempts": 1,
           "spent": {
             "wire": 11937,
@@ -4191,8 +4231,8 @@
         },
         {
           "k": "cddaa431a102e37fa1049391d37affab5a5d42115a35e91ebf6c1b14a611f64f",
-          "d": "e8eed67e5e08b5514ff170b19092cc69f3ad7e9b8328555bb1feea25da4520aa",
-          "deadline": 9260,
+          "d": "c3415a783fd1474faea7a880c246804edd3b6b4a78d32d2e9e696ea94b4caed9",
+          "deadline": 10111,
           "attempts": 1,
           "spent": {
             "wire": 11934,
@@ -4202,8 +4242,8 @@
         },
         {
           "k": "e42db7d8f1063a5248e37ac49bbffa35c62341a102e14f12c191e269449dff99",
-          "d": "ac1f046bd091eb9a3b7c3c5e83615d85415752888646f242f571241744cbd7b9",
-          "deadline": 9260,
+          "d": "598e25c5001037a10559221ae1264270d7b51ffb9609bff3e0f39fca738bc6f4",
+          "deadline": 10111,
           "attempts": 1,
           "spent": {
             "wire": 11934,
@@ -4213,8 +4253,8 @@
         },
         {
           "k": "3d06c7d0a19d92c1526a7fb251f8b5f386aab5387d35368798191d6e6a3edc27",
-          "d": "2259e2eb550ee981cbcc0b404145cfd624078a84dfbdaf90436adbc2f375791f",
-          "deadline": 9260,
+          "d": "1ca24847fc9d76dbddb7a0da6c2daa186a73fd1618ff4625792d63fd15d3b3c9",
+          "deadline": 10111,
           "attempts": 1,
           "spent": {
             "wire": 11934,
@@ -4224,8 +4264,8 @@
         },
         {
           "k": "4ea8f0c6e4ba2222bf1d2181cdcc458adf6f15111d6871c61e3ce800db80b6ea",
-          "d": "8f260f7cf91daf0b8feac1ab002e0cbcb73ac151e1dd044b609883ce94cc52f2",
-          "deadline": 9260,
+          "d": "57536d0579eb083fe15a22f5aa09ac6b795fa12112296000767d465aeae69465",
+          "deadline": 10111,
           "attempts": 1,
           "spent": {
             "wire": 8195,
@@ -4236,7 +4276,7 @@
       ]
     },
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "workload": "large-payload",
       "role": "reader",
       "requests": 9,
@@ -4259,7 +4299,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 4150,
+      "remainingDeadlineMs": 4155,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 11,
@@ -4270,11 +4310,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "b04d05e1ad480ea54f9505032e1c35aaa6a68b5b409b8e391a496dde23cf5457",
             "callId": "d8c8b74c5b67a1054a0e1edd4710477f04ff66775bc5e310f05c1ded7138965e",
-            "originalDeadline": 9728,
+            "originalDeadline": 10559,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -4341,11 +4382,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "f37861099141a6b488871d2245a86eac793d08f5646fd2d84d7225770a8dc5cf",
             "callId": "08bfdd8300bf0011b9af117f45adee3058325331711d82fde3304e223852aded",
-            "originalDeadline": 9728,
+            "originalDeadline": 10559,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -4411,12 +4453,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "6822dc80d986bb4209621e071e4374d38b51783ea4b419cf6e1928d6e84f871d",
           "grant": {
             "actor": "provider",
             "scopeId": "75c791be02511b57f442206f56cf512c410911ef53e0d5482541660452520c6f",
             "callId": "16d399008aa7d3875f0b162549fbbde081c3d3bdb76ef3d1b32e005c069e680c",
-            "originalDeadline": 9728,
+            "originalDeadline": 10559,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -4481,12 +4524,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "6d184daf0fbb16718c826847973ed6ce730f7536ad5ad3c9ff2889a4ff5399ea",
           "grant": {
             "actor": "provider",
             "scopeId": "62099e88e78337ec35a3a18c59d4d3b8439d4f883ed337102e8abb55d33d425d",
             "callId": "7676ecf8db3586ccff13e5f0df1cda3af93037eae96f4ee685a0278316019a24",
-            "originalDeadline": 9728,
+            "originalDeadline": 10559,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -4551,12 +4595,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "e4a05c60dacc8f2c584b0fd901068333393fa9a1675aeebd5f97707a74ab46ee",
           "grant": {
             "actor": "provider",
             "scopeId": "0d66655a5c54418645134d9e269316cc1932d23a2f2b8bef4fa7f3e118700524",
             "callId": "1d37d33f556699590d697d3b5c8176e995c611b105ddbb80fc4f5e7ecbe3af98",
-            "originalDeadline": 9728,
+            "originalDeadline": 10559,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -4621,12 +4666,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "2c1ca43df87393d90643355e4c439f3a27f3c32cf510ac711e42ec7c737ecb16",
           "grant": {
             "actor": "provider",
             "scopeId": "9484843e4bb9ca6eaedb47aed65795c5a995b31dd3ce0393160dec675aaa2f6c",
             "callId": "830e3b276cd26687ad4d1fabbcc9ccf93b01d40381f207c55f1c8d8301b6fe34",
-            "originalDeadline": 9728,
+            "originalDeadline": 10559,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -4691,12 +4737,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "41d0d89796d524b3b7f696340dd8fb1f5b623c9e7eda48fa052451df9867950a",
           "grant": {
             "actor": "provider",
             "scopeId": "c4907f09bfd1ca94c59636f0f05c120810512462a93672f19765e8147d3b9622",
             "callId": "8d20ffae02681d5a1a41081b27e8a8e9ac304bcc701ef6670c770eba2907bb15",
-            "originalDeadline": 9728,
+            "originalDeadline": 10559,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -4761,12 +4808,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "c24200bec06b731494116485b151f665c63d94708f6c6dfc012ac4caac5642f9",
           "grant": {
             "actor": "provider",
             "scopeId": "1579e4572240f03e95d243c4a5d402c877f354674d047c84226a9130a64f2a59",
             "callId": "01c1cf234f39b57967791b16ca433fe85ecbc0ea0aed2ab1f23c0a09c144fa2a",
-            "originalDeadline": 9728,
+            "originalDeadline": 10559,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -4831,12 +4879,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "a832fcc8b86c46207a734af04262c03a3316be85153857c1ec1563157bc0acee",
           "grant": {
             "actor": "provider",
             "scopeId": "44db18b82e894bf62fbaaed8a6024b001d8ba185cbee87d2dabcfd9f3bde37a4",
             "callId": "8dd78db582cb726cebdd36a30e07eb99626803181fc6b52ce99db6c16226ff96",
-            "originalDeadline": 9728,
+            "originalDeadline": 10559,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -4901,12 +4950,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "bafa5398de6d599c9c4edb32558abfea509fa5cbb33404b2eabfe323884661cb",
           "grant": {
             "actor": "provider",
             "scopeId": "cb5da0d666ed9ff3b519baa2c48973763c5bb6ac4a6c8a5bd47f15f2e3074c34",
             "callId": "cd17219c76e4c52c6697ffc34e2ad9a5d7be51167230384af8a7da812ca464df",
-            "originalDeadline": 9728,
+            "originalDeadline": 10559,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -4971,12 +5021,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "a45cbe79fd75540db029e73c722e36c45d55510156ded1bbf6c8981375a4a98f",
           "grant": {
             "actor": "provider",
             "scopeId": "1917e0771dfd82e9614b67e51049a40faecca85d40574c0ece7549dddfa14303",
             "callId": "8848e87dcaf98c103c2ac7eac4e2257d96e1b40e54ee41ed9ef4816ab8b8d54d",
-            "originalDeadline": 9728,
+            "originalDeadline": 10559,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -5046,7 +5097,7 @@
           "actor": "client-initial",
           "scopeId": "b04d05e1ad480ea54f9505032e1c35aaa6a68b5b409b8e391a496dde23cf5457",
           "callId": "d8c8b74c5b67a1054a0e1edd4710477f04ff66775bc5e310f05c1ded7138965e",
-          "originalDeadline": 9728,
+          "originalDeadline": 10559,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -5075,7 +5126,7 @@
           "actor": "client-seal",
           "scopeId": "f37861099141a6b488871d2245a86eac793d08f5646fd2d84d7225770a8dc5cf",
           "callId": "08bfdd8300bf0011b9af117f45adee3058325331711d82fde3304e223852aded",
-          "originalDeadline": 9728,
+          "originalDeadline": 10559,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -5105,8 +5156,8 @@
       "rows": [
         {
           "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-          "d": "e94e84e24b465b09a231842f71b58674d45b8feb7e5cf8c0e50ee3d1e1281757",
-          "deadline": 9728,
+          "d": "cf82cefbe5f9f8c395be4dab792bbe298f7882c2c112f9bcadfaa0c5e03085e6",
+          "deadline": 10559,
           "attempts": 1,
           "spent": {
             "wire": 5337,
@@ -5116,8 +5167,8 @@
         },
         {
           "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-          "d": "21286c9978ef0e36724540dd14438c37c97636743842e2a18ff3926f6b1175d8",
-          "deadline": 9728,
+          "d": "7486f7c23ce4e15b18ba907ebda712b3af9d60a7043532a9261125b596a55502",
+          "deadline": 10559,
           "attempts": 1,
           "spent": {
             "wire": 6142,
@@ -5127,8 +5178,8 @@
         },
         {
           "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-          "d": "ec78cb96153a1bb17a8b4788442ff122e4ae88689a6a3847a675d715f2a5c6f5",
-          "deadline": 9728,
+          "d": "a147290dc97853b07dfdd9a07490e3e973ac0c69bf0d176233e330a09bbfa293",
+          "deadline": 10559,
           "attempts": 1,
           "spent": {
             "wire": 11684,
@@ -5138,8 +5189,8 @@
         },
         {
           "k": "8f82d2c0ff939ec9eeea82d67e398507f83b77c24039335ed9b33ed66ceb77a2",
-          "d": "f1008b6ce3f275c542b7752c06779e178d35651e36e82e1d646590ce15383062",
-          "deadline": 9728,
+          "d": "72984345e5171f502c34841ffd0d24b0a08f1d43dc655142106031bbdc8cbf03",
+          "deadline": 10559,
           "attempts": 1,
           "spent": {
             "wire": 11265,
@@ -5149,8 +5200,8 @@
         },
         {
           "k": "c528432ed0b3e3ee71ab39c7dc6054a18d68b5231bd485b90e13b482be238000",
-          "d": "be239a8991dc4fc8f4464a271a0f4490a9eeba3432eac0d9347dad61502cbe7b",
-          "deadline": 9728,
+          "d": "5a3d1191eb6f9ee5ed198e7b1e2e40729f28916b1bfaffe23580f852c2765ef3",
+          "deadline": 10559,
           "attempts": 1,
           "spent": {
             "wire": 11696,
@@ -5160,8 +5211,8 @@
         },
         {
           "k": "7396b1fc1cd0a8cb138ba651548d03dae3f7dccc79591a821770ed77a8d49f4a",
-          "d": "53a6ecf4c976fec8a54d74485cb87d8deb2a1947c7339ed9318d1337c7e9a324",
-          "deadline": 9728,
+          "d": "c298377d8d746e933e9b590343fb9bdf3f1af8faea7ec4550e9fe6055acd1e89",
+          "deadline": 10559,
           "attempts": 1,
           "spent": {
             "wire": 11265,
@@ -5171,8 +5222,8 @@
         },
         {
           "k": "4c136b468992057c34ce6888e7d18579a41dd365b9e7ef96f26af225f8e7be9b",
-          "d": "65efedd4c3cbcb1a7f965694c6b76ff38a1c6b3f2a56ca341b16f2ce295e650d",
-          "deadline": 9728,
+          "d": "e804c06db785f1713db436161abbd8a8f177d33f97a2dcfc9092c5cad9a9219d",
+          "deadline": 10559,
           "attempts": 1,
           "spent": {
             "wire": 11696,
@@ -5182,8 +5233,8 @@
         },
         {
           "k": "306a479a24e955011259432ecb6ad43ceebb758315466e57d2a1df8ff293e936",
-          "d": "b26f815704c949ded86b7bfea96fb63c2893f18e1d6ef61e78ec760747f70ac7",
-          "deadline": 9728,
+          "d": "c5f66f4fdcdf488f77c77889b791c207598b50f8e51f3f024a6a7d218b6d069d",
+          "deadline": 10559,
           "attempts": 1,
           "spent": {
             "wire": 11265,
@@ -5193,8 +5244,8 @@
         },
         {
           "k": "3a11288c6c49073d00dd0ea43a8e68f6d854fb2dc658404258b938286ec9a75f",
-          "d": "dffb715a547b53bafb87116bb395305df706ba7e2446ae7d0b84557dc432189f",
-          "deadline": 9728,
+          "d": "dcaa7b3b13bab5834da35dfdf7568a3925d47ef767cc3bd3f43d3545dadfa2c8",
+          "deadline": 10559,
           "attempts": 1,
           "spent": {
             "wire": 11696,
@@ -5204,8 +5255,8 @@
         },
         {
           "k": "c9b873fe69f0d9fc6573452b826b112ce08c5b7a252bccda7d70fd57cc7cf483",
-          "d": "a94988b3965e61f741327f79d6aa8b25eea4c8dab0fd4a86fe5c945c086ec7b5",
-          "deadline": 9728,
+          "d": "416fcd29dcf83ded4c4081770be65dc1ac4907432023d5c602911447572c10d5",
+          "deadline": 10559,
           "attempts": 1,
           "spent": {
             "wire": 11265,
@@ -5215,8 +5266,8 @@
         },
         {
           "k": "892385479a23d5a529fd4ab76a424276a2d91c49971684c76915eaca661c3e23",
-          "d": "ea75357b5430b182901c5b99695166737d7435f7bcdc69456e8e6abe750ec26c",
-          "deadline": 9728,
+          "d": "8e9af2488be4e05ee753f6c1377a1972f54ac5196f6bbac23b9d9579f3b889fb",
+          "deadline": 10559,
           "attempts": 1,
           "spent": {
             "wire": 10913,
@@ -5227,7 +5278,7 @@
       ]
     },
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "workload": "large-payload",
       "role": "authority-broker",
       "requests": 9,
@@ -5250,7 +5301,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 4145,
+      "remainingDeadlineMs": 4144,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 11,
@@ -5261,11 +5312,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "f6d8d54e4bdf2a881aa0097f91902d2ae9b60cd853cafdaefbd97d0d39dc06b6",
             "callId": "92256acd572fdecdf32b7865d698b951fbe14216b6ddb94a52ce00db683f300a",
-            "originalDeadline": 10166,
+            "originalDeadline": 10991,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -5332,11 +5384,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "aecfcbe3c5056e804c255c7c0c1bd8d1f77b1b28230d02bf111f0f630f3edef4",
             "callId": "1c92c56df6ab139ba35b6281f176897fbb4db2ee462770f0e330d5ee2f4c4738",
-            "originalDeadline": 10166,
+            "originalDeadline": 10991,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -5402,12 +5455,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "81a8c2a225906406b7ba63c2bf6a97444c501bcc0c6e33060a5fcd87380c5ba2",
           "grant": {
             "actor": "provider",
             "scopeId": "fe89444a373321371777abe29ed6548dc97adcf082900096d72b1b7924842137",
             "callId": "3262a1a9d273ccd3b7d6abde44abe4baa45f207eee35785bd2fd12ac97ed4ee7",
-            "originalDeadline": 10166,
+            "originalDeadline": 10991,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -5472,12 +5526,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "9bc964369e1a6415b2955c3bae3d9970e7372dab44970361480386da244587a2",
           "grant": {
             "actor": "provider",
             "scopeId": "50d37f01119ea7c5a7529e347d92a10ef10832b6682d0acccbfce2946dcb19e5",
             "callId": "44a15082b060168805c51c4f3bb171adb3cbf642ae28513f27969abfde30c402",
-            "originalDeadline": 10166,
+            "originalDeadline": 10991,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -5542,12 +5597,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "17f89d81c962e4f172bc7b58fde04105ba7fa8b8bdafe87cad02fdf94f0a9d2c",
           "grant": {
             "actor": "provider",
             "scopeId": "b7502e3078c0e4104f7fc70106153bd5ccbd49f66420d37e153c59f022dfadf6",
             "callId": "5b9b2a66c4fb4633adc410469aa96494f76d57b408ad114efce631772f8ad312",
-            "originalDeadline": 10166,
+            "originalDeadline": 10991,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -5612,12 +5668,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "abed3f1e7e7349b809c8f42648cab76b79e112e25f60b9084498080d8fd33dff",
           "grant": {
             "actor": "provider",
             "scopeId": "b36d5fcef03a51fd752d5d2209ff313aa7b6d6723ac3a1833080b718de04d432",
             "callId": "31b1392b74e888c336b16ca2f6d8cc1773483e0c930a78581cf5e7476b3ac847",
-            "originalDeadline": 10166,
+            "originalDeadline": 10991,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -5682,12 +5739,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "113c280ad40f3cdb13388d5e35cfa9b40611609398bde510fee82ba194a2fe13",
           "grant": {
             "actor": "provider",
             "scopeId": "d48d16cfb288651ecffd5b0b4f211727f95ff832bfdfa2185efa53a09f1220e2",
             "callId": "71c319a5b2b0defd93362e8182854f6c23baf36b382e3e836f706b9968d2abfa",
-            "originalDeadline": 10166,
+            "originalDeadline": 10991,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -5752,12 +5810,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "1250472a8469782e29397ad686f21d7eb937fb1a2e2885efc063abf7a5f13cc2",
           "grant": {
             "actor": "provider",
             "scopeId": "2228ad53cbde7e431f5c1465a5701adaf7c425bc5584dbc6acb5ff8631f9266f",
             "callId": "6af9051dd9760d4e49008b766bbfbeb9ca9633af19c2ad32b9be36234b77d3c0",
-            "originalDeadline": 10166,
+            "originalDeadline": 10991,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -5822,12 +5881,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "ecb558eaed8dc118f438552d07974e7adde18fe52a3e7e033c0533fc249842aa",
           "grant": {
             "actor": "provider",
             "scopeId": "dd4cc5e39eab10e0e99273c6c2ec0c8a9c5fdca5de6c2f94d7f6f4d0a8521ded",
             "callId": "09754063a24a6927f44dc6709584dac49dc0514a1ddd118dfa6c57c8aef3eee2",
-            "originalDeadline": 10166,
+            "originalDeadline": 10991,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -5892,12 +5952,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "f52ca490c31c5cf37fef25fd64dbe3b0d2282bfe7db81e4e296a408a91d568e3",
           "grant": {
             "actor": "provider",
             "scopeId": "2bdf8b476ac642d789856d3570d61d47fcd7cdf3545108e2993cfc90c7cccc9a",
             "callId": "26be932d4b8373d20008642d2a6c46863992c593e870804ef5058604027e917e",
-            "originalDeadline": 10166,
+            "originalDeadline": 10991,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -5962,12 +6023,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "b77283d96fa703ff8e4b6a8ca2fd9a865558ae852fa40d0ae7db4396065fb85c",
           "grant": {
             "actor": "provider",
             "scopeId": "956c486d76d19a1c17a27ec562ccddc550130897fa5c5fac749d49685dd0b191",
             "callId": "c9317769ee6186950b2e80fc173da4073fe758c8439dac17e69d63ddec5076a8",
-            "originalDeadline": 10166,
+            "originalDeadline": 10991,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -6037,7 +6099,7 @@
           "actor": "client-initial",
           "scopeId": "f6d8d54e4bdf2a881aa0097f91902d2ae9b60cd853cafdaefbd97d0d39dc06b6",
           "callId": "92256acd572fdecdf32b7865d698b951fbe14216b6ddb94a52ce00db683f300a",
-          "originalDeadline": 10166,
+          "originalDeadline": 10991,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -6066,7 +6128,7 @@
           "actor": "client-seal",
           "scopeId": "aecfcbe3c5056e804c255c7c0c1bd8d1f77b1b28230d02bf111f0f630f3edef4",
           "callId": "1c92c56df6ab139ba35b6281f176897fbb4db2ee462770f0e330d5ee2f4c4738",
-          "originalDeadline": 10166,
+          "originalDeadline": 10991,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -6096,8 +6158,8 @@
       "rows": [
         {
           "k": "3dfd7b18b3a08287c15aebe86f6d38b7ace3d933bf1d43430d5185cc9811fd49",
-          "d": "78cedd225a8c8d9d7fe27c8bd9cce0db0bb31833b2bab9a6c44372f24f98444f",
-          "deadline": 10166,
+          "d": "f6e98f2b1f36b21d174ecd2b4a2cbd43088fadbad9e5939bb60e3baee027bc7c",
+          "deadline": 10991,
           "attempts": 1,
           "spent": {
             "wire": 5407,
@@ -6107,8 +6169,8 @@
         },
         {
           "k": "f928c3aaa7949b63a17c5ff5b8f0e624f67aa6b92261d38d6b52083bfb0bdbea",
-          "d": "3e9c3e41ef93c1dbd202374d296874e54845fd6007f846266586cbf95bcf3156",
-          "deadline": 10166,
+          "d": "0aef2f054116e0ae4f8401fb9b12fc294acb43d4f14c34a50e6f0ce0ad85abec",
+          "deadline": 10991,
           "attempts": 1,
           "spent": {
             "wire": 6380,
@@ -6118,8 +6180,8 @@
         },
         {
           "k": "90e2f143d3a7cfc5657b1d069c313fbced48dd14b3e0a66ca0997feb1d48501e",
-          "d": "27abb8b0fa8fed90073176f4c260b9c5f9dee346c309b1643a6dcd3c77d4bc07",
-          "deadline": 10166,
+          "d": "3dd8d6ff6fc03475fa5224800945df4d0ffa258cfad6969507d941ece5bb77e1",
+          "deadline": 10991,
           "attempts": 1,
           "spent": {
             "wire": 11922,
@@ -6129,8 +6191,8 @@
         },
         {
           "k": "cab150d1674ecf98e620d92f241d2664da13c3c6aa4402063f81666feebe1f57",
-          "d": "f278d5a2f532fe829f61d7d99c1a465acbd095a01635b9dd67b93fa310b50b8d",
-          "deadline": 10166,
+          "d": "df286083c8765f9818f4ab74f8c743f5e77b11af159ab5ab3bc3447158ebcd47",
+          "deadline": 10991,
           "attempts": 1,
           "spent": {
             "wire": 11503,
@@ -6140,8 +6202,8 @@
         },
         {
           "k": "fe0a395b1504e3929508fb8ff7196c67e87fe2bb53ef67ebc7bd6c6b695e711d",
-          "d": "f08d92c0d27f21bcea46b61c7440b9254e4336d9ba8d364474f065b8bc16d60b",
-          "deadline": 10166,
+          "d": "70c7c2515bebc87178d86321824be16bdc714a551ab8465032354337fcbbd607",
+          "deadline": 10991,
           "attempts": 1,
           "spent": {
             "wire": 11934,
@@ -6151,8 +6213,8 @@
         },
         {
           "k": "da701fa17bd23131c9e92a32af678ecca3ceea2823c6a945f03f16a980a686f5",
-          "d": "eaf4ab438054a262d06d163affce3b7199edd4d3458cddcc2670301e502b38be",
-          "deadline": 10166,
+          "d": "e9c08d162b28fbe4ac5f8600fc88c2ab0ef7b5cfaaf42cdf2ac4bada5e361bb5",
+          "deadline": 10991,
           "attempts": 1,
           "spent": {
             "wire": 11503,
@@ -6162,8 +6224,8 @@
         },
         {
           "k": "05dacee58fb50222f53b4c5d2a38509b622ec01e258cdd0de504f985f6e0cbbb",
-          "d": "bb967daced6e21a74401e90b364373212b272fcd66891bcbbb38623314af4ad5",
-          "deadline": 10166,
+          "d": "8323658e40fabdaf96b7eb3ed725d477469f235a25fb752f6905d577e9ce0b01",
+          "deadline": 10991,
           "attempts": 1,
           "spent": {
             "wire": 11934,
@@ -6173,8 +6235,8 @@
         },
         {
           "k": "cddaa431a102e37fa1049391d37affab5a5d42115a35e91ebf6c1b14a611f64f",
-          "d": "8840629e2e851b3110222ef0fbdfca79f1880404a6a6946dd2ae429ca5f7daba",
-          "deadline": 10166,
+          "d": "7cba448fddc589b13c6b10fd6f75462561cd749f90ab3ed7a7ed6e6a707c200a",
+          "deadline": 10991,
           "attempts": 1,
           "spent": {
             "wire": 11503,
@@ -6184,8 +6246,8 @@
         },
         {
           "k": "e42db7d8f1063a5248e37ac49bbffa35c62341a102e14f12c191e269449dff99",
-          "d": "0941b769cb60333a82148f7ad64284d80a057764cbb83ac26c089b00b357835a",
-          "deadline": 10166,
+          "d": "f7ba56f52d01ac717479be6d6fa32069d87b1167341a747b25c60517fde97b86",
+          "deadline": 10991,
           "attempts": 1,
           "spent": {
             "wire": 11934,
@@ -6195,8 +6257,8 @@
         },
         {
           "k": "3d06c7d0a19d92c1526a7fb251f8b5f386aab5387d35368798191d6e6a3edc27",
-          "d": "9334119bcbe845fa13e3e6269c94191133ef9979becd242a76d685923e281eb4",
-          "deadline": 10166,
+          "d": "5c0e20ec47889f1b83f1c6dd6a367e8c6abe8a68b5e0992a9242f8b769f9f7f1",
+          "deadline": 10991,
           "attempts": 1,
           "spent": {
             "wire": 11503,
@@ -6206,8 +6268,8 @@
         },
         {
           "k": "4ea8f0c6e4ba2222bf1d2181cdcc458adf6f15111d6871c61e3ce800db80b6ea",
-          "d": "ec925ad76ce603308cfd3dbdb5548c3c5e7a98ba25848461353c4910a0d45f4a",
-          "deadline": 10166,
+          "d": "7404459647c8377dde0485d648856ad3d569c70eafe56a26c716cd72f0ef6b0e",
+          "deadline": 10991,
           "attempts": 1,
           "spent": {
             "wire": 11151,
@@ -6218,7 +6280,7 @@
       ]
     },
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "workload": "h0Sizes",
       "role": "reader",
       "requests": 11,
@@ -6241,7 +6303,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 4005,
+      "remainingDeadlineMs": 4029,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 13,
@@ -6252,11 +6314,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "a9dcb38771414b78a8a4e06807c392ba33df44c9a2b9bc64b26f405c4e073263",
             "callId": "beab1e223aa44bc80daf1c2728ecb8375c5044d2089dc78a371f531082714978",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -6323,11 +6386,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "0f89d66a89f0de809c1662da2a3ca279ffb17f3c90a63ae167f979bc48a5043d",
             "callId": "81de705c0075c1ae4d20475e4518b88bf5b1482cea85e9a23f26b528c86f4dba",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -6393,12 +6457,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "76596432ebd14a23ccf086979d1515d265ff23a9778daee948691c581d4449c3",
           "grant": {
             "actor": "provider",
             "scopeId": "cdd606bd1cf97d647ad69f07ba5cf31b99af7fe630738fdf69f9cac53029abb7",
             "callId": "ddb2f201e660cf5b4074cbee5b5c62aa3d31a0222d1628aecbe2306ece4ae3ac",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -6463,12 +6528,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "e3dd151a7a2f708f01ab41c5ca0fe00305bc356af00e53ded57f9fa8540e5318",
           "grant": {
             "actor": "provider",
             "scopeId": "c4a1357ba9e2d7d8cbb983a89e3df28838a1d23029742953651a19b3e1875d2d",
             "callId": "5d3cf3b1f98c5e2b2b6cb54e41c4cb02fb10e8b48e082b0135a449b50f0f2996",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -6533,12 +6599,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "316b6c0b622b185958ce4bd327516703254c7e7524d0e45c004a6e1e5aeaf32a",
           "grant": {
             "actor": "provider",
             "scopeId": "e66b3d8380275b8aea43191738335b04314f356215f6c06412be6a2349f04b2b",
             "callId": "72b07a702e7dc0b27efc0c8fb7eaa6a03dc72a33c633b351bd7fea9b0cb82b93",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -6603,12 +6670,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "11c20295a45f9b29e4e47e31581846d10242afc4b20d247f7fde4edfeaca1fe4",
           "grant": {
             "actor": "provider",
             "scopeId": "74d7b621b73fb00729524dc14ff17006f45a3cb322d04f25d76ca21b96e9f583",
             "callId": "f9ffec816aafc4e4fce75be52324f2b83f3467547d4dc59cd3f7661c3f8d8198",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -6673,12 +6741,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "b4ef45adca25b6e5a695ba7ae5abe784960d0add3f1a8b1617b4d0d582193b67",
           "grant": {
             "actor": "provider",
             "scopeId": "d6d6efa95b2eab586ebf6c8ce39eb1b319c2baba6c958e60188ea59d1f553cb8",
             "callId": "bf83a8b7823ff5b85c1fbc4fb0604eb386d8e48228ee5c2c6253a4bcecef07f5",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -6743,12 +6812,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "ba1a866e37105444ec82b6e49887d2ab51e1fae694c1dead0b26d4188b56d091",
           "grant": {
             "actor": "provider",
             "scopeId": "8e2281d742242db711d92c14e93703e05c0bf7f61339935de3073eaa2e2b4289",
             "callId": "a5f31ff469425f1893454c01aa9e96d321c30dc14f106dd1f15177ae2769da04",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -6813,12 +6883,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "320abe170d331cbd1b6d7e0f6ff0a4ae2cc7762b86cb3e2456d13776c836d9f2",
           "grant": {
             "actor": "provider",
             "scopeId": "b9386c5c543c1aead06686eab5e5174bdee05cdaed5325346e19e88dbfd841a7",
             "callId": "1f5210aadbf959a8e4c94718637175df09dda467b62b5bc2097c28ad03cfac42",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -6883,12 +6954,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "2a329cc9d30f641fab60cf1f650714d3006ce3a91fcf1b73fc88b19b9407e234",
           "grant": {
             "actor": "provider",
             "scopeId": "d658b34f19db371d492157691cacf31827b69f52ece1f9316cf9d71cb6e2fc74",
             "callId": "6ac844aef547f1c8f3ab0e8472168bc964c0ca13d3d27bd33a99801845f8cfda",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -6953,12 +7025,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "00ad943a4451ea5a97a2ab0703853d1d5b9c48e7198adddbe4916c1ae13b9030",
           "grant": {
             "actor": "provider",
             "scopeId": "673dd3ca604f76ee5e7b8c6281e918726b5e4b51b046bcd41d3fea01ad0a8c6a",
             "callId": "ad89e4b721f4330616d8f8b753022ccd9fd5a0570e38c2c90ed6ebacd02c5dd0",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -7023,12 +7096,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "37e092d0b0bc39d21de2aaba3fb4b20c453fb0920eb9d261dc14abf0f22a9b7e",
           "grant": {
             "actor": "provider",
             "scopeId": "4c18407fff895e0510713fc6d745c7a4aeb2fc7d280b3c07b32f7c7b8da47405",
             "callId": "a1825e2447dd9acef27687fc66a1e7f295a916b260d9148725c8f83585008841",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -7093,12 +7167,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "aaa7f21335df65853d781e298d4bcf7a8c7252f0ee91e1899a1398339aad3037",
           "grant": {
             "actor": "provider",
             "scopeId": "c7f5e4e996cd71960e9de917330e81b1a41f0b99013ad9432c54b098f4689625",
             "callId": "4d48fb51fe870f923f0c4087045f7ca8bd11b1d3ba4a5bbe39154c24f7cb4e80",
-            "originalDeadline": 10614,
+            "originalDeadline": 11436,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -7168,7 +7243,7 @@
           "actor": "client-initial",
           "scopeId": "a9dcb38771414b78a8a4e06807c392ba33df44c9a2b9bc64b26f405c4e073263",
           "callId": "beab1e223aa44bc80daf1c2728ecb8375c5044d2089dc78a371f531082714978",
-          "originalDeadline": 10614,
+          "originalDeadline": 11436,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -7197,7 +7272,7 @@
           "actor": "client-seal",
           "scopeId": "0f89d66a89f0de809c1662da2a3ca279ffb17f3c90a63ae167f979bc48a5043d",
           "callId": "81de705c0075c1ae4d20475e4518b88bf5b1482cea85e9a23f26b528c86f4dba",
-          "originalDeadline": 10614,
+          "originalDeadline": 11436,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -7227,8 +7302,8 @@
       "rows": [
         {
           "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-          "d": "e94e84e24b465b09a231842f71b58674d45b8feb7e5cf8c0e50ee3d1e1281757",
-          "deadline": 10614,
+          "d": "cf82cefbe5f9f8c395be4dab792bbe298f7882c2c112f9bcadfaa0c5e03085e6",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 5338,
@@ -7238,8 +7313,8 @@
         },
         {
           "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-          "d": "8aff2cccb452da3fb5ca2bfffae2c3013f6842aded7a9da436fa1f6b70d9e4ba",
-          "deadline": 10614,
+          "d": "e45e7bbe64c63c23e7907d770fe570274280d9327223ef824fc4b3cd322ba969",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 6801,
@@ -7249,8 +7324,8 @@
         },
         {
           "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-          "d": "ebfd05185a3ba764bb336304c46915c68789806726de63089a35596aa47a82ed",
-          "deadline": 10614,
+          "d": "db9c2ae6750b749f393b471869728ea4f1225a3f5fac2fbe8d1754810f8b4d73",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 11690,
@@ -7260,8 +7335,8 @@
         },
         {
           "k": "8f82d2c0ff939ec9eeea82d67e398507f83b77c24039335ed9b33ed66ceb77a2",
-          "d": "aa3a1c283ae718b26277fecf87084c76dc32c1ae26c9ad21f3f5e4319a9da6c6",
-          "deadline": 10614,
+          "d": "8b52e27a3856335b733f0ef5f0894aeca73bf509f78b7ed4bf7803747611ceae",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 11700,
@@ -7271,8 +7346,8 @@
         },
         {
           "k": "c528432ed0b3e3ee71ab39c7dc6054a18d68b5231bd485b90e13b482be238000",
-          "d": "664d66097728fd812c78d858100e0284ccf120b896d309cfc9eca7429ac9ad04",
-          "deadline": 10614,
+          "d": "ef570eb1d2b6e40f101958d5fd2ee70d8aba4c7e00377a22dd6e74f5aa3db64e",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 11270,
@@ -7282,8 +7357,8 @@
         },
         {
           "k": "7396b1fc1cd0a8cb138ba651548d03dae3f7dccc79591a821770ed77a8d49f4a",
-          "d": "391372cc142e44c92819cdd7f442c0469ee0b7dee6ec5261e476eb1c02c514c8",
-          "deadline": 10614,
+          "d": "4f18464753f92ba5369a16a49ee57ac5335485fdf2c04fb426e4c69b8b557330",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 11270,
@@ -7293,8 +7368,8 @@
         },
         {
           "k": "4c136b468992057c34ce6888e7d18579a41dd365b9e7ef96f26af225f8e7be9b",
-          "d": "bd48f9791f58f69103354d1a4dad6a9c3a1bb487b0d11e5672e6410e01ec01c6",
-          "deadline": 10614,
+          "d": "ef1f436cb8ab8ce596e5088c0379c2a708063e023d84a1826edd51004922e90f",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 11272,
@@ -7304,8 +7379,8 @@
         },
         {
           "k": "306a479a24e955011259432ecb6ad43ceebb758315466e57d2a1df8ff293e936",
-          "d": "c697f6263e4bb2cd9b07ae97c7c673863f3f83addd7ee496f6e77bc028d9370e",
-          "deadline": 10614,
+          "d": "0edd305a1276f0a5eee13c9949ebd36caf386b96a3f71fa2bfc9d3c1c9adb34b",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 11272,
@@ -7315,8 +7390,8 @@
         },
         {
           "k": "3a11288c6c49073d00dd0ea43a8e68f6d854fb2dc658404258b938286ec9a75f",
-          "d": "b2a9ad09f6771d793acd515413a131956d4174a8ec43a5e02d76dfeeadfe0809",
-          "deadline": 10614,
+          "d": "c627725418393e123eac7bf7b985375a33f250f5f68e877dc14080b6d2c497b0",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 11702,
@@ -7326,8 +7401,8 @@
         },
         {
           "k": "c9b873fe69f0d9fc6573452b826b112ce08c5b7a252bccda7d70fd57cc7cf483",
-          "d": "15b0135247d8f11745c7c808997f25290556f9be86f378e12cbb822213752ff0",
-          "deadline": 10614,
+          "d": "13b56c911be2831ded5d58e90c313679753cb11ff51cf8b4be11c298b19163a2",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 12556,
@@ -7337,8 +7412,8 @@
         },
         {
           "k": "892385479a23d5a529fd4ab76a424276a2d91c49971684c76915eaca661c3e23",
-          "d": "e0e8dacb8537e3e153ba5beb0c642c52c90cb8024ea0dd0c762e47f526c25dc6",
-          "deadline": 10614,
+          "d": "5b86bf551ea3dfa91362589978f55f31f44c3d53bab1e7792901e4d6193ab923",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 11698,
@@ -7348,8 +7423,8 @@
         },
         {
           "k": "5bcbf2278accbcc0bd4cb9e9e6a3b467b691c623c273a1038b1d3f00bcd89872",
-          "d": "03b9b9eaafc6b8679ee5a5a6d7c2a410e201074abe430fc8b507cc78dc94c43f",
-          "deadline": 10614,
+          "d": "0302047f7c806facead1d61dbf7cf85ad569e8abd092b864218bb7bfbded8ffb",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 11694,
@@ -7359,8 +7434,8 @@
         },
         {
           "k": "d8aa30a923d6cc272155b7824527b888fc9db8e5920ec504755bd93c09b0d056",
-          "d": "b46201dea2f5b9d122981cdb477ccee4bb83f47e6a9d3b636e327a42b543de0e",
-          "deadline": 10614,
+          "d": "6875278ffd084764fedd72e2a8cc20a98d872a5393825dc2d2916e6dbccfe25f",
+          "deadline": 11436,
           "attempts": 1,
           "spent": {
             "wire": 6466,
@@ -7371,7 +7446,7 @@
       ]
     },
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "workload": "h0Sizes",
       "role": "authority-broker",
       "requests": 11,
@@ -7394,7 +7469,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 3938,
+      "remainingDeadlineMs": 4009,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 13,
@@ -7405,11 +7480,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "af8369e5083e84d28999c2f6a8a86ae5c1332687c91176b4f4b096983ac184d1",
             "callId": "77a0bed001ef508d910d18a4d02ca4aab8b22894f188d94bb4ef0e55fcbf1477",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -7476,11 +7552,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "43dbf23e1aa4b1d09a993a204fc96b61d1a36f025afebf1351b01db93a856630",
             "callId": "ab05c813aa71638f61886a585b1a31c9e97629cd3e8b7caaa459db05a39c1d18",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -7546,12 +7623,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "ff35fc6372abb8ed10ae29d03163a9b40c68b5b84809cb6dd795a03a3eaf8159",
           "grant": {
             "actor": "provider",
             "scopeId": "5d6d1757e35f079b027ffa6a3c831bb76d2b10a53988e8cdb94da67fef81f0c0",
             "callId": "dcb40358541a7d8aa071159bf453b52d74210fda400a722bea8b9b771acf7afd",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -7616,12 +7694,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "1e0fb1d0615f3ed66e34c6ed537bcedf899080e360cf9279817138b5d921674b",
           "grant": {
             "actor": "provider",
             "scopeId": "d03dc313881fc8ceb199883db5e9df38d7759d30bba5375850d80ccda7940856",
             "callId": "ffa62bd0c705c69602262f73e0038cc05371f0b6face8c2dda6e722c4e126231",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -7686,12 +7765,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "cd49b5b807347a4dc2f10575db30740806e755c4fddcaed7681a3f7af2fd9e77",
           "grant": {
             "actor": "provider",
             "scopeId": "fda290141cb87a65f01d7a3e2cb4b888239eb56b6e79a18b4ed87e5e62a11e00",
             "callId": "32955a5d36d1049623f67f89e640fa030407c264bd6d9f013ec4d8704afc84e3",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -7756,12 +7836,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "808b6076420261bfc5e2a81a84287a0053191c8ba95773bbb1be1f8b4b2c5ce8",
           "grant": {
             "actor": "provider",
             "scopeId": "bd3a5bab45e905b0e1d3f28e3bdcd764894e7372a6d1e89600fc137cf39a5889",
             "callId": "496e1ea9ee6cb19ce1398177ac7a79b8707b80348fcb39c508165825608743f0",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -7826,12 +7907,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "91be238b1253abc3738a3b599baebe935f42fe94f71ef4fabb5816b19d7ed838",
           "grant": {
             "actor": "provider",
             "scopeId": "4e880986ce974d33a0f441579b13b1b96301d460202855195861fbda59e41189",
             "callId": "d98acc75b69c5ea63143c876f3d0f86590d66e2163c3d9488d3eb2f3f78f61c0",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -7896,12 +7978,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "c34fd0fe9a425807edb0233762234ee68fae808238bd9420f9ea7cb4c0441969",
           "grant": {
             "actor": "provider",
             "scopeId": "c955118795b16f4cd1ee3b4ab595689d195ac9757d631bb475c9db4fc5b6d7a1",
             "callId": "3d6f6f7686216074c1fa3717e9827d24f2b9e4e706740e9de188fc4515b0b301",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -7966,12 +8049,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "bcf61082ebd67027fff9a12d32ebf22c81a601debe46438a771a6fdad157c57a",
           "grant": {
             "actor": "provider",
             "scopeId": "55ae0f3dd62e78047f737f175d313002020bd097f0730caf05415ab9873146ae",
             "callId": "eb75320b64922b3fa2c95fb19d54de48e2ba31d94d24075d04a4df6695df244c",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -8036,12 +8120,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "23fa539fbbb5e3591e3ba88e7483fe228c98cd059b0b8b37373e2e1de48d6362",
           "grant": {
             "actor": "provider",
             "scopeId": "579e84a624ff22125d09a734a0acec8576c218015e040c21501af282a1d1a163",
             "callId": "978ebda35ffbf39f9e2e712b99e667b26147c7b696eab200ca5b00c0b191cd40",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -8106,12 +8191,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "3a3e49dfc6c3a280169db0b0a5894873572e1a31c03891cf3a463c8c13b11f27",
           "grant": {
             "actor": "provider",
             "scopeId": "cd224e38c62fb127bed90c60585893d0c4bc0e9acbdae3f921972d323a3e98f0",
             "callId": "f02c52836c991c21b5002ef1cc76b9cdcccf4888a3ed4d3c0b34120a85230d62",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -8176,12 +8262,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "fa9065cb3a63882fe8e794dfc4f7e48ff331297870f1a30d1cfa26cc3e8d0a5f",
           "grant": {
             "actor": "provider",
             "scopeId": "a14d7db621c92b15dca4ad2bf53cf8a5718942836b4bc1e27191aa899424420a",
             "callId": "37d7ea82b2ec63045a37d54dc7c546f33d88a14cb2c40aea14dbd47728eb9ef6",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -8246,12 +8333,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "58e25a495ba56c2e96ae783957545bee9c4f658a69bf0125dde750236ef42fba",
           "grant": {
             "actor": "provider",
             "scopeId": "1781a985aa31f12d3a76b2ecc8023976c196dcea0994f4f9bc00f7cf9d868c79",
             "callId": "a0e36cfa80f9a9a6fe75ea80db2f601e8bdd929344cccc8cb66d4be8a7ab7218",
-            "originalDeadline": 11232,
+            "originalDeadline": 12018,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -8321,7 +8409,7 @@
           "actor": "client-initial",
           "scopeId": "af8369e5083e84d28999c2f6a8a86ae5c1332687c91176b4f4b096983ac184d1",
           "callId": "77a0bed001ef508d910d18a4d02ca4aab8b22894f188d94bb4ef0e55fcbf1477",
-          "originalDeadline": 11232,
+          "originalDeadline": 12018,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -8350,7 +8438,7 @@
           "actor": "client-seal",
           "scopeId": "43dbf23e1aa4b1d09a993a204fc96b61d1a36f025afebf1351b01db93a856630",
           "callId": "ab05c813aa71638f61886a585b1a31c9e97629cd3e8b7caaa459db05a39c1d18",
-          "originalDeadline": 11232,
+          "originalDeadline": 12018,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -8380,8 +8468,8 @@
       "rows": [
         {
           "k": "3dfd7b18b3a08287c15aebe86f6d38b7ace3d933bf1d43430d5185cc9811fd49",
-          "d": "78cedd225a8c8d9d7fe27c8bd9cce0db0bb31833b2bab9a6c44372f24f98444f",
-          "deadline": 11232,
+          "d": "f6e98f2b1f36b21d174ecd2b4a2cbd43088fadbad9e5939bb60e3baee027bc7c",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 5408,
@@ -8391,8 +8479,8 @@
         },
         {
           "k": "f928c3aaa7949b63a17c5ff5b8f0e624f67aa6b92261d38d6b52083bfb0bdbea",
-          "d": "0f75ed87c426e7cf298da49fd529aa88aea97d94c76fc3716c55c0b6ac7b5872",
-          "deadline": 11232,
+          "d": "b9802eb2b2125040dfd38768d38d23310e7dac290a33fc4cccb323bbc6d0c639",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 7039,
@@ -8402,8 +8490,8 @@
         },
         {
           "k": "90e2f143d3a7cfc5657b1d069c313fbced48dd14b3e0a66ca0997feb1d48501e",
-          "d": "7d21cafbffbe85536e17b848286c2818163e132e382b49a063d7ab3323d60ba9",
-          "deadline": 11232,
+          "d": "061910d971230de7c5c4586564c7cbb6acb652f39c6556c925cc44291bb6d6d6",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 11928,
@@ -8413,8 +8501,8 @@
         },
         {
           "k": "cab150d1674ecf98e620d92f241d2664da13c3c6aa4402063f81666feebe1f57",
-          "d": "e7d7821551e66aca84d520646d5a5b49b4c3617dad78c5f6f3131e23986e404b",
-          "deadline": 11232,
+          "d": "aadd727a67511a797cc023d1c83f138974b23faac658f0f639164a1ba48ac1f9",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 11938,
@@ -8424,8 +8512,8 @@
         },
         {
           "k": "fe0a395b1504e3929508fb8ff7196c67e87fe2bb53ef67ebc7bd6c6b695e711d",
-          "d": "fbec407b0d3271a219d89255784c0137f4881db88ac9427dfe906155237d0b07",
-          "deadline": 11232,
+          "d": "02e9976e08e7cd6d8491da7fa578ba13aefd0f0eb317b924eaa8748a4d07de73",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 11508,
@@ -8435,8 +8523,8 @@
         },
         {
           "k": "da701fa17bd23131c9e92a32af678ecca3ceea2823c6a945f03f16a980a686f5",
-          "d": "b0c7f2a521823f06b8e21783b603428babd2d4cbe9cc37e5d3306f4eaa4245d6",
-          "deadline": 11232,
+          "d": "3c46d6caa98c55743cab032d792429de29641a9c0c95c6e63cf8858fe250c809",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 11508,
@@ -8446,8 +8534,8 @@
         },
         {
           "k": "05dacee58fb50222f53b4c5d2a38509b622ec01e258cdd0de504f985f6e0cbbb",
-          "d": "5de4fce5700044b6eaefeba037b7a4fe03cddc25ec9737e6e4758688ac4f37f6",
-          "deadline": 11232,
+          "d": "fdf4a9ec7c91f477aa6b67499d39c6367cca46d4486b684001e0823cef2b59ab",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 11510,
@@ -8457,8 +8545,8 @@
         },
         {
           "k": "cddaa431a102e37fa1049391d37affab5a5d42115a35e91ebf6c1b14a611f64f",
-          "d": "9004817aaf83a9eb578a3bd45626fd5847498e9f6703262641bec401912c56f0",
-          "deadline": 11232,
+          "d": "34f8f8b967438132901d1dfd5b35ac686f4f317a7d5c124bef17110060a7c746",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 11510,
@@ -8468,8 +8556,8 @@
         },
         {
           "k": "e42db7d8f1063a5248e37ac49bbffa35c62341a102e14f12c191e269449dff99",
-          "d": "88f14753c569cf5c64ac9131b66208e60a2b5370c3faaea47560ec5348ca88fd",
-          "deadline": 11232,
+          "d": "49379bacb554d1d72b8c1fb05c3b0f14734cbafd928164a39bef8a88d0fe0e70",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 11940,
@@ -8479,8 +8567,8 @@
         },
         {
           "k": "3d06c7d0a19d92c1526a7fb251f8b5f386aab5387d35368798191d6e6a3edc27",
-          "d": "ced715a8f4c5c2808b5d75770d4236427401186f997ca88b59bca94b93267d4f",
-          "deadline": 11232,
+          "d": "8f94dcfc9e62afa500c257fc916aed991b3abac9d6100559486823287a464c61",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 12794,
@@ -8490,8 +8578,8 @@
         },
         {
           "k": "4ea8f0c6e4ba2222bf1d2181cdcc458adf6f15111d6871c61e3ce800db80b6ea",
-          "d": "54bbb8721265aa6be542f5fe213cf2593b16349e70da75067aecd96486b40ccb",
-          "deadline": 11232,
+          "d": "9a120eedcb23625e64fd49b00fee623fea23a2f78f20fee79875cc22598c14f8",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 11936,
@@ -8501,8 +8589,8 @@
         },
         {
           "k": "5cb8d78692a519b06b70250880efdbd87db470f1ddd8dfd0f83965a2abcb89ec",
-          "d": "f2fae94d5a9f5f64ab91f08826f95be8b59cc1b48a0aa76fcdc37faf5ec3cae8",
-          "deadline": 11232,
+          "d": "81255ae1cda006dff033534ac5fcb31281a2461e561e819ccfc74f25b7bd7d64",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 11932,
@@ -8512,8 +8600,8 @@
         },
         {
           "k": "ff198fa8c2f35a6c108d22041d34af50bd7c74db4b959b2bfb731fcc256957b8",
-          "d": "ae41f3b55e220da3413208b6f03bbc6852e162e17857a4b746d34f16c8794aad",
-          "deadline": 11232,
+          "d": "701e9d872a7a3972829f8bd600c13a0bd10e175961b54f6e1369a00c844373ac",
+          "deadline": 12018,
           "attempts": 1,
           "spent": {
             "wire": 6704,
@@ -8524,7 +8612,7 @@
       ]
     },
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "workload": "singleLarge",
       "role": "reader",
       "requests": 12,
@@ -8547,7 +8635,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 3933,
+      "remainingDeadlineMs": 3977,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 14,
@@ -8558,11 +8646,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "66396f4cc83e8d4f1fc3e60102375663d81e2814b5f6b1b1ad03b701d1b646e0",
             "callId": "5249b67da51dbe1324c43e9db2c8810d1d662ba522653e20d980529f26520bc8",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -8629,11 +8718,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "b5838f8ee4993d6cb271af2a9a3ebeecf95638ae3e02f21cfe35dd59d524bda5",
             "callId": "b89c6502ff878dbfafca647d376267bbcc7ea79d81467036ded3b2e35e083408",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -8699,12 +8789,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "fdcafee380fbd5554d770ffac7333b10892a9e87975f944fbbbde91372778e46",
           "grant": {
             "actor": "provider",
             "scopeId": "404e4d666f36a8266318f0a0c38763372e6a3823390480b75369d590560fbcbf",
             "callId": "ac927a38ffe57699359784416294ca128c4ef2ec3b0c381e99e7beeb5463e076",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -8769,12 +8860,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "1bcd031bd9cfc4cc1542b8b235ec0fc9230dc2486714219e48c075610eacf6e9",
           "grant": {
             "actor": "provider",
             "scopeId": "dbd5ee87a81fa4efe46fe8d1b930fe4b33c8e0d9845e2e972a2621fd1ff85f64",
             "callId": "0b8753495d301024b7f9502a2f65e191de39abecd77bbb4b0d7904c9e53430a4",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -8839,12 +8931,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "0f56bb905b12edae9fbb3fc525551a62802500a820216b42664863001e3d38fc",
           "grant": {
             "actor": "provider",
             "scopeId": "82bd4f071d6986672fef958a7b2f01f312b61230ef804a1c7ea452830fa3ed2d",
             "callId": "34a4b996b6f600e69cc2dd254e41e15728ab18f22d76eb03808826d29c778db1",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -8909,12 +9002,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "b415e31279e622809ed520b4c5d0793203a1068ed145aee20d5587b1dbb7cdc5",
           "grant": {
             "actor": "provider",
             "scopeId": "e1310a6aa9de76a01efd5536d93fa8ff98fb074666eb8ec7697b0bc69de5c0c4",
             "callId": "160c11af428d7287b5f372fbfb6920df2d5ae049c98c46b9c5b6be35d51b4c73",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -8979,12 +9073,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "201ccb07bbd26917418576915a5eb5a90ac77abde1521f1d3b2c31b63ff2a52d",
           "grant": {
             "actor": "provider",
             "scopeId": "b897e030f1792156a0e028b234bab5a6b434daa18853627e09c64632054c7be7",
             "callId": "f3378231b63d48e97b06e7459227c9033faca4984873403229b5fa190404805f",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -9049,12 +9144,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "94fb64833972085f4da6e8a78f74c7a8afdb11f0b8e5f2bd0a7fda909d408e3b",
           "grant": {
             "actor": "provider",
             "scopeId": "895a997e97d33ab7b88271266b9d1cf3d40f50b23b3de5eca69f6f3fcea3bc38",
             "callId": "a6eaae46971ac9c52751d8957f7b40fad60b4786a6d698e1f581c033909102c0",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -9119,12 +9215,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "3b76f760d6a4a9e2418b572fdd664234fde27c0879f158b271215892a2f7c7e0",
           "grant": {
             "actor": "provider",
             "scopeId": "04e23d463c6bd3db091bd055eee17304ed7445321f1375e4bc6a99ba1b1d6ac6",
             "callId": "54d79a93dc4f4092ef40018f16a4e9202131f5dd5dab41558b9f88610906cf16",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -9189,12 +9286,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "710a0bc4bb89e5273bda2a2f92f0164d6481d9d6cc29b25dda3c9fa27b4be085",
           "grant": {
             "actor": "provider",
             "scopeId": "88d6cb75059b58e887a9eefacbbd4d46600ac92a1f2fc6997ab946e89a6c4174",
             "callId": "3202b671b8d1a3edc7478fc39cec70d61adc75a087d77b94d5c0ae8cce0ea64a",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -9259,12 +9357,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "1af76964e8c7c4af85e613464bec83171ae41f45b4307cb117aef32082cb3d38",
           "grant": {
             "actor": "provider",
             "scopeId": "abaff552f5313ffe46d47336a2be0c380cf0be17d46afd4c72bd83223fd06c77",
             "callId": "d5c54aa933f47deb6d129e7a3353ebd4a44bbb3087572ae6fe22f851ba3585bc",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -9329,12 +9428,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "e16f1a47b7a4bb645e19c7dae13b9286517388a6b2ae4a9c2fc8bcfa50267ed6",
           "grant": {
             "actor": "provider",
             "scopeId": "639f4a2199ec19ca3377e0248fb6477c434ab3bdf725dbe90acc07eaa2eb91fb",
             "callId": "84baa96f97d0d71661b554531b34f01beadd769edf12cb189d7c113e9f5aa8bc",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -9399,12 +9499,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "3f83aa234f0ec1314f63098128781873bbda5c5e3ddb9771954c423be80af7be",
           "grant": {
             "actor": "provider",
             "scopeId": "6aed92f568aa8b8e76eed54916d7dd498f238ea8e9062cea59ff2cb17f3dc624",
             "callId": "95649343ebac17922f7ce155e8fd765db42563d34dfe4c6679ea001f376c5386",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -9469,12 +9570,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "1ee1c9de7682b4d60fd5496de428e0fe22ec3d781b619e61e17b57001d71604c",
           "grant": {
             "actor": "provider",
             "scopeId": "181a49a7b041a1181daf96bb5a98d96317a63d15e2ebb587eda85b31753bb514",
             "callId": "0a706bb12e1c5cc915696cef93f8a696177480a7c5d0cb3dd2ab9f227fcf9777",
-            "originalDeadline": 11918,
+            "originalDeadline": 12622,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -9544,7 +9646,7 @@
           "actor": "client-initial",
           "scopeId": "66396f4cc83e8d4f1fc3e60102375663d81e2814b5f6b1b1ad03b701d1b646e0",
           "callId": "5249b67da51dbe1324c43e9db2c8810d1d662ba522653e20d980529f26520bc8",
-          "originalDeadline": 11918,
+          "originalDeadline": 12622,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -9573,7 +9675,7 @@
           "actor": "client-seal",
           "scopeId": "b5838f8ee4993d6cb271af2a9a3ebeecf95638ae3e02f21cfe35dd59d524bda5",
           "callId": "b89c6502ff878dbfafca647d376267bbcc7ea79d81467036ded3b2e35e083408",
-          "originalDeadline": 11918,
+          "originalDeadline": 12622,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -9603,8 +9705,8 @@
       "rows": [
         {
           "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-          "d": "e94e84e24b465b09a231842f71b58674d45b8feb7e5cf8c0e50ee3d1e1281757",
-          "deadline": 11918,
+          "d": "cf82cefbe5f9f8c395be4dab792bbe298f7882c2c112f9bcadfaa0c5e03085e6",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 5337,
@@ -9614,8 +9716,8 @@
         },
         {
           "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-          "d": "35d2127a5df384276991ea5eb648cc77d293aaea405ae8f71b08b1b5adea711b",
-          "deadline": 11918,
+          "d": "48a7fe8efac100def0029fe76f18b220546331fe45560f51432ba24d16bb07b8",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 6130,
@@ -9625,8 +9727,8 @@
         },
         {
           "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-          "d": "71a4065d9b55ffbcfb0fd756e82669f5e53865689727433b4996d48ffc4127cf",
-          "deadline": 11918,
+          "d": "44e18ca1280c69dfbb58fe285b68537394bce7f953f92329cebd894f1bfc9fa5",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 11262,
@@ -9636,8 +9738,8 @@
         },
         {
           "k": "8f82d2c0ff939ec9eeea82d67e398507f83b77c24039335ed9b33ed66ceb77a2",
-          "d": "980d1a1f0dc68a15e18f6d2e8f8f63b393db78fe3c1e4d6f8b732b68051d7b7a",
-          "deadline": 11918,
+          "d": "d6b74c60dfc5e3e1f7a3c5062ee2b689b454d9cfe8666b1e124ed48c6fb00ede",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 11268,
@@ -9647,8 +9749,8 @@
         },
         {
           "k": "c528432ed0b3e3ee71ab39c7dc6054a18d68b5231bd485b90e13b482be238000",
-          "d": "09ddb88b6c6133f53462fd79e7057ff3240db528b134f8c70a6a5d33addd7de9",
-          "deadline": 11918,
+          "d": "e0f35481c1683ffc4d45ff37c9dced57d1e31538935899f9a86e69072f5b5edd",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 11268,
@@ -9658,8 +9760,8 @@
         },
         {
           "k": "7396b1fc1cd0a8cb138ba651548d03dae3f7dccc79591a821770ed77a8d49f4a",
-          "d": "932abaa60c8e57825750c446ddb0f4f4b1a5b192b53b5661dc23c750a66f4fea",
-          "deadline": 11918,
+          "d": "e8da7f699cc2999b15fea0f2d9e413d88854e191dae8487d7138f6d58597b98a",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 11270,
@@ -9669,8 +9771,8 @@
         },
         {
           "k": "4c136b468992057c34ce6888e7d18579a41dd365b9e7ef96f26af225f8e7be9b",
-          "d": "79537e377a3dbad7a6a84f5b1e8f5b2f53dd01136f315a26fc769dacee4da678",
-          "deadline": 11918,
+          "d": "ed8cb9130aa694f8e6570ab2bfc5055be049b1b71caa399c7a082c0b4e0b8318",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 11270,
@@ -9680,8 +9782,8 @@
         },
         {
           "k": "306a479a24e955011259432ecb6ad43ceebb758315466e57d2a1df8ff293e936",
-          "d": "892573f3b57d999d0b7575f5c6808b10a4c50e515a2ffd9021d87401269a9178",
-          "deadline": 11918,
+          "d": "b4512d1cb26267eb8dbb5dd7e2de50089b708a2f3d5bb4fde5b3091cbf988570",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 11270,
@@ -9691,8 +9793,8 @@
         },
         {
           "k": "3a11288c6c49073d00dd0ea43a8e68f6d854fb2dc658404258b938286ec9a75f",
-          "d": "49df993716f003a913fd8db4b6acf9d2a3b9ae2d70ef6e0d38d1aeff03c6eaa9",
-          "deadline": 11918,
+          "d": "ef8b1f4723480d7dbaa85f76cdde428eadff10218d1bdd93f4a5d8731b2d40f8",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 11270,
@@ -9702,8 +9804,8 @@
         },
         {
           "k": "c9b873fe69f0d9fc6573452b826b112ce08c5b7a252bccda7d70fd57cc7cf483",
-          "d": "b06644ef75b8a4426372c365929ff4ba74676aa1bdc2652495dc6793b56952be",
-          "deadline": 11918,
+          "d": "d8248f493e9ac7efdfc01f8384053168ce58ba797b4f577ec5178d94e3aa538c",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 11270,
@@ -9713,8 +9815,8 @@
         },
         {
           "k": "892385479a23d5a529fd4ab76a424276a2d91c49971684c76915eaca661c3e23",
-          "d": "de7a5aeaaad97b226391bcad4c763884c846ee531ade644ea5557f627a3f1ba0",
-          "deadline": 11918,
+          "d": "25a384be7e19176943d56cbdb428149be5ed014f0b1b90729c3170e1a0ddd1e4",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 11270,
@@ -9724,8 +9826,8 @@
         },
         {
           "k": "5bcbf2278accbcc0bd4cb9e9e6a3b467b691c623c273a1038b1d3f00bcd89872",
-          "d": "ef246ebd2ac42ef2b799297308a01a6ea28066ee6d2a0705de1fe0582f6a28cc",
-          "deadline": 11918,
+          "d": "99563db91e9389bcb9feecf3c1e3defecc835162f6db2898fefb54c1572a392c",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 11270,
@@ -9735,8 +9837,8 @@
         },
         {
           "k": "d8aa30a923d6cc272155b7824527b888fc9db8e5920ec504755bd93c09b0d056",
-          "d": "d9048825f9b5e84bb36946d9f422d2f589fbe61949c3e94c0e278582e9ccc0ed",
-          "deadline": 11918,
+          "d": "5581046704b795a06158fec2b3b182df6cf263cd7c9dfca31876fc7289defdc1",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 7739,
@@ -9746,8 +9848,8 @@
         },
         {
           "k": "856d7418fee47617e794d283f6e5e2b65b9b85bc5d29fb589d9ef8749343959d",
-          "d": "ea3ef9e6f0898cc0dda8f6a3071d4b8416f57e6299b87520f3fbfd593f633b5c",
-          "deadline": 11918,
+          "d": "c3d99c20ddcdbdeee8498b04d911c2d869829fd084ae632a609b3a4f96aaf509",
+          "deadline": 12622,
           "attempts": 1,
           "spent": {
             "wire": 5788,
@@ -9758,7 +9860,7 @@
       ]
     },
     {
-      "sourceApprovalPin": "486f76d87ad1900ce17d63f784a654a80eaf7aeb259c555af389ee6f6b8f9527",
+      "sourceApprovalPin": "702bc2a31b383e9e48063f569a17945380308fc043d311f73547633b0a130278",
       "workload": "singleLarge",
       "role": "authority-broker",
       "requests": 12,
@@ -9781,7 +9883,7 @@
       "planReservation": 156978,
       "workAccounting": "cpr.request-bytes-ranges-probes.v1",
       "clock": "real",
-      "remainingDeadlineMs": 3934,
+      "remainingDeadlineMs": 3941,
       "probes": {
         "finalOracleCalls": 0,
         "layoutCalls": 14,
@@ -9792,11 +9894,12 @@
       "plans": [
         {
           "actor": "client-initial",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-initial",
             "scopeId": "a7c19ccb6ac92e8af41ec3e13f2da16ce9fd861d291689e4ad0809449d412625",
             "callId": "d4dc61d4d3c38d041725fe4604d87a296b256f3543790ac42ed85824d6c8a5be",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -9863,11 +9966,12 @@
         },
         {
           "actor": "client-seal",
+          "referenceOracleCalls": 0,
           "grant": {
             "actor": "client-seal",
             "scopeId": "18092e6a76b0bc8cea9a1168cd1e7fe40631616dd950fc72b307d42403c1a238",
             "callId": "c20f46767b0d2d6c84f0aadf8a2e83702ff7c46879da87d70788d41664333337",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -9933,12 +10037,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "a27b859c7465cbaf3dc41ad3ccf40b02297abd92b5e32fe761e1a25bb67dce82",
           "grant": {
             "actor": "provider",
             "scopeId": "66c612981988abf4286830e6543a156f9a5430fa50771e64dbc1b86e8922c3f8",
             "callId": "b6aeb9905083ef9116f5c73f99a03db2af0646e4be4e1f3eb170a218ea708439",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10003,12 +10108,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "7eb0fa530ddd046a8ebbce83d3753ca58183b8c33d239d52ea32cba7cdcf08ac",
           "grant": {
             "actor": "provider",
             "scopeId": "17336ced80e6251e7138342fe41442800fcca95763ffba09a59619db2328ebb4",
             "callId": "6b7ec7a6e6aa3aea0151dc0c5c91334cc5e76f3f78e6443e837ead085523cbbb",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10073,12 +10179,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "7a045fae815d1cb2029fc9d225fd8fdd7295af4ea317b9893f667a79a5c58bd3",
           "grant": {
             "actor": "provider",
             "scopeId": "2ccc72168e7ac42342e812e0216c085bfa51a1e6292c759992c9a21dcc221d97",
             "callId": "db0785dd746edeb8d3648a5ae3d5e3ae20cff3c901106badaaf12dcbc9cf1761",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10143,12 +10250,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "7d93b782b5d9b4b22876fb7378642fdf0ca47ad9ac2c4870a21d812140e7fb14",
           "grant": {
             "actor": "provider",
             "scopeId": "02c3f5e75e67fae48f0286b433d3394eaf5360946ae98fdd51cfb52854602d60",
             "callId": "cc9c32caeed683720385f36e87e0e5cb4f629849a4f49904e26adef6472de0a1",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10213,12 +10321,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "b1468e7b00417127378acb01e2fa0997a1271b8976f39b36ff7119c73cb3611a",
           "grant": {
             "actor": "provider",
             "scopeId": "ae378536813e8cf3bbd929e0bd2b52bdea6f93ea5b0c7fa26f720406aca0ad14",
             "callId": "938bc1927e838428d297787faab7c7dafedeb2ecfc5b68915a17c7439cbbddb1",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10283,12 +10392,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "2d091abcb6863769de78df128f1a28f967a09fcf3b21b56fbb9811e7b2c71634",
           "grant": {
             "actor": "provider",
             "scopeId": "c69f37a7b11ae12308fac8e1be7f0a4a360e64899e9038f1eae8c3d5b294a274",
             "callId": "a02d0e995b28f06a089207a6282e23cf221e22781c94fe4b4d6925211cd9407e",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10353,12 +10463,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "578fbed3c39b4eb7e260a34be11751aa76f3886ff0a7cc49d4927542cbba71c0",
           "grant": {
             "actor": "provider",
             "scopeId": "00a7bee98eb3eb479cd5a171c78cd2cca44a75bfd6a0b1b16eb85888397b92a7",
             "callId": "ede5e20c07100c06877ac3e6496470e5ac313f28adf3dccd1fb5b2f4f465c833",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10423,12 +10534,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "e6890f2a7477d739ba2359c5ea4c1497dd6280a456734291cbc2cd14c606d488",
           "grant": {
             "actor": "provider",
             "scopeId": "9645eddf76e61a11cfefe827c0272e195bc8100023230c47cfbba7c77051b616",
             "callId": "7db7f0d33a72457c993880916507f4211c84f8453de6526cbdc69511604fc467",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10493,12 +10605,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "37c14f1bbd3f99398073f40362ec51139a7b21b4bc51b52d7fbd6b7c7d8ea884",
           "grant": {
             "actor": "provider",
             "scopeId": "ac48f48f5af22d99184eed12d8df97a7ffea82334a39d4748f0f482de451f014",
             "callId": "869fc4af48136efbf6ee21a46ccd09b875abe7c7455e8754c7a0d3aa8e2fe67c",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10563,12 +10676,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "ec676ebccdefa150266d5420473e5b225e73ab8cb7afc8770e484bd48aa295c5",
           "grant": {
             "actor": "provider",
             "scopeId": "980165235e885e138c233bcf6412748b3dcdcc9fde906721251440130c7c6a8f",
             "callId": "808b4d7c515538c0e03f0885f308470d877209d856ce5731e048f7bf78d242be",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10633,12 +10747,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "b5a4a9f4d8b95bdbd28b7cadf49ba184f8279a3ca78fded45db28c0e37cfdf03",
           "grant": {
             "actor": "provider",
             "scopeId": "ef1343f26583145fc80334697e07bd8636c0994b224a90be58feb5522b37e2a9",
             "callId": "25199abcaf8b2bace8efed2327e2a9cd33afe01034927fc7f6927150e0dc846f",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10703,12 +10818,13 @@
           }
         },
         {
+          "referenceOracleCalls": 0,
           "requestDigest": "ec18d9e15c2ecd549c96c03f31e9758b569d6f5621ce7944e6a12fc73e3cbd13",
           "grant": {
             "actor": "provider",
             "scopeId": "6f635cd4f9192d92786da3d17dd1f156d027513d30ff000b2b6b60e5e5a2584d",
             "callId": "a8d74ab057c90e9c279b1106f7be6afc90f3d8ad741864fe7cb94b455d6b3db5",
-            "originalDeadline": 12615,
+            "originalDeadline": 13262,
             "prepaidPlanWork": 156978,
             "workAccounting": "cpr.request-bytes-ranges-probes.v1",
             "memory": {
@@ -10778,7 +10894,7 @@
           "actor": "client-initial",
           "scopeId": "a7c19ccb6ac92e8af41ec3e13f2da16ce9fd861d291689e4ad0809449d412625",
           "callId": "d4dc61d4d3c38d041725fe4604d87a296b256f3543790ac42ed85824d6c8a5be",
-          "originalDeadline": 12615,
+          "originalDeadline": 13262,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -10807,7 +10923,7 @@
           "actor": "client-seal",
           "scopeId": "18092e6a76b0bc8cea9a1168cd1e7fe40631616dd950fc72b307d42403c1a238",
           "callId": "c20f46767b0d2d6c84f0aadf8a2e83702ff7c46879da87d70788d41664333337",
-          "originalDeadline": 12615,
+          "originalDeadline": 13262,
           "prepaidPlanWork": 156978,
           "workAccounting": "cpr.request-bytes-ranges-probes.v1",
           "memory": {
@@ -10837,8 +10953,8 @@
       "rows": [
         {
           "k": "3dfd7b18b3a08287c15aebe86f6d38b7ace3d933bf1d43430d5185cc9811fd49",
-          "d": "78cedd225a8c8d9d7fe27c8bd9cce0db0bb31833b2bab9a6c44372f24f98444f",
-          "deadline": 12615,
+          "d": "f6e98f2b1f36b21d174ecd2b4a2cbd43088fadbad9e5939bb60e3baee027bc7c",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 5407,
@@ -10848,8 +10964,8 @@
         },
         {
           "k": "f928c3aaa7949b63a17c5ff5b8f0e624f67aa6b92261d38d6b52083bfb0bdbea",
-          "d": "98b85387211d5c283b8c9fa7fff8867b61cc3aa8e702e4c38c8210500c875d71",
-          "deadline": 12615,
+          "d": "a4d0725280b0df1c448261d9ef8cd1f629575cc7237e0a7d6d6aefc7202342e1",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 6368,
@@ -10859,8 +10975,8 @@
         },
         {
           "k": "90e2f143d3a7cfc5657b1d069c313fbced48dd14b3e0a66ca0997feb1d48501e",
-          "d": "fffb65bc346325e3e5b6b1f102449836f08032615f79a75793a900d778d7e368",
-          "deadline": 12615,
+          "d": "b8f21b3b665612f95b475f474ee1df4e97fd6d9a12b2890b6ec6bd19fbb54a97",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 11500,
@@ -10870,8 +10986,8 @@
         },
         {
           "k": "cab150d1674ecf98e620d92f241d2664da13c3c6aa4402063f81666feebe1f57",
-          "d": "3a18c595c2057ded7509e86b930cd1c4b34718652d69f94dc5a3ee8fb7ba162e",
-          "deadline": 12615,
+          "d": "8f90df213ef0b01e1f6ceaa0360a40aac0726c8ac0396aff23317a227ec5fb24",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 11506,
@@ -10881,8 +10997,8 @@
         },
         {
           "k": "fe0a395b1504e3929508fb8ff7196c67e87fe2bb53ef67ebc7bd6c6b695e711d",
-          "d": "17226624e7103ee80d7c6095f8dab018481c96051617c9dbcc5256f7bf4ee735",
-          "deadline": 12615,
+          "d": "a1e0480bcb8c68b6b2b4c4062d138455c33a5f7a3dc199982386fd5d1324e918",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 11506,
@@ -10892,8 +11008,8 @@
         },
         {
           "k": "da701fa17bd23131c9e92a32af678ecca3ceea2823c6a945f03f16a980a686f5",
-          "d": "bd4b16fe59215911f9c89efd3164e2652d0a84bab17fcb872fc7ff1c8a633deb",
-          "deadline": 12615,
+          "d": "3a12a17d0a9497b99312ec62425dadbe8e4d8e744773671fb5c6b6907adebf04",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 11508,
@@ -10903,8 +11019,8 @@
         },
         {
           "k": "05dacee58fb50222f53b4c5d2a38509b622ec01e258cdd0de504f985f6e0cbbb",
-          "d": "7f0acf305fb7d7e58ae2baebf6c6feb41ba06265a53ab1325d3141b07931e67b",
-          "deadline": 12615,
+          "d": "05e162c39fd33a1420b88900dfc5fde680274b7fc743e94b24de1c42144e56dd",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 11508,
@@ -10914,8 +11030,8 @@
         },
         {
           "k": "cddaa431a102e37fa1049391d37affab5a5d42115a35e91ebf6c1b14a611f64f",
-          "d": "5c0d0c3699a81834e343ecc44fb67f4295639a45eb0e83bb4412e522b8f400bf",
-          "deadline": 12615,
+          "d": "023e5fd4d93112998a6dee2a24f7d3516db64d0684d26bf818d2d318ecb50b8b",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 11508,
@@ -10925,8 +11041,8 @@
         },
         {
           "k": "e42db7d8f1063a5248e37ac49bbffa35c62341a102e14f12c191e269449dff99",
-          "d": "783959fdda28a01a20368eb84d7521ca7b2bcf59925ae9b857adb9faccbdd82d",
-          "deadline": 12615,
+          "d": "bd095512d686067936519f517725277dd2ce9bcc6deb428a8a27ddaa969d8a1f",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 11508,
@@ -10936,8 +11052,8 @@
         },
         {
           "k": "3d06c7d0a19d92c1526a7fb251f8b5f386aab5387d35368798191d6e6a3edc27",
-          "d": "2c00372be0bb3b2a5ec971c05bf97af56016972e6692379592ad50f5e4de5279",
-          "deadline": 12615,
+          "d": "dec76c88d3b4514075607d588d3fc7bcdcbedcd96b9c7afe9a4233dbe2708e25",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 11508,
@@ -10947,8 +11063,8 @@
         },
         {
           "k": "4ea8f0c6e4ba2222bf1d2181cdcc458adf6f15111d6871c61e3ce800db80b6ea",
-          "d": "bb0f840ced3bbc58fe75bcd70133dc134ed226d5dbc416b46fbd523adf86c6e9",
-          "deadline": 12615,
+          "d": "74ba0f9b262d74a275b08719b10aa074ee05509de9b8d766275c0772991612d1",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 11508,
@@ -10958,8 +11074,8 @@
         },
         {
           "k": "5cb8d78692a519b06b70250880efdbd87db470f1ddd8dfd0f83965a2abcb89ec",
-          "d": "69c360ab563fff195588853fcea36c7f57bd50788eafe68bd2e9ddc2375c7515",
-          "deadline": 12615,
+          "d": "e028c66210cd4b44479456832bcd6d2829df902674411db660c3fe2a4ddc21dc",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 11508,
@@ -10969,8 +11085,8 @@
         },
         {
           "k": "ff198fa8c2f35a6c108d22041d34af50bd7c74db4b959b2bfb731fcc256957b8",
-          "d": "4f5d7ae550f24b6cafbbcab004bfb65394c4ce577d11356a3d0335f94a915c2c",
-          "deadline": 12615,
+          "d": "033da5ee2d0efa526d648cc47d5482806db86a2e53dd00cd68d6d54a3f70e8b3",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 7977,
@@ -10980,8 +11096,8 @@
         },
         {
           "k": "a799e959abdf1dad2db3b1c4537066cbb08b821820ead2a4c37ebaa123d0b31f",
-          "d": "309959234725c3ef741e34af8c43c22e654f05ca98cf9ebf3f8c9d624a35b16f",
-          "deadline": 12615,
+          "d": "9dcf19fdfd04809376de95049d9724013fbb9862c08c0cc7061d67ac00ddb2dc",
+          "deadline": 13262,
           "attempts": 1,
           "spent": {
             "wire": 6026,

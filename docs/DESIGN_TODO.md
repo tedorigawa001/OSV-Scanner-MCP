@@ -3148,10 +3148,15 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - [x] CWC-Aのstrict helper／fact contractをfixtureへ実装（§9.118）。actor／call／domain・private copy・child移管・current gate・寿命／失効・事前予算と非返還をCWA01〜41で検証。同一scopeのroot発行前再入を拒否し、initial証拠と同じ親readへ結んだseal一致確認をchild移管の条件へ追加。模擬owner scopeのみ、全N reference codecを維持し、composition／閉じたfamily proof・実session接続・性能改善は未成立。
 - [x] CWC-B：閉じたASCII family tree／length proof、14 canonical domainの独立oracle照合・実署名・境界／改変拒否を限定実証（§9.119）。6 workload（CPR-BPのh0Sizes・singleLargeを含む）×2 role×通常／最大IDの全24 sample・全commandを照合し、既存実sessionへの診断observerも対照。全N oracleを維持し、optimized primary・性能改善・adapter接続は未成立。
 - [x] CWC-C：独立pin／署名の実装source承認契約、実AuthenticatedSessionCall／private ReadScope／fresh SourceSnapshotへA root／fact・B proofを接続（§9.120）。1 MiB以内の論理共存予約と既存構造work156978の一回限りの前払いticketを検証し、最終owner/auth wire生成をproofへ置換。12 sampleの実session正当性／予約比較・回帰を記録。本番・native配備／外部承認service・RSS／速度改善は未成立。
-- [ ] 次はCWC-D：共通source承認／current gate・memory条件のscalar／reference／composedで、計画込み総時間と観測費用・完了率を比較。旧CPR-BPとの強化差はbridgeへ分離する。CPR-C、本番採用・実storage・隔離・8 read・CG0／CG3の保留を維持する。
+- [x] CWC-D：共通source承認／current gate・memory条件のscalar／reference／composedで、計画込み総時間と観測費用・完了率を比較するハーネスを追加（§9.121）。旧CPR-BPは別bridge、warm-upと観測あり／なしを分離し、paired差と計画許容額・失敗を含む完了率を保存する。
+- [ ] CWC-Dの採用条件を満たすまでCPR-Cへ進まない。次はcomposedのroot／fact／gate・診断記録を含む追加費用を分解し、共有可能な事実と再確認必須の境界を維持した削減余地を検討する。本番採用・実storage・隔離・8 read・CG0／CG3の保留を維持する。
 
 §9.118 2回目のレビュー修正：CWC-Aのprivate bytesと返却コピーが`Buffer.from`の共有poolに載り、返却コピーの`.buffer`全体の書換えがprivate factへ波及していた。`Buffer.alloc`の専用領域へ変更し、CWA07・CWA18でArrayBuffer全体の書換えを検査する。
 
 §9.119レビュー修正：CWC-B matrixの`h0`がCPR-BPの`h0Sizes`と別workloadだったため`mid-2048`へ改名し、CPR-BPの`h0Sizes`・`singleLarge`を追加（16→24 sample）。計画中の生成数4項目が常に0の固定値だったため削除し、`planProof`中のowner／frames／exact／result／layout／ownedSha256呼出しをspyで実測（全0）、oracle側owner 2N回を陽性対照とした。
 
 §9.120 2回目のレビュー修正：CWC-C05・C23が通常の`npm test`で実時間の4500 ms期限に依存していたため固定clockへ変更。記録runner（`CWC_C_EVIDENCE_PATH`）と`OSV_REALTIME_PROCESS=1`のときだけ実clockにし、記録は各sampleの`clock: real`を必須とする。
+
+§9.121 CWC-D実測：384転送（warm-up 96、測定288＝primary216＋旧BP bridge72）が全て4500 ms以内に完了。quiet総時間中央値はscalar 25.9〜64.7 ms、composed 49.9〜517.3 ms。全12 workload／roleで採用をdeferし、CPR-Cの見送りを維持した。観測あり／なしの差とpaired差・計画許容額はrawと同じ検証記録に保存し、負の観測差も除去しない。referenceからの短縮をscalar優位へ読み替えない。
+
+§9.121レビュー修正：時間内訳をtimestamp差へ照合し、initial＋seal／provider計画をsetup／転送前半の実測区間に制限した。duration・timestamp・trace時間の非有限値・負値を拒否するCWD12〜15を追加（修正前の失敗を確認）。384転送を再実行し全て期限内に完了、全12条件の採用見送りを維持。差分指標の負値は保持し、CPR-C／本番採用の保留を解除しない。
