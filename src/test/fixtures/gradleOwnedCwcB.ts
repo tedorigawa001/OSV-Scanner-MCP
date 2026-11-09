@@ -118,5 +118,5 @@ export class ClosedCwcBCodec {
  });}
  inspectProof(proof:CwcBProof,expectedCommand:unknown){return this.#run(8192,()=>{const row=this.#proofs.get(proof),q=this.#checked(expectedCommand);need(row&&row.digest===hash(q),'codec_fact_binding_mismatch');return {...structuredClone(row),proofKind:'closed-tree-length-only' as const,contentProven:false,authorityGranted:false,compositionOracleRequired:true};});}
  close(){this.#closed=true;this.#trees.clear();this.#verified.clear();}
- get diagnostics(){return {grammarVersion:CWC_B_GRAMMAR_VERSION,domains:this.#trees.size,fixedFragmentCanonicalCalls:this.#compileCanonical,fixedBytes:this.#fixedBytes,fragments:this.#fragments,logicalWorkspaceReserved:393216,scratchPeak:this.#scratchPeak,workSpent:this.#work,visits:this.#visits,encodes:this.#encodes,proofs:this.#proofCount,closed:this.#closed,planningOwnerWireBuffers:0,planningAuthWireBuffers:0,planningPartBytesAllocated:0,planningPartHashes:0};}
+ get diagnostics(){return {grammarVersion:CWC_B_GRAMMAR_VERSION,domains:this.#trees.size,fixedFragmentCanonicalCalls:this.#compileCanonical,fixedBytes:this.#fixedBytes,fragments:this.#fragments,logicalWorkspaceReserved:393216,scratchPeak:this.#scratchPeak,workSpent:this.#work,visits:this.#visits,encodes:this.#encodes,proofs:this.#proofCount,closed:this.#closed};}
 }

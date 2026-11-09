@@ -8851,7 +8851,7 @@ runtimeのtree検査は既知node集合、objectの完全なfield集合・辞書
 
 `gradleOwnedCwcBOracle.ts`は新treeをimportせず、既存owner／result／frames・canonicalOwnedJsonを用いる。ownerのunsigned署名preimageと、authのdomain付きunsigned preimage、signed envelopeを別々に比較する。固定nonceを使う計画vectorではdummy署名のsyntaxのみ、real-key vectorでは既存codecが生成したEd25519署名を公開鍵で検証する。compositionは署名を再生成せず、秘密鍵・nonce生成callbackを受け取らない。
 
-再現matrixは4 workload（small／H0／large commit／large payload）×reader/broker×通常／最大ASCII IDの16 sample。各sampleの全N commandで14 domainを完全bytes照合し、6署名を検証する。N・domain別件数・署名検証数・oracle owner/auth生成数と元plannerのreference生成数は実際のloop／counterから記録し、14N／6N／2N／4Nとの一致を検査する。元planのdigest・全field不変と既存保守bound以内も確認する。全N oracleはこの診断で維持し、削減したprimaryの実行費用や性能改善として扱わない。
+再現matrixは6 workload×reader/broker×通常／最大ASCII IDの24 sample。workloadはCWC-Bの形状確認用のsmall／mid-2048（600＋2048×4）／large-commit／large-payloadと、CPR-BPでCPR-C条件を満たさなかった`h0Sizes`（9 entry、11 command）・`singleLarge`（41456 Bの1 entry、12 command）を同じsizeで含む。各sampleの全N commandで14 domainを完全bytes照合し、6署名を検証する。N・domain別件数・署名検証数・oracle owner/auth生成数と元plannerのreference生成数は実際のloop／counterから記録し、14N／6N／2N／4Nとの一致を検査する。`planProof`の間に既存のowner／frames／exact／result／layoutとbytes hash（`ownedSha256`）が呼ばれた回数もspyで数えて記録し、全sampleで0であることを検査する。同じspyがoracle側のowner生成を2N回観測することを陽性対照として確認する。元planのdigest・全field不変と既存保守bound以内も確認する。全N oracleはこの診断で維持し、削減したprimaryの実行費用や性能改善として扱わない。
 
 別のreader/broker 2対照では、既存CPR-Bの実SessionClient／Serverをそのまま動かす。診断observerが実際のrequest／replyをcopyして既存wireへ照合し、実nonce・session ID・sequence・署名を固定値へ書き換えない。独立したsession IDは異なることを確認し、それ以外の完了・request／dispatch・wire bytes・client initial/seal各計画・provider各RPC計画・出力を対照と照合する。observerから署名・nonce・supplierを追加評価する経路はなく、計画APIにはKeyObject／nonce生成callbackもない。observerは診断用の追加decode・clone・schema／hash・encodingを実行するため、wall timeの非干渉や費用0は主張しない。全sessionを通した同じ診断codecの利用はwire照合用であり、actor間／provider call間でfactを共有する本番adapterではない。
 
@@ -8870,6 +8870,8 @@ npx vitest run src/test/utils/gradleOwnedCwcB.test.ts --maxWorkers=1
 npm run typecheck
 ```
 
-`docs/validation/gradle-cwc-b-2026-11-09.json`はrunnerが実際のVitest結果、matrix loopの出力、実session対照の出力から作る。35件のID／title、16 sampleの閉包・全14 domainのN件被覆、署名数、論理上限、2 roleのsession観測を検証し、テスト・local import閉包・runner・lock／設定・本節のdigestを結ぶ。`--check`は保存済み記録の整合性検査、通常起動はテスト再実行である。件数は検証済みsampleから合計する。閉じたsubsetの診断記録であり、外部署名された承認やnative隔離証拠ではない。
+`docs/validation/gradle-cwc-b-2026-11-09.json`はrunnerが実際のVitest結果、matrix loopの出力、実session対照の出力から作る。35件のID／title、24 sampleの閉包・全14 domainのN件被覆、署名数、計画中の実測呼出し数0と陽性対照、論理上限、2 roleのsession観測を検証し、テスト・local import閉包・runner・lock／設定・本節のdigestを結ぶ。`--check`は保存済み記録の整合性検査、通常起動はテスト再実行である。件数は検証済みsampleから合計する。閉じたsubsetの診断記録であり、外部署名された承認やnative隔離証拠ではない。
+
+レビュー修正：初版のmatrixの`h0`は600＋2048×4で、CPR-BPの`h0Sizes`とは別のworkloadだった。`large-commit`もCPR-BPの大entry（41456 B）とは異なる。名前を`mid-2048`へ改め、CPR-BPの`h0Sizes`・`singleLarge`を同じsizeで追加した（16→24 sample）。また、codecの`diagnostics`が返していた`planningOwnerWireBuffers`等4項目は計数せず常に0を返す固定値で、記録とrunnerの検査が必ず通っていた。この4項目を削除し、上記のspyによる実測呼出し数と陽性対照へ置き換えた。CWB06も同じ6関数をspyする。
 
 CWC-Bの閉じたtree／length proofと全N bytes照合は成立した範囲で記録するが、optimized primary・独立source approval・CWC-A／実call／fresh SourceOwnerへのadapter・本番memory予約接続は未成立。CWC-Cの前提確認と接続、CWC-Dの計画込み総時間比較が次段階である。CPR-Cの見送り・実storage・独立UID隔離・本番採用・継続8 read・CG0／CG3の保留は解除しない。

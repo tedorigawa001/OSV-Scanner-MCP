@@ -10,11 +10,11 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.119 CWC-B：閉じたfamilyの構造／長さと実codec bytesの限定実証",
-    "sectionSha256": "78043d7f42d057b6a1b28a231499bc561ae5b5605a9a8004f0656ea4e382f975"
+    "sectionSha256": "b10f86f41140c158f47363515338be6d52962030d229826ed6ffc8f5605cf139"
   },
   "sourceBindings": {
-    "src/test/utils/gradleOwnedCwcB.test.ts": "b22d20869d43e83e8dcca74d936fd323fbcac2151be8c5890c5cbd7d459a1d92",
-    "src/test/fixtures/gradleOwnedCwcBExperiment.ts": "8c0a997d21ea55c074f56ff960a23a9d6545367107e6c7ddff55eb09940d7a80",
+    "src/test/utils/gradleOwnedCwcB.test.ts": "63eeb32dd40251418d32adfd443eab82a8a4d576b4507af4f576ed2fbd6d7a5c",
+    "src/test/fixtures/gradleOwnedCwcBExperiment.ts": "a5517c8c609bd20910fb4db3d1a68b6d2e39dc72391fea62135dde71daaeb1ae",
     "src/test/fixtures/gradleOwnedCprAFixture.ts": "eb54faca78d6837666881ce0e66687dc467be1e27bb3f24ef2e9ee5ceddb6fd6",
     "src/utils/gradleOwnedSourceSchema.ts": "4a4b70982504fc1e275ab2c45cf6330136916dbeb0eb8ec2b8963cbdc1649cb9",
     "src/utils/gradleOwnedDeliverySchema.ts": "d956f4b536fcb090369aff1e75ff592446178a7a940ff7de38629ce50460acf1",
@@ -72,7 +72,7 @@
     "src/test/fixtures/gradleOwnedCgpI2Protocol.ts": "de027b29a417d599a8509f8912e4a7b85bd1c472ff52100dfd31338844d76b3b",
     "src/test/fixtures/gradleOwnedCgpI2Owners.ts": "0b4319a767a7d2b94a2037b98ed4ec3d8bc06a149f04b85fbcdfaf4ab0ff8cfb",
     "src/test/fixtures/gradleOwnedCprAPlanner.ts": "b587875fd944dff95a35d26f3550e636fbe476d6968a9defc51ebe470c5c8117",
-    "src/test/fixtures/gradleOwnedCwcB.ts": "668aaa9232a8d09c8596a7ae751bbdd8636840014d52a5ab70163b92f530b890",
+    "src/test/fixtures/gradleOwnedCwcB.ts": "ac0a2a93fab34ff9df26b1cf6d12a2019e1eefd12e85a20625f861e0e22e9145",
     "src/test/fixtures/gradleOwnedCwcA.ts": "cf4592516d3948bca3370887c55dd55b7cc847cf34f7c02d2275161c90f44c53",
     "src/test/fixtures/gradleOwnedCwcBOracle.ts": "adb2d4e291b94cb509b2431fd6764fd712959115d9939d1fc8ad32c2ba0127ab",
     "src/test/fixtures/gradleOwnedCprB.ts": "9e74eb6f1fd48cfc91f18f0f664ace08fb5b64130a3c9d16ed51c4e9059ed168",
@@ -83,7 +83,7 @@
     "src/test/fixtures/gradleOwnedCgpI2Schema.ts": "187a4b26448f11ed69a49438197981ff6f27d4a634fe4189856d976392c5ef23",
     "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
     "src/test/fixtures/gradleOwnedCprBProvider.ts": "6d1faeb7f9ab3df9a778f1684e75dc438359379ca05a997d875cc15794a2038f",
-    "scripts/check-cwc-b.mjs": "d5af11b6edc2fad57b082f6d763b13c16960b7c30fb115392701d72d3d613d32",
+    "scripts/check-cwc-b.mjs": "181c5c6cde7e57350428a5faf428d1385a8547dcd4289affff405bec5dae26d6",
     "src/test/fixtures/gradleOwnedCgpS0Bound.mjs": "f1530986cf57994fd288767896c9a973e83c96fc79e540f1d6d5750e83a0048f",
     "package-lock.json": "77c7e48101598ea9e662974676b7d04acb8d65d09832f9c0f7dff5c2856c78d7",
     "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb",
@@ -315,6 +315,15 @@
         "owner.request.unsigned": 2,
         "wireIntent.preimage": 2
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 4,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -342,11 +351,7 @@
         "visits": 2524,
         "encodes": 28,
         "proofs": 2,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
@@ -377,6 +382,15 @@
         "owner.request.unsigned": 2,
         "wireIntent.preimage": 2
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 4,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -404,11 +418,7 @@
         "visits": 2524,
         "encodes": 28,
         "proofs": 2,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
@@ -439,6 +449,15 @@
         "owner.request.unsigned": 2,
         "wireIntent.preimage": 2
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 4,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -466,11 +485,7 @@
         "visits": 2542,
         "encodes": 28,
         "proofs": 2,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
@@ -501,6 +516,15 @@
         "owner.request.unsigned": 2,
         "wireIntent.preimage": 2
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 4,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -528,15 +552,11 @@
         "visits": 2542,
         "encodes": 28,
         "proofs": 2,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
-      "workload": "h0",
+      "workload": "mid-2048",
       "role": "reader",
       "largeIds": false,
       "commands": 3,
@@ -563,6 +583,15 @@
         "owner.request.unsigned": 3,
         "wireIntent.preimage": 3
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 6,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -590,15 +619,11 @@
         "visits": 3718,
         "encodes": 42,
         "proofs": 3,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
-      "workload": "h0",
+      "workload": "mid-2048",
       "role": "reader",
       "largeIds": true,
       "commands": 3,
@@ -625,6 +650,15 @@
         "owner.request.unsigned": 3,
         "wireIntent.preimage": 3
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 6,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -652,15 +686,11 @@
         "visits": 3718,
         "encodes": 42,
         "proofs": 3,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
-      "workload": "h0",
+      "workload": "mid-2048",
       "role": "authority-broker",
       "largeIds": false,
       "commands": 3,
@@ -687,6 +717,15 @@
         "owner.request.unsigned": 3,
         "wireIntent.preimage": 3
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 6,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -714,15 +753,11 @@
         "visits": 3745,
         "encodes": 42,
         "proofs": 3,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
-      "workload": "h0",
+      "workload": "mid-2048",
       "role": "authority-broker",
       "largeIds": true,
       "commands": 3,
@@ -749,6 +784,15 @@
         "owner.request.unsigned": 3,
         "wireIntent.preimage": 3
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 6,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -776,11 +820,7 @@
         "visits": 3745,
         "encodes": 42,
         "proofs": 3,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
@@ -811,6 +851,15 @@
         "owner.request.unsigned": 9,
         "wireIntent.preimage": 9
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 18,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -838,11 +887,7 @@
         "visits": 10066,
         "encodes": 126,
         "proofs": 9,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
@@ -873,6 +918,15 @@
         "owner.request.unsigned": 9,
         "wireIntent.preimage": 9
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 18,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -900,11 +954,7 @@
         "visits": 10066,
         "encodes": 126,
         "proofs": 9,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
@@ -935,6 +985,15 @@
         "owner.request.unsigned": 9,
         "wireIntent.preimage": 9
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 18,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -962,11 +1021,7 @@
         "visits": 10147,
         "encodes": 126,
         "proofs": 9,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
@@ -997,6 +1052,15 @@
         "owner.request.unsigned": 9,
         "wireIntent.preimage": 9
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 18,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -1024,11 +1088,7 @@
         "visits": 10147,
         "encodes": 126,
         "proofs": 9,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
@@ -1059,6 +1119,15 @@
         "owner.request.unsigned": 9,
         "wireIntent.preimage": 9
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 18,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -1086,11 +1155,7 @@
         "visits": 10066,
         "encodes": 126,
         "proofs": 9,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
@@ -1121,6 +1186,15 @@
         "owner.request.unsigned": 9,
         "wireIntent.preimage": 9
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 18,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -1148,11 +1222,7 @@
         "visits": 10066,
         "encodes": 126,
         "proofs": 9,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
@@ -1183,6 +1253,15 @@
         "owner.request.unsigned": 9,
         "wireIntent.preimage": 9
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 18,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -1210,11 +1289,7 @@
         "visits": 10147,
         "encodes": 126,
         "proofs": 9,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
       }
     },
     {
@@ -1245,6 +1320,15 @@
         "owner.request.unsigned": 9,
         "wireIntent.preimage": 9
       },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 18,
       "sourcePlannerReference": {
         "layoutOwners": 2,
         "layoutFrames": 4,
@@ -1272,11 +1356,543 @@
         "visits": 10147,
         "encodes": 126,
         "proofs": 9,
-        "closed": false,
-        "planningOwnerWireBuffers": 0,
-        "planningAuthWireBuffers": 0,
-        "planningPartBytesAllocated": 0,
-        "planningPartHashes": 0
+        "closed": false
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "reader",
+      "largeIds": false,
+      "commands": 11,
+      "comparisons": 154,
+      "preimages": 66,
+      "signedEnvelopes": 66,
+      "signatureVerifications": 66,
+      "oracleOwners": 22,
+      "oracleFrames": 44,
+      "comparedBytes": 447637,
+      "domains": {
+        "auth.challenge-request.request.signed": 11,
+        "auth.challenge-request.request.unsigned": 11,
+        "auth.challenge.reply.signed": 11,
+        "auth.challenge.reply.unsigned": 11,
+        "auth.channel.reply.signed": 11,
+        "auth.channel.reply.unsigned": 11,
+        "auth.channel.request.signed": 11,
+        "auth.channel.request.unsigned": 11,
+        "command.full": 11,
+        "owner.reply.signed": 11,
+        "owner.reply.unsigned": 11,
+        "owner.request.signed": 11,
+        "owner.request.unsigned": 11,
+        "wireIntent.preimage": 11
+      },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 22,
+      "sourcePlannerReference": {
+        "layoutOwners": 2,
+        "layoutFrames": 4,
+        "finalOwners": 22,
+        "finalFrames": 44
+      },
+      "planDigest": "d16c10e3593c855746421568db0c198f82e6c3eb79c092f774645e46b5db58fe",
+      "semanticPlanUnchanged": true,
+      "sourceReadCallbacks": 0,
+      "proofWorkUnits": 45791,
+      "referenceWorkUnits": 45791,
+      "conservativeWireBytes": 186685,
+      "referenceWireBytes": 186685,
+      "serializedPlanBytes": 48787,
+      "oraclePeakLogicalBytes": 56624,
+      "diagnostics": {
+        "grammarVersion": "cwc.closed-ascii-tree.v1",
+        "domains": 14,
+        "fixedFragmentCanonicalCalls": 210,
+        "fixedBytes": 6341,
+        "fragments": 418,
+        "logicalWorkspaceReserved": 393216,
+        "scratchPeak": 24024,
+        "workSpent": 12296192,
+        "visits": 12726,
+        "encodes": 154,
+        "proofs": 11,
+        "closed": false
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "reader",
+      "largeIds": true,
+      "commands": 11,
+      "comparisons": 154,
+      "preimages": 66,
+      "signedEnvelopes": 66,
+      "signatureVerifications": 66,
+      "oracleOwners": 22,
+      "oracleFrames": 44,
+      "comparedBytes": 514015,
+      "domains": {
+        "auth.challenge-request.request.signed": 11,
+        "auth.challenge-request.request.unsigned": 11,
+        "auth.challenge.reply.signed": 11,
+        "auth.challenge.reply.unsigned": 11,
+        "auth.channel.reply.signed": 11,
+        "auth.channel.reply.unsigned": 11,
+        "auth.channel.request.signed": 11,
+        "auth.channel.request.unsigned": 11,
+        "command.full": 11,
+        "owner.reply.signed": 11,
+        "owner.reply.unsigned": 11,
+        "owner.request.signed": 11,
+        "owner.request.unsigned": 11,
+        "wireIntent.preimage": 11
+      },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 22,
+      "sourcePlannerReference": {
+        "layoutOwners": 2,
+        "layoutFrames": 4,
+        "finalOwners": 22,
+        "finalFrames": 44
+      },
+      "planDigest": "2450a442ad93107313a92a5061a1a1ae98f0e36119577666d0b475ffcfd4b452",
+      "semanticPlanUnchanged": true,
+      "sourceReadCallbacks": 0,
+      "proofWorkUnits": 52235,
+      "referenceWorkUnits": 52235,
+      "conservativeWireBytes": 217280,
+      "referenceWireBytes": 217280,
+      "serializedPlanBytes": 51849,
+      "oraclePeakLogicalBytes": 61726,
+      "diagnostics": {
+        "grammarVersion": "cwc.closed-ascii-tree.v1",
+        "domains": 14,
+        "fixedFragmentCanonicalCalls": 210,
+        "fixedBytes": 9123,
+        "fragments": 418,
+        "logicalWorkspaceReserved": 393216,
+        "scratchPeak": 24564,
+        "workSpent": 12296192,
+        "visits": 12726,
+        "encodes": 154,
+        "proofs": 11,
+        "closed": false
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "largeIds": false,
+      "commands": 11,
+      "comparisons": 154,
+      "preimages": 66,
+      "signedEnvelopes": 66,
+      "signatureVerifications": 66,
+      "oracleOwners": 22,
+      "oracleFrames": 44,
+      "comparedBytes": 458549,
+      "domains": {
+        "auth.challenge-request.request.signed": 11,
+        "auth.challenge-request.request.unsigned": 11,
+        "auth.challenge.reply.signed": 11,
+        "auth.challenge.reply.unsigned": 11,
+        "auth.channel.reply.signed": 11,
+        "auth.channel.reply.unsigned": 11,
+        "auth.channel.request.signed": 11,
+        "auth.channel.request.unsigned": 11,
+        "command.full": 11,
+        "owner.reply.signed": 11,
+        "owner.reply.unsigned": 11,
+        "owner.request.signed": 11,
+        "owner.request.unsigned": 11,
+        "wireIntent.preimage": 11
+      },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 22,
+      "sourcePlannerReference": {
+        "layoutOwners": 2,
+        "layoutFrames": 4,
+        "finalOwners": 22,
+        "finalFrames": 44
+      },
+      "planDigest": "f64d21147dfc34dc5c8bb9ef3f8512e3a10b70df04441421e17436e2b7125191",
+      "semanticPlanUnchanged": true,
+      "sourceReadCallbacks": 0,
+      "proofWorkUnits": 48409,
+      "referenceWorkUnits": 48409,
+      "conservativeWireBytes": 189963,
+      "referenceWireBytes": 189963,
+      "serializedPlanBytes": 51163,
+      "oraclePeakLogicalBytes": 57220,
+      "diagnostics": {
+        "grammarVersion": "cwc.closed-ascii-tree.v1",
+        "domains": 14,
+        "fixedFragmentCanonicalCalls": 212,
+        "fixedBytes": 6629,
+        "fragments": 421,
+        "logicalWorkspaceReserved": 393216,
+        "scratchPeak": 24024,
+        "workSpent": 12296192,
+        "visits": 12825,
+        "encodes": 154,
+        "proofs": 11,
+        "closed": false
+      }
+    },
+    {
+      "workload": "h0Sizes",
+      "role": "authority-broker",
+      "largeIds": true,
+      "commands": 11,
+      "comparisons": 154,
+      "preimages": 66,
+      "signedEnvelopes": 66,
+      "signatureVerifications": 66,
+      "oracleOwners": 22,
+      "oracleFrames": 44,
+      "comparedBytes": 522067,
+      "domains": {
+        "auth.challenge-request.request.signed": 11,
+        "auth.challenge-request.request.unsigned": 11,
+        "auth.challenge.reply.signed": 11,
+        "auth.challenge.reply.unsigned": 11,
+        "auth.channel.reply.signed": 11,
+        "auth.channel.reply.unsigned": 11,
+        "auth.channel.request.signed": 11,
+        "auth.channel.request.unsigned": 11,
+        "command.full": 11,
+        "owner.reply.signed": 11,
+        "owner.reply.unsigned": 11,
+        "owner.request.signed": 11,
+        "owner.request.unsigned": 11,
+        "wireIntent.preimage": 11
+      },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 22,
+      "sourcePlannerReference": {
+        "layoutOwners": 2,
+        "layoutFrames": 4,
+        "finalOwners": 22,
+        "finalFrames": 44
+      },
+      "planDigest": "b601692ca9865978cb69bdc5c916c320e1cc2220fec47b9d90346f7cceb29f4b",
+      "semanticPlanUnchanged": true,
+      "sourceReadCallbacks": 0,
+      "proofWorkUnits": 54303,
+      "referenceWorkUnits": 54303,
+      "conservativeWireBytes": 219348,
+      "referenceWireBytes": 219348,
+      "serializedPlanBytes": 53985,
+      "oraclePeakLogicalBytes": 62102,
+      "diagnostics": {
+        "grammarVersion": "cwc.closed-ascii-tree.v1",
+        "domains": 14,
+        "fixedFragmentCanonicalCalls": 212,
+        "fixedBytes": 9301,
+        "fragments": 421,
+        "logicalWorkspaceReserved": 393216,
+        "scratchPeak": 24564,
+        "workSpent": 12296192,
+        "visits": 12825,
+        "encodes": 154,
+        "proofs": 11,
+        "closed": false
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "reader",
+      "largeIds": false,
+      "commands": 12,
+      "comparisons": 168,
+      "preimages": 72,
+      "signedEnvelopes": 72,
+      "signatureVerifications": 72,
+      "oracleOwners": 24,
+      "oracleFrames": 48,
+      "comparedBytes": 471308,
+      "domains": {
+        "auth.challenge-request.request.signed": 12,
+        "auth.challenge-request.request.unsigned": 12,
+        "auth.challenge.reply.signed": 12,
+        "auth.challenge.reply.unsigned": 12,
+        "auth.channel.reply.signed": 12,
+        "auth.channel.reply.unsigned": 12,
+        "auth.channel.request.signed": 12,
+        "auth.channel.request.unsigned": 12,
+        "command.full": 12,
+        "owner.reply.signed": 12,
+        "owner.reply.unsigned": 12,
+        "owner.request.signed": 12,
+        "owner.request.unsigned": 12,
+        "wireIntent.preimage": 12
+      },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 24,
+      "sourcePlannerReference": {
+        "layoutOwners": 2,
+        "layoutFrames": 4,
+        "finalOwners": 24,
+        "finalFrames": 48
+      },
+      "planDigest": "483aaed7b6bfb3a5ea0cda22c96a82785556e5adac90ff84fccdafc8f85cb47a",
+      "semanticPlanUnchanged": true,
+      "sourceReadCallbacks": 0,
+      "proofWorkUnits": 48956,
+      "referenceWorkUnits": 48956,
+      "conservativeWireBytes": 196135,
+      "referenceWireBytes": 196135,
+      "serializedPlanBytes": 50898,
+      "oraclePeakLogicalBytes": 54052,
+      "diagnostics": {
+        "grammarVersion": "cwc.closed-ascii-tree.v1",
+        "domains": 14,
+        "fixedFragmentCanonicalCalls": 210,
+        "fixedBytes": 6341,
+        "fragments": 418,
+        "logicalWorkspaceReserved": 393216,
+        "scratchPeak": 21681,
+        "workSpent": 13402112,
+        "visits": 13104,
+        "encodes": 168,
+        "proofs": 12,
+        "closed": false
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "reader",
+      "largeIds": true,
+      "commands": 12,
+      "comparisons": 168,
+      "preimages": 72,
+      "signedEnvelopes": 72,
+      "signatureVerifications": 72,
+      "oracleOwners": 24,
+      "oracleFrames": 48,
+      "comparedBytes": 543740,
+      "domains": {
+        "auth.challenge-request.request.signed": 12,
+        "auth.challenge-request.request.unsigned": 12,
+        "auth.challenge.reply.signed": 12,
+        "auth.challenge.reply.unsigned": 12,
+        "auth.channel.reply.signed": 12,
+        "auth.channel.reply.unsigned": 12,
+        "auth.channel.request.signed": 12,
+        "auth.channel.request.unsigned": 12,
+        "command.full": 12,
+        "owner.reply.signed": 12,
+        "owner.reply.unsigned": 12,
+        "owner.request.signed": 12,
+        "owner.request.unsigned": 12,
+        "wireIntent.preimage": 12
+      },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 24,
+      "sourcePlannerReference": {
+        "layoutOwners": 2,
+        "layoutFrames": 4,
+        "finalOwners": 24,
+        "finalFrames": 48
+      },
+      "planDigest": "90f3b4f25045c962b00c93d17f4ba1b354f2ebb732a8ba824bd8a902177badbe",
+      "semanticPlanUnchanged": true,
+      "sourceReadCallbacks": 0,
+      "proofWorkUnits": 55988,
+      "referenceWorkUnits": 55988,
+      "conservativeWireBytes": 229519,
+      "referenceWireBytes": 229519,
+      "serializedPlanBytes": 54200,
+      "oraclePeakLogicalBytes": 59616,
+      "diagnostics": {
+        "grammarVersion": "cwc.closed-ascii-tree.v1",
+        "domains": 14,
+        "fixedFragmentCanonicalCalls": 210,
+        "fixedBytes": 9123,
+        "fragments": 418,
+        "logicalWorkspaceReserved": 393216,
+        "scratchPeak": 22725,
+        "workSpent": 13402112,
+        "visits": 13104,
+        "encodes": 168,
+        "proofs": 12,
+        "closed": false
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "largeIds": false,
+      "commands": 12,
+      "comparisons": 168,
+      "preimages": 72,
+      "signedEnvelopes": 72,
+      "signatureVerifications": 72,
+      "oracleOwners": 24,
+      "oracleFrames": 48,
+      "comparedBytes": 483212,
+      "domains": {
+        "auth.challenge-request.request.signed": 12,
+        "auth.challenge-request.request.unsigned": 12,
+        "auth.challenge.reply.signed": 12,
+        "auth.challenge.reply.unsigned": 12,
+        "auth.channel.reply.signed": 12,
+        "auth.channel.reply.unsigned": 12,
+        "auth.channel.request.signed": 12,
+        "auth.channel.request.unsigned": 12,
+        "command.full": 12,
+        "owner.reply.signed": 12,
+        "owner.reply.unsigned": 12,
+        "owner.request.signed": 12,
+        "owner.request.unsigned": 12,
+        "wireIntent.preimage": 12
+      },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 24,
+      "sourcePlannerReference": {
+        "layoutOwners": 2,
+        "layoutFrames": 4,
+        "finalOwners": 24,
+        "finalFrames": 48
+      },
+      "planDigest": "774ba672424d16ebf6d6419b475078484f1148731fe8ee7ec7ae1d6c2c7695a1",
+      "semanticPlanUnchanged": true,
+      "sourceReadCallbacks": 0,
+      "proofWorkUnits": 51812,
+      "referenceWorkUnits": 51812,
+      "conservativeWireBytes": 199711,
+      "referenceWireBytes": 199711,
+      "serializedPlanBytes": 53472,
+      "oraclePeakLogicalBytes": 54648,
+      "diagnostics": {
+        "grammarVersion": "cwc.closed-ascii-tree.v1",
+        "domains": 14,
+        "fixedFragmentCanonicalCalls": 212,
+        "fixedBytes": 6629,
+        "fragments": 421,
+        "logicalWorkspaceReserved": 393216,
+        "scratchPeak": 21681,
+        "workSpent": 13402112,
+        "visits": 13212,
+        "encodes": 168,
+        "proofs": 12,
+        "closed": false
+      }
+    },
+    {
+      "workload": "singleLarge",
+      "role": "authority-broker",
+      "largeIds": true,
+      "commands": 12,
+      "comparisons": 168,
+      "preimages": 72,
+      "signedEnvelopes": 72,
+      "signatureVerifications": 72,
+      "oracleOwners": 24,
+      "oracleFrames": 48,
+      "comparedBytes": 552524,
+      "domains": {
+        "auth.challenge-request.request.signed": 12,
+        "auth.challenge-request.request.unsigned": 12,
+        "auth.challenge.reply.signed": 12,
+        "auth.challenge.reply.unsigned": 12,
+        "auth.channel.reply.signed": 12,
+        "auth.channel.reply.unsigned": 12,
+        "auth.channel.request.signed": 12,
+        "auth.channel.request.unsigned": 12,
+        "command.full": 12,
+        "owner.reply.signed": 12,
+        "owner.reply.unsigned": 12,
+        "owner.request.signed": 12,
+        "owner.request.unsigned": 12,
+        "wireIntent.preimage": 12
+      },
+      "planningCalls": {
+        "owner": 0,
+        "frames": 0,
+        "exact": 0,
+        "result": 0,
+        "layout": 0,
+        "ownedSha256": 0
+      },
+      "probeControlOwnerCalls": 24,
+      "sourcePlannerReference": {
+        "layoutOwners": 2,
+        "layoutFrames": 4,
+        "finalOwners": 24,
+        "finalFrames": 48
+      },
+      "planDigest": "86b2c889e72135061a9dfeb94fd29e457b39ebeafe2e777466548061823d3e66",
+      "semanticPlanUnchanged": true,
+      "sourceReadCallbacks": 0,
+      "proofWorkUnits": 58244,
+      "referenceWorkUnits": 58244,
+      "conservativeWireBytes": 231775,
+      "referenceWireBytes": 231775,
+      "serializedPlanBytes": 56514,
+      "oraclePeakLogicalBytes": 59992,
+      "diagnostics": {
+        "grammarVersion": "cwc.closed-ascii-tree.v1",
+        "domains": 14,
+        "fixedFragmentCanonicalCalls": 212,
+        "fixedBytes": 9301,
+        "fragments": 421,
+        "logicalWorkspaceReserved": 393216,
+        "scratchPeak": 22725,
+        "workSpent": 13402112,
+        "visits": 13212,
+        "encodes": 168,
+        "proofs": 12,
+        "closed": false
       }
     }
   ],
@@ -1325,10 +1941,10 @@
     }
   ],
   "totals": {
-    "samples": 16,
-    "commands": 92,
-    "comparisons": 1288,
-    "signatureVerifications": 552,
+    "samples": 24,
+    "commands": 184,
+    "comparisons": 2576,
+    "signatureVerifications": 1104,
     "sessionComparisons": 48
   }
 }

@@ -3146,7 +3146,9 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - [x] 閉じたfamilyのPlanLayout／canonical fact、actor別のprivate root・client seal child寿命、共有／非共有境界、実codec bytes照合、読取前承認・current gate・予算／失効を具体化。
 - [x] CWC-A〜Dの出口、CWC01〜40の回帰条件、scalar／共通reference／composed＋BP bridge・oracle対照、計画込み総時間とpaired許容額の責任を設計。
 - [x] CWC-Aのstrict helper／fact contractをfixtureへ実装（§9.118）。actor／call／domain・private copy・child移管・current gate・寿命／失効・事前予算と非返還をCWA01〜41で検証。同一scopeのroot発行前再入を拒否し、initial証拠と同じ親readへ結んだseal一致確認をchild移管の条件へ追加。模擬owner scopeのみ、全N reference codecを維持し、composition／閉じたfamily proof・実session接続・性能改善は未成立。
-- [x] CWC-B：閉じたASCII family tree／length proof、14 canonical domainの独立oracle照合・実署名・境界／改変拒否を限定実証（§9.119）。4 workload×2 role×通常／最大IDの全16 sample・全commandを照合し、既存実sessionへの診断observerも対照。全N oracleを維持し、optimized primary・性能改善・adapter接続は未成立。
+- [x] CWC-B：閉じたASCII family tree／length proof、14 canonical domainの独立oracle照合・実署名・境界／改変拒否を限定実証（§9.119）。6 workload（CPR-BPのh0Sizes・singleLargeを含む）×2 role×通常／最大IDの全24 sample・全commandを照合し、既存実sessionへの診断observerも対照。全N oracleを維持し、optimized primary・性能改善・adapter接続は未成立。
 - [ ] 次はCWC-C：独立source承認・CWC-A root／実call／ReadScope／fresh SourceSnapshot・共同memory予約の接続条件を満たし、閉じたproofを実session経路へ接続。その後CWC-Dの計画込み総時間比較。全N oracle省略のprimary採用は別の承認／接続実証が必要。CPR-C、本番採用・実storage・隔離・8 read・CG0／CG3の保留を維持する。
 
 §9.118 2回目のレビュー修正：CWC-Aのprivate bytesと返却コピーが`Buffer.from`の共有poolに載り、返却コピーの`.buffer`全体の書換えがprivate factへ波及していた。`Buffer.alloc`の専用領域へ変更し、CWA07・CWA18でArrayBuffer全体の書換えを検査する。
+
+§9.119レビュー修正：CWC-B matrixの`h0`がCPR-BPの`h0Sizes`と別workloadだったため`mid-2048`へ改名し、CPR-BPの`h0Sizes`・`singleLarge`を追加（16→24 sample）。計画中の生成数4項目が常に0の固定値だったため削除し、`planProof`中のowner／frames／exact／result／layout／ownedSha256呼出しをspyで実測（全0）、oracle側owner 2N回を陽性対照とした。
