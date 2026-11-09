@@ -196,9 +196,15 @@ export class CwcLb0Session{
  dispatch(call:Lb0Call,work:()=>Promise<unknown>):Promise<unknown>{
   const c=this.#lookup(call);need(!c.dispatchStarted,'operation_busy');this.#operation(c,()=>{need(c.boundReady&&c.b?.state==='ready'&&c.b.scope&&this.#scopes.get(c.b.scope)?.open,'source_binding');this.#inspect(c);need(c.b.state==='ready'&&this.#scopes.get(c.b.scope)?.open,'owner_closed');});c.dispatchStarted=true;c.pendingDispatch=true;const generation=c.generation;
   const response=new Promise((resolve,reject)=>{c.settle={resolve,reject};});
-  void(async()=>{try{const value=await work();if(c.state!=='active'||c.generation!==generation){c.metrics.late++;this.#event(c,'late-resolve');return;}const result=this.#finish(c,value);c.settle!.resolve(result);}
-   catch(error){if(c.state==='active'&&c.generation===generation)this.#end(c,error);else{c.metrics.late++;this.#event(c,'late-reject');}}
-   finally{c.pendingDispatch=false;this.#event(c,'dispatch-drained');c.settle=undefined;this.#releaseScratch(c);}})();
+  void(async()=>{let value:unknown,error:unknown,rejected=false;try{value=await work();}catch(e){rejected=true;error=e;}
+   try{
+    // Late means the outcome arrived after the call had already ended (timeout, cancel or close).
+    if(c.state!=='active'||c.generation!==generation){c.metrics.late++;this.#event(c,rejected?'late-reject':'late-resolve');return;}
+    if(rejected){this.#end(c,error);return;}
+    // An on-time result refused by the final verification is ended (and the caller rejected) inside #finish; it is not a late arrival.
+    let result:unknown;try{result=this.#finish(c,value);}catch{return;}
+    c.settle!.resolve(result);
+   }finally{c.pendingDispatch=false;this.#event(c,'dispatch-drained');c.settle=undefined;this.#releaseScratch(c);}})();
   return response;
  }
  stats(call:Lb0Call){const c=this.#all.get(call);need(c,'peer_mismatch');return {mode:this.#mode,state:c.state,phase:c.phase,generation:c.generation,lookupPresent:this.#calls.get(call)===c,readers:c.readers,bytesHeld:c.bytes,reclaimed:c.reclaimed,pendingDispatch:c.pendingDispatch,scratchReleased:c.scratchReleased,slotReleased:c.slotReleased,claimHeld:!!c.claim,bindingState:c.b?.state??'absent',deadline:c.deadline,issuedPurpose:c.issuedPurpose,metrics:{...c.metrics},events:copyData(c.events),budget:this.#budget.stats()};}

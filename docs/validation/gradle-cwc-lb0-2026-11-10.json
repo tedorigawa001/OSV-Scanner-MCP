@@ -3,9 +3,9 @@
   "date": "2026-11-10",
   "document": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
   "heading": "### 9.127 CLB-0：私有wire・identityとbinding状態機械の共通fixture",
-  "sectionDigest": "08fde3a04497e7412f3126bf2bf286f7075a885d2e58f35cc833a0c82b56898f",
+  "sectionDigest": "4286ed9eb151abde475f8102bb8c9f846f48a55d2f8e062b39fdaf9367be05d0",
   "sourceBindings": {
-    "src/test/utils/gradleOwnedCwcLb0.test.ts": "ddae354363ef3679b302a0e27027c048c988b9bb108cd4a201b0ca7ee42ed282",
+    "src/test/utils/gradleOwnedCwcLb0.test.ts": "4bd8fc74b2bc2fe65a1564eb588b698a72d948d706e5ad1e8f771a737f87415c",
     "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
@@ -48,7 +48,7 @@
     "src/utils/gradleOwnedAuthorityClock.ts": "71f593e38f88fc1f1dcd2c049202c25a969d3ee60350104ee9f5a5d9fff53994",
     "src/utils/gradleOwnedAuthorityOwnerSchema.ts": "18867824165fa4c7a6d7553017599541d87bce94e9a4a28c2ed3c9721e9b852f",
     "src/test/fixtures/gradleOwnedCwcLb0Fixture.ts": "9cde276ad685a9ec285375fddf3c07115cba50077604fbfd8ac36f6f176a0442",
-    "src/test/fixtures/gradleOwnedCwcLb0.ts": "32af4579c8598dd7bc94d42f61c2bd152cd9fad0f0b622204cbf5bc48d645285",
+    "src/test/fixtures/gradleOwnedCwcLb0.ts": "7505ded2de387e936933b538706f91c01c938febaabf8a890a008375d1f3634a",
     "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "d16a7154d26a275201a366cbc4550830bc3b84925051b9bb661b5f57e4b5c0b6",
     "src/test/fixtures/gradleOwnedServiceContract.ts": "5ecc61a0da3ba4903792fa3e01d1b2d2c3922adcf22a071b9d5443e89f35ea1a",
     "src/test/fixtures/gradleOwnedCgpI0Case.ts": "b35cb70e79373acea7e8dd80b0c147b693ee872e3aedf99d01e7028865b03ab5",
@@ -100,7 +100,7 @@
         "mode": "full-reference",
         "role": "reader",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "commandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "scopeClosed": {
@@ -309,7 +309,7 @@
         "mode": "full-reference",
         "role": "reader",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "commandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "scopeClosed": {
@@ -518,7 +518,7 @@
         "mode": "full-reference",
         "role": "reader",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "commandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "scopeClosed": {
@@ -727,7 +727,7 @@
         "mode": "full-reference",
         "role": "authority-broker",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "commandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "scopeClosed": {
@@ -936,7 +936,7 @@
         "mode": "full-reference",
         "role": "authority-broker",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "commandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "scopeClosed": {
@@ -1145,7 +1145,7 @@
         "mode": "full-reference",
         "role": "authority-broker",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "commandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "scopeClosed": {
@@ -1354,7 +1354,7 @@
         "mode": "bound-live",
         "role": "reader",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "commandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "scopeClosed": {
@@ -1563,7 +1563,7 @@
         "mode": "bound-live",
         "role": "reader",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "commandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "scopeClosed": {
@@ -1772,7 +1772,7 @@
         "mode": "bound-live",
         "role": "reader",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "commandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "scopeClosed": {
@@ -1981,7 +1981,7 @@
         "mode": "bound-live",
         "role": "authority-broker",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "commandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "scopeClosed": {
@@ -2190,7 +2190,7 @@
         "mode": "bound-live",
         "role": "authority-broker",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "commandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "scopeClosed": {
@@ -2399,7 +2399,7 @@
         "mode": "bound-live",
         "role": "authority-broker",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+        "sourceApprovalPin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
         "expectedCommandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "commandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "scopeClosed": {
@@ -2606,7 +2606,7 @@
       }
     ],
     "sourceApproval": {
-      "pin": "a46080292f7486b2f4c50c5cf451a07f5b67687d39a44490037fa91d130ad22b",
+      "pin": "064f204efa56dc1d1fbf588558983fd3edb40181b9aca9bc8b0c78c8f0ab1a89",
       "envelope": {
         "manifest": {
           "schema": "cwc-lb0.approval.v1",
@@ -2614,7 +2614,7 @@
           "node": "v26.12.1",
           "sources": {
             "src/test/fixtures/gradleOwnedCwcLb0Fixture.ts": "9cde276ad685a9ec285375fddf3c07115cba50077604fbfd8ac36f6f176a0442",
-            "src/test/fixtures/gradleOwnedCwcLb0.ts": "32af4579c8598dd7bc94d42f61c2bd152cd9fad0f0b622204cbf5bc48d645285",
+            "src/test/fixtures/gradleOwnedCwcLb0.ts": "7505ded2de387e936933b538706f91c01c938febaabf8a890a008375d1f3634a",
             "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
             "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
             "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
@@ -2676,12 +2676,12 @@
             "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
           }
         },
-        "signature": "dr5qy+DUTz/m2gn9JnlafHYUZJUyeVERDYWL5N4CndLP4p7H5rJvIgwLLQMvQOfTs7X6GokziPrez8FQGtGDDA=="
+        "signature": "1iQeFHa6MZ2j0mRY2SOYFwVe2bl2lcTJl4QFbnn7ylU3xpWExi/pkN15vujALWeDJAPLU5aygnPmkzLKQWCqBQ=="
       },
       "registry": {
         "schema": "cwc-lb0.registry.v1",
-        "manifestDigest": "f41454a48bfb64b5a955fbb3a8062424bb6a31eb3ea42d533cb413a80ca45724",
-        "operatorSpki": "MCowBQYDK2VwAyEAyjSZ0Nx8WW7grh+xdE18EZn8rwdaN5PFlCgMpBNYhOQ="
+        "manifestDigest": "e8107f9a3ee1023b0dbc5a80cc363c742e0afb7a867b37127a3cad4c6c320655",
+        "operatorSpki": "MCowBQYDK2VwAyEAOO0ikIJrCZL0OSBH1d9SRyhxeV/OTe0rvnIkBJ/R3EQ="
       }
     },
     "proofs": [

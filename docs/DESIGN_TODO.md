@@ -3208,3 +3208,5 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュ�
 - [x] CLB-0の共通fixture contractを実装。私有wire／identity、claim／Draft・scope束縛、予算・再入拒否、purpose照合、timeoutのlookup除去・reader排出・B回収・後着拒否を36回帰で検証。2 mode×2 role×3 APIの12正常例と13証拠を保存し、9件の記録検査を追加。両modeとも完全検証を維持。
 - [x] CLB-0のレビュー2件を修正。TypedArrayの実slot・brandと信頼するコピー処理を使い、Bufferのcopy差し替え・SAB／metadata偽装をコピー前に拒否。receiveの共通再入guardを受付済み判定より先に適用。LB033〜036の修正前失敗を確認し、両modeのcallback／alias流出・危険入力の追加copy・外側の発行／公開0と回収を検証。LBR09と保存記録を更新。
 - [ ] CLB-1：実P／S・CWC root／fact・ReadScopeへの限定接続。CLB-0は署名済み入力を使う隔離fixtureで、実SessionServer接続・source IO・hash／clone省略・実storage・native隔離・性能改善は未成立。全36条件の成立とは扱わず、CLB-2／3・CWC-FP・CPR-C／CG0／CG3等の保留を維持。
+
+§9.127レビュー修正：CLB-0の`dispatch`で、期限内に届いた結果が最終検証で拒否された場合まで後着（`late`／`late-reject`）として記録していたため、call終了後に届いた結果だけを後着と数えるよう分離。LB028に回帰を追加（修正前の失敗を確認）。

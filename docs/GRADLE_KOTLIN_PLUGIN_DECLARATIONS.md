@@ -9477,3 +9477,5 @@ node scripts/check-cwc-lb0.mjs
 node scripts/check-cwc-lb0.mjs --check
 npx vitest run src/test/utils/gradleOwnedCwcLb0.test.ts src/test/utils/gradleOwnedCwcLb0Record.test.ts --maxWorkers=1
 ```
+
+CLB-0レビュー修正：`dispatch`は、元期限内に届いた結果が最終検証（`#finish`）で拒否された場合も、外側の`catch`で「既にcallが終わっていた」と判定し、`metrics.late`と`late-reject`を記録していた。最終検証の失敗は`#finish`内で失効・callerへのrejectまで完了しているため、後着とは別の経路である。work自体の完了／拒否を先に受け取り、call終了後に届いた場合だけを後着として数え、最終検証の失敗は後着へ数えないよう分離した。LB028に、期限内のresolve後にcredentialを取り消すと`permission_denied`で拒否され、`late`が0、`late-*`イベントがなく、回収と隔離枠の解放が完了することを追加し、修正前に失敗することを確認した。テスト件数は36件のまま。
