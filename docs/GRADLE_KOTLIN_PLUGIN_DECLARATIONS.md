@@ -8996,6 +8996,27 @@ CDP01〜14で元関数への接続、計数／partition・外側時間、operati
 
 削減余地は実測後に分類する。診断snapshotは権限判断から独立している範囲だけを省略候補とする。privateな不変context／coreのdigest・同一call内の型検証事実・コピーの重複は今後の契約候補だが、deep-freeze・root／actor／domain束縛・reentry／mutation／失効の拒否が必要であり、この段階では共有を実装しない。現在認可／取消し／元期限、callback・IO・署名・enqueueの前後、call／snapshot／actor間の境界は費用の大小によらず統合しない。
 
+#### 9.122.1 測定結果
+
+総時間の中央値（ms、各3 round）、診断省略による短縮（composed−診断省略版のpaired差の中央値、負は省略版が長い）、profiled composedのcanonical-hash exclusive中央値と判定。
+
+| workload | role | scalar | composed | 診断省略 | 省略による短縮 | canonical-hash | 判定 |
+|---|---|---|---|---|---|---|---|
+| small | reader | 26.2 | 50.4 | 50.5 | -0.1 | 26.5 | defer |
+| small | authority-broker | 26.8 | 50.5 | 50.3 | 0.5 | 27.7 | defer |
+| mid-2048 | reader | 26.0 | 72.6 | 72.6 | -0.1 | 41.5 | defer |
+| mid-2048 | authority-broker | 26.9 | 76.1 | 77.2 | 0.2 | 44.1 | defer |
+| large-commit | reader | 41.2 | 315.6 | 326.0 | -0.8 | 206.6 | defer |
+| large-commit | authority-broker | 41.3 | 328.1 | 333.6 | -5.5 | 210.4 | defer |
+| large-payload | reader | 59.5 | 343.4 | 345.6 | -5.1 | 213.7 | defer |
+| large-payload | authority-broker | 62.1 | 352.1 | 346.6 | 4.9 | 224.9 | defer |
+| h0Sizes | reader | 67.8 | 460.3 | 469.9 | -2.2 | 321.0 | defer |
+| h0Sizes | authority-broker | 70.5 | 515.9 | 490.9 | 30.5 | 320.1 | defer |
+| singleLarge | reader | 89.7 | 721.1 | 794.3 | -68.0 | 370.8 | defer |
+| singleLarge | authority-broker | 91.7 | 739.7 | 735.9 | -4.4 | 470.8 | defer |
+
+診断省略による短縮は−68.0〜30.5 msで正負に分かれ、round間の変動を超える改善は見られない。診断getterのexclusiveは0.013〜0.106 msにとどまる。canonical-hashのexclusiveはprofiled総時間の47.5〜57.3%で、全条件で最大のcategoryである。ただしこの中にはcommand・wireIntent・内容・署名など維持必須の処理も含まれ、削減可能額ではない。計測追加費用（profiled−composed）は4.7〜81.9 ms。表はrunnerが保存summaryから同じ書式で再生成し、本文との一致を検査する。
+
 ```sh
 node scripts/check-cwc-dp.mjs
 node scripts/check-cwc-dp.mjs --check
@@ -9005,3 +9026,5 @@ npx vitest run src/test/utils/gradleOwnedCwcDP.test.ts --maxWorkers=1
 CWC-DPの解釈：categoryの最大値をそのまま削減見積りにしない。とくにcanonical-hashにはcommand・wireIntent・内容・署名等の維持必須の処理も入る。最初に検討する対象はAのprivate contextの固定fingerprint（`#checkOwner`で自己contextを繰り返しhashする箇所）と、grantへ再提示する同じ自己contextである。constructor時の完全照合・所有権・非公開の不変性を証拠にする契約が必要であり、current callbackが返すcontext／pinの検査、gateの実行、時計・取消し・IO前後の確認は毎回維持する。call-site別の削減可能時間はまだ未計測であり、このcategory全体をcacheしてよいという結論ではない。root／factの外部入力のcopy・schema検査・完全性hashはmutationや別rootとの混同を防ぐため維持する。診断省略の対照はdefaultを変更しないtest専用optionであり、計測器の時間を引いた仮想値では採用しない。
 
 CWC-DPレビュー修正：非再入が保証される`A.metrics`／`grant.diagnostics`／`B.diagnostics`と`Buffer.alloc`／`Buffer.copy`／`Buffer.write`は、同一operationのinclusive合計をobserver wall以内（丸め許容1e-6 ms）に制限する。これらは同時に重ならず、呼出し件数を上限へ乗じない。callbackによる再入の可能性を持つほかの入口へ同じ制約を無条件に適用せず、保守上限を維持する。CDP13は件数・exclusive・wall・otherを保持してinclusiveだけを増やす6負例、CDP14はwall一致の受理と超過の拒否を確認する。両テストが修正前に失敗することを確認してから修正し、240転送の実時間比較を再実行する。
+
+CWC-DP 2回目のレビュー修正：runnerは本節の見出しからファイル末尾までをhashしていたため、後続の節を追加すると記録が無効になった。CWC-Dと同じく本節だけを切り出す。また本節に測定値がなかったため9.122.1に12条件の結果表を追加し、runnerが保存summaryから表の行を再生成して本文と照合する。再現は`node scripts/check-cwc-dp.mjs --measure-only`（再測定）→表の更新→`node scripts/check-cwc-dp.mjs --rebind-document`（測定値を変えず本節hashだけ更新）→`--check`。runnerの変更に伴い240転送を実時計で再実行し、全て期限内に完了、全12条件deferを維持した。

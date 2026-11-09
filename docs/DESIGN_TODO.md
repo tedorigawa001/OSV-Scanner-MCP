@@ -3157,7 +3157,7 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 
 §9.120 2回目のレビュー修正：CWC-C05・C23が通常の`npm test`で実時間の4500 ms期限に依存していたため固定clockへ変更。記録runner（`CWC_C_EVIDENCE_PATH`）と`OSV_REALTIME_PROCESS=1`のときだけ実clockにし、記録は各sampleの`clock: real`を必須とする。
 
-§9.121 CWC-D実測：384転送（warm-up 96、測定288＝primary216＋旧BP bridge72）が全て4500 ms以内に完了。quiet総時間中央値はscalar 24.9〜62.5 ms、composed 48.0〜503.9 ms（2回目のレビュー修正後の再測定）。composedはscalarの1.9〜8.5倍、旧BP bridgeの2.6〜4.6倍。全12 workload／roleで採用をdeferし、CPR-Cの見送りを維持した。観測あり／なしの差とpaired差・計画許容額はrawと同じ検証記録に保存し、負の観測差も除去しない。referenceからの短縮をscalar優位へ読み替えない。
+§9.121 CWC-D実測：384転送（warm-up 96、測定288＝primary216＋旧BP bridge72）が全て4500 ms以内に完了。quiet総時間中央値はscalar 24.9〜62.5 ms、composed 48.0〜503.9 ms（2回目のレビュー修正後の再測定）。composedはscalarの1.8〜8.6倍、旧BP bridgeの2.5〜4.9倍。全12 workload／roleで採用をdeferし、CPR-Cの見送りを維持した。観測あり／なしの差とpaired差・計画許容額はrawと同じ検証記録に保存し、負の観測差も除去しない。referenceからの短縮をscalar優位へ読み替えない。
 
 §9.121レビュー修正：時間内訳をtimestamp差へ照合し、initial＋seal／provider計画をsetup／転送前半の実測区間に制限した。duration・timestamp・trace時間の非有限値・負値を拒否するCWD12〜15を追加（修正前の失敗を確認）。384転送を再実行し全て期限内に完了、全12条件の採用見送りを維持。差分指標の負値は保持し、CPR-C／本番採用の保留を解除しない。
 
@@ -3170,6 +3170,8 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 
 費用の最大categoryは全12条件でcanonical-hash。categoryは計測器管理費用が親exclusive／otherへ入る観測値であり、純粋CPUや削減可能額ではない。native／実storage・RSS・本番採用・継続8 read・CG0／CG3の保留を維持する。
 
-CWC-DP計測値（各条件3 roundの中央値範囲、ms）：root-fact 5.7〜64.2、copy 3.7〜51.5、gate 3.3〜52.8、canonical-hash 26.8〜341.9、診断getter 0.012〜0.072。計測追加費用のpaired差は4.7〜71.8 ms、診断省略のpaired差は-5.1〜6.8 msと変動し、速度改善を確立しない。元の認可・取消し・元期限・完全性確認は維持した。
+CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュー修正後の再測定）：root-fact 5.9〜102.1、copy 3.7〜76.0、gate 3.0〜73.4、canonical-hash 26.5〜470.8、診断getter 0.013〜0.106。計測追加費用のpaired差は4.7〜81.9 ms、診断省略のpaired差は-68.0〜30.5 msと変動し、速度改善を確立しない。元の認可・取消し・元期限・完全性確認は維持した。
 
 §9.122レビュー修正：非再入の診断getterとBuffer操作のinclusive合計をobserver wall以内に制限し、件数・exclusive・partitionを維持した過大計上6件と境界値をCDP13／14で検証。修正前の失敗を確認し、240転送の実時間比較を再実行。全転送が期限内に完了し、全12条件deferを維持した。
+
+§9.122 2回目のレビュー修正：runnerの本節hashを後続節に依存しない切り出しへ変更。9.122.1に12条件の結果表を追加し、runnerがsummaryから照合する。DESIGN_TODOの§9.121の倍率を再測定値（1.8〜8.6倍・2.5〜4.9倍）へ更新。
