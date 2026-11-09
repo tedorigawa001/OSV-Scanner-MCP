@@ -1,6 +1,7 @@
 /** CWC-B closed-tree codec diagnostic. Not a signer, dispatcher or SessionRuntime adapter.
  * Per-command full semantic checks remain. A length receipt is not content/authentication evidence.
  */
+import {assertCwcConnectedGrant,type CwcConnectedGrant} from './gradleOwnedCwcC.js';
 import {CWC_DOMAINS,cwcBudgetSchema,type CwcBudget} from './gradleOwnedCwcA.js';
 import {context,command,checkCommand,keys,CPR_SPEC_DIGEST,type CprContext,type CprCommand} from './gradleOwnedCprASchema.js';
 import {checkResult} from './gradleOwnedCprAWire.js';
@@ -34,21 +35,21 @@ function base64Bytes(s:unknown):number{
  return s.length/4*3-padding;
 }
 export function assertCwcBBytes(actual:Buffer,oracle:Buffer){need(Buffer.isBuffer(actual)&&Buffer.isBuffer(oracle)&&actual.equals(oracle),'codec_layout_mismatch');}
-export type CwcBOptions={context:CprContext;gate:()=>void;now:()=>number;deadline:number;budget:CwcBudget};
+export type CwcBOptions={context:CprContext;gate:()=>void;now:()=>number;deadline:number;budget:CwcBudget;connected?:CwcConnectedGrant};
 type ProofRow={digest:string;request:number;reply:number;frames:number[];total:number};
 export class ClosedCwcBCodec {
- readonly #c:CprContext;readonly #gateCallback:()=>void;readonly #now:()=>number;readonly #deadline:number;readonly #budget:CwcBudget;
+ readonly #c:CprContext;readonly #gateCallback:()=>void;readonly #now:()=>number;readonly #deadline:number;readonly #budget:CwcBudget;readonly #connected?:CwcConnectedGrant;
  readonly #trees=new Map<CwcBDomain,Node>();readonly #verified=new Set<Node>();readonly #virtual=new WeakMap<object,number>();readonly #proofs=new WeakMap<CwcBProof,ProofRow>();
  #closed=false;#busy=false;#last=0;#work=0;#compileCanonical=0;#fragments=0;#fixedBytes=0;#visits=0;#encodes=0;#proofCount=0;#scratchPeak=0;
  constructor(options:CwcBOptions){
   this.#gateCallback=options.gate;this.#now=options.now;this.#deadline=options.deadline;this.#budget=parsed(cwcBudgetSchema,dataCopy(options.budget));
   // Reserve the entire logical diagnostic workspace before copying context/compiling any tree.
-  need(this.#budget.bytes>=393216&&this.#budget.fragments>=4096&&this.#budget.work>=131072,'codec_budget_exceeded');this.#work=131072;
+  need(this.#budget.bytes>=393216&&this.#budget.fragments>=4096&&this.#budget.work>=131072,'codec_budget_exceeded');this.#connected=options.connected;this.#work=options.connected?0:131072;
   need(Number.isSafeInteger(this.#deadline)&&this.#deadline>0,'configuration_invalid');this.#busy=true;
-  try{this.#gate();need(this.#deadline<=this.#last+4500,'request_expired');this.#c=context(dataCopy(options.context));this.#compile();this.#gate();}catch(e){this.close();throw e;}finally{this.#busy=false;}
+  try{this.#gate();need(this.#deadline<=this.#last+4500,'request_expired');this.#c=context(dataCopy(options.context));if(this.#connected)assertCwcConnectedGrant(this.#connected,this.#connected.actor,this.#c);this.#connected?.codecStep('compile');this.#compile();this.#gate();}catch(e){this.close();throw e;}finally{this.#busy=false;}
  }
- #gate(){need(!this.#closed,'owner_closed');this.#gateCallback();const n=this.#now();need(Number.isSafeInteger(n)&&n>=this.#last,'clock_invalid');this.#last=n;need(!this.#closed,'owner_closed');need(n<this.#deadline,'request_expired');}
- #run<T>(cost:number,fn:()=>T){need(!this.#closed,'owner_closed');if(this.#busy){this.#closed=true;need(false,'codec_fact_binding_mismatch');}this.#busy=true;try{this.#gate();need(this.#work+cost<=this.#budget.work,'codec_budget_exceeded');this.#work+=cost;const out=fn();this.#gate();return out;}catch(e){this.close();throw e;}finally{this.#busy=false;}}
+ #gate(){need(!this.#closed,'owner_closed');this.#connected?.gate();this.#gateCallback();const n=this.#now();need(Number.isSafeInteger(n)&&n>=this.#last,'clock_invalid');this.#last=n;need(!this.#closed,'owner_closed');need(n<this.#deadline,'request_expired');}
+ #run<T>(cost:number,fn:()=>T){need(!this.#closed,'owner_closed');if(this.#busy){this.#closed=true;need(false,'codec_fact_binding_mismatch');}this.#busy=true;try{this.#gate();need(this.#work+(this.#connected?0:cost)<=this.#budget.work,'codec_budget_exceeded');this.#work+=this.#connected?0:cost;const out=fn();this.#gate();return out;}catch(e){this.close();throw e;}finally{this.#busy=false;}}
  #fixed(value:Json):Node{const copy=dataCopy(value),text=canonical(copy);this.#compileCanonical++;this.#fixedBytes+=Buffer.byteLength(text);need(this.#fixedBytes<=81920,'codec_budget_exceeded');return {kind:'fixed',value:copy,text};}
  #compile(){
   const c=this.#c,f=(v:unknown)=>this.#fixed(v as Json);
@@ -100,12 +101,12 @@ export class ClosedCwcBCodec {
   if(domain==='wireIntent.preimage'){need(value?.domain==='cpr.wire-intent.v3','codec_fact_binding_mismatch');const full={...value.command,requestDigest:hash(value)};this.#checked(full);return;}
   if(domain.startsWith('owner.')){need(q,'codec_fact_binding_mismatch');const expected=this.#checked(q);if(domain.startsWith('owner.request.'))need(equal(value.body,{api:'ReadSourceRanges',command:expected}),'codec_fact_binding_mismatch');else checkResult(this.#c,expected,value.body);}
  }
- #encode(domain:CwcBDomain,input:unknown,expectedCommand?:CprCommand){const node=this.#node(domain),value=dataCopy(input);this.#validateSemantic(domain,value,expectedCommand);const size=this.#walk(node,value);need(size<=(domain.startsWith('auth.')?16384:8192),'codec_budget_exceeded');const fragments:string[]=[];this.#walk(node,value,fragments);const out=Buffer.from(fragments.join(''));need(out.length===size,'codec_layout_mismatch');this.#scratchPeak=Math.max(this.#scratchPeak,3*size);need(this.#scratchPeak<=65536,'codec_budget_exceeded');this.#encodes++;return out;}
+ #encode(domain:CwcBDomain,input:unknown,expectedCommand?:CprCommand){need(!this.#connected,'codec_profile_unsupported');const node=this.#node(domain),value=dataCopy(input);this.#validateSemantic(domain,value,expectedCommand);const size=this.#walk(node,value);need(size<=(domain.startsWith('auth.')?16384:8192),'codec_budget_exceeded');const fragments:string[]=[];this.#walk(node,value,fragments);const out=Buffer.from(fragments.join(''));need(out.length===size,'codec_layout_mismatch');this.#scratchPeak=Math.max(this.#scratchPeak,3*size);need(this.#scratchPeak<=65536,'codec_budget_exceeded');this.#encodes++;return out;}
  encode(domain:CwcBDomain,input:unknown,expectedCommand?:CprCommand){return this.#run(65536,()=>this.#encode(domain,input,expectedCommand));}
  compareOracle(domain:CwcBDomain,input:unknown,oracle:Buffer,expectedCommand?:CprCommand){return this.#run(73728,()=>{need(Buffer.isBuffer(oracle)&&oracle.length<=(domain.startsWith('auth.')?16384:8192),'codec_budget_exceeded');const out=this.#encode(domain,input,expectedCommand);assertCwcBBytes(out,oracle);return {domain,bytes:out.length,sha256:sha(out)};});}
 
  planProof(input:unknown):CwcBProof{return this.#run(65536,()=>{
-  const q=this.#checked(input),c=this.#c,claim=q.payload.plan;
+  this.#connected?.codecStep('proof');const q=this.#checked(input),c=this.#c,claim=q.payload.plan;
   const request=this.#owner('request',{api:'ReadSourceRanges',command:q});
   const reply=this.#owner('reply',{schema:'osv-mcp.cgp.range-result.v3',api:'ReadSourceRanges',lineage:c.lineage,requestDigest:q.requestDigest,operationKey:keys(c,q).k,mode:'observed',snapshot:c.snapshot,inventoryDigest:c.inventoryDigest,transferId:q.payload.transferId,specDigest:claim.specDigest,planDigest:claim.planDigest,batchOrdinal:claim.batchOrdinal,batchCount:claim.batchCount,parts:q.payload.ranges.map(r=>{const virtual=Object.freeze({kind:'private-length'});this.#virtual.set(virtual,r.length);return {ordinal:r.ordinal,kind:r.kind,index:r.index,entry:r.entry,offset:r.offset,totalBytes:r.entry.byteLength,bytes:virtual,sha256:zero};}),live:false});
   const requestBytes=this.#walk(this.#node('owner.request.signed'),{...request,signature:dummySignature});
@@ -116,7 +117,8 @@ export class ClosedCwcBCodec {
   });need(requestBytes<=8192&&replyBytes<=8192&&frames.every(n=>n<=16384),'codec_budget_exceeded');
   const h=Object.freeze({kind:'cwc-b-length-proof' as const});this.#proofs.set(h,{digest:hash(q),request:requestBytes,reply:replyBytes,frames,total:requestBytes+replyBytes+frames.reduce((a,b)=>a+b,0)});this.#proofCount++;return h;
  });}
- inspectProof(proof:CwcBProof,expectedCommand:unknown){return this.#run(8192,()=>{const row=this.#proofs.get(proof),q=this.#checked(expectedCommand);need(row&&row.digest===hash(q),'codec_fact_binding_mismatch');return {...structuredClone(row),proofKind:'closed-tree-length-only' as const,contentProven:false,authorityGranted:false,compositionOracleRequired:true};});}
+ inspectProof(proof:CwcBProof,expectedCommand:unknown){return this.#run(8192,()=>{this.#connected?.codecStep('inspect');const row=this.#proofs.get(proof),q=this.#checked(expectedCommand);need(row&&row.digest===hash(q),'codec_fact_binding_mismatch');return {...structuredClone(row),proofKind:'closed-tree-length-only' as const,contentProven:false,authorityGranted:false,compositionOracleRequired:!this.#connected};});}
+ matchesGrant(grant:CwcConnectedGrant){return this.#connected===grant;}
  close(){this.#closed=true;this.#trees.clear();this.#verified.clear();}
- get diagnostics(){return {grammarVersion:CWC_B_GRAMMAR_VERSION,domains:this.#trees.size,fixedFragmentCanonicalCalls:this.#compileCanonical,fixedBytes:this.#fixedBytes,fragments:this.#fragments,logicalWorkspaceReserved:393216,scratchPeak:this.#scratchPeak,workSpent:this.#work,visits:this.#visits,encodes:this.#encodes,proofs:this.#proofCount,closed:this.#closed};}
+ get diagnostics(){return {grammarVersion:CWC_B_GRAMMAR_VERSION,domains:this.#trees.size,connected:this.#connected!==undefined,prepaidPlanWork:this.#connected?.memory.work??null,fixedFragmentCanonicalCalls:this.#compileCanonical,fixedBytes:this.#fixedBytes,fragments:this.#fragments,logicalWorkspaceReserved:393216,scratchPeak:this.#scratchPeak,workSpent:this.#work,visits:this.#visits,encodes:this.#encodes,proofs:this.#proofCount,closed:this.#closed};}
 }

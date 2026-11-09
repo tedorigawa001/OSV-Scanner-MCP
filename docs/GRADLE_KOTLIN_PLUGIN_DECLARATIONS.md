@@ -8875,3 +8875,60 @@ npm run typecheck
 レビュー修正：初版のmatrixの`h0`は600＋2048×4で、CPR-BPの`h0Sizes`とは別のworkloadだった。`large-commit`もCPR-BPの大entry（41456 B）とは異なる。名前を`mid-2048`へ改め、CPR-BPの`h0Sizes`・`singleLarge`を同じsizeで追加した（16→24 sample）。また、codecの`diagnostics`が返していた`planningOwnerWireBuffers`等4項目は計数せず常に0を返す固定値で、記録とrunnerの検査が必ず通っていた。この4項目を削除し、上記のspyによる実測呼出し数と陽性対照へ置き換えた。CWB06も同じ6関数をspyする。
 
 CWC-Bの閉じたtree／length proofと全N bytes照合は成立した範囲で記録するが、optimized primary・独立source approval・CWC-A／実call／fresh SourceOwnerへのadapter・本番memory予約接続は未成立。CWC-Cの前提確認と接続、CWC-Dの計画込み総時間比較が次段階である。CPR-Cの見送り・実storage・独立UID隔離・本番採用・継続8 read・CG0／CG3の保留は解除しない。
+
+### 9.120 CWC-C：独立source承認・実call／snapshot接続と既存予約内のproof置換
+
+2026-11-09。CWC-A／Bの接続条件を具体化し、既存CPR-BPのin-process実署名sessionへ接続した。実装はtest fixtureの`gradleOwnedCwcC.ts`・`gradleOwnedCwcCPlanner.ts`・`gradleOwnedCwcCProvider.ts`・`gradleOwnedCwcCCase.ts`。本番MCP／SourceOwner APIへの登録、実storage、独立UID／IPC、外部承認serviceの配備は行っていない。
+
+#### 9.120.1 独立した実装source承認と採用gate
+
+実装sourceの承認とprojectのSourceSnapshotを区別する。fixture operatorはprovider／clientのservice鍵と別のEd25519鍵を使い、source閉包・CWC-C policy digest・Node／Vitest版を署名する。runtime側の`CwcCApprovalRegistry`は、wireから選ばれない独立registry pin、承認済みmanifest digest、operator公開鍵に照合する。source bytes・全path集合・必須entrypoint・相対importの閉包とruntime版も照合する。hash更新・再署名をしても独立pinを更新していなければ拒否し、欠落した必須source／未対応policy／runtime／鍵を採用しない。operator helperはplanner／providerからimportしない。
+
+承認済みsource closureはAのImplementationApprovalへ渡し、独立registry digest／policy digestを内部implementation manifestへ結ぶ。公開service catalog／lineage profileやwire v3の意味と混同しない。current registry pinの変更は失効をlatchし、古いviewをpin復元で再開しない。client current gateとSessionRuntimeの環境gate、providerの各境界から確認し、無効時はproject source IO前に拒否する。実行途中の失効は実施済みIO／消費を保持し、dataの成功確定・enqueueを拒否する。
+
+source pinはfixture loaderが渡す読込source・設定／lock・Node／Vitest版に対する独立署名の契約である。変換後moduleのnative execution attestationや、同権限の任意コード改変に対する隔離証明ではない。外部controller／registryの配備・鍵の物理隔離・ロードartifactの独立証拠は未成立とする。
+
+#### 9.120.2 実call・ReadScope・fresh SourceSnapshotへの束縛
+
+providerは実`AuthenticatedSessionCall`とexact inner wireを`inspectAuthenticatedCall`へ照合し、peer／server・API・lineage／binding・refs・origin・元期限へ結んだ`CwcCReadScope`を作る。fake call、同callからの二重scope、異なるSaved metadata／inventory、他scopeのsnapshot／grant／permitは拒否する。各RPCでpre live確認→fresh read 1回→metadata／全entry／inventory検証→private SourceSnapshotを行い、同じdigestでも次callのsnapshotを代用しない。
+
+source wireは65536 B、metadataは4096 B、entries≤9・decoded source≤41460 B・inventory≤4096 Bを接続profileの許可範囲とする。既存CPRの上限を引き上げない。raw base64量をcopy／canonical化前に検査し、metadata／namespace入力もschema検査する。profile未対応が事前に分かればIO前に拒否し、実データの過大・改変をread後に検出した場合はIO 1回を消さない。scalar controlにも同じ承認・memory・source profile gateを適用し、旧BPはこの強化を含まないbridgeとして区別する。
+
+CWC-C grantはscope・actor・context・clock domain・元期限・一回限りの前払いticketへ結ぶ。Aのroot／layout／command factを同grantに束縛し、Bのconnected codecも同じprivate grantでなければ組み合わせられない。source inventoryとAの完全なplanCore被覆を照合し、実wireの現在commandが同じ全計画に含まれることを確認してからDispatchPermitを作る。partsはそのpermitでのみprivate snapshotからcopyする。scalarは実wireの`ReadSealedSource`の指定chunkだけを取得でき、batch用scopeからscalar APIへ迂回できない。
+
+clientは認証sessionで取得・検証したdescriptor／inventoryへscopeを結ぶ。initialとsealは別grant・別root・別codecで全計画を再現する。initialのprivate証拠と同じ親readへsealを登録し、一致確認後だけchild factを移管する。initialのfact／Bufferをsealへ共有しない。initial root／codecはseal前にdisposeし、childだけを実sendまで保持する。send時はchildのcanonical commandと承認済みcommandを照合し、既存signer／prepareBusinessの順序を維持する。retryは既存pending ledgerのexact signed request recoveryであり、新しいprovider callではfresh read・root・全proofをやり直す。
+
+#### 9.120.3 既存memory／work予約との対応
+
+A／Bの診断用保守work値を単純合算すると既存plan予約に収まらない。このためconnected版は診断ledgerを流用せず、元CPRの構造work単位を維持する。単位は最終request bytes＋range個数＋算術probe数で、CPU命令数・hash処理bytes総量・経過時間ではない。上界`156978`を親ledgerから一度だけ前払いし、source `65536`・finish `1`と合わせたbatch `222515`を変えない。clientはinitial／sealそれぞれ前払いし、合計`313956`を保持する。
+
+`CwcCWorkLedger`は親の実work残高を直接減算し、scope／actorに結ぶprivate ticketを発行する。無処理callbackの「予約済み」という申告ではgrantを作れない。ticketのserialized clone・別scope・再使用を拒否し、後続gateでも残高の巻戻し・上限超過を拒否する。失敗・失効・再送で消費やattempt・K/D・元期限を返還／更新しない。既存per-operation limit `222515`ちょうどでも成功し、retryでは同じrowに前回消費を保持して残予算を検査する。
+
+A／B helperのconnectedモードはこの単一予約の下位操作である。root／compile各1、encode／proof／width各19、client fact read38、B compile1／proof・inspect各19等の構造上限をprivate counterで制限する。B診断ledgerの`workSpent=0`は「追加の独立debitなし」を意味し、処理費用0ではない。connected実行でもfield／schema／wireIntent／operation・全inventory／全entry・current gateを残す。最終構造量＋probe数が元の`156978`以内であることを検査する。helperのコピー・compile・proofは承認したbounded algorithmに含まれ、CPU時間をこの構造単位へ読み替えない。
+
+memoryは親readの1 MiB以内の論理同時保持量をpreflightで予約する。実contextから最大CID／数値幅・19×4 rangesのcommand／core上界を計算し、source wire、decoded dataとcopy、inventory／frame、初期／seal plan、A fact bytes、context、Bの393216 B workspace・共有scratch、recordを合算する。template≤81920 B、fragment≤4096を維持する。loader時とcodec時の一時領域は共有し、initial codec／factをsealへ持ち越さない。最大fixture IDを含め予約内に収まることを確認し、残memory／work不足はIO前に拒否する。実データのprofile違反は成功replyを返さず拒否する。これはserialized／bufferベースの論理予約であり、JS heap／RSSの1 MiB保証やnative allocatorの実証ではない。
+
+#### 9.120.4 計画用wire生成の置換と非変更境界
+
+packingのmax-feasible-prefix・planCore／planDigest・command・range被覆・保守bound・wire/work見積りはCPR-BPと一致させる。layout準備のowner 2／auth 4は1回だけ残し、全N commandの最終`exact`によるowner 2N／auth 4Nのwire生成を、同じA rootのB length proofへ置換した。Aのfactにcanonical commandを保存し、proof後は不要なprivate command cloneを保持しない。proofの幅はroot／receipt／grantに束縛したAPIから取得し、callerが幅やtemplateを申告するAPIを作らない。
+
+primaryの計画中は全N oracleを実行しない。独立署名された実装承認とBの閉じたfamilyの帰納規則を前提とし、別のreference実行で全計画・出力・wire量を照合する。connected codecの診断`encode`／oracle APIは拒否し、そこで密かに全materializationを再導入しない。実送信signer／owner／auth生成、実nonce／sequence／challenge、受信decode・schema・署名、pre/post live・認可・元期限・最終全entry再構成は変更しない。post後のpin-only変更とcredential／source承認の失効も区別する。scalarへの暗黙fallbackは行わない。
+
+#### 9.120.5 回帰・実行記録・次段階
+
+`gradleOwnedCwcC.test.ts`のCWC-C01〜36で、独立pin／署名・source差替え／再署名・欠落source・runtime／鍵不正、偽call／grant／ticket、snapshotのcall間移動、コピー／ArrayBuffer、前払い残高・容量不足・元期限・全provider境界の取消し、全entry改変・更新済みhash・source過大・post区別・exact retry・source承認の失効を検証する。実work残高の巻戻しや一回限りのticket再使用も拒否する。
+
+再現matrixは6 workload（small／mid-2048／large-commit／large-payload／CPR-BPのh0Sizes／singleLarge）×reader/brokerの12 sample。元の4500 ms期限を実clockで維持し、client2計画・provider各RPC1 fresh snapshot／計画、実rowのwork消費・1 MiB以内の予約・child使用数を記録する。named-export probeで最終`exact`が0であることと、別referenceでは`N*(N+2)`回を観測する正例を照合する。layout内部のlexical owner/auth呼出しはexport spyの件数とは混同せず、既存codecの実Stats（layout owner2/auth4、final0）で記録する。これは正当性／予約の比較であり、T全体の性能比較ではない。
+
+```sh
+node scripts/check-cwc-c.mjs
+node scripts/check-cwc-c.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcC.test.ts --maxWorkers=1
+npm run typecheck
+```
+
+`docs/validation/gradle-cwc-c-2026-11-09.json`は実Vitest結果とmatrixの出力から作り、テスト／runtime local import閉包・runner・設定／lock・本節のhashを保存する。実際に用いたoperator公開鍵・署名manifest・独立registry pinも保存し、署名とsource閉包を再照合する。件数・上限・role/workload閉包・row／helper／probeの整合性を検査し、totalsを検証済みsampleから算出する。通常起動は再実行、`--check`は保存記録の整合性検査。A／Bの既存診断経路も再実行し、source閉包の記録を更新する。
+
+成立したのはin-processの実認証callとprivateな模擬storage snapshotへの接続、独立pin／署名のsource承認契約、論理memory／既存構造work予約、計画用wireのproof置換である。本番MCP採用・実storage・独立UID／認証IPCでの配備・外部承認service・loaded moduleのnative attestation・heap／RSS保証・速度改善は未成立。次はCWC-Dの共通承認／gateを持つscalar・reference・composedによる計画込み総時間比較であり、CPR-Cの見送り・継続8 read・CG0／CG3の保留は解除しない。
+
+CWC-Cレビュー修正：connected ownerは提示されたapproval／pinの自己整合だけでなく、grantのregistryが選んだactor別承認と完全一致することを要求する。CWC-C35はsourceClosureDigestとpinを同時に変更した差替えをowner作成時に拒否する。相対source参照の探索には`import './dependency.js'`形式の副作用importも含め、operator側の一覧作成とruntime検査、検証runnerのsource束縛で共通に追跡する。CWC-C36はsource digest・署名・独立pinを更新しても、一覧にない副作用importを拒否する。両回帰テストは修正前の失敗を確認した。動的ロード一般の解析やloaded moduleのnative attestationを成立させたものではない。

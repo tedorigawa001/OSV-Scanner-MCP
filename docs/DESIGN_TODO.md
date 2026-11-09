@@ -3147,7 +3147,8 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 - [x] CWC-A〜Dの出口、CWC01〜40の回帰条件、scalar／共通reference／composed＋BP bridge・oracle対照、計画込み総時間とpaired許容額の責任を設計。
 - [x] CWC-Aのstrict helper／fact contractをfixtureへ実装（§9.118）。actor／call／domain・private copy・child移管・current gate・寿命／失効・事前予算と非返還をCWA01〜41で検証。同一scopeのroot発行前再入を拒否し、initial証拠と同じ親readへ結んだseal一致確認をchild移管の条件へ追加。模擬owner scopeのみ、全N reference codecを維持し、composition／閉じたfamily proof・実session接続・性能改善は未成立。
 - [x] CWC-B：閉じたASCII family tree／length proof、14 canonical domainの独立oracle照合・実署名・境界／改変拒否を限定実証（§9.119）。6 workload（CPR-BPのh0Sizes・singleLargeを含む）×2 role×通常／最大IDの全24 sample・全commandを照合し、既存実sessionへの診断observerも対照。全N oracleを維持し、optimized primary・性能改善・adapter接続は未成立。
-- [ ] 次はCWC-C：独立source承認・CWC-A root／実call／ReadScope／fresh SourceSnapshot・共同memory予約の接続条件を満たし、閉じたproofを実session経路へ接続。その後CWC-Dの計画込み総時間比較。全N oracle省略のprimary採用は別の承認／接続実証が必要。CPR-C、本番採用・実storage・隔離・8 read・CG0／CG3の保留を維持する。
+- [x] CWC-C：独立pin／署名の実装source承認契約、実AuthenticatedSessionCall／private ReadScope／fresh SourceSnapshotへA root／fact・B proofを接続（§9.120）。1 MiB以内の論理共存予約と既存構造work156978の一回限りの前払いticketを検証し、最終owner/auth wire生成をproofへ置換。12 sampleの実session正当性／予約比較・回帰を記録。本番・native配備／外部承認service・RSS／速度改善は未成立。
+- [ ] 次はCWC-D：共通source承認／current gate・memory条件のscalar／reference／composedで、計画込み総時間と観測費用・完了率を比較。旧CPR-BPとの強化差はbridgeへ分離する。CPR-C、本番採用・実storage・隔離・8 read・CG0／CG3の保留を維持する。
 
 §9.118 2回目のレビュー修正：CWC-Aのprivate bytesと返却コピーが`Buffer.from`の共有poolに載り、返却コピーの`.buffer`全体の書換えがprivate factへ波及していた。`Buffer.alloc`の専用領域へ変更し、CWA07・CWA18でArrayBuffer全体の書換えを検査する。
 

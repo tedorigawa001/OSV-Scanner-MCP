@@ -72,16 +72,17 @@
     "src/test/fixtures/gradleOwnedCgpI2Protocol.ts": "de027b29a417d599a8509f8912e4a7b85bd1c472ff52100dfd31338844d76b3b",
     "src/test/fixtures/gradleOwnedCgpI2Owners.ts": "0b4319a767a7d2b94a2037b98ed4ec3d8bc06a149f04b85fbcdfaf4ab0ff8cfb",
     "src/test/fixtures/gradleOwnedCprAPlanner.ts": "b587875fd944dff95a35d26f3550e636fbe476d6968a9defc51ebe470c5c8117",
-    "src/test/fixtures/gradleOwnedCwcB.ts": "ac0a2a93fab34ff9df26b1cf6d12a2019e1eefd12e85a20625f861e0e22e9145",
-    "src/test/fixtures/gradleOwnedCwcA.ts": "cf4592516d3948bca3370887c55dd55b7cc847cf34f7c02d2275161c90f44c53",
-    "src/test/fixtures/gradleOwnedCwcBOracle.ts": "adb2d4e291b94cb509b2431fd6764fd712959115d9939d1fc8ad32c2ba0127ab",
-    "src/test/fixtures/gradleOwnedCprB.ts": "9e74eb6f1fd48cfc91f18f0f664ace08fb5b64130a3c9d16ed51c4e9059ed168",
-    "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
+    "src/test/fixtures/gradleOwnedCwcB.ts": "bf0e0839ebccede38a1a7db06a19a19041dac006caca4adcaef887a24764d270",
+    "src/test/fixtures/gradleOwnedCwcC.ts": "709dddc41c6d657789e531b2463e00f5c196adc0907e3528d88c4ca80d099e39",
     "src/test/fixtures/gradleOwnedCprBSession.ts": "62c372ab12a1068eda15b0bcab845da8ac4398900e680b5828171330926dda2d",
     "src/test/fixtures/gradleOwnedCprBCodec.ts": "617e7bcae1eab6b178b02f6f3b1c7e08eba844a211eae36c9d64c5c7935886eb",
     "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
     "src/test/fixtures/gradleOwnedCgpI2Schema.ts": "187a4b26448f11ed69a49438197981ff6f27d4a634fe4189856d976392c5ef23",
+    "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
     "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
+    "src/test/fixtures/gradleOwnedCwcA.ts": "170e42a899e2fde350e9407f0cced17fd288094c2a65b841c499391cb5708ebe",
+    "src/test/fixtures/gradleOwnedCwcBOracle.ts": "adb2d4e291b94cb509b2431fd6764fd712959115d9939d1fc8ad32c2ba0127ab",
+    "src/test/fixtures/gradleOwnedCprB.ts": "9e74eb6f1fd48cfc91f18f0f664ace08fb5b64130a3c9d16ed51c4e9059ed168",
     "src/test/fixtures/gradleOwnedCprBProvider.ts": "6d1faeb7f9ab3df9a778f1684e75dc438359379ca05a997d875cc15794a2038f",
     "scripts/check-cwc-b.mjs": "181c5c6cde7e57350428a5faf428d1385a8547dcd4289affff405bec5dae26d6",
     "src/test/fixtures/gradleOwnedCgpS0Bound.mjs": "f1530986cf57994fd288767896c9a973e83c96fc79e540f1d6d5750e83a0048f",
@@ -342,6 +343,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 6341,
         "fragments": 418,
@@ -409,6 +412,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 9123,
         "fragments": 418,
@@ -476,6 +481,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 6629,
         "fragments": 421,
@@ -543,6 +550,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 9301,
         "fragments": 421,
@@ -610,6 +619,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 6341,
         "fragments": 418,
@@ -677,6 +688,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 9123,
         "fragments": 418,
@@ -744,6 +757,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 6629,
         "fragments": 421,
@@ -811,6 +826,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 9301,
         "fragments": 421,
@@ -878,6 +895,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 6341,
         "fragments": 418,
@@ -945,6 +964,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 9123,
         "fragments": 418,
@@ -1012,6 +1033,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 6629,
         "fragments": 421,
@@ -1079,6 +1102,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 9301,
         "fragments": 421,
@@ -1146,6 +1171,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 6341,
         "fragments": 418,
@@ -1213,6 +1240,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 9123,
         "fragments": 418,
@@ -1280,6 +1309,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 6629,
         "fragments": 421,
@@ -1347,6 +1378,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 9301,
         "fragments": 421,
@@ -1414,6 +1447,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 6341,
         "fragments": 418,
@@ -1481,6 +1516,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 9123,
         "fragments": 418,
@@ -1548,6 +1585,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 6629,
         "fragments": 421,
@@ -1615,6 +1654,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 9301,
         "fragments": 421,
@@ -1682,6 +1723,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 6341,
         "fragments": 418,
@@ -1749,6 +1792,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 210,
         "fixedBytes": 9123,
         "fragments": 418,
@@ -1816,6 +1861,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 6629,
         "fragments": 421,
@@ -1883,6 +1930,8 @@
       "diagnostics": {
         "grammarVersion": "cwc.closed-ascii-tree.v1",
         "domains": 14,
+        "connected": false,
+        "prepaidPlanWork": null,
         "fixedFragmentCanonicalCalls": 212,
         "fixedBytes": 9301,
         "fragments": 421,
