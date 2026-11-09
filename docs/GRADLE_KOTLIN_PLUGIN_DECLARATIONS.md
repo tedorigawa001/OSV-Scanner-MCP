@@ -9028,3 +9028,27 @@ CWC-DPの解釈：categoryの最大値をそのまま削減見積りにしない
 CWC-DPレビュー修正：非再入が保証される`A.metrics`／`grant.diagnostics`／`B.diagnostics`と`Buffer.alloc`／`Buffer.copy`／`Buffer.write`は、同一operationのinclusive合計をobserver wall以内（丸め許容1e-6 ms）に制限する。これらは同時に重ならず、呼出し件数を上限へ乗じない。callbackによる再入の可能性を持つほかの入口へ同じ制約を無条件に適用せず、保守上限を維持する。CDP13は件数・exclusive・wall・otherを保持してinclusiveだけを増やす6負例、CDP14はwall一致の受理と超過の拒否を確認する。両テストが修正前に失敗することを確認してから修正し、240転送の実時間比較を再実行する。
 
 CWC-DP 2回目のレビュー修正：runnerは本節の見出しからファイル末尾までをhashしていたため、後続の節を追加すると記録が無効になった。CWC-Dと同じく本節だけを切り出す。また本節に測定値がなかったため9.122.1に12条件の結果表を追加し、runnerが保存summaryから表の行を再生成して本文と照合する。再現は`node scripts/check-cwc-dp.mjs --measure-only`（再測定）→表の更新→`node scripts/check-cwc-dp.mjs --rebind-document`（測定値を変えず本節hashだけ更新）→`--check`。runnerの変更に伴い240転送を実時計で再実行し、全て期限内に完了、全12条件deferを維持した。
+
+### 9.123 CWC-Sites：private context・current入力・command／内容検証の呼出し位置別計測
+
+CWC-DPに続き、scalar／composed／位置計測composedを6 workload×2 role×（warm-up 1＋測定3 round）で比較する。計144転送。元のCWC-C helper・gate・hash・schema・コピー・署名session・work／wire予算は変更せず、test専用のcall-through observerだけを追加する。共通承認・4500 ms元期限・論理memory profileを維持し、cacheや検証省略は実装しない。
+
+NodeのgetCallSitesをsourceMap:falseで使用し、公開JSON・schema・コピー・source検証入口の実行位置をfile／function／実行版line／columnで記録する。元ソースの行番号とは呼ばない。Aの実行版class全文・SHA256とcheckOwner本文を保存し、本文にある2つのdigest呼出しのcolumnを照合してcurrent.hashとprivate-context.rehashを区別する。本文とclass hashの整合、2位置の件数一致、file／function／位置と辞書keyを検査する。これはV8／Vitestの当該実行版に限定した診断であり、一般のsource map解析・独立したloader証明ではない。未対応の実行版は拒否する。
+
+grant.assertへのcontext入力、current入力のcopy／parse／context検査、command schema／wireIntent／plan検査、source内容／inventory検証を、観測したcallerと祖先frameから区分する。10 frameの範囲に現れないものはotherに残す。digest内のlexical canonical／SHA等はその呼出しに含み、公開exportの外を全部観測したとは主張しない。位置別exclusiveはchild inclusiveを除き、全位置のexclusive合計＋otherをobserver wall、observer wallを転送の外側Tへ照合する。callback／IO／署名前後の認可・取消し・元期限・内容検証は元関数が実行する。
+
+位置取得・spy・集計の費用は位置計測composedと未計測composedのpaired総時間差で別に保存し、observer設置時間もTの外へ分けて記録する。位置取得自身は各位置の観測時間に入り、純粋なhash／parse CPU費用ではない。差を引いて仮想高速値を作ったり、その値からcacheの効果を採用したりしない。失敗・期限超過も分母へ残し、計測の成立範囲と完了率を記録する。
+
+CST01〜12で出力・plan／wire・fresh load／work、private/currentの2位置と件数、実行class hash・本文の対応、座標とkey／frameの不一致、partitionを保った外側時間の過大計上、失敗の保持、source失効・取消し・元期限・内容改変の拒否を検証する。通常テストは固定clock、記録runnerだけ実clockを用いる。回帰テストは単独実行可能とする。
+
+private-context.rehashは今後の固定fingerprint候補だが、計測値をそのまま削減可能額とみなさない。currentの入力検査とcallback、command／内容完全性の照合は区別して維持する。constructor時の完全照合・所有権・不変性・actor／root／call束縛を具体化する前に再利用を導入しない。本番・実storage・独立UID・RSS・継続8 read・CPR-C・CG0／CG3の保留は解除しない。
+
+```sh
+node scripts/check-cwc-sites.mjs
+node scripts/check-cwc-sites.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcSites.test.ts --maxWorkers=1
+```
+
+CWC-Sitesレビュー修正：(1) site keyへ直近祖先と、各呼出しの全観測frameから判定した分類用祖先tagを加える。深い呼出しpathの無制限な組合せは保持せず、同じ分類・直近祖先に属するframeは代表例として保存する。これにより共通copy／parse helperをpreflight・current・command等から呼んでも、最初の祖先へ分類を吸収しない。論理owner hashの2位置は祖先別bucketを併合して件数を照合する。(2) 実行中のconstructorからpreflightCodecProfileを呼ぶ位置をanchorとして採取し、class全文内のpreflight呼出し行とdigest行の差からowner行を決定する。anchorのcolumnとtrace中のpreflight／constructor frameも照合し、ownerのline・column両方を拘束する。CST09はhelperを異なる祖先・順序で呼ぶ正例、CST10はkey／framesも更新したowner行移動の負例、CST11はcurrentコピー数とowner検査数の一致を検証する。CST09／10の修正前の失敗を確認した。
+
+分類の補足：owner検査の祖先があっても、その手前にgrant／scope／registryのgate frameがある費用はgate.validationへ分離し、current.inputのcopy／parse費用と混ぜない。CST12でこの境界を確認する。

@@ -1,0 +1,9 @@
+import {cwcCCase} from './gradleOwnedCwcCCase.js';
+import {cwcCApprovalFixture} from './gradleOwnedCwcCApprovalFixture.js';
+import {CWC_C_WORKLOADS} from './gradleOwnedCwcCExperiment.js';
+import {installSiteObserver} from './gradleOwnedCwcSiteProfile.js';
+import {validateSiteRows} from './gradleOwnedCwcSiteValidation.mjs';
+export async function runSites(rounds=3,workloads:readonly typeof CWC_C_WORKLOADS[number][]=CWC_C_WORKLOADS,realClock=false){const rows:any[]=[];
+ for(const w of workloads)for(const role of ['reader','authority-broker'] as const)for(let round=-1;round<rounds;round++){const a=cwcCApprovalFixture();for(let i=0;i<3;i++){const arm=['scalar','composed','sites'][(i+round+1)%3]!,f=cwcCCase(arm==='scalar'?'S-scoped':'B-independent',{codeApproval:a.view,comparisonProfile:true,variant:'combined',role,sizes:[...w.sizes],realClock,planEvents:false});const setup=performance.now(),o=arm==='sites'?installSiteObserver():undefined,setupMs=performance.now()-setup,start=performance.now();let trace:any=null;
+ try{let result:Awaited<ReturnType<typeof f.transfer>>;if(o){const r=await o.measure(()=>f.transfer());trace=r.trace;if(!r.ok)throw r.error;result=r.result!;}else result=await f.transfer();const end=performance.now();rows.push({workload:w.id,role,round,arm,approvalPin:a.pin,clock:realClock?'real':'fixed',setupMs,outerMs:end-start,status:'complete',trace,artifact:o?.artifact??null,...result,loads:f.provider.metrics.loads,clientWork:f.clientWork});}catch(e){rows.push({workload:w.id,role,round,arm,approvalPin:a.pin,clock:realClock?'real':'fixed',setupMs,outerMs:performance.now()-start,status:'failed',trace,artifact:o?.artifact??null,error:e instanceof Error?e.message:String(e)});}finally{o?.close();f.close();}
+ }}return {schema:'cwc-sites.measurement.v1',clock:realClock?'real':'fixed',rounds,rows,summary:validateSiteRows(rows,rounds,workloads.map(w=>w.id),realClock?'real':'fixed')};}

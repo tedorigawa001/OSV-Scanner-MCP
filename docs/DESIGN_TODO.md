@@ -3175,3 +3175,13 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュ�
 §9.122レビュー修正：非再入の診断getterとBuffer操作のinclusive合計をobserver wall以内に制限し、件数・exclusive・partitionを維持した過大計上6件と境界値をCDP13／14で検証。修正前の失敗を確認し、240転送の実時間比較を再実行。全転送が期限内に完了し、全12条件deferを維持した。
 
 §9.122 2回目のレビュー修正：runnerの本節hashを後続節に依存しない切り出しへ変更。9.122.1に12条件の結果表を追加し、runnerがsummaryから照合する。DESIGN_TODOの§9.121の倍率を再測定値（1.8〜8.6倍・2.5〜4.9倍）へ更新。
+
+### CWC-Sites：private context／current／command・内容検証の位置別費用（§9.123）
+- [x] 元のhelperを変更しないcall-through observerでJSON・schema・copy・source入口の呼出し位置を採取。実行版class／hash／本文とcolumnを照合し、current.hashとprivate-context.rehashを分離。source承認・認可・取消し・元期限・完全性は元の処理を実行する。
+- [x] 6 workload×2 role×scalar／composed／位置計測の144転送が元期限内に完了。位置取得の追加費用はpaired T差で別保存し、費用から差し引いた仮想値では採用しない。CST01〜08で位置・実行版・件数・partition・境界拒否を検証。
+- [ ] 次はprivateな自己contextのfingerprintをconstructor時に固定できる条件と、現在callback入力を毎回検査する条件を具体化する。今回cacheやhash省略は未実装。位置計測の追加費用が大きいため、観測値をそのまま改善見積りに使わない。
+
+位置別計測ではprivate/contextの2 hash呼出し数が各126〜1316回／転送で一致した。純粋CPU費用や全面的なcaller解析ではなく、10 frameと列挙したexport入口に限定する。既存CWC-DPの採用見送りを維持する。本番・実storage・隔離・RSS・継続8 read・CPR-C／CG0／CG3の保留は維持する。
+
+§9.123レビュー修正：CST09／10の修正前の失敗を確認し、直近祖先＋呼出しごとの分類tagで共通helperの吸収を解消。constructor/preflightの実行位置とclass内の相対行でowner行を拘束した。CST11でcurrentコピー数とowner検査数、CST12でgate配下の分類境界を検証。12テスト・144転送の実時間比較を再実行し、全転送が期限内に完了した。旧分類値は置き換え、cache未実装・本番採用保留を維持する。
+修正後の各条件中央値の範囲（ms、計測負荷を含む観測値）：private-context.rehash 3.4〜39.2、current.hash 3.4〜38.4、current.input 15.4〜191.5、command.validation 10.3〜194.2、content.validation 2.0〜8.5、gate.validation 67.7〜1171.6。祖先による分類漏れを修正した値であり、過去の分類値と性能改善として比較しない。
