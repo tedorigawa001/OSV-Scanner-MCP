@@ -3157,6 +3157,8 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 
 §9.120 2回目のレビュー修正：CWC-C05・C23が通常の`npm test`で実時間の4500 ms期限に依存していたため固定clockへ変更。記録runner（`CWC_C_EVIDENCE_PATH`）と`OSV_REALTIME_PROCESS=1`のときだけ実clockにし、記録は各sampleの`clock: real`を必須とする。
 
-§9.121 CWC-D実測：384転送（warm-up 96、測定288＝primary216＋旧BP bridge72）が全て4500 ms以内に完了。quiet総時間中央値はscalar 25.9〜64.7 ms、composed 49.9〜517.3 ms。全12 workload／roleで採用をdeferし、CPR-Cの見送りを維持した。観測あり／なしの差とpaired差・計画許容額はrawと同じ検証記録に保存し、負の観測差も除去しない。referenceからの短縮をscalar優位へ読み替えない。
+§9.121 CWC-D実測：384転送（warm-up 96、測定288＝primary216＋旧BP bridge72）が全て4500 ms以内に完了。quiet総時間中央値はscalar 26.4〜80.7 ms、composed 51.5〜652.7 ms（2回目のレビュー修正後の再測定）。composedはscalarの1.9〜8.5倍、旧BP bridgeの2.6〜4.6倍。全12 workload／roleで採用をdeferし、CPR-Cの見送りを維持した。観測あり／なしの差とpaired差・計画許容額はrawと同じ検証記録に保存し、負の観測差も除去しない。referenceからの短縮をscalar優位へ読み替えない。
 
 §9.121レビュー修正：時間内訳をtimestamp差へ照合し、initial＋seal／provider計画をsetup／転送前半の実測区間に制限した。duration・timestamp・trace時間の非有限値・負値を拒否するCWD12〜15を追加（修正前の失敗を確認）。384転送を再実行し全て期限内に完了、全12条件の採用見送りを維持。差分指標の負値は保持し、CPR-C／本番採用の保留を解除しない。
+
+§9.121 2回目のレビュー修正：CWD01の実clock依存を記録runner／`OSV_REALTIME_PROCESS=1`だけに限定し、検証テストを単独実行可能にした。runnerの本節hashを後続節に依存しない切り出しへ変更。9.121.1に12条件の結果表を追加し、runnerがsummaryから照合する。

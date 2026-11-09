@@ -8945,6 +8945,27 @@ primaryはS-scoped scalar、CWC-C reference、CWC-C composed。同じ独立sourc
 
 採用候補はprimary全測定が完了しquiet composedの総時間中央値がscalarとreferenceの両方を下回り全paired差でも優位となったworkload／roleだけ。それ以外はdefer。candidate-onlyもCPR-C／本番採用の許可ではない。独立storage・UID隔離・cold／churn／復旧・5 process・継続8 read、CG0／CG3の保留は維持する。observerが非干渉であるとの一般保証や統計的な速度改善の確定は主張しない。
 
+#### 9.121.1 測定結果
+
+quiet総時間の中央値（ms、各3 round）と判定。旧BP bridgeは承認・gate強化を含まない別条件で、primaryの判定には使わない。
+
+| workload | role | scalar | reference | composed | 旧BP bridge | 判定 |
+|---|---|---|---|---|---|---|
+| small | reader | 27.4 | 53.6 | 51.5 | 19.5 | defer |
+| small | authority-broker | 26.8 | 54.9 | 52.5 | 19.5 | defer |
+| mid-2048 | reader | 26.4 | 79.1 | 76.1 | 25.4 | defer |
+| mid-2048 | authority-broker | 26.4 | 82.1 | 78.1 | 25.8 | defer |
+| large-commit | reader | 40.6 | 347.2 | 329.7 | 74.0 | defer |
+| large-commit | authority-broker | 41.8 | 360.0 | 342.7 | 75.7 | defer |
+| large-payload | reader | 54.8 | 357.7 | 341.9 | 76.1 | defer |
+| large-payload | authority-broker | 54.0 | 355.8 | 335.1 | 75.6 | defer |
+| h0Sizes | reader | 69.1 | 541.4 | 488.5 | 109.6 | defer |
+| h0Sizes | authority-broker | 69.3 | 553.9 | 505.6 | 110.1 | defer |
+| singleLarge | reader | 65.5 | 590.6 | 557.8 | 121.8 | defer |
+| singleLarge | authority-broker | 80.7 | 772.5 | 652.7 | 143.8 | defer |
+
+composedはreferenceより3.8〜15.5%短いが、scalarの1.9〜8.5倍、旧BP bridgeの2.6〜4.6倍の時間がかかった。旧BP bridgeはsmall／mid-2048ではscalarより短く、H0／大entryでは長い。つまりCWC-Cの接続（root／fact／grant・承認・前払い・current gateの再確認）を加えた計画は、全N oracleを省いても旧BPよりかなり遅い。bridgeとの差には強化分が含まれるため、その差をcodec削減の失敗だけには帰さない。次の課題は、この接続費用のうち共有可能な事実と再確認必須の境界を保ったまま減らせる部分の分解である。表はrunnerが保存summaryから同じ書式で再生成し、本文との一致を検査する。
+
 CWD01〜15で比較の閉包、出力／batchの一致、oracleの実呼出し件数、計画・finalizationを含む外側時間、失敗の完了率反映、全primaryのsource失効・memory不足・取消し・元期限拒否を検証する。実行記録はraw rowとpaired summary、source hashと本節hashを保持する。
 
 ```sh
@@ -8956,3 +8977,5 @@ npx vitest run src/test/utils/gradleOwnedCwcD.test.ts --maxWorkers=1
 quietのpaired差と勝敗を記録する。observed scalar対composedではP＝client initial＋seal＋provider plan、H＝T_scalar−(T_composed−P)を各pairで計算する。P≤HはT_composed≤T_scalarと同じ条件であり独立証拠とは数えない。trace内のinclusive費用を総時間へ再加算しない。
 
 CWC-Dレビュー修正：setup／dispatch-reconstruction／finalizationを、それぞれplanned−start／end−planned／end−reconstructionStartedに1e-6 ms以内で照合する。client initial＋sealはsetup区間、provider計画はplannedからreconstructionStartedまでの区間を超えてはならない。全duration・timestamp・trace内のinclusive／exclusive／other時間は有限かつ非負を必須とする。paired差・観測差・許容額Hは差分なので負値を保持し、durationの検査とは区別する。CWD12〜15で計画費用の過大計上、時間内訳の過小計上、NaN／±Infinity／負値を拒否する。4テストの修正前の失敗を確認した上で実時間matrixを再実行する。
+
+CWC-D 2回目のレビュー修正：(1) CWD01は通常の`npm test`でも全armを`realClock: true`で実行し、実時間の4500 ms期限に依存していた。期限超過で行が`failed`になると、観測ありのcomposed行を読むCWD09・CWD11〜15がTypeErrorで失敗する。CWC-Cと同じく通常は固定clockとし、記録runner（`CWC_D_EVIDENCE_PATH`）と`OSV_REALTIME_PROCESS=1`のときだけ実clockにした。記録は`clock: real`を必須とする。matrixは遅延評価で共有し、各検証テストを単独でも実行できるようにした。(2) runnerは本節の見出しからファイル末尾までをhashしていたため、後続の節を追加すると記録が無効になった。ほかのrunnerと同じく本節だけを切り出す。(3) 9.121.1の結果表を追加し、runnerが保存summaryから表の行を再生成して本文と照合する。再現は`node scripts/check-cwc-d.mjs --measure-only`（再測定）→表の更新→`node scripts/check-cwc-d.mjs --rebind-document`（測定値を変えず本節hashだけ更新）→`--check`。384転送を実clockで再実行し、全て期限内に完了、全12条件deferを維持した。
