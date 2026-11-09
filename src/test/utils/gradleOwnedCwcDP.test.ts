@@ -1,0 +1,33 @@
+import {it,expect} from 'vitest';
+import {writeFileSync} from 'node:fs';
+import {runCwcDP,validateCwcDP} from '../fixtures/gradleOwnedCwcDP.js';
+import {installDpObserver} from '../fixtures/gradleOwnedCwcDPProfile.js';
+import {cwcCCase} from '../fixtures/gradleOwnedCwcCCase.js';
+import {cwcCApprovalFixture} from '../fixtures/gradleOwnedCwcCApprovalFixture.js';
+let evidence:Awaited<ReturnType<typeof runCwcDP>>,pending:Promise<Awaited<ReturnType<typeof runCwcDP>>>|undefined;
+async function prepare(){const record=!!process.env.CWC_DP_EVIDENCE_PATH;pending??=runCwcDP(record?3:1,record?undefined:[{id:'small',sizes:[600,800,900,1100,1300]}],{realClock:record||process.env.OSV_REALTIME_PROCESS==='1'});evidence=await pending;return evidence;}
+const check=(rows:any[])=>validateCwcDP(rows,evidence.rounds,[...new Set(rows.map(r=>r.workload))],evidence.clock as 'real'|'fixed');
+it('CDP01: call-through cost observer preserves root proof counts, wire, budgets and fresh reads',async()=>{
+ const record=!!process.env.CWC_DP_EVIDENCE_PATH;evidence=await prepare();if(!record)expect(evidence.rows.every(r=>r.status==='complete')).toBe(true);if(record)writeFileSync(process.env.CWC_DP_EVIDENCE_PATH!,JSON.stringify(evidence));
+},180000);
+it('CDP02: duplicate or missing arm rejects comparison closure',async()=>{await prepare();const rows=structuredClone(evidence.rows);rows[1]=structuredClone(rows[0]);expect(()=>check(rows)).toThrow('cwc_dp_duplicate');});
+it('CDP03: partition-preserving trace inflation cannot exceed the measured transfer',async()=>{await prepare();const rows=structuredClone(evidence.rows),r=rows.find(r=>r.arm==='profiled');r.trace.wallMs+=1000000;r.trace.otherMs+=1000000;expect(()=>check(rows)).toThrow('cwc_dp_trace');});
+it('CDP04: root or fact counts cannot be changed while preserving timing partitions',async()=>{await prepare();for(const name of ['A.openCodecRoot','A.encodeCheckedCommand','B.planProof']){const rows=structuredClone(evidence.rows),r=rows.find(r=>r.arm==='profiled');r.trace.operations[name].calls++;expect(()=>check(rows)).toThrow('cwc_dp_count');}});
+it('CDP05: extra or missing gate observations invalidate the quiet-diagnostics comparison',async()=>{await prepare();const rows=structuredClone(evidence.rows),r=rows.find(r=>r.arm==='diagnostic-quiet-profiled');r.trace.operations['scope.gate'].calls++;expect(()=>check(rows)).toThrow('cwc_dp_gate_parity');});
+it('CDP06: nonfinite or negative cost and changed categories cannot pass the observer contract',async()=>{await prepare();for(const value of [NaN,Infinity,-1]){const rows=structuredClone(evidence.rows),r=rows.find(r=>r.arm==='profiled');r.trace.operations['scope.gate'].exclusiveMs=value;expect(()=>check(rows)).toThrow();}const rows=structuredClone(evidence.rows),r=rows.find(r=>r.arm==='profiled');r.trace.operations['scope.gate'].category='copy';expect(()=>check(rows)).toThrow('cwc_dp_operation');});
+it('CDP07: altered output, work or time decomposition is rejected',async()=>{await prepare();for(const field of ['outputDigest','clientWork','setupAndClientPlanMs']){const rows=structuredClone(evidence.rows),r=rows.find(r=>r.arm==='diagnostic-quiet');r[field]=field==='outputDigest'?'0'.repeat(64):0;expect(()=>check(rows)).toThrow();}});
+it('CDP08: observer restores methods and rejects overlapping installation',()=>{const original=globalThis.structuredClone,o=installDpObserver();try{expect(globalThis.structuredClone).not.toBe(original);expect(()=>installDpObserver()).toThrow('cwc_dp_busy');}finally{o.close();}expect(globalThis.structuredClone).toBe(original);});
+it('CDP09: diagnostic removal and observer retain source revocation, cancellation, deadlines and full integrity',async()=>{
+ for(const quiet of [false,true])for(const observed of [false,true])for(const fault of ['source','cancel','deadline','integrity']){
+  const a=cwcCApprovalFixture(),f=cwcCCase('B-independent',{codeApproval:a.view,comparisonProfile:true,codecDiagnostics:!quiet,variant:'combined',hook:phase=>{if(phase==='load-after'){if(fault==='cancel')f.revoke();if(fault==='deadline')f.setNow(4500);}if(fault==='integrity'&&phase==='load-before')f.source.payloads[3]=Buffer.from('changed').toString('base64');}});if(fault==='source')a.revoke();const o=observed?installDpObserver():undefined;
+  try{if(o){const r=await o.measure(()=>f.transfer());expect(r.error).toBeDefined();}else await expect(f.transfer()).rejects.toThrow();}finally{o?.close();f.close();}
+ }
+});
+it('CDP10: failed transfers remain in completion counts and prevent adoption',async()=>{await prepare();const rows=structuredClone(evidence.rows),r=rows.find(r=>r.round===0&&r.arm==='diagnostic-quiet');r.status='failed';r.error='request_expired';const result=check(rows);expect(result.some(r=>r.decision==='defer'&&r.times['diagnostic-quiet'].completed<r.times['diagnostic-quiet'].attempts)).toBe(true);});
+
+it('CDP11: actual work rows cannot be changed behind a valid aggregate claim',async()=>{await prepare();const rows=structuredClone(evidence.rows),r=rows.find(r=>r.arm==='diagnostic-quiet');r.providerRows.at(-1).spent.work=0;expect(()=>check(rows)).toThrow('cwc_dp_work_evidence');});
+
+it('CDP12: observer preserves opaque return identity and falsy thrown values',async()=>{const o=installDpObserver(),handle=Object.freeze({kind:'opaque'});try{const success=await o.measure(async()=>handle);expect(success.ok).toBe(true);expect(success.result).toBe(handle);for(const error of [undefined,null,false,0,'']){const failure=await o.measure(async()=>{throw error;});expect(failure.ok).toBe(false);expect(failure.error).toBe(error);}}finally{o.close();}});
+
+it('CDP13: non-reentrant inclusive inflation rejects unchanged counts, exclusive and partition',async()=>{await prepare();for(const name of ['A.metrics','grant.diagnostics','B.diagnostics','Buffer.alloc','Buffer.copy','Buffer.write']){const rows=structuredClone(evidence.rows),r=rows.find(r=>r.arm==='profiled'),b=r.trace.operations[name],before=structuredClone(r.trace);b.inclusiveMs=r.trace.wallMs*2;expect(b.calls).toBe(before.operations[name].calls);expect(b.exclusiveMs).toBe(before.operations[name].exclusiveMs);expect(r.trace.wallMs).toBe(before.wallMs);expect(r.trace.otherMs).toBe(before.otherMs);expect(()=>check(rows)).toThrow('cwc_dp_operation');}});
+it('CDP14: non-reentrant inclusive upper boundary is accepted but excess is refused',async()=>{await prepare();const rows=structuredClone(evidence.rows),r=rows.find(r=>r.arm==='profiled');r.trace.operations['A.metrics'].inclusiveMs=r.trace.wallMs;expect(()=>check(rows)).not.toThrow();r.trace.operations['A.metrics'].inclusiveMs+=0.01;expect(()=>check(rows)).toThrow('cwc_dp_operation');});

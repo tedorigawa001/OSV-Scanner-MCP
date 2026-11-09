@@ -4,7 +4,7 @@ const median=(a         )=>{const s=[...a].sort((x,y)=>x-y);return s[Math.floor(
 const finiteNonnegative=value=>Number.isFinite(value)&&value>=0;
 // Millisecond differences use the same timestamp boundaries; allow only floating-point rounding.
 const TIME_EPSILON=0.000001;
-function validateTiming(r){
+export function validateTiming(r){
  const t=r.timing;
  need(t&&['start','planned','reconstructionStarted','end'].every(k=>finiteNonnegative(t[k]))&&
   ['wallMs','setupAndClientPlanMs','dispatchAndReconstructionMs','finalizationMs','clientPlanMs','sealMs','providerPlanMs'].every(k=>finiteNonnegative(r[k])),'cwc_d_timing');

@@ -8951,20 +8951,20 @@ quiet総時間の中央値（ms、各3 round）と判定。旧BP bridgeは承認
 
 | workload | role | scalar | reference | composed | 旧BP bridge | 判定 |
 |---|---|---|---|---|---|---|
-| small | reader | 27.4 | 53.6 | 51.5 | 19.5 | defer |
-| small | authority-broker | 26.8 | 54.9 | 52.5 | 19.5 | defer |
-| mid-2048 | reader | 26.4 | 79.1 | 76.1 | 25.4 | defer |
-| mid-2048 | authority-broker | 26.4 | 82.1 | 78.1 | 25.8 | defer |
-| large-commit | reader | 40.6 | 347.2 | 329.7 | 74.0 | defer |
-| large-commit | authority-broker | 41.8 | 360.0 | 342.7 | 75.7 | defer |
-| large-payload | reader | 54.8 | 357.7 | 341.9 | 76.1 | defer |
-| large-payload | authority-broker | 54.0 | 355.8 | 335.1 | 75.6 | defer |
-| h0Sizes | reader | 69.1 | 541.4 | 488.5 | 109.6 | defer |
-| h0Sizes | authority-broker | 69.3 | 553.9 | 505.6 | 110.1 | defer |
-| singleLarge | reader | 65.5 | 590.6 | 557.8 | 121.8 | defer |
-| singleLarge | authority-broker | 80.7 | 772.5 | 652.7 | 143.8 | defer |
+| small | reader | 26.0 | 49.8 | 48.0 | 18.8 | defer |
+| small | authority-broker | 24.9 | 49.1 | 48.0 | 18.2 | defer |
+| mid-2048 | reader | 25.2 | 73.6 | 70.9 | 23.3 | defer |
+| mid-2048 | authority-broker | 25.6 | 79.1 | 73.4 | 24.8 | defer |
+| large-commit | reader | 38.6 | 324.0 | 304.5 | 70.3 | defer |
+| large-commit | authority-broker | 39.3 | 338.6 | 317.5 | 71.5 | defer |
+| large-payload | reader | 51.0 | 324.8 | 306.5 | 70.5 | defer |
+| large-payload | authority-broker | 52.2 | 340.0 | 316.5 | 72.2 | defer |
+| h0Sizes | reader | 61.5 | 463.6 | 431.5 | 93.5 | defer |
+| h0Sizes | authority-broker | 62.5 | 476.8 | 442.0 | 94.5 | defer |
+| singleLarge | reader | 57.6 | 520.4 | 485.5 | 100.6 | defer |
+| singleLarge | authority-broker | 58.8 | 540.6 | 503.9 | 102.8 | defer |
 
-composedはreferenceより3.8〜15.5%短いが、scalarの1.9〜8.5倍、旧BP bridgeの2.6〜4.6倍の時間がかかった。旧BP bridgeはsmall／mid-2048ではscalarより短く、H0／大entryでは長い。つまりCWC-Cの接続（root／fact／grant・承認・前払い・current gateの再確認）を加えた計画は、全N oracleを省いても旧BPよりかなり遅い。bridgeとの差には強化分が含まれるため、その差をcodec削減の失敗だけには帰さない。次の課題は、この接続費用のうち共有可能な事実と再確認必須の境界を保ったまま減らせる部分の分解である。表はrunnerが保存summaryから同じ書式で再生成し、本文との一致を検査する。
+composedはreferenceより2.3〜7.3%短いが、scalarの1.8〜8.6倍、旧BP bridgeの2.5〜4.9倍の時間がかかった。旧BP bridgeはsmall／mid-2048ではscalarより短く、H0／大entryでは長い。つまりCWC-Cの接続（root／fact／grant・承認・前払い・current gateの再確認）を加えた計画は、全N oracleを省いても旧BPよりかなり遅い。bridgeとの差には強化分が含まれるため、その差をcodec削減の失敗だけには帰さない。次の課題は、この接続費用のうち共有可能な事実と再確認必須の境界を保ったまま減らせる部分の分解である。表はrunnerが保存summaryから同じ書式で再生成し、本文との一致を検査する。
 
 CWD01〜15で比較の閉包、出力／batchの一致、oracleの実呼出し件数、計画・finalizationを含む外側時間、失敗の完了率反映、全primaryのsource失効・memory不足・取消し・元期限拒否を検証する。実行記録はraw rowとpaired summary、source hashと本節hashを保持する。
 
@@ -8979,3 +8979,29 @@ quietのpaired差と勝敗を記録する。observed scalar対composedではP＝
 CWC-Dレビュー修正：setup／dispatch-reconstruction／finalizationを、それぞれplanned−start／end−planned／end−reconstructionStartedに1e-6 ms以内で照合する。client initial＋sealはsetup区間、provider計画はplannedからreconstructionStartedまでの区間を超えてはならない。全duration・timestamp・trace内のinclusive／exclusive／other時間は有限かつ非負を必須とする。paired差・観測差・許容額Hは差分なので負値を保持し、durationの検査とは区別する。CWD12〜15で計画費用の過大計上、時間内訳の過小計上、NaN／±Infinity／負値を拒否する。4テストの修正前の失敗を確認した上で実時間matrixを再実行する。
 
 CWC-D 2回目のレビュー修正：(1) CWD01は通常の`npm test`でも全armを`realClock: true`で実行し、実時間の4500 ms期限に依存していた。期限超過で行が`failed`になると、観測ありのcomposed行を読むCWD09・CWD11〜15がTypeErrorで失敗する。CWC-Cと同じく通常は固定clockとし、記録runner（`CWC_D_EVIDENCE_PATH`）と`OSV_REALTIME_PROCESS=1`のときだけ実clockにした。記録は`clock: real`を必須とする。matrixは遅延評価で共有し、各検証テストを単独でも実行できるようにした。(2) runnerは本節の見出しからファイル末尾までをhashしていたため、後続の節を追加すると記録が無効になった。ほかのrunnerと同じく本節だけを切り出す。(3) 9.121.1の結果表を追加し、runnerが保存summaryから表の行を再生成して本文と照合する。再現は`node scripts/check-cwc-d.mjs --measure-only`（再測定）→表の更新→`node scripts/check-cwc-d.mjs --rebind-document`（測定値を変えず本節hashだけ更新）→`--check`。384転送を実clockで再実行し、全て期限内に完了、全12条件deferを維持した。
+
+### 9.122 CWC-DP：composedの費用分解と診断記録の限定対照
+
+CWC-Dの採用見送りを受け、scalar、composed、profiled composed、codec診断記録を省いたcomposed、同省略版のprofiledを比較する。6 workload×2 role×5 arm×（warm-up 1＋測定3 round）＝240転送。順序を回転し、実時計の4500 ms元期限・同じsource承認・認可・1 MiB論理memory profile・全entry完全性・再試行／work／wire予算を維持する。旧CPR-BPとの比較はCWC-Dの別bridgeを維持し、このmatrixのprimaryへ混ぜない。
+
+計測器はtest fixtureだけで有効にするcall-through wrapperである。Aのroot／fact操作、Cの公開grant／ReadScope gateとregistry current確認、公開structuredClone／Buffer alloc・copy・write、JSON関数export、B proof操作、診断getterを包み、必ず元関数を元のthis／引数で呼ぶ。戻り値・例外・opaque handleを置換せず、finallyで原状復帰する。export spyの引数履歴は毎回破棄し、保持するのは閉じたoperation集合の集計と同期stackのみ。nativeのloaded-module attestationを成立させるものではなく、承認対象sourceとobserver sourceのhashを別に記録する。
+
+各operationのinclusive時間から直下childのinclusive時間を引いてexclusiveを計算する。exclusive合計＋otherをobserver wallへ、observer wallを転送全体の外側実測へ照合する。category別inclusiveは入れ子を含む参考値であり合算しない。root-factのexclusiveにはschema検査・登録処理等も残る。copyは列挙したJSコピー入口の範囲であり、全native allocationや全コピーCPUではない。canonical-hashは公開canonicalOwnedJson／ownedDigest／ownedSha256の入口を計測する。digest内のlexical canonical／SHAはdigestのinclusiveに含まれ、別export呼出しとして数え直さない。非公開gate内の現在認可callbackやnative sessionの処理でこの入口に現れない時間はother等へ残し、全認可費用を観測したとは呼ばない。
+
+計測追加費用はprofiled−composed、profiled省略版−未計測省略版のpaired総時間差で保存し、負値も保持する。observer設置時間はobserverSetupMsとしてTの外側へ別保存する。計画・descriptor／inventory取得・fresh load・実署名session・全entry再構成・final digest／元期限gateを含むTから、観測済みexclusiveやobserver差を引いて仮想高速値を採用判断へ使わない。
+
+限定対照で省くのはcodecPlansへの診断snapshot追加と、そのためだけのmetrics／diagnostics getterである。authority／root／fact／initial evidence／seal／read／budget・retry台帳・署名framesとwire集計・現在認可確認は省かない。profiled同士のgate／root-fact／proof／canonical-hash operationの呼出し件数を照合し、意味のある境界の欠落を拒否する。各転送でroot数N＋2、fact／proof数N×(N＋2)、fresh read数N＋2、実work消費、出力・plan／wireを照合する。providerの実rowを保存し、work／完了件数はそのrowから再検証する。
+
+CDP01〜14で元関数への接続、計数／partition・外側時間、operation／category閉包、診断省略時のgate件数一致、source失効・取消し・元期限・全entry改変の拒否、wrapper復旧、失敗を分母へ残す採用判断を確認する。少数のin-process模擬storage比較であり、実storage・UID隔離・RSS・本番・継続8 readは未成立。診断省略の結果だけでCPR-Cへ進めず、scalarより全paired総時間で優位な条件だけをcandidate-onlyとする。
+
+削減余地は実測後に分類する。診断snapshotは権限判断から独立している範囲だけを省略候補とする。privateな不変context／coreのdigest・同一call内の型検証事実・コピーの重複は今後の契約候補だが、deep-freeze・root／actor／domain束縛・reentry／mutation／失効の拒否が必要であり、この段階では共有を実装しない。現在認可／取消し／元期限、callback・IO・署名・enqueueの前後、call／snapshot／actor間の境界は費用の大小によらず統合しない。
+
+```sh
+node scripts/check-cwc-dp.mjs
+node scripts/check-cwc-dp.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcDP.test.ts --maxWorkers=1
+```
+
+CWC-DPの解釈：categoryの最大値をそのまま削減見積りにしない。とくにcanonical-hashにはcommand・wireIntent・内容・署名等の維持必須の処理も入る。最初に検討する対象はAのprivate contextの固定fingerprint（`#checkOwner`で自己contextを繰り返しhashする箇所）と、grantへ再提示する同じ自己contextである。constructor時の完全照合・所有権・非公開の不変性を証拠にする契約が必要であり、current callbackが返すcontext／pinの検査、gateの実行、時計・取消し・IO前後の確認は毎回維持する。call-site別の削減可能時間はまだ未計測であり、このcategory全体をcacheしてよいという結論ではない。root／factの外部入力のcopy・schema検査・完全性hashはmutationや別rootとの混同を防ぐため維持する。診断省略の対照はdefaultを変更しないtest専用optionであり、計測器の時間を引いた仮想値では採用しない。
+
+CWC-DPレビュー修正：非再入が保証される`A.metrics`／`grant.diagnostics`／`B.diagnostics`と`Buffer.alloc`／`Buffer.copy`／`Buffer.write`は、同一operationのinclusive合計をobserver wall以内（丸め許容1e-6 ms）に制限する。これらは同時に重ならず、呼出し件数を上限へ乗じない。callbackによる再入の可能性を持つほかの入口へ同じ制約を無条件に適用せず、保守上限を維持する。CDP13は件数・exclusive・wall・otherを保持してinclusiveだけを増やす6負例、CDP14はwall一致の受理と超過の拒否を確認する。両テストが修正前に失敗することを確認してから修正し、240転送の実時間比較を再実行する。
