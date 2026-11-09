@@ -8827,3 +8827,49 @@ npm run typecheck
 レビュー修正ではCWA33〜41を追加した。同一scopeのroot発行時再入（拒否をcallbackが捕捉する場合も含む）、initial欠落、異なるplan digest、同じdigestでも別readの証拠、serialized clone、不完全initial、親の失効、clock／元期限の不一致、親証拠の二重seal登録を拒否した。CWA33／34は修正前に失敗することを確認してから修正し、child移管の正例もinitial登録→sealの独立検査→一致確認を通る形へ更新した。
 
 2回目のレビュー修正：private bytesと返却コピーを`Buffer.from`で作っていたため、小さなBufferがNodeの共有poolに置かれ、返却コピーの`.buffer`全体を書き換えるとprivate factも変わった（4085 Bの返却コピーが65600 BのArrayBufferを共有）。CWA07は返却範囲だけを書き換えていたため検出できなかった。CWA07とCWA18（child読取）に、返却BufferのArrayBufferが専用であることと、その全体の書換えが次の読取へ波及しないことを追加し、修正前に失敗することを確認した。保存・返却とも`Buffer.alloc`の専用領域へ変更した。テスト件数はCWA01〜41のまま。
+
+### 9.119 CWC-B：閉じたfamilyの構造／長さと実codec bytesの限定実証
+
+2026-11-09。§9.117のCWC-Bを`gradleOwnedCwcB.ts`・独立oracle・再現matrixへ実装した。owner request／reply、auth challenge-request／challenge／request/reply channelの6 family、unsigned／signedの12 domainにcommand.full／wireIntent.preimageを加えた14 domainを扱う。callerのdescriptor／template／offset tableは受理しない。実署名sessionのwireを変更せず観測したが、CWC-Aへの本番接続・SessionRuntime adapter・providerの取得／計画の置換はしていない。
+
+#### 9.119.1 閉じたtreeの帰納規則と採用範囲
+
+compilerはprivateなfixed／cid／hash／signature／enum／非負safe integer／base64／object／array nodeだけでfamily treeを構築する。fixedにはstrict parsed contextのprivate copyと、既存canonical codecでcompileした固定bytesを結ぶ。context数値は実値を用い、actor identity・boot／key ID／epoch、endpoint／registry／lineage／binding／refsは別contextへ付け替えられない。
+
+runtimeのtree検査は既知node集合、objectの完全なfield集合・辞書順・ASCII key、arrayの個数、数値のmin/max、base64の1〜4096 B制限、全固定fragmentのcanonical一致を確認する。次の帰納規則により、受理した閉じた入力について生成bytesと長さ計算を対応付ける。
+
+- fixedは照合済みcanonical文字列のUTF-8長。objectは`{}`・各key/punctuation・子nodeの長さ・comma、arrayは`[]`・各子node・commaの和とする。入力キーの挿入順は生成順序へ使わない。
+- cid／hash／enum／base64／signatureのalphabetにはJSON escapeも非ASCIIも含まれないため、quote 2 BとASCII長の和になる。hashは小文字hex64、Ed25519署名はcanonical base64の64 bytes／88文字。余剰padding・未使用tail bitも検査する。
+- 数値は非負safe integerの通常の十進表記のみで、負数・小数・NaN・unsafe integer・負のzeroは拒否する。sequenceは1〜512、TTLは1〜4500。epoch／generationは実context値である。
+- 計画用replyのbytesはprivateなvirtual length tokenへ結び、`4*ceil(n/3)+2`を用いる。caller tokenを受け付けず、このtokenから実bytesをencodeできない。dummy hash／署名／nonceは長さ・shapeのためだけで、内容・署名・pending session・自然消費の証明ではない。
+
+`planProof`は各commandで完全なschema／wireIntent／operation検査を残し、contextと閉じたtreeを照合する。request／reply／authのwire BufferやJSON textを生成せず、zero part Bufferの生成・part hash計算も行わない。typed walk用のowner／auth値objectは構築するため、object生成0や全canonical処理0とは呼ばない。保守packing boundの縮小や再計画は行わず、既存plannerのplanCore／planDigest・command・bound・wire/workを維持する。ここでの帰納規則は閉じたASCII subsetの構造・長さの対応であり、全schema一般の形式証明やschema更新を自動採用する契約ではない。source承認とruntime接続はCWC-Cの前提として残る。
+
+`encode`は診断用に14 domainの完全bytesを生成する。owner requestは期待command、replyは既存`checkResult`、command／intentは既存意味検査も通す。authの構造照合は認証・現nonce／sequence認可を代用しない。実wireの受信側decode・schema・署名・pending／challenge検証は現行SessionRuntimeに残る。`compareOracle`は完全bytesを独立oracleへ照合し、不一致はrootをcloseして以前のreceiptも無効にする。decoded値や長さだけが同じでも成功扱いしない。
+
+#### 9.119.2 独立oracle・全command matrix・実sessionの対照
+
+`gradleOwnedCwcBOracle.ts`は新treeをimportせず、既存owner／result／frames・canonicalOwnedJsonを用いる。ownerのunsigned署名preimageと、authのdomain付きunsigned preimage、signed envelopeを別々に比較する。固定nonceを使う計画vectorではdummy署名のsyntaxのみ、real-key vectorでは既存codecが生成したEd25519署名を公開鍵で検証する。compositionは署名を再生成せず、秘密鍵・nonce生成callbackを受け取らない。
+
+再現matrixは4 workload（small／H0／large commit／large payload）×reader/broker×通常／最大ASCII IDの16 sample。各sampleの全N commandで14 domainを完全bytes照合し、6署名を検証する。N・domain別件数・署名検証数・oracle owner/auth生成数と元plannerのreference生成数は実際のloop／counterから記録し、14N／6N／2N／4Nとの一致を検査する。元planのdigest・全field不変と既存保守bound以内も確認する。全N oracleはこの診断で維持し、削減したprimaryの実行費用や性能改善として扱わない。
+
+別のreader/broker 2対照では、既存CPR-Bの実SessionClient／Serverをそのまま動かす。診断observerが実際のrequest／replyをcopyして既存wireへ照合し、実nonce・session ID・sequence・署名を固定値へ書き換えない。独立したsession IDは異なることを確認し、それ以外の完了・request／dispatch・wire bytes・client initial/seal各計画・provider各RPC計画・出力を対照と照合する。observerから署名・nonce・supplierを追加評価する経路はなく、計画APIにはKeyObject／nonce生成callbackもない。observerは診断用の追加decode・clone・schema／hash・encodingを実行するため、wall timeの非干渉や費用0は主張しない。全sessionを通した同じ診断codecの利用はwire照合用であり、actor間／provider call間でfactを共有する本番adapterではない。
+
+#### 9.119.3 寿命・予算・回帰と検証記録
+
+diagnostic rootは同じcontext copy・元期限・gate callbackへ固定し、全encode／proof／照合の前後で確認する。close・取消し・期限・時計逆行・再入・schema／bytes不一致はrootを閉じる。receiptはprivate identity＋command digestへ結び、他root／command・serialized tokenを拒否する。内容・認証・実装承認・DispatchPermitへ昇格できない。
+
+compile前に393216 Bの論理workspaceと4096 fragmentの下位枠を確認し、131072 workを消費する。保持fixed bytesは81920以下、encode一回のscratch上界は65536 B。fragmentはtree node・field tuple／array・fixed値のobject recordを数えた論理会計である。proof／encodeは65536、oracle照合は73728、receipt確認は8192 workを先に消費し、失敗後も返還しない。matrixでは元planのserialized bytes、当該commandのoracle／partの保守working bytes、workspace合計が1 MiB以内であることも確認する。JS heap／RSS上限や実ownerの共同memory予約内への収容を実証したものではない。fixedFragmentCanonicalCallsは固定fragmentのcompile／自己照合分のみを数え、残したcontext／command意味検査・hashのcanonical処理やoracle費用の総数ではない。
+
+`gradleOwnedCwcB.test.ts`のCWB01〜35では、全domain・全command・実署名・最大ID／数値幅／base64幅、CWC10の挿入順正例と非canonical bytes拒否、同長byte改変、domain交換、schema／getter／Unicode／padding／hash幅、part改変、proofの束縛とコピー、元期限・取消し・budget不足・失敗消費保持・再入、実session対照、記録の由来を検証する。part改変後にhashも更新した場合とpart欠落は既存の受信／全entry検査で拒否し、長さproofを内容証拠へ昇格しないことも確認する。結果の再現は次による。
+
+```sh
+node scripts/check-cwc-b.mjs
+node scripts/check-cwc-b.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcB.test.ts --maxWorkers=1
+npm run typecheck
+```
+
+`docs/validation/gradle-cwc-b-2026-11-09.json`はrunnerが実際のVitest結果、matrix loopの出力、実session対照の出力から作る。35件のID／title、16 sampleの閉包・全14 domainのN件被覆、署名数、論理上限、2 roleのsession観測を検証し、テスト・local import閉包・runner・lock／設定・本節のdigestを結ぶ。`--check`は保存済み記録の整合性検査、通常起動はテスト再実行である。件数は検証済みsampleから合計する。閉じたsubsetの診断記録であり、外部署名された承認やnative隔離証拠ではない。
+
+CWC-Bの閉じたtree／length proofと全N bytes照合は成立した範囲で記録するが、optimized primary・独立source approval・CWC-A／実call／fresh SourceOwnerへのadapter・本番memory予約接続は未成立。CWC-Cの前提確認と接続、CWC-Dの計画込み総時間比較が次段階である。CPR-Cの見送り・実storage・独立UID隔離・本番採用・継続8 read・CG0／CG3の保留は解除しない。
