@@ -3199,4 +3199,10 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュ�
 - [x] stack取得を使わないcall-through observer、件数のみ対照、scalar／composed／旧BP bridgeを比較する再現ハーネスとCWG01〜09を追加。現認可・取消し・元期限・完全性の検査は変更しない。
 - [x] 実clockで240転送を再検証し全完了。h0Sizes／singleLargeの実call検査16979／19457回とgate内canonical・wire hash・identityコピーの反復を記録。費用・計測追加費用は診断値として保存し、削減可能額や採用成立へ読み替えない。
 - [x] レビュー3件を修正。旧BPのbatch同値性、wrapper入口の独立計数とSHA／clone／permission件数関係、非再入SHAのwall上限・leaf性を検査。CWG10〜12の修正前失敗を確認し、CWG13〜15の共通欠落・witness不備・上限境界も追加。15件の回帰を通したsourceで実時間比較を再実行し240転送が全完了。表・記録を更新し、診断限定・採用保留を維持。
-- [ ] 接続費用の測定結果に沿って、session所有の不変な実call／wire bindingと毎回のlive検査を分ける削減契約を具体化する。実証・採用は別工程。CFP-0・CPR-C／本番・実storage・隔離・8 read・CG0／CG3の保留を維持。
+- [x] 接続費用の測定結果に沿って、session所有の不変な実call／wire bindingと毎回のlive検査を分ける削減契約を§9.126へ具体化。実証・採用は別工程。CFP-0・CPR-C／本番・実storage・隔離・8 read・CG0／CG3の保留を維持。
+
+### CWC-LB：session所有bindingとlive検査の分離（§9.126、設計のみ）
+- [x] private Bの捕捉・固定identityの所有権、非公開begin／seal／live／read／release API、owner／scope／実call／generationへの束縛、Draftとterminal状態・session最終読取までの寿命を定義。
+- [x] permission／credential／source承認・取消し・元期限を毎回検査し、内部G／S／P frameと外部再入を区別する条件、既存予約・独立profile承認、拒否理由、CLB01〜36・CLB-0〜3の出口を具体化。mutable identity／bytesを固定digestだけで適格化しない。
+- [x] レビュー2件を反映。currentPurpose＝issuedPurpose＝binding／projectionの照合を必須化。timeoutはdispatchのfinallyと分離して失効・lookup除去を先行し、private reader排出後のB回収・byte予約解放、後着結果の拒否と未完了dispatchの隔離枠を定義。CLB15／19／20・設計整合性テスト・記録を更新。runtime実装・36回帰の実行は未実施。
+- [ ] CLB-0の共通fixture contractから実装。runtime・hash／clone省略・identity封印・bindingは未実装。設計整合性の検証と実行時の36回帰を区別し、CWC-FPは後順位、採用・CPR-C／CG0／CG3等の保留を維持。

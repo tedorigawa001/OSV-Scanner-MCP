@@ -1,0 +1,351 @@
+{
+  "schema": "cwc-lb.design-record.v1",
+  "date": "2026-11-09",
+  "reviewUpdated": "2026-11-10",
+  "status": "design-only",
+  "document": {
+    "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+    "heading": "### 9.126 CWC-LB：session所有の実call／wire bindingとlive検査の分離（設計）",
+    "sectionSha256": "5afed0849245dea1b70a8e7e32f983e8f564639774dde1318dc3b153b235fe8a"
+  },
+  "sourceBindings": {
+    "src/test/fixtures/gradleOwnedCprBSession.ts": "62c372ab12a1068eda15b0bcab845da8ac4398900e680b5828171330926dda2d",
+    "src/test/fixtures/gradleOwnedCwcC.ts": "709dddc41c6d657789e531b2463e00f5c196adc0907e3528d88c4ca80d099e39",
+    "src/test/fixtures/gradleOwnedCwcCProvider.ts": "13bd76e2202a818777704f4db6349ad843b5fbc0f21d9670ecdca72401c889c4",
+    "src/test/fixtures/gradleOwnedCwcCPlanner.ts": "cac50e5eae4ec646f4ba313755fd9aea0eae9dedba16a272334107e6575639f4",
+    "src/test/fixtures/gradleOwnedCwcCCase.ts": "0a2648856b848886bf4900eaa0a3b718e58a7648d243d983dafd9a8a103e5373",
+    "src/test/fixtures/gradleOwnedCwcA.ts": "170e42a899e2fde350e9407f0cced17fd288094c2a65b841c499391cb5708ebe",
+    "src/test/fixtures/gradleOwnedCwcB.ts": "bf0e0839ebccede38a1a7db06a19a19041dac006caca4adcaef887a24764d270",
+    "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
+    "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+    "src/utils/gradleOwnedSourceSchema.ts": "4a4b70982504fc1e275ab2c45cf6330136916dbeb0eb8ec2b8963cbdc1649cb9",
+    "scripts/check-cwc-lb-design.mjs": "c6b794dc268623adf3b92be3101d013fdc43e6e068c545bb626c03e4ae4687cb",
+    "src/test/utils/gradleOwnedCwcLiveBindingDesign.test.ts": "e4f28ac5ac940b05ad1c85ab3f871d03de73292da22471c54720f991a63efef6"
+  },
+  "contract": {
+    "profile": "cwc.session-owned-call-binding.v1",
+    "helperEntries": [
+      "beginCallBinding",
+      "sealCallBinding",
+      "checkBoundCallLive",
+      "readBoundCommand",
+      "releaseCallBinding"
+    ],
+    "modes": [
+      "full-reference",
+      "bound-live"
+    ],
+    "maximumInnerWireBytes": 8192,
+    "memoryLimitBytes": 1048576,
+    "identityOwnershipPrerequisite": true,
+    "privateWireBeforeFirstVerification": true,
+    "liveCallChecksPerReplacement": 1,
+    "permissionCanonicalEveryCheck": true,
+    "ordinaryInspectRetained": true,
+    "contentChecksRetained": true,
+    "scopeCloseWipesSessionWire": false,
+    "sessionFinalReadBeforeWipe": true,
+    "internalFrameCarriesAuthorization": false,
+    "arbitraryBufferCallbackAllowed": false,
+    "unobservedPinRestoration": "same-as-cfp10",
+    "comparisonIncludesAssemblyAndCleanup": true
+  },
+  "purposeBinding": {
+    "conditionId": "CLB15",
+    "capturedFrom": "verified-channel-purpose",
+    "compare": [
+      "currentPurpose",
+      "issuedPurpose",
+      "binding.purpose",
+      "expectedProjection.purpose"
+    ],
+    "comparison": "exact-equality",
+    "permitResultDiscardAllowed": false,
+    "alternativeGrantedPurpose": "reject-permission-denied",
+    "rebaseAllowed": false,
+    "modes": [
+      "full-reference",
+      "bound-live"
+    ]
+  },
+  "timeoutLifecycle": {
+    "conditionIds": [
+      "CLB19",
+      "CLB20"
+    ],
+    "invalidationWaitsForDispatch": false,
+    "invalidationOrder": [
+      "terminal-and-generation",
+      "bindings-and-frames-invalid",
+      "lookup-removed",
+      "channel-admission-stopped",
+      "timeout-response"
+    ],
+    "privateReadMode": "bounded-synchronous",
+    "privateReadsAcrossAwait": false,
+    "privateReadsAcrossExternalCallback": false,
+    "bufferReferences": "control-and-active-readers-only",
+    "reclaimWhen": "terminal-and-privateReaders-zero",
+    "byteReservationReleasedOnce": true,
+    "lateContinuation": "check-control-generation-before-bytes-or-publication",
+    "unfinishedDispatchRetainsCapacity": true,
+    "spentBudgetRefund": false
+  },
+  "scope": {
+    "runtimeChanged": false,
+    "bindingImplemented": false,
+    "identitySealingImplemented": false,
+    "runtimeRegressionExecuted": false,
+    "performanceImprovementEstablished": false,
+    "productionAdopted": false,
+    "nativeAttestationEstablished": false,
+    "storageIntegrationEstablished": false,
+    "continuousEightReadsEstablished": false
+  },
+  "regressionConditions": [
+    {
+      "id": "CLB01",
+      "condition": "fake／clone／serialize往復のcall・ownerKey・scopeKey、同じID／digestの別実参照を拒否。private membershipをcaller fieldで代用しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB02",
+      "condition": "oversized／空／非Buffer／SharedArrayBuffer backing／出自不明型を捕捉前に拒否。専用Bとcaller／返却copyのArrayBuffer共有0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB03",
+      "condition": "最初の署名／frame検証、innerDigest、providerの初回完全検証・request decodeが同じBへ束縛される。途中のpacket交換で別requestを採用しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB04",
+      "condition": "capture後の元packet・dispatch copy・返却copyの変更がBへ波及しない。別wireを受ける一般inspect APIは完全照合を維持し変更を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB05",
+      "condition": "mutable identity profileをunsupported。適格profileではidentityの子node変更・slot／public property差替えが実call／live principalへ波及せず、copy getterだけを公開",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB06",
+      "condition": "peer／serverのrole・instance・boot・credentialId・keyEpoch、expected projectionとAPI／purposeを各々不一致にし、sealで拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB07",
+      "condition": "未完了／失敗Draftからsource IO・root／fact・DispatchPermit・replyの発行0。全post成功前のready公開0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB08",
+      "condition": "ready bindingを別scope／owner／call／channel／Endpointへ移動、2回seal・再bind・同値tokenでの流用を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB09",
+      "condition": "claim前callback数0。同じcallへの同時・再入beginと失敗後の再claimを拒否。消費とclaimを保持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB10",
+      "condition": "独立source pin・mode・policy・runtime不一致、自己hash更新後のsource差替え、旧profileを拒否。source読取0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB11",
+      "condition": "grant／root／fact・plan／source permitの既存scope検査を維持。bindingだけではsource読取や計画一致を表明できない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB12",
+      "condition": "B・identity・projection・claim／guard・scratchの容量不足をcopy／decode／source IO前に拒否。既存1 MiB枠と実予約を越えない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB13",
+      "condition": "署名・challenge・sequence・innerDigest・APIが違うwireを初回完全検証で拒否。bounded bytesの検証省略0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB14",
+      "condition": "ready前は固定した完全検証経路、ready後は承認modeの経路を実行。bound失敗後の完全経路fallback・再発行0。transport最終inspectも維持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB15",
+      "condition": "ready後に現在のread権限を失うpermissions／委任／lineage変更を各旧境界で拒否。readとpublicationの両purposeが同じAPIに許可されたcredentialでも、currentPurposeがread→publicationならissuedPurpose＝binding＝projectionとの差をpermission_deniedで拒否。現行c.checkの返値破棄では通る負例を両modeで試し、purpose復元・bindingの再基準化・出力receiptによる救済も禁止",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB16",
+      "condition": "peer／serverのcredential取消し、environment／policy停止を各callback境界で注入し拒否。現在性callbackの欠落0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB17",
+      "condition": "観測済みpin不一致と記録済み失効はpin復元後も拒否。検査前に変更・復元が完了した未観測対照は全live検査成功時に両modeで継続可能とし、履歴検出成功と記録しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB18",
+      "condition": "channel／Endpointのclose、session lifetime・challenge期限到達を拒否。sessionの再開・nonce変更で旧bindingを復活させない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB19",
+      "condition": "dispatchを未完了promiseで保留し、元期限到達時にそのfinallyを待たずterminal／generation更新・全binding／frame失効・公開lookup除去・channel受付停止を確認。旧call／Draft／BoundCallと同値row再挿入を拒否。後着のresolve／rejectはcontrol照合で止め、B取得・decode・署名／enqueue・use／ACK・成功記録0。正常完了との競合とrepeat expire／late finallyでterminal遷移・枠解放が一度だけになることを検証",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB20",
+      "condition": "(a) 正常scope.close後もsession最終検証まではBを保持し、最終読取後にzero。(b) timeoutでprivateReaders＝0ならdispatch未完了のままBをzeroし、binding／async closureにBの強参照がないことと私有bytes cacheの参照解消を確認してbyteReservationを一度だけ解放。(c) reader保持中の失効はlookup除去を先行し、早期zero・新規reader・失効した結果公開を拒否、最後のreaderのfinallyで回収。(d) late finally／scope release後も再登録・二重zero／解放0。消費済みwork／attempt／wire枠は返還せず、未終了dispatchは隔離枠へ残し上限外の作業を増やさない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB21",
+      "condition": "begin／sealのcopy・hash・decode中、c.check callback中、操作／署名完了後の元期限到達をpostで拒否。初期化費用で期限を延長しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB22",
+      "condition": "非整数／逆行する時計、row／親の期限短縮、期限の増加・再基準化を注入。最小期限・固定上限を維持し拒否条件を照合",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB23",
+      "condition": "callbackから同じbinding／ownerへ直接・間接再入。内側例外を捕捉しても外側はterminal／generation変更で拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB24",
+      "condition": "正規のG→S→P・ledger→P・別親scope検査は通し、全bound checkでliveを新規実行。外部の偽frame、frameの流出・再使用、global busyによる正規経路の誤拒否を検査",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB25",
+      "condition": "current／now／permission callback中のclose・偽値・非Error例外で外側成功0。finallyでterminalを戻さず根本理由を保持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB26",
+      "condition": "sourceのrequested／unrequested bytes改変、snapshot交換を従来の内容検証で拒否。pre／post・fresh read・全entry再構成を維持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB27",
+      "condition": "request／診断copyの変更で固定requestを変えられない。再入力APIのschema／command／plan照合は維持し、bindingを内容検証の代用にしない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB28",
+      "condition": "次batch・exact retryで新call／bindingを使用。同一operation rowのK/D・元期限・attempt・spentを保持し、古いbindingの再使用を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB29",
+      "condition": "effect／outcome分類・use／ACKと送受信署名を維持。binding失効だけを根拠に副作用なし／成功へ変換せず、未知結果を保持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB30",
+      "condition": "共通full-referenceとbound-liveで対象checkの新規c.check件数・current／permission／credential／期限・IO前後境界を照合。削減は承認したwire hash／identity clone・canonical一致だけ",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB31",
+      "condition": "新modeのfull検査／bound検査・live callback・入口witnessと費用の閉包を独立照合。旧CWGのI＝SHA等の係数をbound-liveへ流用せず、欠落・過大時間・二重計上を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB32",
+      "condition": "新Endpoint構築・identity封印・capture・begin／seal・cleanupを含む総時間とtransfer時間を別記録。計測費用を差し引かず、失敗を完了率から除外しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB33",
+      "condition": "予約不足、ledger巻戻し・既消費の返還、spent／attempt／wire枠の再設定を拒否。構造workをCPU上限と誤記しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB34",
+      "condition": "Bのwrite／差替えAPIやaliasを含むsourceをunsupported。自己digest更新でも独立承認pinがなければ拒否。任意の私有memory改変を検出したとの主張は禁止",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB35",
+      "condition": "client-initial／seal、recoveryや未承認APIはこのbindingを使えない。一般のI1 facts／inspectやtransport署名・最終検査の既存経路を維持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB36",
+      "condition": "設計記録を実行時証拠と混同しない。全36条件・4段階はplanned／未実行で、速度改善・native／本番・実storage・継続8 read・CPR-C／CG0／CG3の成立を主張しない",
+      "status": "planned",
+      "executed": false
+    }
+  ],
+  "stages": [
+    {
+      "id": "CLB-0",
+      "condition": "封印profile・private B／identity・claim／Draft／状態機械・予算・内部検査frameを両mode共通のfixtureへ実装。完全検証を維持しCLB01〜14／19／20／23〜25／33〜35を先行",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB-1",
+      "condition": "scoped P／Sへbound-liveを限定接続。CLB15〜18／21／22／26〜31でliveの現認可と元期限・内容検証・retry・記録の閉包を固定clockで対照",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB-2",
+      "condition": "実署名session・fresh snapshotで正常／取消し・close・応答紛失・期限境界を確認。private Bとtransport最終検証の寿命を実callback順に検証。未対応adapterを採用しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CLB-3",
+      "condition": "scalar／共通full-reference／bound-liveを同じ新profile・source承認・live境界・元期限・memory／work条件で実比較。旧CWC-Gate／旧BPは強化差の別bridge。CLB30〜32／36を根拠に採用を判断",
+      "status": "planned",
+      "executed": false
+    }
+  ]
+}

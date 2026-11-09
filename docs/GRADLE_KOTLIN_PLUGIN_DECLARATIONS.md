@@ -9246,3 +9246,176 @@ npx vitest run src/test/utils/gradleOwnedCwcGate.test.ts --maxWorkers=1
 今回の計測追加費用はpaired中央値1.2〜90.6 msと条件で大きく変動した。これを引いて高速版を推定せず、既存Sitesの重いstack計測値との比率も性能改善へ読み替えない。実証したのは接続gateの増幅と内訳、認可・期限・完全性を維持した観測器の限定対照であり、削減実装や速度改善の成立ではない。次はこの大きい接続費用を対象にした実call binding／live検査の責任分離を優先する。
 
 レビュー修正後の再検証：CWG01〜15と記録の再検証を実施し、source hash・入口計数witness・件数関係・旧BPのbatch同値性を照合した。実clockの240転送は全完了し、本表とraw／summaryを更新した。入口計数の費用も計数のみ／時間計測の両armへ含むため、旧記録との時間差を高速化と解釈しない。認可・取消し・元期限・内容検証の省略は0、判断はdiagnostic-onlyを維持する。
+
+### 9.126 CWC-LB：session所有の実call／wire bindingとlive検査の分離（設計）
+
+#### 9.126.1 対象と採用前提
+
+設計のみ。helper・session runtime・本番reader・承認profileは未変更で、CLB01〜36は未実行の回帰条件である。CWC-Gateで反復を確認したproviderのP（provider callback）／S（ReadScope）からの実call検査を対象にする。最初に省略候補とするのは、同じsession所有bytesへのwire hashと、同じ私有identityのclone／canonical一致確認である。G／S／Pを通る回数、current callback、permissionの検索・lineageのcanonical照合、credentialの現在性、取消し・元期限は削減対象へ含めない。CWC-FPの自己context hash、計画・command・source内容の検証も変更しない。
+
+現行の`inspectAuthenticatedCall`は毎回wire hash→`c.check()`→peer／serverのcloneを実行する。call recordのidentityは`ServerChannel.peer.identity`／`Endpoint.credential.identity`と参照を共有し、Endpointのpublic readonlyはTypeScript上の制約である。現行wireもBufferで可変であり、この状態へbindingを足すだけでは省略を採用できない。
+
+初期profile候補を`cwc.session-owned-call-binding.v1`とする。sessionが署名credentialのprincipal identityを私有copy・完全parse・deep-freezeし、identity slotの差替えを防ぐこと、callの固定identityと`c.check()`が現在性を問うprincipalが同じ封印済み実体であることを前提にする。boot／keyEpoch／credentialId／role／instance等は固定identityへ含む。public診断はcopyまたはprimitiveだけを返し、public propertyの差替えが実gateの参照先を変更しない。permissions・委任条件・business purpose・policy／registryの現在性は別のlive領域とし、freezeや承認時の真偽値で判定を固定しない。
+
+current authority callbackへidentityを渡す場合は、principalごとに別途用意した凍結済みpublic value viewを両modeで同じ契約で渡す。private identity実参照・owner／scope key・内部frame・Bを渡さない。viewの値は封印principalと完全一致し、mutable aliasを持たないが、view自体を保持しても権限や内部membershipは得られない。旧callbackがprivate objectの参照同一性へ依存する場合は、互換性を仮定せず新profileの適格性を別に確認する。callbackの現在性の返答は毎回評価する。
+
+この所有権とidentity封印は共通full-reference／bound-liveの両方へ適用する新しい条件である。現行CWC-Gateとの強化差は別bridgeで測る。独立したsource承認registryがsession・factory・binding実装とidentity封印の版を明示承認するまでunsupportedとし、従来profile・caller提供のdigest／valid／frozenフラグで有効化しない。in-processの信頼するコードとintrinsicsを前提とし、native loader attestationや任意のprocess侵害への耐改変証明は含めない。
+
+#### 9.126.2 bytesの捕捉・所有権・入力経路
+
+sessionはinner wireの最初のframe／署名検証より前に、8192 B以下の通常Bufferを既存transport容量の内側で専用領域へcopyし、privateなBを所有する。対になるouter認証frameも既存16384 B枠で私有snapshot化し、署名・sequence・challengeとBの対応を同じ組で検査する。outerの署名検証は省略しない。SharedArrayBufferをbacking storeとする入力・出自不明のProxy／型は拒否する。長さ・表現・予約の検査を追加copy前に行い、共有memoryのcopyを安定snapshotと呼ばない。`Buffer.alloc`等で専用領域を作り、poolやcallerの`.buffer`と共有しない。
+
+`validateChannelFrame`、owner署名／schema検証、call recordのinnerDigest、provider側のrequest decode／K/D算出は全て同じBに由来させる。検証後にcallerの`packet.inner`やdispatch用copyを読み直してcallの内容を決めない。providerの初回完全検証は維持し、信頼する固定entryを通じてBから検証したadmission factsを取得する。sessionの一般的なbusinessDispatchへ渡すcopyをBそのものへ置換しない。一般APIに別wireが提示された場合は、従来どおり完全なwire照合を行う。
+
+Bはsessionが最後まで所有し、bindingは同じcallに限った読取capabilityを持つ。scopeやcodecへmutableなBを返さない。request取得entryは固定されたdecode／owner検証だけを実装し、callerが渡す任意callbackへBを渡すAPIを設けない。外へ返すcommand／診断／bytesは独立したcopyとし、返却Bufferの`.buffer`全体を書き換えてもBへ波及しない。内部の固定requestは私有・不変とし、copyを再入力する既存APIのschema／内容検証は維持する。
+
+capture後に元packetやdispatch copyが変わっても、bindingは検証済みBを使う。これは私有bytesの改変ではなく外部copyの変更である。通常APIによるBのwrite／差替え／再serializeは拒否し、close時のzero以外のwriteをprofileで認めない。任意の内部コードがBを直接書き換えたことを再hashなしで検出できるとは主張しない。その保証を要求するadapter、aliasを除去できないadapter、封印後write経路のあるsourceはunsupportedであり、mutable bufferへdigestだけ付けるfallbackは作らない。
+
+#### 9.126.3 非公開helperの入出力と初期化
+
+以下は将来のmodule-private APIの概念形であり、今回exportを追加しない。ownerKey／scopeKeyは信頼するfactory／ReadScopeが作る実参照で、内部WeakMapへの登録を要する。文字列IDや単なる`{kind:...}`では代用しない。peer role（reader／authority-broker等）とplanner actor（provider）も別fieldへ束縛する。
+
+| entry | 入力 | 出力・完了条件 |
+|---|---|---|
+| beginCallBinding | 実AuthenticatedSessionCall、登録済みfactory ownerKey、承認済みmode、既存transport／初期化予約 | constructingなDraftと検証済みadmission factsの私有copy。実call lookup後、外部callback前に1 call＝1 ownerのclaimを確保。Bの初回完全検証とlive pre/postが成功するまでfactsを公開しない |
+| sealCallBinding | 同じDraft、登録済みscopeKey、私有expected identity projection、実operation row・元期限、ReadScopeの実予約 | BoundCallを1回だけ発行。scopeRef・ownerRef・call rowRef／generation・Endpoint／channel実参照・actor・API／purpose・B／digest版・identity・元期限へ束縛。call発行時のissuedPurpose＝binding purpose＝expected projection purposeを完全一致させ、未完成scopeをreadyにしない |
+| checkBoundCallLive | BoundCall、同じownerKey／scopeKey、内部検査frame | void。現在のpurposeとissuedPurposeの一致を検査する新契約の`c.check()`を毎回実行し、binding／projectionとも照合。同じcall row・session・scopeの現状態と元期限をpre/post確認。成功を再利用するreceiptは返さない |
+| readBoundCommand | 同じBoundCallとscopeKey | 固定Bから検証したrequestの独立copy。読取前後のlive gateを維持し、source読取権限・DispatchPermitを発行しない |
+| releaseCallBinding | DraftまたはBoundCall、同じownerKey／scopeKey | 先にterminal化し、scopeの参照とscratchを解放。claim・失敗までの消費は返還しない。sessionの最終処理に必要なBは消さない |
+
+beginのclaimはconstructorの重複・同時・callback再入も拒否し、失敗時に同じcallから再発行しない。scopeKeyはReadScope構築時に内部登録し、sealで一度だけ取り付ける。DraftはrowのK/D・attempt・元期限を決める初期化に限り使い、source IO・plan root生成・結果送信には使えない。ReadScope自身もconstructingとreadyを区別し、callbackがDraftや未完成scopeからIOを始めることを拒否する。
+
+封印するexpected projectionは、私有contextから完全検査して得たpeer／provider identity・API／purposeの期待値である。projectionとそのslotも私有・不変とし、contextのmutable aliasから差替えられない。完全なcontext／current入力のhash検査は既存経路で続ける。bindingはsnapshotや計画の鮮度を証明しない。
+
+初期化前半で必要な実call検査は従来の完全経路を通す。readyへ移る境界を固定し、その後は同じownerのP／SとledgerからPを呼ぶ経路へBoundCallを接続する。準備中だけの固定経路と、ready後に失敗したbindingを完全経路で救済するfallbackを区別し、後者は禁止する。sessionの最終reply検証や他APIの`inspectAuthenticatedCall(call, wire)`は完全経路のままとする。
+
+#### 9.126.4 binding状態・scopeへの束縛・寿命
+
+private record候補は`{callRef, callRowRef, callGeneration, endpointRef, channelRef, ownerRef, scopeRef, scopeGeneration, actor, api, purpose, privateWireRef, innerDigest, privatePeerRef, privateServerRef, expectedProjectionRef, originalDeadline, profileDigest, mode, state}`。call rowにはchannel検証時の`issuedPurpose`を私有・不変で保存する。recordや内部参照は外部へ返さない。BoundCallの殻のfreezeは権限の根拠にならず、内部membershipと全実参照を照合する。
+
+| 状態 | 許可と遷移 |
+|---|---|
+| constructing | claim済み。検証・予約・scope取り付けだけを許可。全post確認後にready、失敗／close／再入でinvalid／closed |
+| ready | 同じscopeからの新規live検査と固定request取得を許可。検査中はchecking。別scopeへの再bindや2回目のsealは禁止 |
+| checking | 同じ検査の完了を待つ。外部公開操作の再入でinvalid。正規の内部検査frameだけが既存のG／S／Pの入れ子を通れる |
+| invalid／closed | terminal。pin・hash・identityが元に戻ってもreadyへ戻さず、後続の読取・root／fact利用・返信を拒否 |
+
+期限と取消しは、実call・channel／Endpoint・owner・ReadScope・親leaseの最も短い寿命に従う。保存するoriginalDeadlineは固定上限であり、各gateは実row／親のより短い現在の期限も読む。後からrowの期限が増えても固定上限を延長しない。起点を現在時刻へ置き直さない。新batch／exact retryは新しい認証callと新しいbindingを必要とし、既存operation rowのK/D・attempt・spent・元期限の保持はそのまま続ける。
+
+bindingはcall＋ReadScopeに束縛する。provider grant・plan root／factとの関係は既存のscope membershipで検査し、bindingをrootやDispatchPermitの代わりにしない。scalar／descriptorにはplan rootがないためrootを捏造させない。client-initial／sealにはproviderの実callがないので、このbindingを流用しない。
+
+正常終了時のscope.closeはscope bindingをterminalにするが、sessionのcallは最終reply検証まで生きる場合がある。Bの所有者はsessionなので、scope.closeだけではBをzeroしない。正常経路ではsession自身の最終読取が終わった後、call rowをterminal／generation更新→bindingを失効→公開lookupから除去し、読取数0を確認してBをzero・解放する。bindingの失効は既存のeffect／outcome分類を変更しない。
+
+**timeoutの線形化点。** 現行のdeadlineはPromise.raceであり、timeout応答だけでは内部dispatchもそのfinallyも終了しない。新契約ではdispatchのfinallyを失効の起点にしない。sessionがcall発行時にprivateなcontrolを作り、元期限のwatchdogとgateの期限到達検出が同じ`expireCall(control, expectedGeneration)`へ入る。seal時に実row／親の期限がより短ければwatchdogを前倒しし、延長しない。authorityが通知した期限短縮も反映する。未通知の外部変更を常時観測したとは主張せず、既存の各gateでの期限確認も維持する。
+
+expireCallはawaitや外部callbackの前に、activeからterminalへの一回限りの遷移、call／bindingのgeneration更新、constructing／checkingを含む全binding・frameの失効、認証callの公開lookupからの除去、channelの新規受付停止を行う。lookupがまだ同じcallRowRefを指す場合だけ除去し、別世代のrecordを消さない。この状態変更がtimeoutの線形化点であり、その後にtimeout応答や外部の取消し通知を行う。dispatchが未完了でも旧call・Draft・BoundCallはlookupも新規読取もできない。削除後の同値row再挿入も旧callRowRef／generationで拒否する。
+
+**Bの読取と回収。** 私有controlは`state／generation／reason／privateReaders／reclaimed／B／byteReservation`を保持し、lookupから除去した後も終了処理がこのcontrolを直接参照する。Bへの全読取はmodule-privateなread区間でのみ許可し、active・generation・実参照を確認してからprivateReadersを加算する。区間は有界な同期処理だけとし、await・外部callback・mutableなB参照の外部持出しを禁止する。hash／decode／固定copyを終えたらfinallyで読取数を減らし、結果公開前にもgenerationを確認する。liveのcurrent／now等はBのread区間外で呼ぶ。full-referenceの完全検証とsession最終検証にも同じ読取管理を適用する。
+
+Bへの強参照はcontrolと実行中のprivate read区間内だけに限定する。recordのprivateWireRefはcontrol所有storageへの非公開keyであり、Bufferそのものではない。call／binding／frameやreceive／finishのasync closureはcontrolだけを保持し、Bを直接捕捉しない。回収時はcontrolのBと全私有bytes cacheへの参照を外し、最後のreaderが残す参照も解消してからbyteReservationを解放する。zeroしただけで参照が残るbytesを回収済みと計上しない。
+
+timeoutでは以後のsession最終読取も禁止するため、privateReaders＝0ならdispatchの返却を待たずBをzeroし、B参照を外してbyteReservationを一度だけ解放する。読取中なら失効・lookup除去を先行し、最後のreaderのfinallyで回収する。失効中に得た読取結果は公開しない。通常のJS timerは同期readを割り込まないが、故障注入で読取中の失効を再現し、早過ぎるzeroと新規reader受付の両方を拒否する。outer snapshot等のsession私有bytesも最後の読取後に同じ所有規則で回収する。
+
+**後着処理と枠。** timeout後のresolve／reject／catch／finallyは、閉包に保持したcontrolと開始時generationを最初に照合する。authenticatedCalls.get(call)が存在するとの仮定を置かず、Bの再取得・decode、正常／拒否outcomeの生成、署名・enqueue、use／ACK・成功記録へ進まない。既に外部で生じた効果を取り消したとは扱わず、既存のunknown／possibleとoperation rowのK/D・元期限・spentを保持する。repeat expire・scope release・late finallyは同じterminal状態を保持し、再登録・二重zero・二重解放・別世代の枠の解放をしない。
+
+BのbyteReservation解放は、消費済みwork／attempt／wire枠の返還ではない。停止できないdispatchは、実際に終了または信頼するfenceで隔離されるまで既存上限内の隔離枠で数え続ける。timeoutだけでworking／未完了dispatch枠を再利用可能とせず、終わらない作業を上限外へ積み上げない。Bを持たないcontrolや外部copyを保持するdispatchについても、残るscratch／memoryを安全に解放できるまで計上する。正常完了とtimeoutは一回限りのterminal遷移で競合を解決し、元期限内の最終検査・enqueueが先に完了した成功を後のtimerで書き換えない。CLB-0／2で線形化点と回収完了を別イベントとして検証する。
+
+#### 9.126.5 毎回のlive検査と再入・取消し
+
+固定化できるのは、同じ私有Bを認証した事実と、封印済みのprincipal／expected projectionの対応だけである。checkBoundCallLiveは少なくとも次を毎回行う。
+
+1. 正規のmembership・実call row・Endpoint／channel・owner／scope参照・generation・ready状態、API／purpose／actorと固定上限を照合する。外部コードを呼ぶ前に検査予約を取る。
+2. 現在の実callに属する新契約の`c.check()`を1回呼ぶ。Endpoint／channelのclose・session lifetime、environment.assertOpen、両credentialの現在性、business purposeとpermission／委任・lineageの照合、challengeの元期限を省略しない。call row発行時のcallbackと同じprincipalへ作用することを確認する。内部で`currentPurpose = permitAPI(peer, api)`を新規評価し、その返値を捨てず、callのissuedPurposeと完全一致させる。sealで一致させたbinding／expected projectionのpurposeも同じ不変値であることを確認する。
+3. callbackから戻った直後にrecord・generation・terminal状態を再確認し、時計を新規に読む。単調性と元期限の最小値を検査する。copy／decode／callback／操作中の期限到達もpostで拒否する。
+
+purposeは、認証channelの検証に使いcall発行時に保存したissuedPurposeへ束縛する。現在のpolicyが別purposeを返した場合、そのpurpose自体がcredentialで許可されていても`permission_denied`で拒否し、bindingをterminalにする。currentPurposeへissuedPurpose／bindingを再基準化せず、purposeを元に戻しても旧bindingを復活させない。現行のc.check()はpermitAPIの返値を捨てるため、そのまま委譲する実装は不適格である。共通full-reference／bound-liveの両modeにこの照合を実装する。c.check()と公開helperはvoidのままでよく、内部の比較を外部へ返す真偽値や後で使うreceiptへ置き換えない。
+
+Pにある`o.current()`、ReadScopeのsource registry current、pinの失効、ledger残高・消費下限・attempt／wire予算、IO前後・署名／enqueue前後の既存検査は呼出し位置を変えずに維持する。対象の旧inspect 1回につき新規`c.check()`も1回であり、同じscope内で成功したことを理由に次の検査を省略しない。permission条件やそのlineageのcanonical処理は初期版では毎回実行する。
+
+P／Sの外側callbackも含め、信頼するowner／scope操作の予約を最初のcurrent／now等より前に確保する。正規の内部G→S→P、ledger→Pには外部へ渡さない内部検査frameを使う。frameは経路の正当性だけを示し、認可の成功事実を含まない。同じframeでも各bound checkは新しいlive検査を行う。callbackにはframeも内部gate portも渡さず、public entryからframeを指定できない。実装時にこの区別を示せなければunsupportedとする。bindingのchecking latchは`c.check()`中の再入も拒否する。正規の親scope検査をglobal busyで止めない。
+
+再入、callback中のclose／失効、例外、post失敗では先にterminal・generationを更新し、例外を捕捉して返した値やfinallyのbusy解除で復活させない。元のauthorityエラーを保持し、Error以外のthrowも失敗にする。未知の副作用を自動で「副作用なし」へ変えず、work・attempt・wire枠も巻き戻さない。
+
+pinの変更を検査で観測した場合と、信頼する失効経路がterminal状態を記録した場合は、復元後も拒否する。一方、次の検査前に変更と復元が完了し、観測も失効記録もない外部履歴は、このbindingでも検出を保証しない。§9.124のCFP10と同じ扱いにし、履歴検出が必須のadapterは独立した失効世代／履歴の契約なしではunsupportedとする。
+
+#### 9.126.6 予算・承認・拒否理由
+
+transportのB捕捉は既存sessionのframe／inner入力枠に、binding／封印identity／expected projection／claim／guard／scratchは既存の1 MiB論理共存枠と実予約に含めて再計算する。sessionとscopeの共有Bは所有者と参照数を明記し、二重予約の隠蔽や未計上領域を作らない。copy／decode前に必要な枠を確保し、証明できなければ追加入力評価・source読取前に拒否する。構造workは従来のrequest bytes／ranges／probesの定義を維持しCPU上限とは呼ばない。初期化の有界性と実消費を別に記録し、上限を一律拡大しない。失敗後も既消費とclaimを保持する。
+
+1 MiBは既存のtransfer／ReadScopeの論理共存枠で、Endpointの全session合算やheap／RSSの上限ではない。認証call発行前のouter／inner捕捉もsessionの予約へ計上し、後のscopeへの所有参照の対応を記録する。並行session数・未完了call数は既存Endpointの枠で別に制限し、scope初期化前の捕捉bytesを無制限な領域として扱わない。
+
+source承認は新policy digest・helper／session／factoryを含む参照閉包・封印条件・modeを独立registryから選ぶ。peerのcommandや自己署名manifestで選択させない。source／policy差替え、旧adapter形式、profile未承認、runtime不一致は読取前に拒否する。初期採用はin-process fixtureに限定し、将来の実storage・独立UID・native採用は別証拠とする。
+
+| 原因 | 拒否理由／扱い |
+|---|---|
+| 偽call・異なるwire／署名／frame | peer_mismatch、signature_invalid等の元理由。未検証bytesからbindingを発行しない |
+| owner／scope／call row／generation／APIの不一致、再bind | source_binding または call_reused。terminal化し再発行しない |
+| 未完成DraftからIO、失効bindingから利用 | source_binding／owner_closed。成功handle・parts・replyを公開しない |
+| current permission／credential／policy取消し | permission_denied等の元authority理由。固定identity一致で上書きしない |
+| currentPurposeとissuedPurpose／binding／projectionの不一致 | permission_denied。別purposeのpermissionがあっても拒否し、purpose復元で復活させない |
+| owner／scope／channel／Endpointのclose、call完了 | owner_closed／session_closed等。旧bindingの再使用は禁止 |
+| 非整数／逆行する時計・元期限到達 | clock_invalid／request_expired／session_expired。新期限へ再基準化しない |
+| 私有bytes／identityを保証できない、未承認profile | codec_profile_unsupported。完全経路への暗黙fallbackで採用しない |
+| 容量・初期化予約不足 | codec_budget_exceeded等。追加copy／source IOを開始しない |
+
+#### 9.126.7 回帰テスト条件（未実行）
+
+| ID | 条件・必須結果 |
+|---|---|
+| CLB01 | fake／clone／serialize往復のcall・ownerKey・scopeKey、同じID／digestの別実参照を拒否。private membershipをcaller fieldで代用しない |
+| CLB02 | oversized／空／非Buffer／SharedArrayBuffer backing／出自不明型を捕捉前に拒否。専用Bとcaller／返却copyのArrayBuffer共有0 |
+| CLB03 | 最初の署名／frame検証、innerDigest、providerの初回完全検証・request decodeが同じBへ束縛される。途中のpacket交換で別requestを採用しない |
+| CLB04 | capture後の元packet・dispatch copy・返却copyの変更がBへ波及しない。別wireを受ける一般inspect APIは完全照合を維持し変更を拒否 |
+| CLB05 | mutable identity profileをunsupported。適格profileではidentityの子node変更・slot／public property差替えが実call／live principalへ波及せず、copy getterだけを公開 |
+| CLB06 | peer／serverのrole・instance・boot・credentialId・keyEpoch、expected projectionとAPI／purposeを各々不一致にし、sealで拒否 |
+| CLB07 | 未完了／失敗Draftからsource IO・root／fact・DispatchPermit・replyの発行0。全post成功前のready公開0 |
+| CLB08 | ready bindingを別scope／owner／call／channel／Endpointへ移動、2回seal・再bind・同値tokenでの流用を拒否 |
+| CLB09 | claim前callback数0。同じcallへの同時・再入beginと失敗後の再claimを拒否。消費とclaimを保持 |
+| CLB10 | 独立source pin・mode・policy・runtime不一致、自己hash更新後のsource差替え、旧profileを拒否。source読取0 |
+| CLB11 | grant／root／fact・plan／source permitの既存scope検査を維持。bindingだけではsource読取や計画一致を表明できない |
+| CLB12 | B・identity・projection・claim／guard・scratchの容量不足をcopy／decode／source IO前に拒否。既存1 MiB枠と実予約を越えない |
+| CLB13 | 署名・challenge・sequence・innerDigest・APIが違うwireを初回完全検証で拒否。bounded bytesの検証省略0 |
+| CLB14 | ready前は固定した完全検証経路、ready後は承認modeの経路を実行。bound失敗後の完全経路fallback・再発行0。transport最終inspectも維持 |
+| CLB15 | ready後に現在のread権限を失うpermissions／委任／lineage変更を各旧境界で拒否。readとpublicationの両purposeが同じAPIに許可されたcredentialでも、currentPurposeがread→publicationならissuedPurpose＝binding＝projectionとの差をpermission_deniedで拒否。現行c.checkの返値破棄では通る負例を両modeで試し、purpose復元・bindingの再基準化・出力receiptによる救済も禁止 |
+| CLB16 | peer／serverのcredential取消し、environment／policy停止を各callback境界で注入し拒否。現在性callbackの欠落0 |
+| CLB17 | 観測済みpin不一致と記録済み失効はpin復元後も拒否。検査前に変更・復元が完了した未観測対照は全live検査成功時に両modeで継続可能とし、履歴検出成功と記録しない |
+| CLB18 | channel／Endpointのclose、session lifetime・challenge期限到達を拒否。sessionの再開・nonce変更で旧bindingを復活させない |
+| CLB19 | dispatchを未完了promiseで保留し、元期限到達時にそのfinallyを待たずterminal／generation更新・全binding／frame失効・公開lookup除去・channel受付停止を確認。旧call／Draft／BoundCallと同値row再挿入を拒否。後着のresolve／rejectはcontrol照合で止め、B取得・decode・署名／enqueue・use／ACK・成功記録0。正常完了との競合とrepeat expire／late finallyでterminal遷移・枠解放が一度だけになることを検証 |
+| CLB20 | (a) 正常scope.close後もsession最終検証まではBを保持し、最終読取後にzero。(b) timeoutでprivateReaders＝0ならdispatch未完了のままBをzeroし、binding／async closureにBの強参照がないことと私有bytes cacheの参照解消を確認してbyteReservationを一度だけ解放。(c) reader保持中の失効はlookup除去を先行し、早期zero・新規reader・失効した結果公開を拒否、最後のreaderのfinallyで回収。(d) late finally／scope release後も再登録・二重zero／解放0。消費済みwork／attempt／wire枠は返還せず、未終了dispatchは隔離枠へ残し上限外の作業を増やさない |
+| CLB21 | begin／sealのcopy・hash・decode中、c.check callback中、操作／署名完了後の元期限到達をpostで拒否。初期化費用で期限を延長しない |
+| CLB22 | 非整数／逆行する時計、row／親の期限短縮、期限の増加・再基準化を注入。最小期限・固定上限を維持し拒否条件を照合 |
+| CLB23 | callbackから同じbinding／ownerへ直接・間接再入。内側例外を捕捉しても外側はterminal／generation変更で拒否 |
+| CLB24 | 正規のG→S→P・ledger→P・別親scope検査は通し、全bound checkでliveを新規実行。外部の偽frame、frameの流出・再使用、global busyによる正規経路の誤拒否を検査 |
+| CLB25 | current／now／permission callback中のclose・偽値・非Error例外で外側成功0。finallyでterminalを戻さず根本理由を保持 |
+| CLB26 | sourceのrequested／unrequested bytes改変、snapshot交換を従来の内容検証で拒否。pre／post・fresh read・全entry再構成を維持 |
+| CLB27 | request／診断copyの変更で固定requestを変えられない。再入力APIのschema／command／plan照合は維持し、bindingを内容検証の代用にしない |
+| CLB28 | 次batch・exact retryで新call／bindingを使用。同一operation rowのK/D・元期限・attempt・spentを保持し、古いbindingの再使用を拒否 |
+| CLB29 | effect／outcome分類・use／ACKと送受信署名を維持。binding失効だけを根拠に副作用なし／成功へ変換せず、未知結果を保持 |
+| CLB30 | 共通full-referenceとbound-liveで対象checkの新規c.check件数・current／permission／credential／期限・IO前後境界を照合。削減は承認したwire hash／identity clone・canonical一致だけ |
+| CLB31 | 新modeのfull検査／bound検査・live callback・入口witnessと費用の閉包を独立照合。旧CWGのI＝SHA等の係数をbound-liveへ流用せず、欠落・過大時間・二重計上を拒否 |
+| CLB32 | 新Endpoint構築・identity封印・capture・begin／seal・cleanupを含む総時間とtransfer時間を別記録。計測費用を差し引かず、失敗を完了率から除外しない |
+| CLB33 | 予約不足、ledger巻戻し・既消費の返還、spent／attempt／wire枠の再設定を拒否。構造workをCPU上限と誤記しない |
+| CLB34 | Bのwrite／差替えAPIやaliasを含むsourceをunsupported。自己digest更新でも独立承認pinがなければ拒否。任意の私有memory改変を検出したとの主張は禁止 |
+| CLB35 | client-initial／seal、recoveryや未承認APIはこのbindingを使えない。一般のI1 facts／inspectやtransport署名・最終検査の既存経路を維持 |
+| CLB36 | 設計記録を実行時証拠と混同しない。全36条件・4段階はplanned／未実行で、速度改善・native／本番・実storage・継続8 read・CPR-C／CG0／CG3の成立を主張しない |
+
+#### 9.126.8 実装順と比較の出口
+
+| 段階 | 内容と出口 |
+|---|---|
+| CLB-0 | 封印profile・private B／identity・claim／Draft／状態機械・予算・内部検査frameを両mode共通のfixtureへ実装。完全検証を維持しCLB01〜14／19／20／23〜25／33〜35を先行 |
+| CLB-1 | scoped P／Sへbound-liveを限定接続。CLB15〜18／21／22／26〜31でliveの現認可と元期限・内容検証・retry・記録の閉包を固定clockで対照 |
+| CLB-2 | 実署名session・fresh snapshotで正常／取消し・close・応答紛失・期限境界を確認。private Bとtransport最終検証の寿命を実callback順に検証。未対応adapterを採用しない |
+| CLB-3 | scalar／共通full-reference／bound-liveを同じ新profile・source承認・live境界・元期限・memory／work条件で実比較。旧CWC-Gate／旧BPは強化差の別bridge。CLB30〜32／36を根拠に採用を判断 |
+
+性能比較は、独立source承認を同条件で準備した後、各armの新しいfixture／Endpoint構築前から最終再構成・現在認可・元期限確認・binding cleanup後までのT_totalを主判定にする。従来と対応するT_transferも併記し、assembly・identity封印・transport capture・begin／seal・cleanupのinclusiveを二重加算しない。parentDeadlineとchallenge期限の起点を変更せず、fixture構築・初期化中の到達も失敗へ残す。事前生成したbindingを最適化armだけへ渡さない。warm-up・未観測primary・件数／時間計測対照を分離し、output・plan・requests・wire bytesの同値性、失敗を含む完了率、memoryと実workを確認する。
+
+削減対象の量は実装後の共通条件の実測で決める。CWC-Gateのgate時間をそのまま削減可能額へ使わず、新guard／封印の強化差やobserver費用を引いた仮想高速値も採用しない。4段階とも未実装であり、今回の設計によってCFP-0・CPR-C／本番・実storage・独立UID／5process・継続8 read・CG0／CG3の保留を解除しない。
+
+設計整合性の再現は以下。これはsection／参照sourceのhashと36条件・4段階の未実行状態を照合するもので、CLBの実行時回帰や公開API実証を実行しない。
+
+```sh
+node scripts/check-cwc-lb-design.mjs
+node scripts/check-cwc-lb-design.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcLiveBindingDesign.test.ts --maxWorkers=1
+```
