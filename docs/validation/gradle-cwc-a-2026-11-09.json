@@ -10,11 +10,11 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.118 CWC-A：private helper・fact・予算／寿命のfixture contract",
-    "sectionSha256": "851a1c7e23ed045b94519ceb07776cd130e3583dcb2c18407c918dec37aa0dc4"
+    "sectionSha256": "2501fd8b38fdf116f24222e4f90d55f275376ef3cd5f97d19818771ee921c73f"
   },
   "sourceBindings": {
-    "src/test/utils/gradleOwnedCwcA.test.ts": "01d89fe888bedc33cf928ed6f1172ac98a6374101be9ab25caaaa1c857da6c0b",
-    "src/test/fixtures/gradleOwnedCwcA.ts": "806c58f0c6b13f3accf6b28c3cc260c5ce8e24e6de8d52d3f21fd34a4caba86c",
+    "src/test/utils/gradleOwnedCwcA.test.ts": "6e29d3569b137d9ba70348e3cc4a82fdc248e2d45c06d96dc162168b2230293c",
+    "src/test/fixtures/gradleOwnedCwcA.ts": "cf4592516d3948bca3370887c55dd55b7cc847cf34f7c02d2275161c90f44c53",
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
     "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",

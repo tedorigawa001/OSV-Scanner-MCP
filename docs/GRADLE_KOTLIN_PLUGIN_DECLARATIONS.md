@@ -8796,7 +8796,7 @@ npx vitest run src/test/utils/gradleOwnedCwcDesign.test.ts --maxWorkers=1
 - `compilePlanLayout`は固定6 familyの既存reference layoutを作る。81920 B／6 fragment／81920 workを先に消費し、template上界と8192 B／16384 B境界を検査する。caller template／offset tableの受付口はない。実際にはowner 2／auth 4の計画用生成を残す。
 - `encodeCheckedCommand`は`command.full`だけを受け付け、全schema／wireIntent／operationとcontextを検査する。private coreから再構築した期待commandと全fieldを照合し、ordinal順に全N件を検査する。各回8192 B／16 fragment／24576 workを先に消費し、canonical bytesはprivate Bufferに保管する。別domainの生成はまだ実装せず拒否する。
 - `provePlannedOwnerAndAuth`は各commandを順序どおり既存の`exact`で検査し、保守layout上界との関係を検査する。各回24576 B／8 fragment／32768 workを先に消費する。receiptは`referenceOnly=true／compositionProven=false／authorityGranted=false`であり、閉じたfamily proof・実署名・実消費receiptではない。各commandのowner 2／auth 4の計画用生成を省略していない。
-- `readCommandFact`は同じroot／domainへ結び、Bufferのコピーだけを返す。読取ごと8192 B／1 fragment／8192 workを先に消費する。caller入力・返却Buffer・slice／subarray／ArrayBuffer・diagnostics変更はprivate factへ波及しない。
+- `readCommandFact`は同じroot／domainへ結び、Bufferのコピーだけを返す。読取ごと8192 B／1 fragment／8192 workを先に消費する。保存するprivate bytesと返却コピーは、Nodeの共有pool（`Buffer.from`）を使わず`Buffer.alloc`で専用のArrayBufferに置く。caller入力・返却Buffer・slice／subarray・返却BufferのArrayBuffer全体・diagnostics変更はprivate factへ波及しない。
 - `retainClientCommandFact`は全N commandの検査・reference proofを終え、同じ親readのinitial計画との一致を確認したclient-sealだけが同じcommandをchildへ移管できる。initial／provider／不完全seal・別owner／scope／ordinal／domainを拒否する。rootをdisposeしてもchildは同じ親readの元期限まで保持できるが、親終了／取消し／期限／owner closeでは全childを無効化する。
 
 root状態はopened→compiled→all-commands-proved→disposed。各実行の前後でcurrent callbackと元期限を確認し、callbackをrootに固定して外側currentCallへ依存しない。context／approval pin変更・取消し・期限・時計逆行はscope全体を失効させる。検査失敗はrootをterminalにし、消費済みworkを保持して同root再実行を拒否する。current callback経由の再入・処理中closeも成功factを返せない。dispose時は非移管Bufferをzero化し、layout・core・factへの所有参照を外す。parent終了時は移管済みBufferもzero化する。外部に返却済みのコピーを遠隔消去する保証はない。
@@ -8825,3 +8825,5 @@ npm run typecheck
 `docs/validation/gradle-cwc-a-2026-11-09.json`はrunnerが実際のVitest JSON結果から41件のID・title・passedを抽出して保存する。回帰テストとそのlocal import閉包、本runner、本節のdigestを束縛し、実行前後でsource不変を照合する。`--check`は保存済み記録の整合性検査であり、テスト再実行は通常起動で行う。メモリ内fixtureの検証記録であり、独立署名されたnative隔離証拠や性能比較ではない。
 
 レビュー修正ではCWA33〜41を追加した。同一scopeのroot発行時再入（拒否をcallbackが捕捉する場合も含む）、initial欠落、異なるplan digest、同じdigestでも別readの証拠、serialized clone、不完全initial、親の失効、clock／元期限の不一致、親証拠の二重seal登録を拒否した。CWA33／34は修正前に失敗することを確認してから修正し、child移管の正例もinitial登録→sealの独立検査→一致確認を通る形へ更新した。
+
+2回目のレビュー修正：private bytesと返却コピーを`Buffer.from`で作っていたため、小さなBufferがNodeの共有poolに置かれ、返却コピーの`.buffer`全体を書き換えるとprivate factも変わった（4085 Bの返却コピーが65600 BのArrayBufferを共有）。CWA07は返却範囲だけを書き換えていたため検出できなかった。CWA07とCWA18（child読取）に、返却BufferのArrayBufferが専用であることと、その全体の書換えが次の読取へ波及しないことを追加し、修正前に失敗することを確認した。保存・返却とも`Buffer.alloc`の専用領域へ変更した。テスト件数はCWA01〜41のまま。
