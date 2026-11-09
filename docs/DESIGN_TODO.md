@@ -3184,4 +3184,6 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュ�
 位置別計測ではprivate/contextの2 hash呼出し数が各126〜1316回／転送で一致した。純粋CPU費用や全面的なcaller解析ではなく、10 frameと列挙したexport入口に限定する。既存CWC-DPの採用見送りを維持する。本番・実storage・隔離・RSS・継続8 read・CPR-C／CG0／CG3の保留は維持する。
 
 §9.123レビュー修正：CST09／10の修正前の失敗を確認し、直近祖先＋呼出しごとの分類tagで共通helperの吸収を解消。constructor/preflightの実行位置とclass内の相対行でowner行を拘束した。CST11でcurrentコピー数とowner検査数、CST12でgate配下の分類境界を検証。12テスト・144転送の実時間比較を再実行し、全転送が期限内に完了した。旧分類値は置き換え、cache未実装・本番採用保留を維持する。
-修正後の各条件中央値の範囲（ms、計測負荷を含む観測値）：private-context.rehash 3.4〜39.2、current.hash 3.4〜38.4、current.input 15.4〜191.5、command.validation 10.3〜194.2、content.validation 2.0〜8.5、gate.validation 67.7〜1171.6。祖先による分類漏れを修正した値であり、過去の分類値と性能改善として比較しない。
+修正後の各条件中央値の範囲（ms、計測負荷を含む観測値、2回目のレビュー修正後の再測定）：private-context.rehash 3.4〜38.0、current.hash 3.5〜38.3、current.input 15.8〜192.7、command.validation 10.3〜195.5、content.validation 2.0〜8.3、gate.validation 68.8〜1176.1。祖先による分類漏れを修正した値であり、過去の分類値と性能改善として比較しない。
+
+§9.123 2回目のレビュー修正：位置計測の負担（1回4.21〜4.86 µs）が呼出し数に比例してgroupへ入るため、較正値と推定計測負担を記録し、9.123.1に表と解釈を追加（gate.validationはexclusiveの45〜50%、private-context.rehashは14〜17%が推定負担。推定は実測増加の44〜50%しか説明しない下限）。記録をインデントなし・class証跡1回保持にして37 MB→約19 MB。

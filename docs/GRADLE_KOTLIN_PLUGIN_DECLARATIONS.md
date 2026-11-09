@@ -9043,6 +9043,25 @@ CST01〜12で出力・plan／wire・fresh load／work、private/currentの2位�
 
 private-context.rehashは今後の固定fingerprint候補だが、計測値をそのまま削減可能額とみなさない。currentの入力検査とcallback、command／内容完全性の照合は区別して維持する。constructor時の完全照合・所有権・不変性・actor／root／call束縛を具体化する前に再利用を導入しない。本番・実storage・独立UID・RSS・継続8 read・CPR-C・CG0／CG3の保留は解除しない。
 
+#### 9.123.1 測定結果と計測負担の偏り
+
+composedの総時間中央値は50.3〜518.5 ms、位置計測版は199.1〜2390.1 msで、計測による増加（paired差の中央値）は148.8〜1870.1 msだった。位置計測では計測した関数を1回呼ぶたびに`getCallSites`（10 frame）とsite key・集計を行うため、この負担は呼出し回数に比例して各位置のexclusiveへ入る。同じobserve経路を空の関数で1000回実行し、1回あたりの負担を各転送の直後に別途測った（4.21〜4.86 µs）。
+
+各groupについて、12条件それぞれの中央値の範囲を示す。推定計測負担は呼出し数×同じ行の1回あたり負担で、exclusiveから差し引かず並べて示す。
+
+| group | 呼出し数／転送 | exclusive（ms） | 推定計測負担（ms） |
+|---|---|---|---|
+| private-context.rehash | 126〜1316 | 3.4〜38.0 | 0.5〜5.6 |
+| current.hash | 126〜1316 | 3.5〜38.3 | 0.5〜5.6 |
+| grant.context-input | 142〜1372 | 4.0〜40.0 | 0.6〜5.9 |
+| current.input | 1302〜17332 | 15.8〜192.7 | 5.5〜74.1 |
+| command.validation | 658〜14066 | 10.3〜195.5 | 2.8〜59.2 |
+| content.validation | 153〜637 | 2.0〜8.3 | 0.6〜2.8 |
+| gate.validation | 7339〜134199 | 68.8〜1176.1 | 31.1〜574.1 |
+| other | 5443〜46882 | 72.1〜537.0 | 23.0〜200.1 |
+
+gate.validationのexclusiveの最大値1176.1 msは、計測しないcomposedの総時間（最大518.5 ms）の2倍を超える。推定計測負担はgate.validationでexclusiveの45〜50%、private-context.rehashでは14〜17%であり、呼出し数の多いgroupほど大きく膨らむ。空関数での較正は浅い呼出し位置で測るため、推定合計は実際の計測増加の44〜50%しか説明せず、下限の目安である。したがって、group間の大小を本来の費用の大小として読まない。とくに「private-context.rehashは小さくgate.validationは大きい」という比較は、呼出し数の偏りをそのまま含む。表はrunnerが保存summaryから同じ書式で再生成し、本文との一致を検査する。
+
 ```sh
 node scripts/check-cwc-sites.mjs
 node scripts/check-cwc-sites.mjs --check
@@ -9052,3 +9071,5 @@ npx vitest run src/test/utils/gradleOwnedCwcSites.test.ts --maxWorkers=1
 CWC-Sitesレビュー修正：(1) site keyへ直近祖先と、各呼出しの全観測frameから判定した分類用祖先tagを加える。深い呼出しpathの無制限な組合せは保持せず、同じ分類・直近祖先に属するframeは代表例として保存する。これにより共通copy／parse helperをpreflight・current・command等から呼んでも、最初の祖先へ分類を吸収しない。論理owner hashの2位置は祖先別bucketを併合して件数を照合する。(2) 実行中のconstructorからpreflightCodecProfileを呼ぶ位置をanchorとして採取し、class全文内のpreflight呼出し行とdigest行の差からowner行を決定する。anchorのcolumnとtrace中のpreflight／constructor frameも照合し、ownerのline・column両方を拘束する。CST09はhelperを異なる祖先・順序で呼ぶ正例、CST10はkey／framesも更新したowner行移動の負例、CST11はcurrentコピー数とowner検査数の一致を検証する。CST09／10の修正前の失敗を確認した。
 
 分類の補足：owner検査の祖先があっても、その手前にgrant／scope／registryのgate frameがある費用はgate.validationへ分離し、current.inputのcopy／parse費用と混ぜない。CST12でこの境界を確認する。
+
+CWC-Sites 2回目のレビュー修正：(1) 位置計測の負担が呼出し回数に比例してgroupのexclusiveへ入り、group間の比較に偏りがあることを本文で示していなかった。各転送の直後に同じobserve経路を空の関数で1000回実行して1回あたりの負担を較正し、記録の各行に保存する。summaryはgroupごとに呼出し数×1回あたり負担の推定を持ち、9.123.1に12条件の範囲の表と解釈を追加した。runnerは表の行を保存summaryから再生成して本文と照合する。推定はexclusiveから差し引かない。(2) 記録はインデント付きで37 MBあり、実行版class全文を位置計測の48行すべてに重複保存していた。インデントなしで保存し、同一のclass証跡は1回だけ保持する（照合時に各行へ戻して検査する）。記録は約19 MBになった。再現は`node scripts/check-cwc-sites.mjs --measure-only`（再測定）→表の更新→`node scripts/check-cwc-sites.mjs --rebind-document`→`--check`。144転送を実時計で再実行し、全て期限内に完了した。

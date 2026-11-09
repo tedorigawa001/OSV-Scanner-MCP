@@ -28,7 +28,10 @@ export function installSiteObserver(){
   const descriptor=Object.getOwnPropertyDescriptor(globalThis,'structuredClone')!,original=globalThis.structuredClone;Object.defineProperty(globalThis,'structuredClone',{...descriptor,value:(...args:Parameters<typeof structuredClone>)=>observe('structuredClone',()=>original(...args))});restores.push(()=>Object.defineProperty(globalThis,'structuredClone',descriptor));
  }catch(e){for(const restore of restores.reverse())restore();busy=false;throw e;}
  let closed=false;
- return {artifact,
+ // Per-call observer cost: the same observe() path (getCallSites, siteKey, bookkeeping) around a no-op.
+ // Runs outside any measured transfer and writes to a throwaway site table.
+ function calibrate(calls:number){if(closed||active)throw Error('cwc_site_closed_or_busy');if(!Number.isSafeInteger(calls)||calls<1||calls>100000)throw Error('cwc_site_calibration');const keep=sites,keepStack=stack;sites={};stack=[];active=true;const start=performance.now();try{for(let i=0;i<calls;i++)observe('calibration',()=>undefined);}finally{active=false;}const wallMs=performance.now()-start;sites=keep;stack=keepStack;return {calls,wallMs,perCallMs:wallMs/calls};}
+ return {artifact,calibrate,
   async measure<T>(run:()=>Promise<T>){if(closed||active)throw Error('cwc_site_closed_or_busy');active=true;sites={};stack=[];let result:T|undefined,error:unknown,ok=false;const start=performance.now();try{result=await run();ok=true;}catch(e){error=e;}finally{active=false;}const wallMs=performance.now()-start;return {ok,result,error,trace:{wallMs,otherMs:wallMs-Object.values(sites).reduce((n,b)=>n+b.exclusiveMs,0),sites}};},
   close(){if(active)throw Error('cwc_site_busy');if(closed)return;closed=true;for(const r of restores.reverse())r();busy=false;}
  };
