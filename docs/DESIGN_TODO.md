@@ -3201,8 +3201,10 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュ�
 - [x] レビュー3件を修正。旧BPのbatch同値性、wrapper入口の独立計数とSHA／clone／permission件数関係、非再入SHAのwall上限・leaf性を検査。CWG10〜12の修正前失敗を確認し、CWG13〜15の共通欠落・witness不備・上限境界も追加。15件の回帰を通したsourceで実時間比較を再実行し240転送が全完了。表・記録を更新し、診断限定・採用保留を維持。
 - [x] 接続費用の測定結果に沿って、session所有の不変な実call／wire bindingと毎回のlive検査を分ける削減契約を§9.126へ具体化。実証・採用は別工程。CFP-0・CPR-C／本番・実storage・隔離・8 read・CG0／CG3の保留を維持。
 
-### CWC-LB：session所有bindingとlive検査の分離（§9.126、設計のみ）
+### CWC-LB：session所有bindingとlive検査の分離（§9.126設計、§9.127 CLB-0）
 - [x] private Bの捕捉・固定identityの所有権、非公開begin／seal／live／read／release API、owner／scope／実call／generationへの束縛、Draftとterminal状態・session最終読取までの寿命を定義。
 - [x] permission／credential／source承認・取消し・元期限を毎回検査し、内部G／S／P frameと外部再入を区別する条件、既存予約・独立profile承認、拒否理由、CLB01〜36・CLB-0〜3の出口を具体化。mutable identity／bytesを固定digestだけで適格化しない。
 - [x] レビュー2件を反映。currentPurpose＝issuedPurpose＝binding／projectionの照合を必須化。timeoutはdispatchのfinallyと分離して失効・lookup除去を先行し、private reader排出後のB回収・byte予約解放、後着結果の拒否と未完了dispatchの隔離枠を定義。CLB15／19／20・設計整合性テスト・記録を更新。runtime実装・36回帰の実行は未実施。
-- [ ] CLB-0の共通fixture contractから実装。runtime・hash／clone省略・identity封印・bindingは未実装。設計整合性の検証と実行時の36回帰を区別し、CWC-FPは後順位、採用・CPR-C／CG0／CG3等の保留を維持。
+- [x] CLB-0の共通fixture contractを実装。私有wire／identity、claim／Draft・scope束縛、予算・再入拒否、purpose照合、timeoutのlookup除去・reader排出・B回収・後着拒否を36回帰で検証。2 mode×2 role×3 APIの12正常例と13証拠を保存し、9件の記録検査を追加。両modeとも完全検証を維持。
+- [x] CLB-0のレビュー2件を修正。TypedArrayの実slot・brandと信頼するコピー処理を使い、Bufferのcopy差し替え・SAB／metadata偽装をコピー前に拒否。receiveの共通再入guardを受付済み判定より先に適用。LB033〜036の修正前失敗を確認し、両modeのcallback／alias流出・危険入力の追加copy・外側の発行／公開0と回収を検証。LBR09と保存記録を更新。
+- [ ] CLB-1：実P／S・CWC root／fact・ReadScopeへの限定接続。CLB-0は署名済み入力を使う隔離fixtureで、実SessionServer接続・source IO・hash／clone省略・実storage・native隔離・性能改善は未成立。全36条件の成立とは扱わず、CLB-2／3・CWC-FP・CPR-C／CG0／CG3等の保留を維持。

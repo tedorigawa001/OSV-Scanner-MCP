@@ -1,0 +1,22 @@
+import {it,expect} from 'vitest';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {LB0_POLICY} from '../fixtures/gradleOwnedCwcLb0Contract.js';
+import {ownedDigest as hash} from '../../utils/gradleOwnedJson.js';
+import {validateLb0Record} from '../fixtures/gradleOwnedCwcLb0Validation.mjs';
+const input=()=>JSON.parse(readFileSync(process.env.CWC_LB0_RECORD_PATH??'docs/validation/gradle-cwc-lb0-2026-11-10.json','utf8'));
+function check(r:any){const sources:Record<string,string>={};for(const p of Object.keys(r.sourceBindings)){expect((p.startsWith('src/')||p.startsWith('scripts/')||['package-lock.json','tsconfig.json','vitest.config.ts'].includes(p))&&!p.split('/').includes('..')).toBe(true);sources[p]=createHash('sha256').update(readFileSync(p)).digest('hex');}return validateLb0Record(r,hash(LB0_POLICY),sources);}
+it('LBR01: revalidates source approval, evidence closure, private lifecycle and complete checks',()=>{expect(check(input())).toEqual({samples:12,proofs:13,fullVerificationBothModes:true,testsPassed:36,recordTestsPassed:9,hashElisionImplemented:false,productionAdopted:false});});
+it('LBR02: duplicate or missing samples and altered command digests reject',()=>{for(const kind of ['duplicate','missing','digest']){const r=input();if(kind==='duplicate')r.measurement.samples[1]=structuredClone(r.measurement.samples[0]);if(kind==='missing')r.measurement.samples.pop();if(kind==='digest')r.measurement.samples[0].commandDigest='0'.repeat(64);expect(()=>check(r)).toThrow();}});
+it('LBR03: common validator-count losses in both modes reject',()=>{const r=input();for(const s of r.measurement.samples)s.completed.metrics.ownerChecks--;expect(()=>check(r)).toThrow('lb0_record_counts');});
+it('LBR04: premature zero and late publications or verification reads reject',()=>{const a=input();a.measurement.samples[0].scopeClosed.bytesHeld=0;expect(()=>check(a)).toThrow('lb0_record_before-final');for(const field of ['publications','fullChecks','channelChecks','ownerChecks','copies','lookups']){const b=input();b.measurement.proofs.find((p:any)=>p.id==='timeout-resolve').drained.metrics[field]++;expect(()=>check(b)).toThrow('lb0_record_late');}});
+it('LBR05: removed lookup events with repaired serial numbers still reject',()=>{const r=input(),s=r.measurement.proofs.find((p:any)=>p.id==='timeout-resolve').drained;s.events=s.events.filter((e:any)=>e.name!=='lookup-removed').map((e:any,i:number)=>({...e,order:i+1}));expect(()=>check(r)).toThrow('lb0_record_event');});
+it('LBR06: native, production or hash-elision promotion cannot pass fixture evidence',()=>{for(const k of ['hashElisionImplemented','nativeIsolationVerified','productionRuntimeChanged','allCLBConditionsVerified']){const r=input();r.scope[k]=true;expect(()=>check(r)).toThrow('lb0_record_scope');}});
+it('LBR07: an invalid operator signature or a changed source digest is refused',()=>{const a=input();a.measurement.sourceApproval.envelope.signature='A'.repeat(86)+'==';expect(()=>check(a)).toThrow('lb0_record_approval');const b=input();b.sourceBindings['src/test/fixtures/gradleOwnedCwcLb0.ts']='0'.repeat(64);expect(()=>check(b)).toThrow('lb0_record_sources');});
+it('LBR08: refunded initialization and premature quarantine release are refused',()=>{const a=input();a.measurement.samples[0].budgetAfterClose.initialization=0;expect(()=>check(a)).toThrow('lb0_record_refund');const b=input();b.measurement.proofs.find((p:any)=>p.id==='timeout-reject').expired.budget.occupiedSlots=0;expect(()=>check(b)).toThrow('lb0_record_quarantine');});
+it('LBR09: missing review cases, escaped aliases, getter calls or reentrant outer issuance reject',()=>{
+ for(const mode of ['full-reference','bound-live'])for(const kind of ['missing','duplicate','copy','alias','getter','issued','publication','reclaimed','repeated']){const r=input(),id=['missing','duplicate','copy','alias'].includes(kind)?'buffer-copy':kind==='getter'?'shared-buffer':'receive-reentry',proof=r.measurement.proofs.find((p:any)=>p.id===id&&p.mode===mode),c=proof.cases[0];
+  if(kind==='missing')proof.cases.pop();if(kind==='duplicate')proof.cases[1]=structuredClone(c);if(kind==='copy')c.callbacks=1;if(kind==='alias')c.aliases=1;if(kind==='getter')c.getters=1;if(kind==='issued')c.issued=true;if(kind==='publication')c.after.metrics.publications=1;if(kind==='reclaimed')c.after.reclaimed=false;if(kind==='repeated')c.repeated.generation++;
+  expect(()=>check(r)).toThrow();
+ }
+});

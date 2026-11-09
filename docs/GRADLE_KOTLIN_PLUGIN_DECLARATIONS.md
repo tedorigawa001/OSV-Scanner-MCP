@@ -9419,3 +9419,61 @@ node scripts/check-cwc-lb-design.mjs
 node scripts/check-cwc-lb-design.mjs --check
 npx vitest run src/test/utils/gradleOwnedCwcLiveBindingDesign.test.ts --maxWorkers=1
 ```
+
+### 9.127 CLB-0：私有wire・identityとbinding状態機械の共通fixture
+
+2026-11-10。§9.126に沿って、`gradleOwnedCwcLb0.ts`とcontract／operator fixtureを追加した。これはCLB-0の隔離されたメモリ内contractである。歴史的な§9.126とその設計記録の「未実装／未実行」は設計作成時の状態として保持し、今回の実装状態は本節と別の検証記録に保存する。
+
+#### 9.127.1 実装範囲と検証経路
+
+`full-reference`／`bound-live`の両mode、reader／authority-brokerの両role、ReadSourceDescriptor／ReadSealedSource／ReadSourceRangesの3 APIを対象にする。両modeとも同じ完全検証を実行し、ready後もchallenge署名・channel frame・inner digest・owner署名・identity／K/D・command対応を省略しない。mode名によってhash省略を有効にしない。元のCPR／CWC／本番readerは変更していない。
+
+実Ed25519署名の4phase transcript・challenge・channel／owner入力を、既存のprotocol／signer関数で検証する。これは既存SessionServerの実receive／dispatch／署名reply／ACK経路への接続ではない。結果公開はfixtureのコピー済みJSON publicationを確認するモデルであり、実transportでの成功署名・enqueue・use／ACKや外部効果の分類を実証したとは扱わない。source IO・DispatchPermit・CWC root／fact・実ReadScope・fresh SourceSnapshotとの接続もCLB-1以降へ残す。
+
+operatorが独立に選ぶEd25519公開鍵／registry pinでprofileを承認し、policy digest・Node版とhelper／contract／factoryの相対import参照閉包を照合する。peer commandからprofileを選択しない。承認元は検証ハーネス内のoperatorであり、外部承認serviceや独立UIDの証拠ではない。
+
+#### 9.127.2 所有権・状態・予算
+
+ordinary Bufferの型・proxy／SharedArrayBuffer・長さを捕捉前に検査し、専用ArrayBufferへコピーしてから最初の署名検査を行う。inner上限8192 bytes、outer上限16384 bytes。identity／projectionはgetter・proxyを評価せずplain dataだけをbounded copyし、私有値とcallback向けの別copyを再帰freezeする。入力・返却copyの変更が私有Bへ波及しないことを検査する。任意の私有memory改変に耐えるとの主張ではない。
+
+レビュー修正では、入力の`copy`を呼び出さず、信頼するTypedArrayのgetterから実backing／lengthを取得して、通常ArrayBufferのbrandを確認する方式へ変更した。入力のbuffer／length／byteLength／byteOffset／copyのown propertyはgetterも評価せず拒否し、コピーは信頼するUint8Array.setで実行する。SharedArrayBufferのbuffer property偽装やbacking prototype変更も拒否し、外部コードへ私有コピー先を渡さない。
+
+call／owner／scope／Draft／Bound／operation rowは私有membershipと実参照へ束縛する。beginはcallbackより先にclaimし、constructing→ready→checking→ready、失敗時closedへ遷移する。再begin・二重seal・別call／scopeへの移動・偽token・外部frame指定を拒否する。callback中の再入を内側で捕捉しても外側は失効し、close・例外・post失敗後に復活しない。内部nestedChecksは4回の新しい完全／live検査を確認するframeモデルであり、既存G→S→P／ledger→Pへの実接続は未実証である。
+
+receiveも受付済み判定より先に共通のcontrol再入guardを通す。now／assertOpen／credential／purpose／permissions callbackから同じpendingへ再入し、内側例外を捕捉しても外側へ同じ失敗を伝播させる。call発行・lookup残存・結果公開を0に保ち、generationを一度だけ更新してB／予約を回収する。pendingStatsは拒否されたpendingのコピー済み診断だけを返し、認証call capabilityや私有Bは返さない。
+
+現在のpurposeは毎回取得し、issuedPurpose＝binding／projectionのreadと厳密に照合する。publicationも別途許可したcredentialでread→publicationを拒否し、readへの復元でもbindingを復活させない。credential・現在permission／委任・lineage・source承認pin・environment停止・単調時計・元期限を毎回確認する。観測済みpin失効はlatchedであり、検査前に変更と復元が完了した未観測履歴は検出を保証しない。
+
+共有する実budgetは論理memory上限1048576 bytes、work＋initialization上限156978、wire上限163840、attempt上限256。初期化予約はsession 4096、call 8192、binding 4096で、request bytesを別のwork項目へ事前計上する。memoryはsession 393216、call 98304、binding 8192の保守的な固定予約から、回収可能な私有bytes分と残るscratchを分離して返す。予約不足はcopy／decode前に拒否し、失敗後もwork／initialization／wire／attemptを返還しない。全検査回数も4096以下へ制限する。これはfixture自身の会計であり、既存CPR plannerと全transfer予約の共存やCPU／heap／RSS上限の証明ではない。
+
+#### 9.127.3 timeout・回収・後着処理
+
+正常scope.closeではbindingだけを閉じ、sessionの最終完全検証まではBを保持する。最終検証とコピー済み結果公開の後、terminal／generation更新→lookup除去→B回収を一度だけ実行する。
+
+元期限のwatchdogは保留dispatchのfinallyを待たず失効・binding／frame無効化・lookup除去・新規受付停止を行う。private readはboundedな同期内部処理のみで、await・外部callbackへBを持ち出さない。reader数0ならBをzeroして参照を外しbyte予約を解放する。読取中の失効は限定faultで注入し、reader排出までBを保持してから回収する。通常のJS timerが同期readへ割り込むという実証ではない。
+
+未終了dispatchはBを保持しないcontrolを参照し、occupiedSlotsと残るscratch予約を終了まで保持する。後着resolve／rejectは最初にterminal／generationを確認し、再読取・decode・結果公開へ進まない。repeat expire・close・late finallyでも二重回収・消費返還をしない。外部handlerを強制停止した、既に発生した副作用を取り消した、との主張はしない。
+
+#### 9.127.4 回帰と保存証拠
+
+| テスト | 検証内容 |
+|---|---|
+| LB001〜005 | 両mode×両role×3 APIの12正常例、偽handle、copy分離、危険入力の捕捉前拒否、copy前予算予約 |
+| LB006〜010 | 別途許可されたpurposeへの変更、現在権限・pin・元期限、署名／digest、別session・scopeの実参照不一致 |
+| LB011〜017 | claim前callback 0、二重登録・再入、内部frameモデル、正常close後の最終読取、callback中close、残高巻戻し |
+| LB018〜024 | 保留dispatchのtimeoutと後着resolve／reject、reader保持中失効、隔離枠保持、Draft利用拒否、falsy throw、一般inspect、watchdog前倒し |
+| LB025〜032 | 独立pin／source閉包・署名、ArrayBuffer全域変更、projection／row流用、正常dispatch、getter、実validator件数照合、非void callback、反復cleanup |
+| LB033〜036 | 両modeでinner／outerのcopy差し替え・SAB偽装、5種のcallbackからのreceive再入と内側例外捕捉、length／byteLength／byteOffset／copy getterを拒否。入力callback・alias流出・危険入力の追加copy・外側の発行／公開0 |
+| LBR01〜09 | 保存記録のsource承認・12例／13証拠閉包、重複／欠落・digest・両mode共通件数欠落・早期zero・後着公開・lookupイベント欠落・採用主張の昇格・消費返還・隔離枠早期解放の拒否。レビュー負例のcase欠落／重複・callback／alias流出・getter実行・外側発行／公開・回収漏れ・再使用による状態変更も拒否 |
+
+保存する13証拠はpurpose不一致を両modeで2例、timeout後のresolve／rejectを両modeで4例、reader保持中失効を1例、Buffer copy／SAB偽装／receive再入のcase群を両modeで6例。copyはinner／outer各1、SABはinner／outer×value／getter／prototype偽装、receive再入は5 callbackのcase閉包を照合する。正常例では実関数のspyとも照合し、完全検証・channel検証・wire比較hashの各回数、challenge検証＝完全検証＋初回、owner検証＝完全検証＋command copyを確認する。内部channel等のhashを全て独立計数したとは扱わない。
+
+CLB01〜14／19／20／23〜25／33〜35の先行fixture条件とpurposeを検証するが、CLB07／11の実source IO・root／fact／permit、CLB24の既存内部経路等は未接続である。全CLB01〜36、実SessionServer・P／S・storage・native隔離・外部承認・性能改善・継続8 readの成立は記録しない。次はCLB-1の限定接続であり、CLB-2／3・CFP-0・CPR-C／CG0／CG3の保留は維持する。
+
+レビュー修正前のsourceにLB033〜036を追加して4件の失敗を確認し、修正後に36件のruntime回帰を実行する。再現ハーネスは12正常例・13証拠を保存候補へ出力してから、9件の記録回帰で再検証した場合だけ記録を保存する。source／実行Node／本節hashも束縛する。時刻境界は固定clock／fake timerで再現し、性能比較・native実測は行わない。
+
+```sh
+node scripts/check-cwc-lb0.mjs
+node scripts/check-cwc-lb0.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcLb0.test.ts src/test/utils/gradleOwnedCwcLb0Record.test.ts --maxWorkers=1
+```
