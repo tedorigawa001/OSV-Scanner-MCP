@@ -9573,3 +9573,57 @@ node scripts/check-cwc-lb2.mjs
 node scripts/check-cwc-lb2.mjs --check
 npx vitest run src/test/utils/gradleOwnedCwcLb2.test.ts src/test/utils/gradleOwnedCwcLb2Record.test.ts --maxWorkers=1
 ```
+
+
+### 9.130 CLB-3：共通条件・実時間・初期化からcleanupまでの比較
+
+CLB-2の既存SessionServer／Client・CwcCProviderを使う限定adapterを、実時間の4500 ms元期限で比較する。scalarはscalar取得＋full-reference binding、full-referenceは独立batch計画＋完全binding検査、bound-liveは同じbatch計画でready後の不変wire比較hash・固定identityの反復copy／一致確認だけを省く。CWCのreferenceOracleは全方式falseであり、旧CWC-Dのreference armとは異なる。認可・purpose・credential・source承認・取消し・pin・元期限・channel／owner署名・command／計画・内容検査は元の経路を実行する。
+
+比較groupごとに独立署名・pinでsource閉包と比較条件を承認し、実際のCLB-2／CLB-1承認とCWC source承認を束縛する。同じ承認viewを3 arm×3計測modeへ渡す。context manifestはmode非依存とし、条件digest・source／binding pin・contextの一致を記録検査で要求する。承認の配備・source読込／署名はcall前の固定準備で総時間から除き、各call内の承認鮮度確認は含める。
+
+元期限の起点をfixture構築前へ移し、後で再設定しない。1 MiB論理memory、既存1 MiBのprovider operation work・64 MiBのclient計画work上限、64 MiB累積wire、163840 bytes／operation、既存156978のcall初期化／work予約、1 business RPC/channelを共通に保つ。scalarとbatchのcommand数の違いは意図した変更である。初回実装では共通のcurrent入力hash等は省略しない。新Caseを隔離し、過去のCLB-2 source／記録を変更しない。
+
+総時間Tは計測器の準備開始直前から、構築、全RPCのhandshake、capture、client initial／seal・各providerの独立計画、全batch転送、全entryのbytes再構成・digest／source検証、共通監査、close・drain・private bytes／lookup／slot回収、計測器の停止・復元までの単調時計差である。構築前・後片付け後も元期限を適用し、結果が届いていてもcleanup完了が遅ければ失敗とする。全entry再構成の内部時刻もouter transfer境界へ照合する。比較用rowの組立・保存・統計計算はTの外であり、実サービスの経路とは区別する。
+
+quiet、件数のみcounts、内側時間も取るtimedを別々に実行する。countsはwrapper内の追加時計読取をしない。timedの同期費用はstackでinclusive／exclusiveを分け、exclusive＋other＝observer wallを要求する。handshakeのawait区間は含まれる観測値であり、同期費用やTへ加算しない。入口の独立計数と完了計数、実RPC／load件数、handshake順・連番・件数、非再入operationのinclusive上限を検証する。計測追加費用は同じroundのcounts−quiet、timed−counts、timed−quietのT差で残す。負の差はばらつきであり、差し引いた仮想高速値で採用しない。
+
+small・h0・single-largeの3 workload×reader／authority-broker、warm-up各1回＋実測各3 round、3 arm×3計測modeの216試行を順序回転して実行する。warm-upも保存し、実測の162試行から失敗込み完了率を計算する。失敗の最初の構造化理由を保持し、後でcleanup中に期限を迎えても別の拒否をtimeoutへ変更しない。各試行のtotalは失敗時も保存する。quiet成功中央値と、失敗を含むquiet試行中央値を別に残す。3回という小標本・同一hostの逐次比較であり、統計的有意差や継続負荷の保証は主張しない。
+
+採用gateは全計測modeの実測試行が完了し、全3 quiet roundでbound-liveが両対照より速く、quiet中央値もscalar／full-referenceの両方に5%以上優れること、同値性・現認可・元期限・予算・回収が成立することとする。成立してもcandidate-onlyであり、本番採用とはしない。一つでも条件を満たさないgroupはdefer、全条件成立を全体候補の条件とする。
+
+<!-- CLB3-TABLE-BEGIN -->
+| 条件 | role | scalar総時間 ms | full-reference ms | bound-live ms | 完了／試行（全計測mode） | 判断 |
+| --- | --- | ---: | ---: | ---: | --- | --- |
+| small | reader | 390.9 | 1054.0 | 1023.9 | 9/9 · 9/9 · 9/9 | defer |
+| small | authority-broker | 398.8 | 1053.0 | 1049.2 | 9/9 · 9/9 · 9/9 | defer |
+| h0 | reader | 1027.0 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| h0 | authority-broker | 1035.1 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| single-large | reader | 955.3 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| single-large | authority-broker | 981.8 | — | — | 9/9 · 0/9 · 0/9 | defer |
+<!-- CLB3-TABLE-END -->
+
+結果は全6条件deferで、本番採用を見送る。warm-up込み216試行の120件、実測162試行の90件が完了した。実測の方式別完了率はscalar 54/54（100%）、full-reference 18/54（33.3%）、bound-live 18/54（33.3%）。smallのquiet総時間中央値はscalar 390.9〜398.8 ms、full-reference 1053.0〜1054.0 ms、bound-live 1023.9〜1049.2 msであり、bound-liveはfull-referenceとの差が約0.4〜2.9%に留まり、scalarに対して約2.6倍遅い。h0／single-largeの両batch方式は実測全72試行がtransfer中にrequest_expiredとなった。scalarは同条件でも955.3〜1035.1 msで完了した。失敗は成功中央値へ混ぜず、失敗を含む試行中央値（約4500 ms）と停止理由をJSONへ残す。
+
+成功した条件のpaired T差（各groupの3 round中央値）は、counts−quietが9.3〜27.1 ms、timed−countsが-10.7〜20.5 ms、timed−quietが8.6〜40.0 msだった。期限停止したbatch条件の差は打切り時刻に制約されるため、計測費用の推定・速度改善の根拠には使わない。成功条件のconstructionは約5.8〜6.0 ms、cleanupは約0.3〜0.9 ms（方式内のquiet成功試行をまとめた中央値）であり、transferと区別して保存する。異なるworkloadの中央値をまとめた値で改善を判断しない。captureのprepareChallenge／receive、handshake、全entry再構成の時間は個々のrowで照合できる。
+
+表の時間はquiet成功試行のT中央値、完了／試行はscalar・full-reference・bound-liveの順でcounts／timedも含む実測値。全216 row、失敗理由、各phase、計測費用partition、handshake、計測mode間のpaired差、署名承認とsource hashは `docs/validation/gradle-cwc-lb3-2026-11-10.json` に保存する。
+
+レビュー修正では、成功・失敗の両方でmemory・call work／wire・provider work／wire・client workの6予算値を必須の非負整数として検査し、同じ上限を適用する。fixture構築前に失敗した場合も6値を明示的な0として保存し、欠落を0として補完しない。構築のinclusive時間はobserver全体ではなくconstruction区間を上限とする。再構成・setup・dispatchの各時間は対応する単調時計差に一致させ、全時間値で非有限・負値・null・欠落を拒否する。
+
+記録とmeasurementをv2へ改訂し、client-initial／client-seal／providerの開始・終了時刻、actor、連番、完了状態を有界なplanTimingへ保存する。clientは計画とowner処理を挟む区間、providerは既存plan-before／plan-afterのmarker間（認可gate・比較処理を含む）であり、純粋なplanner CPU時間ではない。従来planEvents=falseで0だったprovider.metrics.planMsを取得時間の証拠には使わない。開始・終了の採取はquietも含む全armの基準処理で、追加費用を総時間から差し引かない。未完了provider区間はcloseで打ち切りcomplete=falseとし、終了までの区間であって完了した計画の費用とはしない。
+
+planTimingの各区間で順序・actor・連番・非有限値・包含関係を検査し、各計画時間を区間長の合計へ一致させる。成功結果ではclient計画はsetup区間、provider計画は転送開始後から再構成開始までに限定し、全計画が完了していることと件数の閉包を要求し、区間の欠落・重複を拒否する。失敗結果でも部分区間・累積時間を保持・検査する。元期限、認可・取消し・完全性・予算は変更しない。v1の計測との速度改善比較は行わない。
+
+再測定の216試行では767区間を保存し、期限停止した96試行（warm-upを含む）に各1区間の未完了provider区間を残した。実測成功したbatch転送のprovider phase合計は642.2〜700.1 ms、失敗したbatch転送は未完了区間を含め3848.0〜3972.0 msだった。失敗区間の時間は作業完了やplanner CPUの証明には使わない。
+
+動的fs読込を含む承認rootをrunnerと共通化し、子承認のsource閉包が外側に収録されることも検査する。保存前検査の失敗時はpending測定を保持し、同じsource hash集合の場合だけ再検査へ再開できる。
+
+LB301〜316は共通条件・総時間境界・観測件数とpartition・matrix閉包・非有限／負値・失敗分母・構築／cleanupの元期限・承認失効・transport期限到達・実時間比較を検証する。LBR301〜311はsource／署名・試行の欠落／重複・過小／過大時間・共通の件数欠落・handshakeの重複・plan／wire差・完了率／採用改変を拒否する。LB312〜314は修正前の失敗を確認し、LB315／316で区間閉包・部分失敗・上限境界を追加検証する。LBR309〜311では失敗行の予算超過・必須値欠落と、件数・exclusive・partitionを維持した構築時間過大計上、再構成／計画時間の不正値・合計の整合した改変も拒否する。
+
+実証範囲は同一processの署名付きSessionServer／Client、synthetic peer identity、1 RPC/channel、fixture sourceからのfresh private snapshotである。外部storage・独立承認service・native隔離・RSS・同一channelの複数RPC・継続8 read・本番bundleでの採用を証明しない。CLB-2で確認したauthority／use／ACKの制御経路を変更しないが、今回その全体の性能は測らない。全CLB条件・CWC-FP・CPR-C／CG0／CG3の保留を維持する。
+
+```sh
+node scripts/check-cwc-lb3.mjs
+node scripts/check-cwc-lb3.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcLb3.test.ts src/test/utils/gradleOwnedCwcLb3Record.test.ts --maxWorkers=1
+```

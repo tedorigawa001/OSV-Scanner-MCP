@@ -3209,8 +3209,13 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、CLB-1接続後のsou
 - [x] CLB-0のレビュー2件を修正。TypedArrayの実slot・brandと信頼するコピー処理を使い、Bufferのcopy差し替え・SAB／metadata偽装をコピー前に拒否。receiveの共通再入guardを受付済み判定より先に適用。LB033〜036の修正前失敗を確認し、両modeのcallback／alias流出・危険入力の追加copy・外側の発行／公開0と回収を検証。LBR09と保存記録を更新。
 - [x] CLB-1：既存CwcCProvider／ReadScope・CWC root／fact／実ledgerへbindingをopt-in接続（§9.128）。追加署名profileと参照閉包を必須にし、ready後のbound-liveだけ追加wire比較hash・固定identityのcopy／projection一致を省略。認可・purpose・取消し・元期限・署名・command／独立計画・source内容検証は維持。正規の内部frameと外部再入を区別し、既存1 MiB・構造work内の共存を検査。28回帰・7記録検査、正常12例・拒否30例を追加。レビュー修正としてsource返却値の正規化中とowner／codecの直接時計callbackにも再入guardを適用し、両modeで内側例外を捕捉しても返信・公開が0となることを確認。
 - [x] CLB-2：既存SessionServer／Clientの実handshake・challengeへbindingを接続し、全batch転送・全entry再構成・fresh scope／snapshot／root、取消し・close・応答紛失・元期限・transport最終検証前後の寿命・早期B回収／後着拒否を確認（§9.129）。元の署名付きrefused／unknownと、再構成sourceから実AuthorityOwner・durable provider use／正しいACKへの対照も検証。固定clock・同一process・1 business RPC/channelの限定adapterで、元のscalar source取得の省略、外部storage／native隔離・本番採用は未成立。14回帰・8記録検査、正常6転送・26証拠を保存。レビュー修正として複数commitの区分を保持し、実採用済み更新snapshotを全転送・再構成。実予約履歴・入力サイズ・試行前／捕捉後／drain後の残高を対応付け、両modeで非負値への消費減額・整合するcopy／履歴改変・試行間resetを拒否。
-- [ ] CLB-3：同じ新profile・source承認・live／予算条件でscalar／full-reference／bound-liveを実時間比較。初期化・capture・cleanup・計測追加費用・失敗を含む完了率から採用判断。性能改善・全36条件・CWC-FP・CPR-C／CG0／CG3等の保留を維持。
+- [x] CLB-3：共通の独立source／binding承認・認可・元期限・1 MiB共存・既存work／wire予算でscalar／full-reference／bound-liveを実時間比較（§9.130）。構築前からcleanup・drain・observer復元後までの総時間、全entry再構成、handshake／capture、quiet／counts／timed、失敗を含む完了率を保存。動的fs読込rootの収録漏れを修正し、16回帰・11記録検査と216試行を再実行。全6条件defer・本番採用見送り。
+- [ ] 次は共通batch経路の大きい費用を絞り込む。smallでもbound-liveはscalarより約2.6倍遅く、追加wire／identity検査の省略だけでは不足した。h0／single-largeの4.5秒期限内完了を新たな出口にし、停止までの作業量と毎batchの計画／実call検査を調査する。期限・認可・完全性・予算を緩和せず、期限停止時刻の差を改善量にしない。性能改善・全36条件・CWC-FP・CPR-C／CG0／CG3等の保留を維持。
 
 §9.127レビュー修正：CLB-0の`dispatch`で、期限内に届いた結果が最終検証で拒否された場合まで後着（`late`／`late-reject`）として記録していたため、call終了後に届いた結果だけを後着と数えるよう分離。LB028に回帰を追加（修正前の失敗を確認）。
 
 §9.128レビュー修正：CLB-1で`gradleOwnedCwcC.ts`・`gradleOwnedCwcCProvider.ts`を変更したことで、CWC-A／B／C／D／DP／Sites／Gateの7記録の照合が失敗していた。A／B／Cを再実行、D／DP／Sites／Gateを実時計で再測定し、各表・範囲を更新（判定は不変）。Sitesの分類規則に`#checkGate`を追加し、gate.validationからotherへの7444回の誤分類を解消。
+
+§9.130 CLB-3実時間比較：warm-up込み216試行中120件、実測162試行中90件完了。scalarは54/54、full-reference／bound-liveは各18/54で、大きい2条件の両batch方式は全72件request_expired。smallのquiet総時間はscalar 390.9〜398.8 ms、full-reference 1053.0〜1054.0 ms、bound-live 1023.9〜1049.2 ms。成功条件のtimed−quiet中央値は8.6〜40.0 msで、期限停止条件の差は計測費用推定に使わない。同一process・1 RPC/channelの限定実証であり、外部storage・native隔離・継続8 readの成立は未確認。
+
+§9.130レビュー修正：失敗試行を含め6予算値の必須・非負整数・上限を検査し、構築inclusiveを実際の構築phaseへ制限。再構成／setup／dispatchを対応時刻差へ、client-initial／seal・providerの計画時間を開始／終了区間の合計と包含関係へ照合する。v2記録に改訂し、providerは純粋なplanner CPUではなく既存phase marker間の時間を保存。LB312〜314の修正前失敗を確認し、LB315／316・LBR309〜311を追加。16回帰・11記録検査と216試行の再実行後も全6条件deferを維持。767区間中、未完了provider区間96件を保持し、失敗を成功・完了作業へ読み替えない。

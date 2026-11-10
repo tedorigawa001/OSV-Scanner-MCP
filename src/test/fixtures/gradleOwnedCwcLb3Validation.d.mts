@@ -1,0 +1,10 @@
+export const LB3_CONDITIONS:Readonly<{schema:string;deadlineMs:number;memory:number;work:number;providerWork:number;wire:number;variant:'combined';businessCallsPerChannel:number;referenceOracle:boolean;planEvents:boolean;timingEvidence:string;minimumImprovementPercent:number;measuredRounds:number}>;
+export const LB3_ARMS:readonly ['scalar','full-reference','bound-live'];
+export const LB3_OBSERVATIONS:readonly ['quiet','counts','timed'];
+export const LB3_APPROVAL_ROOTS:string[];
+export const LB3_WORKLOADS:{id:string;sizes:number[]}[];
+export function validateLb3Trace(trace:any,row:any):void;
+export function validateLb3Row(row:any):any;
+export function summarizeLb3(rows:any[],rounds:number,workloads:string[],clock:string):any;
+export function validateLb3Measurement(m:any,sources:Record<string,string>):any;
+export function lb3Table(m:any):string;
