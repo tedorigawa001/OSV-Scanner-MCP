@@ -9525,3 +9525,51 @@ npx vitest run src/test/utils/gradleOwnedCwcLb1.test.ts src/test/utils/gradleOwn
 ```
 
 CLB-0レビュー修正：`dispatch`は、元期限内に届いた結果が最終検証（`#finish`）で拒否された場合も、外側の`catch`で「既にcallが終わっていた」と判定し、`metrics.late`と`late-reject`を記録していた。最終検証の失敗は`#finish`内で失効・callerへのrejectまで完了しているため、後着とは別の経路である。work自体の完了／拒否を先に受け取り、call終了後に届いた場合だけを後着として数え、最終検証の失敗は後着へ数えないよう分離した。LB028に、期限内のresolve後にcredentialを取り消すと`permission_denied`で拒否され、`late`が0、`late-*`イベントがなく、回収と隔離枠の解放が完了することを追加し、修正前に失敗することを確認した。テスト件数は36件のまま。
+
+### 9.129 CLB-2：実SessionServer・全batch転送・transport最終検証への接続
+
+2026-11-10。既存CWCで用いる`gradleOwnedCprBSession.ts`の実SessionServer／SessionClientへ、追加のtransport側adapterを接続する。実Ed25519 handshake・challenge・channel・owner署名、元のbusiness dispatch・最終inspect・返信検証・channel署名と、clientの最終検証をそのまま実行する。SessionServerや本番SessionRuntimeの実装は変更しない。固定clock・同一processの協調fixtureであり、native IPC／独立UID・本番登録の成立とは扱わない。
+
+#### 9.129.1 登録・独立承認・限定したchannel方針
+
+CLB-2専用のpolicyとoperator署名・独立pinを要求し、実adapter・factory・既存SessionServerを含む参照source閉包とCLB-1のconnected承認を対応付ける。自己digestの更新だけ、別sourceのconnected capability、peerからのflagで接続を有効化しない。providerへ渡すportは、実SessionServerが発行したAuthenticatedSessionCallの実wire・peer・provider・API・元期限と照合した後にだけ作る。
+
+今回のadapterは**1 authenticated channelあたりbusiness RPCを1件**に限定する。全batch・exact retryは新しいchannel／call／bindingを使い、既存のsequenceを再基準化したり、過去のchallengeを新しいcallへ流用したりしない。client boot quota・同一requestの予算・provider rowのK/D・attempt・spentと4500 msの親期限は引き継ぐ。同じoperationに対する再試行でも初期化消費を返さない。操作は64件・call記録128件・未終了処理1件以内、active providerの論理共存は既存1 MiB以内に限定する。複数RPCを同一channelへ収容する一般adapterやEndpoint全sessionのRSSの証明は今回の範囲外である。
+
+#### 9.129.2 実call・transport最終検証と私有bytesの寿命
+
+実transportが交換した4 handshake frameとchallenge対を捕捉し、元の署名validatorで確認してCLB controllerへ渡す。provider実行中のlive検査では、実AuthenticatedSessionCallのinspectと、既存serverのgate／permission、CLBの現在purpose・両credential・追加承認・元期限を確認する。CLB-1の省略は私有Bの追加比較hash・固定identityの再copy／projection一致だけであり、実session側の検査を省略しない。
+
+providerが返った時点ではCLB dispatchを完了させない。実SessionServerが最終inspect・返信owner検証・channel署名を終え、実際のreply packetをadapterでも独立検証した後にだけ保留を解く。その後CLB側の完全な最終検査・公開・Bのzero／lookup除去を行い、clientへ返す。通常のscope.closeやproviderのfinallyではsession所有Bを回収しない。実callのtransport側処理が終わった後は、同じchannelの生存・server gate／permission・元期限・実返信署名を確認し、既に終了したAuthenticatedSessionCallを再利用しない。
+
+adapterが持つtransport frame／challenge／packetの専用copyはCLB捕捉後にzeroして参照を外す。実call照合用の別wire copyもprovider復帰、取消し・close・失効、drain時にzeroして外す。これらはSessionServer／transportが元々所有する入力とは別であり、元transportの入力を上書きしない。CLB私有Bを外部callbackや非同期継続へ直接返さない。
+
+取消し・close・watchdogでは未完了providerを待たずcontrolをterminalにし、lookup除去・private reader数0でB回収を先行する。未終了処理のslot／scratch・追加予約は実continuationのdrainまで残す。後着continuationはcontrol／generationで拒否し、旧B取得・成功公開・use／ACKを行わない。実作業のdrainを確認してから次のchannelを受け付け、応答の拒否だけで作業枠を返さない。
+
+#### 9.129.3 全batch・fresh snapshot・outcome・use／ACK
+
+descriptorとinventoryを実sessionで取得し、client-initial／sealの実CWC root／factから全commandを作る。各batchでproviderはfresh ReadScope／私有snapshotと新root／factを作り、inventory全体・requested／unrequested entry・独立計画・返信内容を確認する。全batchを転送した後に全entryの長さ／digestとinventoryの完全性を検査する。default reader、H0／大entry brokerを両modeで確認する。応答紛失では実署名replyを一度捨て、client自身のrecoveryで新channel／call／rootを作り、元のrowと消費を保持する。
+
+refused／unknownは既存SessionServerが実AuthenticatedSessionCallのeffect状態から署名したservice outcomeを確認する。source_integrityの拒否と、明示的なpossible-effect故障のunknownを別に保存する。binding失効だけで「副作用なし」や成功に変換しない。返信署名の改変は元のserver最終検証で拒否し、署名済みの内容改変もclientの内容検証・再構成で拒否する。transport packetの公開と、内容検証済みの文書公開を同一視しない。
+
+use／ACK対照は、実AuthorityOwner fixtureが取得した同一のSourceBundleを、このbinding付き全batch転送で再構成してAuthorityOwnerへ渡す。実verifierと保存層を通したauthority result、保存済みprovider use receiptの読取・署名／digest／delivery／result対応、consumerの全result bytes、偽receiptのACK拒否、正しいACKでreleased、Finish後の未解決件数0を確認する。RecordUse／ACK自体へread用bindingを流用しない。この対照では元のscalar source取得も先に実行し、original readの省略や外部storage serviceへの透過置換は主張しない。
+
+#### 9.129.4 回帰・検証記録と未成立の範囲
+
+LB201〜214の14テストは、両modeの正常6転送と26証拠を保存する。元のvalidator入口のcall-through照合、全batch／entry・fresh root、応答紛失、refused／unknown、取消し・close・保留中の元期限、provider復帰後の取消し／元期限、署名／内容改変、実use／ACK対照を含む。時間の長いH0／大entryはtest runnerの上限だけを180秒にする。protocol上の4500 ms期限は固定clockで維持し、実時間の性能成功や5秒内完了と読み替えない。
+
+LB2R01〜08は、source／署名承認、転送・entry・factの重複／欠落、transport最終検証前の早期回収、保留slotの早期解放・後着公開・消費改変、outcome昇格・receipt差替え・ACK偽装、未成立範囲への主張の昇格を拒否する。保存記録は実行した件数・source閉包・本節のdigestへ束縛し、計測費用・速度比較・本番採用は成立としない。既存のCLB-0／1および過去の性能sourceは変更しない。
+
+レビュー修正：ownedSourceのcommit／payload区分は元bundleの防御的copyで保持し、連結したdataの先頭1件だけをcommitとして再構築しない。LB214は実SourceOwnerのgenesis→advance→採用済みのrevision 2（2 commit・5 payload）を両modeで全batch転送し、全entryのbytes・順序・区分・digestと再構成bundleの一致を確認する。区分欠落・payloadへの移動も保存記録で拒否する。
+
+消費の証拠はoperationのrequestDigestへ束縛し、各試行のconstructor前、捕捉後、実continuationのdrain後の4 counterと、実入力のinner／outer／challengeの長さ、実Lb0Budget.reserveへcall-throughした受理済み予約履歴を保存する。既存ticket・認可・時計・予約量は変更しない。履歴は32件以内で、コピー済みの数値だけを返す。constructor 4096・call受付8192・binding開始4096の初期化と、実inner bytesのwork、inner＋outer bytesのwire、slotのattemptを各予約で独立再計算する。capture後にbindingを開始しない故障は、その段階までの予約だけを必須にする。
+
+再試行前のcounterは前試行の固定drain snapshotと一致させ、予約の順序を継続する。後から取得するbudget／control／bindingの診断copyは当該operationの最新残高へ照合し、過去の試行snapshotを最新値で上書きしない。LB203で初期化16384→32768と実入力に一致するwork／wireの累積を確認する。LB2R07／08は両modeで、非負値への0化・1減額、全copyとsnapshot・予約増分まで整合させた改変、試行間のcounter reset、履歴欠落を拒否する。上限を超えないことだけを消費保持の証拠にしない。
+
+次はCLB-3の共通条件によるscalar／full-reference／bound-live比較である。同一channelの複数RPC、外部storage／独立承認service・native隔離・継続8 read・本番採用・全CLB条件、CFP-0・CPR-C／CG0／CG3は引き続き保留する。
+
+```sh
+node scripts/check-cwc-lb2.mjs
+node scripts/check-cwc-lb2.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcLb2.test.ts src/test/utils/gradleOwnedCwcLb2Record.test.ts --maxWorkers=1
+```
