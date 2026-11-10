@@ -3157,7 +3157,7 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 
 §9.120 2回目のレビュー修正：CWC-C05・C23が通常の`npm test`で実時間の4500 ms期限に依存していたため固定clockへ変更。記録runner（`CWC_C_EVIDENCE_PATH`）と`OSV_REALTIME_PROCESS=1`のときだけ実clockにし、記録は各sampleの`clock: real`を必須とする。
 
-§9.121 CWC-D実測：384転送（warm-up 96、測定288＝primary216＋旧BP bridge72）が全て4500 ms以内に完了。quiet総時間中央値はscalar 24.9〜62.5 ms、composed 48.0〜503.9 ms（2回目のレビュー修正後の再測定）。composedはscalarの1.8〜8.6倍、旧BP bridgeの2.5〜4.9倍。全12 workload／roleで採用をdeferし、CPR-Cの見送りを維持した。観測あり／なしの差とpaired差・計画許容額はrawと同じ検証記録に保存し、負の観測差も除去しない。referenceからの短縮をscalar優位へ読み替えない。
+§9.121 CWC-D実測：384転送（warm-up 96、測定288＝primary216＋旧BP bridge72）が全て4500 ms以内に完了。quiet総時間中央値はscalar 27.4〜72.5 ms、composed 52.7〜547.6 ms（CLB-1接続後のsourceで再測定）。composedはscalarの1.9〜8.5倍、旧BP bridgeの2.5〜4.7倍。全12 workload／roleで採用をdeferし、CPR-Cの見送りを維持した。観測あり／なしの差とpaired差・計画許容額はrawと同じ検証記録に保存し、負の観測差も除去しない。referenceからの短縮をscalar優位へ読み替えない。
 
 §9.121レビュー修正：時間内訳をtimestamp差へ照合し、initial＋seal／provider計画をsetup／転送前半の実測区間に制限した。duration・timestamp・trace時間の非有限値・負値を拒否するCWD12〜15を追加（修正前の失敗を確認）。384転送を再実行し全て期限内に完了、全12条件の採用見送りを維持。差分指標の負値は保持し、CPR-C／本番採用の保留を解除しない。
 
@@ -3170,7 +3170,7 @@ process回帰はvitestの別projectで単独実行する。GC／compaction、`Re
 
 費用の最大categoryは全12条件でcanonical-hash。categoryは計測器管理費用が親exclusive／otherへ入る観測値であり、純粋CPUや削減可能額ではない。native／実storage・RSS・本番採用・継続8 read・CG0／CG3の保留を維持する。
 
-CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュー修正後の再測定）：root-fact 5.9〜102.1、copy 3.7〜76.0、gate 3.0〜73.4、canonical-hash 26.5〜470.8、診断getter 0.013〜0.106。計測追加費用のpaired差は4.7〜81.9 ms、診断省略のpaired差は-68.0〜30.5 msと変動し、速度改善を確立しない。元の認可・取消し・元期限・完全性確認は維持した。
+CWC-DP計測値（各条件3 roundの中央値範囲、ms、CLB-1接続後のsourceで再測定）：root-fact 6.1〜86.3、copy 4.0〜65.7、gate 3.6〜68.5、canonical-hash 28.7〜413.5、診断getter 0.022〜0.094。計測追加費用のpaired差は4.0〜87.1 ms、診断省略のpaired差は-20.5〜10.1 msと変動し、速度改善を確立しない。元の認可・取消し・元期限・完全性確認は維持した。
 
 §9.122レビュー修正：非再入の診断getterとBuffer操作のinclusive合計をobserver wall以内に制限し、件数・exclusive・partitionを維持した過大計上6件と境界値をCDP13／14で検証。修正前の失敗を確認し、240転送の実時間比較を再実行。全転送が期限内に完了し、全12条件deferを維持した。
 
@@ -3184,7 +3184,7 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュ�
 位置別計測ではprivate/contextの2 hash呼出し数が各126〜1316回／転送で一致した。純粋CPU費用や全面的なcaller解析ではなく、10 frameと列挙したexport入口に限定する。既存CWC-DPの採用見送りを維持する。本番・実storage・隔離・RSS・継続8 read・CPR-C／CG0／CG3の保留は維持する。
 
 §9.123レビュー修正：CST09／10の修正前の失敗を確認し、直近祖先＋呼出しごとの分類tagで共通helperの吸収を解消。constructor/preflightの実行位置とclass内の相対行でowner行を拘束した。CST11でcurrentコピー数とowner検査数、CST12でgate配下の分類境界を検証。12テスト・144転送の実時間比較を再実行し、全転送が期限内に完了した。旧分類値は置き換え、cache未実装・本番採用保留を維持する。
-修正後の各条件中央値の範囲（ms、計測負荷を含む観測値、2回目のレビュー修正後の再測定）：private-context.rehash 3.4〜38.0、current.hash 3.5〜38.3、current.input 15.8〜192.7、command.validation 10.3〜195.5、content.validation 2.0〜8.3、gate.validation 68.8〜1176.1。祖先による分類漏れを修正した値であり、過去の分類値と性能改善として比較しない。
+修正後の各条件中央値の範囲（ms、計測負荷を含む観測値、CLB-1接続後のsourceで再測定）：private-context.rehash 3.7〜38.6、current.hash 3.6〜39.3、current.input 16.5〜194.4、command.validation 11.2〜195.0、content.validation 2.0〜8.6、gate.validation 68.1〜1185.0。祖先による分類漏れを修正した値であり、過去の分類値と性能改善として比較しない。
 
 §9.123 2回目のレビュー修正：位置計測の負担（1回4.21〜4.86 µs）が呼出し数に比例してgroupへ入るため、較正値と推定計測負担を記録し、9.123.1に表と解釈を追加（gate.validationはexclusiveの45〜50%、private-context.rehashは14〜17%が推定負担。推定は実測増加の44〜50%しか説明しない下限）。記録をインデントなし・class証跡1回保持にして37 MB→約19 MB。
 
@@ -3212,3 +3212,5 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュ�
 - [ ] CLB-3：同じ新profile・source承認・live／予算条件でscalar／full-reference／bound-liveを実時間比較。初期化・capture・cleanup・計測追加費用・失敗を含む完了率から採用判断。性能改善・全36条件・CWC-FP・CPR-C／CG0／CG3等の保留を維持。
 
 §9.127レビュー修正：CLB-0の`dispatch`で、期限内に届いた結果が最終検証で拒否された場合まで後着（`late`／`late-reject`）として記録していたため、call終了後に届いた結果だけを後着と数えるよう分離。LB028に回帰を追加（修正前の失敗を確認）。
+
+§9.128レビュー修正：CLB-1で`gradleOwnedCwcC.ts`・`gradleOwnedCwcCProvider.ts`を変更したことで、CWC-A／B／C／D／DP／Sites／Gateの7記録の照合が失敗していた。A／B／Cを再実行、D／DP／Sites／Gateを実時計で再測定し、各表・範囲を更新（判定は不変）。Sitesの分類規則に`#checkGate`を追加し、gate.validationからotherへの7444回の誤分類を解消。

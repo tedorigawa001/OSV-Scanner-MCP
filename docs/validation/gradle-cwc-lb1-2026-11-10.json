@@ -3,7 +3,7 @@
   "date": "2026-11-10",
   "document": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
   "heading": "### 9.128 CLB-1：既存provider／ReadScope・CWC root／factへの限定接続",
-  "sectionDigest": "b11b40bcccb1c5f9aef078366c4087d03a030b2787785d1a4a2a67333e2735fa",
+  "sectionDigest": "dba0494ff18dfbc2e10261ea792e7abeb201b81abe5c2e93e50f79e65f6bb40d",
   "sourceBindings": {
     "src/test/utils/gradleOwnedCwcLb1.test.ts": "93ac4c6cf353b1863c2d697efbdcc489e7f813019580e8466a4db5ae8c639e73",
     "src/test/fixtures/gradleOwnedCwcLb1Fixture.ts": "e454e140b5fc5bc71aa9e5aaea617f95219eb032f19e3893a8e2728f12bc9ca4",
@@ -8028,7 +8028,7 @@
       }
     ],
     "sourceApproval": {
-      "pin": "7db6e7476cf3550eac512f9663ed6eeead815ced897bbc19e037f6ab91a2b670",
+      "pin": "28b862cde21d0d4fd7f837b3cbed61d5d0972ed696e4e5ebc8ecb26315ceaaeb",
       "envelope": {
         "manifest": {
           "schema": "cwc-lb1.approval.v1",
@@ -8114,12 +8114,12 @@
             "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
           }
         },
-        "signature": "t8z1fea1MXqXsYr8HOeY4A/xTqvqiUGKs0lvFcp5XwE9686fUjWuXcJVuIcwJmcjMJcBPrKNqFmKh7eowSUiCw=="
+        "signature": "5C6dAH6zz5QkPRdc39JJiwryPxtZ3JzngYRU3j58bQ3r11KHzvefrSqLbo+cvjqwvmuACcPt8vTD9qUOoXwwAw=="
       },
       "registry": {
         "schema": "cwc-lb1.registry.v1",
         "manifestDigest": "af6fd87d12c814d925883684e9ee080098b04033071edcc8afca2b25b9fb3def",
-        "operatorSpki": "MCowBQYDK2VwAyEA4QwS4VG4g6R4lFoxKzLrBtS/+3H066aUha954wOvIWs="
+        "operatorSpki": "MCowBQYDK2VwAyEA/DG1ScDUwAG+Hyh1nuR61sOvM37Iepxp8fpGhe8kzOY="
       }
     }
   }
