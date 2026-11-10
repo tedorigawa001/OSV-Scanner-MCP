@@ -6,7 +6,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.132 CLB-VF：私有requestの検証事実とlive検査の分離（設計）",
-    "sectionSha256": "7381a15e22278fff77046de892e812781065298974cc603a2b0a310792b68fb8"
+    "sectionSha256": "d345e7929411301e4724aaae3857a1137862c99a3b16832bf6ee4e31e5d05122"
   },
   "sourceBindings": {
     "src/test/fixtures/gradleOwnedCwcLb0.ts": "85ee886a123be1ad848d23214ac047590d8a987727a303c502c5da19144cc3e8",

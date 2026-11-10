@@ -9817,7 +9817,7 @@ timeout／cancel／close／検査失敗ではawait・外部callbackより先にc
 
 追加metadataの候補上限は4096 Bで、既存binding 8192 B枠の一部とする。projection・claim／guard・membership・generation・diagnostic scratchを含めた総上限を両mode共通のlayoutで証明し、入場前にsub-reservationを取る。4096 Bの空きがあると仮定したり、同じ8192 Bを既存用途と二重に割り当てない。合わなければcopy／decode前にcodec_budget_exceededで拒否し、profileの出口は未成立とする。JS object上限は構造予算でありRSS上限の保証ではない。
 
-fact初期化・copy・hash・guardのworkは既存初期化／構造work予約へ明記し、容量不足時は実行前に拒否する。上限を増やさず、失敗したcapture／sealの消費とclaimを保持する。旧maxChecks＝4096は暗号検証数ではなく論理gate試行上限として両modeで維持し、cryptoを省いて無限回呼べるようにしない。byte解放と消費済みinitialization／work／wire／attemptの返還を分離する。
+fact初期化・copy・hash・guardのworkは既存初期化／構造work予約へ明記し、容量不足時は実行前に拒否する。上限を増やさず、失敗したcapture／sealの消費とclaimを保持する。現行の`maxChecks`＝4096は`#inspect`の完全検証（署名検証を含む）回数の上限である。fact-liveでは完全検証が減るため、この数え方のままでは上限が効かなくなる。新profileではready前／ready後／最終の完全検証とfact検査をすべて論理gate試行として数え、同じ4096を両modeの上限とする。cryptoを省いた分だけ試行を増やせるようにはしない。byte解放と消費済みinitialization／work／wire／attemptの返還を分離する。
 
 #### 9.132.10 拒否理由・実装箇所
 
