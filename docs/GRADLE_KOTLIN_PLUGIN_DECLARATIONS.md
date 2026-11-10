@@ -9936,3 +9936,62 @@ node scripts/check-cwc-vf-design.mjs
 node scripts/check-cwc-vf-design.mjs --check
 npx vitest run src/test/utils/gradleOwnedCwcVerificationFactsDesign.test.ts --maxWorkers=1
 ```
+
+### 9.133 VF-0：検証事実・認可revision・同期公開のstandalone fixture
+
+§9.132の最初の工程をtest専用の独立fixtureへ実装した。既存CLB-0〜3P、実SessionServer、provider／ReadScope、CWC root／fact、MCP／本番readerは変更しない。新profileの追加承認、私有storage、診断call／association・owner／scope・generation、verified-unbound→ready→checking→terminal、claim・再入拒否、既存予算と認可revisionのfenceを対象にする。実sessionへの登録capabilityは発行しない。
+
+署名入力は既存のCLB-0 assemblyで生成し、そのsessionを閉じてからVF-0へ渡す。VF-0自身が独立source pinを検証し、registry／identity／expectationをprivateにparse・freezeする。callerの投影identityはregistryと完全一致を要求する。通常Buffer・実backing store・packet descriptorを検査し、SAB／Proxy／getter／copy差し替えを追加copy前に拒否する。4入力の専用copyはprivate capture method内で完成させ、外部callbackを跨ぐcapture closureにBを残さない。返却commandは独立copyである。
+
+初回はprivate transcriptの実検証、prepareのchallenge検証、receive／beginの完全検証、ready直前の完全検証を実行する。ready前は静的事実を利用しない。ready後のfact-liveだけが同じstorage実参照・epoch、call／owner／scope・generation、private registry／codec／command／K/Dへの束縛を照合して静的再検証を省く。full-verifyは同じ状態機械・authority fenceで毎回完全検証する。別call／scope・clone token・actual-sessionと偽るassociation・再capture／再sealは拒否する。
+
+#### 9.133.1 静的検証／live検査の対応表と観測
+
+実装した閉じた対応表は`gradleOwnedCwcVf0Map.ts`の19行である。下位validatorのpredicate群は同じ既存関数を呼んで検証し、固定predicateを独自の簡略判定へ置換しない。捕捉時permissionと、各回の現在permission／purposeは区別する。
+
+| ID | 元の検査とVF-0での対応 |
+|---|---|
+| VFS01 | validateSessionTranscript：私有copyした4 handshake frameの署名・schema・nonce／session／transcript・principal対応。初回完全検証のみで、省略しない |
+| VFS02 | validateChallengeExchange：署名・schema・challenge／sequence／API／origin／TTL・捕捉時registryの対応。ready後だけfactの対象 |
+| VFS03 | validateChannelFrame：outer認証・innerDigest・direction／API／lineage・捕捉時permission。ready後だけfactの対象 |
+| VFS04 | verifyOwnerValue：owner署名・identity／key・domain／API・body schema。ready後だけfactの対象 |
+| VFS05 | #inspectのprivate identity／command peer・lineage・K/D対応。ready後だけfactの対象。実row接続はVF-1以降 |
+| VFL01〜08 | #liveのtime-entry→current／approval→両credential→purpose→permissions／委任／lineage→budget→time-exitを各回実行 |
+| VFL09 | #inspect入口の#timeを各論理検査で実行 |
+| VFL10 | prepare／receive／beginの元のoperation-post時計を独立した3 nodeとして保持 |
+| VFL11 | VF-0外側operationのpost時計。初期化を包む追加guardのclockも両mode共通。constructorの旧callback接続全体を実証したとはしない |
+| VFC01〜03 | privateな最終clock、authority／generation fence、同期commit。VF-0共通の追加検査であり、旧liveノードの削減として計上しない |
+
+phaseはprepare／receive／begin／ready／check／copy-pre／copy-post／finishの8区分。実関数の入口・finally件数を固定長counterへ記録し、challenge／channel／ownerの実export入口を別のcall-through spyでも観測する。spyを含むruntime testのsourceも独立承認の閉包へ含め、任意のbyte observerを許可する公開helperは作らない。各phaseの静的／live件数、正規内部の4重check、copy前後、最終完全検証を独立の期待操作列へ照合する。固定bodyからの内部呼出しを使い、外部からframeやbyte callbackを受け付けない。provider／ReadScopeの実frame接続・全call graphの同値性はVF-1の対象である。
+
+12正常例はcapture→seal→check→command copy→内部4 check→scope.close→finishの同じ操作列を実行する。各例の論理検査は11回、live検査14回。full-verifyは完全検証11回、fact-liveは初回・ready・finishの完全検証4回とready後fact検査7回になる。独立の実validator入口はchallengeが完全検証数＋prepareの1回、channel／ownerが完全検証数に一致する。commandの期待値と返却値のdigest、元の署名／schema検証、全live nodeと最終完全検証の維持を確認する。負例は主にreader／descriptorで実行し、role／API横断の全負例matrixは実行していない。これは件数の限定対照であり、速度改善の測定ではない。
+
+#### 9.133.2 認可revision・最後のcallback・寿命
+
+認可は1個のVf0Authorityが私有・不変の現在viewとowner epoch／revision／revocation epochを所有する。両credentialとそれぞれのkey epoch、permission／委任／lineage、purpose、3種pin、callback policyの初期viewをboolean・正のkey epoch・permission・purpose・pin・callback policyのstrict schemaで検査してから保持し、変更はstrictな固定mutation entryだけから行い、同値復元でもepochを戻さない。偽owner／clockやopaque／alias／remote-unnotifiedという未対応構成は事前拒否する。外部authorityを自動的にこのownerへ接続したと認定する仕組みではない。
+
+最初のcallback前からstampを保持し、各callback後にcontrol／scope generationとauthority stampを確認する。最後のclock callbackで権限を失効させ、control generationが変わらないままでも公開0となることを両modeで検証した。復元しても同じcallは救済しない。final clockは固定のowned clock cellを直接読み、foreign callbackの返した時刻だけで最終期限を判断しない。最後のcallbackが古い時刻を返しつつowned clockを元期限へ進める負例も拒否する。membership／private readの入場前にもowned clockを直接確認するため、検査入口のclock callbackが期限到達を隠しても新しいB読取0となる。foreign nowの件数は登録したcallback入口を数え、追加のprivate clock cell読取の総数とは区別する。
+
+copy・正規化の後にprivate final clock→revision／generation fence→固定同期commitを実行する。callback数は実入口counterのfence前後差から算出し、成功例は差0となる。commitに任意bodyを指定する公開APIはなく、固定したseal／返値／finishだけが使う。任意のprocess侵害・信頼するintrinsicsやmoduleの書換えに対する耐性は主張しない。
+
+sealの同期commit完了をprivateなsealed状態へ記録し、finishはcaptureとsealの両方を必須にする。scope.closeはbound capabilityを失効させるがseal完了記録は残し、callのfinish完全検証まではBを保持する。timeout／cancel／失敗ではlookup除去とgeneration更新を先行し、readerがなければB・command cacheの参照を外してzeroする。reader保持中は早期zero・新read・公開を拒否し、readerのfinallyで回収する。scratchは外側operationまたは未完了dispatchが残る間は保持し、実drain後にslotを解放する。実Promiseの後着resolve／rejectはprivate controlを照合し、bytes読取・公開0で拒否する。pending tokenの完了も1回だけに制限する。
+
+#### 9.133.3 予算・検証記録・範囲
+
+Lb0Budgetの実共有balanceとticketを使う。session 131072 B、constructor scratch 131072 B、call 98304 B、binding 8192 Bを既存1 MiB・work 156978の内側へ予約する。callはwire 57344＋frame workspace 32768＋command 8192 B。bindingはfact 4096＋projection 2048＋guard 512＋counter診断1536 Bに分ける。固定長counterは1344 Bで診断枠以内、最大64件のlifecycle eventはsession metadata 8192 Bの内側へ収める。registry・authority permission view・identity／lineageにも既存copy上限を適用する。構造予算の証拠であり、JS heap・GC・RSSの上限測定ではない。
+
+captureの先払いはcall＋bindingの106496 B、初期化12288、最大input work／wire各57344を一括予約し、その内側のlayoutを重複利用しない。失敗したcaptureのclaim／work／attemptは保持する。各論理検査もworkを消費し、policyの最大4096と、より小さく設定したfixture上限を両modeで適用する。上限拒否の実行対照は4回制限を使い、4096超の設定を拒否する。全4096回をfull-verifyで反復した性能試験は行っていない。
+
+35件のruntime fixture回帰、12件の記録検査を用意した。記録は正常12例を含む224証拠（成功16・拒否208）と、認可／clock／ownership／初期authority viewの事前拒否38例を閉包として保持する。実validator件数、phase移動・件数欠落、署名／source／policy、最終fence、予算・command digest・reader回収順序、実証scopeの改変を記録検査で拒否する。承認manifest・公開registry／pinを証拠へ含め、current sourceのhash・署名・policy対応も再検査する。
+
+2026-11-11レビュー修正：VF034は両modeで未capture・capture済み・未sealでscope.close済みのfinishを拒否し、追加B読取・binding発行・応答公開が0であることを確認する。seal後のscope.close→finishは既存VF020と正常12例で引き続き成功する。VF035は両modeで文字列`"false"`のpeer／server、必須field欠落、epoch・pin・permission・purpose・callback policyの不正型／値、未知fieldの13種をauthority保持・予算確保前に拒否する。正規のboolean falseはconstructorで受理し、capture時のcredential検査で拒否する。VFR12は両modeのprepare／receive／begin／ready／finishのchallenge検査をcheckへ移し、entry／finally総件数と実validator件数を変えなくても拒否する。challengeもchannel／owner／identity-commandと同様、phase別の期待件数へ照合する。修正前はseal前のfinish成功、文字列credentialの受理、challenge phase移動の記録受理を各回帰で再現した。
+
+CVF01〜48に対する実行範囲は記録のcoverageへ明記した。各対応はstandalone-subsetまたはdeferredで、completeDesignConditionExecutedは全てfalse。とくに実AuthenticatedSessionCall／channel／operation row、provider／ReadScope／CWC root／fact、source取得・全entry再構成、実transport最終検証・outcome／use／ACKは未接続であり、VF-0の診断associationを実session証拠へ昇格しない。複数authorityのrevision vector、実clock／native隔離、288試行の比較、速度改善・本番採用も未成立。既存VF設計の22整合性テストや35 fixture回帰を、CVF48条件全体の完了と数えない。
+
+次はVF-1で、対応表の各検査を既存provider／ReadScopeの実入口へ結び、単一fixtureの内部呼出しと実CWC frameを区別して検証する。VF-2の実session読取前guard、VF-3の元期限・観測費用込み比較、本番・実storage・隔離・8 read・CFP-0／CPR-C／CG0／CG3の保留を維持する。
+
+```sh
+node scripts/check-cwc-vf0.mjs
+node scripts/check-cwc-vf0.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcVf0.test.ts src/test/utils/gradleOwnedCwcVf0Record.test.ts --maxWorkers=1
+```

@@ -3236,9 +3236,15 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、CLB-1接続後のsou
 - [x] 独立した追加承認profile、private storage／call／association／owner／scope／generationへの実参照束縛、初回capture・ready時seal、5つの非公開helperと状態機械を具体化。
 - [x] 静的predicateとlive入力を分類し、実SessionServer／Lb2Linkの一般inspect・現在性検査、初回・transport最終・CLB finishの完全検証を維持。各旧liveノードを位置・回数とも1対1で引き継ぎ、実purpose返値の照合と実sessionの読取前lifecycle guardを共通採用前提にする。再入・失効・改変・流用・後着・早期回収の拒否を定義。
 - [x] 既存call 98304 B・binding 8192 Bの内側で、metadata候補4096 Bとcommand／frame workspaceの重複保持・二重予約を禁止。予算不足は実行前拒否。CVF01〜48・VF-0〜3とscalar／batch×2 modeの同条件比較を定義。48件は未実行の回帰条件で、今回の確認は設計整合性だけ。
-- [ ] 次はVF-0のstrict fixture contractとpredicate／live call-site対応表を実装し、私有storage・association・fact状態・generation・claim／再入・予算の拒否を限定実証する。新profileでの静的検証省略・速度改善・本番採用は未成立。
+- [x] VF-0のstrict standalone fixtureとpredicate／live呼出し対応表を実装し、私有storage・診断association・fact状態・generation・claim／再入・予算・認可revision／同期公開を限定実証した（§9.133）。実sessionの検証省略・速度改善・本番採用は未成立。
 - [ ] 続いてVF-1のprovider／ReadScope接続、VF-2の実session／fresh snapshot、VF-3の元期限・計測追加費用込み比較へ進む。実storage・native隔離・5process・8 read・CFP-0／CPR-C／CG0／CG3の保留を維持。
 
 §9.132レビュー修正：最後のclock／権限callback後は、信頼するAuthorityOwnerのowner epoch・単調な認可revision vectorをprivateに再確認する。全mutation経路の通知・alias除去を採用前提にし、control generationが不変でも変更を拒否。最終clock intrinsic・revision／generation確認から公開までforeign callbackのない同期fenceを共通化し、未通知closure／async authorityはunsupported。CVF22／24を拡充。
 
-対照armの期限停止と候補の適格性を分離し、候補B/fact-liveの全9測定完了、対照3 armのcomplete／正当な元期限打切り／invalid分類、保守的な時間下限による5%判定と独立機能oracleを要求する。対照の打切りだけでは一律deferにせず、成功中央値・正確な倍率へ流用しない。CVF46／47とVFD01〜08の設計例・検証記録を更新。runtime・48回帰・288試行の実行は引き続き未着手。
+対照armの期限停止と候補の適格性を分離し、候補B/fact-liveの全9測定完了、対照3 armのcomplete／正当な元期限打切り／invalid分類、保守的な時間下限による5%判定と独立機能oracleを要求する。対照の打切りだけでは一律deferにせず、成功中央値・正確な倍率へ流用しない。CVF46／47とVFD01〜08の設計例・検証記録を更新。§9.132設計時点ではruntime・48回帰・288試行は未着手。VF-0の限定実行範囲は次節へ記載し、48条件全体と288試行は引き続き未実行。
+
+### VF-0：strict standalone fixture・認可revision・同期公開（§9.133）
+- [x] 追加source承認と私有storage／fact／call／owner／scope／generation束縛、固定内部呼出しと外部再入、epoch復元拒否、最終callback後のprivate clock／認可fence、lookup除去・reader drain・scratch／slotの回収を実装。既存CLB・実SessionServer・MCP／本番readerは変更しない。
+- [x] 19行の静的／live／追加fence対応表、phase別entry／finallyと実validator spyの照合を追加。正常12例の完全検証はfull-verify 11回／fact-live 4回＋fact 7回、liveは両modeで14回。35 fixture回帰・224証拠（成功16・拒否208）・事前拒否38例・12記録検査を保存。
+- [x] レビュー3件を修正。seal同期commit前のfinishと追加B読取・公開、初期authority viewの不正型／値、総件数を保つchallenge検査のphase移動を両modeで拒否。seal後のscope.close→finishは維持（VF034／035・VFR12、2026-11-11再検証）。
+- [ ] 次はVF-1の既存provider／ReadScope・CWC root／fact／ledger接続と、実入口のlive node 1対1／予算共存を実証する。VF-0は固定clock・1 authority・standaloneのみ。実call／operation row・fresh source／全entry・transport／outcome／use／ACK、複数authority vector・native隔離・288試行の比較・速度改善・本番採用は未成立。
