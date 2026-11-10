@@ -9986,7 +9986,7 @@ captureの先払いはcall＋bindingの106496 B、初期化12288、最大input w
 
 2026-11-11レビュー修正：VF034は両modeで未capture・capture済み・未sealでscope.close済みのfinishを拒否し、追加B読取・binding発行・応答公開が0であることを確認する。seal後のscope.close→finishは既存VF020と正常12例で引き続き成功する。VF035は両modeで文字列`"false"`のpeer／server、必須field欠落、epoch・pin・permission・purpose・callback policyの不正型／値、未知fieldの13種をauthority保持・予算確保前に拒否する。正規のboolean falseはconstructorで受理し、capture時のcredential検査で拒否する。VFR12は両modeのprepare／receive／begin／ready／finishのchallenge検査をcheckへ移し、entry／finally総件数と実validator件数を変えなくても拒否する。challengeもchannel／owner／identity-commandと同様、phase別の期待件数へ照合する。修正前はseal前のfinish成功、文字列credentialの受理、challenge phase移動の記録受理を各回帰で再現した。
 
-CVF01〜48に対する実行範囲は記録のcoverageへ明記した。各対応はstandalone-subsetまたはdeferredで、completeDesignConditionExecutedは全てfalse。とくに実AuthenticatedSessionCall／channel／operation row、provider／ReadScope／CWC root／fact、source取得・全entry再構成、実transport最終検証・outcome／use／ACKは未接続であり、VF-0の診断associationを実session証拠へ昇格しない。複数authorityのrevision vector、実clock／native隔離、288試行の比較、速度改善・本番採用も未成立。既存VF設計の22整合性テストや35 fixture回帰を、CVF48条件全体の完了と数えない。
+CVF01〜48に対する実行範囲は記録のcoverageへ明記した。各対応はstandalone-subsetまたはdeferredで、completeDesignConditionExecutedは全てfalse。とくに実AuthenticatedSessionCall／channel／operation row、provider／ReadScope／CWC root／fact、source取得・全entry再構成、実transport最終検証・outcome／use／ACKは未接続であり、VF-0の診断associationを実session証拠へ昇格しない。複数authorityのrevision vector、実clock／native隔離、288試行の比較、速度改善・本番採用も未成立。既存VF設計の9整合性テストや35 fixture回帰を、CVF48条件全体の完了と数えない。
 
 次はVF-1で、対応表の各検査を既存provider／ReadScopeの実入口へ結び、単一fixtureの内部呼出しと実CWC frameを区別して検証する。VF-2の実session読取前guard、VF-3の元期限・観測費用込み比較、本番・実storage・隔離・8 read・CFP-0／CPR-C／CG0／CG3の保留を維持する。
 
