@@ -9678,7 +9678,7 @@ actor別に全contextのexclusiveを合計し、同actorのpack inclusiveと一�
 
 全18 workload／role／armのcategory中央値で最大はwire-verificationだった。小規模batchで公開inspectAuthenticatedCallは1153回、challenge検証1165回、channel検証1169回、owner検証1181回、binding.providerGateは868回、providerのpackは2回だった。binding fullChecksは1157回で、実call検査API単独のexclusiveだけを大きな費用とみなすのは不適切である。canonical/hashのうち154.0〜178.7 msはwire検証の直下へ帰属した（既にcanonical/hashの列に含まれ、wire列へ再加算しない）。live gateの残余にも未観測の私有検査処理が入り、純粋な認可計算とは呼ばない。
 
-計測追加費用のpaired T差は小規模batchでcounts−quietが32.3〜83.8 ms、timed−countsが−29.7〜40.7 ms、timed−quietが22.5〜73.0 ms（各role／armの実測3 roundの中央値範囲）だった。負の差もそのまま保存し、観測費用の安定した単一推定や最適化効果は確立しない。h0 scalarの失敗を含む対と、h0／single-largeの両batchの打切り前の費用は、完了作業の計測追加費用・完了転送の費用へ換算しない。
+計測追加費用のpaired T差は小規模batchでcounts−quietが16.0〜83.8 ms（batch方式だけでは32.3〜83.8 ms、scalarは16.0〜31.1 ms）、timed−countsが−29.7〜40.7 ms、timed−quietが22.5〜73.0 ms（各role／armの実測3 roundの中央値範囲）だった。負の差もそのまま保存し、観測費用の安定した単一推定や最適化効果は確立しない。h0 scalarの失敗を含む対と、h0／single-largeの両batchの打切り前の費用は、完了作業の計測追加費用・完了転送の費用へ換算しない。
 
 次の削減候補は、私有wireへ束縛された不変のchallenge／channel／owner検証事実と、毎回必要な現在性・purpose・credential・取消し・元期限・scope／row／generationの検査を分ける契約である。今回の結果だけで検証を省略せず、初回／transport最終検査・予算・再入／流用／後着拒否の契約を具体化してから別に実証する。planner本体やcontext自己hashだけの小さい費用を先に削って採用成立とはしない。
 
