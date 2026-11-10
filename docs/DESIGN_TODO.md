@@ -3207,6 +3207,8 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、2回目のレビュ�
 - [x] レビュー2件を反映。currentPurpose＝issuedPurpose＝binding／projectionの照合を必須化。timeoutはdispatchのfinallyと分離して失効・lookup除去を先行し、private reader排出後のB回収・byte予約解放、後着結果の拒否と未完了dispatchの隔離枠を定義。CLB15／19／20・設計整合性テスト・記録を更新。runtime実装・36回帰の実行は未実施。
 - [x] CLB-0の共通fixture contractを実装。私有wire／identity、claim／Draft・scope束縛、予算・再入拒否、purpose照合、timeoutのlookup除去・reader排出・B回収・後着拒否を36回帰で検証。2 mode×2 role×3 APIの12正常例と13証拠を保存し、9件の記録検査を追加。両modeとも完全検証を維持。
 - [x] CLB-0のレビュー2件を修正。TypedArrayの実slot・brandと信頼するコピー処理を使い、Bufferのcopy差し替え・SAB／metadata偽装をコピー前に拒否。receiveの共通再入guardを受付済み判定より先に適用。LB033〜036の修正前失敗を確認し、両modeのcallback／alias流出・危険入力の追加copy・外側の発行／公開0と回収を検証。LBR09と保存記録を更新。
-- [ ] CLB-1：実P／S・CWC root／fact・ReadScopeへの限定接続。CLB-0は署名済み入力を使う隔離fixtureで、実SessionServer接続・source IO・hash／clone省略・実storage・native隔離・性能改善は未成立。全36条件の成立とは扱わず、CLB-2／3・CWC-FP・CPR-C／CG0／CG3等の保留を維持。
+- [x] CLB-1：既存CwcCProvider／ReadScope・CWC root／fact／実ledgerへbindingをopt-in接続（§9.128）。追加署名profileと参照閉包を必須にし、ready後のbound-liveだけ追加wire比較hash・固定identityのcopy／projection一致を省略。認可・purpose・取消し・元期限・署名・command／独立計画・source内容検証は維持。正規の内部frameと外部再入を区別し、既存1 MiB・構造work内の共存を検査。28回帰・7記録検査、正常12例・拒否30例を追加。レビュー修正としてsource返却値の正規化中とowner／codecの直接時計callbackにも再入guardを適用し、両modeで内側例外を捕捉しても返信・公開が0となることを確認。
+- [ ] CLB-2：実SessionServer・fresh snapshotへ接続し、正常・取消し・close・応答紛失・期限境界・transport最終検証・outcome／use／ACK・寿命を確認。CLB-1の起点は署名済み静的入力の固定clock fixtureと模擬sourceで、全batchの実session転送・全entry再構成、実storage・native隔離・本番採用は未成立。
+- [ ] CLB-3：同じ新profile・source承認・live／予算条件でscalar／full-reference／bound-liveを実時間比較。初期化・capture・cleanup・計測追加費用・失敗を含む完了率から採用判断。性能改善・全36条件・CWC-FP・CPR-C／CG0／CG3等の保留を維持。
 
 §9.127レビュー修正：CLB-0の`dispatch`で、期限内に届いた結果が最終検証で拒否された場合まで後着（`late`／`late-reject`）として記録していたため、call終了後に届いた結果だけを後着と数えるよう分離。LB028に回帰を追加（修正前の失敗を確認）。

@@ -1,11 +1,12 @@
 /** CWC-C: real-call/owned-snapshot connection; mock Saved/storage/live pin, unchanged signer/session. */
 import {type KeyObject} from 'node:crypto';
+import {CwcLb1Binding,type Lb0Call} from './gradleOwnedCwcLb0.js';
 import {inspectAuthenticatedCall,noteAuthenticatedNoEffect,type AuthenticatedSessionCall} from './gradleOwnedCprBSession.js';
 import {verifyOwnerValue} from './gradleOwnedCprBSigner.js';
 import {type CredentialRegistry} from './gradleOwnedCgpI2Owners.js';
 import {context,checkCommand,keys,same,type CprContext,type CprCommand} from './gradleOwnedCprASchema.js';
 import {pack} from './gradleOwnedCwcCPlanner.js';
-import {CwcCReadScope,CwcCWorkLedger,type CwcConnectedGrant,type CwcCApprovalRegistry,type CwcCCap} from './gradleOwnedCwcC.js';
+import {CwcCReadScope,CwcCWorkLedger,cwcCMemory,type CwcConnectedGrant,type CwcCApprovalRegistry,type CwcCCap} from './gradleOwnedCwcC.js';
 import {CPR_WORK} from './gradleOwnedCprAAdmission.js';
 import {result,owner} from './gradleOwnedCprAWire.js';
 import {sourceInventory,inventoryBytes,sourceBundleSchema,canonicalBase64,validateSourceCommand,sourceOperationKey,sourceResultSchema,type SourceBundle} from '../../utils/gradleOwnedSourceSchema.js';
@@ -21,23 +22,29 @@ export type ProviderOptions={codeApproval:CwcCApprovalRegistry;codecDiagnostics?
  expected:{metadataDigest:string;inventoryDigest:string;inventorySha256:string;inventoryBytes:number;sourceBytes:number;entries:number};
  planEvents?:boolean;mutateResult?:(body:any)=>void;hook?:(phase:CprBPhase)=>void|Promise<void>;work?:number;slots?:number};
 type Row={k:string;d:string;deadline:number;attempts:number;spent:{wire:number;work:number};state:'admitted'|'verified'|'complete'|'refused'|'unknown'|'retired'};
+export type CwcCProviderRow=Row;
+const providerInstances=new WeakSet<object>();
 
 export class CwcCProvider {
  readonly #o:ProviderOptions;readonly #c:CprContext;readonly #rows=new Map<string,Row>();#busy=false;#requests=0;
+ #activeBinding?:CwcLb1Binding;
  readonly codecPlans:any[]=[];
  readonly metrics={calls:0,pre:0,post:0,loads:0,plans:0,planMs:0,validatedBytes:0,parts:0,replies:0};
  readonly plans:{requestDigest:string;batchOrdinal:number;call:number;inventoryDigest:string;inputDigest:string;planDigest:string;commands:number;work:number;ms:number}[]=[];
- constructor(options:ProviderOptions){need(['reference','max-first','single-check','combined'].includes(options.variant)&&['S-scoped','B-independent'].includes(options.mode)&&Number.isSafeInteger(options.work??1048576)&&(options.work??1048576)>0&&(options.work??1048576)<=67108864&&Number.isSafeInteger(options.slots??512)&&(options.slots??512)>0&&(options.slots??512)<=512,'configuration_invalid');options.codeApproval.assertCurrent();this.#c=context(options.context);this.#o={...options,context:this.#c,expected:structuredClone(options.expected)};}
+ constructor(options:ProviderOptions){need(['reference','max-first','single-check','combined'].includes(options.variant)&&['S-scoped','B-independent'].includes(options.mode)&&Number.isSafeInteger(options.work??1048576)&&(options.work??1048576)>0&&(options.work??1048576)<=67108864&&Number.isSafeInteger(options.slots??512)&&(options.slots??512)>0&&(options.slots??512)<=512,'configuration_invalid');options.codeApproval.assertCurrent();this.#c=context(options.context);this.#o={...options,context:this.#c,expected:structuredClone(options.expected)};providerInstances.add(this);}
+ static ownsBinding(value:object,binding:CwcLb1Binding){return providerInstances.has(value)&&(value as CwcCProvider).#busy&&(value as CwcCProvider).#activeBinding===binding;}
+ static ownsRow(value:object,binding:CwcLb1Binding,row:Row){return this.ownsBinding(value,binding)&&(value as CwcCProvider).#rows.get(row.k)===row;}
  get rows(){return structuredClone([...this.#rows.values()]);}
- async execute(wire:Buffer,call:AuthenticatedSessionCall){
-  const initial=inspectAuthenticatedCall(call,wire);need(!this.#busy,'busy');this.#busy=true;let row:Row|undefined;
+ async execute(wire:Buffer,call:AuthenticatedSessionCall|Lb0Call,binding?:CwcLb1Binding){
+  if(this.#busy){this.#activeBinding?.rejectReentry(this);need(false,'busy');}this.#busy=true;let row:Row|undefined;
   let metadata:SourceBundle['metadata']|undefined;let scope:CwcCReadScope|undefined,sourceCap:CwcCCap|undefined,grant:CwcConnectedGrant|undefined,permit:CwcCCap|undefined,connection:ReturnType<typeof pack>['connection']|undefined;
   const o=this.#o,c=this.#c;
-  const gate=()=>{o.current();const a=inspectAuthenticatedCall(call,wire);need(same(a.peer,c.peer)&&same(a.server,c.provider),'peer_mismatch');need(o.now()<Math.min(o.deadline,a.deadline,row?.deadline??Infinity),'request_expired');};
-  const step=async(phase:CprBPhase)=>{gate();await o.hook?.(phase);gate();};
+  let initial:ReturnType<typeof inspectAuthenticatedCall>;
+  const gate=(frame?:unknown)=>{if(binding){binding.providerGate(this,frame);return;}o.current();const a=inspectAuthenticatedCall(call as AuthenticatedSessionCall,wire);need(same(a.peer,c.peer)&&same(a.server,c.provider),'peer_mismatch');need(o.now()<Math.min(o.deadline,a.deadline,row?.deadline??Infinity),'request_expired');};
+  const step=async(phase:CprBPhase)=>{gate();if(binding)await binding.phase(this,()=>o.hook?.(phase));else await o.hook?.(phase);gate();};
   const spend=(work:number,bytes=0)=>{gate();need(row&&row.spent.work+work<=(o.work??1048576)&&row.spent.wire+bytes<=163840,'operation_budget');row.spent.work+=work;row.spent.wire+=bytes;};
   try{
-   noteAuthenticatedNoEffect(call);gate();
+   if(binding){CwcLb1Binding.require(binding,call);this.#activeBinding=binding;initial=binding.start(this,c,o.current,o.now,o.deadline,wire);}else{initial=inspectAuthenticatedCall(call as AuthenticatedSessionCall,wire);noteAuthenticatedNoEffect(call as AuthenticatedSessionCall);}gate();
    const envelope=verifyOwnerValue(wire,o.registry,{role:c.peer.role,instanceId:c.peer.instanceId,direction:'request',domain:'aux',api:initial.api});
    const raw:any=(envelope.body as any).command;
    const batch=initial.api==='aux.ReadSourceRanges';
@@ -56,7 +63,7 @@ export class CwcCProvider {
    need(row.spent.work+CPR_WORK.total<=(o.work??1048576)&&row.spent.wire+81920<=163840,'operation_budget');
    need(old||this.#rows.size<(o.slots??512),'slot_budget');need(this.#requests<256,'session_budget');gate();
    row.deadline=Math.min(row.deadline,initial.deadline);row.attempts++;row.state='admitted';this.#rows.set(row.k,row);this.#requests++;this.metrics.calls++;
-   spend(0,wire.length);scope=new CwcCReadScope({registry:o.codeApproval,context:c,gate,now:o.now,deadline:row.deadline,call,wire,expected:o.expected});need(scope.memory.reserved<=(o.memory??1048576),'codec_budget_exceeded');if(batch)grant=scope.grant('provider',scope.reservePlan('provider',new CwcCWorkLedger(row.spent,o.work??1048576,gate)));await step('admission');await step('pre-before');this.metrics.pre++;scope.pre(o.live);await step('pre-after');
+   binding?.attachRow(row);if(binding)binding.reserve(cwcCMemory(c).reserved);spend(0,wire.length);scope=new CwcCReadScope({registry:o.codeApproval,context:c,gate,now:o.now,deadline:row.deadline,...(binding?{binding}:{call:call as AuthenticatedSessionCall,wire}),expected:o.expected});need(scope.memory.reserved<=(o.memory??1048576),'codec_budget_exceeded');if(batch)grant=scope.grant('provider',scope.reservePlan('provider',new CwcCWorkLedger(row.spent,o.work??1048576,gate)));await step('admission');await step('pre-before');this.metrics.pre++;scope.pre(o.live);await step('pre-after');
    await step('load-before');spend(CPR_WORK.source);this.metrics.loads++;
    sourceCap=scope.load(o.read);const summary=scope.summary(sourceCap);metadata=summary.metadata;
    const inventory={rows:summary.entries,size:summary.sourceBytes,digest:c.inventoryDigest},ib=summary.inventory!;
@@ -66,7 +73,7 @@ export class CwcCProvider {
    if(batch){
     await step('plan-before');this.metrics.plans++;
     const start=o.planEvents===false?0:performance.now();
-    const p=pack(c,inventory.rows,q.payload.plan.seed,q.payload.transferId,gate,undefined,{variant:o.variant,actor:'provider',witness:{call:this.metrics.calls,requestDigest:q.requestDigest,batchOrdinal:q.payload.plan.batchOrdinal}},{referenceOracle:o.referenceOracle,grant:grant!,...(()=>{const a=scope!.approval('provider');return {approval:a.approval,pin:a.pin};})(),now:o.now});connection=p.connection;
+    const p=pack(c,inventory.rows,q.payload.plan.seed,q.payload.transferId,gate,undefined,{variant:o.variant,actor:'provider',witness:{call:this.metrics.calls,requestDigest:q.requestDigest,batchOrdinal:q.payload.plan.batchOrdinal}},{referenceOracle:o.referenceOracle,grant:grant!,...(()=>{const a=scope!.approval('provider');return {approval:a.approval,pin:a.pin};})(),now:binding?()=>binding.providerExternal(this,o.now):o.now});connection=p.connection;
     const ms=o.planEvents===false?0:performance.now()-start;this.metrics.planMs+=ms;
     if(o.planEvents!==false)this.plans.push({requestDigest:q.requestDigest,batchOrdinal:q.payload.plan.batchOrdinal,call:this.metrics.calls,inventoryDigest:inventory.digest,inputDigest:digest(inventory.rows),planDigest:p.planDigest,commands:p.commands.length,work:p.workUnits+p.stats.arithmeticTrials,ms});
     need(p.workUnits+p.stats.arithmeticTrials<=CPR_WORK.plan,'planner_work_bound');
@@ -96,7 +103,7 @@ export class CwcCProvider {
    if(row&&this.#rows.get(row.k)===row&&['admitted','verified'].includes(row.state)){
     row.state=o.now()>=row.deadline?'retired':error instanceof CurrentControlError?'refused':'unknown';
    }throw error;
-  }finally{connection?.owner.close();connection?.codec.close();scope?.close();metadata=undefined;this.#busy=false;}
+  }finally{connection?.owner.close();connection?.codec.close();scope?.close();if(this.#activeBinding)this.#activeBinding.finishProvider(this);this.#activeBinding=undefined;metadata=undefined;this.#busy=false;}
  }
 }
 import {sign} from 'node:crypto';

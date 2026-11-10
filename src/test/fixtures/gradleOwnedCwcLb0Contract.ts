@@ -68,12 +68,12 @@ export class Lb0Approval{
 }
 
 export type Lb0Balance={work:number;initialization:number;wire:number;attempts:number};
-type MemoryTicket={remaining:number};
+type MemoryTicket=Readonly<{kind:'lb0-memory-reservation'}>;
 const budgets=new WeakSet<object>();
 /** Actual shared mutable balance, not a caller-provided prepaid flag. Initialization is separately labelled. */
 export class Lb0Budget{
  readonly #balance:Lb0Balance;readonly #memory:number;readonly #work:number;readonly #slots:number;
- #held=0;#active=0;#peak=0;#last={work:0,initialization:0,wire:0,attempts:0};readonly #tickets=new WeakSet<MemoryTicket>();
+ #held=0;#active=0;#peak=0;#last={work:0,initialization:0,wire:0,attempts:0};readonly #tickets=new WeakMap<MemoryTicket,{remaining:number;slotOpen:boolean}>();
  constructor(balance:Lb0Balance={work:0,initialization:0,wire:0,attempts:0},memory=1048576,work=156978,slots=4){
   need(balance&&typeof balance==='object'&&!types.isProxy(balance)&&Object.getPrototypeOf(balance)===Object.prototype,'codec_budget_exceeded');
   need(Number.isSafeInteger(memory)&&memory>=0&&memory<=LB0_POLICY.memory&&Number.isSafeInteger(work)&&work>=0&&work<=LB0_POLICY.work&&Number.isSafeInteger(slots)&&slots>0&&slots<=64,'codec_budget_exceeded');
@@ -87,10 +87,10 @@ export class Lb0Budget{
   this.check();for(const n of [bytes,initialization,requestBytes,wireBytes])need(Number.isSafeInteger(n)&&n>=0,'codec_budget_exceeded');
   need(this.#held+bytes<=this.#memory&&this.#balance.work+this.#balance.initialization+initialization+requestBytes<=this.#work&&this.#balance.wire+wireBytes<=163840&&(!slot||this.#active<this.#slots&&this.#balance.attempts<256),'codec_budget_exceeded');
   this.#held+=bytes;this.#peak=Math.max(this.#peak,this.#held);this.#balance.initialization+=initialization;this.#balance.work+=requestBytes;this.#balance.wire+=wireBytes;
-  if(slot){this.#active++;this.#balance.attempts++;}this.check();const t={remaining:bytes};this.#tickets.add(t);return t;
+  if(slot){this.#active++;this.#balance.attempts++;}this.check();const t=Object.freeze({kind:'lb0-memory-reservation' as const});this.#tickets.set(t,{remaining:bytes,slotOpen:slot});return t;
  }
- release(t:MemoryTicket,bytes=t.remaining){need(this.#tickets.has(t)&&Number.isSafeInteger(bytes)&&bytes>=0&&bytes<=t.remaining,'codec_budget_exceeded');t.remaining-=bytes;this.#held-=bytes;}
- endSlot(){need(this.#active>0,'codec_budget_exceeded');this.#active--;}
+ release(t:MemoryTicket,bytes?:number){const row=this.#tickets.get(t);need(row,'codec_budget_exceeded');const amount=bytes===undefined?row.remaining:bytes;need(Number.isSafeInteger(amount)&&amount>=0&&amount<=row.remaining&&amount<=this.#held,'codec_budget_exceeded');row.remaining-=amount;this.#held-=amount;}
+ endSlot(t:MemoryTicket){const row=this.#tickets.get(t);need(row?.slotOpen&&this.#active>0,'codec_budget_exceeded');row.slotOpen=false;this.#active--;}
  stats(){return {...this.#balance,heldBytes:this.#held,peakBytes:this.#peak,occupiedSlots:this.#active,memoryLimit:this.#memory,workLimit:this.#work};}
  static require(value:Lb0Budget){need(budgets.has(value),'codec_budget_exceeded');value.check();}
 }

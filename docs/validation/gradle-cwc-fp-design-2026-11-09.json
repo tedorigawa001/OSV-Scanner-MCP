@@ -9,7 +9,7 @@
   },
   "sourceBindings": {
     "src/test/fixtures/gradleOwnedCwcA.ts": "170e42a899e2fde350e9407f0cced17fd288094c2a65b841c499391cb5708ebe",
-    "src/test/fixtures/gradleOwnedCwcC.ts": "709dddc41c6d657789e531b2463e00f5c196adc0907e3528d88c4ca80d099e39",
+    "src/test/fixtures/gradleOwnedCwcC.ts": "de927c90433cd044eb8ec4ef08ae88adc7bc427dff73e591056faaa7f6a35e29",
     "src/test/fixtures/gradleOwnedCwcB.ts": "bf0e0839ebccede38a1a7db06a19a19041dac006caca4adcaef887a24764d270",
     "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",

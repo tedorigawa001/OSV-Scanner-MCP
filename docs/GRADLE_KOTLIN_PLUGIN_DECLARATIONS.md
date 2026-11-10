@@ -9478,4 +9478,48 @@ node scripts/check-cwc-lb0.mjs --check
 npx vitest run src/test/utils/gradleOwnedCwcLb0.test.ts src/test/utils/gradleOwnedCwcLb0Record.test.ts --maxWorkers=1
 ```
 
+### 9.128 CLB-1：既存provider／ReadScope・CWC root／factへの限定接続
+
+2026-11-10。CLB-0の私有wire／identityと状態機械を、既存のCwcCProvider・CwcCReadScope・CwcCWorkLedgerへopt-in接続した。既存のCwcConnectedGrant、CwcAContractの実root／fact、ClosedCwcBCodec、独立計画・promote／partsを実行する。別モデルのrootや返値のsuccess flagで代用しない。CLB-0 profile単独では接続や省略を有効化できず、独立operator署名・current pin・本実装／factoryの参照閉包を束縛したCLB-1追加承認を要する。
+
+#### 9.128.1 省略する処理と維持する処理
+
+両modeは同じ新profile・private capture・claim／Draft・scope登録・元期限・source承認・実予約を使う。readyまでは完全経路を通り、ready後のbound-liveだけが、同じ私有Bへの追加比較SHAと固定peer／provider identityの再copy・projection canonical一致を省略する。一般inspectへ別wireが提示された場合とsessionの最終検査は完全経路を維持する。署名・challenge・channel検査内のinner hash、owner署名・command schema／context／K/D・毎batchの独立計画・fresh source全体の内容検証は省略しない。CLB-0経路の既定動作も完全検証のままにする。
+
+各旧P／S検査は新しいlive検査を行い、current・両credential・purpose／現在permission／委任／lineage・追加承認とCWC source registry・時計・元期限・実rowの期限と消費下限を確認する。purposeはread以外のpermissionも持つprincipalでも、issuedPurpose＝binding／projectionと異なれば拒否する。元のcontext fingerprintやgrant／root／factのscope検査を維持し、固定identityを現在認可の証拠へ読み替えない。pinのlive取得は従来のpre／post境界を維持する。post検査を完了した後に未観測のpinだけを変更した履歴を、常時検出するという強化は主張しない。
+
+#### 9.128.2 内部呼出し・再入・寿命
+
+sessionが発行した私有binding portだけをproviderへ渡す。providerのbusy予約、sessionのclaim、固定bodyのscope登録を外部callbackより先に行い、同じcallからの二重port／再claimを拒否する。portは実provider・scope・call・generation・固定context・実rowのK/D・元期限へ束縛する。provider／scopeは実constructorの私有membership、rowは当該providerの実map・実行中bindingとの一致を必須にし、構造fakeやprototype偽装では登録できない。生B・identity実参照・frameをcurrent／now／permission／source／phase等の外部callbackへ渡さない。
+
+正規のS→Pとledger→Pにはmodule-private frameを明示的に伝え、frameのmembership・同じbinding・generation・checking状態を各境界で確認する。frameは現在認可の成功を表明せず、内部P／Sでも新しいlive検査を行う。G→Sやroot／factから戻った後の検査も残す。外部callbackからscope／providerへ再入した場合、内側例外を捕捉してもcallをterminalにし外側の公開を拒否する。source／pre-live callbackと非同期phase hookには別の外部callback区間を設け、内部frameの権限を継承させない。awaitをまたいでBのreaderやframeを保持しない。
+
+レビュー修正では、sourceのread復帰だけで外部区間を閉じず、返却値の長さ制限・schema検査・canonical正規化で私有のplain dataを得るまで保持する。commits／payloads／metadataのgetterからのscope再入もterminalとし、内側例外をgetterが捕捉して有効な値を返しても復活させない。CWC owner／codecへ渡す時計もproviderに束縛した外部callback区間を通す。G→Sの検査が完了した後にowner／codecが直接時計を呼ぶ場合も、scopeへの外部再入を正規の内部frameとして受理しない。同期外部callbackの正常復帰時にもcontrolの有効性を確認し、捕捉された再入拒否を外側へ伝播する。正規の内部P／S検査・時計の評価回数・元期限・内容検証は維持する。
+
+scope.closeはroot／codecのcleanup後にbindingと追加予約を閉じる。通常終了のsession最終検査まではBを保持する。dispatchConnectedは準備を含む未終了処理をslot／scratchへ計上し、readyが成立しなければ結果公開へ進まない。失効・timeout時のlookup除去・B回収と後着拒否はCLB-0のcontrol／generationへ接続する。scope／root／factの旧handleは再使用できない。新しいcallでの同一要求の再実行は同じ実rowのK/D・4500 msの元期限・attempt・spentを保持し、fresh sourceと新root／factを用いる。応答紛失・実transportのuse／ACK・recoveryはCLB-2へ残す。
+
+#### 9.128.3 論理予約の共存
+
+CLB-1の限定入力はregistry canonical上限57344、handshake frame各4096、identity各2048、lineage／pins各4096 bytes。constructorの一時領域131072をコピー前に追加予約し、constructor終了時に解放する。保持するsession予約131072、call予約98304、binding／context予約8192を持ち、binding予約と有界初期化消費は固定contextやadmissionのコピー前に確保する。CLB-0既定profileの393216予約や入力上限を縮めたとは扱わない。
+
+既存CWCのscope上界Mには計画用frame領域32768が含まれる。CLB-1ではsession所有call枠からこの領域を明示的に供給する。call枠98304は最大私有入力57344（challenge 2×16384＋inner 8192＋outer 16384）、control／copy scratch 8192、計画frame workspace 32768を同時に収容する。予約時にこの不等式を検査し、scopeはM−32768だけを追加予約する。session／scopeがそれぞれ同じframeを所有したと計上せず、当該bindingが閉じるまで借用領域を他callへ返さない。
+
+共存上界は131072＋98304＋8192＋M−32768。Mは既存cwcCMemoryから実contextごとに再計算し、実Lb0Budgetのheld／peakへ予約する。1 MiBに収まらない場合はsource IO／計画前に拒否する。既存CwcCWorkLedgerは実rowのwork残高へ計画156978を実行前に課金し、source65536＋finish1を含む222515の従来構造workを維持する。初期化の別カウンタはCLB-0と同じ156978以内で検査し、構造workやCPU時間と混同しない。失敗・再試行・cleanupで消費を返還しない。memory ticketの残量とslot所有はprivate WeakMapに保持し、field改変・clone・他reservationによる過剰解放やslot回収を拒否する。これは論理共存予約であり、JS heap／RSSやEndpoint全session合算の証明ではない。
+
+#### 9.128.4 回帰・保存記録・実証範囲
+
+LBC01〜28は、両mode×両role×3 APIの正常12例、実validator入口の件数照合、purpose／権限・委任・lineage・承認取消し、9つのprovider境界での元期限到達、requested／unrequested source改変、署名を更新した計画不一致、memory／work不足時のno-read、current／source／phaseからの再入・偽frame、終了後のscope／root失効、一般inspect・私有snapshot、返信内容検証、pin pre/post・environment／session停止、provider再入、H0／大entry、同一要求の新callによる再実行を確認する。保存する拒否証拠30例はpurpose・source改変2種・予算2種・再入3種・偽frame・保留providerのwatchdogに、source返却値の3 getterとowner／codecの直接時計callbackの再入を加え、両modeで実行したもの。LBC27／28は実ReadScopeと実owner／codecへcall-throughし、内側のsource_bindingを捕捉したこと、provider返信・session公開がともに0であることを確認する。時計の選択は公開methodとproviderから渡した時計のcall-throughで行い、stack文字列に依存しない。拒否応答後も未終了処理は予約を保持し、証拠取得ではその実終了をbounded microtaskで待ってから回収・消費保持を照合する。
+
+正常記録ではchannel／owner検証・live／purpose／credentialの件数を両mode間で一致させる。追加hashの省略数、identity copy／比較数、実root・全command fact／proof数、実rowの消費、予約の共存・解放を保存する。LBCR01〜07は、両mode共通の検査欠落、fact欠落、予約の過小計上・借用偽装・消費返還、拒否例の欠落・重複・no-read違反・再入後公開・source検証の消費不足、承認差替えと未成立scopeへの昇格を拒否する。追加拒否証拠では境界・getter／時計の種別・実再入件数・捕捉した拒否理由を必須とし、欠落・差替え・公開／返信件数の改変も拒否する。
+
+接続先のprovider／ReadScope・root／factは既存実装で、入力署名も実検証するが、起点は固定clockのCLB session fixtureと模擬Saved／source callbackである。既存SessionServerのreceive／reply／outcome／use／ACKへ接続した、全batchを実transport転送して全entryを再構成した、実storage・外部承認service・native隔離・本番採用が成立した、とは扱わない。H0／大entryでも今回の1 RPCで全計画を独立再現するが、全batch転送の実証ではない。CLB-2で実session／fresh snapshot・応答紛失・失効／寿命を確認し、CLB-3で初期化／cleanup込みのscalar比較を行う。性能比較は今回未実施で、過去のCWC-Gate／BPの時間差を削減額へ読み替えない。
+
+既定CLB-0の記録は変更後sourceで再実行し、完全検証条件を再確認する。設計整合性記録の参照source hashも更新するが、36条件／4段階のplannedは設計記録自身の範囲であり、実行証拠は各実装節を参照する。過去の性能記録は当時のsourceと測定値を保持し、今回のsourceで再計測したとは表示しない。
+
+```sh
+node scripts/check-cwc-lb1.mjs
+node scripts/check-cwc-lb1.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcLb1.test.ts src/test/utils/gradleOwnedCwcLb1Record.test.ts --maxWorkers=1
+```
+
 CLB-0レビュー修正：`dispatch`は、元期限内に届いた結果が最終検証（`#finish`）で拒否された場合も、外側の`catch`で「既にcallが終わっていた」と判定し、`metrics.late`と`late-reject`を記録していた。最終検証の失敗は`#finish`内で失効・callerへのrejectまで完了しているため、後着とは別の経路である。work自体の完了／拒否を先に受け取り、call終了後に届いた場合だけを後着として数え、最終検証の失敗は後着へ数えないよう分離した。LB028に、期限内のresolve後にcredentialを取り消すと`permission_denied`で拒否され、`late`が0、`late-*`イベントがなく、回収と隔離枠の解放が完了することを追加し、修正前に失敗することを確認した。テスト件数は36件のまま。
