@@ -9574,6 +9574,7 @@ node scripts/check-cwc-lb2.mjs --check
 npx vitest run src/test/utils/gradleOwnedCwcLb2.test.ts src/test/utils/gradleOwnedCwcLb2Record.test.ts --maxWorkers=1
 ```
 
+CLB-2レビュー修正：LB202（broker・H0・大entryの全batch転送）、LB213（authority・provider use・ACK）、LB214（進んだsnapshotの採用）は単独でもそれぞれ約64秒・42秒・12秒かかり、通常の`npm test`へ約140秒を加えていた。並行実行の負荷下ではLB213が60秒のtimeoutを超えて失敗し、LB202も上限180秒に対し約137秒に達した。この3件は記録runner（`CWC_LB2_EVIDENCE_PATH`）では常に実行し、通常のテストでは`OSV_CWC_HEAVY=1`を付けたときだけ実行する。実行時のtimeoutはLB202／LB213を300秒、LB214を180秒へ広げた。通常のテストにはLB201の代表例と拒否・寿命・再試行の回帰を残し、保存記録の検証（LB2R01〜08）は3件の証拠も含めて毎回行う。
 
 ### 9.130 CLB-3：共通条件・実時間・初期化からcleanupまでの比較
 

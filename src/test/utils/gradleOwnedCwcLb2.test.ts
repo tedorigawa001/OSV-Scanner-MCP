@@ -15,17 +15,21 @@ import {authorityOwnerFixture} from '../fixtures/gradleOwnedAuthorityOwnerFixtur
 const capture=(id:string,mode:string,f:ReturnType<typeof setup>,extra:any={})=>proofs.push({id,mode,calls:f.link.diagnostics,server:f.server.diagnostics,client:f.client.diagnostics,provider:{...f.provider.metrics},clientRows:f.clientRows,...extra});
 const deferred=()=>{let resolve!:()=>void;const promise=new Promise<void>(r=>resolve=r);return {promise,resolve};};
 const samples:any[]=[],proofs:any[]=[];
+// LB202/213/214 transfer every batch of H0/large workloads or drive the authority/source owners through real sessions.
+// They take 10-65 s alone and exceeded their timeouts under a parallel full run, so the default npm test skips them.
+// The evidence runner (CWC_LB2_EVIDENCE_PATH) always runs them; OSV_CWC_HEAVY=1 runs them locally.
+const heavy=it.runIf(process.env.CWC_LB2_EVIDENCE_PATH!==undefined||process.env.OSV_CWC_HEAVY==='1');
 afterAll(()=>{if(process.env.CWC_LB2_EVIDENCE_PATH)writeFileSync(process.env.CWC_LB2_EVIDENCE_PATH,JSON.stringify({schema:'cwc-lb2.samples.v1',samples,proofs}));});
 const setup=(bindingMode:typeof LB0_MODES[number],extra:Partial<Parameters<typeof cwcLb2Case>[1]>={})=>cwcLb2Case('B-independent',{bindingMode,approval:lb2ApprovalFixture().view,codeApproval:cwcCApprovalFixture().view,variant:'combined',planEvents:false,...extra});
 it('LB201: all batches traverse the actual SessionServer and reconstruct every entry before binding reclamation',async()=>{
  for(const mode of LB0_MODES){const f=setup(mode);try{const result=await f.transfer();expect(result.requests).toBeGreaterThan(1);expect(f.server.diagnostics.dispatches).toBe(result.requests+2);expect(f.link.unfinished).toBe(0);for(const r of f.link.diagnostics){expect(r.finalChecks).toBe(1);expect(r.bytesAtFinal).toBeGreaterThan(0);expect(r.control.bytesHeld).toBe(0);expect(r.control.metrics.publications).toBe(1);expect(r.events.indexOf('transport-final')).toBeLessThan(r.events.indexOf('binding-settled'));expect(r.budget.heldBytes).toBe(0);}samples.push({mode,role:'reader',workload:'default',approval:f.link.approvalRecord,inventory:sourceInventory(f.reconstructed!),metadata:f.reconstructed!.metadata,plans:structuredClone(f.provider.codecPlans),result,calls:f.link.diagnostics,server:f.server.diagnostics,client:f.client.diagnostics});}finally{f.close();}}
 },15000);
 
-it('LB202: broker, H0 and large-entry transfers retain all entry reconstruction and per-batch fresh roots',async()=>{
+heavy('LB202: broker, H0 and large-entry transfers retain all entry reconstruction and per-batch fresh roots',async()=>{
  for(const mode of LB0_MODES)for(const [workload,sizes]of Object.entries({h0:[3061,1250,20810,5057,949,635,2072,6745,881],large:[41456,1,1,1,1]})){
   const f=setup(mode,{role:'authority-broker',sizes});try{const result=await f.transfer();expect(f.provider.metrics.loads).toBe(result.requests+2);expect(f.provider.codecPlans).toHaveLength(result.requests);expect(new Set(f.provider.codecPlans.map(p=>p.grant.scopeId)).size).toBe(result.requests);expect(f.link.diagnostics.every(r=>r.control.bytesHeld===0&&r.budget.heldBytes===0)).toBe(true);samples.push({mode,workload,role:'authority-broker',approval:f.link.approvalRecord,inventory:sourceInventory(f.reconstructed!),metadata:f.reconstructed!.metadata,plans:structuredClone(f.provider.codecPlans),result,calls:f.link.diagnostics,server:f.server.diagnostics,client:f.client.diagnostics});}finally{f.close();}
  }
-},180000);
+},300000);
 
 it('LB203: loss after a signed successful reply retries with new channel/call/root and retained operation spending',async()=>{
  for(const mode of LB0_MODES){const f=setup(mode);try{const qs=await f.commands(),before=f.link.diagnostics.length;f.dropNextReplies(1);await f.run(qs[0]!);const rows=f.provider.rows.filter(r=>r.attempts===2);expect(rows).toHaveLength(1);expect(rows[0]!.deadline).toBe(4500);expect(rows[0]!.spent.work).toBe(2*222515);expect(f.client.diagnostics.recoveries).toBe(1);const calls=f.link.diagnostics.slice(before);expect(calls).toHaveLength(2);expect(calls.every(c=>c.control.metrics.publications===1&&c.budget.heldBytes===0)).toBe(true);expect(calls[1]!.budget.attempts).toBe(2);const [first,retry]=calls.map(c=>c.accounting);expect(first!.before).toEqual({initialization:0,work:0,wire:0,attempts:0});expect(first!.after).toEqual(retry!.before);expect(first!.captured.initialization).toBe(12288);expect(first!.after!.initialization).toBe(16384);expect(retry!.after).toEqual({initialization:32768,work:first!.input.inner+retry!.input.inner,wire:first!.input.inner+first!.input.outer+retry!.input.inner+retry!.input.outer,attempts:2});expect(retry!.after).toEqual({initialization:retry!.reservations!.at(-1)!.after.initialization,work:retry!.reservations!.at(-1)!.after.work,wire:retry!.reservations!.at(-1)!.after.wire,attempts:retry!.reservations!.at(-1)!.after.attempts});capture('response-lost',mode,f);}finally{f.close();}}
@@ -67,7 +71,7 @@ it('LB212: changed reply content remains rejected by reconstruction even with a 
  for(const mode of LB0_MODES){let enabled=false;const f=setup(mode,{mutateResult:body=>{if(enabled&&body.parts)body.parts[0].sha256=sha('wrong');}});try{const qs=await f.commands();enabled=true;await expect(f.run(qs[0]!)).rejects.toThrow();capture('invalid-content',mode,f);}finally{f.close();}}
 });
 
-it('LB213: a reconstructed bound source feeds the real authority, durable provider use, result delivery and exact ACK path',async()=>{
+heavy('LB213: a reconstructed bound source feeds the real authority, durable provider use, result delivery and exact ACK path',async()=>{
  for(const mode of LB0_MODES){const f=await authorityOwnerFixture(),links:ReturnType<typeof setup>[]=[];try{const p=await f.selected();let transferResult:any;
   f.hooks.source=async(bundle:any)=>{const link=setup(mode,{role:'authority-broker',ownedSource:{bundle,registry:f.r.f.registry,pins:f.r.f.pins(),binding:p.binding,lineage:f.f.lineage,snapshot:p.candidate.snapshot,checkpoint:p.prepared.checkpoint,pin:p.pin}});links.push(link);transferResult=await link.transfer('authority-bound');expect(link.reconstructed).toEqual(bundle);return link.reconstructed;};
   const prepared=await f.call('aux.PrepareAuthorityResult',p.payload,'reader',p.binding),complete=await f.call('aux.CompleteAuthorityResult',{pin:p.pin,gate:prepared.body.result.gate,result:prepared.body.result.result,witness:p.payload.witness,useId:p.payload.useId},'reader',p.binding),d=complete.body.result;
@@ -78,13 +82,13 @@ it('LB213: a reconstructed bound source feeds the real authority, durable provid
   const ack=await f.r.call('control.AcknowledgeDelivery',{pin:p.pin,delivery:d.delivery,useId:p.payload.useId,result:d.result,receipt:d.receipt,resultDigest:sha(result),effect:null},'reader',p.binding);expect(ack.body.result.phase).toBe('released');await f.call('aux.FinishAuthorityResult',{pin:p.pin,delivery:d.delivery,useId:p.payload.useId,result:d.result,receipt:d.receipt},'reader',p.binding);expect(f.authority.diagnostics.unresolved).toBe(0);
   proofs.push({id:'use-ack',mode,transferResult,calls:links[0]!.link.diagnostics,receipt:d.receipt,resultDigest:sha(result),expectedDigest:d.result.sha256,ack:ack.body.result.phase,unresolved:f.authority.diagnostics.unresolved,forgedAckRejected:true,useReceiptDigest:sha(receiptWire),useResultDigest:use.result.sha256});
  }finally{for(const l of links)l.close();await f.cleanup();}}
-},60000);
+},300000);
 
-it('LB214: an adopted advanced snapshot retains every commit and payload through all batches',async()=>{
+heavy('LB214: an adopted advanced snapshot retains every commit and payload through all batches',async()=>{
  for(const mode of LB0_MODES){const owner=await sourceOwnerFixture();let f:ReturnType<typeof setup>|undefined;try{
   await owner.genesis();const advanced=await owner.advance(),pin=(await owner.f.call('control.AcquireReadPin',{operationBinding:sha('operation')},'reader')).body.result.pin,binding=(await owner.f.call('aux.ReadContext',{purpose:'read',floor:null})).body.result.binding,bundle=parseSourceBundle(encodeSourceBundle(advanced.input));expect(bundle.commits).toHaveLength(2);
   f=setup(mode,{ownedSource:{bundle,registry:owner.f.f.registry,pins:owner.f.f.pins(),binding,lineage:owner.lineage,snapshot:advanced.candidate.snapshot,checkpoint:advanced.prepared.checkpoint,pin}});
   expect(f.source).toEqual(bundle);const result=await f.transfer('advanced');expect(f.reconstructed).toEqual(bundle);expect(result.requests).toBeGreaterThan(1);expect(f.provider.metrics.loads).toBe(result.requests+2);expect(f.link.diagnostics.every(c=>c.control.metrics.publications===1&&c.control.bytesHeld===0&&c.budget.heldBytes===0)).toBe(true);
   proofs.push({id:'advanced-snapshot',mode,calls:f.link.diagnostics,result,inventory:sourceInventory(f.reconstructed!),metadata:bundle.metadata,expected:{commits:bundle.commits.map(t=>sha(Buffer.from(t,'base64'))),payloads:bundle.payloads.map(t=>sha(Buffer.from(t,'base64')))},reconstructed:{commits:f.reconstructed!.commits.map(t=>sha(Buffer.from(t,'base64'))),payloads:f.reconstructed!.payloads.map(t=>sha(Buffer.from(t,'base64')))},adopted:binding.selected,checkpoint:advanced.prepared.checkpoint});
  }finally{f?.close();await owner.cleanup();}}
-},60000);
+},180000);

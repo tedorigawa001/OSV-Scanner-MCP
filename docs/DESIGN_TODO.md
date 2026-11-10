@@ -3219,3 +3219,5 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、CLB-1接続後のsou
 §9.130 CLB-3実時間比較：warm-up込み216試行中120件、実測162試行中90件完了。scalarは54/54、full-reference／bound-liveは各18/54で、大きい2条件の両batch方式は全72件request_expired。smallのquiet総時間はscalar 390.9〜398.8 ms、full-reference 1053.0〜1054.0 ms、bound-live 1023.9〜1049.2 ms。成功条件のtimed−quiet中央値は8.6〜40.0 msで、期限停止条件の差は計測費用推定に使わない。同一process・1 RPC/channelの限定実証であり、外部storage・native隔離・継続8 readの成立は未確認。
 
 §9.130レビュー修正：失敗試行を含め6予算値の必須・非負整数・上限を検査し、構築inclusiveを実際の構築phaseへ制限。再構成／setup／dispatchを対応時刻差へ、client-initial／seal・providerの計画時間を開始／終了区間の合計と包含関係へ照合する。v2記録に改訂し、providerは純粋なplanner CPUではなく既存phase marker間の時間を保存。LB312〜314の修正前失敗を確認し、LB315／316・LBR309〜311を追加。16回帰・11記録検査と216試行の再実行後も全6条件deferを維持。767区間中、未完了provider区間96件を保持し、失敗を成功・完了作業へ読み替えない。
+
+§9.129レビュー修正：CLB-2の重いLB202／LB213／LB214（単独で約64／42／12秒、並行負荷下でLB213が60秒timeout）を通常の`npm test`から外し、記録runnerと`OSV_CWC_HEAVY=1`のときだけ実行。通常のテストは約142秒→15秒。保存記録の検証は毎回実行。

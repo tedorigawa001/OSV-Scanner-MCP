@@ -3,9 +3,9 @@
   "date": "2026-11-10",
   "document": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
   "heading": "### 9.129 CLB-2：実SessionServer・全batch転送・transport最終検証への接続",
-  "sectionDigest": "73fc81f82ceda4cf8c8786e5f4645b64113e66761665dcdbb82be165e6daafb9",
+  "sectionDigest": "68ef1b347b702395329f65328d19518bb6de49713ca63c19b1cf7fd07cb11115",
   "sourceBindings": {
-    "src/test/utils/gradleOwnedCwcLb2.test.ts": "7fed9d23052077f7486c8983824316a1d395486200b4a4d6d8a424ffa7df1fc0",
+    "src/test/utils/gradleOwnedCwcLb2.test.ts": "1fb0e3b2fada62c05910a7bd4cb219b5e1cc26f234f45f09051c18610ef55630",
     "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
     "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
     "src/test/fixtures/gradleOwnedCwcLb0.ts": "85ee886a123be1ad848d23214ac047590d8a987727a303c502c5da19144cc3e8",
@@ -150,7 +150,7 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "3c27c43b0b168b2e978af1f7fcf23afbeb748faaf1b5cc626caefcfaeb3676a2",
+              "connectedPin": "0b9ad6bb35749ed88af172f693c96eab081c3e2831f04b00ee373d7f06fd1a50",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
@@ -235,14 +235,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "XGwXjpLupBaLAMXPmVn1cbuHwlMF4XoDw8WcWqMJXA/rh/jKPoe3/nGZZmH8sbfFneypAm2/4X+84tuUXttCCA=="
+            "signature": "wZChB+GOYsiySHR/VMlSrJtNB906LXLg4gElNk3VwNS4RgZLULc65IldrR0iyPmci3eA09p33L/YVejJduwBAQ=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "7ec5c97640a5a02704cbe877baf7c2452e367fe15a8b97be1cc88ad74f02616a",
-            "operatorSpki": "MCowBQYDK2VwAyEAgCbwOG1EoROju/ijCZgTQNKkYO7Sbtgh8R7E5LWYUok="
+            "manifestDigest": "263dc63607df5c435246845f3ccc2757eb58537d0d9bce184878b747aa10ced1",
+            "operatorSpki": "MCowBQYDK2VwAyEApFE6uTM821Ar32lp711RSxRswQvtwN40undm6aWdvRI="
           },
-          "pin": "cfffccaa31d1e99e26c0604a969ec1860c467d4870213d686d38a71e3311c19a",
+          "pin": "8d3ef6e42725883025b1de45a00ad26afbdfc239b8a4dc668364624704bdb1a5",
           "connected": {
             "envelope": {
               "manifest": {
@@ -332,14 +332,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "AZeLL6dHF+FpEWdUTyLD7O6ybrV82k6JrEldcSZxrdq9Dp7PUINN1LzkMPkGXQ0m4aB42utDwTIHclUVbUxnCg=="
+              "signature": "JW5lXVCyYjF7KOET/H5689EA4l02BgUGAnzfhPYziTg42jln5BRSrzUQTelVl8HFrv+4FSpFKxWkX2HFRSDMCA=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
               "manifestDigest": "d26305dba19de69ffeb10393555c5b9cd4b3464f391448dbfe474ada8695440d",
-              "operatorSpki": "MCowBQYDK2VwAyEA3GH8a+UAP/CToMMpsD5kdkAR2KahdPRJaYCyo+zBhzQ="
+              "operatorSpki": "MCowBQYDK2VwAyEAldaZdW959/lZF5/FqULO/R/mnEgoCMnF7sme1A88NX0="
             },
-            "pin": "3c27c43b0b168b2e978af1f7fcf23afbeb748faaf1b5cc626caefcfaeb3676a2"
+            "pin": "0b9ad6bb35749ed88af172f693c96eab081c3e2831f04b00ee373d7f06fd1a50"
           }
         },
         "inventory": {
@@ -546,17 +546,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 233.854333,
-            "planned": 397.82575,
-            "reconstructionStarted": 1352.714875,
-            "end": 1352.863041
+            "start": 275.510417,
+            "planned": 495.25425,
+            "reconstructionStarted": 1554.32525,
+            "end": 1554.515333
           },
-          "finalizationMs": 0.14816600000017388,
-          "wallMs": 1119.008708,
-          "setupAndClientPlanMs": 163.97141700000003,
-          "dispatchAndReconstructionMs": 955.0372910000001,
-          "clientPlanMs": 11.002707999999984,
-          "sealMs": 9.478707999999983,
+          "finalizationMs": 0.1900829999999587,
+          "wallMs": 1279.004916,
+          "setupAndClientPlanMs": 219.743833,
+          "dispatchAndReconstructionMs": 1059.261083,
+          "clientPlanMs": 16.252707999999984,
+          "sealMs": 15.159000000000049,
           "providerPlanMs": 0,
           "requests": 2,
           "clientPlans": 2,
@@ -738,7 +738,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -1175,7 +1175,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -1612,7 +1612,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -2047,7 +2047,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8584,
-            "replyDigest": "2f129144e821c07cce9710fcbe2d77dc9b0858d1a38b65e109ae407808e6b016",
+            "replyDigest": "febb90b2eb0f661bdb8eae53f9f571542232822e885574fe8f1efaac9bd4d91a",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -2356,7 +2356,7 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "4ba89a9d3d775a3e724b700a14426a1d3da521b0471ca07a752fb420bc95a3f5",
+              "connectedPin": "c9ddbc900c91ac55bb29b90c4e0e8e369507a8b999ea2fdf8c7ee7625c1f7a4f",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
@@ -2441,14 +2441,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "GcODxOLfnzDGKEU5aK4EwfpeRNwXT4dIKF+I3ll78Umw+T+LWujbYyN92bWPQFYATWKzIKYsE0SBQbl2IIGWBw=="
+            "signature": "Y5382+ITuwSAEt2ARsA0XNkmbbh/U0UukqWj1y0/YPsn0+zu8n5Ardnj+aFh44Ny0OoCdNazOmDiT1b/4fODCw=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "d9a87f2872cdb458f3c3e59ed929c1d131fa215ee006ff32f76ef9fa8649282c",
-            "operatorSpki": "MCowBQYDK2VwAyEAzwtsifTx4LDbpEFvWWJdB1jl+AtcTyL07cTx1FfqFHw="
+            "manifestDigest": "e73e759aee358164f15bb6926d43f8793c8cf41cb2758c12db822e733a08ed66",
+            "operatorSpki": "MCowBQYDK2VwAyEAYtFuUEAihE6boRHcgr57HAEIOXJkPutfSCSf/LyzJ5M="
           },
-          "pin": "422c8e991d29a0991982db84b533c7261d0c99be6f6ca6db72275650a493fa8c",
+          "pin": "70bf3b0fa398f6927d34974221e352c612982bb2b86651b4f2ef04ce93ea287f",
           "connected": {
             "envelope": {
               "manifest": {
@@ -2538,14 +2538,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "8c1mSx87D+dL/MesLXmqBh2Z7t2j+nS51/65M3jUFvcVa3GHbYoI7f2oA0YDZDObNYrhF3i6BnQ3iSK01zejBg=="
+              "signature": "9FScvQcGDH8pIW05rgY0N/gm15ARjK5ZI+KpLr89VEyBZz5/iWFhzAn6QZlPkbFKMEzv64tq1e1evqhcmORLCA=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
               "manifestDigest": "d26305dba19de69ffeb10393555c5b9cd4b3464f391448dbfe474ada8695440d",
-              "operatorSpki": "MCowBQYDK2VwAyEAAZIrYBGxQBmBA4/Y3J8WObNBpU0DtWFAsOqVwTfwoIo="
+              "operatorSpki": "MCowBQYDK2VwAyEAiwKC3lAi+pBbNTAas/AHR9DGoFYUzOSgEOfPpFZdigg="
             },
-            "pin": "4ba89a9d3d775a3e724b700a14426a1d3da521b0471ca07a752fb420bc95a3f5"
+            "pin": "c9ddbc900c91ac55bb29b90c4e0e8e369507a8b999ea2fdf8c7ee7625c1f7a4f"
           }
         },
         "inventory": {
@@ -2752,17 +2752,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 1375.28475,
-            "planned": 1497.291333,
-            "reconstructionStarted": 2406.227541,
-            "end": 2406.300625
+            "start": 1578.245917,
+            "planned": 1704.263542,
+            "reconstructionStarted": 2679.411042,
+            "end": 2679.4895
           },
-          "finalizationMs": 0.07308399999965332,
-          "wallMs": 1031.0158749999998,
-          "setupAndClientPlanMs": 122.00658299999986,
-          "dispatchAndReconstructionMs": 909.009292,
-          "clientPlanMs": 6.043209000000161,
-          "sealMs": 8.785082999999986,
+          "finalizationMs": 0.07845799999995506,
+          "wallMs": 1101.2435830000002,
+          "setupAndClientPlanMs": 126.01762499999995,
+          "dispatchAndReconstructionMs": 975.2259580000002,
+          "clientPlanMs": 6.537500000000136,
+          "sealMs": 8.710874999999987,
           "providerPlanMs": 0,
           "requests": 2,
           "clientPlans": 2,
@@ -2944,7 +2944,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -3381,7 +3381,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -3818,7 +3818,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -4253,7 +4253,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8584,
-            "replyDigest": "2f129144e821c07cce9710fcbe2d77dc9b0858d1a38b65e109ae407808e6b016",
+            "replyDigest": "febb90b2eb0f661bdb8eae53f9f571542232822e885574fe8f1efaac9bd4d91a",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -4562,7 +4562,7 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "5f218f6925cd2072a26d59d4b4b8f93daf7bf74fbefe22cb05b07f3e2ae1a987",
+              "connectedPin": "dba5d8a219681f5ef981cffa3f98f2610b1498f6fa9804564b3d15303798a39b",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
@@ -4647,14 +4647,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "5lWG1cBpQ+25TC9EZmj74ixtFhABuUNn2CbKIlb3cfor5YNok02zweXz6GYe0y+EiHqcUWvu+o+eVthMLBJoDA=="
+            "signature": "SWj+MSojm8W7HJ38nSL63u1ARKAwPjiQ8nTSy6FNJITgJhCFpbMmZ4t6shBKy3gadOZK/cJbCkLfaC3h2dlzAQ=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "b955aa0faf22c3e8af5edcabd0d74b0a349e4a074515901517b76995ba30f268",
-            "operatorSpki": "MCowBQYDK2VwAyEAY5FT/fReL9wB/5a5DT1kVqiQWksQnSrLQGlaC/GVTpQ="
+            "manifestDigest": "a08ca5a7d6217d74e1e8825e8fd9b9bf00d2d674d2205b6d0fd66da2ed44eebb",
+            "operatorSpki": "MCowBQYDK2VwAyEAz2YiGTBTYgOafj8SWiBcrMzJzb2qwBro5Trzw1HVGqo="
           },
-          "pin": "3e7c365effc513d80f00d88cbb17d1fca7c2a1362795b47376aeb876c6b38161",
+          "pin": "80b6d5b54d11b6290fd3c06652c9c405b75b9c021eb9e8c684ea43ef22e016f9",
           "connected": {
             "envelope": {
               "manifest": {
@@ -4744,14 +4744,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "OI1uOqeV7rTAFWfri3YNeIoK04dwyY1q0g6vUdJF+8zwJ7E/GCgQpVlnxezIpe+YoZgEyJPreqEfI7CcWTFqDg=="
+              "signature": "NvlQBFxVTfHQbuaTh3UneoKCAaJWIBZSLCLEBt1lDIPqjbdrKRXKXpxjJNflAO06pt7Azxd7qGmbHT+PdsgRDA=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
               "manifestDigest": "d26305dba19de69ffeb10393555c5b9cd4b3464f391448dbfe474ada8695440d",
-              "operatorSpki": "MCowBQYDK2VwAyEAjRHbAdvs9+L4k7KrffvJ89N89FjNo6GIL7Zb0xWovEQ="
+              "operatorSpki": "MCowBQYDK2VwAyEAJhdbBvtu/IYvgVA2ALts1PEU6DYhZjGo6Wt9hA9E4E0="
             },
-            "pin": "5f218f6925cd2072a26d59d4b4b8f93daf7bf74fbefe22cb05b07f3e2ae1a987"
+            "pin": "dba5d8a219681f5ef981cffa3f98f2610b1498f6fa9804564b3d15303798a39b"
           }
         },
         "inventory": {
@@ -5621,17 +5621,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 2427.508208,
-            "planned": 2584.770875,
-            "reconstructionStarted": 16940.610458,
-            "end": 16940.727916
+            "start": 2704.527625,
+            "planned": 2875.772375,
+            "reconstructionStarted": 18469.583042,
+            "end": 18469.70175
           },
-          "finalizationMs": 0.11745800000062445,
-          "wallMs": 14513.219708,
-          "setupAndClientPlanMs": 157.26266699999996,
-          "dispatchAndReconstructionMs": 14355.957041,
-          "clientPlanMs": 18.423917000000074,
-          "sealMs": 30.518167000000176,
+          "finalizationMs": 0.1187080000017886,
+          "wallMs": 15765.174125,
+          "setupAndClientPlanMs": 171.24474999999984,
+          "dispatchAndReconstructionMs": 15593.929375,
+          "clientPlanMs": 18.979750000000422,
+          "sealMs": 31.33612499999981,
           "providerPlanMs": 0,
           "requests": 11,
           "clientPlans": 2,
@@ -5813,7 +5813,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8015,
-            "replyDigest": "7485b164de8f4dfa5cbf0b1d807d996deb3d3fc03123d4845f13d3b33a7462ac",
+            "replyDigest": "5d77e1f5001592e84b0c48003c0e62e0c19e76657d6ce53ae37cfda7b1747212",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -6250,7 +6250,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8240,
-            "replyDigest": "38fa6c5833c6d70640e0456527f6fd8d05fc0457e5147b6c754ca33f3de7c8a2",
+            "replyDigest": "f235447e3308770a0141910d0d879f8b9d9df31586b99d78f1b1db1ccd50f97c",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -6687,7 +6687,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8870,
-            "replyDigest": "ab00f4380167c641234228f7e99eb55439578997860c24ad7f279367f30dedda",
+            "replyDigest": "6a7131e5776bcac86a74cb118a0a3e3402ca975800b0fb20406d8808b711c462",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -7124,7 +7124,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8874,
-            "replyDigest": "3e9e31036f5875571faf32dc3fb990ed008672648efa60f7d2c35fd82143ee87",
+            "replyDigest": "4b381f11c810356de73c9bbca0797a6ab2405dd6017be8f2bc9ff4e1d655fddb",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -7561,7 +7561,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "ecfb62a1a15fe02aee92385438ce1c47093e2594ebc180299eae92e9980b96d6",
+            "replyDigest": "951634317f9b93824efef16b5379efde541182273fdb384648de718a21194c11",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -7998,7 +7998,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "fc8afb067f96a5a51816d87ac67e9abdbbfc528208b1dd9c921ad11a025ab133",
+            "replyDigest": "ea5acadab20d1a2bfd89ddee6a035b92cc269508df9dc9b795b8008139d92061",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -8435,7 +8435,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8706,
-            "replyDigest": "8d49e2a836c78092fda761f2b18f127a3036fb69d372f2152f0f98f947e38ad0",
+            "replyDigest": "833f9de780e0e1c08ca80070d432fb42cd9e5fc8e985be4841fd56f83f1ab48c",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -8872,7 +8872,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8706,
-            "replyDigest": "a515fd0462b2f45e23a39939cba4d67f7929382b95663e69ea9bd737136bb7f3",
+            "replyDigest": "b45b46aad748aa88ce8a9688370f6568b9110a64d2a54b74c4068cf682a762ae",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -9309,7 +9309,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8875,
-            "replyDigest": "0dc1b84c64296e463db462d50e4aed9543fabcaf54d7b2ac420fded8d8cb358d",
+            "replyDigest": "079325c27f0f10bb59b41c8405123ce45c9c6b9be21093a92632ea1ce41bc277",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -9746,7 +9746,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9210,
-            "replyDigest": "3592b9142134563e0e5564328c7a9207730d4594802ef169dbe494929436526e",
+            "replyDigest": "d0878d1367d8b3a6074718292f510363e0f0a49a5694e6396ef8e6bd4e575e37",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -10183,7 +10183,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8874,
-            "replyDigest": "3716dd91bde0c671f144ca42d21a382a0309fc50f5b46a84a152467422fc3df3",
+            "replyDigest": "b5e5f4f82612dd4075b81b6c46c319e7e9f253a883ddb6b9bf71c07e3fe34ee7",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -10620,7 +10620,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8872,
-            "replyDigest": "ffab51eae0ec4219f5d46f38a4b57a3a10fc49f4b27221b93ccb26e91d282f73",
+            "replyDigest": "b10722c109a0987e8aed05ea48bbf0e2b0f98b0537b042b1f0ccb97f71b8e38b",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -11055,7 +11055,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8701,
-            "replyDigest": "95b4d26d61c32ea2a9ccd57e9d7561ab1b5bb772077a42de406f00e4564cf7c4",
+            "replyDigest": "d9cd0c588861e99672500a9662710589e6a46c8ea506badf8e35e28afde14c2a",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -11364,7 +11364,7 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "6e162bbfd88da8a9fa5bc610883a113b655f835718d108208065c09745a46de2",
+              "connectedPin": "1174fe09620199d0fb0b1884dd78347b29ac1d51eee0b9754ada1b4518f259e9",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
@@ -11449,14 +11449,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "8tfKtWKXrsBdQKFJqj0/socrY4DkAlRfSt80em2BIzx4WQ8Z9/6NA4Npml74/fnqWFy3MCEQ6xNxQXlt5VQRAA=="
+            "signature": "r7yPOhKdc+yu0yVUxBdCpLvoGpGQbLFPf12YHgYfKaK0bZsGeFuHTktU0SGMUbc/eg9XfQP6swve5vmZtFftAA=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "16485d9b00f66128ce2daebef9fc2e0dfec86419bd9bb48b3978714a61f53adc",
-            "operatorSpki": "MCowBQYDK2VwAyEAGtfaPzuMd7KIROf/xVPuiX6NFmfCpcpGOVdqKeFz5A4="
+            "manifestDigest": "0d045f5f170bfeb88fafba6c5afdf079f02a15a43f69f5a7567a23c820c5198d",
+            "operatorSpki": "MCowBQYDK2VwAyEAIf11WzY3zRznJUq+vnb1ZIn/fyFe07Tv0YqMEN9QWT8="
           },
-          "pin": "af606366378ad280792657545ac5077ce158497fbf9d544fb70bccb72cd86df5",
+          "pin": "d472a3d0bd66fdcdf1195c572c251e71edc4ad077d0157b64d6197eaee52a65d",
           "connected": {
             "envelope": {
               "manifest": {
@@ -11546,14 +11546,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "NcPvlhUM6McoeYVQBU4UCIOetR6Z88iO5vZflsKQdyJ++7XBlt4jeu6fuLegyTqx2hAKgcisBfr+mq3HYF9kBg=="
+              "signature": "vEDT5lZ7ck1Z4CGCNVFNxf+9AONyQN04LnHBQQi4DjxuPmNYENaVP1d20TYVdzlhlDXJoV5v7mh4ThGZ9oDXDQ=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
               "manifestDigest": "d26305dba19de69ffeb10393555c5b9cd4b3464f391448dbfe474ada8695440d",
-              "operatorSpki": "MCowBQYDK2VwAyEA7JbtWag0bI8RDBEMvc87E9UVsXbWpdbrzkl4D9JIegc="
+              "operatorSpki": "MCowBQYDK2VwAyEAgBk8j7QT42jbIu3TgcWY6lQ+StnOc9NPdIrCTXikYK4="
             },
-            "pin": "6e162bbfd88da8a9fa5bc610883a113b655f835718d108208065c09745a46de2"
+            "pin": "1174fe09620199d0fb0b1884dd78347b29ac1d51eee0b9754ada1b4518f259e9"
           }
         },
         "inventory": {
@@ -12470,17 +12470,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 16972.777083,
-            "planned": 17137.923333,
-            "reconstructionStarted": 34579.461083,
-            "end": 34579.672458
+            "start": 18502.395667,
+            "planned": 18666.438042,
+            "reconstructionStarted": 35926.831667,
+            "end": 35926.935417
           },
-          "finalizationMs": 0.21137499999895226,
-          "wallMs": 17606.895375,
-          "setupAndClientPlanMs": 165.14624999999796,
-          "dispatchAndReconstructionMs": 17441.749125000002,
-          "clientPlanMs": 19.36066700000083,
-          "sealMs": 31.829416000000492,
+          "finalizationMs": 0.10375000000203727,
+          "wallMs": 17424.53975,
+          "setupAndClientPlanMs": 164.0423750000009,
+          "dispatchAndReconstructionMs": 17260.497375,
+          "clientPlanMs": 19.707334000002447,
+          "sealMs": 33.408416999998735,
           "providerPlanMs": 0,
           "requests": 12,
           "clientPlans": 2,
@@ -12662,7 +12662,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8015,
-            "replyDigest": "708e9afc2328cec6035a3679bb707188ade4ac88f692dd4ce6fd181112f0dff5",
+            "replyDigest": "06d4683e7d377cf509d8e67ff0795025c36999fdf17b919c4690f8cf95512658",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -13099,7 +13099,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8239,
-            "replyDigest": "a9b5f92dd91a81fd0e90666f53a4cc7ff0b0b336071808d346620b853a29f880",
+            "replyDigest": "41a827cbf71757a4ace28abe2296af6991ec4ee7037d9096d3309cb513fa1bdc",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -13536,7 +13536,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8701,
-            "replyDigest": "75ebfe3f4b561e3655e4d090d2a19dfd38a7cbe7a65cc2e23e009dc36aeb203f",
+            "replyDigest": "fc3e1c6e88fc0d7f9a0d9c087aeb413c92d1ce64f708b5f0cdd86c1dfb30b32f",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -13973,7 +13973,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8704,
-            "replyDigest": "acd923fcdd79b2aa3cefc1e6cd6c30697637051fb22240db4a165e1069f513ea",
+            "replyDigest": "fe37229aa5202ac760a0d12f8db6629d9a03dfa37423bab5408688cc7b731bb3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -14410,7 +14410,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8704,
-            "replyDigest": "d63c43844568e617734955f107eb4b43278abf88bc85eb1b128d563e54c5db4e",
+            "replyDigest": "8f16015be498955397fc6e76568b902a7fecdc9675644fd18ff5e38ae4abcfa9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -14847,7 +14847,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "a6ac1c5b066e52520a9bec0c32cf5b3fe23007c23c997e1c7f69582b5c3bd0db",
+            "replyDigest": "176ede134f4cc0b6da6d117058f7c79ec3f0fd5fb3c8c881ab74c1fe69533306",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -15284,7 +15284,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "953bcf7a4cae55cccc1050f32bb2b68cd49e46c2d16da714402f21bc57d30a21",
+            "replyDigest": "51eed97ecdcbe458c2f4d120007e26c331fb713f264dff9da7118e91db56b400",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -15721,7 +15721,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "717b967e8968faf53c75375957b01bc0e83cb4fb03d4b0ca979d276c06b2f739",
+            "replyDigest": "b74a7a8fe2ae1a45d9bd00b6a4b32aa047fbb512482fa696bfef2197129e1007",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -16158,7 +16158,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "eb58aee4f5d82a66c5ead9778407a2edda005181f24e090141f233670d78cb56",
+            "replyDigest": "64e2cda05290a2fa4f94bb99f79e0a2ee85a012b504764a0952550d5dda2d1e9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -16595,7 +16595,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "7c7ad6a69c991849d33a0729661fa87ba5c29261b7888be05a1ad49398100a4c",
+            "replyDigest": "a4df10e99e1d69bece12bf71817a6a3c296d2781911dc585ad9030e2e2aba573",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -17032,7 +17032,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "2fa1fb702d134840dda36ca26f84746bbc6f5911690fdbbd2c605786debb8cbf",
+            "replyDigest": "df0e2c95885fdc90dffff30ffae82466b45bfa8c3a2539c9381625cc6e6798e5",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -17469,7 +17469,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "46911aa7fac7aaa7409b492bc4d673caccb911eb93dc7c5e10ab9353e9320e3b",
+            "replyDigest": "a15f94cf271edf1681d3600409c161a4a702f683224fb91fc3041d0bafffc079",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -17906,7 +17906,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9196,
-            "replyDigest": "2fdf49c23407eef2c12e6da5c643b5df4e6215406553b25e2e7d6f273ce0dbfa",
+            "replyDigest": "920f6ec202705c5311b1ce29f2f628cac365093b300fa8c006926395777beded",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -18341,7 +18341,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8693,
-            "replyDigest": "3c05358982034d2c5ea1ad8fba7f951364a9c0fec9930c6753505df8ab9e2bad",
+            "replyDigest": "da9ab4d68fee34caf12bc0e78249b5d5ae7e3a52ef0ea897ef7dace9349b87cb",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -18650,7 +18650,7 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "61608f41c3fdd827523266390748c16aef746d3e416e3b2a4a104866b4771b2f",
+              "connectedPin": "fd7fceb66a8cb2a74c82355dea1acbc5d439fa053f024be73e493a78fca68701",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
@@ -18735,14 +18735,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "97ZwODKLxPBqKhbPcipv7VCl/FVKP3MKmxdA1GpsqqkBkC/rDjbYsmHh+G0b+ARWrMtceYuvDPH+YyKUMvWyAQ=="
+            "signature": "ja6coFIZqx2tajEi+aeMzC3pVkgBznGqcTAcrWNb7SZtgf3/Csy0uJeGwKu6zhi/pKHy50e0HtypJ2EiJlF3Dw=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "86281043945d20c33aefd0954c227577a931cc65d943e7c7ec3a96ab4988e7e6",
-            "operatorSpki": "MCowBQYDK2VwAyEAGbrx1sYudSzwxlu5aCQrmzQ9t0Us1FTunGaOzZYPaHo="
+            "manifestDigest": "43cee06b985285566a73a5906335bf69f8a030412f994debae029d6c94caeb3f",
+            "operatorSpki": "MCowBQYDK2VwAyEAjIyfhefxY0xRZmIi/3I1yha1zUXSeVMDjqm99vnsXpw="
           },
-          "pin": "80cf43cc2d81be0ec7ed935392836b85aac3a3a2cdcd9b5e1b3377e8f6122a9e",
+          "pin": "7dcc2a03cc49d0747bda49a592d39de95ad910be8e27763331dde85c5e0abc0e",
           "connected": {
             "envelope": {
               "manifest": {
@@ -18832,14 +18832,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "tcKKQ526/bLXSaJRyP/zQdb/9PHGi8NyHd8oJEu6hYykalftLx3vcMXvmkXOg0swmp6dEOImWsDkwwnSj+jpDg=="
+              "signature": "Cu1j1nGV9biSr7xqPZh6XRSCyPUrXdAEY67Dw8H54CGnESUlQbI8FSM19moY7Og5r355719yX4CcVabhXVNxDw=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
               "manifestDigest": "d26305dba19de69ffeb10393555c5b9cd4b3464f391448dbfe474ada8695440d",
-              "operatorSpki": "MCowBQYDK2VwAyEAOTq3Q0AItqWpDcYMvUcrMK1vZQOtoclp7TB1oA20oJc="
+              "operatorSpki": "MCowBQYDK2VwAyEA8BMRMaotmgQW4UUDteaUBepxj7/Hul5z2LQly13Z9fA="
             },
-            "pin": "61608f41c3fdd827523266390748c16aef746d3e416e3b2a4a104866b4771b2f"
+            "pin": "fd7fceb66a8cb2a74c82355dea1acbc5d439fa053f024be73e493a78fca68701"
           }
         },
         "inventory": {
@@ -19709,17 +19709,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 34615.41725,
-            "planned": 34798.036875,
-            "reconstructionStarted": 49568.432,
-            "end": 49568.554333
+            "start": 35963.012958,
+            "planned": 36134.348458,
+            "reconstructionStarted": 51383.21675,
+            "end": 51383.336125
           },
-          "finalizationMs": 0.12233299999934388,
-          "wallMs": 14953.137083000001,
-          "setupAndClientPlanMs": 182.61962499999936,
-          "dispatchAndReconstructionMs": 14770.517458000002,
-          "clientPlanMs": 18.392832999998063,
-          "sealMs": 32.15916699999798,
+          "finalizationMs": 0.11937500000203727,
+          "wallMs": 15420.323167000002,
+          "setupAndClientPlanMs": 171.33550000000105,
+          "dispatchAndReconstructionMs": 15248.987667000001,
+          "clientPlanMs": 19.55529199999728,
+          "sealMs": 32.029083000001265,
           "providerPlanMs": 0,
           "requests": 11,
           "clientPlans": 2,
@@ -19901,7 +19901,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8015,
-            "replyDigest": "7485b164de8f4dfa5cbf0b1d807d996deb3d3fc03123d4845f13d3b33a7462ac",
+            "replyDigest": "5d77e1f5001592e84b0c48003c0e62e0c19e76657d6ce53ae37cfda7b1747212",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -20338,7 +20338,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8240,
-            "replyDigest": "38fa6c5833c6d70640e0456527f6fd8d05fc0457e5147b6c754ca33f3de7c8a2",
+            "replyDigest": "f235447e3308770a0141910d0d879f8b9d9df31586b99d78f1b1db1ccd50f97c",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -20775,7 +20775,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8870,
-            "replyDigest": "ab00f4380167c641234228f7e99eb55439578997860c24ad7f279367f30dedda",
+            "replyDigest": "6a7131e5776bcac86a74cb118a0a3e3402ca975800b0fb20406d8808b711c462",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -21212,7 +21212,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8874,
-            "replyDigest": "3e9e31036f5875571faf32dc3fb990ed008672648efa60f7d2c35fd82143ee87",
+            "replyDigest": "4b381f11c810356de73c9bbca0797a6ab2405dd6017be8f2bc9ff4e1d655fddb",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -21649,7 +21649,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "ecfb62a1a15fe02aee92385438ce1c47093e2594ebc180299eae92e9980b96d6",
+            "replyDigest": "951634317f9b93824efef16b5379efde541182273fdb384648de718a21194c11",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -22086,7 +22086,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "fc8afb067f96a5a51816d87ac67e9abdbbfc528208b1dd9c921ad11a025ab133",
+            "replyDigest": "ea5acadab20d1a2bfd89ddee6a035b92cc269508df9dc9b795b8008139d92061",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -22523,7 +22523,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8706,
-            "replyDigest": "8d49e2a836c78092fda761f2b18f127a3036fb69d372f2152f0f98f947e38ad0",
+            "replyDigest": "833f9de780e0e1c08ca80070d432fb42cd9e5fc8e985be4841fd56f83f1ab48c",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -22960,7 +22960,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8706,
-            "replyDigest": "a515fd0462b2f45e23a39939cba4d67f7929382b95663e69ea9bd737136bb7f3",
+            "replyDigest": "b45b46aad748aa88ce8a9688370f6568b9110a64d2a54b74c4068cf682a762ae",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -23397,7 +23397,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8875,
-            "replyDigest": "0dc1b84c64296e463db462d50e4aed9543fabcaf54d7b2ac420fded8d8cb358d",
+            "replyDigest": "079325c27f0f10bb59b41c8405123ce45c9c6b9be21093a92632ea1ce41bc277",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -23834,7 +23834,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9210,
-            "replyDigest": "3592b9142134563e0e5564328c7a9207730d4594802ef169dbe494929436526e",
+            "replyDigest": "d0878d1367d8b3a6074718292f510363e0f0a49a5694e6396ef8e6bd4e575e37",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -24271,7 +24271,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8874,
-            "replyDigest": "3716dd91bde0c671f144ca42d21a382a0309fc50f5b46a84a152467422fc3df3",
+            "replyDigest": "b5e5f4f82612dd4075b81b6c46c319e7e9f253a883ddb6b9bf71c07e3fe34ee7",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -24708,7 +24708,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8872,
-            "replyDigest": "ffab51eae0ec4219f5d46f38a4b57a3a10fc49f4b27221b93ccb26e91d282f73",
+            "replyDigest": "b10722c109a0987e8aed05ea48bbf0e2b0f98b0537b042b1f0ccb97f71b8e38b",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -25143,7 +25143,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8701,
-            "replyDigest": "95b4d26d61c32ea2a9ccd57e9d7561ab1b5bb772077a42de406f00e4564cf7c4",
+            "replyDigest": "d9cd0c588861e99672500a9662710589e6a46c8ea506badf8e35e28afde14c2a",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -25452,7 +25452,7 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "aa0ca48735386b36d13bde23c62370fa7627869218a67c81fd76862c983f8cbf",
+              "connectedPin": "14a156ffa10aa5a53305ec14d7b4b34742a888f0b43993d7516b9833589cd96c",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
@@ -25537,14 +25537,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "SScoYsaH2XafoSo7z4mSrMH1eaKOAveKdAkI1OrILrRIavQHNxz08iCdI7fDYnODR/rM4BiadmGekuUEh3bAAQ=="
+            "signature": "UaSOVWChrjD6ulKHql2tebY4FDjg5Rf4r4zUhd85LUD4mctVhCBQ35Z6zRY7WSRnpBEU8fK6vkbOS2P6IVj7Cg=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "08e52fa5d0993759dcb5ce87607155b5cdd2eb5045724647a19be2876f666ff5",
-            "operatorSpki": "MCowBQYDK2VwAyEAPFIFfiQ3WuDyoBgJajOHQLwq6PS9rnbZWbacBoBfZ3E="
+            "manifestDigest": "93d8e3850a40d0c80103c10baa3b4af5e15746f649c25d2460428d6327bc6ff3",
+            "operatorSpki": "MCowBQYDK2VwAyEA4+lwJZ5bgz6bnVThrl0ahKq5nrkvZbWZ+7nMEMSODBM="
           },
-          "pin": "f7a7210f5fb5992c6548024056dfefc0ef1d6e5f0cd55e6f9d4cd0ddf4ee8392",
+          "pin": "23a91032455c400dc17a651d2749b148af98b7685c70df2c0e6ca63ec860703d",
           "connected": {
             "envelope": {
               "manifest": {
@@ -25634,14 +25634,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "IVvjUZ7+WSzlUlbjjms+CkLHAbGIJF53zbmyEK3yLXEK3MXqC8oMSY+pvMg+2LnNDV+WfwSYjrab5TQJPWaEDw=="
+              "signature": "Rj8NRNSRnE43Pq4iCSW+WEODTb0grZ34j5e5BS1QnlXRyz6UqlDj5OCqQ3o4b4BwqkVfWKU8PRUZWB+6bDcwAA=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
               "manifestDigest": "d26305dba19de69ffeb10393555c5b9cd4b3464f391448dbfe474ada8695440d",
-              "operatorSpki": "MCowBQYDK2VwAyEASQ5+3ButkRLgkyiMn/nmjoWRWP6VfTe+JIAdrWwtYVM="
+              "operatorSpki": "MCowBQYDK2VwAyEAtPj/aPQIhK96huUlnXNyDmOI8s+PniIEwzABHGPjDxI="
             },
-            "pin": "aa0ca48735386b36d13bde23c62370fa7627869218a67c81fd76862c983f8cbf"
+            "pin": "14a156ffa10aa5a53305ec14d7b4b34742a888f0b43993d7516b9833589cd96c"
           }
         },
         "inventory": {
@@ -26558,17 +26558,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 49600.952666,
-            "planned": 49757.991916,
-            "reconstructionStarted": 67548.773083,
-            "end": 67548.909375
+            "start": 51416.974792,
+            "planned": 51579.180125,
+            "reconstructionStarted": 68616.207708,
+            "end": 68616.319708
           },
-          "finalizationMs": 0.13629200001014397,
-          "wallMs": 17947.956709000006,
-          "setupAndClientPlanMs": 157.03925000000163,
-          "dispatchAndReconstructionMs": 17790.917459000004,
-          "clientPlanMs": 18.644375000003492,
-          "sealMs": 32.12487500000134,
+          "finalizationMs": 0.11199999999371357,
+          "wallMs": 17199.344915999995,
+          "setupAndClientPlanMs": 162.20533299999806,
+          "dispatchAndReconstructionMs": 17037.139582999996,
+          "clientPlanMs": 22.11866700000246,
+          "sealMs": 32.72883400000137,
           "providerPlanMs": 0,
           "requests": 12,
           "clientPlans": 2,
@@ -26750,7 +26750,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8015,
-            "replyDigest": "708e9afc2328cec6035a3679bb707188ade4ac88f692dd4ce6fd181112f0dff5",
+            "replyDigest": "06d4683e7d377cf509d8e67ff0795025c36999fdf17b919c4690f8cf95512658",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -27187,7 +27187,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8239,
-            "replyDigest": "a9b5f92dd91a81fd0e90666f53a4cc7ff0b0b336071808d346620b853a29f880",
+            "replyDigest": "41a827cbf71757a4ace28abe2296af6991ec4ee7037d9096d3309cb513fa1bdc",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -27624,7 +27624,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8701,
-            "replyDigest": "75ebfe3f4b561e3655e4d090d2a19dfd38a7cbe7a65cc2e23e009dc36aeb203f",
+            "replyDigest": "fc3e1c6e88fc0d7f9a0d9c087aeb413c92d1ce64f708b5f0cdd86c1dfb30b32f",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -28061,7 +28061,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8704,
-            "replyDigest": "acd923fcdd79b2aa3cefc1e6cd6c30697637051fb22240db4a165e1069f513ea",
+            "replyDigest": "fe37229aa5202ac760a0d12f8db6629d9a03dfa37423bab5408688cc7b731bb3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -28498,7 +28498,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8704,
-            "replyDigest": "d63c43844568e617734955f107eb4b43278abf88bc85eb1b128d563e54c5db4e",
+            "replyDigest": "8f16015be498955397fc6e76568b902a7fecdc9675644fd18ff5e38ae4abcfa9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -28935,7 +28935,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "a6ac1c5b066e52520a9bec0c32cf5b3fe23007c23c997e1c7f69582b5c3bd0db",
+            "replyDigest": "176ede134f4cc0b6da6d117058f7c79ec3f0fd5fb3c8c881ab74c1fe69533306",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -29372,7 +29372,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "953bcf7a4cae55cccc1050f32bb2b68cd49e46c2d16da714402f21bc57d30a21",
+            "replyDigest": "51eed97ecdcbe458c2f4d120007e26c331fb713f264dff9da7118e91db56b400",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -29809,7 +29809,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "717b967e8968faf53c75375957b01bc0e83cb4fb03d4b0ca979d276c06b2f739",
+            "replyDigest": "b74a7a8fe2ae1a45d9bd00b6a4b32aa047fbb512482fa696bfef2197129e1007",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -30246,7 +30246,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "eb58aee4f5d82a66c5ead9778407a2edda005181f24e090141f233670d78cb56",
+            "replyDigest": "64e2cda05290a2fa4f94bb99f79e0a2ee85a012b504764a0952550d5dda2d1e9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -30683,7 +30683,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "7c7ad6a69c991849d33a0729661fa87ba5c29261b7888be05a1ad49398100a4c",
+            "replyDigest": "a4df10e99e1d69bece12bf71817a6a3c296d2781911dc585ad9030e2e2aba573",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -31120,7 +31120,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "2fa1fb702d134840dda36ca26f84746bbc6f5911690fdbbd2c605786debb8cbf",
+            "replyDigest": "df0e2c95885fdc90dffff30ffae82466b45bfa8c3a2539c9381625cc6e6798e5",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -31557,7 +31557,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "46911aa7fac7aaa7409b492bc4d673caccb911eb93dc7c5e10ab9353e9320e3b",
+            "replyDigest": "a15f94cf271edf1681d3600409c161a4a702f683224fb91fc3041d0bafffc079",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -31994,7 +31994,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9196,
-            "replyDigest": "2fdf49c23407eef2c12e6da5c643b5df4e6215406553b25e2e7d6f273ce0dbfa",
+            "replyDigest": "920f6ec202705c5311b1ce29f2f628cac365093b300fa8c006926395777beded",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -32429,7 +32429,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8693,
-            "replyDigest": "3c05358982034d2c5ea1ad8fba7f951364a9c0fec9930c6753505df8ab9e2bad",
+            "replyDigest": "da9ab4d68fee34caf12bc0e78249b5d5ae7e3a52ef0ea897ef7dace9349b87cb",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -32905,7 +32905,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -33342,7 +33342,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -33779,7 +33779,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -34214,7 +34214,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -34527,7 +34527,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -34535,7 +34535,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -34543,7 +34543,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 2,
             "wire": 36806,
@@ -34725,7 +34725,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -35162,7 +35162,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -35599,7 +35599,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -36034,7 +36034,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -36347,7 +36347,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -36355,7 +36355,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -36363,7 +36363,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 2,
             "wire": 36806,
@@ -36545,7 +36545,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -36982,7 +36982,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -37419,7 +37419,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -37854,7 +37854,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8584,
-            "replyDigest": "2f129144e821c07cce9710fcbe2d77dc9b0858d1a38b65e109ae407808e6b016",
+            "replyDigest": "febb90b2eb0f661bdb8eae53f9f571542232822e885574fe8f1efaac9bd4d91a",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -38167,7 +38167,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -38175,7 +38175,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -38183,7 +38183,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 18403,
@@ -38191,7 +38191,7 @@
           },
           {
             "k": "8f82d2c0ff939ec9eeea82d67e398507f83b77c24039335ed9b33ed66ceb77a2",
-            "d": "78acb939bf22e4a74f232ae69be1abb5423522dbd0050de180606032b97ad62a",
+            "d": "bbab5d67f7647e7c85a737af2b1325e04dd7f630549cc7a4b686e367bfd417c0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 17160,
@@ -38375,7 +38375,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -38812,7 +38812,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -39249,7 +39249,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -39684,7 +39684,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8584,
-            "replyDigest": "2f129144e821c07cce9710fcbe2d77dc9b0858d1a38b65e109ae407808e6b016",
+            "replyDigest": "febb90b2eb0f661bdb8eae53f9f571542232822e885574fe8f1efaac9bd4d91a",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -39997,7 +39997,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -40005,7 +40005,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -40013,7 +40013,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 18403,
@@ -40021,7 +40021,7 @@
           },
           {
             "k": "8f82d2c0ff939ec9eeea82d67e398507f83b77c24039335ed9b33ed66ceb77a2",
-            "d": "78acb939bf22e4a74f232ae69be1abb5423522dbd0050de180606032b97ad62a",
+            "d": "bbab5d67f7647e7c85a737af2b1325e04dd7f630549cc7a4b686e367bfd417c0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 17160,
@@ -40205,7 +40205,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -40642,7 +40642,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -41076,7 +41076,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "59083a3799ccbac285b2611b116c60897f8361a33eca09297d9528c762d09887",
+            "replyDigest": "3f5d50a741d7c087da7f52cb25f915229fee05f34bdcfd03766db71318bbc30e",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -41375,7 +41375,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -41383,7 +41383,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -41391,7 +41391,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11687,
@@ -41577,7 +41577,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -42014,7 +42014,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -42448,7 +42448,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "59083a3799ccbac285b2611b116c60897f8361a33eca09297d9528c762d09887",
+            "replyDigest": "3f5d50a741d7c087da7f52cb25f915229fee05f34bdcfd03766db71318bbc30e",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -42747,7 +42747,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -42755,7 +42755,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -42763,7 +42763,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11687,
@@ -42906,7 +42906,7 @@
             "outcome": "unknown",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "e2a3fe0b019331ee41e41e8066431f89f2299c638e8b41846d07468b43b223d6",
+            "replyDigest": "372c80cc6bca836bc98a8bb013518cba8ad982328d09f3c3b7a648e332a06384",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -43149,7 +43149,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 10678,
@@ -43292,7 +43292,7 @@
             "outcome": "unknown",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "e2a3fe0b019331ee41e41e8066431f89f2299c638e8b41846d07468b43b223d6",
+            "replyDigest": "372c80cc6bca836bc98a8bb013518cba8ad982328d09f3c3b7a648e332a06384",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -43535,7 +43535,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 10678,
@@ -43721,7 +43721,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -44158,7 +44158,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -44592,7 +44592,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "a974fe3b924a590e33fd846a80ad08d8c58cfdbfa3f9754f08cc10398b64e23c",
+            "replyDigest": "839a87bf72a9469861516adaa5c62e9354674345ea3dfb9f2d62f75dff83593c",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -44905,7 +44905,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -44913,7 +44913,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -44921,7 +44921,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11682,
@@ -45498,7 +45498,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -45935,7 +45935,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -46369,7 +46369,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "a974fe3b924a590e33fd846a80ad08d8c58cfdbfa3f9754f08cc10398b64e23c",
+            "replyDigest": "839a87bf72a9469861516adaa5c62e9354674345ea3dfb9f2d62f75dff83593c",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -46682,7 +46682,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -46690,7 +46690,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -46698,7 +46698,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11682,
@@ -47275,7 +47275,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -47712,7 +47712,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -48460,7 +48460,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -48468,7 +48468,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -48476,7 +48476,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -48658,7 +48658,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -49095,7 +49095,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -49843,7 +49843,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -49851,7 +49851,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -49859,7 +49859,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -50041,7 +50041,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -50478,7 +50478,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -51224,7 +51224,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -51232,7 +51232,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -51240,7 +51240,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -51820,7 +51820,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -52257,7 +52257,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -53003,7 +53003,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -53011,7 +53011,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -53019,7 +53019,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -53599,7 +53599,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -54036,7 +54036,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -54471,7 +54471,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -54784,7 +54784,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -54792,7 +54792,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -54800,7 +54800,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -54984,7 +54984,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -55421,7 +55421,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -55857,7 +55857,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -56291,7 +56291,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "a974fe3b924a590e33fd846a80ad08d8c58cfdbfa3f9754f08cc10398b64e23c",
+            "replyDigest": "839a87bf72a9469861516adaa5c62e9354674345ea3dfb9f2d62f75dff83593c",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -56590,7 +56590,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -56598,7 +56598,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -56606,7 +56606,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 2,
             "wire": 20599,
@@ -56790,7 +56790,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -57227,7 +57227,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -57662,7 +57662,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -57975,7 +57975,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -57983,7 +57983,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -57991,7 +57991,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -58175,7 +58175,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -58612,7 +58612,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -59048,7 +59048,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d28fd97ba820c7b3ef4a47ca44a78e841a6dba8c9800bc60c5afd4e9ac02eb12",
+            "replyDigest": "cdc1e9b0c0034ca97a9a9177ead1b67f7c516123827d7edb7b841a8329bf0b05",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -59482,7 +59482,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "a974fe3b924a590e33fd846a80ad08d8c58cfdbfa3f9754f08cc10398b64e23c",
+            "replyDigest": "839a87bf72a9469861516adaa5c62e9354674345ea3dfb9f2d62f75dff83593c",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -59781,7 +59781,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -59789,7 +59789,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -59797,7 +59797,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 2,
             "wire": 20599,
@@ -59981,7 +59981,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -60418,7 +60418,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -61600,7 +61600,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -61608,7 +61608,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -61616,7 +61616,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 2,
             "wire": 17834,
@@ -61798,7 +61798,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -62235,7 +62235,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -63417,7 +63417,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -63425,7 +63425,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -63433,7 +63433,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 2,
             "wire": 17834,
@@ -63615,7 +63615,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -64052,7 +64052,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -64487,7 +64487,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "444f8f143a6f171917fda350a93a5b194f6df088705ee8e3ffd7deea594172d2",
+            "replyDigest": "9545bd7cc7e1f2cd7eb3e14278c61f0b90f5d952c760531465324510704e6099",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -64800,7 +64800,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -64808,7 +64808,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -64816,7 +64816,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 18403,
@@ -64998,7 +64998,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "1c9f34602c561452fb05e9c41c6d9e1351f8fc213ba90e600859e976b5676fff",
+            "replyDigest": "1ffac3ae610c671e0a4afa8982ca763ae04d13bfb8847297ca0c4f96f51bd7a9",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -65435,7 +65435,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "847d024f301db189f25d9d0210a23fe728f815321792a6d4759861f044380b84",
+            "replyDigest": "533eaebf5b60ee31bdfe0345ae90745c1928875d401abec60422325ac0abe6b3",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -65870,7 +65870,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "444f8f143a6f171917fda350a93a5b194f6df088705ee8e3ffd7deea594172d2",
+            "replyDigest": "9545bd7cc7e1f2cd7eb3e14278c61f0b90f5d952c760531465324510704e6099",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -66183,7 +66183,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "7005eab2cce3a0c0b9523bdeca9ff39b8381beba82d089c7972f143f60999cf9",
+            "d": "086f89eda53cf4fff9a64adcec795df1bd6991d098ce6703e3fee8a19d5439f9",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -66191,7 +66191,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "971ef1446a7a7dc7a9cf6e696a387e3a00395160785a02affa4da900609a2d27",
+            "d": "ad1e81554a3a006b1b8e9257b7df5d7c692f4839eaff2739112971a94cccf978",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -66199,7 +66199,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "7b372290284d21f6fedf5808ff9b4be85daf5c216af96104add5c4fc758e1704",
+            "d": "71683640961c1fe9ce6670f8b4bc139260b50352544aa071c2eacc715d080769",
             "deadline": 4500,
             "attempts": 1,
             "wire": 18403,
@@ -66213,26 +66213,26 @@
         "transferResult": {
           "mode": "B-independent",
           "timing": {
-            "start": 84318.289416,
-            "planned": 84498.899125,
-            "reconstructionStarted": 101536.774791,
-            "end": 101536.965708
+            "start": 85184.076667,
+            "planned": 85369.454792,
+            "reconstructionStarted": 101094.259,
+            "end": 101094.42225
           },
-          "finalizationMs": 0.19091699999989942,
-          "wallMs": 17218.676292000004,
-          "setupAndClientPlanMs": 180.60970899999666,
-          "dispatchAndReconstructionMs": 17038.066583000007,
-          "clientPlanMs": 21.30600000001141,
-          "sealMs": 35.703332999997656,
+          "finalizationMs": 0.1632499999977881,
+          "wallMs": 15910.345583000002,
+          "setupAndClientPlanMs": 185.3781250000029,
+          "dispatchAndReconstructionMs": 15724.967458,
+          "clientPlanMs": 23.097416999997222,
+          "sealMs": 33.41458300000522,
           "providerPlanMs": 0,
           "requests": 11,
           "clientPlans": 2,
           "providerPlans": 11,
           "wireBytes": 275896,
-          "outputDigest": "3263548dc7a41053cf2be6e1ad8bbe8126924b36f8d53c62ade9e5b93ed470d0",
-          "inventoryDigest": "62e4d0e59ee9a8b7c0ad680ef3d41709ab15033f10b19c25de491cb2288005d9",
-          "inputDigest": "a35180ba90cf2c1a174090207421444e6528b38a55905ee8db30dc45533c1103",
-          "planDigest": "4e484d50f181321d38f93e05b027d444a48d282381ab7c67f2eeee1f29be6446"
+          "outputDigest": "de9035b8aec69837b989b9510973d90fbbc92a435048d76e29ed0282096df097",
+          "inventoryDigest": "df2ce10ee203a0cc77cab24f5dbe3881a80d65e8e1bf094d51cd7ae8e97d5ff2",
+          "inputDigest": "dc4de996976197681d8fc76bd4d52eedfb9455125edffd974ae9ddaaa3c27f44",
+          "planDigest": "d01bcfeda0075bc422af9d0f85a9f2d958284938add6bdf8d3c116fb8d445e2e"
         },
         "calls": [
           {
@@ -66240,7 +66240,7 @@
             "api": "aux.ReadSourceDescriptor",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "1080da50900edac25474113ea26016453ccbf50080b96b430e3a487319f31f4d",
+              "budgetKey": "f1f14f3adc33f0253465beacb7db655c3e3beebf6d375f797f82907d0cdf4f8c",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -66405,7 +66405,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8046,
-            "replyDigest": "becc4a2d65de7c1eb4cb2aa3c5f079626bbe02b376de6e1bf5d68257ec76ea59",
+            "replyDigest": "bf93f8acc1542f567ed52cc3dfb1347c8834fb8e08fd97e9dbce2372fb9ec16d",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -66677,7 +66677,7 @@
             "api": "aux.ReadSealedSource",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "381a4b108e9cef804f6a2bcccf02ea93a268a718906852d57e365da73b381c9d",
+              "budgetKey": "7792c3e55955268679eeeee81eb47fa67eaa06dc9d64cc238819cf0c1401b63c",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -66842,7 +66842,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8271,
-            "replyDigest": "badb9a945f7ae0c08d9562acd2102ed9c7eee58982ca3223b0a7e2bc9b9cb7d1",
+            "replyDigest": "1a8dd7b5dbd72d5a5153c02c5ad1ab7349cf4b2f7d152f8b77beb036da501783",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -67114,7 +67114,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "5f079fae7650daf96fcd111dba2873522f2577408923c9938420d005e73c4a4a",
+              "budgetKey": "dfd28050fb3f854c9e3e4c1ad94ecadb1c204ec12bf6427604f088db8c0fe326",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -67279,7 +67279,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8908,
-            "replyDigest": "aa1b55fdb1341f9d90dba2c8bb53108fb7131f553d0b8fa7a071933c4b1104b8",
+            "replyDigest": "cb8eb17e36bfceaaca4a0f345d8869ed0d01ba06f0625b36a54a81444eac54dd",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -67551,7 +67551,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "7c8b6f6d0213e6493c1d4a0fd78945ad106ae14205f8f8d18e2608058c06377a",
+              "budgetKey": "56e714644ced243d09f712937ca1072b9dc8a425a8be5be73d11b8c369fc2cb4",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -67716,7 +67716,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8912,
-            "replyDigest": "bf11d14bec93aad01d482929909be68da568826d2ab8bc0d0e52903764ddfeb2",
+            "replyDigest": "b7f8beb482344817e42e8e8f92dffdd8b235f9cde2a66f96e497d486cdb5c4cb",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -67988,7 +67988,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "6c116544c573f0c4b42a10ed33661b88aaa7a8cbeec704283f221c0726c62088",
+              "budgetKey": "18269cabe0a58e8c708bfb8c18473ca7cad93d6248bafc63f7768aa83d4f4d8a",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -68153,7 +68153,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "623139ba23ecc4d72ec3e8d752cdb7c3c5616bb38842ca207c6c7edbec07d839",
+            "replyDigest": "63bb4055e255cb5207157fe04efe1bf3b04df9d93f704904fc40a0a1eb6c2267",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -68425,7 +68425,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "efe6164a7df67b9a51e81644d073bc96e920a45c6a66e8a618470e0b9086e187",
+              "budgetKey": "c6ae7e715351f3029c46fe26652b77b5b554d186bae47c651414b3699d2197d2",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -68590,7 +68590,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "5c1ea3e30a6e3828c89d9f6198b752bcc4f433c9b911be631a718d229b7372a1",
+            "replyDigest": "56b9aa41d1180e2c6fff567a5987916c89a26536b1a85051e229eabcd01ce3d7",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -68862,7 +68862,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "42379d482c55d023f391e9460dbd010268f2f44ad2a7db8b2104530e547e2a46",
+              "budgetKey": "3b45353b87fef88811dcf30e78e5047bea09c5ce59e896d155e3a78ddab6b5df",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -69027,7 +69027,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8744,
-            "replyDigest": "36277e1a166e15d9945406d005a0cf78815f4e1775eff901c8a4884547f8c7bf",
+            "replyDigest": "f99c33934f1f9ccde4fbade68bdd9a2cd8cae2108559e9d92636cde2364fb2d4",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -69299,7 +69299,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "918b80a3531b062c10e553f742d2aaf63afbf5a6dd1b2938971892719d17c027",
+              "budgetKey": "f9230a6c65781352c1b5359c9790941b6c76fb343a3e6e2edf2da8177bcda22a",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -69464,7 +69464,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8744,
-            "replyDigest": "26adeb8b7dd9ca8a6cc8330e109abf5b8509a4785987e9e314770a5bea764ab4",
+            "replyDigest": "b16f4962b57561eae6daec0c6dfb8b3909cc1de682ccc8fa419c3898d5c9e609",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -69736,7 +69736,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "f1b978544fe12d627c756af174bdcc0ac88e03b02a36563ca3c423d75146004c",
+              "budgetKey": "e528bd891c10bfba6ecc269b3e3c4878b2f415855c2f67d8afa80c4ad7d6a57d",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -69901,7 +69901,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8913,
-            "replyDigest": "f7638251c6fc094647e1fb7afd8adb151c29a81efea796b85e56856519be7fc9",
+            "replyDigest": "2fbf9b566f487d9209831f07bba433f60762c54ba3ab4e0c3bbe52c66437b101",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -70173,7 +70173,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "a571228c0a4b4224cd25c4ca380109989fc6d512ee90b58fb737b2be7211477d",
+              "budgetKey": "4c76988e80172085121798451bea2d0b4d8bdc37c7e5b3473dfce2bed15d382b",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -70338,7 +70338,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9248,
-            "replyDigest": "fb1429be1f4ff416b2a60f614d61bdc1c6fb330e3629ff77b58201536ce2e8f5",
+            "replyDigest": "c91acfaf800a5938e0851f5bfedd7f5ca98c8cd4e2f268256d8a7a0a20eb128e",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -70610,7 +70610,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "a829c1b404d8d24cf02058827e1fd9838012a21534f52c325d09b13227f6ed41",
+              "budgetKey": "0fc5bae444240a97a1a7f42c93d4e6b884028f9597374af4f90982708ded6517",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -70775,7 +70775,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8912,
-            "replyDigest": "0078e716642e668dc3fc2dd1386bf7433e82444c7984c2cd2e93159d16df50b3",
+            "replyDigest": "68c874768af53e6ef9a9053d170566ea1cb6c0773d80326f7706b6b7a29a1d5b",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -71047,7 +71047,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "b1998a1d5efecf1761e0101caec01ade6e1467661fa11cba5e3095bf30ecb523",
+              "budgetKey": "e17eb20370cd0784d8b7fa0a0b78323bfac3c5cd10b7b203aa379fcf2637aa97",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -71212,7 +71212,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8910,
-            "replyDigest": "32314d1cc32cceabb8b5753e3f4cfc730e21285eb7898ab807b4da363d830d37",
+            "replyDigest": "0d0acdec2f4cbdc4d0e449ad2109eeecd054292481ae0db9c8c83567ac419fa3",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -71484,7 +71484,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "90d3249e29d53f27769678d066485523c2a95239c54c16fd312ccd66e53b1acf",
+              "budgetKey": "a8b5e2ae8fa6c2626bcc99a2e27f1759801b535cedb62c333affa96f0978cc37",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -71647,7 +71647,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8739,
-            "replyDigest": "ab553fbf2a55427ed1471234d314b6768d1afa7c72221eb2b2f834a602c2e223",
+            "replyDigest": "0a67ed929353b310d580f3c3b274e2bbbb149c11d013243b16de0b3a327a8338",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -71917,16 +71917,16 @@
         ],
         "receipt": {
           "byteLength": 3929,
-          "id": "7f99e476d02c59faeedd8bb8ee9d7ff500b365fed636300bf3b781af2b300cb3",
+          "id": "b5c6afeab8ece2b760883b5859154875e1f7ae9cba8cafce0fa31015f4c8f73f",
           "role": "semantic-result",
-          "sha256": "7f99e476d02c59faeedd8bb8ee9d7ff500b365fed636300bf3b781af2b300cb3"
+          "sha256": "b5c6afeab8ece2b760883b5859154875e1f7ae9cba8cafce0fa31015f4c8f73f"
         },
         "resultDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a",
         "expectedDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a",
         "ack": "released",
         "unresolved": 0,
         "forgedAckRejected": true,
-        "useReceiptDigest": "7f99e476d02c59faeedd8bb8ee9d7ff500b365fed636300bf3b781af2b300cb3",
+        "useReceiptDigest": "b5c6afeab8ece2b760883b5859154875e1f7ae9cba8cafce0fa31015f4c8f73f",
         "useResultDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a"
       },
       {
@@ -71935,26 +71935,26 @@
         "transferResult": {
           "mode": "B-independent",
           "timing": {
-            "start": 106794.479125,
-            "planned": 106982.504208,
-            "reconstructionStarted": 121683.100666,
-            "end": 121683.266583
+            "start": 105815.390125,
+            "planned": 105987.062625,
+            "reconstructionStarted": 120768.011208,
+            "end": 120768.184958
           },
-          "finalizationMs": 0.16591700000572018,
-          "wallMs": 14888.787458000006,
-          "setupAndClientPlanMs": 188.02508300000045,
-          "dispatchAndReconstructionMs": 14700.762375000006,
-          "clientPlanMs": 22.11520900001051,
-          "sealMs": 34.8928339999984,
+          "finalizationMs": 0.17375000000174623,
+          "wallMs": 14952.794832999993,
+          "setupAndClientPlanMs": 171.67250000000058,
+          "dispatchAndReconstructionMs": 14781.122332999992,
+          "clientPlanMs": 19.08270800000173,
+          "sealMs": 32.079166000010446,
           "providerPlanMs": 0,
           "requests": 11,
           "clientPlans": 2,
           "providerPlans": 11,
           "wireBytes": 275896,
-          "outputDigest": "60f77847434eee4f8464f891e4353125bb4fdfc565bd448d776f01419f254389",
-          "inventoryDigest": "08b37dfeeae76075b19fbfb851de592cd3b065ac6ff89d1928b556a752d9e75c",
-          "inputDigest": "2a1550567707cad48f575004c311b415050409c36ed4ef52bcbe56c43f334422",
-          "planDigest": "834f22c5ee7792f50d294ef217193215172d5e18a5d8ff15c30526a6e865ca73"
+          "outputDigest": "067f02f72fc68fbc3d48cf22e74e6ddf079cebe4267d77ff8f2d87216a31807a",
+          "inventoryDigest": "11c0b1f143d9de466ab0dc0de13d0c00228024d19d5510963af408d8cda8b2b5",
+          "inputDigest": "45bc9dbb22f301ea49671941bda8621bf3b736b641a4dac805a552b6e1ed6135",
+          "planDigest": "2b3119908078324a91dfa4741e8beaab14b22defce290e1472c4b80b7952d54d"
         },
         "calls": [
           {
@@ -71962,7 +71962,7 @@
             "api": "aux.ReadSourceDescriptor",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "6892939cde9b8898db7c6e5235b4c5433feffb03c5be38326e9d222cd7c7bbfe",
+              "budgetKey": "0b46bedd2503968c1c7cc937daa83b7c113670a589ff2df044b4bb8261a43ba9",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -72127,7 +72127,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8046,
-            "replyDigest": "f733e4d98c04258c2935300959308d3ac992f4390871641239b727dfb14126d7",
+            "replyDigest": "c9d38ea866b2663b192b69e35fabfdd3a3c60e295e585995a1edcabe28365a1d",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -72399,7 +72399,7 @@
             "api": "aux.ReadSealedSource",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "dcb74b9b5eca3ea5943693c93b84d04b27a3e351ff4668116ac1a76ef8449fc6",
+              "budgetKey": "f6cdce4fae1caa4cb082b86431afe2fd3d2bdb5af3c266e52b25498d99d11a9e",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -72564,7 +72564,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8271,
-            "replyDigest": "169bca5f5cc2ea3a40a5ddc37e0e62f77fbdda193ccfcabdd326be840b3a44f6",
+            "replyDigest": "5196677ecff9e0e2f03d1615aedb52c6e2e02803d3ed936142288d3db2f8a61e",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -72836,7 +72836,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "ef2b8a1e5066938bec1825cde058a7c51e8734a53d0b2f72d3531d842350235c",
+              "budgetKey": "fc1a7b873f60b677dd36aa763a1161fe23f224679556c3bd491f8ca5f87039dc",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -73001,7 +73001,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8908,
-            "replyDigest": "d2213a371131316a6c12952e65d475390519f63b599c14f415edea9823110492",
+            "replyDigest": "64540a69df7d925045fdffbeeb31113cd877897547d093faf99923a1905a25ca",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -73273,7 +73273,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "d3752b61ac9028fd4c95f39ecfb3d78d99223f25b1647d9852d4e167effb6a36",
+              "budgetKey": "76f4f0f27126346bfdbdb96d6f37bcc2a3cdb88f9523b48d0f984d24689f422f",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -73438,7 +73438,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8912,
-            "replyDigest": "321af271d23e37258c7507c4651ff586aa6646dd4b343d538052ae1f9c560dea",
+            "replyDigest": "02d088deec261f93197b6f23189868fa0164ca8629712258b010238e3cbf905b",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -73710,7 +73710,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "02c20b537ffae7421a7bb2d96204b8d81909f88b4dbaedfae73de105101b12c1",
+              "budgetKey": "9f5ecf6875f23dc5b0efd37a311f8ecdfe7b2a31f1a7b8bc8e6be61f5bf698f9",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -73875,7 +73875,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "19265726d88318f93d1e44231c44a07de97921f907729c737d7806650da64aaf",
+            "replyDigest": "560f1844d5a511fce7e2c803e2297d70e27670a6eca22ec801d8a3fedfc64d93",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -74147,7 +74147,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "ce7e7a5d93df4ab45a959e9b99b1a7c7a9c320294799c4f0ee2461085dcd517e",
+              "budgetKey": "fff522809e7c31d6fe23ae94b53269f99641a3692c17b4d067e6cc9ba84fb7c4",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -74312,7 +74312,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "56e79d94b77194e89f10c0036ce42aecfb312cf362d076181366e9646752e779",
+            "replyDigest": "9677500d68c887befa896157d0ab583f328580da303b93e661bb7ada0437628f",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -74584,7 +74584,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "49d120a27fd8c5ac4074ef8ff30f4a47859f48bd77f17c774b34df27809537b5",
+              "budgetKey": "e4ab8d686e4a6604b9b868eab00c790b9669a92b86e2ab2a531d54844418309a",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -74749,7 +74749,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8744,
-            "replyDigest": "c4228621ad2279b3752c250221f55e5e39ee239e0149438bd1edef83b5c08908",
+            "replyDigest": "3d1341b45f3b12c043fb6b6d8193f3087d9e9b1116666d3ed4a08bf9b9ddbe93",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -75021,7 +75021,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "188d65e891b37da47f16ba3229e166ba3369a8dbefba5d1df61423e155f5e4ba",
+              "budgetKey": "f123b9e18bee1f0180b87a72e9e2564818fc7f8a184f8ebdfbf02d2664f4c834",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -75186,7 +75186,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8744,
-            "replyDigest": "74f9ecaecf0562a8a8833e3895db1d2528805b5a7665323956645cf316c80b60",
+            "replyDigest": "c81dd3b9881b9ec277c533c88ab72b80d7ba0d327963678257e5ef4518938572",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -75458,7 +75458,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "383cd7928dca906ab31296911de14101387a77ca5c172bdb279d17ad0b8fe5b6",
+              "budgetKey": "e17f6480b47c49e5427d55223fc190c3cff63a9f33bd8992e2b6d93fe3520f6c",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -75623,7 +75623,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8913,
-            "replyDigest": "419ceade31bc5b77d4c46922ffbc326e85782391a94f7ceb5dd33466805d546f",
+            "replyDigest": "3e0be314238e5921f907aa4278d92f93fa6721356d03b9f52042ec0fc21d306e",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -75895,7 +75895,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "9229a2b34b2be417570420ab1a3656eb1fe7a1630f8861878fe026e9d8bf333c",
+              "budgetKey": "7ae82c2eddfec61bd411a75bd605c578b672cf3a340367ef17ea99b36a5037e2",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -76060,7 +76060,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9248,
-            "replyDigest": "1c823bc2d3507ec531db3eb54ec5199b0b2aee92b5f1c7860e3a4ddee2ff5687",
+            "replyDigest": "9f0549ea5223f66b3d168f076f2a854864a0e83e59a14567c0e8fbfbc206792c",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -76332,7 +76332,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "6e304f1688e6075d682d030ef8eed038892d4db57ba84288a34ff88745462cac",
+              "budgetKey": "4a7e661af7dc64fcef0a84eb4a1a64f41ae642f66731cf54f39aae4049303bbc",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -76497,7 +76497,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8912,
-            "replyDigest": "6b06b5195cc3dfb70eb3b6120f1bb6cd14947a32507eb3959a1a94e8f5a534f9",
+            "replyDigest": "4e2e4148343e671799c34fbc0042045db5730af5a7ab59751834491ffa2bb983",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -76769,7 +76769,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "501650ed1e9a808418420a23ea9ebeeffb86a9dfe360657c637f889e90fff237",
+              "budgetKey": "410a890c147c9045fb76c282e0ecc951a992acbe0fff6408d54027c512543dd4",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -76934,7 +76934,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8910,
-            "replyDigest": "cc5d05517a39a06c7e69416750cfbefd36fb1608ced9dcc47dc8d356087a0155",
+            "replyDigest": "712a68ddf97f951b4de72ae4bd7000967a1d7ef9502d34616ee97b8bf9efd9ee",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -77206,7 +77206,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "b8c4a84905b98e1a1744510722a378180e3058588a45d964df7d477abe95b412",
+              "budgetKey": "746072c4fc6fdcae79469b843b073ea98eeecf000a92d787052c95cc780685c5",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -77369,7 +77369,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8739,
-            "replyDigest": "5a2692da8941b27530198240514fbd7ac3b4f0fec6635cbf85d3e1df9796c942",
+            "replyDigest": "b985303599179263bfbc6a0dbd635013d8c2d105a3b26e100511e76886a1496f",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -77639,16 +77639,16 @@
         ],
         "receipt": {
           "byteLength": 3929,
-          "id": "6b73c90f75ca871c957def02a3d6aeb636e4655282efd84bf0a056dfd89362fb",
+          "id": "3e69a4b2cf2d1310f4a9ddc144313cc824a059f74fb6843d89aaac67da2a9bf9",
           "role": "semantic-result",
-          "sha256": "6b73c90f75ca871c957def02a3d6aeb636e4655282efd84bf0a056dfd89362fb"
+          "sha256": "3e69a4b2cf2d1310f4a9ddc144313cc824a059f74fb6843d89aaac67da2a9bf9"
         },
         "resultDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a",
         "expectedDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a",
         "ack": "released",
         "unresolved": 0,
         "forgedAckRejected": true,
-        "useReceiptDigest": "6b73c90f75ca871c957def02a3d6aeb636e4655282efd84bf0a056dfd89362fb",
+        "useReceiptDigest": "3e69a4b2cf2d1310f4a9ddc144313cc824a059f74fb6843d89aaac67da2a9bf9",
         "useResultDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a"
       },
       {
@@ -77660,7 +77660,7 @@
             "api": "aux.ReadSourceDescriptor",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "54b2a25a00b19dbda4764abae248fbee5f46e08510052aa8d2693b4474353519",
+              "budgetKey": "e49f365e16b7abc4d6ca3c1a46f7811d4be5b5ec35dbea2ac29cdd061b8bdb2d",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -77825,7 +77825,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7904,
-            "replyDigest": "428a213fd95d42671755eecb2a76657a1bcad7db0f92e0ff021897984b089229",
+            "replyDigest": "5f49be3551081ac07d4a0a9f5dff0724fea6cf7c8cdd223d6eae0ee70757cdce",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -78097,7 +78097,7 @@
             "api": "aux.ReadSealedSource",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "0bda947a9baefb52cf6c0800d091ada663797b7d85a66083c456dd7755eb1de4",
+              "budgetKey": "aadda3e1d7bc8c86d94c667a28bc42ac3b13503741a96c6b9a57c4472d6487fd",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -78262,7 +78262,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7960,
-            "replyDigest": "603410d6b60af0a4f3a4fba5ed9051f819719566cd3d83d8040015a8dedc9bd8",
+            "replyDigest": "2d2913bc0c6593425e2236212d1103f3598cd1239405348373f38e3fce66daa4",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -78534,7 +78534,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "1a61f8e03a58c2c8c0453a458ef7427f83e22aedcd093f93d77e81d8789aa5d5",
+              "budgetKey": "b808bb153f39122d684f7134db59560753580b97491e47c4d051a93df239a40e",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -78699,7 +78699,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "dc21e586764fea74b740edb095368c6892f369a85ea7678bf00b7fa77db74387",
+            "replyDigest": "69f483aa05d9828fff325021fb083564b16a0e19aaf3b7f67499b764dc0fb551",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -78971,7 +78971,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "271f4aec6aaa34321c1e173b1f038dc4877b41c1d7d258f7134da0d61d568227",
+              "budgetKey": "97c29f2b9371b8586a2d68855f0364be3009d02f6abe8bd65416a3a8712cdb15",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -79134,7 +79134,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "08c3a08ac2b4049ea386ad94dd52ec8719baf9eb5eeb9fa25d75ecd46bd65814",
+            "replyDigest": "277b6bba4cc23f6e17a9af234c573854ee27ab5cc1ed9890ab3abf2d0a848386",
             "control": {
               "mode": "full-reference",
               "state": "closed",
@@ -79405,17 +79405,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 125909.206625,
-            "planned": 126035.38475,
-            "reconstructionStarted": 126977.814666,
-            "end": 126977.912375
+            "start": 125639.807625,
+            "planned": 125768.553667,
+            "reconstructionStarted": 126731.057333,
+            "end": 126731.161
           },
-          "finalizationMs": 0.0977089999942109,
-          "wallMs": 1068.7057499999937,
-          "setupAndClientPlanMs": 126.17812499999127,
-          "dispatchAndReconstructionMs": 942.5276250000024,
-          "clientPlanMs": 5.54070800000045,
-          "sealMs": 7.954167000003508,
+          "finalizationMs": 0.10366699998849072,
+          "wallMs": 1091.3533749999915,
+          "setupAndClientPlanMs": 128.74604199999885,
+          "dispatchAndReconstructionMs": 962.6073329999927,
+          "clientPlanMs": 6.31495799998811,
+          "sealMs": 7.656958000006853,
           "providerPlanMs": 0,
           "requests": 2,
           "clientPlans": 2,
@@ -79424,7 +79424,7 @@
           "outputDigest": "8b6c53f8aa5f6e17930f5af19d6508eed05bc9e1afadef3bce3b208f23d040c7",
           "inventoryDigest": "1fabe93081e8ee2ab349fb8af7e5b89086ee6216a60aa9b2c1af90cd9ba68b6e",
           "inputDigest": "24687e15ba8a66909bd94b4408736d4550a9642730d7db88ff830c386811fba0",
-          "planDigest": "8ecda035423ce89c1236fd6d2a2c2d33f489e075af78d378c2d86e0f2b8db529"
+          "planDigest": "2add3a3598326275860840cf84eebd7c275c46e96eea4f801b2c03d81175bcf9"
         },
         "inventory": {
           "rows": [
@@ -79524,9 +79524,9 @@
         "adopted": {
           "checkpoint": {
             "byteLength": 1830,
-            "id": "3d9ecb0804bf6e9c449cd3e603464feac40c6db2360bb56ec0b6a0b31b4d9d29",
+            "id": "2b83ff09cfef1b27f195eef03ebe0de8af3a5e566c92aee7d29af42d7be3f996",
             "role": "checkpoint-prepare",
-            "sha256": "3d9ecb0804bf6e9c449cd3e603464feac40c6db2360bb56ec0b6a0b31b4d9d29"
+            "sha256": "2b83ff09cfef1b27f195eef03ebe0de8af3a5e566c92aee7d29af42d7be3f996"
           },
           "head": {
             "baseDigest": "2be132dcfc82043694c8ff75664af7adddf0d5eb459340595ef4b689f49de208",
@@ -79537,16 +79537,16 @@
           },
           "snapshot": {
             "byteLength": 3034,
-            "id": "8c831adad627a61dbacfa3d22052a77ce341d5d8cd5b4c4893f9d55ddae38794",
+            "id": "7ecfbf2e803b1af5a2a683ed5105c73ac3af46e34298fd2326522cbc8a2d2f5f",
             "role": "snapshot",
-            "sha256": "8c831adad627a61dbacfa3d22052a77ce341d5d8cd5b4c4893f9d55ddae38794"
+            "sha256": "7ecfbf2e803b1af5a2a683ed5105c73ac3af46e34298fd2326522cbc8a2d2f5f"
           }
         },
         "checkpoint": {
           "byteLength": 1830,
-          "id": "3d9ecb0804bf6e9c449cd3e603464feac40c6db2360bb56ec0b6a0b31b4d9d29",
+          "id": "2b83ff09cfef1b27f195eef03ebe0de8af3a5e566c92aee7d29af42d7be3f996",
           "role": "checkpoint-prepare",
-          "sha256": "3d9ecb0804bf6e9c449cd3e603464feac40c6db2360bb56ec0b6a0b31b4d9d29"
+          "sha256": "2b83ff09cfef1b27f195eef03ebe0de8af3a5e566c92aee7d29af42d7be3f996"
         }
       },
       {
@@ -79558,7 +79558,7 @@
             "api": "aux.ReadSourceDescriptor",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "2e3ec2bde2a4cb2b74b7735a092c2d9b3bcf423c6d251e642ae8edfe6a0d29c0",
+              "budgetKey": "6db5f7ea2e551ce2818ba1be6f912c8b9d61ee19a9f95ae1bcb0a44c495737fd",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -79723,7 +79723,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7904,
-            "replyDigest": "f4793b841a5de49f3d71e3f4c15324e62317b617d12e86d01bcac66dcc9872b8",
+            "replyDigest": "f6ee21171058b983d4ade43b4043e20d4aa78fbbe8a702fe7cb4c059bb1932f5",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -79995,7 +79995,7 @@
             "api": "aux.ReadSealedSource",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "bd4be38dcb3169b8d1ef24c063a9aa643f3298d4f095e01e4f0598e1c1ba347a",
+              "budgetKey": "91ccf1a64abce7f713fc9ac332f2ab2e9b099bb7a24f5710e8baabcf6fa69663",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -80160,7 +80160,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7960,
-            "replyDigest": "4cc72000013e86cce971d6dfd775a1236b7d936f520042e233ec0d1f1770d718",
+            "replyDigest": "46cf71c723755a3dc58f6e847fc885e2bb3a3ccb7248e86041cc8e345d33d62a",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -80432,7 +80432,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "4592cfee146fddfb304cdae35831e0231849f494a35c1fe3df344164fda18e70",
+              "budgetKey": "b85460a55923282d8da68eace14b02a8d11365a07c936e90b511ace71ecfde9b",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -80597,7 +80597,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "448f60550fb4553b806a4dcdf04e54ad1ead6aa14842776ab5772930bfaeeaf7",
+            "replyDigest": "e75ab30eae9f323af86cffdd712a1590423edf3156abd2abcc9e8805d41a4f51",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -80869,7 +80869,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "de2bc2855498d60a6e808cb21ae173374e9e702f0195a3ad4cd59bf38ee062dc",
+              "budgetKey": "4491fcb422a05526865bc6ced4dd512bf5122c85d2d3199ee458672311c504cc",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -81032,7 +81032,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "48bf41eedd7aad70ca57b924fbd0d4d810f645091c4f4688888b9f91276ea399",
+            "replyDigest": "c86558a93d5d6c081adc3229fea4638f522bd35c0841071bacbad534dc0fb260",
             "control": {
               "mode": "bound-live",
               "state": "closed",
@@ -81303,17 +81303,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 129610.642166,
-            "planned": 129735.808125,
-            "reconstructionStarted": 130665.8575,
-            "end": 130665.954083
+            "start": 129534.775958,
+            "planned": 129661.727042,
+            "reconstructionStarted": 130612.490042,
+            "end": 130612.606292
           },
-          "finalizationMs": 0.09658300000592135,
-          "wallMs": 1055.311916999999,
-          "setupAndClientPlanMs": 125.16595899999083,
-          "dispatchAndReconstructionMs": 930.1459580000082,
-          "clientPlanMs": 5.731375000003027,
-          "sealMs": 8.106417000002693,
+          "finalizationMs": 0.11624999999185093,
+          "wallMs": 1077.8303339999984,
+          "setupAndClientPlanMs": 126.95108400000026,
+          "dispatchAndReconstructionMs": 950.8792499999981,
+          "clientPlanMs": 5.703875000006519,
+          "sealMs": 8.418875000003027,
           "providerPlanMs": 0,
           "requests": 2,
           "clientPlans": 2,
@@ -81322,7 +81322,7 @@
           "outputDigest": "8b6c53f8aa5f6e17930f5af19d6508eed05bc9e1afadef3bce3b208f23d040c7",
           "inventoryDigest": "1fabe93081e8ee2ab349fb8af7e5b89086ee6216a60aa9b2c1af90cd9ba68b6e",
           "inputDigest": "24687e15ba8a66909bd94b4408736d4550a9642730d7db88ff830c386811fba0",
-          "planDigest": "ec8684f9e4c722a4159d30d1da5e50c678c74329948b33c12ed6d37c0cf13489"
+          "planDigest": "211f4ca6467f997c899c891caa02170e2216a75431a5afc278b7144751c7d3e5"
         },
         "inventory": {
           "rows": [
@@ -81422,9 +81422,9 @@
         "adopted": {
           "checkpoint": {
             "byteLength": 1830,
-            "id": "beb86a4466636dee339e5da470a98b4cc0fe9c0d13a17f4ca02a6e5da9103eba",
+            "id": "28acc4a3f13dd11005e2b082cf39e1f05ddad3fee89b86472c7053cab5943d21",
             "role": "checkpoint-prepare",
-            "sha256": "beb86a4466636dee339e5da470a98b4cc0fe9c0d13a17f4ca02a6e5da9103eba"
+            "sha256": "28acc4a3f13dd11005e2b082cf39e1f05ddad3fee89b86472c7053cab5943d21"
           },
           "head": {
             "baseDigest": "2be132dcfc82043694c8ff75664af7adddf0d5eb459340595ef4b689f49de208",
@@ -81435,16 +81435,16 @@
           },
           "snapshot": {
             "byteLength": 3034,
-            "id": "96b0c66a12a1edd523f9da7f2a712ba4f6e8b9df2b26a707c8633779461f1299",
+            "id": "c61b8f9709ab1a985552ff709733acef00268ffad5a246c90b62c35e863a1db3",
             "role": "snapshot",
-            "sha256": "96b0c66a12a1edd523f9da7f2a712ba4f6e8b9df2b26a707c8633779461f1299"
+            "sha256": "c61b8f9709ab1a985552ff709733acef00268ffad5a246c90b62c35e863a1db3"
           }
         },
         "checkpoint": {
           "byteLength": 1830,
-          "id": "beb86a4466636dee339e5da470a98b4cc0fe9c0d13a17f4ca02a6e5da9103eba",
+          "id": "28acc4a3f13dd11005e2b082cf39e1f05ddad3fee89b86472c7053cab5943d21",
           "role": "checkpoint-prepare",
-          "sha256": "beb86a4466636dee339e5da470a98b4cc0fe9c0d13a17f4ca02a6e5da9103eba"
+          "sha256": "28acc4a3f13dd11005e2b082cf39e1f05ddad3fee89b86472c7053cab5943d21"
         }
       }
     ]
