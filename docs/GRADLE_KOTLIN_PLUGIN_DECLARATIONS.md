@@ -9632,3 +9632,62 @@ node scripts/check-cwc-lb3.mjs
 node scripts/check-cwc-lb3.mjs --check
 npx vitest run src/test/utils/gradleOwnedCwcLb3.test.ts src/test/utils/gradleOwnedCwcLb3Record.test.ts --maxWorkers=1
 ```
+
+
+### 9.131 CLB-3P：共通batch経路の検証・gate・計画・codec費用分解
+
+CLB-2の重い3テストの実行分離・記録更新は68a2242で完了している。CLB-3の共通batch経路で残る費用を調べるため、新しいin-process診断ハーネスを追加する。既存Case／provider／binding／session／plannerは変更せず、同じ実関数へcall-throughする。原本読取・認可・purpose・credential／pin・取消し・元期限・署名・内容／独立計画・work／wire・memory・回収を省略しない。最適化の実装や本番採用ではない。
+
+独立署名の追加source承認は新しいobserver／runnerと既存CLB-3の参照閉包・base pin・比較policyを束縛する。各armのclock入口でも追加pinの現在性を確認し、全方式・全計測modeに同じ追加gateを適用する。配備・署名は計測前、各callの構築からcleanup／計測器復元後までを元の4500 ms期限内のTとして扱う。baseの1 MiB共存、provider 1 MiB／client 64 MiB構造work・64 MiB総wireなどは維持する。追加承認と診断の強化差があるため、旧CLB-3／CWC-D／旧BPとの差を性能改善へ読み替えない。
+
+scalar／full-reference／bound-live、3 workload×2 role、warm-up各1＋実測3 round、quiet／counts／timedの216試行を順序回転する。quietは追加observerなし、countsはwrapper内時計なし、timedは同期stackでinclusive／exclusive／childを分ける。実callのinspect、challenge／channel／owner検証、binding／scope／grant／ledger／registry／endpointの公開gate、packの3 actor、A／Bの公開codec入口、canonical／digest／SHA、structuredClone、capture・source・transportを観測する。awaitするhandshake区間とasync関数の同期entry区間を区別する。
+
+exclusiveをactual-call／wire-verification／live-gate／planner／codec／canonical-hash／copy／source／transport／constructionに分類し、合計＋otherをobserver外側wallへ一致させる。inclusiveやhandshakeを合計へ足さない。canonical/hashには直近の非JSON観測入口のcategoryとplan actorも保存し、どの経路の反復に属するかを分ける。これは公開入口による限定帰属であり、全source call-site解析ではない。planner残余には未観測のcodec constructor等も含まれ、純粋な計画アルゴリズム費用ではない。公開codec入口やhashの内側にも計測器の費用が入り、純粋CPUや削減可能額は主張しない。
+
+入口counterとfinallyでの完了counter、actor／owner／operation別の入口witnessと費用の合計、base traceへの射影、実行時method本文hashと現在の実装、challenge／channel／owner検証とbindingの検査件数、plan markerの区間数と包含上限を照合する。SHAは非再入かつ観測childなし、constructionは構築phase以内、packは対応actorのplan区間合計以内を要求する。実関数は置換した計算や固定値で代用しない。stackは128、contextは1024、handshakeは768に制限する。
+
+レビュー修正では、完了した閉じた転送経路について `session.inspectAuthenticatedCall + audit.calls = audit.fullChecks` を独立したbinding検査件数との照合条件に追加した。これはこの承認済みrecipeの成功経路の関係であり、途中で拒否された試行に成功時の式を押し付けない。成功したcounts／timedの対は、旧traceだけでなく追加した全operation・actor／owner別の入口件数も一致させる。片側だけの削減に加え、両計測modeの入口・完了counterを同時に減らしても独立witnessで拒否する。
+
+actor別に全contextのexclusiveを合計し、同actorのpack inclusiveと一致、外側の実測plan区間合計以下を要求する。operation合計・inclusive／exclusive／childのpartition・owner別合計を変えず、providerのcanonical費用をclient-initialへ移す記録も拒否する。outsideの費用をplan内へ混在させない。追加条件は保存記録の検査であり、実call中の認可・取消し・元期限・内容検証・予算を省略・追加予約しない。
+
+初回の実時間比較では、完了したscalar転送のcounts／timed間でaudit一致が失敗した。送信時の残TTLが1000 ms未満になると署名packetのttlMsが4桁から3桁へ変わり、同じ内容でもwire長が変わる。これを比較不正とは扱わず、CLB-3P専用の比較契約で、実際の全frame長・inner長・送信したchallenge／channelのTTLを保持する。各行のactual wire合計・call wire・予算は実数値のまま照合する。cross-mode／full-referenceとbound-liveの同値比較だけは、検証済みの対応replyにも同じTTLが束縛される閉じたauth codecに限り、TTLを4桁としたframe長へ揃えて照合する。TTL自体・元期限を増やしたり、転送したbytesを減額・隠蔽しない。TTL以外の長さの差・pair不一致・実wire集計の改変は拒否する。旧CLB-3の契約・記録は変更しない。LBP16で実署名sessionを使って999 msのTTLを再現し、元の比較失敗と区別する。失敗時もraw測定をOS一時領域へ残し、診断に使えるようにする。
+
+計測追加費用はcounts−quiet／timed−counts／timed−quietのpaired T差で残し、差し引いた仮想値で判定しない。失敗とwarm-upも全て保存し、期限停止した条件の費用は拒否までの観測作業であり、完了転送の費用・削減可能時間とはしない。成功時の同値性・現在検査・予算・再構成を維持し、全試行で資源回収と部分plan証拠を照合する。採用判断は診断限定で、本番・実storage・native隔離・同一channelの複数RPC・継続8 read・全CLB条件・CFP-0／CPR-C／CG0／CG3の保留を維持する。
+
+<!-- CLB3P-TABLE-BEGIN -->
+| 条件 | role | scalar総時間 ms | full-reference ms | bound-live ms | 完了／試行（全計測mode） | 判断 |
+| --- | --- | ---: | ---: | ---: | --- | --- |
+| small | reader | 419.5 | 1063.3 | 1019.5 | 9/9 · 9/9 · 9/9 | defer |
+| small | authority-broker | 443.6 | 1232.2 | 1152.6 | 9/9 · 9/9 · 9/9 | defer |
+| h0 | reader | 1100.0 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| h0 | authority-broker | 2270.2 | — | — | 6/9 · 0/9 · 0/9 | defer |
+| single-large | reader | 1434.5 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| single-large | authority-broker | 1039.8 | — | — | 9/9 · 0/9 · 0/9 | defer |
+<!-- CLB3P-TABLE-END -->
+
+レビュー修正後の再測定はwarm-up込み216試行中117完了、実測162試行中87完了。方式別の実測完了数はscalar 51/54、full-reference 18/54、bound-live 18/54で、全6条件deferを維持した。小規模は両role・全方式・全計測modeで完了したが、bound-liveのquiet総時間中央値は1019.5〜1152.6 msで、scalarの419.5〜443.6 msを上回った。大きい2条件の両batch方式は全72件が期限停止。h0のauthority-broker scalarにもquiet／counts／timed各1件、計3件の期限停止があり、除外せず記録した。修正は記録の検証条件であり、実call中の検査を削減していない。前回との負荷差の原因や差分の有意性は確定していないため、旧測定との速度改善は主張しない。
+
+小規模batchのtimed観測（各role／armの実測3 roundの中央値、ms）は以下。categoryはexclusiveである。異なるrowの中央値の和をwall中央値のpartitionとは扱わない。
+
+| role | arm | 実call検査 | wire検証 | live gate | planner残余 | 公開codec | canonical/hash | copy |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| reader | full-reference | 2.5 | 642.8 | 98.3 | 3.7 | 9.2 | 271.2 | 40.4 |
+| reader | bound-live | 2.5 | 644.8 | 91.1 | 3.9 | 8.9 | 266.3 | 38.3 |
+| authority-broker | full-reference | 2.7 | 725.6 | 111.4 | 4.3 | 11.8 | 313.2 | 47.5 |
+| authority-broker | bound-live | 2.5 | 679.3 | 95.7 | 4.3 | 10.9 | 281.9 | 41.1 |
+
+全18 workload／role／armのcategory中央値で最大はwire-verificationだった。小規模batchで公開inspectAuthenticatedCallは1153回、challenge検証1165回、channel検証1169回、owner検証1181回、binding.providerGateは868回、providerのpackは2回だった。binding fullChecksは1157回で、実call検査API単独のexclusiveだけを大きな費用とみなすのは不適切である。canonical/hashのうち154.0〜178.7 msはwire検証の直下へ帰属した（既にcanonical/hashの列に含まれ、wire列へ再加算しない）。live gateの残余にも未観測の私有検査処理が入り、純粋な認可計算とは呼ばない。
+
+計測追加費用のpaired T差は小規模batchでcounts−quietが32.3〜83.8 ms、timed−countsが−29.7〜40.7 ms、timed−quietが22.5〜73.0 ms（各role／armの実測3 roundの中央値範囲）だった。負の差もそのまま保存し、観測費用の安定した単一推定や最適化効果は確立しない。h0 scalarの失敗を含む対と、h0／single-largeの両batchの打切り前の費用は、完了作業の計測追加費用・完了転送の費用へ換算しない。
+
+次の削減候補は、私有wireへ束縛された不変のchallenge／channel／owner検証事実と、毎回必要な現在性・purpose・credential・取消し・元期限・scope／row／generationの検査を分ける契約である。今回の結果だけで検証を省略せず、初回／transport最終検査・予算・再入／流用／後着拒否の契約を具体化してから別に実証する。planner本体やcontext自己hashだけの小さい費用を先に削って採用成立とはしない。
+
+LBPR10／11は修正前に改変記録を受理して失敗し、修正後は件数削減・actor間費用移動を拒否した。LBP17／18では小さい実転送からの記録でも確認し、LBPR12では追加codec件数の観測間不一致も拒否する。18回帰（実時間比較を含む）・12記録検査を再実行し、成功時・途中拒否時の証拠と新しいsource承認を保存した。
+
+表の値はquiet成功試行の初期化・cleanup込みT中央値。完了／試行はscalar・full-reference・bound-liveの順で計測modeを含む実測値。詳細なexclusive分類、canonicalの帰属、実行method hash、時間・work／wire・memory・完了率・計測追加費用は `docs/validation/gradle-cwc-lb3p-2026-11-10.json` に保存する。LBP01〜14／16〜18と記録検査LBPR01〜12で同値性、検証・認可・取消し・元期限・内容拒否、source／pin、観測の閉包と過大／過小・非有限・負値・欠落、失敗時の予算検査を確認し、LBP15は記録runnerでのみ216試行を実行する。
+
+```sh
+node scripts/check-cwc-lb3p.mjs
+node scripts/check-cwc-lb3p.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcLb3p.test.ts src/test/utils/gradleOwnedCwcLb3pRecord.test.ts --maxWorkers=1
+```

@@ -3210,7 +3210,8 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、CLB-1接続後のsou
 - [x] CLB-1：既存CwcCProvider／ReadScope・CWC root／fact／実ledgerへbindingをopt-in接続（§9.128）。追加署名profileと参照閉包を必須にし、ready後のbound-liveだけ追加wire比較hash・固定identityのcopy／projection一致を省略。認可・purpose・取消し・元期限・署名・command／独立計画・source内容検証は維持。正規の内部frameと外部再入を区別し、既存1 MiB・構造work内の共存を検査。28回帰・7記録検査、正常12例・拒否30例を追加。レビュー修正としてsource返却値の正規化中とowner／codecの直接時計callbackにも再入guardを適用し、両modeで内側例外を捕捉しても返信・公開が0となることを確認。
 - [x] CLB-2：既存SessionServer／Clientの実handshake・challengeへbindingを接続し、全batch転送・全entry再構成・fresh scope／snapshot／root、取消し・close・応答紛失・元期限・transport最終検証前後の寿命・早期B回収／後着拒否を確認（§9.129）。元の署名付きrefused／unknownと、再構成sourceから実AuthorityOwner・durable provider use／正しいACKへの対照も検証。固定clock・同一process・1 business RPC/channelの限定adapterで、元のscalar source取得の省略、外部storage／native隔離・本番採用は未成立。14回帰・8記録検査、正常6転送・26証拠を保存。レビュー修正として複数commitの区分を保持し、実採用済み更新snapshotを全転送・再構成。実予約履歴・入力サイズ・試行前／捕捉後／drain後の残高を対応付け、両modeで非負値への消費減額・整合するcopy／履歴改変・試行間resetを拒否。
 - [x] CLB-3：共通の独立source／binding承認・認可・元期限・1 MiB共存・既存work／wire予算でscalar／full-reference／bound-liveを実時間比較（§9.130）。構築前からcleanup・drain・observer復元後までの総時間、全entry再構成、handshake／capture、quiet／counts／timed、失敗を含む完了率を保存。動的fs読込rootの収録漏れを修正し、16回帰・11記録検査と216試行を再実行。全6条件defer・本番採用見送り。
-- [ ] 次は共通batch経路の大きい費用を絞り込む。smallでもbound-liveはscalarより約2.6倍遅く、追加wire／identity検査の省略だけでは不足した。h0／single-largeの4.5秒期限内完了を新たな出口にし、停止までの作業量と毎batchの計画／実call検査を調査する。期限・認可・完全性・予算を緩和せず、期限停止時刻の差を改善量にしない。性能改善・全36条件・CWC-FP・CPR-C／CG0／CG3等の保留を維持。
+- [x] CLB-3Pで共通batch経路の費用を分解し、実call検査・wire検証・live gate・公開codec・canonical/hash・copy・planner残余を観測（§9.131）。18回帰（記録runnerでは全実行、通常は実時間比較1件をskip）・12記録検査と216試行を保存。TTL桁数だけのwire差を実署名sessionで再現し、実wire予算を保った比較契約を追加。
+- [ ] 次は不変のchallenge／channel／owner検証事実と、毎回必要なlive検査を分離する削減契約を具体化する。CLB-3時点ではsmallでもbound-liveはscalarより約2.6倍遅く、追加wire／identity検査の省略だけでは不足した。h0／single-largeの4.5秒期限内完了を新たな出口にし、停止までの作業量と毎batchの計画／実call検査を調査する。期限・認可・完全性・予算を緩和せず、期限停止時刻の差を改善量にしない。性能改善・全36条件・CWC-FP・CPR-C／CG0／CG3等の保留を維持。
 
 §9.127レビュー修正：CLB-0の`dispatch`で、期限内に届いた結果が最終検証で拒否された場合まで後着（`late`／`late-reject`）として記録していたため、call終了後に届いた結果だけを後着と数えるよう分離。LB028に回帰を追加（修正前の失敗を確認）。
 
@@ -3223,3 +3224,10 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、CLB-1接続後のsou
 §9.129レビュー修正：CLB-2の重いLB202／LB213／LB214（単独で約64／42／12秒、並行負荷下でLB213が60秒timeout）を通常の`npm test`から外し、記録runnerと`OSV_CWC_HEAVY=1`のときだけ実行。通常のテストは約142秒→15秒。保存記録の検証は毎回実行。
 
 §9.130 2回目のレビュー修正：runnerの再開用ファイルをOSの一時ディレクトリへ移動、LB310を`it.runIf`へ変更、総時間の大部分が各gateの完全検証（smallのbatch 1転送で1157回）であることを内訳として追記。216試行を再測定し全6条件deferを維持、本文の範囲を更新。
+
+### CLB-3P：共通batch経路の費用分解（§9.131）
+- [x] call-through observerと独立source pinを追加し、入口／完了・actor／owner別witness・method本文hash・区間／予算を照合。既存の認可・元期限・完全性・署名・budgetは省略しない。
+- [x] レビュー修正後の216試行（実測162）のうち117件（実測87件）が完了。実測はscalar 51/54、full-reference 18/54、bound-live 18/54で全6条件defer。全18 cohortのexclusive中央値でwire-verificationが最大。小規模batchでwire検証643〜726 ms、canonical/hash 266〜313 ms、live gate 91〜111 ms、実call API単独2.5〜2.7 ms。18回帰・12記録検査を再実行。
+- [ ] 私有wireに束縛した不変の認証事実とlive検査の分離契約を設計し、別実証へ進む。今回の観測値を削減可能時間や純粋CPUへ読み替えない。planner残余には未観測constructor等もあり、分類を完全なsource call-site解析とはしない。CPR-C／本番・実storage・native隔離・継続8 read・CG0／CG3の保留を維持。
+
+§9.131レビュー修正：完了経路の実call検査件数をbinding fullChecksと照合し、成功したcounts／timed間では追加operation・contextの全件数も一致させる。actor別exclusive合計を同actorのpack inclusiveと外側plan区間へ照合。LBP17／18・LBPR10〜12で、片側／両側の件数削減と、operation合計・partitionを保つactor間の費用移動を拒否する。
