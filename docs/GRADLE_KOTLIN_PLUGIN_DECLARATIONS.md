@@ -9595,17 +9595,19 @@ small・h0・single-largeの3 workload×reader／authority-broker、warm-up各1�
 <!-- CLB3-TABLE-BEGIN -->
 | 条件 | role | scalar総時間 ms | full-reference ms | bound-live ms | 完了／試行（全計測mode） | 判断 |
 | --- | --- | ---: | ---: | ---: | --- | --- |
-| small | reader | 390.9 | 1054.0 | 1023.9 | 9/9 · 9/9 · 9/9 | defer |
-| small | authority-broker | 398.8 | 1053.0 | 1049.2 | 9/9 · 9/9 · 9/9 | defer |
-| h0 | reader | 1027.0 | — | — | 9/9 · 0/9 · 0/9 | defer |
-| h0 | authority-broker | 1035.1 | — | — | 9/9 · 0/9 · 0/9 | defer |
-| single-large | reader | 955.3 | — | — | 9/9 · 0/9 · 0/9 | defer |
-| single-large | authority-broker | 981.8 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| small | reader | 394.6 | 1046.5 | 1035.6 | 9/9 · 9/9 · 9/9 | defer |
+| small | authority-broker | 400.7 | 1049.4 | 1053.0 | 9/9 · 9/9 · 9/9 | defer |
+| h0 | reader | 1017.5 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| h0 | authority-broker | 1027.6 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| single-large | reader | 945.4 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| single-large | authority-broker | 967.6 | — | — | 9/9 · 0/9 · 0/9 | defer |
 <!-- CLB3-TABLE-END -->
 
-結果は全6条件deferで、本番採用を見送る。warm-up込み216試行の120件、実測162試行の90件が完了した。実測の方式別完了率はscalar 54/54（100%）、full-reference 18/54（33.3%）、bound-live 18/54（33.3%）。smallのquiet総時間中央値はscalar 390.9〜398.8 ms、full-reference 1053.0〜1054.0 ms、bound-live 1023.9〜1049.2 msであり、bound-liveはfull-referenceとの差が約0.4〜2.9%に留まり、scalarに対して約2.6倍遅い。h0／single-largeの両batch方式は実測全72試行がtransfer中にrequest_expiredとなった。scalarは同条件でも955.3〜1035.1 msで完了した。失敗は成功中央値へ混ぜず、失敗を含む試行中央値（約4500 ms）と停止理由をJSONへ残す。
+結果は全6条件deferで、本番採用を見送る。warm-up込み216試行の120件、実測162試行の90件が完了した。実測の方式別完了率はscalar 54/54（100%）、full-reference 18/54（33.3%）、bound-live 18/54（33.3%）。smallのquiet総時間中央値はscalar 394.6〜400.7 ms、full-reference 1046.5〜1049.4 ms、bound-live 1035.6〜1053.0 msであり、bound-liveとfull-referenceの差は約−0.3〜1.0%に留まり（authority-brokerではbound-liveのほうが遅い）、scalarに対して約2.6倍遅い。h0／single-largeの両batch方式は実測全72試行がtransfer中にrequest_expiredとなった。scalarは同条件でも955.3〜1035.1 msで完了した。失敗は成功中央値へ混ぜず、失敗を含む試行中央値（約4500 ms）と停止理由をJSONへ残す。
 
-成功した条件のpaired T差（各groupの3 round中央値）は、counts−quietが9.3〜27.1 ms、timed−countsが-10.7〜20.5 ms、timed−quietが8.6〜40.0 msだった。期限停止したbatch条件の差は打切り時刻に制約されるため、計測費用の推定・速度改善の根拠には使わない。成功条件のconstructionは約5.8〜6.0 ms、cleanupは約0.3〜0.9 ms（方式内のquiet成功試行をまとめた中央値）であり、transferと区別して保存する。異なるworkloadの中央値をまとめた値で改善を判断しない。captureのprepareChallenge／receive、handshake、全entry再構成の時間は個々のrowで照合できる。
+成功した条件のpaired T差（各groupの3 round中央値）は、counts−quietが7.0〜57.4 ms、timed−countsが-19.1〜18.0 ms、timed−quietが9.0〜48.2 msだった。期限停止したbatch条件の差は打切り時刻に制約されるため、計測費用の推定・速度改善の根拠には使わない。成功条件のconstructionは約5.8〜6.0 ms、cleanupは約0.3〜0.9 ms（方式内のquiet成功試行をまとめた中央値）であり、transferと区別して保存する。異なるworkloadの中央値をまとめた値で改善を判断しない。captureのprepareChallenge／receive、handshake、全entry再構成の時間は個々のrowで照合できる。
+
+CWC-Dとの差の内訳：CLB-3の総時間はCWC-Dより1桁大きい（smallのscalarはCWC-Dの約28 msに対し約400 ms）。timed記録の内訳では、handshake（RPCごとに1回の接続）は上位に入らず、主因ではない。最大のbucketは`binding.providerGate`で、`json.canonicalOwnedJson`、`binding.scopeGate`が続く。smallのbatch 1転送（4 call）では、challenge・channel・owner署名の検証を含む完全検証（CLB-0の`#inspect`）が1157回、h0のscalar 1転送（18 call）では1002回実行された。CLB-1以降の各provider／scope gateが毎回この完全検証を行うことが総時間の大部分を占める。bound-liveが省くのは追加のwire比較hashと固定identityのcopy／照合だけで、完全検証の回数はfull-referenceと同じなので、両者の差は小さい。次の調査は、期限・認可・完全性を緩めずに、ready後のgateで毎回再検証が必要なものを絞り、この完全検証の反復を減らせるかを対象にする。件数は記録の`audit.fullChecks`、時間は`trace.buckets`から確認できる。
 
 表の時間はquiet成功試行のT中央値、完了／試行はscalar・full-reference・bound-liveの順でcounts／timedも含む実測値。全216 row、失敗理由、各phase、計測費用partition、handshake、計測mode間のpaired差、署名承認とsource hashは `docs/validation/gradle-cwc-lb3-2026-11-10.json` に保存する。
 
@@ -9615,7 +9617,9 @@ small・h0・single-largeの3 workload×reader／authority-broker、warm-up各1�
 
 planTimingの各区間で順序・actor・連番・非有限値・包含関係を検査し、各計画時間を区間長の合計へ一致させる。成功結果ではclient計画はsetup区間、provider計画は転送開始後から再構成開始までに限定し、全計画が完了していることと件数の閉包を要求し、区間の欠落・重複を拒否する。失敗結果でも部分区間・累積時間を保持・検査する。元期限、認可・取消し・完全性・予算は変更しない。v1の計測との速度改善比較は行わない。
 
-再測定の216試行では767区間を保存し、期限停止した96試行（warm-upを含む）に各1区間の未完了provider区間を残した。実測成功したbatch転送のprovider phase合計は642.2〜700.1 ms、失敗したbatch転送は未完了区間を含め3848.0〜3972.0 msだった。失敗区間の時間は作業完了やplanner CPUの証明には使わない。
+再測定の216試行では768区間を保存し、期限停止した96試行（warm-upを含む）に各1区間の未完了provider区間を残した。実測成功したbatch転送のprovider phase合計は643.5〜697.9 ms、失敗したbatch転送は未完了区間を含め3848.5〜3914.2 msだった。失敗区間の時間は作業完了やplanner CPUの証明には使わない。
+
+CLB-3レビュー修正：(1) runnerは再開用の測定結果を`docs/validation/…json.pending`へ書き、途中で失敗すると約2 MBのファイルが.gitignore外に残っていた。source hashから決まる名前でOSの一時ディレクトリへ置く。(2) LB310は記録runner以外で何も検査せずにpassedとなっていたため、`it.runIf`で明示的にスキップする。(3) 上記「CWC-Dとの差の内訳」を追加した。runnerは表だけを再生成するため、本文の範囲も再測定値へ更新した（再測定後も上位3 bucketと完全検証回数は同じ）。
 
 動的fs読込を含む承認rootをrunnerと共通化し、子承認のsource閉包が外側に収録されることも検査する。保存前検査の失敗時はpending測定を保持し、同じsource hash集合の場合だけ再検査へ再開できる。
 

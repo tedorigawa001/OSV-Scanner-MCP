@@ -42,9 +42,8 @@ it('LB309: transport expiry cannot publish completed reconstruction in any arm',
  try{const commands=await f.commands();enabled=true;await expect(f.run(commands[0]!)).rejects.toThrow();await f.link.settle();expect(f.reconstructed).toBeUndefined();expect(f.link.diagnostics.slice(2).every(r=>r.control.metrics.publications===0)).toBe(true);}finally{f.close();}
  }
 },60000);
-it('LB310: native real-time matrix retains warmups, failures and all observer states',async()=>{
- if(!process.env.CWC_LB3_EVIDENCE_PATH)return;
- const measured=await runCwcLb3(3,undefined,{realClock:true});writeFileSync(process.env.CWC_LB3_EVIDENCE_PATH,JSON.stringify(measured));expect(measured.rows).toHaveLength(216);expect(measured.summary.attempted).toBe(162);
+it.runIf(process.env.CWC_LB3_EVIDENCE_PATH!==undefined)('LB310: native real-time matrix retains warmups, failures and all observer states',async()=>{
+ const measured=await runCwcLb3(3,undefined,{realClock:true});writeFileSync(process.env.CWC_LB3_EVIDENCE_PATH!,JSON.stringify(measured));expect(measured.rows).toHaveLength(216);expect(measured.summary.attempted).toBe(162);
 },1800000);
 it('LB311: the outer source closure covers every nested approval including fs-loaded case roots',()=>{
  const a=lb3ApprovalFixture().view.record,outer=a.comparison.envelope.manifest.sources;
