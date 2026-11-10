@@ -9691,3 +9691,248 @@ node scripts/check-cwc-lb3p.mjs
 node scripts/check-cwc-lb3p.mjs --check
 npx vitest run src/test/utils/gradleOwnedCwcLb3p.test.ts src/test/utils/gradleOwnedCwcLb3pRecord.test.ts --maxWorkers=1
 ```
+
+### 9.132 CLB-VF：私有requestの検証事実とlive検査の分離（設計）
+
+#### 9.132.1 対象・採用前提
+
+設計のみ。新しいhelper・profile・runtime・検証省略は未実装であり、CVF01〜48は未実行の回帰条件である。CLB-3Pの最大categoryは全18 cohortでwire-verification、小規模batchでchallenge／channel／ownerの公開検証入口は1165／1169／1181回だった。この観測値は計測負担を含み、その全額を削減可能時間としない。今回の対象は、ready後に同じCLB私有requestへ反復する `CwcLb0Session.#inspect` の静的検証である。
+
+候補profileを `cwc.session-private-verification-facts.v1`、比較modeを `full-verify` と `fact-live` とする。既存のfull-reference／bound-liveはwire比較hash・identity copyの省略条件であり、新modeとは別軸である。新profileの両modeは既存bound-liveの所有権・scope・再入契約を共通前提とし、変更点を静的検証事実の再利用だけに限定する。通常API／既存profileの動作を暗黙に変更しない。
+
+`Lb2Link.#current` の `inspectAuthenticatedCall`、実SessionServerのc.check／最終inspect・reply検証、一般APIへ別wireを渡すinspectは対象外で、従来の完全経路を維持する。CWCのcontext自己hash、command再入力・独立計画、fresh SourceSnapshot／全entry内容、原本読取・保存・use／ACKも対象外である。provider／ReadScope／ledgerのlive境界数を減らしたり、複数検査を一度の認可成功で代用しない。
+
+新しい独立source承認はfactory・私有storage・fact発行／live helper・呼出し元の閉包、Node／intrinsics前提、静的validator／schema／codec版、既存binding pinと新policyを固定する。caller提供のdigest／validフラグ、旧profile、自己hashだけの更新では有効化できない。profile／pinの現在性を毎回確認し、不適格なら新entryはno-readで拒否する。旧経路を明示選択するcallerは維持するが、新entryの失敗後に旧経路へfallbackして救済しない。
+
+実Endpointのpublic readonlyを所有権の証拠としない。CLBのregistry／key selection／identity／expectationは私有copy・完全parse・deep-freeze・slot固定を要する。実SessionServer側のprincipalとの対応は、既存の実call検査・現在のcredential／permission照合で毎回維持する。Endpoint等の可変slotから固定事実を借りるadapterは、封印またはその都度の完全な対応確認を示せなければunsupportedとする。初期版は実SessionServerの検査を一切省略しない。任意のprocess侵害・信頼するmodule内部の不正書込への耐性は保証しない。
+
+#### 9.132.2 静的事実とlive判定の境界
+
+| 対象 | 固定可能な事実 | 各利用時に残す検査 |
+|---|---|---|
+| handshake／challenge | 同じ私有transcriptとchallenge request／replyの署名・schema、nonce／sessionId／requestId・sequence・originDigest・ttlMs・challengeの一致 | 実Endpoint／channel／callのactive・generation、nonce消費・受付順の状態、session lifetime・challenge元期限・取消し。新frameの署名／sequence検査は完全に実行 |
+| request channel | 同じ私有outerとinner B、署名・schema・innerDigest・direction／API・lineage・発行時purposeの一致 | 現在のpurpose＝issuedPurpose、permission／委任／lineage、registry／credential／key epochの現在性。受信frameからexpectationを作り直さない |
+| owner envelope | 同じBの署名、keyId／SPKI／identity・role／instance／boot／keyEpoch・domain／API・body schemaと固定commandの一致 | 現在の署名principalの有効性・profile／source pin・owner／scope・row・元期限・spent下限。commandを再入力する既存APIのschema／内容検証は継続 |
+| admission・K/D | 同じ検証済みcommandから得たoperation keyとrequestDigestの対応、固定expected projectionとの一致 | 実operation rowRefとK/D、attempt／work／wireの単調性、元期限・短縮期限、再試行の既存intent guard・予算 |
+
+静的validatorに含まれるpermission照合は「捕捉時のregistry snapshotで整合した」という履歴に限る。`authorized:true`、`pinCurrent:true`、`deadlineValid:true`、`sourceFresh:true`のようなlive成功事実はfactへ保存しない。現在のpermission／purposeの再検査を必須とし、静的validatorを飛ばすことを権限の継続と解釈しない。role→API destination、direction、schema、lineage、registry key selection等、元の完全検証の全predicateを「固定事実」または「各回live」のどちらへ移すかを実装時のsource一覧で網羅し、未分類predicateがあれば採用不可とする。
+
+#### 9.132.3 私有wireの捕捉と不変性
+
+最初のdecode／hash／署名検証の前に、既存receive guard・予約を取り、通常Bufferの実brand／backing store／長さをintrinsicsで確認する。SAB・Proxy・getter・copy差し替え等を拒否し、inner B≤8192 B、outer／challenge request／reply各≤16384 Bを専用storageへcopyする。既存の私有storageを共有し、fact用に同じwire一式をもう一度保持しない。callerのpacket、pool、`.buffer`、subarray、返却command／診断からprivate bytesへaliasしない。
+
+storageは非公開keyと単調なstorageEpochで識別し、Bufferの外部read／write API・任意callbackを持たない。固定されたvalidator・command copy・最終検証・zeroだけが触れる。factはBのdigestだけでなく、実storageRef／epoch・callRef・validator版へ束縛する。同値bytesや同じdigestでも別storageへの置換を許可しない。正規のwrite／replace／release要求はepoch更新とfact失効を先行する。入場後の元packet／dispatch copyの変更はBへ波及せず、別wireを提示する通常inspectはその変更を完全照合で拒否する。
+
+freezeはBufferの不変性の証明にならない。隠れたalias・post-seal write経路が残るadapterはunsupportedとし、再hashしないfact-liveで任意の内部書込を必ず検出できるとは主張しない。故障試験では正規entryからの改変・slot置換を拒否し、alias非共有を検査する。特権的な故障注入でstorageを直接変更する対照は、full-verifyが拒否することと、そのようなwrite経路を持つprofileを事前拒否することを区別する。
+
+#### 9.132.4 factの実参照・初回発行・scope封印
+
+fact本体はmodule-private recordであり、外へ返すのは値による権限を持たないdiagnostic copyだけとする。recordの主要束縛は次の通り。
+
+- `controlRef / clbCallRef / actualCallRef / transportAssociationRef / callRowRef / callGeneration`。
+- `endpointRef / channelRef / channelGeneration / staticSessionRef / transcriptRef / registrySnapshotRef / registryDigest / keySelectionRef`。
+- `storageRef / storageEpoch / innerDigest / outerDigest / challengeRequestDigest / challengeReplyDigest`と私有・不変のvalidatedCommandRef。
+- `ownerRef / bindingRef / bindingGeneration / scopeRef / scopeGeneration / operationRowRef / actor`。peer roleとplanner actorを別fieldにする。
+- 固定API／direction／issuedPurpose／lineage／expectedProjectionRef、challenge・sequence・nonce／sessionId・originDigest・K/D、schema／codec／policy版・承認pinとoriginalDeadline。
+
+実callとの対応を文字列IDやcallerの`actualCall` fieldで表明させない。信頼するLb2Linkの同じdispatchが、実AuthenticatedSessionCallの完全inspect、実wireとCLB私有Bの完全一致確認、call claim後に非公開TransportAssociationを登録する。associationは実server／channel／run／actualCall／CLB controlの実参照とgenerationを含み、root adapterのみが発行・照合できる。standalone署名fixtureには別のdiagnostic association種別を与え、実session接続済みとは数えない。新entryがassociationを偽造・復元するAPIは作らない。
+
+初回は `prepareChallenge`、`receive`、begin／wire対応確認、ready直前の既存完全検証を維持する。初期版ではこれら同士の重複も省略しない。receiveで得た私有recordはverified-unboundとして保持できるが、scope完成前のP／S検査・source IO・root／fact生成・返信へ使わない。ready直前の完全検証から全factを構築し、全post検査が成功した後に一度だけscope-boundへsealする。B・static registry・固定expectationが同じであることを確認し、以前の中途factを後から補完して採用しない。
+
+sealはfactory owner、provider、ReadScope、binding、実operation rowの実参照とgeneration、K/D・元期限・purpose／projectionをすべて照合する。最初のcallbackより前に同callへの1 owner claimと再入latchを取り、失敗・外部再入で旧claimを再発行しない。scope bindingを付け替えず、新batch／retryは新しいactualCall・CLB control・association・storage・factを作る。元operation rowのK/D・元期限・attempt／spentは既存契約どおり保持する。client-initial／sealにprovider callのfactを貸さない。
+
+#### 9.132.5 非公開helperの入出力
+
+以下は実装予定の概念entryであり、公開export・runtime追加ではない。tokenはWeakMap等のmembershipで検査し、JSON復元・clone・prototype一致・digest一致では代用できない。
+
+| entry | 入力 | 出力・完了条件 |
+|---|---|---|
+| captureVerificationFacts | claim済みprivate control、既存storage handle、固定validator／registry／expectation、追加承認・先払いticket | 完全検証＋live pre/post済みのverified-unbound私有record。固定command・identity・K/Dは最初の完全検証に由来し、公開capabilityは返さない |
+| sealVerificationFacts | 同record、同TransportAssociation／actualCall、登録済みowner／binding／ReadScope／operation row、現在generation、projection | scope-boundな非公開VerificationBindingを一度だけ発行。ready後の省略を許可するが、IO・認可receipt・DispatchPermitを発行しない |
+| checkVerificationLive | 同binding、同owner／scope／provider、正規内部frame、現在操作のAPI／purpose | void。§9.132.6の全live pre/postと実参照照合。成功値・有効期間receiptを返さない |
+| copyVerifiedCommand | 同binding、同scopeと正規frame | 完全検証済みprivate commandの専用copy。copy前後のlive／generation／元期限を検査し、外側公開をguardする。一般command APIへの再入力検証は省略しない |
+| invalidateVerificationFacts | 信頼するcontrol／scope lifecycleと現在generation、失効理由 | bound lookupとframeを先に失効。元callの最終検証に必要なstorageの寿命とは分離する。spent・claimを返還しない |
+
+helperへ任意validator／byte callback／now callbackを渡させない。fixed factoryが事前登録したbodyだけを呼び、mode選択・source承認もcall開始前に固定する。current／now／permissionsは事実生成関数へ埋め込む計算ではなく、各回必ず実行するlive入力である。利用中にvalidator／policy版やpinが変わったらterminalにし、旧recordのdigestを書き換えない。
+
+#### 9.132.6 毎回のlive検査・元期限
+
+旧gate 1回ごとに、次の全手順を新規実行する。内部G→S→P、ledger→Pで同frameを使っても、live検査の成功は共有しない。
+
+1. lookup・control／actualCall association・Endpoint／channel・binding／scope／rowの実参照、すべてのgeneration、stateとmode・policy版を確認する。guard／checking latchをcurrent・now・copy等の最初の外部callbackより前に取る。P／S・CWC owner／codec clockへ直接入る経路も同じ外部再入境界へ結ぶ。
+2. 元のP current、実SessionServer／Lb2Linkの完全な現在性検査、独立source／profile／registry pin、両credential、現在purpose／permission／委任／lineage、owner／scopeのopenを、元の境界と順序で確認する。`currentPurpose = issuedPurpose = bindingPurpose = projectionPurpose`を要求し、別purposeも許可されていることを代用にしない。permissionのcopy・schema／canonical処理も残す。
+3. 実operation rowのK/D・state、attempt／work／wireの非負整数と消費下限、ledger残高・reservation、fresh scope／snapshot／grant membershipを毎回照合する。毎batchのprovider独立計画・完全性確認も元のまま行う。
+4. 単調な時計を新規評価し、deadlineFloorを `min(originalParentDeadline, challengeDeadline, sessionCreated+30000, originalRowDeadline, currentParentDeadline, currentRowDeadline, previousDeadlineFloor)` 以下へしか動かさない。外部rowが期限を増やす試みは拒否し、現在時刻やTTLから起点を再作成しない。新profileも比較は構築前から4500 msの元期限を維持する。
+5. 各callback／copy／固定操作から戻った直後、状態・実参照・generation・失効latchと時計を再確認する。認可確認後の最後の時計callbackも含め、後述のauthorization fenceで認可revisionの変更を検出してから公開する。controlのgenerationが同じことだけを認可維持の根拠にしない。callback後に旧pinへ戻っていても、既に観測／記録した失効はterminalのままにする。
+
+**authorization fenceと公開の線形化点。** 各gate／copy返却／seal／最終公開の外側操作ごとに、信頼するprivate AuthorityOwnerの認可状態cellを使う。cellは権限主体・owner実参照・owner epochと単調な認可revision、私有で不変な現在policy viewを持つ。peer／server credentialとkey epoch・permission／委任／lineage・purpose resolver・registry／source／profile pinの変更、取消し、callbackやpolicy slotの差替えは、すべて同ownerの固定mutation entryから同期的にrevisionを進め、変更を公開する。同値値への復元でもrevisionを戻さず、overflow／owner再起動は旧bindingを失効させる。複数ownerが関係する場合は承認済みの有界なrevision vectorと各owner epochを照合し、全要素の捕捉・再確認を同じcallbackなしの同期区間で行う。callerからrevisionを渡したり、任意getter・Proxy・SAB・async IPCでcellを読むAPIは認めない。
+
+登録済みownerが記録したcredential／pin等の失効は、fence中のrevision差とは別にsubjectごとの単調なrevocation epochまたはbindingのsticky失効latchへ結ぶ。新bindingの発行時に対応するsubject epochを束縛し、各gateで比較する。失効を通知した後で権限やpinを元へ戻しても旧bindingのepochを更新せず、新call／bindingだけが新しいepochへ参加できる。これによりgate開始前に起きた記録済み失効も復元で救済しない。これは認可成功の保存ではなく、既存のgeneration／terminal検査に加える失効検出である。
+
+外側guard取得後、最初のauthority／clock／permission等のcallbackより前にrevision vectorをprivate data読取で捕捉する。元のlive判定をすべて実行し、最後のnow callback・copy・結果正規化を終えた後、同じowner／epoch・revision vectorをprivate data読取で再確認する。途中で権限が変われば、control／binding generationが不変でも外側をterminalにして公開0とする。権限を復元してもこの操作のrevision差は消えない。変更に対応する既存の失効理由を保持し、理由を特定できないrevision差はpolicy_changedとして拒否する。同callでcallbackを再試行して救済せず、失敗分の消費を保持する。
+
+最終revision照合から返値／fact capabilityの返却、署名済みbytesの外部引渡し、endpointの私有queueへのenqueue確定までを、承認済み固定bodyだけの有界な同期publish区間とする。この区間はawait・任意callback・時計callback・getter・Proxy・ユーザーのthen／toJSON／copy・外部transport enqueueを呼ばない。結果copy／schema正規化は先に済ませ、最後の元期限確認には捕捉した信頼する単調clock intrinsicを使う。その読取後にもrevision・control／scope／generationをprivateに確認し、期限未満の状態で一度だけ内部publicationを確定する。この最後のfenceと確定が公開の線形化点である。intrinsicの実体・時計domain／deadline変換もsource承認へ束縛し、差替え可能なperformance.nowや追加now callbackを最終確認の代用にしない。
+
+外部transportへ渡す後続pumpが別のIO境界なら、そのsession／transport所有の現在controlで新しいfenceと既存live gateを実行する。閉じたscopeのfactや旧callのready状態を再利用しない。queue確定を実delivery／use／ACKの成功とは数えず、後続拒否は元のeffect／outcomeに従って扱い、既存の区別・寿命・bytes所有と予約を維持する。この独立した送信gateと寿命を示せないasync adapterもunsupportedとする。callbackが必要なenqueueや署名APIを上の同期区間へ混在させるadapter、最終照合後にforeign codeを実行するadapterはunsupportedとする。これは各操作内だけのfenceで、live成功receipt・跨gate cacheをfactへ保存するものではない。full-verify／fact-liveの双方に同じ強化・guard・予算・計測を適用する。
+
+revisionの完全な通知は採用前提である。旧fixtureのrevoked Setや外部closureをcallbackが直接変更し、その変更をcellへ通知しない構成は、generation確認や任意のcurrent callbackをもう一度呼ぶだけでは保証できない。新adapterの事前検査でその構成をunsupportedにし、状態所有者の固定mutation entry・alias除去・通知経路をsource閉包と故障試験で実証する。遠隔authorityの変更をローカルcellへ線形化できない場合も未対応であり、任意のrevision値を観測しただけで採用しない。新cell／revision vector・最終clock intrinsic・publish guardのmemory／workは§9.132.9の既存予算へ含め、入場前の予約とlayout証明が必要である。
+
+read／IO／署名／enqueueの前後、parts再構成・最終digestの後、outcome／use／ACKの各既存gateを移動・統合しない。外側操作が成功して初めて返値を公開し、途中の成功callbackが作った値をpost検査前に外へ渡さない。元の境界に追加する強化gateは両mode共通に明示して別費用として残す。新helperを全predicateの分類・呼出し対応表なしで既存#liveの呼出し削減へ使わない。
+
+purposeの供給元もadapter契約へ含める。現行の実session c.checkはpermitAPIの返値を捨て、既存fixtureのserver／linkは別々にread固定callbackを渡しているため、そのまま現在purposeの一致を実証したとは扱わない。新adapterは同じ権限主体の現在purpose resolverをprivate factoryで束縛し、Lb2Linkの既存 `server.permitAPI(peer, api)` の実返値をissuedPurposeへ照合する。CLBのpurpose／permissions callbackも同じ現在policyへ接続し、捕捉時snapshotの固定返却や別callbackの値で代用しない。resolverやcallbackが同値値へ差し替わる場合も、登録した実参照・policy generationを照合する。この追加照合は両mode共通の強化差であり、実SessionServerのc.checkを削除・置換するものではない。
+
+pre／postは新しい#liveを一律2回呼ぶという意味ではない。実装時は旧P current・#time・#live・source pre/post・最終公開gateを、呼出し箇所／operation ID／callback種別ごとの対応表へ展開する。各旧ノードを同じ位置・回数で実行し、private factのmembership／generation確認をその前後へ追加する。追加のauthority検査が必要なら共通mode manifestで強化差と費用を明示する。既存ノードの省略・移動をfact利用による件数減少へ紛れ込ませない。
+
+gate開始前に外部で変更と復元が完了し、現在viewへ渡すまでの履歴が契約外である一時pin／permission変更は、CFP10と同様に全live検査成功時の継続を両modeで許容し、検出したと記録しない。ただし、今回必須としたfence区間内のauthority mutationを未観測対照へ分類してはならない。登録したmutationはすべてrevision差で拒否し、その通知を迂回できるadapterはunsupportedとする。外部の履歴まで検出するadapterは独立した失効記録とgateへの接続を別途要する。観測した取消しやcallback中のscope.closeは復元できない。
+
+#### 9.132.7 状態機械・再入・流用
+
+| 状態 | 許可・遷移 |
+|---|---|
+| reserved／capturing | claim・guard・容量を確保済み。完全検証だけを許可し、失敗・再入・失効でinvalidへ。捕捉中のfact利用と2回目のcaptureを拒否 |
+| verified-unbound | 私有の静的結果を保持。scope seal以外の利用を拒否。callback後のstate／generation不一致でinvalidへ |
+| ready | 同じscopeの固定entryだけを許可。外側操作の入場時にchecking。別owner・scope・root／factへの移管はしない |
+| checking | 非公開で登録した同期frameの正規内部G／S／Pだけを通す。外部再入、偽frame、同frameの別操作への流用、awaitを跨ぐframe保持でinvalidへ |
+| invalid／released | terminal。lookupとframeを失効し、新read／root／fact／replyを拒否。finallyでreadyへ戻さず、再bind／再capture／pin復元による救済0 |
+
+内側の再入例外をcallbackが捕捉しても、外側はgeneration／失効latchで拒否する。permissions／purpose／clock、source返却値のgetter、copy先・diagnostic、CWC owner／codec clock、promise継続からの再入も対象とする。正規frameは制御経路だけを表し認可成功を持たない。外部callbackにはframe・private entryを渡さず、完全なfault boundaryの外へ元の検査処理を出さない。別callの正規操作をglobal busyだけで不当に止めない。
+
+#### 9.132.8 初回・transport最終検査と回収
+
+ready前の全検証、受信する新frameのauth、実SessionServerの最終 `inspectAuthenticatedCall`／reply body・schema・署名生成、SessionClientの応答検証、`Lb2Link.reply` の実reply channel／owner完全検証、CLBのfinish時request完全検証は維持する。これらはfactで置換しない。最終完全検証も同じprivate read管理を用い、失効・後着なら読取自体を開始しない。新replyのbytesへrequestのfactを適用しない。
+
+完全検証を残すことと失効後のno-readは別条件である。現行inspectAuthenticatedCallはwire hashの後にc.checkを呼び、実SessionServerの元call lookupもdispatchのfinallyまで残る。従って既存entryをそのまま呼ぶだけでは、後着時のhash／decode前拒否を証明できない。VF-2では実session側にprivate control／generationと元期限へ結ぶ読取前lifecycle guardを必須とする。最終inspect・outcome用decode・reply検証／署名のそれぞれの前に、Bへ触れないstate／generation確認と現在の元期限検査を行い、各callback後にも再確認する。guard中の再入を先にlatchで拒否し、元の署名／schema／live検査は省略しない。
+
+root adapterのtimeout／cancelは実channel停止と同callの失効をこのcontrolへ同期させ、非公開expiry処理がlookup除去をdispatchのfinallyより先に行う。旧async継続はcontrolを直接保持して先にterminalを照合し、lookupからcallが得られると仮定しない。必要な共通lifecycle hookは両modeへ同じsource承認・費用で導入するもので、静的検証省略とは別の強化である。既存entryの前後だけのwrapperで全読取を覆えない場合はunsupportedとし、検証関数の暗号処理を残したことをno-readの証拠にしない。VF-1のstandalone成功だけでこの出口を通過したとしない。
+
+scope.close／finishProviderはbound側を先に失効させるが、正常なsession最終検証に必要なB・outer・challenge storageとcall controlを直ちに消さない。初期版ではfactの固定command等もcall終了まで既存予約内へ保持し、最終処理はfact-liveのfallbackではなく最初から定めた独立した完全経路として行う。scope閉鎖で再利用capabilityが消えた後も、private session final entryだけがactiveなcallを完全検証できる。scope用factは二度とreadyに戻らない。
+
+timeout／cancel／close／検査失敗ではawait・外部callbackより先にcall／boundのterminal・generation更新、fact／frame失効、公開lookup除去・channel受付停止を行う。dispatchのfinallyを待たない。privateReaders＝0ならB・outer等をzeroし、fact・command cacheを含む全bytes参照を外してbyteReservationを一度だけ解放する。reader保持中は新read・公開を拒否し、最後のreaderのfinallyで回収する。read区間内は有界同期・外部callbackなしとし、async closureはcontrolだけを持ちBを直接捕捉しない。
+
+後着resolve／reject／finallyは開始時control・generationを最初に照合し、B取得／decode・署名／enqueue・outcome生成・use／ACK・成功記録0で止める。既に生じた効果の取消しや副作用なしをfact失効から推定せず、元のrefused／unknownとK/D・元期限・spentを維持する。repeat expire・late finally・releaseは二重zero／解放0。未終了dispatchの隔離枠と残るscratchは実drain／fenceまで計上する。正常成功とtimeoutの競合は最終検証・公開の線形化点で一回だけ確定し、成功後のtimerで結果を書き換えない。
+
+#### 9.132.9 memory・work・件数
+
+同callにfact 1個・scope-bound capability 1個までとし、digestごとのMapや跨call cacheを作らない。所有wireは既存callの98304 B予約内（4入力の最大合計57344 B）、frame workspace 32768 B、既存admission command枠8192 Bの対応を維持する。factは固定commandの同じ私有不変実体を参照し、追加のcommand一式を常駐させない。
+
+追加metadataの候補上限は4096 Bで、既存binding 8192 B枠の一部とする。projection・claim／guard・membership・generation・diagnostic scratchを含めた総上限を両mode共通のlayoutで証明し、入場前にsub-reservationを取る。4096 Bの空きがあると仮定したり、同じ8192 Bを既存用途と二重に割り当てない。合わなければcopy／decode前にcodec_budget_exceededで拒否し、profileの出口は未成立とする。JS object上限は構造予算でありRSS上限の保証ではない。
+
+fact初期化・copy・hash・guardのworkは既存初期化／構造work予約へ明記し、容量不足時は実行前に拒否する。上限を増やさず、失敗したcapture／sealの消費とclaimを保持する。旧maxChecks＝4096は暗号検証数ではなく論理gate試行上限として両modeで維持し、cryptoを省いて無限回呼べるようにしない。byte解放と消費済みinitialization／work／wire／attemptの返還を分離する。
+
+#### 9.132.10 拒否理由・実装箇所
+
+| 分類 | 条件と外側への結果 |
+|---|---|
+| codec_profile_unsupported | 未承認source／runtime／validator版、旧profile、未封印・aliasありadapter。事実利用・source読取0 |
+| schema_invalid／signature_invalid／peer_mismatch／binding_mismatch | 初回の不正bytes・署名・identity・expectation。既存validatorの理由を保持し、fact発行0 |
+| source_binding／call_reused | 偽token・別実参照／generation／purpose projection・storage置換・再capture／再seal・外部再入。outer成功公開0 |
+| permission_denied | 現在purpose不一致、permission／委任／credential失効。観測後terminal、復元による救済0 |
+| owner_closed／session_closed／request_expired／clock_invalid | 現在state・取消し・元期限・逆行時計。lookup除去・回収を先行し後着を拒否 |
+| codec_budget_exceeded／operation_budget | 事前容量／work不足・論理gate上限・消費下限違反。取得／計画の開始0、失敗消費は保持 |
+
+エラー名は既存分類へ対応させ、authority由来の元理由を一般的なfact不一致へ上書きしない。最初のterminal理由を保持し、非Error throwも失敗にする。実装候補はCwcLb0Sessionのprivate storage／#inspect・ready／finish、CwcLb1BindingのP／S正規frame、Lb2Linkのassociation登録・最終検証／drainである。CWC root／fact・ReadScope・ledgerは既存のscopeと予算検査を継続する。実SessionServerのc.check・一般inspect・transport verifierは削減実装の変更対象へ含めない。§9.132.8の共通lifecycle hookを必要とする場合も、その完全検証処理を削らず、別の共通前提として実証する。
+
+#### 9.132.11 回帰条件（すべてplanned・未実行）
+
+| ID | 条件 |
+|---|---|
+| CVF01 | profile無効・旧profile・未承認source／validator／runtimeを両modeでcopy／decode／source IO前に拒否 |
+| CVF02 | source自己hash・署名・digestだけを更新しても独立承認pin不一致を拒否。自己承認で採用しない |
+| CVF03 | Buffer copy差し替え・SAB偽装・Proxy／getter・不正prototypeを両modeで捕捉前に拒否 |
+| CVF04 | capture後のpacket／dispatch／command／diagnosticのbuffer全体・subarray改変がBへ波及しない。別wireの通常inspectは完全照合で拒否 |
+| CVF05 | 正規entryからのB／outer／challengeのwrite・storage slot置換をepoch失効前に許可しない。同じdigest・bytesでも別storageRefを拒否 |
+| CVF06 | alias・post-seal write経路のあるadapterをunsupported。特権的な内部bytes改変をfull-verifyで拒否する対照をfact-liveの任意書込検出成功と混同しない |
+| CVF07 | challenge request／reply・nonce／requestId／sessionId／transcript・originDigest・ttlMs・sequence・署名の各不一致を初回完全検証で拒否 |
+| CVF08 | request channelのdirection／API／innerDigest／lineage／purpose・outer署名・新frameのreplayを拒否しfactで救済しない |
+| CVF09 | owner keyId／SPKI／role／instance／boot／keyEpoch／domain／API・body schemaの各不一致を初回検証で拒否 |
+| CVF10 | 受信frame由来のexpectation・未分類predicate・callerのvalid／authorizedフラグでは発行できない。全validator predicateの固定／live分類の欠落を拒否 |
+| CVF11 | 最初のcallback前にclaim・guard・ticketを確保。同callの同時／再入capture・失敗後再claimを拒否し消費を保持 |
+| CVF12 | verified-unbound・失敗captureからsource IO／root／fact／reply発行0。ready直前の完全検証と全post成功前の公開0 |
+| CVF13 | 偽物・clone・JSON復元token、同値文字列ID／digestで実call／TransportAssociationを代用しても拒否。standalone associationを実session証拠へ昇格しない |
+| CVF14 | actualCall／CLB call／control／Endpoint／channel／staticSession／run／rowの交換と同値row再挿入を実参照・generationで拒否 |
+| CVF15 | 別owner／provider／ReadScope／scopeGeneration／bindingGenerationへの移管、二度seal・再bind、client-initial／sealへの流用を拒否 |
+| CVF16 | 固定command／identity／projection／registry／key slotの子変更・差替え・返却copy経由変更を拒否または非波及とし、現在principalとの対応は毎回検査 |
+| CVF17 | ready前のprepare／receive／begin／ready完全検証を両modeで維持。ready後のみfact-liveで静的省略、full-verifyは毎回完全検証 |
+| CVF18 | 各旧P／S／G／ledger境界へ新live検査を1対1対応。内部frameを使っても認可／clock callbackの実行欠落0 |
+| CVF19 | 実server.permitAPIの返値がread→publicationで両方許可されてもpermission_denied。別の固定purpose callbackで代用せず、issued／binding／projectionへ再基準化しない。観測後のpurpose復元も拒否 |
+| CVF20 | permission／委任先／lineage／peerとserver両credential・key epochの取消しを各callback境界で拒否。静的な捕捉時permissionをliveの代用にしない |
+| CVF21 | 観測済みpin不一致・記録済み失効は復元後も拒否。検査前に変更・復元した未観測対照は両modeの全live成功時だけ継続可能とし検出成功と記録しない |
+| CVF22 | current／now callback中にclose／cancel／失効後pin復元を行い、内側例外を捕捉しても外側公開0。最後の時計callbackでcredential／permission／purpose／pinを変更し復元せず、control generationは不変のままでもauthority revision差で拒否。復元してもrevisionは進んだままとし最初のterminal理由を保持。通知を迂回する旧revoked Set／closure adapterは事前拒否 |
+| CVF23 | currentParent／rowの期限短縮を反映し、延長・deadlineFloorの増加・retryのTTL再基準化・逆行／非整数時計を拒否 |
+| CVF24 | 構築・capture／seal・live callback・command copy・最終digest・最終公開中の元期限到達をpostで拒否し、初期化費用で延長しない。最終clock intrinsic後のrevision・generation再確認とcallbackなしの同期公開を検証し、最後のfence後へのclock／getter／then／外部enqueueの挿入、clock intrinsic差替え、公開前の認可変更、期限到達時は外側公開0 |
+| CVF25 | 正規内部G→S→P・ledger→P・親scope検査は通し、偽frame・外部指定・別操作／await後の再使用を拒否。別callをglobal busyだけで誤拒否しない |
+| CVF26 | permissions／purpose／clockから直接・間接再入し、内側例外を捕捉しても外側fact発行・返信0。finallyでreadyへ戻さない |
+| CVF27 | source返却値getter・CWC owner／codec時計・copy／diagnosticからの再入を両modeで拒否し、外側応答公開0 |
+| CVF28 | private read中は外部callback／await／B持出し0。faultでreader保持中に失効し、早期zero・新reader受付・結果公開を拒否 |
+| CVF29 | command copyのschema・内容・K/D改変、別scopeのroot／fact／grant／permitを従来の完全性検査で拒否し、bindingで代用しない |
+| CVF30 | sourceのrequested／unrequested bytes・snapshot交換・複数commit区分改変を拒否。fresh取得・全entry再構成・独立計画・最終digestを維持 |
+| CVF31 | 新batch／exact retryで新call／association／storage／factを使用。元rowのK/D・元期限・attempt／spentを維持し、旧fact流用と非負値への消費減額を拒否 |
+| CVF32 | fact metadata／command常駐・scratchの二重予約・容量不足をcopy／decode前に拒否。binding 8192 Bとmetadata 4096 Bのlayout、既存1 MiBの実共存を検証 |
+| CVF33 | 初期化／work予算不足を取得・計画前に拒否。capture／seal失敗後の消費・claim・論理gate上限4096を両modeで保持し、crypto省略による無制限反復を拒否 |
+| CVF34 | 正常scope.closeでbound lookupを失効しつつsession最終検証用Bを保持。scope capabilityの復活0、最終完全検証後だけ正常回収 |
+| CVF35 | 実sessionのhash／decodeより前のcontrol／generation／期限guardと、実SessionServerの最終inspect／reply schema、Client／Linkのreply channel／owner完全検証、CLB finishのrequest完全検証が両modeで実行されることを独立counterで照合 |
+| CVF36 | request factで不正reply／refused／unknown署名・API／digest・outcomeを救済しない。transport最終検証失敗後の成功記録・use／ACK公開0 |
+| CVF37 | 未完了dispatch中のtimeoutでfinallyを待たずterminal・generation更新・fact／frame失効・公開lookup除去。privateReaders＝0ならbytes回収、隔離枠は維持 |
+| CVF38 | 後着resolve／reject／finallyをcontrol／generationで拒否。現行のhash-before-checkを負例にし、実sessionの最終hash／B取得・decode・署名／enqueue・新outcome・use／ACK・成功公開0。repeat expire／releaseで二重解放0 |
+| CVF39 | 正常完了とtimeoutの競合を最終検証・公開の線形化点で一回確定。終了済みcallをtimerで改変せず、unknown／possibleを失効から副作用なしへ変更しない |
+| CVF40 | private storage・command cacheの強参照を回収時に解消。binding／async closureのB保持0を確認し、zeroだけを解放済みと計上しない |
+| CVF41 | source／profile／mode・scope・予算条件を全arm共通に固定。初期化を最適化armだけ計測外へ出した比較と未承認sourceへ署名し直した記録を拒否 |
+| CVF42 | 各modeのgate試行・live pre/post・初回／finalの完全検証・ready後完全検証／fact利用を独立witnessで照合し、全counterを整合させた検査件数削減も拒否 |
+| CVF43 | exclusive＋otherを外側wallへ照合。actor別合計をpack inclusive・実測区間へ結び、operation合計／partitionを維持したactor費用移動・非再入inclusive過大計上を拒否 |
+| CVF44 | 初期化・handshake／capture・計画・全entry再構成／digest・audit・cleanup／drain・計測器復元を総時間へ含め、計画・転送の過小計上、負／非有限時間を拒否 |
+| CVF45 | 実署名sessionのTTL桁数差は比較用shapeだけ正規化し、actual wire・call wire・失敗時予算を維持。TTL延長・別API対応付け・frame欠落を拒否 |
+| CVF46 | 各workload／roleでquiet／counts／timed・warm-up・期限停止を全保存。候補の全測定完了と対照のcomplete／deadline-censored／invalidを分離。対照の元期限到達証拠とLのclock対応を照合し、単なるrequest_expired・早いchallenge期限・取消し・認可／完全性／予算障害を打切り下限へ流用しない。失敗除外・失敗totalMsの成功中央値への混入・停止時間差の高速化主張を拒否 |
+| CVF47 | primaryの4 armを同profile・fact layout・source承認・元期限・予算で比較。候補B/fact-liveが全測定完了しS/fact-liveとB/full-verifyへの5%条件を満たせば、対照の正当な期限停止だけを理由にdeferしない。VFD01〜08で完了対照・打切り下限・証拠不足・予算／認可障害・候補失敗・5%下限不足を判定。正確な速度比と下限証拠を区別し、本番採用はfalse。旧profileの強化差は別bridge |
+| CVF48 | 実session／fresh snapshot・outcome／use／ACKの対象範囲とfixture／同process・1 RPC/channelを区別。本番・実storage・隔離・8 read・CG0／CG3の保留を解除しない |
+
+CVF01〜40は原則full-verify／fact-live両mode、reader／authority-broker、対応するdescriptor／scalar part／rangesで正常例と負例を持つ。事実省略そのもののcounter差と、未観測pin復元の対照は期待差を明示する。単なる故障selectorのログではなく、実validator／callbackの入口数・読取／公開／回収の観測とgate操作ID・phase・区間の一対一対応を根拠にする。外側が捕捉した例外名だけで成功としない。
+
+#### 9.132.12 実装順・比較と出口
+
+| ID | 実装範囲と出口 |
+|---|---|
+| VF-0 | strict fixture contract。private storage／fact・association・scope generation・状態機械・claim／guard・認可revision／同期publish fence・予算・predicate分類を実装し、CVF01〜28／31〜34／37〜40の対象負例を実証。設計整合性検査だけで完了しない |
+| VF-1 | provider／ReadScope／CWC root／fact・ledgerへopt-in接続。既存live境界1対1と初回／finish完全検証、内容／独立計画・既存予算、CVF17〜34の対象部分・42のfixture counterを検証 |
+| VF-2 | 実SessionServer／Client・fresh snapshotへの限定接続。全batch／全entry、複数commit、取消し・元期限・応答紛失／retry、transport最終検証、outcome／use／ACK、早期回収・後着拒否とCVF13／14／28〜40の実session対象部分を検証。一般inspect・実session検査は完全経路を維持 |
+| VF-3 | 同条件の実時間比較と独立記録検査。CVF41〜48、計測追加費用・全失敗込み完了率・実予算・共通閉包に基づき候補／deferを判断。速度改善・本番採用を設計だけで認めない |
+
+primaryは転送形scalar／batchそれぞれにfull-verify／fact-liveを組み合わせた4 armとする。scalarも同じfact利用の候補を持つことで、改善したbatchを未改善scalarだけと比較しない。全armに同じ独立承認、binding所有権・identity封印・association・guard・private fact生成／scope seal・memory layoutを適用する。full-verifyでもshadow factを同じ初期化で生成するがready後の静的検証は毎回行い、fact-liveだけ同じgateをlive検査＋fact参照へ置換する。これを測定前にmode manifestへ束縛し、source内の暗黙分岐で切り替えない。
+
+最初の実時間matrixはCLB-3Pと同じ3 workload×2 role、warm-up 1＋実測3 round、4 arm×quiet／counts／timed＝288試行（実測216）。順序を回転し、失敗・warm-upも保存する。独立承認の配備は計測前、Endpoint／fixture・observer構築前から全entry再構成・最終digest・audit・最終live確認・cleanup／drain・observer復元後までをT_totalとする。新profile共通の初期化・fact生成・copy・gate・canonical／hashの追加費用を含め、inclusiveやhandshakeを足し直さない。counts−quiet／timed−counts／timed−quietのpaired差は差引きせず別保存し、期限停止の差を完了作業の計測追加費用や速度改善と呼ばない。
+
+同じ転送形の両modeはoutput／inventory／plan／request／actual wireと予約・live境界を対応付ける。実wireは常に実数値で予算検査し、署名packetの残TTL桁数差だけを対応API／requestの比較用shapeで正規化する。scalar対batchではrequest形・件数・wireの同一性を要求せず、全entryの再構成結果・同じfresh source・元期限・共通予算を照合する。CLB-3Pの成功時inspect＋call数＝fullChecksという旧式は新profileへコピーせず、各modeの論理gate試行＝ready前完全検証＋ready後完全検証／fact検査＋最終完全検証のpartition、各試行のlive pre/postと実session検査の独立witnessへ改訂する。途中拒否は未完了phaseとして保持し、成功経路の件数式を押し付けない。
+
+**候補の適格性と対照の打切り。** 全primary完了を一括要件にせず、次の順で同一workload／roleを判定する。matrixの行・失敗・warm-upは全件保存し、対照の未完了を成功に書き換えない。
+
+1. B/fact-liveのquiet／counts／timed全9測定が元期限内に完了し、source承認・認可・全entryの完全性・予算・最終検証・回収が全件成功することを候補の必須条件とする。元期限を超えた候補、失敗を除いた候補はdefer。h0／single-largeにも4.5秒の元期限を適用する。
+2. 対照3 armの全測定をcomplete、deadline-censored、invalidへ分類する。completeは正しい全entry結果と最終検証を伴う成功。deadline-censoredは同条件の実行がtrialの元期限で中断されたことを、信頼するclock・phase／guard traceと元deadlineへの対応で証明し、その時点まで認可・完全性・予算・profileの障害がないものに限る。request_expiredの理由文字列だけ、短縮された別challenge期限、取消し、応答紛失、schema／署名／source不正、work／memory／wire超過、初期化不成立はinvalidとし、いずれかがあれば当該条件の候補判定をdeferする。対照の安全性・資源回収は失敗時も必須である。
+3. deadline-censoredの時間証拠はL＝当該元deadlineを測定clockへ写した時刻−T_totalの開始時刻という完了時間の下限である。開始時刻の丸め・clock domain対応を明記し、Lを単純に4500 msや残TTLへ固定しない。timeout処理／cleanup後の失敗totalMsはLにも成功時間にも使わない。同じarm・observationの全3 roundが完了していなければ、その群の完全な成功中央値や正確な倍率は未定義のまま残す。完了行だけの診断中央値を併記する場合も、候補判定へ流用しない。
+4. 各quiet roundでB/fact-liveをS/fact-liveとB/full-verifyの双方へ対応付ける。完了対照なら実測T_totalへ勝つこと、打切り対照なら候補時間b≤0.95×Lであることを要求する。各対照の3 roundについてqを完了T_totalまたは打切りLとした保守的vectorを作り、median(b)≤0.95×median(q)も双方に要求する。完了対照のみなら従来の全quiet勝利＋中央値5%条件、打切りを含むなら下限で証明できた優位性に限る。打切り対照のLとの差を正確な速度差として報告しない。B/fact-liveがLより早くても5%を証明できなければdeferする。
+5. 同source承認のVF-0〜2でfull-verifyを含む両転送形・両modeの完全な陽性対照と独立の全entry oracleを検証していることも必須とする。固定clock等の機能対照は非性能証拠として分け、実時間対照が未完了だった事実を置換しない。controlの終了前prefixだけで意味同値性の完了を主張しない。
+
+上記が全て成立すればdecisionはcandidate-only、comparisonKindは全対照完了ならcompleted-controls、正当な打切りを含むならdeadline-censored-controlsとする。条件不成立はdeferと理由を保存する。comparisonKindは比較証拠の分類であり、invalidを正当な打切りへ変更するラベルではない。candidate-onlyでもproductionAdoptedはfalse。全workload／roleをまとめて候補とするには各条件で成立が必要で、限定採用は適格範囲・拒否条件の別承認を要する。
+
+次は設計上の判定例であり実測値ではない。各数値は説明用に元期限とのclock対応が確認された例を使い、同じquiet値を3 round反復したものとする。他の候補行・oracle・安全性・回収は正常という前提を省略せず、障害例は明示する。
+
+| ID | 条件と期待判定 |
+|---|---|
+| VFD01 | b=500 ms、S/fact-live=1000 ms、B/full-verify=1500 ms、他対照も全完了。candidate-only／completed-controls |
+| VFD02 | b=500 ms、S/fact-live=1000 ms、B/full-verifyは元期限の正当な打切りでL=4500 ms。他対照は完了または正当な打切り。candidate-only／deadline-censored-controls、B/full-verifyの成功中央値・正確な倍率は未定義 |
+| VFD03 | b=500 ms、S/fact-liveとB/full-verifyが正当な打切りでL=4500 ms。機能oracle・他の全条件も成立。candidate-only／deadline-censored-controls |
+| VFD04 | b=4300 ms、両比較対照の打切りL=4500 ms。完了はしても5%下限不足でdefer |
+| VFD05 | b=500 msでも対照にwork超過・permission取消し・署名／source不正・初期化障害がある。deadline-censoredへ分類せずdefer |
+| VFD06 | 候補のquiet／counts／timedのいずれかが失敗・元期限超過・予算／完全性不成立。対照に勝つ成功行があってもdefer |
+| VFD07 | 対照はrequest_expiredだが元期限到達trace・clock対応・Lの証拠が欠落、または短い別challenge期限だけに到達。比較不能としてdefer |
+| VFD08 | 有利な行だけ除外、失敗totalMs／4500固定値を成功時間として中央値／倍率へ混入、未完了対照の結果一致や本番採用を捏造。記録自体を拒否 |
+
+この変更は対照の期限停止だけによる一律deferを解除するもので、期限延長・成功例選別・観測費用差引き・不正な障害分類で採用を成立させない。
+
+旧CLB-3P／旧profileとの差は新しい共有前提・初期化・guardを含む別bridgeとして同source承認・実環境・時刻・予算条件を対応付けて測り、主比較へ混ぜない。今回の設計によりCFP-0・CPR-C／本番・実storage・独立UID／5process・継続8 read・CG0／CG3の保留を解除しない。
+
+設計整合性の再現は以下。section／参照sourceのhash・48回帰条件・4段階と設計上の境界を照合するだけで、新runtime・回帰の実行・性能改善・公開API実証・本番採用の証拠ではない。
+
+```sh
+node scripts/check-cwc-vf-design.mjs
+node scripts/check-cwc-vf-design.mjs --check
+npx vitest run src/test/utils/gradleOwnedCwcVerificationFactsDesign.test.ts --maxWorkers=1
+```

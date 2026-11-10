@@ -3211,7 +3211,7 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、CLB-1接続後のsou
 - [x] CLB-2：既存SessionServer／Clientの実handshake・challengeへbindingを接続し、全batch転送・全entry再構成・fresh scope／snapshot／root、取消し・close・応答紛失・元期限・transport最終検証前後の寿命・早期B回収／後着拒否を確認（§9.129）。元の署名付きrefused／unknownと、再構成sourceから実AuthorityOwner・durable provider use／正しいACKへの対照も検証。固定clock・同一process・1 business RPC/channelの限定adapterで、元のscalar source取得の省略、外部storage／native隔離・本番採用は未成立。14回帰・8記録検査、正常6転送・26証拠を保存。レビュー修正として複数commitの区分を保持し、実採用済み更新snapshotを全転送・再構成。実予約履歴・入力サイズ・試行前／捕捉後／drain後の残高を対応付け、両modeで非負値への消費減額・整合するcopy／履歴改変・試行間resetを拒否。
 - [x] CLB-3：共通の独立source／binding承認・認可・元期限・1 MiB共存・既存work／wire予算でscalar／full-reference／bound-liveを実時間比較（§9.130）。構築前からcleanup・drain・observer復元後までの総時間、全entry再構成、handshake／capture、quiet／counts／timed、失敗を含む完了率を保存。動的fs読込rootの収録漏れを修正し、16回帰・11記録検査と216試行を再実行。全6条件defer・本番採用見送り。
 - [x] CLB-3Pで共通batch経路の費用を分解し、実call検査・wire検証・live gate・公開codec・canonical/hash・copy・planner残余を観測（§9.131）。18回帰（記録runnerでは全実行、通常は実時間比較1件をskip）・12記録検査と216試行を保存。TTL桁数だけのwire差を実署名sessionで再現し、実wire予算を保った比較契約を追加。
-- [ ] 次は不変のchallenge／channel／owner検証事実と、毎回必要なlive検査を分離する削減契約を具体化する。CLB-3時点ではsmallでもbound-liveはscalarより約2.6倍遅く、追加wire／identity検査の省略だけでは不足した。h0／single-largeの4.5秒期限内完了を新たな出口にし、停止までの作業量と毎batchの計画／実call検査を調査する。期限・認可・完全性・予算を緩和せず、期限停止時刻の差を改善量にしない。性能改善・全36条件・CWC-FP・CPR-C／CG0／CG3等の保留を維持。
+- [x] 不変のchallenge／channel／owner検証事実と、毎回必要なlive検査を分離する削減契約を§9.132へ具体化した（設計のみ）。CLB-3時点ではsmallでもbound-liveはscalarより約2.6倍遅く、追加wire／identity検査の省略だけでは不足した。h0／single-largeの4.5秒期限内完了を新たな出口にし、停止までの作業量と毎batchの計画／実call検査を調査する。期限・認可・完全性・予算を緩和せず、期限停止時刻の差を改善量にしない。性能改善・全36条件・CWC-FP・CPR-C／CG0／CG3等の保留を維持。
 
 §9.127レビュー修正：CLB-0の`dispatch`で、期限内に届いた結果が最終検証で拒否された場合まで後着（`late`／`late-reject`）として記録していたため、call終了後に届いた結果だけを後着と数えるよう分離。LB028に回帰を追加（修正前の失敗を確認）。
 
@@ -3228,6 +3228,17 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、CLB-1接続後のsou
 ### CLB-3P：共通batch経路の費用分解（§9.131）
 - [x] call-through observerと独立source pinを追加し、入口／完了・actor／owner別witness・method本文hash・区間／予算を照合。既存の認可・元期限・完全性・署名・budgetは省略しない。
 - [x] レビュー修正後の216試行（実測162）のうち117件（実測87件）が完了。実測はscalar 51/54、full-reference 18/54、bound-live 18/54で全6条件defer。全18 cohortのexclusive中央値でwire-verificationが最大。小規模batchでwire検証643〜726 ms、canonical/hash 266〜313 ms、live gate 91〜111 ms、実call API単独2.5〜2.7 ms。18回帰・12記録検査を再実行。
-- [ ] 私有wireに束縛した不変の認証事実とlive検査の分離契約を設計し、別実証へ進む。今回の観測値を削減可能時間や純粋CPUへ読み替えない。planner残余には未観測constructor等もあり、分類を完全なsource call-site解析とはしない。CPR-C／本番・実storage・native隔離・継続8 read・CG0／CG3の保留を維持。
+- [x] 私有wireに束縛した不変の認証事実とlive検査の分離契約を§9.132へ設計した。runtime・別実証は未着手。今回の観測値を削減可能時間や純粋CPUへ読み替えない。planner残余には未観測constructor等もあり、分類を完全なsource call-site解析とはしない。CPR-C／本番・実storage・native隔離・継続8 read・CG0／CG3の保留を維持。
 
 §9.131レビュー修正：完了経路の実call検査件数をbinding fullChecksと照合し、成功したcounts／timed間では追加operation・contextの全件数も一致させる。actor別exclusive合計を同actorのpack inclusiveと外側plan区間へ照合。LBP17／18・LBPR10〜12で、片側／両側の件数削減と、operation合計・partitionを保つactor間の費用移動を拒否する。
+
+### CLB-VF：私有requestの検証事実とlive検査の分離（§9.132、設計のみ）
+- [x] 独立した追加承認profile、private storage／call／association／owner／scope／generationへの実参照束縛、初回capture・ready時seal、5つの非公開helperと状態機械を具体化。
+- [x] 静的predicateとlive入力を分類し、実SessionServer／Lb2Linkの一般inspect・現在性検査、初回・transport最終・CLB finishの完全検証を維持。各旧liveノードを位置・回数とも1対1で引き継ぎ、実purpose返値の照合と実sessionの読取前lifecycle guardを共通採用前提にする。再入・失効・改変・流用・後着・早期回収の拒否を定義。
+- [x] 既存call 98304 B・binding 8192 Bの内側で、metadata候補4096 Bとcommand／frame workspaceの重複保持・二重予約を禁止。予算不足は実行前拒否。CVF01〜48・VF-0〜3とscalar／batch×2 modeの同条件比較を定義。48件は未実行の回帰条件で、今回の確認は設計整合性だけ。
+- [ ] 次はVF-0のstrict fixture contractとpredicate／live call-site対応表を実装し、私有storage・association・fact状態・generation・claim／再入・予算の拒否を限定実証する。新profileでの静的検証省略・速度改善・本番採用は未成立。
+- [ ] 続いてVF-1のprovider／ReadScope接続、VF-2の実session／fresh snapshot、VF-3の元期限・計測追加費用込み比較へ進む。実storage・native隔離・5process・8 read・CFP-0／CPR-C／CG0／CG3の保留を維持。
+
+§9.132レビュー修正：最後のclock／権限callback後は、信頼するAuthorityOwnerのowner epoch・単調な認可revision vectorをprivateに再確認する。全mutation経路の通知・alias除去を採用前提にし、control generationが不変でも変更を拒否。最終clock intrinsic・revision／generation確認から公開までforeign callbackのない同期fenceを共通化し、未通知closure／async authorityはunsupported。CVF22／24を拡充。
+
+対照armの期限停止と候補の適格性を分離し、候補B/fact-liveの全9測定完了、対照3 armのcomplete／正当な元期限打切り／invalid分類、保守的な時間下限による5%判定と独立機能oracleを要求する。対照の打切りだけでは一律deferにせず、成功中央値・正確な倍率へ流用しない。CVF46／47とVFD01〜08の設計例・検証記録を更新。runtime・48回帰・288試行の実行は引き続き未着手。

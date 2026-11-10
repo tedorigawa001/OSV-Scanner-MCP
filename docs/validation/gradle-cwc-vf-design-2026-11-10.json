@@ -1,0 +1,658 @@
+{
+  "schema": "cwc-vf.design-record.v1",
+  "date": "2026-11-10",
+  "reviewUpdated": "2026-11-10",
+  "status": "design-only",
+  "document": {
+    "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
+    "heading": "### 9.132 CLB-VF：私有requestの検証事実とlive検査の分離（設計）",
+    "sectionSha256": "7381a15e22278fff77046de892e812781065298974cc603a2b0a310792b68fb8"
+  },
+  "sourceBindings": {
+    "src/test/fixtures/gradleOwnedCwcLb0.ts": "85ee886a123be1ad848d23214ac047590d8a987727a303c502c5da19144cc3e8",
+    "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
+    "src/test/fixtures/gradleOwnedCwcLb1Approval.ts": "6b236bf6ee28a3cc8e8ec269987007a51a2368a9fec3fec526195f8d055391ff",
+    "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
+    "src/test/fixtures/gradleOwnedCwcLb3Case.ts": "e3b6a62904fe2cd09735ecea3e8903ebcb4530cf934319c333e428005e6c83c6",
+    "src/test/fixtures/gradleOwnedCwcLb3p.ts": "eb080176786fd1b9f564f25e42ee21ecd3001022c880b30f616451c099c27324",
+    "src/test/fixtures/gradleOwnedCwcLb3pProfile.ts": "89c65efef0190eb1ba211610bdc0dbb7d8b7b78f78f859bbb160281d2d402705",
+    "src/test/fixtures/gradleOwnedCwcLb3pValidation.mjs": "d4710055d0cabe23b7bce6754a788caeca0cc399e92248b4dbe6fca20e2961e0",
+    "src/test/fixtures/gradleOwnedCprBSession.ts": "62c372ab12a1068eda15b0bcab845da8ac4398900e680b5828171330926dda2d",
+    "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
+    "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
+    "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
+    "src/test/fixtures/gradleOwnedCwcC.ts": "de927c90433cd044eb8ec4ef08ae88adc7bc427dff73e591056faaa7f6a35e29",
+    "src/test/fixtures/gradleOwnedCwcCProvider.ts": "e5fc7bc56a3ae71a0c14ffe6f490f5c35673228c782fb3bd0ac217494e87aa4c",
+    "src/test/fixtures/gradleOwnedCwcA.ts": "170e42a899e2fde350e9407f0cced17fd288094c2a65b841c499391cb5708ebe",
+    "src/test/fixtures/gradleOwnedCwcB.ts": "bf0e0839ebccede38a1a7db06a19a19041dac006caca4adcaef887a24764d270",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+    "src/test/fixtures/gradleOwnedCgpS0Bound.mjs": "f1530986cf57994fd288767896c9a973e83c96fc79e540f1d6d5750e83a0048f",
+    "scripts/check-cwc-vf-design.mjs": "f72cbdd28bb59861517b7bdb90338a7e9225bd5ce625c2147829a517745cff4f",
+    "src/test/utils/gradleOwnedCwcVerificationFactsDesign.test.ts": "ad72afd44e45b7f7d0d6980d919f1b0878637a483ecb4b1f69c95a732de265ae"
+  },
+  "contract": {
+    "profile": "cwc.session-private-verification-facts.v1",
+    "modes": [
+      "full-verify",
+      "fact-live"
+    ],
+    "existingBindingMode": "bound-live",
+    "helperEntries": [
+      "captureVerificationFacts",
+      "sealVerificationFacts",
+      "checkVerificationLive",
+      "copyVerifiedCommand",
+      "invalidateVerificationFacts"
+    ],
+    "factLimitPerCall": 1,
+    "boundLimitPerCall": 1,
+    "privateWireBeforeDecode": true,
+    "privateBytesMayEscape": false,
+    "arbitraryByteCallbackAllowed": false,
+    "callerValidFlagAllowed": false,
+    "postSealWritesAllowed": false,
+    "storageIdentityAndEpochRequired": true,
+    "transportAssociationRequired": true,
+    "initialFullChecksRetained": true,
+    "readySealFullCheckRetained": true,
+    "sessionInspectRetained": true,
+    "sessionPreReadLifecycleGuardRequired": true,
+    "linkCurrentInspectRetained": true,
+    "transportFinalFullChecksRetained": true,
+    "clbFinishFullCheckRetained": true,
+    "ordinaryInspectRetained": true,
+    "liveNodeMapping": "one-to-one-position-and-count",
+    "staticPermissionIsHistoricalOnly": true,
+    "purposeSource": "actual-server-permit-return-and-shared-current-policy",
+    "liveAuthorizationReceiptAllowed": false,
+    "readyFailureFallbackAllowed": false,
+    "unobservedRestoration": "same-as-cfp10"
+  },
+  "bindings": [
+    "controlRef",
+    "clbCallRef",
+    "actualCallRef",
+    "transportAssociationRef",
+    "callRowRef",
+    "callGeneration",
+    "endpointRef",
+    "channelRef",
+    "channelGeneration",
+    "staticSessionRef",
+    "transcriptRef",
+    "registrySnapshotRef",
+    "registryDigest",
+    "keySelectionRef",
+    "storageRef",
+    "storageEpoch",
+    "ownerRef",
+    "bindingRef",
+    "bindingGeneration",
+    "scopeRef",
+    "scopeGeneration",
+    "operationRowRef",
+    "actor",
+    "expectedProjectionRef",
+    "originalDeadline"
+  ],
+  "excludedFromFacts": [
+    "authorized:true",
+    "pinCurrent:true",
+    "deadlineValid:true",
+    "sourceFresh:true"
+  ],
+  "lifecycle": {
+    "claimBeforeCallback": true,
+    "states": [
+      "reserved／capturing",
+      "verified-unbound",
+      "ready",
+      "checking",
+      "invalid／released"
+    ],
+    "internalFrameCarriesAuthorization": false,
+    "externalReentryPoisonsOuter": true,
+    "scopeCloseInvalidatesBound": true,
+    "scopeCloseWipesSessionStorage": false,
+    "expireWaitsForDispatch": false,
+    "expiryOrder": [
+      "terminal-generation",
+      "facts-frames-invalid",
+      "lookup-removed",
+      "channel-stopped",
+      "response"
+    ],
+    "reclaim": "terminal-and-privateReaders-zero",
+    "lateReadOrPublicationAllowed": false,
+    "spentRefundAllowed": false,
+    "unfinishedDispatchRetainsCapacity": true
+  },
+  "budgets": {
+    "memory": 1048576,
+    "callBytes": 98304,
+    "wireStorageBytes": 57344,
+    "frameWorkspace": 32768,
+    "admissionCommandBytes": 8192,
+    "bindingBytes": 8192,
+    "factMetadataCandidateBytes": 4096,
+    "layoutProofRequired": true,
+    "logicalGateLimit": 4096,
+    "globalLimitsIncreased": false
+  },
+  "comparison": {
+    "shapes": [
+      "scalar",
+      "batch"
+    ],
+    "modes": [
+      "full-verify",
+      "fact-live"
+    ],
+    "arms": [
+      "S/full-verify",
+      "S/fact-live",
+      "B/full-verify",
+      "B/fact-live"
+    ],
+    "workloads": [
+      "small",
+      "h0",
+      "single-large"
+    ],
+    "roles": [
+      "reader",
+      "authority-broker"
+    ],
+    "observations": [
+      "quiet",
+      "counts",
+      "timed"
+    ],
+    "warmupRounds": 1,
+    "measuredRounds": 3,
+    "trials": 288,
+    "measuredTrials": 216,
+    "deadlineMs": 4500,
+    "minimumImprovementPercent": 5,
+    "shadowFactsInFullVerify": true,
+    "totalIncludesConstructionThroughObserverRestore": true,
+    "legacyBridgeSeparate": true,
+    "ttlNormalization": "comparison-only-actual-wire-budget-retained",
+    "failedTrialsRetained": true
+  },
+  "authorizationFence": {
+    "owner": "private-authority-owner",
+    "revision": "monotonic-owner-epoch-and-bounded-vector",
+    "mutationDomains": [
+      "peer-credential",
+      "server-credential",
+      "key-epoch",
+      "permission-delegation-lineage",
+      "purpose-resolver",
+      "registry-pin",
+      "source-pin",
+      "profile-pin",
+      "policy-callback-slots"
+    ],
+    "mutationBeforeStatePublication": true,
+    "allMutationPathsCovered": true,
+    "untrackedMutationAdapter": "unsupported",
+    "captureBeforeFirstCallback": true,
+    "compareAfterLastCallback": true,
+    "controlGenerationOnlySufficient": false,
+    "recordedRevocationSticky": true,
+    "revisionRestorationAllowed": false,
+    "finalClock": "captured-trusted-monotonic-intrinsic",
+    "finalWindow": "bounded-synchronous-no-foreign-code",
+    "finalRecheckIncludesRevisionAndGeneration": true,
+    "authorizationReceiptReturned": false,
+    "crossGateReuseAllowed": false,
+    "policyFailureFallbackAllowed": false,
+    "bothModes": true,
+    "budgetLayoutProofRequired": true
+  },
+  "candidatePolicy": {
+    "candidate": "B/fact-live",
+    "candidateAllNineMeasuredComplete": true,
+    "allPrimaryCompleteRequired": false,
+    "controlArms": [
+      "S/full-verify",
+      "S/fact-live",
+      "B/full-verify"
+    ],
+    "speedComparators": [
+      "S/fact-live",
+      "B/full-verify"
+    ],
+    "controlClasses": [
+      "complete",
+      "deadline-censored",
+      "invalid"
+    ],
+    "invalidControlDecision": "defer",
+    "censoredControlRequiresOriginalDeadlineWitness": true,
+    "censorLowerBound": "mapped-original-deadline-minus-total-start",
+    "failureTotalUsedAsCompletion": false,
+    "hardcodedDeadlineLowerBoundAllowed": false,
+    "eachQuietRoundWinsRequired": true,
+    "censoredPairMaximumRatio": 0.95,
+    "medianAgainstConservativeVectorMaximumRatio": 0.95,
+    "semanticOracleRequired": true,
+    "exactCensoredMedianAvailable": false,
+    "decisions": [
+      "candidate-only",
+      "defer"
+    ],
+    "comparisonKinds": [
+      "completed-controls",
+      "deadline-censored-controls"
+    ],
+    "productionAdopted": false
+  },
+  "decisionExamples": [
+    {
+      "id": "VFD01",
+      "condition": "b=500 ms、S/fact-live=1000 ms、B/full-verify=1500 ms、他対照も全完了。candidate-only／completed-controls",
+      "candidateMs": 500,
+      "scalarMs": 1000,
+      "batchMs": 1500,
+      "expected": "candidate-only",
+      "comparisonKind": "completed-controls",
+      "status": "illustrative-only",
+      "executed": false
+    },
+    {
+      "id": "VFD02",
+      "condition": "b=500 ms、S/fact-live=1000 ms、B/full-verifyは元期限の正当な打切りでL=4500 ms。他対照は完了または正当な打切り。candidate-only／deadline-censored-controls、B/full-verifyの成功中央値・正確な倍率は未定義",
+      "candidateMs": 500,
+      "scalarMs": 1000,
+      "batchLowerBoundMs": 4500,
+      "expected": "candidate-only",
+      "comparisonKind": "deadline-censored-controls",
+      "status": "illustrative-only",
+      "executed": false
+    },
+    {
+      "id": "VFD03",
+      "condition": "b=500 ms、S/fact-liveとB/full-verifyが正当な打切りでL=4500 ms。機能oracle・他の全条件も成立。candidate-only／deadline-censored-controls",
+      "candidateMs": 500,
+      "scalarLowerBoundMs": 4500,
+      "batchLowerBoundMs": 4500,
+      "expected": "candidate-only",
+      "comparisonKind": "deadline-censored-controls",
+      "status": "illustrative-only",
+      "executed": false
+    },
+    {
+      "id": "VFD04",
+      "condition": "b=4300 ms、両比較対照の打切りL=4500 ms。完了はしても5%下限不足でdefer",
+      "candidateMs": 4300,
+      "scalarLowerBoundMs": 4500,
+      "batchLowerBoundMs": 4500,
+      "expected": "defer",
+      "status": "illustrative-only",
+      "executed": false
+    },
+    {
+      "id": "VFD05",
+      "condition": "b=500 msでも対照にwork超過・permission取消し・署名／source不正・初期化障害がある。deadline-censoredへ分類せずdefer",
+      "candidateMs": 500,
+      "invalidControl": true,
+      "expected": "defer",
+      "status": "illustrative-only",
+      "executed": false
+    },
+    {
+      "id": "VFD06",
+      "condition": "候補のquiet／counts／timedのいずれかが失敗・元期限超過・予算／完全性不成立。対照に勝つ成功行があってもdefer",
+      "candidateComplete": false,
+      "expected": "defer",
+      "status": "illustrative-only",
+      "executed": false
+    },
+    {
+      "id": "VFD07",
+      "condition": "対照はrequest_expiredだが元期限到達trace・clock対応・Lの証拠が欠落、または短い別challenge期限だけに到達。比較不能としてdefer",
+      "originalDeadlineWitness": false,
+      "expected": "defer",
+      "status": "illustrative-only",
+      "executed": false
+    },
+    {
+      "id": "VFD08",
+      "condition": "有利な行だけ除外、失敗totalMs／4500固定値を成功時間として中央値／倍率へ混入、未完了対照の結果一致や本番採用を捏造。記録自体を拒否",
+      "recordTampered": true,
+      "expected": "record-rejected",
+      "status": "illustrative-only",
+      "executed": false
+    }
+  ],
+  "scope": {
+    "runtimeChanged": false,
+    "factsImplemented": false,
+    "runtimeRegressionsExecuted": false,
+    "newPerformanceRunExecuted": false,
+    "performanceImprovementEstablished": false,
+    "productionAdopted": false,
+    "storageIntegrationEstablished": false,
+    "nativeIsolationEstablished": false,
+    "continuousEightReadsEstablished": false
+  },
+  "regressionConditions": [
+    {
+      "id": "CVF01",
+      "condition": "profile無効・旧profile・未承認source／validator／runtimeを両modeでcopy／decode／source IO前に拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF02",
+      "condition": "source自己hash・署名・digestだけを更新しても独立承認pin不一致を拒否。自己承認で採用しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF03",
+      "condition": "Buffer copy差し替え・SAB偽装・Proxy／getter・不正prototypeを両modeで捕捉前に拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF04",
+      "condition": "capture後のpacket／dispatch／command／diagnosticのbuffer全体・subarray改変がBへ波及しない。別wireの通常inspectは完全照合で拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF05",
+      "condition": "正規entryからのB／outer／challengeのwrite・storage slot置換をepoch失効前に許可しない。同じdigest・bytesでも別storageRefを拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF06",
+      "condition": "alias・post-seal write経路のあるadapterをunsupported。特権的な内部bytes改変をfull-verifyで拒否する対照をfact-liveの任意書込検出成功と混同しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF07",
+      "condition": "challenge request／reply・nonce／requestId／sessionId／transcript・originDigest・ttlMs・sequence・署名の各不一致を初回完全検証で拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF08",
+      "condition": "request channelのdirection／API／innerDigest／lineage／purpose・outer署名・新frameのreplayを拒否しfactで救済しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF09",
+      "condition": "owner keyId／SPKI／role／instance／boot／keyEpoch／domain／API・body schemaの各不一致を初回検証で拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF10",
+      "condition": "受信frame由来のexpectation・未分類predicate・callerのvalid／authorizedフラグでは発行できない。全validator predicateの固定／live分類の欠落を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF11",
+      "condition": "最初のcallback前にclaim・guard・ticketを確保。同callの同時／再入capture・失敗後再claimを拒否し消費を保持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF12",
+      "condition": "verified-unbound・失敗captureからsource IO／root／fact／reply発行0。ready直前の完全検証と全post成功前の公開0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF13",
+      "condition": "偽物・clone・JSON復元token、同値文字列ID／digestで実call／TransportAssociationを代用しても拒否。standalone associationを実session証拠へ昇格しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF14",
+      "condition": "actualCall／CLB call／control／Endpoint／channel／staticSession／run／rowの交換と同値row再挿入を実参照・generationで拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF15",
+      "condition": "別owner／provider／ReadScope／scopeGeneration／bindingGenerationへの移管、二度seal・再bind、client-initial／sealへの流用を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF16",
+      "condition": "固定command／identity／projection／registry／key slotの子変更・差替え・返却copy経由変更を拒否または非波及とし、現在principalとの対応は毎回検査",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF17",
+      "condition": "ready前のprepare／receive／begin／ready完全検証を両modeで維持。ready後のみfact-liveで静的省略、full-verifyは毎回完全検証",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF18",
+      "condition": "各旧P／S／G／ledger境界へ新live検査を1対1対応。内部frameを使っても認可／clock callbackの実行欠落0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF19",
+      "condition": "実server.permitAPIの返値がread→publicationで両方許可されてもpermission_denied。別の固定purpose callbackで代用せず、issued／binding／projectionへ再基準化しない。観測後のpurpose復元も拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF20",
+      "condition": "permission／委任先／lineage／peerとserver両credential・key epochの取消しを各callback境界で拒否。静的な捕捉時permissionをliveの代用にしない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF21",
+      "condition": "観測済みpin不一致・記録済み失効は復元後も拒否。検査前に変更・復元した未観測対照は両modeの全live成功時だけ継続可能とし検出成功と記録しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF22",
+      "condition": "current／now callback中にclose／cancel／失効後pin復元を行い、内側例外を捕捉しても外側公開0。最後の時計callbackでcredential／permission／purpose／pinを変更し復元せず、control generationは不変のままでもauthority revision差で拒否。復元してもrevisionは進んだままとし最初のterminal理由を保持。通知を迂回する旧revoked Set／closure adapterは事前拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF23",
+      "condition": "currentParent／rowの期限短縮を反映し、延長・deadlineFloorの増加・retryのTTL再基準化・逆行／非整数時計を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF24",
+      "condition": "構築・capture／seal・live callback・command copy・最終digest・最終公開中の元期限到達をpostで拒否し、初期化費用で延長しない。最終clock intrinsic後のrevision・generation再確認とcallbackなしの同期公開を検証し、最後のfence後へのclock／getter／then／外部enqueueの挿入、clock intrinsic差替え、公開前の認可変更、期限到達時は外側公開0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF25",
+      "condition": "正規内部G→S→P・ledger→P・親scope検査は通し、偽frame・外部指定・別操作／await後の再使用を拒否。別callをglobal busyだけで誤拒否しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF26",
+      "condition": "permissions／purpose／clockから直接・間接再入し、内側例外を捕捉しても外側fact発行・返信0。finallyでreadyへ戻さない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF27",
+      "condition": "source返却値getter・CWC owner／codec時計・copy／diagnosticからの再入を両modeで拒否し、外側応答公開0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF28",
+      "condition": "private read中は外部callback／await／B持出し0。faultでreader保持中に失効し、早期zero・新reader受付・結果公開を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF29",
+      "condition": "command copyのschema・内容・K/D改変、別scopeのroot／fact／grant／permitを従来の完全性検査で拒否し、bindingで代用しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF30",
+      "condition": "sourceのrequested／unrequested bytes・snapshot交換・複数commit区分改変を拒否。fresh取得・全entry再構成・独立計画・最終digestを維持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF31",
+      "condition": "新batch／exact retryで新call／association／storage／factを使用。元rowのK/D・元期限・attempt／spentを維持し、旧fact流用と非負値への消費減額を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF32",
+      "condition": "fact metadata／command常駐・scratchの二重予約・容量不足をcopy／decode前に拒否。binding 8192 Bとmetadata 4096 Bのlayout、既存1 MiBの実共存を検証",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF33",
+      "condition": "初期化／work予算不足を取得・計画前に拒否。capture／seal失敗後の消費・claim・論理gate上限4096を両modeで保持し、crypto省略による無制限反復を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF34",
+      "condition": "正常scope.closeでbound lookupを失効しつつsession最終検証用Bを保持。scope capabilityの復活0、最終完全検証後だけ正常回収",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF35",
+      "condition": "実sessionのhash／decodeより前のcontrol／generation／期限guardと、実SessionServerの最終inspect／reply schema、Client／Linkのreply channel／owner完全検証、CLB finishのrequest完全検証が両modeで実行されることを独立counterで照合",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF36",
+      "condition": "request factで不正reply／refused／unknown署名・API／digest・outcomeを救済しない。transport最終検証失敗後の成功記録・use／ACK公開0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF37",
+      "condition": "未完了dispatch中のtimeoutでfinallyを待たずterminal・generation更新・fact／frame失効・公開lookup除去。privateReaders＝0ならbytes回収、隔離枠は維持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF38",
+      "condition": "後着resolve／reject／finallyをcontrol／generationで拒否。現行のhash-before-checkを負例にし、実sessionの最終hash／B取得・decode・署名／enqueue・新outcome・use／ACK・成功公開0。repeat expire／releaseで二重解放0",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF39",
+      "condition": "正常完了とtimeoutの競合を最終検証・公開の線形化点で一回確定。終了済みcallをtimerで改変せず、unknown／possibleを失効から副作用なしへ変更しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF40",
+      "condition": "private storage・command cacheの強参照を回収時に解消。binding／async closureのB保持0を確認し、zeroだけを解放済みと計上しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF41",
+      "condition": "source／profile／mode・scope・予算条件を全arm共通に固定。初期化を最適化armだけ計測外へ出した比較と未承認sourceへ署名し直した記録を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF42",
+      "condition": "各modeのgate試行・live pre/post・初回／finalの完全検証・ready後完全検証／fact利用を独立witnessで照合し、全counterを整合させた検査件数削減も拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF43",
+      "condition": "exclusive＋otherを外側wallへ照合。actor別合計をpack inclusive・実測区間へ結び、operation合計／partitionを維持したactor費用移動・非再入inclusive過大計上を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF44",
+      "condition": "初期化・handshake／capture・計画・全entry再構成／digest・audit・cleanup／drain・計測器復元を総時間へ含め、計画・転送の過小計上、負／非有限時間を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF45",
+      "condition": "実署名sessionのTTL桁数差は比較用shapeだけ正規化し、actual wire・call wire・失敗時予算を維持。TTL延長・別API対応付け・frame欠落を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF46",
+      "condition": "各workload／roleでquiet／counts／timed・warm-up・期限停止を全保存。候補の全測定完了と対照のcomplete／deadline-censored／invalidを分離。対照の元期限到達証拠とLのclock対応を照合し、単なるrequest_expired・早いchallenge期限・取消し・認可／完全性／予算障害を打切り下限へ流用しない。失敗除外・失敗totalMsの成功中央値への混入・停止時間差の高速化主張を拒否",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF47",
+      "condition": "primaryの4 armを同profile・fact layout・source承認・元期限・予算で比較。候補B/fact-liveが全測定完了しS/fact-liveとB/full-verifyへの5%条件を満たせば、対照の正当な期限停止だけを理由にdeferしない。VFD01〜08で完了対照・打切り下限・証拠不足・予算／認可障害・候補失敗・5%下限不足を判定。正確な速度比と下限証拠を区別し、本番採用はfalse。旧profileの強化差は別bridge",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "CVF48",
+      "condition": "実session／fresh snapshot・outcome／use／ACKの対象範囲とfixture／同process・1 RPC/channelを区別。本番・実storage・隔離・8 read・CG0／CG3の保留を解除しない",
+      "status": "planned",
+      "executed": false
+    }
+  ],
+  "stages": [
+    {
+      "id": "VF-0",
+      "condition": "strict fixture contract。private storage／fact・association・scope generation・状態機械・claim／guard・認可revision／同期publish fence・予算・predicate分類を実装し、CVF01〜28／31〜34／37〜40の対象負例を実証。設計整合性検査だけで完了しない",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "VF-1",
+      "condition": "provider／ReadScope／CWC root／fact・ledgerへopt-in接続。既存live境界1対1と初回／finish完全検証、内容／独立計画・既存予算、CVF17〜34の対象部分・42のfixture counterを検証",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "VF-2",
+      "condition": "実SessionServer／Client・fresh snapshotへの限定接続。全batch／全entry、複数commit、取消し・元期限・応答紛失／retry、transport最終検証、outcome／use／ACK、早期回収・後着拒否とCVF13／14／28〜40の実session対象部分を検証。一般inspect・実session検査は完全経路を維持",
+      "status": "planned",
+      "executed": false
+    },
+    {
+      "id": "VF-3",
+      "condition": "同条件の実時間比較と独立記録検査。CVF41〜48、計測追加費用・全失敗込み完了率・実予算・共通閉包に基づき候補／deferを判断。速度改善・本番採用を設計だけで認めない",
+      "status": "planned",
+      "executed": false
+    }
+  ]
+}
