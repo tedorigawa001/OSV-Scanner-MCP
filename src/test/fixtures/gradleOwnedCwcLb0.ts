@@ -1,6 +1,8 @@
 /** CLB-0 retains full verification by default; CLB-1 separately approves the connected opt-in port.
  * Signed-input fixture only: no live SessionServer, external SourceOwner/storage or performance claim. */
 import {z} from 'zod';
+import {Vf1Owner,VF1_POLICY} from './gradleOwnedCwcVf1Contract.js';
+import type {VfAuthorityStamp} from './gradleOwnedCwcVf0Authority.js';
 import {types} from 'node:util';
 import {canonicalOwnedJson as canonical,ownedDigest as hash,ownedSha256 as sha} from '../../utils/gradleOwnedJson.js';
 import {need,parsed,cn,chash,CurrentControlError} from '../../utils/gradleOwnedCurrentSchema.js';
@@ -27,7 +29,8 @@ type Binding={c:Control;owner:Lb0Owner;scope?:Lb0Scope;row?:Row;projection?:Proj
 type Row={c:Control;k:string;d:string;deadline:number;state:'admitted'|'complete'|'retired'};
 type Frame={c:Control;b:Binding;generation:number;active:boolean};
 type Storage={request?:Buffer;reply?:Buffer;inner?:Buffer;outer?:Buffer};
-type Control={call:Lb0Call;state:'active'|'closed';generation:number;reason?:unknown;failure:boolean;phase:'prepared'|'issued';busy:boolean;started:boolean;issuedPurpose:'read';api:typeof LB0_APIS[number];deadline:number;last:number;
+type VerificationFact={storage:Storage;admission:any;registry:CredentialRegistry;session:StaticSession;call:Lb0Call;control:Control;binding:Binding;row:Row;generation:number;bindingGeneration:number;scope:Lb0Scope};
+type Control={vfStamp?:VfAuthorityStamp;vfFact?:VerificationFact;vfLogical:number;vfReused:number;vfSites:Record<string,number>;call:Lb0Call;state:'active'|'closed';generation:number;reason?:unknown;failure:boolean;phase:'prepared'|'issued';busy:boolean;started:boolean;issuedPurpose:'read';api:typeof LB0_APIS[number];deadline:number;last:number;
  expectation:PendingExpectation;storage?:Storage;bytes:number;readers:number;reclaimed:boolean;ticket:Ticket;scratchReleased:boolean;slotReleased:boolean;claim?:Lb0Owner;b?:Binding;admission?:any;row?:Row;
  timer?:ReturnType<typeof setTimeout>;pendingDispatch:boolean;dispatchStarted:boolean;boundReady:boolean;connectedClaim?:boolean;settle?:{resolve:(v:unknown)=>void;reject:(e:unknown)=>void};fault?:'read-expire';
  events:Event[];metrics:{fullChecks:number;wireIdentityHashes:number;challengeChecks:number;channelChecks:number;ownerChecks:number;liveChecks:number;purposeChecks:number;credentialChecks:number;copies:number;lookups:number;reclaims:number;byteReleases:number;publications:number;late:number}};
@@ -36,18 +39,24 @@ type PendingExpectation=z.infer<typeof pendingSchema>;
 const projectionSchema=z.object({peer:serviceIdentitySchema,server:serviceIdentitySchema,api:z.enum(LB0_APIS),purpose:z.literal('read'),actor:z.literal('provider')}).strict();
 type Projection=z.infer<typeof projectionSchema>;
 export type Lb0Environment={now:()=>number;assertOpen:()=>void;credentialCurrent:(identity:Readonly<ServiceIdentity>)=>boolean;purpose:(api:string)=>string;permissions:(identity:Readonly<ServiceIdentity>)=>unknown};
-type Options={approval:Lb0Approval;connectedApproval?:Lb1Approval;budget:Lb0Budget;mode:Lb0Mode;registry:unknown;pins:Parameters<typeof validateCredentialRegistry>[1];frames:readonly Buffer[];clientCredentialId:string;serverCredentialId:string;endpointId:string;lineage:unknown;environment:Lb0Environment};
+type Options={verification?:Vf1Owner;approval:Lb0Approval;connectedApproval?:Lb1Approval;budget:Lb0Budget;mode:Lb0Mode;registry:unknown;pins:Parameters<typeof validateCredentialRegistry>[1];frames:readonly Buffer[];clientCredentialId:string;serverCredentialId:string;endpointId:string;lineage:unknown;environment:Lb0Environment};
 const same=(a:unknown,b:unknown)=>canonical(a)===canonical(b);
 
 export class CwcLb0Session{
- readonly #connectedApproval?:Lb1Approval;
+ readonly #connectedApproval?:Lb1Approval;readonly #verification?:Vf1Owner;
  readonly #approval:Lb0Approval;readonly #budget:Lb0Budget;readonly #mode:Lb0Mode;readonly #registry:CredentialRegistry;readonly #session:StaticSession;
  readonly #peer:ServiceIdentity;readonly #server:ServiceIdentity;readonly #peerView:ServiceIdentity;readonly #serverView:ServiceIdentity;readonly #lineage:z.infer<typeof currentLineageSchema>;readonly #env:Lb0Environment;readonly #created:number;readonly #base:Ticket;
  #open=true;#channelOpen=true;#closed=false;#last=0;#receiveSequence=0;#sendSequence=0;#ownersCreated=0;#scopesCreated=0;#requests=0;#preparing=false;
  readonly #calls=new Map<Lb0Call,Control>();readonly #all=new WeakMap<Lb0Call,Control>();readonly #pending=new WeakMap<Lb0Pending,Control>();readonly #controls=new Set<Control>();
  readonly #owners=new WeakSet<Lb0Owner>();readonly #scopes=new WeakMap<Lb0Scope,{owner:Lb0Owner;open:boolean;b?:Binding}>();readonly #drafts=new WeakMap<Lb0Draft,Binding>();readonly #bounds=new WeakMap<Lb0Bound,Binding>();readonly #rows=new WeakMap<Lb0Row,Row>();readonly #frames=new WeakSet<Frame>();
  constructor(o:Options){
-  Lb0Budget.require(o.budget);if(o.connectedApproval)Lb1Approval.require(o.connectedApproval);this.#connectedApproval=o.connectedApproval;this.#budget=o.budget;this.#base=o.budget.reserve(o.connectedApproval?LB1_POLICY.sessionBytes:LB0_POLICY.baseBytes,4096);
+  // Snapshot only own data properties before calling any supplied code. In particular,
+  // the environment admitted by Vf1Owner must be the exact environment later stored.
+  need(o&&typeof o==='object'&&!types.isProxy(o)&&Object.getPrototypeOf(o)===Object.prototype,'codec_profile_unsupported');
+  const descriptors=Object.getOwnPropertyDescriptors(o);
+  need(Reflect.ownKeys(descriptors).every(k=>typeof k==='string'&&'value'in descriptors[k]!),'codec_profile_unsupported');
+  o=Object.freeze(Object.fromEntries(Object.entries(descriptors).map(([k,d])=>[k,d.value]))) as Options;
+  Lb0Budget.require(o.budget);if(o.verification){Vf1Owner.require(o.verification,o.environment,o.pins.registryDigest);need(o.connectedApproval&&o.mode==='bound-live','codec_profile_unsupported');this.#verification=o.verification;}if(o.connectedApproval)Lb1Approval.require(o.connectedApproval);this.#connectedApproval=o.connectedApproval;this.#budget=o.budget;this.#base=o.budget.reserve(o.connectedApproval?LB1_POLICY.sessionBytes:LB0_POLICY.baseBytes,4096);
   let construction:Ticket|undefined;
   try{
    if(o.connectedApproval)construction=this.#budget.reserve(LB1_POLICY.constructorBytes);
@@ -70,7 +79,7 @@ export class CwcLb0Session{
  scope(owner:Lb0Owner):Lb0Scope{need(this.#owners.has(owner)&&!this.#closed,'source_binding');need(++this.#scopesCreated<=256,'codec_budget_exceeded');const h=token('clb0-scope');this.#scopes.set(h,{owner,open:true});return h;}
  #event(c:Control,name:string){need(c.events.length<64,'codec_budget_exceeded');c.events.push({order:c.events.length+1,name,readers:c.readers,generation:c.generation,bytes:c.bytes});}
  #clock(c?:Control){const n=this.#env.now();need(Number.isSafeInteger(n)&&n>=this.#last&&(!c||n>=c.last),'clock_invalid');this.#last=n;if(c)c.last=n;return n;}
- #active(c:Control,generation=c.generation){if(c.state!=='active'||c.generation!==generation)throw c.failure?c.reason:new CurrentControlError('owner_closed');need(this.#open&&this.#channelOpen,'session_closed');}
+ #active(c:Control,generation=c.generation){if(c.state!=='active'||c.generation!==generation)throw c.failure?c.reason:new CurrentControlError('owner_closed');need(this.#open&&this.#channelOpen,'session_closed');if(this.#verification&&c.vfStamp)try{this.#verification.check(c.vfStamp,c.deadline);}catch(e){this.#end(c,e);throw e;}}
  #time(c:Control){this.#active(c);const generation=c.generation,n=this.#clock(c);this.#active(c,generation);if(n>=c.deadline||n>=this.#created+30000){this.#end(c,new CurrentControlError('request_expired'));throw c.reason;}return n;}
  #live(c:Control){
   this.#time(c);const g=c.generation;this.#approval.assertCurrent();this.#active(c,g);this.#connectedApproval?.assertCurrent();this.#active(c,g);const open=this.#env.assertOpen();this.#active(c,g);need(open===undefined,'schema_invalid');
@@ -82,8 +91,8 @@ export class CwcLb0Session{
  }
  #assertIdle(c:Control){this.#active(c);if(c.busy){this.#end(c,new CurrentControlError('source_binding'));throw c.reason;}}
  #operation<T>(c:Control,run:()=>T):T{
-  this.#assertIdle(c);c.busy=true;const g=c.generation;
-  try{const result=run();this.#active(c,g);this.#time(c);return result;}catch(e){this.#end(c,e);throw e;}finally{c.busy=false;}
+  this.#assertIdle(c);c.busy=true;const g=c.generation,stamp=this.#verification?.stamp();
+  try{const result=run();this.#active(c,g);this.#time(c);if(stamp){this.#verification!.check(stamp,c.deadline);this.#active(c,g);}return result;}catch(e){this.#end(c,e);throw e;}finally{c.busy=false;}
  }
  #watch(c:Control){if(c.timer)clearTimeout(c.timer);const delay=Math.max(0,c.deadline-this.#last);c.timer=setTimeout(()=>this.#end(c,new CurrentControlError('request_expired')),delay);c.timer.unref?.();}
  prepareChallenge(request:Buffer,reply:Buffer,expectation:unknown):Lb0Pending{
@@ -93,8 +102,8 @@ export class CwcLb0Session{
   try{
    ticket=this.#budget.reserve(LB0_POLICY.callBytes,8192,0,0,true);
    const x=parsed(pendingSchema,copyData(expectation));need(x.requestSequence===this.#receiveSequence+1&&x.replySequence===this.#sendSequence+1,'sequence_invalid');
-   const now=this.#clock();need(x.deadline>now&&x.deadline<=Math.min(now+x.ttlMs,this.#created+30000),'request_expired');
-   c={call:token('clb0-authenticated-call'),state:'active',generation:1,failure:false,phase:'prepared',busy:false,started:false,issuedPurpose:'read',api:x.api,deadline:x.deadline,last:now,expectation:freezeData(x),bytes:0,readers:0,reclaimed:false,ticket,scratchReleased:false,slotReleased:false,pendingDispatch:false,dispatchStarted:false,boundReady:false,events:[],metrics:{fullChecks:0,wireIdentityHashes:0,challengeChecks:0,channelChecks:0,ownerChecks:0,liveChecks:0,purposeChecks:0,credentialChecks:0,copies:0,lookups:0,reclaims:0,byteReleases:0,publications:0,late:0}};
+   const vfStamp=this.#verification?.stamp(),now=this.#clock();if(vfStamp)this.#verification!.check(vfStamp,x.deadline);need(x.deadline>now&&x.deadline<=Math.min(now+x.ttlMs,this.#created+30000),'request_expired');
+   c={vfStamp,vfLogical:0,vfReused:0,vfSites:{},call:token('clb0-authenticated-call'),state:'active',generation:1,failure:false,phase:'prepared',busy:false,started:false,issuedPurpose:'read',api:x.api,deadline:x.deadline,last:now,expectation:freezeData(x),bytes:0,readers:0,reclaimed:false,ticket,scratchReleased:false,slotReleased:false,pendingDispatch:false,dispatchStarted:false,boundReady:false,events:[],metrics:{fullChecks:0,wireIdentityHashes:0,challengeChecks:0,channelChecks:0,ownerChecks:0,liveChecks:0,purposeChecks:0,credentialChecks:0,copies:0,lookups:0,reclaims:0,byteReleases:0,publications:0,late:0}};
    this.#controls.add(c);this.#all.set(c.call,c);this.#watch(c);
    const control=c;
    this.#operation(control,()=>{
@@ -111,8 +120,12 @@ export class CwcLb0Session{
   try{if(c.fault==='read-expire'){c.fault=undefined;this.#event(c,'reader-held');this.#end(c,new CurrentControlError('request_expired'));this.#event(c,'reader-still-held');}this.#active(c,g);const value=run(c.storage);this.#active(c,g);return value;}
   finally{c.readers--;if(c.state==='closed'){this.#event(c,'reader-drained');this.#reclaim(c);}}
  }
- #inspect(c:Control,skipOwnedDigest=false){
-  this.#time(c);need(c.phase==='issued','source_binding');need(c.metrics.fullChecks++<LB0_POLICY.maxChecks,'codec_budget_exceeded');
+ #inspect(c:Control,skipOwnedDigest=false,site='general',allowFact=false){
+  this.#time(c);need(c.phase==='issued','source_binding');
+  if(this.#verification){need(++c.vfLogical<=VF1_POLICY.maxChecks,'codec_budget_exceeded');this.#budget.reserve(0,0,1);c.vfSites[site]=(c.vfSites[site]??0)+1;
+   if(allowFact&&c.boundReady&&this.#verification.mode==='fact-live'){const f=c.vfFact,b=c.b,s=b?.scope&&this.#scopes.get(b.scope);need(f&&f.control===c&&f.call===c.call&&f.storage===c.storage&&f.admission===c.admission&&f.registry===this.#registry&&f.session===this.#session&&f.binding===b&&f.row===c.row&&f.generation===c.generation&&f.bindingGeneration===b.generation&&f.scope===b.scope&&s?.open&&s.b===b&&b.state==='checking','source_binding');c.vfReused++;this.#live(c);return c.admission;}
+  }
+  need(c.metrics.fullChecks++<LB0_POLICY.maxChecks,'codec_budget_exceeded');
   const value=this.#read(c,s=>{
    const outer:any=inspectStaticSession(this.#session);c.metrics.challengeChecks++;const challenge=validateChallengeExchange(s.request!,s.reply!,this.#session,{...this.#challengeExpected(c)}).challenge;
    c.metrics.channelChecks++;validateChannelFrame(s.outer!,s.inner!,this.#session,{direction:'request',sequence:c.expectation.requestSequence+1,challenge,api:c.api,originDigest:c.expectation.originDigest,ttlMs:c.expectation.ttlMs,purpose:c.issuedPurpose,lineage:this.#lineage});
@@ -135,7 +148,7 @@ export class CwcLb0Session{
    const inner=ds.inner!.value as Buffer,outer=ds.outer!.value as Buffer;
    this.#budget.reserve(0,0,inner.length,inner.length+outer.length);
    c.storage!.inner=dedicated(inner);c.storage!.outer=dedicated(outer);c.bytes+=inner.length+outer.length;c.phase='issued';
-   c.admission=this.#inspect(c);this.#receiveSequence=c.expectation.requestSequence+1;
+   c.admission=this.#inspect(c,false,'receive');this.#receiveSequence=c.expectation.requestSequence+1;
    this.#calls.set(c.call,c);this.#event(c,'call-issued');return c.call;
   });
  }
@@ -143,7 +156,7 @@ export class CwcLb0Session{
  begin(call:Lb0Call,owner:Lb0Owner):{draft:Lb0Draft;admission:any}{
   const c=this.#lookup(call);need(this.#owners.has(owner),'source_binding');if(c.claim){this.#end(c,new CurrentControlError('call_reused'));throw c.reason;}c.claim=owner;this.#event(c,'claim');
   return this.#operation(c,()=>{this.#approval.assertCurrent();this.#active(c);const b:Binding={c,owner,state:'constructing',generation:1};c.b=b;
-   const value=this.#inspect(c),h=token('clb0-draft');this.#drafts.set(h,b);this.#event(c,'draft');return {draft:h,admission:copyData(value)};
+   const value=this.#inspect(c,false,'begin'),h=token('clb0-draft');this.#drafts.set(h,b);this.#event(c,'draft');return {draft:h,admission:copyData(value)};
   });
  }
  operationRow(draft:Lb0Draft,owner:Lb0Owner):Lb0Row{
@@ -173,9 +186,9 @@ export class CwcLb0Session{
  nestedChecks(bound:Lb0Bound,owner:Lb0Owner,scope:Lb0Scope){this.#withBinding(bound,owner,scope,(_b,f)=>{this.#privateGate(f);this.#privateS(f);this.#privateGate(f);});}
  #privateS(f:Frame){this.#privateGate(f);this.#privateGate(f);}
  readCommand(bound:Lb0Bound,owner:Lb0Owner,scope:Lb0Scope){return this.#withBinding(bound,owner,scope,(b,f)=>{this.#privateGate(f);const command=this.#read(b.c,s=>{b.c.metrics.copies++;b.c.metrics.ownerChecks++;const raw=verifyOwnerValue(s.inner!,this.#registry,{role:this.#peer.role,instanceId:this.#peer.instanceId,direction:'request',domain:'aux',api:b.c.api});return copyData((raw.body as any).command,8192);});this.#privateGate(f);return command;});}
- inspectCall(call:Lb0Call,wire:Buffer){const c=this.#lookup(call);return this.#operation(c,()=>{ordinaryBuffer(wire,8192);const equal=this.#read(c,s=>{c.metrics.wireIdentityHashes+=2;return sha(wire)===sha(s.inner!);});need(equal,'peer_mismatch');return copyData(this.#inspect(c));});}
+ inspectCall(call:Lb0Call,wire:Buffer){const c=this.#lookup(call);return this.#operation(c,()=>{ordinaryBuffer(wire,8192);const equal=this.#read(c,s=>{c.metrics.wireIdentityHashes+=2;return sha(wire)===sha(s.inner!);});need(equal,'peer_mismatch');return copyData(this.#inspect(c,false,'general-inspect'));});}
  closeScope(scope:Lb0Scope){const s=this.#scopes.get(scope);need(s,'source_binding');s.open=false;if(s.b)this.#closeBinding(s.b);}
- #closeBinding(b:Binding){if(b.state==='closed')return;b.state='closed';b.generation++;if(b.scope){const s=this.#scopes.get(b.scope);if(s)s.open=false;}if(b.ticket){this.#budget.release(b.ticket);b.ticket=undefined;}this.#event(b.c,'binding-closed');}
+ #closeBinding(b:Binding){if(b.state==='closed')return;b.state='closed';b.generation++;b.c.vfFact=undefined;if(b.scope){const s=this.#scopes.get(b.scope);if(s)s.open=false;}if(b.ticket){this.#budget.release(b.ticket);b.ticket=undefined;}this.#event(b.c,'binding-closed');}
  releaseDraft(draft:Lb0Draft,owner:Lb0Owner){const b=this.#drafts.get(draft);need(b&&b.owner===owner,'source_binding');this.#closeBinding(b);}
  tighten(call:Lb0Call,deadline:number){const c=this.#lookup(call);this.#operation(c,()=>{this.#time(c);need(Number.isSafeInteger(deadline)&&deadline<=c.deadline,'request_expired');c.deadline=deadline;if(c.row)c.row.deadline=deadline;if(deadline<=this.#last)this.#end(c,new CurrentControlError('request_expired'));else this.#watch(c);});}
  cancel(call:Lb0Call){const c=this.#all.get(call);need(c,'peer_mismatch');this.#end(c,new CurrentControlError('owner_closed'));}
@@ -183,7 +196,7 @@ export class CwcLb0Session{
  faultNextRead(call:Lb0Call){const c=this.#lookup(call);c.fault='read-expire';}
  #reclaim(c:Control){
   if(c.state!=='closed'||c.readers!==0||c.reclaimed)return;
-  c.reclaimed=true;for(const b of Object.values(c.storage??{}))b?.fill(0);c.storage=undefined;
+  c.reclaimed=true;c.vfFact=undefined;if(this.#verification)c.admission=undefined;for(const b of Object.values(c.storage??{}))b?.fill(0);c.storage=undefined;
   const bytes=c.bytes;c.bytes=0;this.#budget.release(c.ticket,bytes);c.metrics.reclaims++;c.metrics.byteReleases++;this.#event(c,'bytes-reclaimed');
   if(!c.pendingDispatch)this.#releaseScratch(c);
  }
@@ -196,7 +209,7 @@ export class CwcLb0Session{
   this.#reclaim(c);if(!success)c.settle?.reject(error);
  }
  #finish(c:Control,value:unknown){
-  const result=this.#operation(c,()=>{need(c.boundReady,'source_binding');this.#inspect(c);return copyData(value,8192);});
+  const result=this.#operation(c,()=>{need(c.boundReady,'source_binding');this.#inspect(c,false,'finish');return copyData(value,8192);});
   c.metrics.publications++;this.#event(c,'output');this.#end(c,undefined,true);return result;
  }
  finishCall(call:Lb0Call){const c=this.#lookup(call);need(c.boundReady,'source_binding');need(!c.dispatchStarted,'operation_busy');return this.#finish(c,{api:c.api,requestDigest:c.admission.command.requestDigest});}
@@ -220,7 +233,7 @@ export class CwcLb0Session{
    }finally{c.pendingDispatch=false;this.#event(c,'dispatch-drained');c.settle=undefined;this.#releaseScratch(c);}})();
   return response;
  }
- stats(call:Lb0Call){const c=this.#all.get(call);need(c,'peer_mismatch');return {mode:this.#mode,state:c.state,phase:c.phase,generation:c.generation,lookupPresent:this.#calls.get(call)===c,readers:c.readers,bytesHeld:c.bytes,reclaimed:c.reclaimed,pendingDispatch:c.pendingDispatch,scratchReleased:c.scratchReleased,slotReleased:c.slotReleased,claimHeld:!!c.claim,bindingState:c.b?.state??'absent',deadline:c.deadline,issuedPurpose:c.issuedPurpose,metrics:{...c.metrics},events:copyData(c.events),budget:this.#budget.stats()};}
+ stats(call:Lb0Call){const c=this.#all.get(call);need(c,'peer_mismatch');return {mode:this.#mode,verification:this.#verification?{mode:this.#verification.mode,logical:c.vfLogical,reused:c.vfReused,sites:{...c.vfSites},factHeld:!!c.vfFact,metadataBytes:VF1_POLICY.metadataBytes}:null,state:c.state,phase:c.phase,generation:c.generation,lookupPresent:this.#calls.get(call)===c,readers:c.readers,bytesHeld:c.bytes,reclaimed:c.reclaimed,pendingDispatch:c.pendingDispatch,scratchReleased:c.scratchReleased,slotReleased:c.slotReleased,claimHeld:!!c.claim,bindingState:c.b?.state??'absent',deadline:c.deadline,issuedPurpose:c.issuedPurpose,metrics:{...c.metrics},events:copyData(c.events),budget:this.#budget.stats()};}
  /** Copied diagnostics only: observing a rejected pending input must not expose a call capability. */
  pendingStats(pending:Lb0Pending){const c=this.#pending.get(pending);need(c,'source_binding');return this.stats(c.call);}
  /** Opt-in connection capability. No frame, private wire or arbitrary byte callback is exposed. */
@@ -234,12 +247,12 @@ export class CwcLb0Session{
     try{const result=fn(f);this.#frame(f);return result;}finally{f.active=false;this.#frames.delete(f);if(b.state==='checking')b.state=previous;}
    });
   };
-  const inspect=(f:Frame,context:CprContext)=>{try{this.#frame(f);counts.checks++;const elide=this.#mode==='bound-live'&&c.boundReady;this.#inspect(c,elide);this.#frame(f);if(elide)counts.elidedHashes++;else{counts.identityCopies+=2;counts.identityComparisons+=2;need(same(copyData(this.#peer),context.peer)&&same(copyData(this.#server),context.provider),'peer_mismatch');}}catch(e){this.#end(c,e);throw e;}};
+  const inspect=(f:Frame,context:CprContext,site='provider')=>{try{this.#frame(f);counts.checks++;const elide=this.#mode==='bound-live'&&c.boundReady;this.#inspect(c,elide,'connected-'+site,true);this.#frame(f);if(elide)counts.elidedHashes++;else{counts.identityCopies+=2;counts.identityComparisons+=2;need(same(copyData(this.#peer),context.peer)&&same(copyData(this.#server),context.provider),'peer_mismatch');}}catch(e){this.#end(c,e);throw e;}};
   return new CwcLb1Binding(lb1Secret,call,{
    start:(wire)=>{this.#active(c);bindingTicket=this.#budget.reserve(LB0_POLICY.bindingBytes,4096);const draft=this.begin(call,owner);b=this.#drafts.get(draft.draft)!;b.ticket=bindingTicket;this.inspectCall(call,wire);return {...draft.admission,peer:copyData(this.#peer),server:copyData(this.#server),api:c.api,deadline:c.deadline};},
    enter,inspect,assertPublic:()=>this.#assertIdle(c),
    reserve:(bytes)=>{active();need(!extra&&Number.isSafeInteger(bytes)&&bytes>LB1_POLICY.frameWorkspace,'codec_budget_exceeded');need(LB0_POLICY.callBytes-(2*16384+8192+16384)-8192>=LB1_POLICY.frameWorkspace,'codec_budget_exceeded');extra=this.#budget.reserve(bytes-LB1_POLICY.frameWorkspace);scopeBytes=bytes;},
-   ready:(context)=>{active();need(b&&b.state==='constructing','source_binding');scope=this.scope(owner);b.scope=scope;b.row={c,k:c.admission.k,d:c.admission.d,deadline:c.deadline,state:'admitted'};c.row=b.row;b.projection=freezeData({peer:copyData(this.#peer),server:copyData(this.#server),api:c.api,purpose:'read',actor:'provider'});this.#scopes.get(scope)!.b=b;this.#operation(c,()=>{this.#inspect(c);need(b!.state==='constructing'&&this.#scopes.get(scope!)!.open,'owner_closed');need(same(context.peer,this.#peer)&&same(context.provider,this.#server),'source_binding');b!.state='ready';c.boundReady=true;this.#event(c,'scope-ready');});},
+   ready:(context)=>{active();need(b&&b.state==='constructing','source_binding');scope=this.scope(owner);b.scope=scope;b.row={c,k:c.admission.k,d:c.admission.d,deadline:c.deadline,state:'admitted'};c.row=b.row;b.projection=freezeData({peer:copyData(this.#peer),server:copyData(this.#server),api:c.api,purpose:'read',actor:'provider'});this.#scopes.get(scope)!.b=b;this.#operation(c,()=>{this.#inspect(c,false,'ready');need(b!.state==='constructing'&&this.#scopes.get(scope!)!.open,'owner_closed');need(same(context.peer,this.#peer)&&same(context.provider,this.#server),'source_binding');b!.state='ready';c.boundReady=true;if(this.#verification)c.vfFact={storage:c.storage!,admission:c.admission,registry:this.#registry,session:this.#session,call:c.call,control:c,binding:b!,row:c.row!,generation:c.generation,bindingGeneration:b!.generation,scope:scope!};this.#event(c,'scope-ready');});},
    close:()=>{if(b)this.#closeBinding(b);if(bindingTicket){this.#budget.release(bindingTicket);bindingTicket=undefined;}if(extra){this.#budget.release(extra);extra=undefined;}},
    fail:(e)=>{this.#end(c,e);},
    diagnostics:()=>({mode:this.#mode,...counts,scopeBytes,sharedFrameWorkspace:LB1_POLICY.frameWorkspace,sessionBytes:LB1_POLICY.sessionBytes,budget:this.#budget.stats(),call:this.stats(call)})
@@ -252,7 +265,7 @@ export class CwcLb0Session{
 }
 
 const lb1Secret=Symbol('lb1-connection'),connectedBindings=new WeakSet<object>();
-type ConnectedDriver={start:(wire:Buffer)=>any;enter:<T>(frame:Frame|undefined,fn:(f:Frame)=>T)=>T;inspect:(f:Frame,c:CprContext)=>void;assertPublic:()=>void;reserve:(bytes:number)=>void;ready:(c:CprContext)=>void;close:()=>void;fail:(error:unknown)=>void;diagnostics:()=>any};
+type ConnectedDriver={start:(wire:Buffer)=>any;enter:<T>(frame:Frame|undefined,fn:(f:Frame)=>T)=>T;inspect:(f:Frame,c:CprContext,site?:string)=>void;assertPublic:()=>void;reserve:(bytes:number)=>void;ready:(c:CprContext)=>void;close:()=>void;fail:(error:unknown)=>void;diagnostics:()=>any};
 /** Trusted adapter port. Only fixed provider/scope bodies are registered; foreign callbacks never receive frames. */
 export class CwcLb1Binding{
  #foreign=false;
@@ -266,9 +279,9 @@ export class CwcLb1Binding{
  reserve(bytes:number){this.#d.reserve(bytes);}
  attachScope(scope:object,context:CprContext,body:(frame:unknown)=>void){this.assertPublicEntry();need(CwcCReadScope.isInstance(scope)&&this.#row&&!this.#scope&&this.#c&&!this.#closed&&same(context,this.#c),'source_binding');this.#scope=scope;this.#scopeBody=body;}
  scopeGate(scope:object,frame?:unknown){this.assertEntry();need(scope===this.#scope&&this.#scopeBody&&!this.#closed,'source_binding');return this.#d.enter(frame as Frame|undefined,f=>this.#scopeBody!(f));}
- checkScope(scope:object,frame:unknown){need(scope===this.#scope&&this.#c&&!this.#closed,'source_binding');this.#d.inspect(frame as Frame,this.#c);}
+ checkScope(scope:object,frame:unknown){need(scope===this.#scope&&this.#c&&!this.#closed,'source_binding');this.#d.inspect(frame as Frame,this.#c,'scope');}
  ready(scope:object){need(scope===this.#scope&&this.#c&&!this.#closed,'source_binding');this.#d.ready(this.#c);}
- command(){this.assertEntry();need(this.#c&&!this.#closed,'source_binding');return this.#d.enter(undefined,f=>{this.#d.inspect(f,this.#c!);const q=copyData(this.#command);this.#d.inspect(f,this.#c!);return q;});}
+ command(){this.assertEntry();need(this.#c&&!this.#closed,'source_binding');return this.#d.enter(undefined,f=>{this.#d.inspect(f,this.#c!,'command-pre');const q=copyData(this.#command);this.#d.inspect(f,this.#c!,'command-post');return q;});}
  #command:any;
  closeScope(scope:object){need(scope===this.#scope,'source_binding');this.#closed=true;this.#d.close();}
  finishProvider(provider:object){need(provider===this.#provider,'source_binding');this.#closed=true;this.#d.close();}

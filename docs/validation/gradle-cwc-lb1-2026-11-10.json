@@ -12,9 +12,12 @@
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
     "src/test/fixtures/gradleOwnedCwcLb0Fixture.ts": "bd55a87a0a726b45034aaaa17717b0fb184127c5569dfebcaca4d17f355fd9f9",
-    "src/test/fixtures/gradleOwnedCwcLb0.ts": "85ee886a123be1ad848d23214ac047590d8a987727a303c502c5da19144cc3e8",
-    "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
+    "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
+    "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "dd4a4f38b0a9aa529c45a24226e82d436056c3d36011750feefdd6311f44f317",
+    "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
     "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
+    "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
+    "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
     "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
     "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
     "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -188,6 +191,7 @@
           },
           "call": {
             "mode": "full-reference",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -404,6 +408,7 @@
           },
           "call": {
             "mode": "full-reference",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -666,6 +671,7 @@
           },
           "call": {
             "mode": "full-reference",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -964,6 +970,7 @@
           },
           "call": {
             "mode": "full-reference",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -1180,6 +1187,7 @@
           },
           "call": {
             "mode": "full-reference",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -1442,6 +1450,7 @@
           },
           "call": {
             "mode": "full-reference",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -1740,6 +1749,7 @@
           },
           "call": {
             "mode": "bound-live",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -1956,6 +1966,7 @@
           },
           "call": {
             "mode": "bound-live",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -2218,6 +2229,7 @@
           },
           "call": {
             "mode": "bound-live",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -2516,6 +2528,7 @@
           },
           "call": {
             "mode": "bound-live",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -2732,6 +2745,7 @@
           },
           "call": {
             "mode": "bound-live",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -2994,6 +3008,7 @@
           },
           "call": {
             "mode": "bound-live",
+            "verification": null,
             "state": "closed",
             "phase": "issued",
             "generation": 2,
@@ -3225,6 +3240,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3380,6 +3396,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3535,6 +3552,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3683,6 +3701,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3831,6 +3850,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3979,6 +3999,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -4127,6 +4148,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -4268,6 +4290,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -4397,6 +4420,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -4538,6 +4562,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -4667,6 +4692,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -4822,6 +4848,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -4977,6 +5004,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -5132,6 +5160,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -5287,6 +5316,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -5442,6 +5472,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -5597,6 +5628,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -5752,6 +5784,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -5907,6 +5940,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -6058,6 +6092,7 @@
         },
         "expired": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -6164,6 +6199,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -6315,6 +6351,7 @@
         },
         "expired": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -6421,6 +6458,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -6582,6 +6620,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -6743,6 +6782,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -6904,6 +6944,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -7065,6 +7106,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -7226,6 +7268,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -7387,6 +7430,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -7548,6 +7592,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -7709,6 +7754,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -7870,6 +7916,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -8028,7 +8075,7 @@
       }
     ],
     "sourceApproval": {
-      "pin": "28b862cde21d0d4fd7f837b3cbed61d5d0972ed696e4e5ebc8ecb26315ceaaeb",
+      "pin": "bde35ccc49a3ffbde06502e1fd0118d40309d9437187b0a20e686fcbd702b20f",
       "envelope": {
         "manifest": {
           "schema": "cwc-lb1.approval.v1",
@@ -8041,9 +8088,12 @@
             "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
             "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
             "src/test/fixtures/gradleOwnedCwcLb0Fixture.ts": "bd55a87a0a726b45034aaaa17717b0fb184127c5569dfebcaca4d17f355fd9f9",
-            "src/test/fixtures/gradleOwnedCwcLb0.ts": "85ee886a123be1ad848d23214ac047590d8a987727a303c502c5da19144cc3e8",
-            "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
+            "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
+            "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "dd4a4f38b0a9aa529c45a24226e82d436056c3d36011750feefdd6311f44f317",
+            "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
             "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
+            "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
+            "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
             "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
             "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
             "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -8114,12 +8164,12 @@
             "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
           }
         },
-        "signature": "5C6dAH6zz5QkPRdc39JJiwryPxtZ3JzngYRU3j58bQ3r11KHzvefrSqLbo+cvjqwvmuACcPt8vTD9qUOoXwwAw=="
+        "signature": "gCbV6XlCUGjFfjVS2gz2RLUTDx1VjTCTAznCdBEGRm85Ud1kMuc8zfv7c+OiUCrirHQj+jQgyLW+6lrtLnqjAA=="
       },
       "registry": {
         "schema": "cwc-lb1.registry.v1",
-        "manifestDigest": "af6fd87d12c814d925883684e9ee080098b04033071edcc8afca2b25b9fb3def",
-        "operatorSpki": "MCowBQYDK2VwAyEA/DG1ScDUwAG+Hyh1nuR61sOvM37Iepxp8fpGhe8kzOY="
+        "manifestDigest": "9dd80b6cc3ba9b902be2db8f6e9263cc389691bcde4da53dc5c1a0012dc46315",
+        "operatorSpki": "MCowBQYDK2VwAyEArQfi9NE7FoJHLOmO/n3mcD3n2LAyn2VtA0Kxd43xJ/0="
       }
     }
   }

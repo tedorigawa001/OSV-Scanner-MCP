@@ -9,7 +9,7 @@
     "sectionSha256": "d345e7929411301e4724aaae3857a1137862c99a3b16832bf6ee4e31e5d05122"
   },
   "sourceBindings": {
-    "src/test/fixtures/gradleOwnedCwcLb0.ts": "85ee886a123be1ad848d23214ac047590d8a987727a303c502c5da19144cc3e8",
+    "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
     "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
     "src/test/fixtures/gradleOwnedCwcLb1Approval.ts": "6b236bf6ee28a3cc8e8ec269987007a51a2368a9fec3fec526195f8d055391ff",
     "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",

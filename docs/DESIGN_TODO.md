@@ -3247,4 +3247,19 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、CLB-1接続後のsou
 - [x] 追加source承認と私有storage／fact／call／owner／scope／generation束縛、固定内部呼出しと外部再入、epoch復元拒否、最終callback後のprivate clock／認可fence、lookup除去・reader drain・scratch／slotの回収を実装。既存CLB・実SessionServer・MCP／本番readerは変更しない。
 - [x] 19行の静的／live／追加fence対応表、phase別entry／finallyと実validator spyの照合を追加。正常12例の完全検証はfull-verify 11回／fact-live 4回＋fact 7回、liveは両modeで14回。35 fixture回帰・224証拠（成功16・拒否208）・事前拒否38例・12記録検査を保存。
 - [x] レビュー3件を修正。seal同期commit前のfinishと追加B読取・公開、初期authority viewの不正型／値、総件数を保つchallenge検査のphase移動を両modeで拒否。seal後のscope.close→finishは維持（VF034／035・VFR12、2026-11-11再検証）。
-- [ ] 次はVF-1の既存provider／ReadScope・CWC root／fact／ledger接続と、実入口のlive node 1対1／予算共存を実証する。VF-0は固定clock・1 authority・standaloneのみ。実call／operation row・fresh source／全entry・transport／outcome／use／ACK、複数authority vector・native隔離・288試行の比較・速度改善・本番採用は未成立。
+- [x] VF-1で既存provider／ReadScope・CWC root／fact／ledger接続と、実入口のlive node 1対1／予算共存を限定実証（§9.134）。VF-0は固定clock・1 authority・standaloneのみ。実call／operation row・fresh source／全entry・transport／outcome／use／ACK、複数authority vector・native隔離・288試行の比較・速度改善・本番採用は未成立。
+
+### VF-1：provider／ReadScope・CWC root／fact・ledger接続（§9.134）
+- [x] 追加source承認・owned authority／clock・private factを既存sessionのopt-inへ接続。provider／scope／planner／root／fact／ledgerの本文は維持し、ready後の私有request検証だけを省略する。一般inspect・初回・ready・finishは完全検証。
+- [x] 正常12例・legacy対照6例でlive callback全順序／件数・実入口・出力・row・memoryを照合。descriptor／scalar／rangesの完全検証は50／56／536→13回、liveは53／59／539回で同じ。memory最大1034970／1043712 B、両modeで4096論理gateを維持。
+- [x] 19 runtime回帰・18記録検査・拒否96例・constructor入場拒否6例。権限／取消し／元期限／内容・計画・row改変・予算・再入・scope回収を確認し、source変更の影響がある既存記録もrunnerから再実行する。固定clock・1 authority・同一processでの限定接続。
+- [ ] 次はVF-2の実SessionServer／Client・fresh snapshot接続。全batch／全entry・複数commit・retry・transport最終検証・outcome／use／ACK・実sessionの読取前guardと後着／回収を実証する。
+- [ ] VF-3の4 arm・288試行比較と採用判断。速度改善・本番採用、外部storage・native隔離・継続8 read・CFP-0／CPR-C／CG0／CG3は保留。
+
+VF-1追加後の既存profile再検証（2026-11-11）：CWC-A／B／C・CLB-0／1／2・VF-0と設計記録を再実行。CWC-D 384転送・DP 240転送・Sites 144転送・Gate 240転送は全完了。CLB-3／3Pはそれぞれ216試行中120完了（実測90/162）、scalar 54/54・各batch 18/54で全6条件defer。旧profileの再測定であり、VF-1の速度改善や本番採用の証拠にはしない。最新値は各節の表・JSONを参照する。
+
+VF-1レビュー修正（2026-11-11）：environmentのgetter／Proxyを評価前に拒否し、constructor入力を一度だけ捕捉・凍結する。grant／codecの固定前払い156978・row222515へ照合し、legacyを含む協調減額を拒否する。拒否時は実reserve・wire・case別phase／論理件数と到達stageから必要消費を求め、budget／after／rowを0にした記録も拒否する。row改変試験はload-afterに実到達するようcall-throughを修正し、改変前の消費も照合する。実session・native・性能改善・本番採用の追加証拠には数えない。
+
+VF-1レビュー修正後の検証：19 runtime回帰・18記録検査、正常12例・legacy対照6例・拒否96例・constructor入場拒否6例を再検証。関連CLB-0／1・VF-0のruntime99件と各記録、CWC-A／B／Cと設計記録も再生成した。旧profile比較はD 384／DP 240／Sites 144／Gate 240転送が全完了、CLB-3／3Pはそれぞれ216試行中120完了（実測90/162）・全6条件defer。source hashだけの付替えは行わず各runnerから再実行し、本文の表・数値も更新する。CWC-D／Sitesの初回runnerは非成功となり一時reportが削除されたため個別理由を回収できなかったが、reportを保持した単独再実行（15件／12件）とrunnerの再生成で成功を確認した。Sites runnerには失敗test名・理由を削除前に出力する診断を追加した。旧profile再測定をVF-1の性能証拠へ転用しない。
+
+VF-1レビュー修正の最終照合：対象37件（runtime19・記録18）、関連runtime99件・各記録、影響する16 runnerの--check、文書例3件、型検査・buildが成功した。拒否時の最大同時予約も初期保持量・成功した予約から再計算し、peak／memory上限の協調減額を拒否する。新規VF-1の実session／外部storage・native隔離・性能・本番採用の成立範囲は拡大しない。

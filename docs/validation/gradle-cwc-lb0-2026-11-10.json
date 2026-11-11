@@ -48,9 +48,12 @@
     "src/utils/gradleOwnedAuthorityClock.ts": "71f593e38f88fc1f1dcd2c049202c25a969d3ee60350104ee9f5a5d9fff53994",
     "src/utils/gradleOwnedAuthorityOwnerSchema.ts": "18867824165fa4c7a6d7553017599541d87bce94e9a4a28c2ed3c9721e9b852f",
     "src/test/fixtures/gradleOwnedCwcLb0Fixture.ts": "bd55a87a0a726b45034aaaa17717b0fb184127c5569dfebcaca4d17f355fd9f9",
-    "src/test/fixtures/gradleOwnedCwcLb0.ts": "85ee886a123be1ad848d23214ac047590d8a987727a303c502c5da19144cc3e8",
-    "src/test/fixtures/gradleOwnedCwcLb1Approval.ts": "6b236bf6ee28a3cc8e8ec269987007a51a2368a9fec3fec526195f8d055391ff",
+    "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
+    "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "dd4a4f38b0a9aa529c45a24226e82d436056c3d36011750feefdd6311f44f317",
+    "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
     "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
+    "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+    "src/test/fixtures/gradleOwnedCwcLb1Approval.ts": "6b236bf6ee28a3cc8e8ec269987007a51a2368a9fec3fec526195f8d055391ff",
     "src/test/fixtures/gradleOwnedCwcCProvider.ts": "e5fc7bc56a3ae71a0c14ffe6f490f5c35673228c782fb3bd0ac217494e87aa4c",
     "src/test/fixtures/gradleOwnedCprBSession.ts": "62c372ab12a1068eda15b0bcab845da8ac4398900e680b5828171330926dda2d",
     "src/test/fixtures/gradleOwnedCprBCodec.ts": "617e7bcae1eab6b178b02f6f3b1c7e08eba844a211eae36c9d64c5c7935886eb",
@@ -114,11 +117,12 @@
         "mode": "full-reference",
         "role": "reader",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "commandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "scopeClosed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -200,6 +204,7 @@
         },
         "completed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -323,11 +328,12 @@
         "mode": "full-reference",
         "role": "reader",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "commandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "scopeClosed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -409,6 +415,7 @@
         },
         "completed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -532,11 +539,12 @@
         "mode": "full-reference",
         "role": "reader",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "commandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "scopeClosed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -618,6 +626,7 @@
         },
         "completed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -741,11 +750,12 @@
         "mode": "full-reference",
         "role": "authority-broker",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "commandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "scopeClosed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -827,6 +837,7 @@
         },
         "completed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -950,11 +961,12 @@
         "mode": "full-reference",
         "role": "authority-broker",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "commandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "scopeClosed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -1036,6 +1048,7 @@
         },
         "completed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -1159,11 +1172,12 @@
         "mode": "full-reference",
         "role": "authority-broker",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "commandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "scopeClosed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -1245,6 +1259,7 @@
         },
         "completed": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -1368,11 +1383,12 @@
         "mode": "bound-live",
         "role": "reader",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "commandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "scopeClosed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -1454,6 +1470,7 @@
         },
         "completed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -1577,11 +1594,12 @@
         "mode": "bound-live",
         "role": "reader",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "commandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "scopeClosed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -1663,6 +1681,7 @@
         },
         "completed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -1786,11 +1805,12 @@
         "mode": "bound-live",
         "role": "reader",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "commandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "scopeClosed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -1872,6 +1892,7 @@
         },
         "completed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -1995,11 +2016,12 @@
         "mode": "bound-live",
         "role": "authority-broker",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "commandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "scopeClosed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -2081,6 +2103,7 @@
         },
         "completed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -2204,11 +2227,12 @@
         "mode": "bound-live",
         "role": "authority-broker",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "commandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "scopeClosed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -2290,6 +2314,7 @@
         },
         "completed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -2413,11 +2438,12 @@
         "mode": "bound-live",
         "role": "authority-broker",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+        "sourceApprovalPin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
         "expectedCommandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "commandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "scopeClosed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "active",
           "phase": "issued",
           "generation": 1,
@@ -2499,6 +2525,7 @@
         },
         "completed": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -2620,7 +2647,7 @@
       }
     ],
     "sourceApproval": {
-      "pin": "80849516eaf4f6b43b90b911db39c2bab7d8fd9bcb913876e237170bde1188c6",
+      "pin": "3de2f83e533c24033f932a39232055d005ea0b6ba5ad6223d84b70478c5d84a9",
       "envelope": {
         "manifest": {
           "schema": "cwc-lb0.approval.v1",
@@ -2628,11 +2655,15 @@
           "node": "v26.12.1",
           "sources": {
             "src/test/fixtures/gradleOwnedCwcLb0Fixture.ts": "bd55a87a0a726b45034aaaa17717b0fb184127c5569dfebcaca4d17f355fd9f9",
-            "src/test/fixtures/gradleOwnedCwcLb0.ts": "85ee886a123be1ad848d23214ac047590d8a987727a303c502c5da19144cc3e8",
-            "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
-            "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
-            "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
+            "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
+            "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "dd4a4f38b0a9aa529c45a24226e82d436056c3d36011750feefdd6311f44f317",
+            "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
             "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
+            "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+            "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+            "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
+            "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
+            "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
             "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
             "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
             "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -2671,7 +2702,6 @@
             "src/utils/gradleOwnedAuthorityClock.ts": "71f593e38f88fc1f1dcd2c049202c25a969d3ee60350104ee9f5a5d9fff53994",
             "src/utils/gradleOwnedAuthorityOwnerSchema.ts": "18867824165fa4c7a6d7553017599541d87bce94e9a4a28c2ed3c9721e9b852f",
             "src/test/fixtures/gradleOwnedCwcLb1Approval.ts": "6b236bf6ee28a3cc8e8ec269987007a51a2368a9fec3fec526195f8d055391ff",
-            "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
             "src/test/fixtures/gradleOwnedCwcCProvider.ts": "e5fc7bc56a3ae71a0c14ffe6f490f5c35673228c782fb3bd0ac217494e87aa4c",
             "src/test/fixtures/gradleOwnedCprBSession.ts": "62c372ab12a1068eda15b0bcab845da8ac4398900e680b5828171330926dda2d",
             "src/test/fixtures/gradleOwnedCprBCodec.ts": "617e7bcae1eab6b178b02f6f3b1c7e08eba844a211eae36c9d64c5c7935886eb",
@@ -2704,12 +2734,12 @@
             "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
           }
         },
-        "signature": "pSMzBFhxW897x/O5jLXi+EUG6YdtMNrdjC+BjTH8A7S+r62mZIJS9UEHqYvb8Vjfmets8ZJP2GyKIRRAsTKfBg=="
+        "signature": "f910HklpkybYwYLaEIw19vLwBldQopC1xEsgm0M8QM2nN0WbzaMAtymE/a1p+vX9L4WGHNpo6sHovTT3lknXDw=="
       },
       "registry": {
         "schema": "cwc-lb0.registry.v1",
-        "manifestDigest": "d1866462b883826d681f4bfccded3721087b3eabbbdf8bd2a3f7fd23afdd817c",
-        "operatorSpki": "MCowBQYDK2VwAyEAYIp0Jnc9djUSjFd+W3TVZRM28SAXq+DDR5nPG/LWDQg="
+        "manifestDigest": "dac372e1a9fc5b7c7183d28ac4836ea06ee51bfa813b46aeacbe7667b9065067",
+        "operatorSpki": "MCowBQYDK2VwAyEAOCOJtmnRpnQtJdNiJNs4bdFSdAKqnUnOkAyFLs22sKU="
       }
     },
     "proofs": [
@@ -2718,6 +2748,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -2824,6 +2855,7 @@
         "mode": "bound-live",
         "after": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -2930,6 +2962,7 @@
         "mode": "full-reference",
         "expired": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3032,6 +3065,7 @@
         },
         "drained": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3152,6 +3186,7 @@
         "mode": "full-reference",
         "expired": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3254,6 +3289,7 @@
         },
         "drained": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3374,6 +3410,7 @@
         "mode": "bound-live",
         "expired": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3476,6 +3513,7 @@
         },
         "drained": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3596,6 +3634,7 @@
         "mode": "bound-live",
         "expired": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3698,6 +3737,7 @@
         },
         "drained": {
           "mode": "bound-live",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3818,6 +3858,7 @@
         "mode": "full-reference",
         "after": {
           "mode": "full-reference",
+          "verification": null,
           "state": "closed",
           "phase": "issued",
           "generation": 2,
@@ -3950,6 +3991,7 @@
             "aliases": 0,
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4022,6 +4064,7 @@
             "aliases": 0,
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4100,6 +4143,7 @@
             "aliases": 0,
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4172,6 +4216,7 @@
             "aliases": 0,
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4250,6 +4295,7 @@
             "getters": 0,
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4322,6 +4368,7 @@
             "getters": 0,
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4394,6 +4441,7 @@
             "getters": 0,
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4466,6 +4514,7 @@
             "getters": 0,
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4538,6 +4587,7 @@
             "getters": 0,
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4610,6 +4660,7 @@
             "getters": 0,
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4688,6 +4739,7 @@
             "getters": 0,
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4760,6 +4812,7 @@
             "getters": 0,
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4832,6 +4885,7 @@
             "getters": 0,
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4904,6 +4958,7 @@
             "getters": 0,
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -4976,6 +5031,7 @@
             "getters": 0,
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5048,6 +5104,7 @@
             "getters": 0,
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5138,6 +5195,7 @@
             },
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5205,6 +5263,7 @@
             },
             "repeated": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5289,6 +5348,7 @@
             },
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5356,6 +5416,7 @@
             },
             "repeated": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5440,6 +5501,7 @@
             },
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5507,6 +5569,7 @@
             },
             "repeated": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5591,6 +5654,7 @@
             },
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5658,6 +5722,7 @@
             },
             "repeated": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5742,6 +5807,7 @@
             },
             "after": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5809,6 +5875,7 @@
             },
             "repeated": {
               "mode": "full-reference",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5899,6 +5966,7 @@
             },
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -5966,6 +6034,7 @@
             },
             "repeated": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -6050,6 +6119,7 @@
             },
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -6117,6 +6187,7 @@
             },
             "repeated": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -6201,6 +6272,7 @@
             },
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -6268,6 +6340,7 @@
             },
             "repeated": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -6352,6 +6425,7 @@
             },
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -6419,6 +6493,7 @@
             },
             "repeated": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -6503,6 +6578,7 @@
             },
             "after": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
@@ -6570,6 +6646,7 @@
             },
             "repeated": {
               "mode": "bound-live",
+              "verification": null,
               "state": "closed",
               "phase": "prepared",
               "generation": 2,
