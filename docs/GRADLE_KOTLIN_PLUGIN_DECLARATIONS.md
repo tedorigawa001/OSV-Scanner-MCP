@@ -8492,12 +8492,12 @@ providerのplan時間・input digest・event記録だけを抑えたquiet対照�
 
 | workload | S総時間 ms | B総時間 ms | B計画合計 ms | 許容額 ms | CPR-C判定 |
 |---|---|---|---|---|---|
-| default | 18.41〜22.62 | 17.15〜21.36 | 5.24〜5.38 | 6.62〜6.83 | 限定条件の判定通過 |
-| small | 28.19〜31.64 | 23.84〜27.30 | 8.81〜9.44 | 13.34〜13.83 | 限定条件の判定通過 |
-| h0Sizes | 51.00〜66.27 | 120.49〜157.88 | 77.67〜94.97 | 4.94〜8.85 | 見送り |
-| singleLarge | 45.64〜52.29 | 118.80〜128.42 | 75.43〜77.98 | 0.80〜2.49 | 見送り |
+| default | 20.23〜25.73 | 18.86〜23.74 | 5.78〜6.31 | 6.86〜8.58 | 限定条件の判定通過 |
+| small | 31.55〜35.71 | 27.06〜31.52 | 9.63〜10.52 | 13.97〜15.40 | 限定条件の判定通過 |
+| h0Sizes | 52.65〜64.68 | 128.41〜144.44 | 81.34〜88.59 | 5.41〜8.61 | 見送り |
+| singleLarge | 52.08〜58.87 | 135.21〜145.54 | 85.76〜89.88 | 1.34〜2.98 | 見送り |
 
-各欄はrole／cold-warmの4条件の中央値の範囲であり、別条件の最小／最大を引き算しない。default／smallの8条件は今回の限定判定を通過した。H0同サイズ・大entryの8条件は、48 pair中47 pairでBが遅く、中央値でも計画が許容額を超えた。残る1 pair（H0同サイズ・reader・warmの反復3）でBが速かったのは、Sが161.02 msと同条件の他5回（約51〜53 ms）の3倍になった外れ値のためである。quiet対照でもこの大きい差は解消しなかった。**全workloadへのCPR-C接続はno-go**とし、採用範囲の限定や毎batchの計画費用をさらに削減する契約を再検討する。provider再計画を省略・client map共有・cross-RPC cacheへ暗黙に戻す変更は行わない。
+各欄はrole／cold-warmの4条件の中央値の範囲であり、別条件の最小／最大を引き算しない。2026-11-11のVF-2レビュー修正後に旧profileを再実行し、288転送・32 warm-upが全て完了した。H0同サイズ・大entryの48 pair中48 pairでBが遅く、全workloadのCPR-C接続はno-go。provider再計画や現認可を省略しない。下記の2026-11-08の外れ値・47/48等は当時のレビュー履歴であり、現在の表はこの再計測のsummaryに対応する。
 
 #### 9.115.4 回帰・保存証拠・残る範囲
 
@@ -8596,29 +8596,29 @@ rawは`docs/validation/gradle-c3b-cpr-bp-2026-11-08.record.json`（無インデ�
 
 | workload | scalar総時間 | reference総時間 | combined総時間 | combined計画合計 | 許容額 |
 |---|---|---|---|---|---|
-| default | 37.52〜87.88 | 34.39〜83.71 | 35.30〜85.88 | 8.61〜16.75 | 12.40〜27.73 |
-| small | 37.23〜80.44 | 32.38〜62.81 | 29.02〜68.38 | 8.07〜17.56 | 17.33〜32.10 |
-| h0Sizes | 62.67〜170.60 | 142.86〜400.74 | 123.38〜225.56 | 65.80〜120.51 | 7.36〜37.34 |
-| singleLarge | 128.58〜187.94 | 315.65〜424.46 | 297.55〜422.47 | 159.64〜225.86 | -9.28〜-4.39 |
+| default | 21.80〜27.82 | 20.95〜24.41 | 19.04〜24.87 | 4.56〜5.25 | 7.21〜8.38 |
+| small | 33.13〜38.89 | 27.30〜32.65 | 24.51〜30.65 | 7.45〜7.84 | 15.10〜16.87 |
+| h0Sizes | 59.06〜63.54 | 139.51〜145.56 | 107.68〜117.98 | 57.88〜62.80 | 8.73〜10.00 |
+| singleLarge | 54.07〜60.92 | 145.75〜151.01 | 118.00〜127.65 | 66.24〜68.82 | 0.83〜3.46 |
 
-combinedの中央値は11条件でreferenceより小さく、pair単位では83/96で短縮した。ただしdefaultの一部条件の差は小さく、scheduler／GCのばらつきも残る。統計的有意性・全環境への速度保証を主張しない。H0／大entryの8条件では、今回も計画が許容額を超えている。**CPR-Cの全workload接続は見送りのまま**であり、今回の短縮を本番採用や8 read成立へ読み替えない。
+combinedの中央値は15条件でreferenceより小さく、pair単位では90/96で短縮した（2026-11-11、VF-2レビュー修正後の旧profile再測定）。scheduler／GCのばらつきがあり、統計的有意性・全環境への速度保証を主張しない。CPR-Cの全workload接続は見送りのままで、本番採用や8 read成立へ読み替えない。下記の旧レビュー件数は2026-11-08当時の履歴として区別する。
 
 H0同サイズ・readerのprovider全11計画の診断を例示する。時間は観測付き1転送のexclusive合計（ms）で、primary時間ではない。
 
 | 分類 | reference件数 | combined件数 | reference ms | combined ms |
 |---|---|---|---|---|
-| command | 121 | 121 | 0.815 | 6.268 |
-| codec | 132 | 132 | 9.842 | 33.822 |
-| gate | 2805 | 693 | 11.008 | 9.932 |
-| schema | 1034 | 913 | 6.567 | 24.191 |
-| hash.digest | 858 | 737 | 10.611 | 19.873 |
-| hash.bytes | 3278 | 1166 | 6.466 | 6.938 |
-| codec.json | 19888 | 7216 | 34.371 | 49.232 |
-| other | — | — | 1.034 | 2.321 |
+| command | 121 | 121 | 1.188 | 3.026 |
+| codec | 132 | 132 | 13.584 | 12.478 |
+| gate | 2805 | 693 | 13.225 | 2.992 |
+| schema | 1034 | 913 | 8.779 | 6.111 |
+| hash.digest | 858 | 737 | 14.053 | 8.012 |
+| hash.bytes | 3278 | 1166 | 7.477 | 2.528 |
+| codec.json | 19888 | 7216 | 42.968 | 20.821 |
+| other | — | — | 1.344 | 0.652 |
 
 認可gate 2805→693、bindingを含むbytes hash 3278→1166、canonical比較19888→7216が主な件数削減である。これは最大lengthが入る場合の算術試行を減らした結果であり、gateをcache／無効化した結果ではない。single-checkではschema 1034→913・canonical digest 858→737（いずれも121件削減）。command 121・codec 132は変わらず、残るcodec生成やJSON／digest費用も記録に残る。commandのdeep copy費用はcommand exclusiveに含める。
 
-この例は件数の削減を示すもので、時間の短縮を示すものではない。provider trace wallの合計はreference 80.7 ms、combined 152.6 msで、件数が減った分類でもcombinedの時間が大きい。4 workload × 2 roleの8組のうち、combinedがreferenceより長かったのは、この組とdefault・reader（7.8→8.5 ms）の2組である。残る6組では短い（例：H0同サイズ・broker 391.8→112.7 ms、大entry・reader 471.2→254.7 ms）。いずれも観測付き1転送の値で、反復による中央値ではない。この2組の増加を、残る費用の原因の特定や削減の効果としては扱わない。
+この例は件数の削減を示すもので、時間の短縮を単独では示さない。H0 readerのprovider trace wall合計はreference 102.6 ms、combined 56.6 ms。combinedのprovider trace wallがreferenceより長い組は0/8だった（H0 broker 93.9→58.0 ms、大entry reader 105.6→64.2 ms）。観測付き1転送の値であり反復中央値ではない。旧測定の特定の2組へ固定せず、各再測定のraw／summaryから照合する。
 
 観測対照の差には正負があり、診断費用を精密な一定値として差し引けない。元CPR-Bとのbridge差・cold/warm・全失敗statusもrawへ保持し、都合のよいpairだけを選ばない。今回は全warm-up／primary／bridge／診断armが完了した。次の課題は、残る全command codec／canonical処理を独立再現・完全性を保ってさらに減らせる契約、または適用範囲の限定である。CPR-Cへ先に接続して不足する性能を補った扱いにはしない。
 
@@ -8951,20 +8951,20 @@ quiet総時間の中央値（ms、各3 round）と判定。旧BP bridgeは承認
 
 | workload | role | scalar | reference | composed | 旧BP bridge | 判定 |
 |---|---|---|---|---|---|---|
-| small | reader | 27.1 | 51.9 | 50.4 | 19.9 | defer |
-| small | authority-broker | 26.0 | 52.6 | 50.6 | 19.1 | defer |
-| mid-2048 | reader | 25.7 | 75.8 | 72.9 | 24.8 | defer |
-| mid-2048 | authority-broker | 26.8 | 78.7 | 75.6 | 26.0 | defer |
-| large-commit | reader | 40.0 | 331.9 | 313.4 | 72.5 | defer |
-| large-commit | authority-broker | 41.2 | 350.4 | 324.3 | 76.1 | defer |
-| large-payload | reader | 52.5 | 345.2 | 315.3 | 72.3 | defer |
-| large-payload | authority-broker | 53.3 | 348.0 | 329.0 | 73.7 | defer |
-| h0Sizes | reader | 64.8 | 472.2 | 452.9 | 95.3 | defer |
-| h0Sizes | authority-broker | 73.3 | 517.8 | 490.8 | 119.2 | defer |
-| singleLarge | reader | 72.3 | 561.5 | 496.7 | 112.5 | defer |
-| singleLarge | authority-broker | 62.6 | 690.2 | 545.4 | 110.0 | defer |
+| small | reader | 32.9 | 63.7 | 59.8 | 26.4 | defer |
+| small | authority-broker | 31.7 | 64.6 | 63.9 | 23.3 | defer |
+| mid-2048 | reader | 30.6 | 92.9 | 89.1 | 32.3 | defer |
+| mid-2048 | authority-broker | 31.8 | 94.0 | 92.1 | 31.7 | defer |
+| large-commit | reader | 50.2 | 395.9 | 375.4 | 86.0 | defer |
+| large-commit | authority-broker | 49.8 | 422.3 | 390.8 | 88.4 | defer |
+| large-payload | reader | 66.2 | 400.6 | 387.9 | 89.1 | defer |
+| large-payload | authority-broker | 67.2 | 427.2 | 388.7 | 89.4 | defer |
+| h0Sizes | reader | 76.3 | 564.3 | 522.9 | 117.6 | defer |
+| h0Sizes | authority-broker | 80.0 | 607.0 | 576.4 | 132.9 | defer |
+| singleLarge | reader | 78.7 | 678.8 | 611.6 | 133.1 | defer |
+| singleLarge | authority-broker | 72.1 | 665.8 | 627.7 | 129.5 | defer |
 
-composedのreferenceに対する短縮率は2.9〜21.0%、scalar比は1.9〜8.7倍、旧BP bridge比は2.5〜5.0倍だった（2026-11-11、VF-1レビュー修正後の旧profile再測定）。旧BP bridgeはsmall／mid-2048ではscalarより短く、H0／大entryでは長い。つまりCWC-Cの接続（root／fact／grant・承認・前払い・current gateの再確認）を加えた計画は、全N oracleを省いても旧BPよりかなり遅い。bridgeとの差には強化分が含まれるため、その差をcodec削減の失敗だけには帰さない。次の課題は、この接続費用のうち共有可能な事実と再確認必須の境界を保ったまま減らせる部分の分解である。表はrunnerが保存summaryから同じ書式で再生成し、本文との一致を検査する。
+composedのreferenceに対する短縮率は1.1〜9.9%、scalar比は1.8〜8.7倍、旧BP bridge比は2.3〜4.8倍だった（2026-11-11、VF-2レビュー修正後の旧profile再測定）。旧BP bridgeは承認・gate強化の異なる別対照であり、その差をcodec削減だけの費用へ帰属しない。表はrunnerが保存summaryから同じ書式で再生成し、本文との一致を検査する。
 
 CWD01〜15で比較の閉包、出力／batchの一致、oracleの実呼出し件数、計画・finalizationを含む外側時間、失敗の完了率反映、全primaryのsource失効・memory不足・取消し・元期限拒否を検証する。実行記録はraw rowとpaired summary、source hashと本節hashを保持する。
 
@@ -9002,20 +9002,20 @@ CDP01〜14で元関数への接続、計数／partition・外側時間、operati
 
 | workload | role | scalar | composed | 診断省略 | 省略による短縮 | canonical-hash | 判定 |
 |---|---|---|---|---|---|---|---|
-| small | reader | 26.7 | 51.1 | 50.5 | 0.6 | 27.1 | defer |
-| small | authority-broker | 29.5 | 50.9 | 50.3 | 0.4 | 27.2 | defer |
-| mid-2048 | reader | 26.5 | 72.4 | 73.7 | -1.3 | 43.5 | defer |
-| mid-2048 | authority-broker | 27.6 | 78.0 | 75.7 | 2.3 | 43.8 | defer |
-| large-commit | reader | 41.5 | 328.0 | 325.0 | 3.0 | 207.0 | defer |
-| large-commit | authority-broker | 40.8 | 333.1 | 331.8 | -0.7 | 215.0 | defer |
-| large-payload | reader | 53.3 | 314.7 | 333.4 | -20.5 | 207.2 | defer |
-| large-payload | authority-broker | 56.1 | 331.5 | 336.3 | -4.8 | 214.4 | defer |
-| h0Sizes | reader | 64.8 | 449.4 | 446.6 | 1.6 | 291.9 | defer |
-| h0Sizes | authority-broker | 65.2 | 461.0 | 460.8 | -2.3 | 298.7 | defer |
-| singleLarge | reader | 61.0 | 503.6 | 507.1 | 5.8 | 328.8 | defer |
-| singleLarge | authority-broker | 60.7 | 515.4 | 515.9 | 1.0 | 335.1 | defer |
+| small | reader | 38.4 | 76.1 | 69.5 | 4.3 | 35.9 | defer |
+| small | authority-broker | 39.8 | 67.6 | 70.8 | -0.5 | 34.8 | defer |
+| mid-2048 | reader | 33.6 | 94.6 | 91.1 | 3.3 | 53.6 | defer |
+| mid-2048 | authority-broker | 35.4 | 96.5 | 96.7 | 1.0 | 52.5 | defer |
+| large-commit | reader | 51.1 | 405.3 | 399.6 | 9.1 | 255.5 | defer |
+| large-commit | authority-broker | 59.7 | 437.1 | 462.4 | -43.2 | 269.8 | defer |
+| large-payload | reader | 66.9 | 400.0 | 409.5 | -9.5 | 252.0 | defer |
+| large-payload | authority-broker | 70.7 | 423.4 | 423.5 | 0.7 | 267.1 | defer |
+| h0Sizes | reader | 86.2 | 562.8 | 574.1 | 1.2 | 379.9 | defer |
+| h0Sizes | authority-broker | 102.8 | 617.0 | 620.5 | -21.6 | 399.6 | defer |
+| singleLarge | reader | 78.7 | 688.0 | 674.8 | 18.3 | 447.2 | defer |
+| singleLarge | authority-broker | 83.4 | 664.9 | 703.4 | -5.6 | 439.3 | defer |
 
-診断省略による短縮は-20.5〜5.8 msで、全条件の判定はdefer。診断getterのexclusive中央値は0.014〜0.074 ms、canonical-hashは27.1〜335.1 ms、計測追加費用（profiled−composed）は4.4〜68.4 ms。これらは削減可能額ではない。2026-11-11のVF-1レビュー修正後に旧profileを再測定し、240/240転送が完了した。表は保存summaryから再生成して照合する。
+診断省略による短縮は-43.2〜18.3 msで、全条件の判定はdefer。診断getterのexclusive中央値は0.024〜0.104 ms、canonical-hashは34.8〜447.2 ms、計測追加費用（profiled−composed）は1.6〜115.5 ms。これらは削減可能額ではない。2026-11-11のVF-2レビュー修正後に旧profileを再測定し、240/240転送が完了した。表は保存summaryから再生成して照合する。
 
 ```sh
 node scripts/check-cwc-dp.mjs
@@ -9045,20 +9045,20 @@ private-context.rehashは今後の固定fingerprint候補だが、計測値を�
 
 #### 9.123.1 測定結果と計測負担の偏り
 
-composedの総時間中央値は53.0〜574.0 ms、位置計測版は206.3〜2474.0 msで、計測による増加（paired差の中央値）は149.0〜1912.0 msだった（2026-11-11、VF-1レビュー修正後の旧profile再測定）。144/144転送が完了した。位置取得・site key・集計の負担もexclusiveへ入り、較正した1回あたり負担は4.26〜4.59 µsだった。
+composedの総時間中央値は67.5〜671.5 ms、位置計測版は257.7〜3150.5 msで、計測による増加（paired差の中央値）は192.7〜2512.4 msだった（2026-11-11、VF-2レビュー修正後の旧profile再測定）。144/144転送が完了した。位置取得・site key・集計の負担もexclusiveへ入り、較正した1回あたり負担は5.16〜6.39 µsだった。
 
 各groupについて、12条件それぞれの中央値の範囲を示す。推定計測負担は呼出し数×同じ行の1回あたり負担で、exclusiveから差し引かず並べて示す。
 
 | group | 呼出し数／転送 | exclusive（ms） | 推定計測負担（ms） |
 |---|---|---|---|
-| private-context.rehash | 126〜1316 | 3.6〜40.5 | 0.5〜5.6 |
-| current.hash | 126〜1316 | 4.0〜41.5 | 0.5〜5.6 |
-| grant.context-input | 142〜1372 | 4.1〜42.0 | 0.6〜5.9 |
-| current.input | 1302〜17332 | 16.0〜202.7 | 5.6〜74.2 |
-| command.validation | 658〜14066 | 11.1〜201.0 | 2.8〜60.2 |
-| content.validation | 153〜637 | 2.1〜8.4 | 0.7〜2.7 |
-| gate.validation | 7339〜134199 | 68.2〜1201.2 | 31.5〜574.8 |
-| other | 5443〜46882 | 76.6〜565.8 | 23.4〜200.8 |
+| private-context.rehash | 126〜1316 | 4.4〜51.4 | 0.7〜7.0 |
+| current.hash | 126〜1316 | 4.6〜49.9 | 0.7〜7.0 |
+| grant.context-input | 142〜1372 | 5.2〜51.7 | 0.7〜7.2 |
+| current.input | 1302〜17332 | 20.3〜267.8 | 6.8〜91.6 |
+| command.validation | 658〜14066 | 14.2〜247.8 | 3.5〜72.9 |
+| content.validation | 153〜637 | 2.5〜10.1 | 0.8〜3.7 |
+| gate.validation | 6837〜125637 | 80.0〜1431.8 | 35.4〜663.8 |
+| other | 5945〜55444 | 98.2〜805.1 | 31.0〜292.4 |
 
 gate.validationには多くの位置取得が入り、計測しないcomposedの総時間と直接比較できない。空関数による推定負担は深いstack等のすべてを説明せず、位置別exclusiveから差し引かない。group間の大小には呼出し回数の偏りが含まれるため、元の処理費用や削減可能時間へ読み替えない。表はrunnerが保存summaryから再生成して照合する。
 
@@ -9230,22 +9230,22 @@ npx vitest run src/test/utils/gradleOwnedCwcGate.test.ts --maxWorkers=1
 
 | workload | role | scalar | composed | 旧BP bridge | BPとの差 | gate観測 | 実call検査回数 | 計測追加費用 |
 |---|---|---|---|---|---|---|---|---|
-| small | reader | 27.6 | 52.9 | 20.6 | 32.6 | 18.6 | 1127 | 7.6 |
-| small | authority-broker | 27.3 | 52.3 | 19.5 | 32.8 | 18.4 | 1127 | 5.8 |
-| mid-2048 | reader | 28.4 | 79.6 | 26.5 | 52.9 | 32.1 | 1991 | 15.2 |
-| mid-2048 | authority-broker | 27.2 | 75.9 | 25.2 | 50.7 | 31.7 | 1991 | 11.7 |
-| large-commit | reader | 41.3 | 317.2 | 74.0 | 243.2 | 171.9 | 11705 | 54.6 |
-| large-commit | authority-broker | 41.6 | 330.9 | 75.5 | 256.4 | 175.7 | 11705 | 54.6 |
-| large-payload | reader | 53.2 | 320.1 | 73.0 | 247.1 | 173.3 | 11705 | 51.8 |
-| large-payload | authority-broker | 53.8 | 344.5 | 75.4 | 269.0 | 176.4 | 11705 | 52.9 |
-| h0Sizes | reader | 64.0 | 444.1 | 97.9 | 346.2 | 250.5 | 16979 | 82.4 |
-| h0Sizes | authority-broker | 67.7 | 463.7 | 98.4 | 364.6 | 260.0 | 16979 | 92.7 |
-| singleLarge | reader | 63.4 | 509.4 | 104.9 | 397.5 | 285.7 | 19457 | 90.1 |
-| singleLarge | authority-broker | 65.1 | 521.8 | 108.7 | 411.7 | 291.7 | 19457 | 101.1 |
+| small | reader | 34.3 | 62.2 | 25.5 | 36.8 | 22.2 | 1127 | 8.5 |
+| small | authority-broker | 33.6 | 64.8 | 24.4 | 40.6 | 23.6 | 1127 | 12.2 |
+| mid-2048 | reader | 34.5 | 98.1 | 33.6 | 66.0 | 41.1 | 1991 | 11.6 |
+| mid-2048 | authority-broker | 36.9 | 95.9 | 35.0 | 59.3 | 40.2 | 1991 | 19.3 |
+| large-commit | reader | 55.4 | 442.8 | 98.9 | 343.9 | 242.6 | 11705 | 68.7 |
+| large-commit | authority-broker | 63.5 | 532.1 | 126.6 | 405.5 | 223.0 | 11705 | 26.7 |
+| large-payload | reader | 91.6 | 532.6 | 119.4 | 413.2 | 262.2 | 11705 | 50.1 |
+| large-payload | authority-broker | 83.0 | 490.4 | 121.0 | 372.5 | 259.0 | 11705 | 85.5 |
+| h0Sizes | reader | 100.6 | 696.6 | 156.8 | 552.0 | 376.9 | 16979 | 112.4 |
+| h0Sizes | authority-broker | 100.4 | 757.8 | 153.6 | 590.6 | 390.9 | 16979 | 74.8 |
+| singleLarge | reader | 94.6 | 770.3 | 156.1 | 620.1 | 426.7 | 19457 | 161.0 |
+| singleLarge | authority-broker | 92.2 | 791.6 | 156.7 | 634.9 | 439.3 | 19457 | 128.5 |
 
 全条件でgate内のcanonical処理が大きい候補として残った。h0Sizes／singleLargeでは実call検査が16979／19457回に達し、その周囲でwireのSHA256、identityのcanonical照合とコピー、permission lineageのcanonical照合が反復される。一方でsource registryの失効確認自体は比較的小さい。実call検査のexclusiveは、子operationのhash・clone等を除いた残差なので、呼出し全体の費用ではない。全operationの内訳・件数と計数のみ／タイマー追加費用は検証記録へ保存する。
 
-今回の計測追加費用はpaired中央値5.8〜101.1 msと条件で変動した（2026-11-11、VF-1レビュー修正後の旧profile再測定。全240転送完了、実call検査回数は不変）。これを引いて高速版を推定せず、既存Sitesの重いstack計測値との比率も性能改善へ読み替えない。実証したのは接続gateの増幅と内訳、認可・期限・完全性を維持した観測器の限定対照であり、削減実装や速度改善の成立ではない。次はこの大きい接続費用を対象にした実call binding／live検査の責任分離を優先する。
+今回の計測追加費用はpaired中央値8.5〜161.0 msと条件で変動した（2026-11-11、VF-2レビュー修正後の旧profile再測定。全240転送完了、実call検査回数は不変）。これを引いて高速版を推定せず、既存Sitesの重いstack計測値との比率も性能改善へ読み替えない。実証したのは接続gateの増幅と内訳、認可・期限・完全性を維持した観測器の限定対照であり、削減実装や速度改善の成立ではない。次はこの大きい接続費用を対象にした実call binding／live検査の責任分離を優先する。
 
 レビュー修正後の再検証：CWG01〜15と記録の再検証を実施し、source hash・入口計数witness・件数関係・旧BPのbatch同値性を照合した。実clockの240転送は全完了し、本表とraw／summaryを更新した。入口計数の費用も計数のみ／時間計測の両armへ含むため、旧記録との時間差を高速化と解釈しない。認可・取消し・元期限・内容検証の省略は0、判断はdiagnostic-onlyを維持する。
 
@@ -9595,17 +9595,17 @@ small・h0・single-largeの3 workload×reader／authority-broker、warm-up各1�
 <!-- CLB3-TABLE-BEGIN -->
 | 条件 | role | scalar総時間 ms | full-reference ms | bound-live ms | 完了／試行（全計測mode） | 判断 |
 | --- | --- | ---: | ---: | ---: | --- | --- |
-| small | reader | 398.8 | 1041.7 | 1059.5 | 9/9 · 9/9 · 9/9 | defer |
-| small | authority-broker | 403.7 | 1079.1 | 1041.7 | 9/9 · 9/9 · 9/9 | defer |
-| h0 | reader | 1012.5 | — | — | 9/9 · 0/9 · 0/9 | defer |
-| h0 | authority-broker | 1047.8 | — | — | 9/9 · 0/9 · 0/9 | defer |
-| single-large | reader | 980.1 | — | — | 9/9 · 0/9 · 0/9 | defer |
-| single-large | authority-broker | 992.9 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| small | reader | 515.8 | 1352.9 | 1303.3 | 9/9 · 9/9 · 9/9 | defer |
+| small | authority-broker | 524.0 | 1368.0 | 1441.1 | 9/9 · 9/9 · 9/9 | defer |
+| h0 | reader | 1271.9 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| h0 | authority-broker | 1018.8 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| single-large | reader | 1180.6 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| single-large | authority-broker | 1318.5 | — | — | 9/9 · 0/9 · 0/9 | defer |
 <!-- CLB3-TABLE-END -->
 
-2026-11-11にVF-1レビュー修正後のsourceで旧profileを再実行した。warm-up込み216試行中120完了、実測162試行中90完了。方式別の実測完了数はscalar 54/54、full-reference 18/54、bound-live 18/54で、6条件の判定はdefer。smallのquiet総時間中央値はscalar 398.8〜403.7 ms、full-reference 1041.7〜1079.1 ms、bound-live 1041.7〜1059.5 ms。失敗を成功中央値へ混ぜず、理由と打切り時間をJSONへ保持する。旧profileの再検証であり、VF-1の速度改善を測ったものではない。
+2026-11-11にVF-2レビュー修正後のsourceで旧profileを再実行した。warm-up込み216試行中120完了、実測162試行中90完了。方式別の実測完了数はscalar 54/54、full-reference 18/54、bound-live 18/54で、6条件の判定はdefer。smallのquiet総時間中央値はscalar 515.8〜524.0 ms、full-reference 1352.9〜1368.0 ms、bound-live 1303.3〜1441.1 ms。失敗を成功中央値へ混ぜず、理由と打切り時間をJSONへ保持する。旧profileの再検証であり、VF-2の速度改善を測ったものではない。
 
-成功条件のpaired T差（3 roundの中央値）はcounts−quietが-4.0〜166.7 ms、timed−countsが-130.3〜11.7 ms、timed−quietが4.1〜38.0 msだった（counts−quiet・timed−countsの最大幅はh0 authority-brokerのscalar）。期限停止したbatch条件の差を計測費用・速度改善へ流用しない。construction・transfer・cleanup・capture・handshake・全entry再構成の各時間は個々のrowへ保存し、異なる条件の中央値を合計して判断しない。
+成功条件のpaired T差（3 roundの中央値）はcounts−quietが-34.7〜90.3 ms、timed−countsが-8.1〜133.6 ms、timed−quietが-2.7〜175.0 msだった。完了した条件だけから算出し、期限停止したbatch条件の差を計測費用・速度改善へ流用しない。construction・transfer・cleanup・capture・handshake・全entry再構成の各時間は個々のrowへ保存し、異なる条件の中央値を合計して判断しない。
 
 CWC-Dとの差の内訳：CLB-3の総時間はCWC-Dより1桁大きい（smallのscalarはCWC-Dの約28 msに対し約400 ms）。timed記録の内訳では、handshake（RPCごとに1回の接続）は上位に入らず、主因ではない。最大のbucketは`binding.providerGate`で、`json.canonicalOwnedJson`、`binding.scopeGate`が続く。smallのbatch 1転送（4 call）では、challenge・channel・owner署名の検証を含む完全検証（CLB-0の`#inspect`）が1157回、h0のscalar 1転送（18 call）では1002回実行された。CLB-1以降の各provider／scope gateが毎回この完全検証を行うことが総時間の大部分を占める。bound-liveが省くのは追加のwire比較hashと固定identityのcopy／照合だけで、完全検証の回数はfull-referenceと同じなので、両者の差は小さい。次の調査は、期限・認可・完全性を緩めずに、ready後のgateで毎回再検証が必要なものを絞り、この完全検証の反復を減らせるかを対象にする。件数は記録の`audit.fullChecks`、時間は`trace.buckets`から確認できる。
 
@@ -9657,28 +9657,28 @@ actor別に全contextのexclusiveを合計し、同actorのpack inclusiveと一�
 <!-- CLB3P-TABLE-BEGIN -->
 | 条件 | role | scalar総時間 ms | full-reference ms | bound-live ms | 完了／試行（全計測mode） | 判断 |
 | --- | --- | ---: | ---: | ---: | --- | --- |
-| small | reader | 426.6 | 1356.7 | 1107.4 | 9/9 · 9/9 · 9/9 | defer |
-| small | authority-broker | 458.4 | 1082.5 | 1562.4 | 9/9 · 9/9 · 9/9 | defer |
-| h0 | reader | 1005.3 | — | — | 9/9 · 0/9 · 0/9 | defer |
-| h0 | authority-broker | 2075.0 | — | — | 9/9 · 0/9 · 0/9 | defer |
-| single-large | reader | 1948.8 | — | — | 9/9 · 0/9 · 0/9 | defer |
-| single-large | authority-broker | 1063.3 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| small | reader | 511.5 | 1323.4 | 1354.8 | 9/9 · 9/9 · 9/9 | defer |
+| small | authority-broker | 515.4 | 1358.2 | 1361.4 | 9/9 · 9/9 · 9/9 | defer |
+| h0 | reader | 1373.1 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| h0 | authority-broker | 1460.1 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| single-large | reader | 1260.9 | — | — | 9/9 · 0/9 · 0/9 | defer |
+| single-large | authority-broker | 1316.3 | — | — | 9/9 · 0/9 · 0/9 | defer |
 <!-- CLB3P-TABLE-END -->
 
-2026-11-11にVF-1レビュー修正後のsourceで旧profileを再実行した。warm-up込み216試行中120完了、実測162試行中90完了。方式別の実測完了数はscalar 54/54、full-reference 18/54、bound-live 18/54で、6条件の判定はdefer。smallのquiet総時間中央値はscalar 426.6〜458.4 ms、full-reference 1082.5〜1356.7 ms、bound-live 1107.4〜1562.4 ms。失敗を成功中央値へ混ぜず、理由と打切り時間をJSONへ保持する。旧profileの再検証であり、VF-1の速度改善を測ったものではない。
+2026-11-11にVF-2レビュー修正後のsourceで旧profileを再実行した。warm-up込み216試行中120完了、実測162試行中90完了。方式別の実測完了数はscalar 54/54、full-reference 18/54、bound-live 18/54で、6条件の判定はdefer。smallのquiet総時間中央値はscalar 511.5〜515.4 ms、full-reference 1323.4〜1358.2 ms、bound-live 1354.8〜1361.4 ms。失敗を成功中央値へ混ぜず、理由と打切り時間をJSONへ保持する。旧profileの再検証であり、VF-2の速度改善を測ったものではない。
 
 小規模batchのtimed観測（各role／armの実測3 roundの中央値、ms）は以下。categoryはexclusiveである。異なるrowの中央値の和をwall中央値のpartitionとは扱わない。
 
 | role | arm | 実call検査 | wire検証 | live gate | planner残余 | 公開codec | canonical/hash | copy |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| reader | full-reference | 2.6 | 654.1 | 100.2 | 3.7 | 9.5 | 277.9 | 41.5 |
-| reader | bound-live | 4.3 | 703.9 | 103.7 | 4.3 | 10.5 | 294.1 | 42.4 |
-| authority-broker | full-reference | 3.4 | 951.4 | 151.9 | 4.9 | 12.3 | 401.2 | 61.7 |
-| authority-broker | bound-live | 3.5 | 996.9 | 150.5 | 5.1 | 12.5 | 401.8 | 59.8 |
+| reader | full-reference | 3.2 | 907.8 | 138.9 | 4.9 | 11.7 | 381.6 | 57.9 |
+| reader | bound-live | 3.2 | 825.3 | 118.8 | 4.6 | 10.6 | 335.6 | 50.2 |
+| authority-broker | full-reference | 3.0 | 864.3 | 132.8 | 5.0 | 11.3 | 361.7 | 56.1 |
+| authority-broker | bound-live | 3.4 | 858.6 | 123.0 | 5.0 | 12.1 | 354.1 | 52.7 |
 
-全18 workload／role／armのcategory中央値で最大はwire-verificationだった。小規模batchで公開inspectAuthenticatedCallは1153回、challenge検証1165回、channel検証1169回、owner検証1181回、binding.providerGateは868回、providerのpackは2回だった。binding fullChecksは1157回で、実call検査API単独のexclusiveだけを大きな費用とみなすのは不適切である。canonical/hashのうち155.9〜233.0 msはwire検証の直下へ帰属した（既にcanonical/hashの列に含まれ、wire列へ再加算しない）。live gateの残余にも未観測の私有検査処理が入り、純粋な認可計算とは呼ばない。
+全18 workload／role／armのcategory中央値で最大はwire-verificationだった。小規模batchで公開inspectAuthenticatedCallは1153回、challenge検証1165回、channel検証1169回、owner検証1181回、binding.providerGateは868回、providerのpackは2回だった。binding fullChecksは1157回で、実call検査API単独のexclusiveだけを大きな費用とみなすのは不適切である。canonical/hashのうち197.6〜216.3 msはwire検証の直下へ帰属した（既にcanonical/hashの列に含まれ、wire列へ再加算しない）。live gateの残余にも未観測の私有検査処理が入り、純粋な認可計算とは呼ばない。
 
-小規模の計測追加費用のpaired T差（各role／arm・3 roundの中央値）はcounts−quietが-67.5〜315.1 ms、timed−countsが-129.0〜415.1 ms、timed−quietが11.8〜98.1 msだった。負値も保持し、安定した単一費用や速度改善を確立しない。期限停止したbatchの観測作業を完了転送の費用・削減可能額へ換算しない。
+小規模の計測追加費用のpaired T差（各role／arm・3 roundの中央値）はcounts−quietが3.9〜98.4 ms、timed−countsが-0.7〜65.6 ms、timed−quietが14.3〜184.5 msだった。負値も保持し、安定した単一費用や速度改善を確立しない。期限停止したbatchの観測作業を完了転送の費用・削減可能額へ換算しない。
 
 次の削減候補は、私有wireへ束縛された不変のchallenge／channel／owner検証事実と、毎回必要な現在性・purpose・credential・取消し・元期限・scope／row／generationの検査を分ける契約である。今回の結果だけで検証を省略せず、初回／transport最終検査・予算・再入／流用／後着拒否の契約を具体化してから別に実証する。planner本体やcontext自己hashだけの小さい費用を先に削って採用成立とはしない。
 
@@ -10059,3 +10059,61 @@ node scripts/check-cwc-vf1.mjs
 node scripts/check-cwc-vf1.mjs --check
 npm exec vitest run src/test/utils/gradleOwnedCwcVf1.test.ts src/test/utils/gradleOwnedCwcVf1Record.test.ts -- --maxWorkers=1
 ```
+
+### 9.135 VF-2：実SessionServer／Client・fresh snapshot・全batchへの接続
+
+#### 9.135.1 接続と追加の読取前guard
+
+VF-1の2 mode（`full-verify`／`fact-live`）を、既存の実`SessionServer`／`SessionClient`・`CwcCProvider`／`CwcCReadScope`・root／fact・ledgerへ接続した。VF-2専用adapter・operator承認は`gradleOwnedCwcVf2Approval.ts`／`Case.ts`／`Link.ts`に分離する。承認はNode・source参照閉包・既存transport承認pin・VF-1承認pinを束縛し、sourceを変更して既存承認を流用しない。CWCの計画用proofだけで実transportの検証を代用しない。
+
+実sessionの追加`SessionReadLifecycle`は、所有authority・clock・registryとVF-1 ownerを同一実体へ束縛する。実call発行後にcall固有ownerを一度だけ登録し、値が等しくても別authority／clockのownerを拒否する。実callの非公開controlは私有request／dispatch copy・generation・lookup・reader数を管理する。失効時はlookupを先に除去し、新規readerを拒否する。既存の同期readerが残る間だけzeroingを待ち、最後のreader帰還時に一度だけ回収する。
+
+`inspectAuthenticatedCall`では私有bytesのhashより前に所有cellの認可revision・purpose・取消し・元期限を検査し、元のhash後の検査も維持する。実Endpointの外部callback・時計の前後にも同じ所有cellを検査する。callback中に取消し・復元が完了してもrevisionが変われば拒否する。再入を内側で捕捉しても親lifecycleを失効させ、自動recoveryで成功へ転換しない。通常の非VF sessionにはこの追加controlを発行しない。新guardは両modeに共通する強化であり、VFの検査省略による速度改善とは区別する。
+
+| 実境界 | 保持する検証／証拠 |
+| --- | --- |
+| dispatch・実inspect | 実channel／peer／purpose・所有owner、hash前後のlive検査、私有request照合 |
+| provider・ReadScope・command | 現認可・取消し・元期限・fresh snapshot全体の内容検証、provider独立計画・root／fact・前払い |
+| 実Server最終化 | 実inspect、reply owner/schema検証、実auth署名、所有cellの前後検査 |
+| Link・実Client | 各々の実reply channel検証。実Clientのowner/digest検証後だけ一回限りの私有receiptを発行。検証済みsession／transcript／challenge／sequenceにも束縛 |
+| CLB finish・再構成公開 | Client receiptの実体・body hash・call対応を消費してからfinish。全entryの最終digest後にも所有cellと元期限を検査 |
+
+実Serverの返却をCLB成功と扱わない。Link検証後もrequest Bを保持し、実Clientの検証済みreceiptと内容検証が揃うまで公開を待つ。Client受理後からCLB finishへ進む非同期境界でも、権限を取消し・復元した場合はfinishで拒否する。この場合はClient検証1・CLB公開0となり、Client未検証の失敗と区別して保存する。Client返却値のclone・getter追加・改変はreceiptの代用にならない。同じ要求・同じ署名済み本文でも、新channelの検証済みcall bindingは異なるため、閉じた旧callの未消費receiptで新callを成功公開できない。getterは評価前に拒否する。実Serverが署名した`refused`／`unknown`は元のeffect分類のまま返し、binding失効から成功／no-effectを推測しない。
+
+#### 9.135.2 転送・再試行・予算・回収
+
+正常8例はreaderのscalar／batchとbrokerのH0／大きなentryを2 modeで全転送・全entry再構成する。batchごとにfresh snapshotと新しいscope／call／rootを取得し、非要求entryが次の取得で変わった場合も拒否する。実SourceOwnerで採用済みの更新snapshot（2 commit）を読み、commit／payloadをそれぞれ独立したindexで再構成し、採用checkpoint・inventory・output digestへ照合する。実authorityのprepare／complete・providerのdurable use記録・偽ACK拒否・正しいACKによる解放も通す。
+
+応答紛失は新channel／call／scope／rootで再試行する。同じoperationの元期限4500と初期化・work・wire・attempt消費を保持する。最初の実Server応答が成功でもClientへ届かなければ、そのCLB公開は0。再試行がClient検証まで終わった時だけ公開1となる。初期化は2試行で32768、provider ranges workは2×222515で、失敗分を返金しない。
+
+CLBの論理予算はmemory1048576・work＋初期化156978・wire163840以内。session131072・constructor一時131072・call98304・binding8192・scope workspaceを実予約し、frame共有32768を一度だけ差し引く。requestの論理検査ごとにwork1を課金し、最大4096とする。実sessionの私有request／dispatch copyは各8192以内でsession枠に含める。provider側の計画前払い156978・source検証65536・finish1は別ledgerであり、CLB workと加算混同しない。正常rangesのprovider rowは222515、scalarは65537へ独立照合する。
+
+記録は`cwc-vf2.consumption.v1`で、成功した予約・前後残高・入力wire長・論理検査数を保持する。連続するwork1の課金だけを数値countへ圧縮し、予約ticketやbytesを観測記録へ保持しない。retry前後の残高・固定前払い・到達phaseとsource rowも照合し、相互一致だけで消費減額を受理しない。boundedな数値記録と論理予約の証拠であり、JS heap／RSSの絶対上限を測ったものではない。
+
+cancel／close／元期限到達では保留producerの完了前にB・fact・lookupを除去する。実dispatchが未完了の間はslotとscratchを保持し、resolve／reject後に解放する。後着処理は新しいbytes読取・outcome decode・reply署名・成功公開をしない。transport最終段階まで進んだ応答への取消し・期限到達、実Client側だけでの改変、最終digest中の期限到達も公開を拒否する。
+
+#### 9.135.3 回帰・検証記録・残る範囲
+
+`docs/validation/gradle-cwc-vf2-2026-11-11.json`へruntime29件・記録検査28件、正常8例・その他102例（51条件×2 mode）を保存する。その他には実authority／複数commitの正常対照も含む。全12 provider境界の期限到達、認可revision・purpose・承認の最終callback変更、実reader保持中の取消し、late resolve／reject、応答紛失、owner署名／内容／独立計画不一致、予算不足、実Client receiptの偽装、同値だが別ownerの拒否を含む。記録検査はケース閉包、署名・source承認、実inspectの前後phase、実Server／Client最終検査、初回／finish、予約とsource work、早期回収・後着消費、commit区分・use／ACKの欠落・改変を拒否する。
+
+今回は固定clock・1 authority・同一process・1 business RPC/channelの実session fixtureに限定する。複数authority vector、外部storage service／別UID隔離、実時間288試行比較、速度改善・本番採用は未成立。所有fixtureのSourceOwner／authorityへ接続したが、MCPの本番採用経路を開かない。既存source承認閉包へ影響する記録は各runnerから再実行し、旧profileの再測定をVF-2の性能証拠へ流用しない。
+
+次はVF-3で共通承認・認可・元期限・予算の4 arm比較を行い、初期化からcleanupまでの総時間・計測追加費用・失敗込み完了率と対照期限停止時の判定を確認する。実storage・native隔離・継続8 read・CFP-0／CPR-C／CG0／CG3の保留を維持する。
+
+```sh
+node scripts/check-cwc-vf2.mjs
+node scripts/check-cwc-vf2.mjs --check
+OSV_CWC_HEAVY=1 npm exec vitest run src/test/utils/gradleOwnedCwcVf2.test.ts src/test/utils/gradleOwnedCwcVf2Record.test.ts -- --maxWorkers=1
+```
+
+#### 9.135.4 レビュー修正：receiptの実call束縛・拒否時の独立した消費照合
+
+旧receiptはClient実体・lifecycle・request／reply digestへ結んでいたが、同じ要求を別channelで再実行すると本文digestが一致し、旧receiptで新callを公開できた。VF229は実Clientが返した未消費のbodyを保持して旧channelを閉じ、同じ要求を新しいchannel／callで実行する。新応答はClientへ渡さず、旧bodyをLinkへ渡す。修正前の公開1をREDで確認し、修正後はsource_binding・公開0・Client検証0・bytes／lookup回収となることを両modeで検査する。二つのreply digestは同じ、新旧call bindingは異なることも保存する。正常転送と正しい再試行のreceipt受理は維持する。
+
+新しい私有receiptは、実Clientが検証したsession ID・transcript digest・challenge・API・origin digest・reply sequence・inner digestから求めるdomain付きcall bindingを保持する。Linkは自分が検証したsession／frameの対応から独立に同じ値を求めて照合する。validateChannelFrameの返却projectionはAPI／inner digestだけなので、そのprojectionだけをhashしてcall識別に代用しない。外部packetを後からhashして検証済み値と取り違えることも避ける。追加の固定長digestは既存metadata枠に含め、live認可・取消し・元期限と実Clientの本文検証を維持する。
+
+拒否記録の消費検査には、提出された論理件数と予約の相互一致だけに依存する欠落があった。signed-refusedの54検査・work4597を1検査・work4544へ減らし、予約・残高・複製counterをそろえても受理していた。`gradleOwnedCwcVf2Frontiers.mjs`へ、固定default reader graphとfault挿入点に対応する独立した期待値を定義した。捕捉済みの拒否callについて、phase別site・full／fact partition・live／purpose／credential検査数、実Sessionのinspect／hash前後の件数と、inner bytes＋必要な論理検査数のwork差分を照合する。未知の拒否recipeは期待値を推測せず拒否する。元の実行件数を提出記録から読み直して期待値にしない。
+
+VF2R26はsigned-refused／unknown、load／plan境界、Client receipt拒否、Client受理後finish拒否で、予約・残高・複製counterをまとめて減額する。さらに実Session側の件数も協調して減らし、固定期待値なしには検出できない変更も拒否する。VF2R27は拒否callの総件数・消費・partitionを保つsite移動、VF2R28は別call bindingの流用・現在callのbinding欠落を拒否する。VF2R26のREDを確認してから独立照合を追加した。証拠schemaを`cwc-vf2.samples.v2`／`cwc-vf2.validation.v2`とし、新しい束縛・回帰証拠のない旧記録を採用しない。
+
+修正後はruntime29件・記録28件、正常8例・その他102例を同じrunnerから再生成する。固定clock・同一process・1 RPC/channelの限定を維持し、速度改善・外部storage・native隔離・本番採用の成立範囲を広げない。

@@ -3237,7 +3237,7 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、CLB-1接続後のsou
 - [x] 静的predicateとlive入力を分類し、実SessionServer／Lb2Linkの一般inspect・現在性検査、初回・transport最終・CLB finishの完全検証を維持。各旧liveノードを位置・回数とも1対1で引き継ぎ、実purpose返値の照合と実sessionの読取前lifecycle guardを共通採用前提にする。再入・失効・改変・流用・後着・早期回収の拒否を定義。
 - [x] 既存call 98304 B・binding 8192 Bの内側で、metadata候補4096 Bとcommand／frame workspaceの重複保持・二重予約を禁止。予算不足は実行前拒否。CVF01〜48・VF-0〜3とscalar／batch×2 modeの同条件比較を定義。48件は未実行の回帰条件で、今回の確認は設計整合性だけ。
 - [x] VF-0のstrict standalone fixtureとpredicate／live呼出し対応表を実装し、私有storage・診断association・fact状態・generation・claim／再入・予算・認可revision／同期公開を限定実証した（§9.133）。実sessionの検証省略・速度改善・本番採用は未成立。
-- [ ] 続いてVF-1のprovider／ReadScope接続、VF-2の実session／fresh snapshot、VF-3の元期限・計測追加費用込み比較へ進む。実storage・native隔離・5process・8 read・CFP-0／CPR-C／CG0／CG3の保留を維持。
+- [ ] VF-1のprovider／ReadScope接続とVF-2の実session／fresh snapshot接続は限定実証済み。次はVF-3の元期限・計測追加費用込み比較へ進む。実storage・native隔離・5process・8 read・CFP-0／CPR-C／CG0／CG3の保留を維持。
 
 §9.132レビュー修正：最後のclock／権限callback後は、信頼するAuthorityOwnerのowner epoch・単調な認可revision vectorをprivateに再確認する。全mutation経路の通知・alias除去を採用前提にし、control generationが不変でも変更を拒否。最終clock intrinsic・revision／generation確認から公開までforeign callbackのない同期fenceを共通化し、未通知closure／async authorityはunsupported。CVF22／24を拡充。
 
@@ -3253,7 +3253,7 @@ CWC-DP計測値（各条件3 roundの中央値範囲、ms、CLB-1接続後のsou
 - [x] 追加source承認・owned authority／clock・private factを既存sessionのopt-inへ接続。provider／scope／planner／root／fact／ledgerの本文は維持し、ready後の私有request検証だけを省略する。一般inspect・初回・ready・finishは完全検証。
 - [x] 正常12例・legacy対照6例でlive callback全順序／件数・実入口・出力・row・memoryを照合。descriptor／scalar／rangesの完全検証は50／56／536→13回、liveは53／59／539回で同じ。memory最大1034970／1043712 B、両modeで4096論理gateを維持。
 - [x] 19 runtime回帰・18記録検査・拒否96例・constructor入場拒否6例。権限／取消し／元期限／内容・計画・row改変・予算・再入・scope回収を確認し、source変更の影響がある既存記録もrunnerから再実行する。固定clock・1 authority・同一processでの限定接続。
-- [ ] 次はVF-2の実SessionServer／Client・fresh snapshot接続。全batch／全entry・複数commit・retry・transport最終検証・outcome／use／ACK・実sessionの読取前guardと後着／回収を実証する。
+- [x] VF-2で実SessionServer／Client・fresh snapshot接続を限定実証（§9.135）。全batch／全entry・複数commit・retry・transport最終検証・outcome／use／ACK・実sessionの読取前guardと後着／回収を両modeで確認。
 - [ ] VF-3の4 arm・288試行比較と採用判断。速度改善・本番採用、外部storage・native隔離・継続8 read・CFP-0／CPR-C／CG0／CG3は保留。
 
 VF-1追加後の既存profile再検証（2026-11-11）：CWC-A／B／C・CLB-0／1／2・VF-0と設計記録を再実行。CWC-D 384転送・DP 240転送・Sites 144転送・Gate 240転送は全完了。CLB-3／3Pはそれぞれ216試行中120完了（実測90/162）、scalar 54/54・各batch 18/54で全6条件defer。旧profileの再測定であり、VF-1の速度改善や本番採用の証拠にはしない。最新値は各節の表・JSONを参照する。
@@ -3263,3 +3263,17 @@ VF-1レビュー修正（2026-11-11）：environmentのgetter／Proxyを評価�
 VF-1レビュー修正後の検証：19 runtime回帰・18記録検査、正常12例・legacy対照6例・拒否96例・constructor入場拒否6例を再検証。関連CLB-0／1・VF-0のruntime99件と各記録、CWC-A／B／Cと設計記録も再生成した。旧profile比較はD 384／DP 240／Sites 144／Gate 240転送が全完了、CLB-3／3Pはそれぞれ216試行中120完了（実測90/162）・全6条件defer。source hashだけの付替えは行わず各runnerから再実行し、本文の表・数値も更新する。CWC-D／Sitesの初回runnerは非成功となり一時reportが削除されたため個別理由を回収できなかったが、reportを保持した単独再実行（15件／12件）とrunnerの再生成で成功を確認した。Sites runnerには失敗test名・理由を削除前に出力する診断を追加した。旧profile再測定をVF-1の性能証拠へ転用しない。
 
 VF-1レビュー修正の最終照合：対象37件（runtime19・記録18）、関連runtime99件・各記録、影響する16 runnerの--check、文書例3件、型検査・buildが成功した。拒否時の最大同時予約も初期保持量・成功した予約から再計算し、peak／memory上限の協調減額を拒否する。新規VF-1の実session／外部storage・native隔離・性能・本番採用の成立範囲は拡大しない。
+
+### VF-2：実session／fresh snapshot接続（§9.135）
+
+- [x] 非公開実call controlと所有authority／clockの束縛、hash前後のlive検査、取消し・元期限・再入のsticky失効。
+- [x] Client自身の実検証receiptを一回だけ消費してからCLB finish／公開。応答紛失の初回公開0、retry消費・元期限保持。
+- [x] 全batch／全entry・2 commit、fresh取得時の非要求entry改変、実authority use／ACK、早期回収・reader drain・後着no-readを両modeで確認。
+- [x] runtime29・記録28、正常8例・その他102例。署名／source承認・phase／live件数・予約とstage別消費・Client検証前公開・後着処理の記録改変を拒否。固定clock・同一process・1 RPC/channelの限定証拠。
+- [ ] 次はVF-3の共通4 arm比較。初期化〜cleanup総時間、計測追加費用、失敗込み完了率と期限停止時の候補判定を検証する。実storage／native隔離・継続8 read・速度改善・本番採用は未成立。
+
+VF-2検証（2026-11-11）：専用runnerのruntime29・記録28、正常8例・その他102例が成功。関連CPR-B／BP 11 files・409回帰、型検査・build・差分検査も成功した。共有Sessionのopt-in追加は明示patchを通して従来I2との完全差分照合を維持する。旧CPR-B 288転送＋32 warm-up、BP 288 primary＋96 bridge＋64診断＋64 warm-up、D 384／DP 240／Sites 144／Gate 240転送を再実行。CLB-3／3Pは各216試行中120完了（実測90/162）で全6条件defer。source hashだけを付け替えず、本文の表とpaired差も最新summaryへ更新した。旧文書テストに固定されていた偶然の遅延pair数・診断の遅い組は、再測定したrawから導く照合へ修正した。これらは旧profileの再検証で、VF-2の性能比較・本番採用の証拠へ転用しない。
+
+VF-2レビュー修正：実Clientのreceiptを検証済みsession／transcript／challenge／sequenceへ束縛し、閉じた旧callの未消費receiptで別callを公開する操作を拒否する。拒否時の件数・消費は閉じたreader recipe／fault別の独立frontierへ照合する。両modeで旧receipt流用、予約・残高・複製counterと実Session件数の協調的減額、総件数を保つsite移動を回帰に追加。新しいsamples／validation v2の記録へ更新する。
+
+VF-2レビュー修正後の確認結果（2026-11-11）：runtime29・記録28が全件成功し、正常8例・その他102例をsamples／validation v2へ再生成した。receiptCallBound・failureConsumptionIndependentを検証済みsummaryへ保存する。関連CPR-B／BP 11 files・409回帰、旧記録21系列の照合、型検査・buildも成功。共有Sessionのsource変更へ届く旧比較を各runnerから再実行し、本文の中央値・paired差・採用見送りの判定も再測定値へ更新した。旧profileの再測定を今回の速度改善や本番採用の証拠には扱わない。

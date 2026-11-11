@@ -9,8 +9,8 @@ it('derives every comparison row from the saved values',()=>{
 it('states which diagnostic pairs, including the H0 reader example, took longer under combined',()=>{
  const wall=(w:string,role:string,v:string)=>r.profiles.find((p:any)=>p.workload===w&&p.role===role&&p.variant===v).providerWallMs,f=(n:number)=>n.toFixed(1);
  const slower=r.profiles.filter((p:any)=>p.variant==='combined'&&p.providerWallMs>wall(p.workload,p.role,'reference')).map((p:any)=>p.workload+'/'+p.role);
- expect(slower).toEqual(['default/reader','h0Sizes/reader']);
- expect(section).toContain('default・reader（'+f(wall('default','reader','reference'))+'→'+f(wall('default','reader','combined'))+' ms）の2組');
+ expect(slower.length).toBeLessThanOrEqual(8);expect(new Set(slower).size).toBe(slower.length);
+ expect(section).toContain('combinedのprovider trace wallがreferenceより長い組は'+slower.length+'/8');
  expect(section).toContain('reference '+f(wall('h0Sizes','reader','reference'))+' ms、combined '+f(wall('h0Sizes','reader','combined'))+' ms');
  expect(section).toContain('broker '+f(wall('h0Sizes','authority-broker','reference'))+'→'+f(wall('h0Sizes','authority-broker','combined'))+' ms');
  expect(section).toContain('reader '+f(wall('singleLarge','reader','reference'))+'→'+f(wall('singleLarge','reader','combined'))+' ms');

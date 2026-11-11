@@ -17,7 +17,7 @@
     "src/test/fixtures/gradleOwnedCwcLb3p.ts": "eb080176786fd1b9f564f25e42ee21ecd3001022c880b30f616451c099c27324",
     "src/test/fixtures/gradleOwnedCwcLb3pProfile.ts": "89c65efef0190eb1ba211610bdc0dbb7d8b7b78f78f859bbb160281d2d402705",
     "src/test/fixtures/gradleOwnedCwcLb3pValidation.mjs": "d4710055d0cabe23b7bce6754a788caeca0cc399e92248b4dbe6fca20e2961e0",
-    "src/test/fixtures/gradleOwnedCprBSession.ts": "62c372ab12a1068eda15b0bcab845da8ac4398900e680b5828171330926dda2d",
+    "src/test/fixtures/gradleOwnedCprBSession.ts": "291e31cb2d5671dc5d18f266f96049c364c8ab47d80d26d098e906754cc77b64",
     "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
     "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
     "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",

@@ -16,6 +16,7 @@ export class Vf1Owner {
   this.environment=Object.freeze({now:()=>{this.#foreign('now');return readOwnedClock(this.#clock);},assertOpen:()=>{this.#foreign('open');this.current();},credentialCurrent:(identity)=>{this.#foreign('credential-'+identity.role);const v=authorityView(this.#authority);return identity.role==='provider'?v.server&&v.serverKeyEpoch===identity.keyEpoch:v.peer&&v.peerKeyEpoch===identity.keyEpoch;},purpose:()=>{this.#foreign('purpose');return authorityView(this.#authority).purpose;},permissions:()=>{this.#foreign('permissions');return copyData(authorityView(this.#authority).permissions,32768);}});
   owners.add(this);this.current();Object.freeze(this);
  }
+ static requireTransport(value:Vf1Owner,authority:Vf0Authority,clock:Vf0Clock,registryPin:string){need(owners.has(value)&&value.#authority===authority&&value.#clock===clock&&value.#registryPin===registryPin,'codec_profile_unsupported');value.current();}
  static require(value:Vf1Owner,environment:Lb0Environment,registryPin:string){need(owners.has(value)&&value.environment===environment&&value.#registryPin===registryPin,'codec_profile_unsupported');value.current();}
  #foreign(site:string){const before=this.stamp();this.#counts[site]=(this.#counts[site]??0)+1;this.#hook(site);need(sameAuthorityStamp(before,this.stamp()),authorityReason(this.#authority));}
  stamp(){return stampAuthority(this.#authority);}
