@@ -3290,3 +3290,18 @@ VF-3初回v1の最終照合（2026-11-11）：対象・関連442テスト、23�
 VF-3レビュー修正：拒否callでも実Session inspectとlogicalを途中検査の1件差まで照合し、実reserve成功時のprivate検査work累積値をbudgetKey付きgateReceiptへ固定する。予約・live／full／fact件数とworkを協調的に1件または複数件減らす操作を両modeで拒否する。provider計画時間は完了・未完了windowの実測合計、clientの計画時間は完了windowの合計へ照合する。両modeの完了計画の0／半減と未完了provider計画の0化を回帰へ追加し、測定・検証schemaをv2へ更新した（§9.136.5）。旧v1のsource hashを付け替えず、288試行を現sourceで再測定した。v2は192/288・測定144/216完了、全6条件defer・本番採用見送り。
 
 VF-3レビュー修正後v2の最終確認（2026-11-11）：runtime18・記録16を含む446テスト、23系列の記録照合、型検査・build・差分検査が成功。修正前の失敗を確認した協調減額・計画時間過小計上の回帰は両modeで成功し、現sourceで再測定した288試行は192完了・測定144/216完了。全6条件deferと同一process／1 RPC/channelの限定証拠を維持する。
+
+### VF-3P：現在のbatch経路の費用・期限停止進捗（§9.137）
+
+- [x] 既存VF-3 v2の本体を変更せず、独立したprofile承認・source／実行method hashを照合。認可・purpose・取消し・元期限4500 ms・内容検証・独立計画・applicationのmemory／work／wire予算を維持。
+- [x] 同期packをactor別に捕捉し、実Session検査・wire検証・live gate・codec・canonical/hash・copyをexclusiveで分解。独立inspection witness・元plan span・operation／contextへ照合し、deadline前後を別集計。
+- [x] レビュー修正v2で再構成と試行全体の成否を分離。再構成後のcleanup期限停止はreconstructed=true・status=failedを保持し、全coverage・digest・機能oracleを照合。
+- [x] 元transport検証が成功した応答wireを捕捉し、元Client受理成功後の進捗へ束縛。元callのreplyDigest／応答長から各partを独立に再構成し、長さの減額・未受理entry差替え・証拠の欠落／改変を拒否。
+- [x] 最終sourceで固定clock oracle24転送と実時間288試行を再実行。199/288・測定149/216完了、67元期限停止・invalid 0。全6条件defer。追加費用は完了pairだけを集計し、不完了pairのattempt差も保持。
+- [x] runtime24・記録21の回帰で両modeの再構成後期限停止・part改変を確認。v1のprogress／measurementを拒否し、旧sourceの記録を現行証拠へ流用しない。
+- [ ] 次はlive gate内部の反復する不変入力検証・canonical／コピーの削減契約を設計する。現在認可・purpose・取消し・pin／generation・元期限・残予算の毎回確認を統合対象にしない。途中観測を削減可能な費用へ直接換算しない。
+- [ ] 速度改善・本番採用、実storage・独立UID／5 process・継続8 read・CPR-C／CG0／CG3は引き続き保留。
+
+VF-3Pレビュー修正v2検証（2026-11-12）：大入力fact-liveの期限前live gate中央値2083.7〜2099.8 ms、canonical/hash 1406.4〜1416.6 ms、copy 543.5〜547.2 ms。pack包含3729.8〜3771.8 msに対し子処理を除くplanner分類は15.0〜15.7 msで、計画中のlive gate側を次の調査対象とする。full-verifyではwire検証が最大。いずれも共通wire証拠と計測器込みの観測で、期限停止から完了転送の速度比を作らない。旧VF-3のsource・記録は変更せず、今回の全110 source・実行method・元raw digestを束縛した新しい記録へ更新する。
+
+VF-3Pレビュー修正v2の最終確認：runtime24・記録21を含む497テスト、24系列の記録照合、型検査・build・差分検査が成功。旧sourceのhashを付け替えず、保存回帰の選定を修正した最終sourceで288試行を再取得した。再構成後の期限停止を両modeで受理し、part長の減額・未受理entry差替えを元transport応答への照合で拒否する。

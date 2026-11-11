@@ -10207,3 +10207,112 @@ providerPlanMsは完了windowと最後の未完了windowの実測合計へ一致
 測定／検証schemaをv2へ更新し、gateReceiptのない旧v1記録を現行の証拠として受理しない。新しいsourceで実時間288試行と固定clock機能oracle24転送を再実行し、元の条件・順序回転・失敗込み集計・採用gateを維持して判定を更新した。
 
 レビュー修正後の最終照合（2026-11-11）：VF314の両modeと、VF307／VF3R15の両modeで修正前の失敗を確認した。新しい実時間v2記録を使ったruntime18・記録16を含む対象・関連446テスト、23系列の記録runnerの--check、型検査・build・差分検査が成功した。最後のレビュー修正では既存profileのsourceを変更しておらず、前段の記録は再照合のみとした。VF-3の実時間clock追加（Vf0Authority・Vf1・Sites）に伴い、既存profileの記録は各runnerで再測定している。正当な途中検査を保持しつつ、1件以上の協調減額とprovider計画時間の過小計上を拒否する。sourceに束縛した288試行・機能oracle・承認とv2の必須receiptを保存し、全6条件deferと実証範囲の制限を維持する。
+
+### 9.137 VF-3P：現在のbatch経路の費用・期限停止時の進捗
+
+VF-3PはVF-3 v2の実SessionServer／Client・ReadScope・CWC root／fact／ledgerをそのまま呼ぶ診断である。追加observer／進捗取得のsource・実行method本文hashを独立したprofile承認へ束縛し、構築前に照合する。承認失効はbaseとcode承認も失効させる。scalar／batch×full-verify／fact-liveの4方式、元期限4500 ms・元のmemory／work／wire上限、現在認可・取消し・内容検証・各batchの独立計画・最終receiptを共通に維持する。元VF-3のsourceと記録を変更せず、今回の最適化実装・本番採用はfalseである。
+
+費用はexport／prototype入口にcall-throughし、exclusiveの合計＋otherをobserver windowへ照合する。inclusiveは内包時間として別表示し、加算しない。actorは同期pack内のclient-initial／client-seal／provider、ownerは直近の非JSON分類へ帰属する。windowにはpack前後の準備・完了処理やhook待ちも含まれるため、window時間・pack包含時間・exclusive分類は同じ値ではない。内部関数・JS heap／RSS・純粋CPUの完全な計測ではない。
+
+全operation・contextの時間を元deadlineでbefore／afterへ切り分け、両側のexclusive＋otherも実時間windowへ照合する。実Sessionのexport入口を実参照ごとの独立counterに対応付け、完了callでは元Sessionのinspectとの差1件（内部の最終検査）へ照合する。失敗時も閉じたfrontier、baseの検査work receipt・予算・回収条件を維持する。actor間の費用移動、entry／finallyやexport入口の欠落、plan spanとの不一致、非再入inclusive過大計上を拒否する。
+
+進捗は全方式に共通の記録器が元のacceptClient promise成功後に記録する。元の公開前guard・Client検証・CLB finishを代行せず、署名・base64 decode・追加source IOを行わない。v2では元transport replyのwireを上限8192 bytesでbase64へコピーし、元reply検証が成功した場合だけlink単位のpendingへ保持する。元Client受理まで成功した場合だけ進捗へ移し、pendingを消費する。静的検証ではwireのbytes／SHA-256を元callのproviderReplyBytes／replyDigestへ照合し、その本文からkind／index／offset／実byte量・entry hashを独立に再構成して進捗の各partへ完全一致させる。元providerのparts数とpublished call／requestDigest、連続したoffset、機能oracleのinventory・全source量の検査も維持する。単なるaccepted coverageと最終全entry再構成は区別し、全bytesの受理だけで再構成成功とは推定しない。再構成とauditが成功した後に試行全体が元期限で停止した場合は、reconstructed=true・status=failedを保持する。validatedSourceBytesは繰返しsource検証の作業量で、受理済みsource bytesと区別する。
+
+承認配備と固定clock機能oracle24転送は測定外とし、method照合・共通進捗記録器・observerの構築からhandshake／capture・計画・全entry再構成／digest・audit・cleanup／drain・復元までをT_totalへ含む。288試行（warm-up72・測定216）を1 workerで順序回転し、失敗を除外しない。quiet／counts／timedの同round pairが両方完了した場合だけT差を計測追加費用へ集計し、打切りを含むpairはattempt差として別保持する。費用表はcomplete／元期限打切り／invalid別の観測値で、打切り費用は完了転送・削減可能量・速度改善へ換算しない。
+
+<!-- VF3P-TABLE-BEGIN -->
+| 条件 | role | scalar/full ms | scalar/fact ms | batch/full ms | batch/fact ms | 完了／測定 | 判断 |
+| --- | --- | ---: | ---: | ---: | ---: | --- | --- |
+| small | reader | 438.0 | 235.2 | 1140.2 | 339.9 | 9/9 · 9/9 · 9/9 · 9/9 | defer |
+| small | authority-broker | 438.6 | 254.3 | 1186.3 | 340.5 | 9/9 · 9/9 · 9/9 · 9/9 | defer |
+| h0 | reader | 1237.5 | 648.6 | — | 4111.9 | 9/9 · 9/9 · 0/9 · 3/9 | defer |
+| h0 | authority-broker | 1259.1 | 700.5 | — | — | 9/9 · 9/9 · 0/9 · 2/9 | defer |
+| single-large | reader | 1133.0 | 642.3 | — | — | 9/9 · 9/9 · 0/9 · 0/9 | defer |
+| single-large | authority-broker | 1191.7 | 624.0 | — | — | 9/9 · 9/9 · 0/9 · 0/9 | defer |
+
+| 条件 | role | batch mode | timed分類／件数 | 実Session ms | live gate ms | canonical/hash ms | pack包含 ms | 期限後observer ms | 受理済みsource B |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| small | reader | batch/full-verify | complete/3 | 7.3 | 184.9 | 302.0 | 770.0 | 0.0 | 4700.0 |
+| small | reader | batch/fact-live | complete/3 | 6.7 | 147.2 | 127.4 | 200.6 | 0.0 | 4700.0 |
+| small | authority-broker | batch/full-verify | complete/3 | 7.2 | 183.8 | 311.8 | 788.1 | 0.0 | 4700.0 |
+| small | authority-broker | batch/fact-live | complete/3 | 6.6 | 146.0 | 127.2 | 200.1 | 0.0 | 4700.0 |
+| h0 | reader | batch/full-verify | original-deadline-censored/3 | 27.3 | 703.1 | 1085.0 | 3894.5 | 2.0 | 8192.0 |
+| h0 | reader | batch/fact-live | original-deadline-censored/3 | 96.8 | 2099.0 | 1406.4 | 3729.8 | 2.4 | 36864.0 |
+| h0 | authority-broker | batch/full-verify | original-deadline-censored/3 | 27.1 | 697.5 | 1101.7 | 3901.9 | 1.2 | 8192.0 |
+| h0 | authority-broker | batch/fact-live | original-deadline-censored/3 | 95.0 | 2083.7 | 1416.6 | 3745.3 | 1.5 | 36864.0 |
+| single-large | reader | batch/full-verify | original-deadline-censored/3 | 28.4 | 711.2 | 1080.3 | 3925.9 | 1.1 | 8192.0 |
+| single-large | reader | batch/fact-live | original-deadline-censored/3 | 97.0 | 2099.8 | 1416.1 | 3771.8 | 1.5 | 36864.0 |
+| single-large | authority-broker | batch/full-verify | original-deadline-censored/3 | 27.8 | 702.0 | 1103.1 | 3905.5 | 1.7 | 8192.0 |
+| single-large | authority-broker | batch/fact-live | original-deadline-censored/3 | 96.6 | 2095.6 | 1415.3 | 3750.9 | 1.3 | 36864.0 |
+<!-- VF3P-TABLE-END -->
+
+再現は`bdo node scripts/check-cwc-vf3p.mjs`、保存記録の照合は`bdo node scripts/check-cwc-vf3p.mjs --check`。記録は`docs/validation/gradle-cwc-vf3p-2026-11-12.json`へ保存する。sourceに束縛した中間rawをOS一時領域へ保存し、同じsourceの完了済み測定だけを--resumeで再検証する。実storage・独立UID／5 process・継続8 read・CPR-C／CG0／CG3と本番採用は保留する。
+
+partial rawは各試行後にJSONLへ追記し、過去全rowの再serialize／書換えを繰り返さない。署名承認の配備・機能oracleと、試行後のJSONL／最終記録の永続化はT_total外である。T_totalには計測用counter・context記録、共通進捗の収集／コピーとobserver復元を含める。記録保存IOの性能や専有CPU環境を実証したものではない。source-key付きの完了済みrawだけを再開へ使用し、未完了JSONLを新しいsourceの性能証拠へ昇格しない。
+
+計測対象と帰属は次の対応で固定する。canonical／hashは捕捉できるexport入口だけを個別計上し、同じmodule内から直接呼ばれる内部処理は親operationのexclusiveへ残す。従ってcanonical／hash欄を全hash処理の総費用とは呼ばない。method照合・observer準備は共通の初期化時間へ含み、独立計画の同期packをactor別に帰属させる。Promiseの待ち時間や未捕捉処理はotherへ残し、CPU時間とは扱わない。
+
+| 分類 | 捕捉する主な入口 | 照合する証拠 |
+| --- | --- | --- |
+| 独立計画 | client-initial／client-seal／providerのpack | 元plan window内の同期span、actor別exclusiveの合計 |
+| 実Session | inspectAuthenticatedCall | 実handleごとのexport counterと元Sessionの検査件数 |
+| live gate | owner・binding・scope・grant・registry・ledger・endpoint | 元のlive／検査work receipt・予算・失効／回収条件 |
+| codec／canonical／hash | CWC root／fact・codec、JSON export | 入口件数・finally件数・contextとoperationの時間一致 |
+| 転送進捗 | 元reply検証・acceptClient成功後 | 元replyDigest／応答wire・published call・provider parts・requestDigest・機能oracle |
+
+VFP01〜13（mode別展開を含むruntime16件）は正常再構成、両modeでの取消し・承認失効・署名済み本文改変・実時間期限、計測対象methodの差替え、進捗欠落／重複、検査件数の減額、actor間の費用移動、時間partition・非再入inclusive上限を検証する。VFPR01〜14は全試行と失敗の保持、完了pairだけの追加費用、source／method承認、進捗と予算、時間の非有限値・負値・過大計上、実Session witness、診断と本番採用の区別を保存記録から再検証する。
+
+#### 9.137.1 レビュー修正後v2の実時間比較と採用判断（2026-11-12）
+
+最終sourceで機能oracle24転送と実時間288試行（warm-up72・測定216）を再実行した。199/288完了、測定149/216完了（69.0%）、残り67件は元期限での打切り・invalid 0件である。測定完了数はscalar/full-verify 54/54、scalar/fact-live 54/54、batch/full-verify 18/54、batch/fact-live 23/54。全6条件defer・本番採用見送りを維持する。
+
+smallのbatch/fact-liveのquiet中央値339.9／340.5 msはscalar/fact-liveの235.2／254.3 msを上回る。H0 readerの候補はquietの3試行だけ完了し中央値4111.9 msだが、counts／timedは全て停止して3/9完了に留まる。H0 brokerの候補は2/9完了で、quietにも停止があり成功中央値を作らない。single-largeのbatchは両modeとも0/9完了。候補の全9測定完了とscalarに対する5%条件は成立しない。v1や途中の別source測定との時間差を改善／悪化の因果証拠にはしない。
+
+上の費用表は各timed 3試行の中央値で、実Session・live gate・canonical/hashは期限前のexclusive、pack包含は子処理と期限後部分を含む同期spanの合計、期限後observerは全observer windowの期限後部分である。同じ列種ではないので足さず、各分類の中央値も足して架空のT_totalを作らない。
+
+full-verifyでは期限前のwire-verificationがsmallで648.5〜652.1 ms、大入力の打切り試行で2381.7〜2405.7 msと最大である。fact-liveのsmallではlive gate 146.0〜147.2 msとcanonical/hash 127.2〜127.4 msが大きい。大入力の打切り試行ではlive gate 2083.7〜2099.8 ms、canonical/hash 1406.4〜1416.6 ms、copy 543.5〜547.2 msを観測した。実Session入口自体のexclusiveは95.0〜97.0 msで、子処理のwire検証・canonical等は別分類へ残す。
+
+大入力fact-liveのpack包含中央値は3729.8〜3771.8 ms、子処理を除くplanner分類は15.0〜15.7 msである。canonical/hashの直近ownerではlive-gateに1142.1〜1156.1 msが帰属する。次の削減契約の調査対象は、計画中に繰り返されるlive gate内部の不変入力検証・canonical／コピーとする。現在認可・purpose・取消し・pin／generation・元期限・予算を毎回確認する条件は維持する。これらはobserver込みの途中までの観測で、各分類の全量を削減できるという見積りではない。
+
+#### 9.137.2 v2の期限停止時の進捗
+
+下表は両roleのtimed測定各3試行の範囲である。source量はinventory本体を含めない。この主測定では期限停止試行の検証済み全entry再構成は0件だった。再構成後の期限停止を両modeで強制した回帰は別に実行し、reconstructed=true・status=failedを保存できることを確認した。受理済みbytesだけから再構成済みと推定しない。
+
+| 入力／方式 | 受理済みsource B／全量 | 完全に受理したsource entry数 | 完了plan window数／開始数 | 繰返し検証したsource B |
+| --- | --- | --- | --- | --- |
+| small／両mode | 4700／4700 | 5 | 4／4 | 18800 |
+| H0／full-verify | 8192／41460 | 2 | 4／5 | 207300 |
+| H0／fact-live | 36864／41460 | 7 | 11／11〜12 | 456060〜497520 |
+| single-large／full-verify | 8192／41460 | 0 | 4／5 | 207300 |
+| single-large／fact-live | 32768〜36864／41460 | 0 | 10〜11／11〜12 | 456060〜497520 |
+
+大入力batchのtimed停止24件のうち23件では最後のsource phaseがplan-beforeで、1件はsource処理へ未到達のnullだった。timedの記録前dispatch数は全て0である。未到達phaseや未受理partを完了と推定せず、元の未完了call／私有bytes回収・後着拒否も維持する。期限後observer時間の中央値は大入力batchで1.1〜2.4 msだが、この値も削減可能量とは扱わない。
+
+#### 9.137.3 v2の計測追加費用と再検証
+
+次表は両方完了した同round pairだけを使った、条件別paired T差の中央値の範囲（ms）である。各差について全6条件×3 pairを保持し、片方以上が停止したpairは別のattempt差に残す。負の差も保持し、純粋なobserver CPU費用や統計的に確立した短縮量とは呼ばない。
+
+| 方式 | 完了pair数（counts−quiet／timed−counts／timed−quiet） | counts−quiet ms | timed−counts ms | timed−quiet ms |
+| --- | --- | ---: | ---: | ---: |
+| scalar/full-verify | 18／18／18 | 43.1〜111.7 | -39.4〜30.6 | 26.8〜129.1 |
+| scalar/fact-live | 18／18／18 | 13.3〜99.0 | -35.2〜19.8 | 24.7〜89.5 |
+| batch/full-verify | 6／6／6 | 83.0〜116.7 | -32.1〜-12.4 | 68.1〜104.3 |
+| batch/fact-live | 6／6／6 | 61.2〜66.3 | 4.3〜6.1 | 65.1〜67.5 |
+
+各batchの残り12 pair／差は不完了pairで、完了転送の追加費用の集計へ混ぜない。共通進捗取得・wireコピー／保持とmethod照合はquietにも存在するため、この差だけでそれらの費用を同定できない。
+
+最終測定は更新した全110件の署名済み実行sourceと実行method hashへ束縛し、measurementOrigin.resumed=falseで新しく取得した。旧sourceのhashを付け替えず、途中の別source測定を今回の採用証拠へ流用しない。明示した完了済みrawを--resume-from=PATHで再検証する場合も全署名・閉包・機能oracle・288試行の照合を省かず、measurementOrigin.rawDigestへ元rawのdigestを固定する。実行sourceを変えた場合は再測定が必要である。
+
+#### 9.137.4 レビュー修正v2：再構成後の期限停止と受理partの束縛
+
+reconstructedはauditの検証済み再構成事実へ束縛し、試行全体のstatusから導かない。trueなら全source entryのcoverage・inventory／入出力digest・auditの期待digestを照合し、測定全体では固定clock oracleのinventoryと結果にも照合する。cleanup／observer復元で元期限へ達した場合も再構成の事実を残し、完了率・採用gateではfailedのまま扱う。VFP14は両modeの実時間clockで再構成後にcleanupを元期限まで待たせ、有効なfailed記録として受理し、再構成事実のfalse化・結果証拠の欠落を拒否する。
+
+受理partを単なる境界・inventory一致から推定することをやめ、別の段階で捕捉した元transport応答へ照合する。replyのコピーは元検査の成功まで公開せず、元Client受理成功後のrecordだけに付ける。保存したwireはbase64の正規形式・8192-byte上限・元provider応答長・元transportのreplyDigestへ一致させ、owner envelopeのreply／aux／apiと本文requestDigestを照合する。本文bytesを静的にdecodeして各partの全項目へ照合するため、4096から1 byteへの減額や、正しいinventory hashを持つ未受理entryへの差替えを拒否する。署名を新しく検証した証拠ではなく、既存の検証済みtransport観測へ束縛する同一processの診断である。独立serviceの認証witnessには昇格しない。
+
+progress・measurement・検証記録・追加承認／policyをv2へ更新し、必要なwire証拠のないv1を現行証拠として受理しない。元transport／CWC／Sessionの実装・認可・purpose・取消し・元期限・内容検証・独立計画・applicationのmemory／work／wire上限は変更しない。共通のwireコピー／base64 encode、pending管理、進捗snapshotのコピー・参照解放を全armのT_totalへ含め、同一callへの重複署名検証・hash・decode・source IOは追加しない。診断の保持はlinkごとのpending一つ、受理済み最大128応答、各応答8192 bytes以内である。JS heap／RSSの上限や保存診断文字列の物理消去を実証したものではない。
+
+observerは元methodを捕捉してから進捗wrapperを装着し、cleanupで逆順に復元する。元replyを一度だけ呼び、実Session検査・live検査の位置と件数は維持する。VFP15〜17とVFPR15〜17は両modeでpart長の減額・未受理entry差替え・wire証拠の欠落／改変を拒否し、測定対象のsummary再生成も不正な進捗で停止することを検証する。VFPR18は旧schemaの拒否を確認する。修正前のVFP14両modeとVFP15／16両modeの失敗を確認してから実装した。
+
+保存記録の改変回帰は、warm-upを除く測定試行で、最後の受理partが1 byteより長く、未受理entryが残る停止例を選ぶ。選定を修正した後の最終sourceで、回帰・機能oracle24転送・実時間288試行を全て再実行した。途中の別source測定や事前のテスト確認用データは採用証拠に流用しない。
+
+最終確認（2026-11-12）：runtime24・記録21を含む対象・関連497テスト、24系列の記録runnerの--check、型検査・build・差分検査が成功した。基底VF-3と旧profileのsource・記録は変更せず再照合のみとした。今回のv2記録は最終sourceで取得した199/288・測定149/216完了のraw・全署名承認・実行method・機能oracleへ束縛する。認可・取消し・元期限・内容検証・予算を維持し、全6条件defer・同一process／1 RPC/channel・実storage／native隔離未成立の範囲を維持する。
