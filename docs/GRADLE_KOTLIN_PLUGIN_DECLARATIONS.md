@@ -10246,7 +10246,7 @@ VF-3PはVF-3 v2の実SessionServer／Client・ReadScope・CWC root／fact／ledg
 | single-large | authority-broker | batch/fact-live | original-deadline-censored/3 | 96.6 | 2095.6 | 1415.3 | 3750.9 | 1.3 | 36864.0 |
 <!-- VF3P-TABLE-END -->
 
-再現は`bdo node scripts/check-cwc-vf3p.mjs`、保存記録の照合は`bdo node scripts/check-cwc-vf3p.mjs --check`。記録は`docs/validation/gradle-cwc-vf3p-2026-11-12.json`へ保存する。sourceに束縛した中間rawをOS一時領域へ保存し、同じsourceの完了済み測定だけを--resumeで再検証する。実storage・独立UID／5 process・継続8 read・CPR-C／CG0／CG3と本番採用は保留する。
+再現は`node scripts/check-cwc-vf3p.mjs`、保存記録の照合は`node scripts/check-cwc-vf3p.mjs --check`。記録は`docs/validation/gradle-cwc-vf3p-2026-11-12.json`へ保存する。sourceに束縛した中間rawをOS一時領域へ保存し、同じsourceの完了済み測定だけを--resumeで再検証する。実storage・独立UID／5 process・継続8 read・CPR-C／CG0／CG3と本番採用は保留する。
 
 partial rawは各試行後にJSONLへ追記し、過去全rowの再serialize／書換えを繰り返さない。署名承認の配備・機能oracleと、試行後のJSONL／最終記録の永続化はT_total外である。T_totalには計測用counter・context記録、共通進捗の収集／コピーとobserver復元を含める。記録保存IOの性能や専有CPU環境を実証したものではない。source-key付きの完了済みrawだけを再開へ使用し、未完了JSONLを新しいsourceの性能証拠へ昇格しない。
 
@@ -10301,7 +10301,7 @@ full-verifyでは期限前のwire-verificationがsmallで648.5〜652.1 ms、大�
 
 各batchの残り12 pair／差は不完了pairで、完了転送の追加費用の集計へ混ぜない。共通進捗取得・wireコピー／保持とmethod照合はquietにも存在するため、この差だけでそれらの費用を同定できない。
 
-最終測定は更新した全110件の署名済み実行sourceと実行method hashへ束縛し、measurementOrigin.resumed=falseで新しく取得した。旧sourceのhashを付け替えず、途中の別source測定を今回の採用証拠へ流用しない。明示した完了済みrawを--resume-from=PATHで再検証する場合も全署名・閉包・機能oracle・288試行の照合を省かず、measurementOrigin.rawDigestへ元rawのdigestを固定する。実行sourceを変えた場合は再測定が必要である。
+最終測定は更新した全110件の署名済み実行sourceと実行method hashへ束縛し、新しく取得した。その後の文書だけの修正では同じrawを--resume-fromで再検証して節digestだけを更新したため、記録のmeasurementOrigin.resumedはtrueで、rawDigestは取得時から変わらない。旧sourceのhashを付け替えず、途中の別source測定を今回の採用証拠へ流用しない。明示した完了済みrawを--resume-from=PATHで再検証する場合も全署名・閉包・機能oracle・288試行の照合を省かず、measurementOrigin.rawDigestへ元rawのdigestを固定する。実行sourceを変えた場合は再測定が必要である。
 
 #### 9.137.4 レビュー修正v2：再構成後の期限停止と受理partの束縛
 
