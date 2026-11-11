@@ -49,10 +49,10 @@
     "src/utils/gradleOwnedAuthorityOwnerSchema.ts": "18867824165fa4c7a6d7553017599541d87bce94e9a4a28c2ed3c9721e9b852f",
     "src/test/fixtures/gradleOwnedCwcLb0Fixture.ts": "bd55a87a0a726b45034aaaa17717b0fb184127c5569dfebcaca4d17f355fd9f9",
     "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-    "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-    "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+    "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+    "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
     "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-    "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+    "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
     "src/test/fixtures/gradleOwnedCwcLb1Approval.ts": "6b236bf6ee28a3cc8e8ec269987007a51a2368a9fec3fec526195f8d055391ff",
     "src/test/fixtures/gradleOwnedCwcCProvider.ts": "e5fc7bc56a3ae71a0c14ffe6f490f5c35673228c782fb3bd0ac217494e87aa4c",
     "src/test/fixtures/gradleOwnedCprBSession.ts": "291e31cb2d5671dc5d18f266f96049c364c8ab47d80d26d098e906754cc77b64",
@@ -117,7 +117,7 @@
         "mode": "full-reference",
         "role": "reader",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "commandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "scopeClosed": {
@@ -328,7 +328,7 @@
         "mode": "full-reference",
         "role": "reader",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "commandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "scopeClosed": {
@@ -539,7 +539,7 @@
         "mode": "full-reference",
         "role": "reader",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "commandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "scopeClosed": {
@@ -750,7 +750,7 @@
         "mode": "full-reference",
         "role": "authority-broker",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "commandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "scopeClosed": {
@@ -961,7 +961,7 @@
         "mode": "full-reference",
         "role": "authority-broker",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "commandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "scopeClosed": {
@@ -1172,7 +1172,7 @@
         "mode": "full-reference",
         "role": "authority-broker",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "commandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "scopeClosed": {
@@ -1383,7 +1383,7 @@
         "mode": "bound-live",
         "role": "reader",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "commandDigest": "79a2d656e22b7e01441026ad5178492b11d6cf12b45ceba6a032de3d027f8d6f",
         "scopeClosed": {
@@ -1594,7 +1594,7 @@
         "mode": "bound-live",
         "role": "reader",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "commandDigest": "a27438e8f0eb3df0e469b3f1bc4e1b21f000772b8455ef4b43b55c4d6033d88e",
         "scopeClosed": {
@@ -1805,7 +1805,7 @@
         "mode": "bound-live",
         "role": "reader",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "commandDigest": "d03313731f87d3a1fa15653cb870dacbe25de3402aec5f26dc3dec183c891007",
         "scopeClosed": {
@@ -2016,7 +2016,7 @@
         "mode": "bound-live",
         "role": "authority-broker",
         "api": "aux.ReadSourceDescriptor",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "commandDigest": "441f0e77d105c6c9b186bcce35b75a84f2833d6295ac013a2ccd660aabddbe3c",
         "scopeClosed": {
@@ -2227,7 +2227,7 @@
         "mode": "bound-live",
         "role": "authority-broker",
         "api": "aux.ReadSealedSource",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "commandDigest": "bcd2cd6499d16f62e54f59676c720bf884540c79a313d7f909b0720b66b45313",
         "scopeClosed": {
@@ -2438,7 +2438,7 @@
         "mode": "bound-live",
         "role": "authority-broker",
         "api": "aux.ReadSourceRanges",
-        "sourceApprovalPin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+        "sourceApprovalPin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
         "expectedCommandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "commandDigest": "403f8e7ff37603953df65c740efeff4d88516887286063e2092d6ffbc94b78e2",
         "scopeClosed": {
@@ -2647,7 +2647,7 @@
       }
     ],
     "sourceApproval": {
-      "pin": "d0d543eb677b05379d3456c486d9aa1c84a79a7399f49b3e54c5eacc3c5dd091",
+      "pin": "f91b9b7e76131fc4908fd6ee1e8cbd25cf483e4bf106d4cc33be4edc1944ce92",
       "envelope": {
         "manifest": {
           "schema": "cwc-lb0.approval.v1",
@@ -2656,14 +2656,14 @@
           "sources": {
             "src/test/fixtures/gradleOwnedCwcLb0Fixture.ts": "bd55a87a0a726b45034aaaa17717b0fb184127c5569dfebcaca4d17f355fd9f9",
             "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-            "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-            "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+            "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+            "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
             "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
             "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
             "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
             "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
             "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-            "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+            "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
             "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
             "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
             "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -2734,12 +2734,12 @@
             "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
           }
         },
-        "signature": "kw+8hvZdChkY+gO/WGI7BFRps2KJn97tD+dXB9SaxOo1kpbOEnIBnxQQNr5/eZPu20QoUMBQnAmeq9qISHI4AQ=="
+        "signature": "j+5FMFNdnW857qoJWrO/wv6htatnr5rh3/w/KnB2GyGgGiffEUk3TqAqX4yZaJMwb6imWWKw9j4B+pF8Iq4yBA=="
       },
       "registry": {
         "schema": "cwc-lb0.registry.v1",
-        "manifestDigest": "3466124a8cd89420d95de9fb923a754daac0fa05df30afa0cfc6914c828a0774",
-        "operatorSpki": "MCowBQYDK2VwAyEA8XZXFa19DGzqKEh/lDwFiidmPFTAnvlhKE8pQ0V29dk="
+        "manifestDigest": "3d1fc5cd659bf24c39bff0c842efd4a86f828344cbfff26abb437da7d41cecdc",
+        "operatorSpki": "MCowBQYDK2VwAyEAHVVlrP8smuTJauIH79dlPoB6tht9ytIOIf1n78I6Kq0="
       }
     },
     "proofs": [

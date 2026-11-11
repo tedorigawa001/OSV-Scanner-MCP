@@ -13,11 +13,11 @@
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
     "src/test/fixtures/gradleOwnedCwcLb0Fixture.ts": "bd55a87a0a726b45034aaaa17717b0fb184127c5569dfebcaca4d17f355fd9f9",
     "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-    "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-    "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+    "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+    "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
     "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
     "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
-    "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+    "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
     "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
     "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
     "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -8075,7 +8075,7 @@
       }
     ],
     "sourceApproval": {
-      "pin": "885e2e419da67953dc9918a6724d460fb5e429b9b7955a5b12abe37a2dd2bb2c",
+      "pin": "6c51f958109d60c6f6eb0c855c45b1c675cda3ec8a7372315ceffbe54e56e888",
       "envelope": {
         "manifest": {
           "schema": "cwc-lb1.approval.v1",
@@ -8089,11 +8089,11 @@
             "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
             "src/test/fixtures/gradleOwnedCwcLb0Fixture.ts": "bd55a87a0a726b45034aaaa17717b0fb184127c5569dfebcaca4d17f355fd9f9",
             "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-            "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-            "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+            "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+            "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
             "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
             "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
-            "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+            "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
             "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
             "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
             "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -8164,12 +8164,12 @@
             "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
           }
         },
-        "signature": "vMk2Hym+tTBdzO/HBxGAUK8ecy8XSAxbDqdgbPr3ks0pTKoDOzTKq6s+F7ZKDUS2EwF+6TSy0yYce1bMUymtDw=="
+        "signature": "R2nw7Rw2Jpw4eCq4se8IUuYl9/cdmYXMRIfNhlIWti3IRs+14H6Suk8W5cD/8Y3vWkzAGMgus0RKKpjW5LfnCQ=="
       },
       "registry": {
         "schema": "cwc-lb1.registry.v1",
-        "manifestDigest": "e971409a5d9bc4679bff331cbd9eef012a9782d14321c4b021125b666c8224a8",
-        "operatorSpki": "MCowBQYDK2VwAyEAkWYBnxKN9f8o5vefa8ztuIOdRQWGtPWkjUALi+0hqaQ="
+        "manifestDigest": "ea18dec42f938a916d14e2f426b2d33c8a205fc55f5698b6cf81fbf278853e40",
+        "operatorSpki": "MCowBQYDK2VwAyEA3HkXcVTQs7Z1zcZKHBbtQTzCDvQKs9Z8PH+gkylGoGo="
       }
     }
   }

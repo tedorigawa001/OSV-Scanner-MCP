@@ -21,7 +21,7 @@
   },
   "baseline": {
     "path": "docs/validation/gradle-c3b-cpr-bp-2026-11-08.json",
-    "sha256": "927d3a49c755cc2089f79d9f58028e8426e8b2826beb9ea8d359108f4075875e",
+    "sha256": "d1c2e3de35c5cf02dff0d76d5c65a21aa7eb2dc1096eb0bbe19fcd9b9df6ad0d",
     "proceedToCprC": false,
     "productionAdopted": false
   },

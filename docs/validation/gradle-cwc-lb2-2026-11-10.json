@@ -9,14 +9,14 @@
     "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
     "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
     "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-    "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-    "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+    "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+    "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
     "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
     "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
     "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
     "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
     "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-    "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+    "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
     "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
     "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
     "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -153,20 +153,20 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "6bc5b968936cf1e8a0ad8de69a15db430bf5b732bed7a5dec0cea2805a149aaa",
+              "connectedPin": "0436c964b86e9d5e5a02ae121d7209d754c182b0ad141363f31f36d1b0ccf816",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                 "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                 "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                 "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                 "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                 "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                 "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                 "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                 "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                 "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                 "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -241,14 +241,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "PfWYKKRpDCxYwATqxyL8LbM61cfhvyYcpHsO8d+bQUHBbUwyMJT+rll8iPWF+9OL81Bcnm5/PUugkT9Np4cYAg=="
+            "signature": "rcFTT9iObb2Lw6lEmUGnSN+0pcpgu1HFXaDtGByln+XRvFN8/D2vJSkkIFnYBLYSUqfAklWswSNbY5ZblDuEDw=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "9ce19517b8139779d8e8093ad60717c1d066d6efd75ecfa5ea2050498bb72690",
-            "operatorSpki": "MCowBQYDK2VwAyEAQw0r7BC5vVlMQ4uIT2oBK0X4bVo5+iV13ksEKRoWv4I="
+            "manifestDigest": "26f8bb83b452148ed25e19787203d12645a302c3dd5960fbbca1cd5ece4370ce",
+            "operatorSpki": "MCowBQYDK2VwAyEA880o0W+X8V5MxmBIMfm7LchmEsdGmnujtdFXz1nnl3s="
           },
-          "pin": "86df8007b8e54e083a7b5b38adbb51c5d4853d5c0d130f1c90282dca9badbbcd",
+          "pin": "e165ca7c7a92e363d87f21db616c4bdc6ccd50a07e5f28d8fb2ced38a67be1e9",
           "connected": {
             "envelope": {
               "manifest": {
@@ -259,14 +259,14 @@
                   "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                   "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                   "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                   "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                   "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                   "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                   "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                   "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                   "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                   "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                   "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -341,14 +341,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "8V44RoLB0hG/L4ZOmBCkIvZoe1p3AQP9vSidDKlEaYNv8c0mCvdWnozf8d2oKKETSqksz1CEjFv91lcbB7LECg=="
+              "signature": "yd9WZfckodnxar/SkMGiEdjHHZBu38MyBg9NdItsqepmxIBvhgADvH4nz+teG3jeXnLCZu17ELpuJ1oTCvNcAw=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
-              "manifestDigest": "61b03748c5060efc19a9ae519f4242e95998d4dac3797f8f9daa870ed7a48b1f",
-              "operatorSpki": "MCowBQYDK2VwAyEAdM1JTGqhF5DgchMT+rkqTS95yhFDVt8EiskAf6RGm4M="
+              "manifestDigest": "85701043aa1dad18c70bc686d84ae20df34f8fcb102ecbe4e576fcbc80b46480",
+              "operatorSpki": "MCowBQYDK2VwAyEAez5zAjyy2QmFo3t7N87htNebkWTF1D7Pd/wv7iiY9Z8="
             },
-            "pin": "6bc5b968936cf1e8a0ad8de69a15db430bf5b732bed7a5dec0cea2805a149aaa"
+            "pin": "0436c964b86e9d5e5a02ae121d7209d754c182b0ad141363f31f36d1b0ccf816"
           }
         },
         "inventory": {
@@ -555,17 +555,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 321.495792,
-            "planned": 597.160375,
-            "reconstructionStarted": 2205.569334,
-            "end": 2205.752209
+            "start": 217.077083,
+            "planned": 390.271167,
+            "reconstructionStarted": 1446.3555,
+            "end": 1446.525833
           },
-          "finalizationMs": 0.182875000000422,
-          "wallMs": 1884.2564170000003,
-          "setupAndClientPlanMs": 275.66458300000005,
-          "dispatchAndReconstructionMs": 1608.5918340000003,
-          "clientPlanMs": 19.244750000000067,
-          "sealMs": 15.244041999999922,
+          "finalizationMs": 0.17033300000002782,
+          "wallMs": 1229.44875,
+          "setupAndClientPlanMs": 173.194084,
+          "dispatchAndReconstructionMs": 1056.2546659999998,
+          "clientPlanMs": 11.9255,
+          "sealMs": 10.462666000000013,
           "providerPlanMs": 0,
           "requests": 2,
           "clientPlans": 2,
@@ -747,7 +747,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -1186,7 +1186,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -1625,7 +1625,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -2062,7 +2062,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8584,
-            "replyDigest": "f298bfa404260e30b53f2c0e559abc88f6f1ac70e98864535ec5f4faed733a16",
+            "replyDigest": "88fb7731034bc3dc94c6dc7040eccab90e439978375f07ec74709d2420b188e5",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -2373,20 +2373,20 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "460f480060845909dd45fa18cf5af9432c6a3c774820b08d84d297819caaa09c",
+              "connectedPin": "0eaaa28b2f6b1bc8396dccc05e2d7a6f5dd2b892fd9e25547bfb78de7c77032c",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                 "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                 "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                 "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                 "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                 "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                 "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                 "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                 "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                 "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                 "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -2461,14 +2461,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "7sW916uBL9J+zG72YLn1XbSGGX3TsXo+pfcY/S0cbQ9RWmjjMac0r+as/PXyy0KCThfN2w9hnFS9lY3fkqvYCA=="
+            "signature": "iPV+tQTWO68aTYz3WOTmPP2p57RcVQtTMnI7vqi2sAOVPfIhRW+UZh+uXOV8BHefVNuyctNAEacrJZnxypAfAg=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "3f091fc5603f7c8cdfc9ffa8a64f1b46dcc8a45d636c001fba79391126e95554",
-            "operatorSpki": "MCowBQYDK2VwAyEAnep3ajanasEmLr2dcsBwV9pRdOapf8Nz+83WAWUw+bI="
+            "manifestDigest": "fc6b6553344f64c622163520ffcea80ac59f09fc1d238eb7011a76a0f608c5a8",
+            "operatorSpki": "MCowBQYDK2VwAyEAKg21vy1AcCGA9Af6t1aF1BjKKZ6f84rl/X2qdRowrjg="
           },
-          "pin": "d88c227d4a36ad262a8ef38743fe9717a182425dd6cc045d71d4d17e99ee982d",
+          "pin": "00d4ace0839ec793f344160530ddefaf126a5dd5cbb4528f91ae5e9dc8e50d6d",
           "connected": {
             "envelope": {
               "manifest": {
@@ -2479,14 +2479,14 @@
                   "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                   "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                   "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                   "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                   "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                   "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                   "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                   "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                   "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                   "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                   "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -2561,14 +2561,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "I1eRBc3Qd3v+LlYiljXdoGqPH6VjXSWEXXRV+QgW4C4B3mL+z+oItCrg9kQsNEfz0Z68rYLQa4Kch4FAWbInAw=="
+              "signature": "9fi4VFMj9qKbx/pojQYC0ELhL3iNdh5ogo426CE+docOr4lLhdZdb6Wq3vdh89lssGnuxomYuscq9Zl/00ngDg=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
-              "manifestDigest": "61b03748c5060efc19a9ae519f4242e95998d4dac3797f8f9daa870ed7a48b1f",
-              "operatorSpki": "MCowBQYDK2VwAyEADBrlV+KP7iVvSPicvXeI6HL11eFTsVUFIp3OwuaHnyg="
+              "manifestDigest": "85701043aa1dad18c70bc686d84ae20df34f8fcb102ecbe4e576fcbc80b46480",
+              "operatorSpki": "MCowBQYDK2VwAyEAHo8h5hQfqMZxZLTTwl/nKaGntaBUspEjGtW056IvDwo="
             },
-            "pin": "460f480060845909dd45fa18cf5af9432c6a3c774820b08d84d297819caaa09c"
+            "pin": "0eaaa28b2f6b1bc8396dccc05e2d7a6f5dd2b892fd9e25547bfb78de7c77032c"
           }
         },
         "inventory": {
@@ -2775,17 +2775,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 2241.70175,
-            "planned": 2439.261125,
-            "reconstructionStarted": 3956.46575,
-            "end": 3956.563042
+            "start": 1473.544917,
+            "planned": 1607.3285,
+            "reconstructionStarted": 2595.711583,
+            "end": 2595.795542
           },
-          "finalizationMs": 0.09729200000037963,
-          "wallMs": 1714.861292,
-          "setupAndClientPlanMs": 197.55937499999982,
-          "dispatchAndReconstructionMs": 1517.3019170000002,
-          "clientPlanMs": 8.103125000000091,
-          "sealMs": 14.186333000000104,
+          "finalizationMs": 0.08395900000004985,
+          "wallMs": 1122.250625,
+          "setupAndClientPlanMs": 133.78358300000014,
+          "dispatchAndReconstructionMs": 988.4670419999998,
+          "clientPlanMs": 5.7787080000000515,
+          "sealMs": 8.902832999999873,
           "providerPlanMs": 0,
           "requests": 2,
           "clientPlans": 2,
@@ -2967,7 +2967,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -3406,7 +3406,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -3845,7 +3845,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -4282,7 +4282,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8584,
-            "replyDigest": "f298bfa404260e30b53f2c0e559abc88f6f1ac70e98864535ec5f4faed733a16",
+            "replyDigest": "88fb7731034bc3dc94c6dc7040eccab90e439978375f07ec74709d2420b188e5",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -4593,20 +4593,20 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "08670a12f7a558365e9e1049ceabc903bee5869b8df709ad9a0dd8e096f8e334",
+              "connectedPin": "ef866781b4b0b74d781adf761a5fccb3c6df88a0a532b181c7604ff5f6ff30fa",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                 "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                 "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                 "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                 "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                 "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                 "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                 "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                 "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                 "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                 "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -4681,14 +4681,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "ov3r5aOHhuarQyitLibrNk10TMbOBcjOe42aFSWZtzZohhTisoqYqmONNgit8LzT7+6gs29yiop1GExH7cUsDA=="
+            "signature": "tCuo5xOvPBaP/pIOGn82anFiNJpPlgkL+/hI9d71gWgluAHCd4O34NdJCA01nr5uK5poQjxf9lTld4nXi28+Dw=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "eea469946abb9c9b813c9c5aaf973e103d8fb20ef5a6bccafff67ed6bdc1f525",
-            "operatorSpki": "MCowBQYDK2VwAyEAozx+/Bh1Gv0QcstAXjg0k2Yj7XYjctC3bh/RXz728C8="
+            "manifestDigest": "c9c0f6f13fbdc21ae1597ee2d5a83355b6f8faf80d4f0c3069326d8b2b989636",
+            "operatorSpki": "MCowBQYDK2VwAyEAu/IR4Nzh/SR4WfT4TIGEY+GlFropn+I6OKfaivHLhTE="
           },
-          "pin": "857106c9e8081d6e05e6c36b40192221097bc7877ea6ec129855a97272bee9e5",
+          "pin": "1256f515e4cbc03de21dd691ae4ad76a76b540fa654df6f9e961930f3e5779bc",
           "connected": {
             "envelope": {
               "manifest": {
@@ -4699,14 +4699,14 @@
                   "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                   "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                   "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                   "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                   "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                   "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                   "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                   "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                   "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                   "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                   "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -4781,14 +4781,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "tXCX63QYxQJz+UIvP54H+OGWq2B44r6qKfC0FPiPctetH/N5lIMGAQjLKph2JtHB2Iy+mI6h8opWRS2fyhxdAg=="
+              "signature": "JEB4qH1PxxWy5yhUBKEdDd6VQn/wOaO2d0Z+h0bwe/L415lthwlaUkss3xzlRGOYbzL2i/gG4zkA8c9pwaiYBQ=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
-              "manifestDigest": "61b03748c5060efc19a9ae519f4242e95998d4dac3797f8f9daa870ed7a48b1f",
-              "operatorSpki": "MCowBQYDK2VwAyEA7aqQygcl09XM7z1riARYzWjG7FIcHkM0dB8ArLnS2Is="
+              "manifestDigest": "85701043aa1dad18c70bc686d84ae20df34f8fcb102ecbe4e576fcbc80b46480",
+              "operatorSpki": "MCowBQYDK2VwAyEAmyrwBIc83C0dq65mPfqvRGf2etb2tTr080sGYOYAcyo="
             },
-            "pin": "08670a12f7a558365e9e1049ceabc903bee5869b8df709ad9a0dd8e096f8e334"
+            "pin": "ef866781b4b0b74d781adf761a5fccb3c6df88a0a532b181c7604ff5f6ff30fa"
           }
         },
         "inventory": {
@@ -5658,17 +5658,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 4000.536917,
-            "planned": 4272.995959,
-            "reconstructionStarted": 27291.480584,
-            "end": 27291.638459
+            "start": 2619.599417,
+            "planned": 2790.435375,
+            "reconstructionStarted": 18456.520708,
+            "end": 18456.644417
           },
-          "finalizationMs": 0.1578750000007858,
-          "wallMs": 23291.101542,
-          "setupAndClientPlanMs": 272.45904199999995,
-          "dispatchAndReconstructionMs": 23018.6425,
-          "clientPlanMs": 30.7754589999995,
-          "sealMs": 50.68804199999977,
+          "finalizationMs": 0.1237089999995078,
+          "wallMs": 15837.045,
+          "setupAndClientPlanMs": 170.83595800000012,
+          "dispatchAndReconstructionMs": 15666.209041999999,
+          "clientPlanMs": 19.7782500000003,
+          "sealMs": 33.158542000000125,
           "providerPlanMs": 0,
           "requests": 11,
           "clientPlans": 2,
@@ -5850,7 +5850,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8015,
-            "replyDigest": "3e126d90992a7c09e23fccb24ea95e02cbaa0cc0f336ac60ac85e2acce2a78c3",
+            "replyDigest": "962f98379bedfece015254ea2e05463d07dded6204512be8f856efd951088565",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -6289,7 +6289,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8240,
-            "replyDigest": "4c35cc2ccee3d31a9bc737ffaec8cd4a58a74279323c71d6c56e8350d2f40f8d",
+            "replyDigest": "202a1d03ba03e477be7fa8e6ca13ee6dd74dfdd8717d121530cf6ae62bcae85c",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -6728,7 +6728,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8870,
-            "replyDigest": "6262acda1fa71669fef0f73da77c18c5a9b367f2dabbf7f0eef0dffe7c44858b",
+            "replyDigest": "37b4bb86357599be78fbd8a894df1b0a5bf9e424f4c1cd86037a0b0e29a3812e",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -7167,7 +7167,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8874,
-            "replyDigest": "b3d69fdcb1a6a60cfcbe6c35573220d86eb7a9263c4943595815f31800dd74c9",
+            "replyDigest": "50c59d7a12e3c279146a17fb56fb90bc4b0a06e3837667427de74b38f05a9171",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -7606,7 +7606,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "665cd810847a8daff0e5a22f29bd550bb5460b6531ea8913cb1f7b09df7d1131",
+            "replyDigest": "4f85704ae02d2e7997efb4e2aaee47a2ab6727bb6cffc35da5d44b1c85a8c8a3",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -8045,7 +8045,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "3caadee883f104bac4356ec0f2f21fe9ec405d5639820f1901cd2f16165fbc3b",
+            "replyDigest": "90ee61439b488c5ead2338c0d27dd7669275d7a0ad257c32b3fb71a58952716c",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -8484,7 +8484,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8706,
-            "replyDigest": "89e15af8ac677718343491109062715f4c6b840654437dc6d03493dda2246ed5",
+            "replyDigest": "8ee525198217a5a8f4ff149a832050e10f19e794e9c11e0193218f6a8e7df996",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -8923,7 +8923,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8706,
-            "replyDigest": "3875b2e5764a318f779668abcb2eb6334b7ca3e9ae7a40f25b13c842dc9219cf",
+            "replyDigest": "b9dbd6b0232c239af41d7b95fdbca2fcbc48b0b83440d4ebd16d3f721d34d14f",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -9362,7 +9362,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8875,
-            "replyDigest": "c0a3e4167e3c3df743b0bb5561d450b459368f35caefc5b966c362ffc0d5b285",
+            "replyDigest": "8d39501d0b29389d13196135543991eafa891ac9893f020926e0cf76430bbb91",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -9801,7 +9801,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9210,
-            "replyDigest": "8f4a0b8755b2bf4b41d6edbf944d12bd6c76a68dd51aafe9b6e98fb3721767fa",
+            "replyDigest": "7146ef427465b6189c3c84db33c81c0aba922c7f522c91cdfc2221539768cb26",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -10240,7 +10240,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8874,
-            "replyDigest": "84ccccf59ef0b2ee4c98305fec8bbda84bc5b592e44313c1ac4630d0e0164737",
+            "replyDigest": "8aa516caabd37658ee292d907168ffd3597b0d009679dd38d0460f1a0ee7729c",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -10679,7 +10679,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8872,
-            "replyDigest": "5e77c1fedc0bf5b6e9827dd9368d0990733bc4b756479cddfeb41abdfb270198",
+            "replyDigest": "cb6ef076bacf50e47fe469647c32c7d0066679ec63902fe4a59029e44520e9c3",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -11116,7 +11116,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8701,
-            "replyDigest": "01a5072912244f6f5039429e936ff2f7b04a4e8ba9a202d66f4e6fc7caf65292",
+            "replyDigest": "58dc0fa3feb028efe04f93bac1066fc08505bf694e0fa25fc44362fc938e122f",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -11427,20 +11427,20 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "f91740c399aa00a9ec0c20220932d06a2e5b5edfc3f185d7e9dbb4b4a7c8f0be",
+              "connectedPin": "21b5d8c1baea278e211bc15c079306deb74dc9e6f8e2d55d5ecb7800d4b80e0f",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                 "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                 "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                 "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                 "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                 "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                 "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                 "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                 "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                 "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                 "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -11515,14 +11515,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "tfpHgUI9zjy1te40PEZmC/t/KNBX0h1Fa+4S5qU+pLqVnmDZJJtCUReN8BBwPG0Bl2+vKc4QbZXJmVZd+XDzBw=="
+            "signature": "TfzWCIYBL7KCdEvdwXtk/7luVLawk63lDtP3FX1A+vG4YSgtp368w56CkzqWPr4QHtER9LRBrvLLkXroiZKnBQ=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "05c2b624a1f0c59ca7f3a1cae6291ea870079788304f7846b3f34db8f03963d8",
-            "operatorSpki": "MCowBQYDK2VwAyEAGO9sjPyczEK7Dl85ZWEgwW7E9sYRT7PYCfVdLlWBkvI="
+            "manifestDigest": "0ac7ce7ca106355298e0076e0dac6296f9419727b5a11dfe71c30e1dfbbfc7c3",
+            "operatorSpki": "MCowBQYDK2VwAyEA0owHnhx/MR87u703wMZDQ0Ydm7Gij4zJHh2fN9ZR9ec="
           },
-          "pin": "db75c514412be3570652ab6db95f69c4833fea37715ed3a029d5dbec1a87df5c",
+          "pin": "c71dbdb63f8e61b718524fb2673dec3f2cd2b6a1d4aabc7c2b04c6f43e4528f9",
           "connected": {
             "envelope": {
               "manifest": {
@@ -11533,14 +11533,14 @@
                   "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                   "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                   "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                   "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                   "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                   "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                   "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                   "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                   "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                   "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                   "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -11615,14 +11615,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "SkMdgOEqcsfR7LKUA0qg5pLECw4uLL/3h0heuplH8SOZKFqmEW5inyZmXh4vx2myEQhlkZNXR9HRxYoWI3RzCA=="
+              "signature": "JzzJBQM+mO/4d7rJaURBubcqvWmMHIYrioA3ziNXPgEetat7omNFtLYC0rNsCSbLiwlZD40GqBOWRaa/LnWoCg=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
-              "manifestDigest": "61b03748c5060efc19a9ae519f4242e95998d4dac3797f8f9daa870ed7a48b1f",
-              "operatorSpki": "MCowBQYDK2VwAyEAGdkispVTPfw86jKw7GypMTlr99Ta22F6D65wPJGq3uM="
+              "manifestDigest": "85701043aa1dad18c70bc686d84ae20df34f8fcb102ecbe4e576fcbc80b46480",
+              "operatorSpki": "MCowBQYDK2VwAyEAR9wEu/P5d6k2do6FPZ4E45whEWn+SruZZ/cw/UUpExw="
             },
-            "pin": "f91740c399aa00a9ec0c20220932d06a2e5b5edfc3f185d7e9dbb4b4a7c8f0be"
+            "pin": "21b5d8c1baea278e211bc15c079306deb74dc9e6f8e2d55d5ecb7800d4b80e0f"
           }
         },
         "inventory": {
@@ -12539,17 +12539,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 27326.418167,
-            "planned": 27578.848292,
-            "reconstructionStarted": 52818.907292,
-            "end": 52819.01775
+            "start": 18496.51075,
+            "planned": 18662.367458,
+            "reconstructionStarted": 36781.606333,
+            "end": 36781.722542
           },
-          "finalizationMs": 0.11045799999556039,
-          "wallMs": 25492.599583,
-          "setupAndClientPlanMs": 252.43012499999895,
-          "dispatchAndReconstructionMs": 25240.169458,
-          "clientPlanMs": 40.145166999998764,
-          "sealMs": 50.44683300000179,
+          "finalizationMs": 0.11620899999979883,
+          "wallMs": 18285.211792000002,
+          "setupAndClientPlanMs": 165.85670799999934,
+          "dispatchAndReconstructionMs": 18119.355084000003,
+          "clientPlanMs": 20.26929200000086,
+          "sealMs": 33.319250000000466,
           "providerPlanMs": 0,
           "requests": 12,
           "clientPlans": 2,
@@ -12731,7 +12731,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8015,
-            "replyDigest": "ffa7eaf5135d0ca746d25b7aac86df148025bab169b4b19b508cbbcc6b545f26",
+            "replyDigest": "1cb78f122891b14afb8325b937186110daa01101380377f0b6efebf8aaed8682",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -13170,7 +13170,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8239,
-            "replyDigest": "88e9ffe6d874dabf9da3d22c931381dcc9b21e196f3bff6cf78fc13f996cc23a",
+            "replyDigest": "49b5ec87172e503feebdd634c0914bcc33f8f8dcaf7a830184a57659188e3b8f",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -13609,7 +13609,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8701,
-            "replyDigest": "376c3d5dac4d749bb6235259311600c161c4ba80e215d35b7f5d7ac180657b3f",
+            "replyDigest": "e190d1d9f8e12765dad60213b57bcfdebb5558fd2cd696b6816aafdb1079fe24",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -14048,7 +14048,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8704,
-            "replyDigest": "c184ba970d7bc991737b99e64253f987342a3ff64be5fa3c027160cca42fb8b7",
+            "replyDigest": "2e3c09c128271bfed49eb965253f11acf523de091bc058f1e77cfa52aabf9fa4",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -14487,7 +14487,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8704,
-            "replyDigest": "2c9382e9cd6da301be0fe5dd5c42948f7bffa0f84a7813f5b40f85fd8c2b10aa",
+            "replyDigest": "8c2bfcfed92dd444b394593d47e78c5fe42d982dd7d6e208bb57249be6ed8b9d",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -14926,7 +14926,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "fc61e35faa9b9c35d7809a43124a919d062bbd87a11c61d7c1bd1679dc000ebd",
+            "replyDigest": "c115a2383436b9df89528559d6ff1b0235bce68a7b64d10b3ff139b5c3173e23",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -15365,7 +15365,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "6ced870b9c8b853cbeb1b37ebb59ed67ae2294cf13d199956fc1361475c6f0ed",
+            "replyDigest": "705a332e9c6b9f00c02d023e2fb7c8d66a6729d10b701d33772e3305e408606a",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -15804,7 +15804,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "dd65972eb354baa9e340c345f96afcf84e94fcf3a7c9b7a378353f5113a9daae",
+            "replyDigest": "97f764355c45004cacd3047f05f7fb1be0abda88289291ce9580fefcc4530bec",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -16243,7 +16243,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "380b84905668ba2f233a42881d29558237813f180afb5dff40a5fbf2a24ffb77",
+            "replyDigest": "e83028de991fdae8a6b9111e4e7d4a473bec40fcd1c8bcb43f09caa3e2a69b99",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -16682,7 +16682,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "d58b571080f2aff5b5eee71492241942ddd8b2fbb26ed39fe7a15ca12058c50a",
+            "replyDigest": "c443a6b095cb8104b46fcb5b30afa5c00a38a1657e81991f051a14f41ce20b96",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -17121,7 +17121,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "21a7d7d75021e9f47dc997e116ef870e6e5f7d28bda3edb50f3512618409ef72",
+            "replyDigest": "58dafe8e1d8d7738062f6cd43afd84bf1d88824595fb07b86687aa37ac9fd6af",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -17560,7 +17560,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "04cc79761606d88f50725cb3e174e9516e850339364e4cb812aa0ae3ae120b25",
+            "replyDigest": "7465ba38d81325e6c0db523292968b2ccd48d6bc257cafaa927513c0fcbd97ce",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -17999,7 +17999,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9196,
-            "replyDigest": "f5251c7f8698edc46a3a1a2c3148187346f80721f34fed2264c182ed05094c60",
+            "replyDigest": "e220dce71491be476133994c690af72a84a7150039c5176bfad2b8d56b0e4d0b",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -18436,7 +18436,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8693,
-            "replyDigest": "f67a85073ca569ccc2b3199aebf9449b268f6b7eb878b1a45c8518c2ec719413",
+            "replyDigest": "f403606b91ff4ed982ee1d87e351700e077575c708cdce0d6f970cf76ac5f649",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -18747,20 +18747,20 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "e50fe6f22558c27c3ceec67916f9219920691102eee51e0023f60240f11ede07",
+              "connectedPin": "2764bfa77e6e7e7d359f21765ff046ff55677e35c9a1a74c200dd8d53e712eca",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                 "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                 "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                 "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                 "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                 "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                 "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                 "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                 "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                 "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                 "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -18835,14 +18835,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "P3V/KGRfIbKZBLIOyHYZVJWDpMHSY+gGbowoRPGYAZRx9WPY0mL5kPnyuz7a22RoiCkmNFKrMtJN3iiKvqQLBw=="
+            "signature": "7QEtGIqKH78bf6lRab8RvZXTh3mQHFs1cc9TWbGmB3tF8a22nnduF5UB8qlGXN+PHnPlhG5ziyv8gf4ei1HrCA=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "16fcf4129d76e406e12242e33eb6476cde8d7c796efec976211b8c1753f1ca28",
-            "operatorSpki": "MCowBQYDK2VwAyEAVwlvX2+94RNAybw7osf3j6iCmi8honNogOjQ7SV/vDE="
+            "manifestDigest": "66a83dd28351f9a6f664b788f1dfcfa08564e49de471b655b39548bf8f57bac1",
+            "operatorSpki": "MCowBQYDK2VwAyEA7MauXHNhXbpqKUDzTjqRSPH6Mnt/E1sHGbEMOhyzOmg="
           },
-          "pin": "03a078774e06403a5a44214cab717c4cebb58e507a6223b7e37ef9e375f818b1",
+          "pin": "75dd3cac2b36281d57820c53d6ea6eb15d4e6c989afaa725710d74cb08cce553",
           "connected": {
             "envelope": {
               "manifest": {
@@ -18853,14 +18853,14 @@
                   "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                   "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                   "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                   "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                   "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                   "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                   "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                   "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                   "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                   "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                   "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -18935,14 +18935,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "vHsC4hVy18+Yc669rf8qIBdg62LCdkRm3Pqc7d+9zmb5kPy0j04x8nfTAhM76zXIncPPV1Tl6uff7UZYhwMtDA=="
+              "signature": "kXUlAG0ael6MSUsgpsT6TJk/jT3DW+bYpIeHZ3HP2hBQrhD9msYwo3yhBK1PhfqM9aHwTnfocpu3xb8UMga/Dg=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
-              "manifestDigest": "61b03748c5060efc19a9ae519f4242e95998d4dac3797f8f9daa870ed7a48b1f",
-              "operatorSpki": "MCowBQYDK2VwAyEAjMA+IliL+ZiabEvnZ8MzICz6MSKTQcZmzL1lTJDyObo="
+              "manifestDigest": "85701043aa1dad18c70bc686d84ae20df34f8fcb102ecbe4e576fcbc80b46480",
+              "operatorSpki": "MCowBQYDK2VwAyEAvfjLZETfZQlAlxl7osniEnyzLJKYehIg1aXZX4frR+0="
             },
-            "pin": "e50fe6f22558c27c3ceec67916f9219920691102eee51e0023f60240f11ede07"
+            "pin": "2764bfa77e6e7e7d359f21765ff046ff55677e35c9a1a74c200dd8d53e712eca"
           }
         },
         "inventory": {
@@ -19812,17 +19812,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 52848.546,
-            "planned": 53038.8615,
-            "reconstructionStarted": 73312.299959,
-            "end": 73312.462875
+            "start": 36819.123375,
+            "planned": 36983.532167,
+            "reconstructionStarted": 52648.95025,
+            "end": 52649.0585
           },
-          "finalizationMs": 0.1629160000011325,
-          "wallMs": 20463.916874999995,
-          "setupAndClientPlanMs": 190.31549999999697,
-          "dispatchAndReconstructionMs": 20273.601375,
-          "clientPlanMs": 21.94287500000064,
-          "sealMs": 37.789959000001545,
+          "finalizationMs": 0.10824999999749707,
+          "wallMs": 15829.935124999996,
+          "setupAndClientPlanMs": 164.40879199999472,
+          "dispatchAndReconstructionMs": 15665.526333000002,
+          "clientPlanMs": 19.042708000000857,
+          "sealMs": 31.899834000003466,
           "providerPlanMs": 0,
           "requests": 11,
           "clientPlans": 2,
@@ -20004,7 +20004,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8015,
-            "replyDigest": "3e126d90992a7c09e23fccb24ea95e02cbaa0cc0f336ac60ac85e2acce2a78c3",
+            "replyDigest": "962f98379bedfece015254ea2e05463d07dded6204512be8f856efd951088565",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -20443,7 +20443,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8240,
-            "replyDigest": "4c35cc2ccee3d31a9bc737ffaec8cd4a58a74279323c71d6c56e8350d2f40f8d",
+            "replyDigest": "202a1d03ba03e477be7fa8e6ca13ee6dd74dfdd8717d121530cf6ae62bcae85c",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -20882,7 +20882,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8870,
-            "replyDigest": "6262acda1fa71669fef0f73da77c18c5a9b367f2dabbf7f0eef0dffe7c44858b",
+            "replyDigest": "37b4bb86357599be78fbd8a894df1b0a5bf9e424f4c1cd86037a0b0e29a3812e",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -21321,7 +21321,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8874,
-            "replyDigest": "b3d69fdcb1a6a60cfcbe6c35573220d86eb7a9263c4943595815f31800dd74c9",
+            "replyDigest": "50c59d7a12e3c279146a17fb56fb90bc4b0a06e3837667427de74b38f05a9171",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -21760,7 +21760,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "665cd810847a8daff0e5a22f29bd550bb5460b6531ea8913cb1f7b09df7d1131",
+            "replyDigest": "4f85704ae02d2e7997efb4e2aaee47a2ab6727bb6cffc35da5d44b1c85a8c8a3",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -22199,7 +22199,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "3caadee883f104bac4356ec0f2f21fe9ec405d5639820f1901cd2f16165fbc3b",
+            "replyDigest": "90ee61439b488c5ead2338c0d27dd7669275d7a0ad257c32b3fb71a58952716c",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -22638,7 +22638,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8706,
-            "replyDigest": "89e15af8ac677718343491109062715f4c6b840654437dc6d03493dda2246ed5",
+            "replyDigest": "8ee525198217a5a8f4ff149a832050e10f19e794e9c11e0193218f6a8e7df996",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -23077,7 +23077,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8706,
-            "replyDigest": "3875b2e5764a318f779668abcb2eb6334b7ca3e9ae7a40f25b13c842dc9219cf",
+            "replyDigest": "b9dbd6b0232c239af41d7b95fdbca2fcbc48b0b83440d4ebd16d3f721d34d14f",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -23516,7 +23516,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8875,
-            "replyDigest": "c0a3e4167e3c3df743b0bb5561d450b459368f35caefc5b966c362ffc0d5b285",
+            "replyDigest": "8d39501d0b29389d13196135543991eafa891ac9893f020926e0cf76430bbb91",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -23955,7 +23955,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9210,
-            "replyDigest": "8f4a0b8755b2bf4b41d6edbf944d12bd6c76a68dd51aafe9b6e98fb3721767fa",
+            "replyDigest": "7146ef427465b6189c3c84db33c81c0aba922c7f522c91cdfc2221539768cb26",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -24394,7 +24394,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8874,
-            "replyDigest": "84ccccf59ef0b2ee4c98305fec8bbda84bc5b592e44313c1ac4630d0e0164737",
+            "replyDigest": "8aa516caabd37658ee292d907168ffd3597b0d009679dd38d0460f1a0ee7729c",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -24833,7 +24833,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8872,
-            "replyDigest": "5e77c1fedc0bf5b6e9827dd9368d0990733bc4b756479cddfeb41abdfb270198",
+            "replyDigest": "cb6ef076bacf50e47fe469647c32c7d0066679ec63902fe4a59029e44520e9c3",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -25270,7 +25270,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8701,
-            "replyDigest": "01a5072912244f6f5039429e936ff2f7b04a4e8ba9a202d66f4e6fc7caf65292",
+            "replyDigest": "58dc0fa3feb028efe04f93bac1066fc08505bf694e0fa25fc44362fc938e122f",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -25581,20 +25581,20 @@
             "manifest": {
               "schema": "cwc-lb2.approval.v1",
               "policyDigest": "626580a0a59dcc91a5255f0c95175b2b759998e49e0a77730cb4f0265c8483bc",
-              "connectedPin": "223a4d69bd10de041c1d427f5167fa4ee1ffb4e253e31a5961dd119f051dfca5",
+              "connectedPin": "85a8a63f858eb03054e9e5200c39c752daaf1a4c9eacfc02ba54a130ce0bd8b8",
               "node": "v26.12.1",
               "sources": {
                 "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                 "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                 "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                 "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                 "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                 "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                 "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                 "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                 "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                 "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                 "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -25669,14 +25669,14 @@
                 "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
               }
             },
-            "signature": "Jde/DHeWbb5MK+LRFJrRtYVCumvmqgCFBRhksHzjwUP+bj5hxFG+LNAjwtxaKF93jF+QhyMcNTK/GnUoKf9mBg=="
+            "signature": "GJE2LZTNc8Q4SpaYEDleLHj1Brq8Lk3j6apXRfQ8Y/QJ6BHYKpOmdU9iRG5d7FJM2qKcWQ81ZcWw8huiMdJfDg=="
           },
           "registry": {
             "schema": "cwc-lb2.registry.v1",
-            "manifestDigest": "e5d8e01e00b16bd6535af24d51318f4702e435ee2f5e06041f992c24b94eec67",
-            "operatorSpki": "MCowBQYDK2VwAyEA5gVK93dk4FOiItRTQ0i9Yo97DimYyUps5hcZipRHJoU="
+            "manifestDigest": "0c8ef8fa1c10621aa93d8a208227a3339b2d6ede4fbb6a60bf2650ece2e78810",
+            "operatorSpki": "MCowBQYDK2VwAyEABF+PuxizzgDMH9yfx3wc+5E5Z1gIbdRU05DXRKDIYZg="
           },
-          "pin": "28fecbafb338ba4664c6cf1bef4259627602c78ec9050a7fd26b9268971f4760",
+          "pin": "5e887e3b35636eaf8e8bd7ce499ef23865fa1f190e0a20822325412859650f8f",
           "connected": {
             "envelope": {
               "manifest": {
@@ -25687,14 +25687,14 @@
                   "src/test/fixtures/gradleOwnedCwcLb2Case.ts": "b54a36fec9e800ddf6be2661ac9db0b44fd43d60d0b95ace4d61f6fabe5c6b5e",
                   "src/test/fixtures/gradleOwnedCwcLb2Link.ts": "2faaa4b66d0fcbdb461ee7ac3c9e3a1f2f14f7f8e6dcbcd072ab0b97f18cad2f",
                   "src/test/fixtures/gradleOwnedCwcLb0.ts": "bfaab137987dda78a62270ad87b67cdb67693dc9378505c23599d2c265473547",
-                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "052b0b32d72073f2a37a479e30291f3a292e9c94787117224a9b2be6e0354fa5",
-                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "3e1f7a0ef3bc8cddf5e26dc27db6256e2b9653a3a378688f2a36813f1e220593",
+                  "src/test/fixtures/gradleOwnedCwcVf1Contract.ts": "f8b2169a3ad396f3517fadb8818a0ddf5bf6bbdd3fcb9f5300b018447fb3a8c8",
+                  "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
                   "src/test/fixtures/gradleOwnedCprBOwners.ts": "ce23e92de139a9569163a3bf01afec5386d8ca3d2aab6cfa230e6d2013dc8330",
                   "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
                   "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
                   "src/utils/gradleOwnedCurrentAuxiliary.ts": "a829560b9c0bb247b27a05838a15de1fe105c118c0381393bcb2c7033bd79ef2",
                   "src/test/fixtures/gradleOwnedCwcLb0Contract.ts": "db492b6aebbc9912db407d563ecf9f1347e903451d1024c09ddfcf8d6944a7b4",
-                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "1d1c1da27ae03189af6c2416ea6e86bc2a4aed71ae83039231c5f18976170ea9",
+                  "src/test/fixtures/gradleOwnedCwcVf1Approval.ts": "eb146ab1398c2cfaba64e118236d3c145a2970ec5da01f9c3592f8dffa93103c",
                   "src/test/fixtures/gradleOwnedCprBProtocol.ts": "5dc2b17becd116391741715bdc42f2c7416f0c18fc514c4b16638ebdee14469f",
                   "src/test/fixtures/gradleOwnedCprBSigner.ts": "ee4575f1ab3cd8f2778c4e1c8bf654a701b5ad727c771c4adc68ec7adb675e3a",
                   "src/test/fixtures/gradleOwnedCprASchema.ts": "a6459e1cec19edf2a94116e8982ad31e4885c64e3c9f4dfd00e81a33a8e7bfb9",
@@ -25769,14 +25769,14 @@
                   "vitest.config.ts": "3e9be704db59499dc1ffd44ac70b59a8b2e09b709aa33e01d64a34c6a12e8dcb"
                 }
               },
-              "signature": "lmZJQ8RSUcA8+M/IWtHHOTNw6qbI6H3gtNB+ns3hU6U7TBPbLYuQ3KvbfNIybZj7lScAON6oN9zA9oLo7J4vCA=="
+              "signature": "of28sWW94c0ROsgmNGIsTF1G5k2kqTWjUOW7vI3IpISpUC1LRpidaTcDRfcccykhMIBgw5/BK7cLtvFHzPrbBQ=="
             },
             "registry": {
               "schema": "cwc-lb1.registry.v1",
-              "manifestDigest": "61b03748c5060efc19a9ae519f4242e95998d4dac3797f8f9daa870ed7a48b1f",
-              "operatorSpki": "MCowBQYDK2VwAyEAjWIUfN80a13+C5EpCX4iPPF0obbxAq+MnfsHFwRffMs="
+              "manifestDigest": "85701043aa1dad18c70bc686d84ae20df34f8fcb102ecbe4e576fcbc80b46480",
+              "operatorSpki": "MCowBQYDK2VwAyEA7eqsRys4Cesiq6aqVSQw24YzOXWHiODOtG0khar7Eys="
             },
-            "pin": "223a4d69bd10de041c1d427f5167fa4ee1ffb4e253e31a5961dd119f051dfca5"
+            "pin": "85a8a63f858eb03054e9e5200c39c752daaf1a4c9eacfc02ba54a130ce0bd8b8"
           }
         },
         "inventory": {
@@ -26693,17 +26693,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 73342.289834,
-            "planned": 73557.924,
-            "reconstructionStarted": 94526.289917,
-            "end": 94526.406084
+            "start": 52683.01925,
+            "planned": 52847.996583,
+            "reconstructionStarted": 69804.299042,
+            "end": 69804.398208
           },
-          "finalizationMs": 0.11616700000013225,
-          "wallMs": 21184.116250000006,
-          "setupAndClientPlanMs": 215.63416600000346,
-          "dispatchAndReconstructionMs": 20968.482084000003,
-          "clientPlanMs": 24.662249999993946,
-          "sealMs": 39.435333000001265,
+          "finalizationMs": 0.09916599999996834,
+          "wallMs": 17121.378958,
+          "setupAndClientPlanMs": 164.97733300000255,
+          "dispatchAndReconstructionMs": 16956.401625,
+          "clientPlanMs": 19.558208000002196,
+          "sealMs": 33.089625000000524,
           "providerPlanMs": 0,
           "requests": 12,
           "clientPlans": 2,
@@ -26885,7 +26885,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8015,
-            "replyDigest": "ffa7eaf5135d0ca746d25b7aac86df148025bab169b4b19b508cbbcc6b545f26",
+            "replyDigest": "1cb78f122891b14afb8325b937186110daa01101380377f0b6efebf8aaed8682",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -27324,7 +27324,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8239,
-            "replyDigest": "88e9ffe6d874dabf9da3d22c931381dcc9b21e196f3bff6cf78fc13f996cc23a",
+            "replyDigest": "49b5ec87172e503feebdd634c0914bcc33f8f8dcaf7a830184a57659188e3b8f",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -27763,7 +27763,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8701,
-            "replyDigest": "376c3d5dac4d749bb6235259311600c161c4ba80e215d35b7f5d7ac180657b3f",
+            "replyDigest": "e190d1d9f8e12765dad60213b57bcfdebb5558fd2cd696b6816aafdb1079fe24",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -28202,7 +28202,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8704,
-            "replyDigest": "c184ba970d7bc991737b99e64253f987342a3ff64be5fa3c027160cca42fb8b7",
+            "replyDigest": "2e3c09c128271bfed49eb965253f11acf523de091bc058f1e77cfa52aabf9fa4",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -28641,7 +28641,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8704,
-            "replyDigest": "2c9382e9cd6da301be0fe5dd5c42948f7bffa0f84a7813f5b40f85fd8c2b10aa",
+            "replyDigest": "8c2bfcfed92dd444b394593d47e78c5fe42d982dd7d6e208bb57249be6ed8b9d",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -29080,7 +29080,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "fc61e35faa9b9c35d7809a43124a919d062bbd87a11c61d7c1bd1679dc000ebd",
+            "replyDigest": "c115a2383436b9df89528559d6ff1b0235bce68a7b64d10b3ff139b5c3173e23",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -29519,7 +29519,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "6ced870b9c8b853cbeb1b37ebb59ed67ae2294cf13d199956fc1361475c6f0ed",
+            "replyDigest": "705a332e9c6b9f00c02d023e2fb7c8d66a6729d10b701d33772e3305e408606a",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -29958,7 +29958,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "dd65972eb354baa9e340c345f96afcf84e94fcf3a7c9b7a378353f5113a9daae",
+            "replyDigest": "97f764355c45004cacd3047f05f7fb1be0abda88289291ce9580fefcc4530bec",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -30397,7 +30397,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "380b84905668ba2f233a42881d29558237813f180afb5dff40a5fbf2a24ffb77",
+            "replyDigest": "e83028de991fdae8a6b9111e4e7d4a473bec40fcd1c8bcb43f09caa3e2a69b99",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -30836,7 +30836,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "d58b571080f2aff5b5eee71492241942ddd8b2fbb26ed39fe7a15ca12058c50a",
+            "replyDigest": "c443a6b095cb8104b46fcb5b30afa5c00a38a1657e81991f051a14f41ce20b96",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -31275,7 +31275,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "21a7d7d75021e9f47dc997e116ef870e6e5f7d28bda3edb50f3512618409ef72",
+            "replyDigest": "58dafe8e1d8d7738062f6cd43afd84bf1d88824595fb07b86687aa37ac9fd6af",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -31714,7 +31714,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8705,
-            "replyDigest": "04cc79761606d88f50725cb3e174e9516e850339364e4cb812aa0ae3ae120b25",
+            "replyDigest": "7465ba38d81325e6c0db523292968b2ccd48d6bc257cafaa927513c0fcbd97ce",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -32153,7 +32153,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9196,
-            "replyDigest": "f5251c7f8698edc46a3a1a2c3148187346f80721f34fed2264c182ed05094c60",
+            "replyDigest": "e220dce71491be476133994c690af72a84a7150039c5176bfad2b8d56b0e4d0b",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -32590,7 +32590,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8693,
-            "replyDigest": "f67a85073ca569ccc2b3199aebf9449b268f6b7eb878b1a45c8518c2ec719413",
+            "replyDigest": "f403606b91ff4ed982ee1d87e351700e077575c708cdce0d6f970cf76ac5f649",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -33068,7 +33068,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -33507,7 +33507,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -33946,7 +33946,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -34383,7 +34383,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -34698,7 +34698,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -34706,7 +34706,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -34714,7 +34714,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 2,
             "wire": 36806,
@@ -34896,7 +34896,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -35335,7 +35335,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -35774,7 +35774,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -36211,7 +36211,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -36526,7 +36526,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -36534,7 +36534,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -36542,7 +36542,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 2,
             "wire": 36806,
@@ -36724,7 +36724,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -37163,7 +37163,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -37602,7 +37602,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -38039,7 +38039,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8584,
-            "replyDigest": "f298bfa404260e30b53f2c0e559abc88f6f1ac70e98864535ec5f4faed733a16",
+            "replyDigest": "88fb7731034bc3dc94c6dc7040eccab90e439978375f07ec74709d2420b188e5",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -38354,7 +38354,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -38362,7 +38362,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -38370,7 +38370,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 18403,
@@ -38378,7 +38378,7 @@
           },
           {
             "k": "8f82d2c0ff939ec9eeea82d67e398507f83b77c24039335ed9b33ed66ceb77a2",
-            "d": "1f26cbb97f747e64bee4cf4021e9bf4e4da50eb03d5df13821bb2363ac30f5c6",
+            "d": "3006a2f37234a38a864777a440a058bc92ceac9813312d6a6326379054e2e99a",
             "deadline": 4500,
             "attempts": 1,
             "wire": 17160,
@@ -38562,7 +38562,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -39001,7 +39001,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -39440,7 +39440,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -39877,7 +39877,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8584,
-            "replyDigest": "f298bfa404260e30b53f2c0e559abc88f6f1ac70e98864535ec5f4faed733a16",
+            "replyDigest": "88fb7731034bc3dc94c6dc7040eccab90e439978375f07ec74709d2420b188e5",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -40192,7 +40192,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -40200,7 +40200,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -40208,7 +40208,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 18403,
@@ -40216,7 +40216,7 @@
           },
           {
             "k": "8f82d2c0ff939ec9eeea82d67e398507f83b77c24039335ed9b33ed66ceb77a2",
-            "d": "1f26cbb97f747e64bee4cf4021e9bf4e4da50eb03d5df13821bb2363ac30f5c6",
+            "d": "3006a2f37234a38a864777a440a058bc92ceac9813312d6a6326379054e2e99a",
             "deadline": 4500,
             "attempts": 1,
             "wire": 17160,
@@ -40400,7 +40400,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -40839,7 +40839,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -41275,7 +41275,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "6ee2f9d126dffe3fc2a71ac45bd90b62435f2dd998fa5d97f86212e7e674c0bb",
+            "replyDigest": "4e28768fdcc6601c7512344d6938d963f8c71dbbc8f197d1ab1bcec923759e35",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -41576,7 +41576,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -41584,7 +41584,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -41592,7 +41592,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11687,
@@ -41778,7 +41778,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -42217,7 +42217,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -42653,7 +42653,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "6ee2f9d126dffe3fc2a71ac45bd90b62435f2dd998fa5d97f86212e7e674c0bb",
+            "replyDigest": "4e28768fdcc6601c7512344d6938d963f8c71dbbc8f197d1ab1bcec923759e35",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -42954,7 +42954,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -42962,7 +42962,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -42970,7 +42970,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11687,
@@ -43113,7 +43113,7 @@
             "outcome": "unknown",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "f0e998654a601ea7d1f9451821f26dd0d1be047f1237622ee470da0f542111ea",
+            "replyDigest": "ffe5f2cf44480bd82fe1d0b36d4ec3a99c234a61fae11ade7959bb63681f3323",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -43358,7 +43358,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 10678,
@@ -43501,7 +43501,7 @@
             "outcome": "unknown",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "f0e998654a601ea7d1f9451821f26dd0d1be047f1237622ee470da0f542111ea",
+            "replyDigest": "ffe5f2cf44480bd82fe1d0b36d4ec3a99c234a61fae11ade7959bb63681f3323",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -43746,7 +43746,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 10678,
@@ -43932,7 +43932,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -44371,7 +44371,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -44807,7 +44807,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "8c1331314589a60e315b80cc51f728233800855fd7bda784341290812aa37b79",
+            "replyDigest": "97c872884541517cb04692f395062c5181c97313c7a0f354459aa60cdb3b5f10",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -45122,7 +45122,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -45130,7 +45130,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -45138,7 +45138,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11682,
@@ -45717,7 +45717,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -46156,7 +46156,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -46592,7 +46592,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "8c1331314589a60e315b80cc51f728233800855fd7bda784341290812aa37b79",
+            "replyDigest": "97c872884541517cb04692f395062c5181c97313c7a0f354459aa60cdb3b5f10",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -46907,7 +46907,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -46915,7 +46915,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -46923,7 +46923,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11682,
@@ -47502,7 +47502,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -47941,7 +47941,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -48693,7 +48693,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -48701,7 +48701,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -48709,7 +48709,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -48891,7 +48891,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -49330,7 +49330,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -50082,7 +50082,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -50090,7 +50090,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -50098,7 +50098,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -50280,7 +50280,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -50719,7 +50719,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -51469,7 +51469,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -51477,7 +51477,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -51485,7 +51485,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -52067,7 +52067,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -52506,7 +52506,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -53256,7 +53256,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -53264,7 +53264,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -53272,7 +53272,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -53854,7 +53854,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -54293,7 +54293,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -54730,7 +54730,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -55045,7 +55045,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -55053,7 +55053,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -55061,7 +55061,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -55245,7 +55245,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -55684,7 +55684,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -56122,7 +56122,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -56558,7 +56558,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "8c1331314589a60e315b80cc51f728233800855fd7bda784341290812aa37b79",
+            "replyDigest": "97c872884541517cb04692f395062c5181c97313c7a0f354459aa60cdb3b5f10",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -56859,7 +56859,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -56867,7 +56867,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -56875,7 +56875,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 2,
             "wire": 20599,
@@ -57059,7 +57059,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -57498,7 +57498,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -57935,7 +57935,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -58250,7 +58250,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -58258,7 +58258,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -58266,7 +58266,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 8917,
@@ -58450,7 +58450,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -58889,7 +58889,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -59327,7 +59327,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "3030b007116e8a75a15acc5b9bfd566c900c7de57f952a4310f9ce57d553a159",
+            "replyDigest": "a11c23064cd6d7510006a98ee065695ac58842f8ab74bf3d26e34ab1f4ddeeeb",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -59763,7 +59763,7 @@
             "outcome": "refused",
             "finalChecks": 1,
             "bytesAtFinal": 0,
-            "replyDigest": "8c1331314589a60e315b80cc51f728233800855fd7bda784341290812aa37b79",
+            "replyDigest": "97c872884541517cb04692f395062c5181c97313c7a0f354459aa60cdb3b5f10",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -60064,7 +60064,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -60072,7 +60072,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -60080,7 +60080,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 2,
             "wire": 20599,
@@ -60264,7 +60264,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -60703,7 +60703,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -61891,7 +61891,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -61899,7 +61899,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -61907,7 +61907,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 2,
             "wire": 17834,
@@ -62089,7 +62089,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -62528,7 +62528,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -63716,7 +63716,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -63724,7 +63724,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -63732,7 +63732,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 2,
             "wire": 17834,
@@ -63914,7 +63914,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -64353,7 +64353,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -64790,7 +64790,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "b77b04bd5243d9eb21b5b4bf2af39af852e264b5331c777c038824990f5293e2",
+            "replyDigest": "3630827357e43337af70832389187e27164526a46e3ec349506aa4508444d2bb",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -65105,7 +65105,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -65113,7 +65113,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -65121,7 +65121,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 18403,
@@ -65303,7 +65303,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7895,
-            "replyDigest": "a0441172a47e183e10a1db9803d817d3f0952df640ebdc675c898e6b1d364b6b",
+            "replyDigest": "acccfe175708080dd351e04503bf26986163f03eface38af7e96fdd9495a0923",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -65742,7 +65742,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7951,
-            "replyDigest": "44e870c97472358d83310705cbd0c26abcda2766a5fa1c8ac0c12548cb70cf5a",
+            "replyDigest": "fbd36f741e896a56254a2a1ce732fc08f234a9764ac0c5ed8c84ce4b209153d2",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -66179,7 +66179,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "b77b04bd5243d9eb21b5b4bf2af39af852e264b5331c777c038824990f5293e2",
+            "replyDigest": "3630827357e43337af70832389187e27164526a46e3ec349506aa4508444d2bb",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -66494,7 +66494,7 @@
         "clientRows": [
           {
             "k": "feda23ace37b1ee2c6afc9e86f27b6b43cc19b106042e4c805f322df3a99dccb",
-            "d": "1e883562e660126199f30548c99c3e9a9481962a32ebdce4ca26b29de77319b6",
+            "d": "ef58b922b753eeb79397c3e00a6aa2d1635af001e2d1a9b8ab74847c3e395904",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11209,
@@ -66502,7 +66502,7 @@
           },
           {
             "k": "c40a6ab0083bdb1f00c4ce3050249c3fa9f628c4fc9f4dd8ec3acd6185c5dc46",
-            "d": "940cc9b6329484c1cd0a7d14208220443df071fd61d7d93d552dca94a97679ff",
+            "d": "6de89995569acfa02b18ac7aa3bfe6c531977e0535c1fde70712b9e26cbab3b0",
             "deadline": 4500,
             "attempts": 1,
             "wire": 11999,
@@ -66510,7 +66510,7 @@
           },
           {
             "k": "2a2084fa2b3ed4ddefa02baaa49ba1aff60db0f5c5e8c5dc0e340dfed955205e",
-            "d": "18d778b8445af8080c067828a9dee6c35502d918377ea9fc216d5a42f0507394",
+            "d": "44fb3f319d08d2433e1741848eb0c6811c6d5a032258db4d180d46966278c0bf",
             "deadline": 4500,
             "attempts": 1,
             "wire": 18403,
@@ -66524,26 +66524,26 @@
         "transferResult": {
           "mode": "B-independent",
           "timing": {
-            "start": 114192.461667,
-            "planned": 114408.194917,
-            "reconstructionStarted": 133677.689709,
-            "end": 133677.892792
+            "start": 86286.618792,
+            "planned": 86509.409042,
+            "reconstructionStarted": 103105.908042,
+            "end": 103106.055708
           },
-          "finalizationMs": 0.2030830000003334,
-          "wallMs": 19485.431125000003,
-          "setupAndClientPlanMs": 215.73325000000477,
-          "dispatchAndReconstructionMs": 19269.697874999998,
-          "clientPlanMs": 25.51212499999383,
-          "sealMs": 41.668250000002445,
+          "finalizationMs": 0.14766600000439212,
+          "wallMs": 16819.436916000006,
+          "setupAndClientPlanMs": 222.79025000000547,
+          "dispatchAndReconstructionMs": 16596.646666,
+          "clientPlanMs": 25.49641600000905,
+          "sealMs": 42.680208999998285,
           "providerPlanMs": 0,
           "requests": 11,
           "clientPlans": 2,
           "providerPlans": 11,
           "wireBytes": 275896,
-          "outputDigest": "36bf252270b3ca3424de5116312fd0e7949a864bc7f954c2d1ae89addc49f2c0",
-          "inventoryDigest": "ab4ad2915942dfc031feca0e3bc373925fe015d810f0dbda5cb6cd77655e8b40",
-          "inputDigest": "532d0250b600d0c0a694336cfbfbef316a57e4f440b2d4c41565d1a14b6692a0",
-          "planDigest": "9d8ef2752ef2d47a61c1c4983ad95030c19193e85f9d2aec26c8356f3d5a8113"
+          "outputDigest": "eec2037bf76b16ed735c397209b3f071ab795055b81d7a7369b3df83b0e0e6a1",
+          "inventoryDigest": "bce332021650dc837e42b4561220e66f27f8140c3e748f1924bbfbfc2c867452",
+          "inputDigest": "e2602891aa4b6200ec79283cf28a31df78ee1daedfd2c9f69996e5eb36ebd00c",
+          "planDigest": "e50559389b7cb6f393eef8b883d03037a63f6724b1ae48ccff68e386a4533231"
         },
         "calls": [
           {
@@ -66551,7 +66551,7 @@
             "api": "aux.ReadSourceDescriptor",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "642806ae09fc5dfb026e97ffabad75fa9290a9fd7f1c4aae2c5440362092e052",
+              "budgetKey": "9cc01bb2ff7f7049029cd5dfd6f2122918cabaf8703bf27e153c7913663978c8",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -66716,7 +66716,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8046,
-            "replyDigest": "2067e1a6b63fe52bba87e87a36057baf24b2e49aee111257b0dee739b48f4a91",
+            "replyDigest": "de0663d9c03da01e25fbd077f7c5413018f038fb3be72e3bc23fc8007871b4bd",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -66990,7 +66990,7 @@
             "api": "aux.ReadSealedSource",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "9d0a58e7445f10c9c474e06420b676c809d66a2a82ad75c6804b2727c7bf797f",
+              "budgetKey": "0ad7afb1d81757104c1b23537304b15a1f10332869231c364405f6b7497200d8",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -67155,7 +67155,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8271,
-            "replyDigest": "262aa56952d04140a31d7f1f39c8ea80abcb3db940681a83cf2806a93ecd142d",
+            "replyDigest": "9a5a209d53785c82c0fdc25a71d2cabbf53d247d21dbfb747f041374e6d72f5b",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -67429,7 +67429,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "787d1ac11bfed63c43951f61640f162679c52e9eb6ad75edcd5f627123122edf",
+              "budgetKey": "eadf0867b5186e60b0035441a5bc98930de3de2c594a100e72a9bdbe2cbd2cd3",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -67594,7 +67594,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8908,
-            "replyDigest": "0b44ac0b6f8b5e5bf946b32193c736314bcdd9f5fcb172e40bb664a017be2926",
+            "replyDigest": "5e56f668878669ee3952614b14cd77c9edb42140c1921dac0858e24b4b7ff7c7",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -67868,7 +67868,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "60be45016f4ecb1a1a4e48c00992ce4b96e8c546d1bee77a9af74d9f7293bbbe",
+              "budgetKey": "1bddfe8205f28e988823ddf1fc3f52be3e2851e04790e306fef26766e5ba4bbc",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -68033,7 +68033,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8912,
-            "replyDigest": "f3acf327cf93ce89ed718bc92c1abc3a5fc991144fd468ed2cc33a6d28fc1043",
+            "replyDigest": "07c65e7f54609819efb412ab90e71a7b1c01fa27200864f96c6a4aff9cc16da8",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -68307,7 +68307,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "f10ef751dc110d7a9f07775b334cd8916a3ff2e5cb93e0768193f31459e70c37",
+              "budgetKey": "abb8e08b6796610735e4f832bc70f821bb8c9d1d46f56011c19aa0387e65b8e3",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -68472,7 +68472,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "30bbd77ee5aa13261c6c4a1d1bde16179ec2ce778dbc51c4010c9693b768d667",
+            "replyDigest": "36dc96b8d209d2c9f289c316f2d0d788d54d2413ab432324df84db3a59b50ee1",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -68746,7 +68746,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "2a11afd9bfd44033866fbb1d2231f662f93c7a590456ad4a9ac1c82f88c09fe2",
+              "budgetKey": "0e6379a2f5cfd621cb8a1e2f716bf0b2a7517a28f0e7a59a71ab94a1454c668c",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -68911,7 +68911,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "e96c20730c99fe7514d2f07855a651ead9d97c2038e0d1198deb055e51f4a70a",
+            "replyDigest": "d7886f036715738ea2c2756bc49ac143808c68c988dd712cc9c048cbff188c6a",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -69185,7 +69185,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "40b06ba29b81e3ab201f9755c4433c469dc00b37de1625b0063595ebdf17f88a",
+              "budgetKey": "f78866aca0a23d75ae31acd5ed7f8c863982ceeb2358101b6639d57dd8d529ec",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -69350,7 +69350,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8744,
-            "replyDigest": "e9e7e4ab28453c88d89e1050cc6cd416dc55a2a2ce2655dcc90433b6579bab2f",
+            "replyDigest": "06c07fcd44651030c3255870e65e6de4781275878da3bccfde58c52ba93ff835",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -69624,7 +69624,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "a61d7d3e421860939ce5b95e17239c26c81b00b85f9947dfc4a95cc4f8765d44",
+              "budgetKey": "480138ade35eda311ef55ae76849b51f7b54aedd8eba190eb72fbce14eb628c7",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -69789,7 +69789,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8744,
-            "replyDigest": "489f04d54f1362344d7d8bdb2e2a8b1b7e76e6a0b6a9557792394edc13d682a9",
+            "replyDigest": "d3abbc960618c1d2fba58a582ac13fa45657e8d01e21f4e10504d6111f9b29f4",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -70063,7 +70063,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "e4f9a5a62569e00672ddb149ac34b9a8c3ffc8d3ce1a506640be7e8e819301ab",
+              "budgetKey": "d85e98673002db41f8a2771de47f6272e8a5db91069c38bb7140219fa6a6f1a0",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -70228,7 +70228,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8913,
-            "replyDigest": "5b7da7f3d5df2602fb1a2036ece1589fe839f428934afa7ee4fa152eafceb55d",
+            "replyDigest": "5a34735088cee15ac44114b92e1ff196c80c8d3f83d77907eb48ec4add1a9e05",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -70502,7 +70502,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "269f2538ec2a16efb056ca06158ab5181f4a737a7620114f99b24280574536dd",
+              "budgetKey": "246bdbe49912db3f9a39134833a4913cff77d63152a358e79455b4baf8b90d3d",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -70667,7 +70667,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9248,
-            "replyDigest": "23950f2e6d1a9c2af81200087be6d6a86e30dcfb5593e52a06491e59e03f556f",
+            "replyDigest": "5896d4df982789945e0373d2be39eb69df4d710250e9aa588445340c2ebed31a",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -70941,7 +70941,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "c8b877e72c77dff6972574bc59882ebed6701a2367a024ed7096663c21bce745",
+              "budgetKey": "f3894eb2cbf969432ec4afac06cda34c345ba422eb78c00a519f59523cc03ada",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -71106,7 +71106,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8912,
-            "replyDigest": "2f2fc95e5d1dcda11c3e1f17a7824b51d70aa966c38218c049f5da5f11874d57",
+            "replyDigest": "f48a182c2bc144d6630167616af7f887171c9aada83ca9744bbb8935e870a187",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -71380,7 +71380,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "8b8c25cbc217db24ba80e7a68220cc66263858ec8b2bd24510b549523f068469",
+              "budgetKey": "3a81148ab04774947d5033b874a27127779e093e39a9df3dcf8686e2ef46b3c1",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -71545,7 +71545,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8910,
-            "replyDigest": "0715bd7026546b425b77aafa83fdacfaa482b5b16255c150fafbb0bf0095ad94",
+            "replyDigest": "1c42d64b21df54b4b6a976c79ca632def64ebb6dc8298f7e2cd9789d78b8004f",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -71819,7 +71819,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "eaec07f24c521fac376f6cfc9e86b3c5c0656da2b77e14972cf33e98482ed790",
+              "budgetKey": "66c106f77ddca1372578d07d2fc98ed895a2f08a7518f77a8b93b0f8a45ba39e",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -71982,7 +71982,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8739,
-            "replyDigest": "25a8afca636f52e306f8db5cf52f5261500099a382f1369f683d4b5663196d91",
+            "replyDigest": "89324011bd9a4817502eb0fd80234485a1afd9d90e345c39369e4862982792e7",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -72254,16 +72254,16 @@
         ],
         "receipt": {
           "byteLength": 3929,
-          "id": "2be18253b055d0d4864a49e2a84e878419ad700a7b352222b6e2d8682619e5f1",
+          "id": "6cd186b61268cd7b475a93507b3092423b42202c211246d2e5bd1c3c3125603d",
           "role": "semantic-result",
-          "sha256": "2be18253b055d0d4864a49e2a84e878419ad700a7b352222b6e2d8682619e5f1"
+          "sha256": "6cd186b61268cd7b475a93507b3092423b42202c211246d2e5bd1c3c3125603d"
         },
         "resultDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a",
         "expectedDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a",
         "ack": "released",
         "unresolved": 0,
         "forgedAckRejected": true,
-        "useReceiptDigest": "2be18253b055d0d4864a49e2a84e878419ad700a7b352222b6e2d8682619e5f1",
+        "useReceiptDigest": "6cd186b61268cd7b475a93507b3092423b42202c211246d2e5bd1c3c3125603d",
         "useResultDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a"
       },
       {
@@ -72272,26 +72272,26 @@
         "transferResult": {
           "mode": "B-independent",
           "timing": {
-            "start": 139668.784042,
-            "planned": 139891.931417,
-            "reconstructionStarted": 158883.266667,
-            "end": 158883.4405
+            "start": 108853.836708,
+            "planned": 109055.443625,
+            "reconstructionStarted": 128761.820375,
+            "end": 128762.022375
           },
-          "finalizationMs": 0.17383300000801682,
-          "wallMs": 19214.656457999983,
-          "setupAndClientPlanMs": 223.14737500000047,
-          "dispatchAndReconstructionMs": 18991.509082999983,
-          "clientPlanMs": 27.15533300000243,
-          "sealMs": 43.494416000001365,
+          "finalizationMs": 0.20200000000477303,
+          "wallMs": 19908.185666999998,
+          "setupAndClientPlanMs": 201.60691699999734,
+          "dispatchAndReconstructionMs": 19706.57875,
+          "clientPlanMs": 23.51091599999927,
+          "sealMs": 37.5346669999999,
           "providerPlanMs": 0,
           "requests": 11,
           "clientPlans": 2,
           "providerPlans": 11,
           "wireBytes": 275896,
-          "outputDigest": "5eae884af9e0dee189b0f386d245ce0ee65605d67146e3bdb74ab5d4fe429051",
-          "inventoryDigest": "bc08ef208aca795f24cbec354af10ce6163b85e8eb5491360667c7b5c6a784cc",
-          "inputDigest": "11fac9fe77a504bb5438c0f3229e4a26092b991083f40f65b5839e7a91ce7064",
-          "planDigest": "ab3905ac962d3337c2b253a72e19f7787244e3fb378128b0b8294ab656216b00"
+          "outputDigest": "3da419af7f93dccf6561772870087cea370122559c66f03b0ddb727928ef258c",
+          "inventoryDigest": "1e629acb39797efe1ce4c7aff7b701763075c0dfdb7a49c821cfa5b0a7129a41",
+          "inputDigest": "168e1860cf040dc10c0924b5f6bcbb9429778f146a619dff065de0ece0f1dca3",
+          "planDigest": "c2d287813a33470d3ce742856fd5fc85991dc6ea3d2f8e86ee54dbaf9f9b15c0"
         },
         "calls": [
           {
@@ -72299,7 +72299,7 @@
             "api": "aux.ReadSourceDescriptor",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "bbffb23253e208507ade8aba1b55686f4f599155d94207a723e6bb0a0c477ea9",
+              "budgetKey": "409832beaaa992470d12566e201439a0b6c5c3638d553fa04059ad80dbd44396",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -72464,7 +72464,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8046,
-            "replyDigest": "8a79a9f291e44b1af20b27c2eed95546c94fbefac090b26522d240dba0a41a6e",
+            "replyDigest": "72c58bd8c779387a01db073a377b92d5e9ede552514922d69df5d5bc25600724",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -72738,7 +72738,7 @@
             "api": "aux.ReadSealedSource",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "e45ee758e17d897e31082f17168c70dac9b281b944c1471fa60e52c6f262306f",
+              "budgetKey": "15f912e507e73378da1387145b059c41f43208c8b265c7ea436480a81985f725",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -72903,7 +72903,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8271,
-            "replyDigest": "9c3b8004aa71d8c5ae9f4d67dc4f66005cd56f7fb2b81d65b2952039ad71272c",
+            "replyDigest": "9ede738fa4b01668859ef60fb5a8cb4c85e7a5b010a2bf41c8520a19d23504d7",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -73177,7 +73177,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "ecbec9f29aac5e0c503151e79eecf20e99032391d36f7dc3caad83e3673b1231",
+              "budgetKey": "67c2cb27b8387a566fa368aab69648edc29690b60b104d9e6bb0155accb921d5",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -73342,7 +73342,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8908,
-            "replyDigest": "5b3e07614393650ce159a49b504d3044eea910ecbef559a834b74348ba67f6f5",
+            "replyDigest": "378d971d87abb64cdf049a89c15c547045751a0ce27c73650aaeaae2daeb320c",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -73616,7 +73616,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "60304c223993e992123610ddc194e6067a57b37817218941ae464908c948f960",
+              "budgetKey": "71da60372cb7df6a71a1750132eba14d7e8a068d1163b1a2523e8744bba82b22",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -73781,7 +73781,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8912,
-            "replyDigest": "b163ec8557e1a08889e698a790c3b28513fba48cd773139a939ce9c02860af8e",
+            "replyDigest": "94e34ffb854deda18f1a66c14e9683bb02f2cc4e22f758728d73ade201a60541",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -74055,7 +74055,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "5ca03bdb3eb550ac5d58ba6bac419abe012117f12b0310290f481dfeac025f19",
+              "budgetKey": "7aeb6aa81e94ea02739327adbfaa649f6e8b068cb736a03c4007c5c28d521909",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -74220,7 +74220,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "bf9e440bd0d2ef3d3ac8701aa4614a0e41d6dccb801d52ab8db3d1579b3cc2cf",
+            "replyDigest": "112b63079926912516dc591aca6c2b86d1c30a2ef6754b54e69e513f36500577",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -74494,7 +74494,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "14fec87d8ab82788f8850c4dec00e2acd9371241226a5bf920742028a438a8e5",
+              "budgetKey": "0edb74b005cc20232f2201520502b4d3e5d66750d0d905b653e53633b263b819",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -74659,7 +74659,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "b15467d8079ce14a9661f0fe953df3f8b9a296a3c16e526b5ee1b1996aee8594",
+            "replyDigest": "ae3537f6e69c451794c19f315940abbcb589ffac1156443183dd67043ee39b0a",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -74933,7 +74933,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "f927c06d69ac512e62a1e0fe39473250e550a5415c88ddb045a1d286db1d0927",
+              "budgetKey": "f74a3168c6135dc74607ec9afd5827dc6b00fc04fdfc307607eb15afef3fcd61",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -75098,7 +75098,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8744,
-            "replyDigest": "d6f1c89fd35f49681cff7f16eec9b80bb38871beebd3a847d78afd7f8356706e",
+            "replyDigest": "75732d52253fddc6170fabaeb41d574144b643d07f3384b1a2afe9c2d44878c5",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -75372,7 +75372,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "77cc8823e6936bc0b12fb4fceca6878104466f8d7fdbb2e92deadf4b61cd0e30",
+              "budgetKey": "6ff8449fb713ea2ef24258eb2791e12b13bb10a3d3ea73d289134f2a8a452e07",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -75537,7 +75537,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8744,
-            "replyDigest": "9e8122fed4a471d1f849008919542b9d2a1a37b769e2a3c988c0241633507ffa",
+            "replyDigest": "5e1ee2f04d28e7fb28ab3b48e2a3b6991c9f7c499c1eec628414a9beff9edb58",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -75811,7 +75811,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "6c29bc5109151d627e773e1dce04516ebe45a8f8ab347d6cf8a6008d5b869e46",
+              "budgetKey": "20d119253f9e467039e758aa2d5820c43354c943ff54c4f7ac27b16403674cb7",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -75976,7 +75976,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8913,
-            "replyDigest": "ff8d1e75d5ca39c5c85d530f4bfaa2b9ac018f2264efb5c8de327d7a2780369b",
+            "replyDigest": "42ebb2e2a28cabfd2d2027c62ecac6af447565b2574a74d1bc0b66d96f45dc3d",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -76250,7 +76250,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "be6f0c4e92d44881f52914eb477ad7ff23ec1d66e2d05c3833a6e87b794c9922",
+              "budgetKey": "80564c853d2937a21a55c05311f2f8ec7b7fdccbafd3d5d67fe2511c20085c72",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -76415,7 +76415,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 9248,
-            "replyDigest": "c40cefec139bfb39fbc49837f733d97fc2edb286912efab1313349c8ac61296e",
+            "replyDigest": "e11a35a0c120123e36280f7dcd38b79773c96b4f5a1f3dacd11f22e183b77c95",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -76689,7 +76689,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "f40fea0577ceb9087d57845aae9fed6a8b55e525a59a39d5b7ae23da5ae0c7d7",
+              "budgetKey": "81f8f6d752f7aa9a6fabcf21c2e25a7b8911acc2227c4c4d831fad3d627854cc",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -76854,7 +76854,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8912,
-            "replyDigest": "135096fbc749ce8b72dee7457f1258c4b995e2e887afa6505c2ff3c23dfb73db",
+            "replyDigest": "f910547b1dd8fef69f3dec8da6a05572487ae67fa7a3b9d41aa51459c58582ee",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -77128,7 +77128,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "ff1ecdad094985d15620d25fd4c41cfb4a6c8f44be6740bd2c1bba7f9e531b45",
+              "budgetKey": "be97b3ded91868efe8a2e217ba5092c26de820e7d2858efa4a71e31eab87939e",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -77293,7 +77293,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8910,
-            "replyDigest": "0da272eac6ee1024a2dc132971353e6f36c3cf0d37cfcbfffbd42d4b3e004ca6",
+            "replyDigest": "de420112776cde9f446492722501b981a4eada0c9bafa94523a89aef5380b31a",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -77567,7 +77567,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "fa8244d551d821a0cdb657f3480b5c0257ba1965342593f1ec307f9d6350bba0",
+              "budgetKey": "a69e1c90832cab28756251e7feabda6fff205f62004637ba9471591e7363eab0",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -77730,7 +77730,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8739,
-            "replyDigest": "bb465d4f14207dd2d1b313fef2856dde058220ccd63760c51ef8ad6e47816304",
+            "replyDigest": "afd4ba044fb3842ce2d422e2776cc7c07cc89ed3fac87995e6eb47418aee29f0",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -78002,16 +78002,16 @@
         ],
         "receipt": {
           "byteLength": 3929,
-          "id": "8f9dda38d8a58f3c1e9ebc71111a61f790a7bc69509ff3e11d25c2d0c0eb8a21",
+          "id": "b46fa73876caf0b038b8fa5873720a7f3764261e9693a697ae3f9e006748c798",
           "role": "semantic-result",
-          "sha256": "8f9dda38d8a58f3c1e9ebc71111a61f790a7bc69509ff3e11d25c2d0c0eb8a21"
+          "sha256": "b46fa73876caf0b038b8fa5873720a7f3764261e9693a697ae3f9e006748c798"
         },
         "resultDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a",
         "expectedDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a",
         "ack": "released",
         "unresolved": 0,
         "forgedAckRejected": true,
-        "useReceiptDigest": "8f9dda38d8a58f3c1e9ebc71111a61f790a7bc69509ff3e11d25c2d0c0eb8a21",
+        "useReceiptDigest": "b46fa73876caf0b038b8fa5873720a7f3764261e9693a697ae3f9e006748c798",
         "useResultDigest": "76f552ad72782c12fcec08aac41ca6cb9ad37ad5fcdc3fb71ca866722983f77a"
       },
       {
@@ -78023,7 +78023,7 @@
             "api": "aux.ReadSourceDescriptor",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "323a6b321ede9eebb4f9fab3a596a8991acc8a2c4e9c0cb7cfc96784514b7dc4",
+              "budgetKey": "4dc0135ca282a6951f19666f481bdc82c317899fc9dfca3ceba71399a3cc4193",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -78188,7 +78188,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7904,
-            "replyDigest": "eac5e51706af72cebe15e20c260d2b39142ca3317735888c79f8b3594a0167df",
+            "replyDigest": "3944d6a1b47810e69380c9222d641f37d60ab3175707f693384696d468d37f20",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -78462,7 +78462,7 @@
             "api": "aux.ReadSealedSource",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "a79a7fcb772aed730464d735c450d6e084b10727a9b476c48fb0cc22be75302f",
+              "budgetKey": "d661420a47e83c65df5bec4ee1ece9b45094509f98d7b12b5cabc560b4179da9",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -78627,7 +78627,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7960,
-            "replyDigest": "4fde442969439377f1b2d7c4975950876f1f7ed23abd854c7696ac5af09f0426",
+            "replyDigest": "c2fc6f88bbea79dcf0895a0d82820e96e1bd702d39d017f538eb0789fd660a5b",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -78901,7 +78901,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "7e0a7583cc70342bbbb0a7b43a188e4a222f3deeb913676537eb11068faf4d12",
+              "budgetKey": "df5a66c100cea143c65716e5088a7ed7234a14a6a50f24a0eb541d73900d8933",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -79066,7 +79066,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "dce7f57bf7d588c0e11600f935651a5e56e03a7dbfc5ce1401480fb01511992f",
+            "replyDigest": "22a99906d47f8a8372e00c3e63a5163ae64a2531d47593a4050baa8dc150f803",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -79340,7 +79340,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "8b1c7bf04695d5d8ab849aeedbb0b84913b372d1c0098619f1736bdba2d2ec63",
+              "budgetKey": "6d0e112282dff0f8f71a5c628e24d99205269ed92bbb6fcfd729dc9c63627c01",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -79503,7 +79503,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "7f2a26ed1b56408e0d5690f8cf9fa52226d2948bbc2c1987396e7f4a5ba3a124",
+            "replyDigest": "cf94afe02d3fa481f2701769a276d7d3869babdb2b26c06abf8694a67411e1a8",
             "control": {
               "mode": "full-reference",
               "verification": null,
@@ -79776,17 +79776,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 164155.261334,
-            "planned": 164339.088584,
-            "reconstructionStarted": 165588.922375,
-            "end": 165589.037042
+            "start": 133492.721792,
+            "planned": 133639.833958,
+            "reconstructionStarted": 134717.995042,
+            "end": 134718.095333
           },
-          "finalizationMs": 0.11466700001619756,
-          "wallMs": 1433.775708000001,
-          "setupAndClientPlanMs": 183.8272500000021,
-          "dispatchAndReconstructionMs": 1249.948457999999,
-          "clientPlanMs": 7.429999999993015,
-          "sealMs": 10.495667000010144,
+          "finalizationMs": 0.10029100000974722,
+          "wallMs": 1225.3735410000081,
+          "setupAndClientPlanMs": 147.11216600000625,
+          "dispatchAndReconstructionMs": 1078.2613750000019,
+          "clientPlanMs": 6.4658329999947455,
+          "sealMs": 9.488000000012107,
           "providerPlanMs": 0,
           "requests": 2,
           "clientPlans": 2,
@@ -79795,7 +79795,7 @@
           "outputDigest": "8b6c53f8aa5f6e17930f5af19d6508eed05bc9e1afadef3bce3b208f23d040c7",
           "inventoryDigest": "1fabe93081e8ee2ab349fb8af7e5b89086ee6216a60aa9b2c1af90cd9ba68b6e",
           "inputDigest": "24687e15ba8a66909bd94b4408736d4550a9642730d7db88ff830c386811fba0",
-          "planDigest": "a52b638b795757b2fa5a1d7535e9cd8a74cbcc60f9b323de3265cd4d24ca2ec6"
+          "planDigest": "3abaac56f68670f922321a0ab7c703878f2d5d4c1e084132da91df38e8f02cf6"
         },
         "inventory": {
           "rows": [
@@ -79895,9 +79895,9 @@
         "adopted": {
           "checkpoint": {
             "byteLength": 1830,
-            "id": "fd2f5b086ad88a8bb88feada8fe23227494fe421d10d2a78fe704ae8c6887b4b",
+            "id": "9b9b59367e83530e71b28354253818f2c8d1ea67b5d05b715ca12e20c429f914",
             "role": "checkpoint-prepare",
-            "sha256": "fd2f5b086ad88a8bb88feada8fe23227494fe421d10d2a78fe704ae8c6887b4b"
+            "sha256": "9b9b59367e83530e71b28354253818f2c8d1ea67b5d05b715ca12e20c429f914"
           },
           "head": {
             "baseDigest": "2be132dcfc82043694c8ff75664af7adddf0d5eb459340595ef4b689f49de208",
@@ -79908,16 +79908,16 @@
           },
           "snapshot": {
             "byteLength": 3034,
-            "id": "2f555502664252ac9bd99d4ed8178b8eddbffa07016052664e9b7bf45f8cfb2e",
+            "id": "453dbe9a70e44cc9ffb6e1bad6538bd069cda2f16d595bcd6b16e3b96a95b66b",
             "role": "snapshot",
-            "sha256": "2f555502664252ac9bd99d4ed8178b8eddbffa07016052664e9b7bf45f8cfb2e"
+            "sha256": "453dbe9a70e44cc9ffb6e1bad6538bd069cda2f16d595bcd6b16e3b96a95b66b"
           }
         },
         "checkpoint": {
           "byteLength": 1830,
-          "id": "fd2f5b086ad88a8bb88feada8fe23227494fe421d10d2a78fe704ae8c6887b4b",
+          "id": "9b9b59367e83530e71b28354253818f2c8d1ea67b5d05b715ca12e20c429f914",
           "role": "checkpoint-prepare",
-          "sha256": "fd2f5b086ad88a8bb88feada8fe23227494fe421d10d2a78fe704ae8c6887b4b"
+          "sha256": "9b9b59367e83530e71b28354253818f2c8d1ea67b5d05b715ca12e20c429f914"
         }
       },
       {
@@ -79929,7 +79929,7 @@
             "api": "aux.ReadSourceDescriptor",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "1af58211a43bddf855fef0b6f3dbc8e2933df5139f2b710ff472215c64d551fb",
+              "budgetKey": "3429e89beeff7cd3b22912148c39396cdbf497b89e188e6a23179ee7e7039a62",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -80094,7 +80094,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7904,
-            "replyDigest": "bb7d6913a6c662da9eddcbff760a9136c4ed820b3d5d8ba160d9ca2bfdc33828",
+            "replyDigest": "0617991829efc6bed8d29bef65f265ead30da01135629bec2c9f2c9862568f9a",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -80368,7 +80368,7 @@
             "api": "aux.ReadSealedSource",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "65e2e3ea0cd4e66f87e3036e2efa08efd71276e4c08f7d447d76e5ec116fb0e7",
+              "budgetKey": "b142eb19699b5753a4bbe444ba420cb3b0633a212c79caf80216ef5d585ae5fb",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -80533,7 +80533,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 7960,
-            "replyDigest": "a6b9294b5fbddad3945e5878001e82877f2f55bf6747e229c295db745e8cdedf",
+            "replyDigest": "e57bb5f9c69df16b6b6f890d63c7803d41349d566761a3f95f99e40658360c1b",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -80807,7 +80807,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "642f72fffb59b84e9cc6769ac565b3f5da3a5135aab1cfbc57ebdc63e87a545e",
+              "budgetKey": "f87d54e6f111a67ed9b593310bef9e8797d8d7ae02012d240c66643844df96c8",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -80972,7 +80972,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8917,
-            "replyDigest": "d821406f8d832a071888b8ffe9c6095f5c412d2ae3a68fe5c288c7f22fd7f11e",
+            "replyDigest": "f694f6259e517e4323b9b7831439ca86ede6b7ec73ae8dd2ca162c4b08442bb4",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -81246,7 +81246,7 @@
             "api": "aux.ReadSourceRanges",
             "accounting": {
               "schema": "cwc-lb2.consumption.v1",
-              "budgetKey": "d90ffcfe8f8b08caaf11b71aecb01401a42020029104405689e66166b31d4e82",
+              "budgetKey": "183b106b3c79ece2aebabc5003955087a28f08aa3cfc1609d08a13ea2a31df31",
               "before": {
                 "initialization": 0,
                 "work": 0,
@@ -81409,7 +81409,7 @@
             "outcome": null,
             "finalChecks": 1,
             "bytesAtFinal": 8743,
-            "replyDigest": "42678e0f1e841a345e23b9a9ff8d827d6d2df9fb937a6adc8884a15beb18ac4a",
+            "replyDigest": "d032f5607c23e9bb92cbde476cd20c30950520134030b353151e863cc0360008",
             "control": {
               "mode": "bound-live",
               "verification": null,
@@ -81682,17 +81682,17 @@
         "result": {
           "mode": "B-independent",
           "timing": {
-            "start": 168870.039334,
-            "planned": 169033.102625,
-            "reconstructionStarted": 170277.655959,
-            "end": 170277.771917
+            "start": 137440.71975,
+            "planned": 137578.289625,
+            "reconstructionStarted": 138623.020458,
+            "end": 138623.121167
           },
-          "finalizationMs": 0.11595800000941381,
-          "wallMs": 1407.7325830000045,
-          "setupAndClientPlanMs": 163.06329099999857,
-          "dispatchAndReconstructionMs": 1244.669292000006,
-          "clientPlanMs": 7.035708999988856,
-          "sealMs": 10.977416999987327,
+          "finalizationMs": 0.1007089999911841,
+          "wallMs": 1182.4014170000155,
+          "setupAndClientPlanMs": 137.5698750000156,
+          "dispatchAndReconstructionMs": 1044.831542,
+          "clientPlanMs": 6.3179999999993015,
+          "sealMs": 9.002542000001995,
           "providerPlanMs": 0,
           "requests": 2,
           "clientPlans": 2,
@@ -81701,7 +81701,7 @@
           "outputDigest": "8b6c53f8aa5f6e17930f5af19d6508eed05bc9e1afadef3bce3b208f23d040c7",
           "inventoryDigest": "1fabe93081e8ee2ab349fb8af7e5b89086ee6216a60aa9b2c1af90cd9ba68b6e",
           "inputDigest": "24687e15ba8a66909bd94b4408736d4550a9642730d7db88ff830c386811fba0",
-          "planDigest": "df521b2ce3397df11f58d4460c974b5e648f8eb495e17986f078ec84eb4ba637"
+          "planDigest": "1a0e93c45adffee7c14ab4fc6dfa0d4dcea3bccbb0ce9f5678e7ad703ce032b5"
         },
         "inventory": {
           "rows": [
@@ -81801,9 +81801,9 @@
         "adopted": {
           "checkpoint": {
             "byteLength": 1830,
-            "id": "a38b1739f5f07cafb1919dcbcb0d4f76efe9d25c1843fc6dfbf42678bce67b4f",
+            "id": "beaf843718f14952a87d680ca0e3d1d01216cdc9a375a8d9f2676611f5647130",
             "role": "checkpoint-prepare",
-            "sha256": "a38b1739f5f07cafb1919dcbcb0d4f76efe9d25c1843fc6dfbf42678bce67b4f"
+            "sha256": "beaf843718f14952a87d680ca0e3d1d01216cdc9a375a8d9f2676611f5647130"
           },
           "head": {
             "baseDigest": "2be132dcfc82043694c8ff75664af7adddf0d5eb459340595ef4b689f49de208",
@@ -81814,16 +81814,16 @@
           },
           "snapshot": {
             "byteLength": 3034,
-            "id": "40d84c547ad408ada88d149493b29d4d515ad7a19b1a0df4d035bc735201f45e",
+            "id": "fdd585a9af9400eb14d91a338d2ca568315e6a4dc49abc38522f718286ded935",
             "role": "snapshot",
-            "sha256": "40d84c547ad408ada88d149493b29d4d515ad7a19b1a0df4d035bc735201f45e"
+            "sha256": "fdd585a9af9400eb14d91a338d2ca568315e6a4dc49abc38522f718286ded935"
           }
         },
         "checkpoint": {
           "byteLength": 1830,
-          "id": "a38b1739f5f07cafb1919dcbcb0d4f76efe9d25c1843fc6dfbf42678bce67b4f",
+          "id": "beaf843718f14952a87d680ca0e3d1d01216cdc9a375a8d9f2676611f5647130",
           "role": "checkpoint-prepare",
-          "sha256": "a38b1739f5f07cafb1919dcbcb0d4f76efe9d25c1843fc6dfbf42678bce67b4f"
+          "sha256": "beaf843718f14952a87d680ca0e3d1d01216cdc9a375a8d9f2676611f5647130"
         }
       }
     ]

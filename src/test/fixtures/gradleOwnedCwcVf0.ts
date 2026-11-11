@@ -4,7 +4,7 @@ import {z} from 'zod';
 import {copyData,freezeData,dedicated,ordinaryBuffer,Lb0Budget,LB0_APIS} from './gradleOwnedCwcLb0Contract.js';
 import {Vf0Approval} from './gradleOwnedCwcVf0Approval.js';
 import {VF0_POLICY,VF0_PHASES,VF0_STATIC,VF0_LIVE,VF0_LAYOUT} from './gradleOwnedCwcVf0Map.js';
-import {Vf0Authority,Vf0Clock,stampAuthority,authorityView,authorityReason,sameAuthorityStamp,assertAuthority,readOwnedClock,type VfAuthorityStamp} from './gradleOwnedCwcVf0Authority.js';
+import {Vf0Authority,Vf0Clock,stampAuthority,authorityView,authorityReason,sameAuthorityStamp,assertAuthority,readOwnedClock,ownedClockKind,type VfAuthorityStamp} from './gradleOwnedCwcVf0Authority.js';
 import {validateSessionTranscript,inspectStaticSession,validateChallengeExchange,validateChannelFrame,type StaticSession} from './gradleOwnedCprBProtocol.js';
 import {validateCredentialRegistry,type ServiceIdentity} from './gradleOwnedCprBOwners.js';
 import {verifyOwnerValue} from './gradleOwnedCprBSigner.js';
@@ -33,7 +33,7 @@ export class Vf0Session {
  readonly #metrics={foreignCallbacks:0,transcripts:0,inputCopies:0,reads:0,full:0,fact:0,live:0,now:0,commands:0,boundIssued:0,publications:0,reclaims:0,late:0,commits:0,privateReferences:0};
  #lastFence:any=null;#guardScopeGeneration?:number;
  constructor(o:Vf0Options){
-  Lb0Budget.require(o.budget);Vf0Approval.require(o.approval);assertAuthority(o.authority);readOwnedClock(o.clock);need(this.#counts.byteLength<=VF0_LAYOUT.binding.diagnostics&&64*32<=VF0_LAYOUT.session.metadata,'codec_budget_exceeded');
+  Lb0Budget.require(o.budget);Vf0Approval.require(o.approval);assertAuthority(o.authority);readOwnedClock(o.clock);need(ownedClockKind(o.clock)==='fixed','codec_profile_unsupported');need(this.#counts.byteLength<=VF0_LAYOUT.binding.diagnostics&&64*32<=VF0_LAYOUT.session.metadata,'codec_budget_exceeded');
   need(o.ownership==='owner-notified'&&VF0_POLICY.modes.includes(o.mode)&&Number.isSafeInteger(o.gateLimit??4096)&&(o.gateLimit??4096)>0&&(o.gateLimit??4096)<=4096,'codec_profile_unsupported');
   this.#o=Object.freeze({...o,pins:freezeData(copyData(o.pins,4096))});this.#stamp=stampAuthority(o.authority);this.#base=o.budget.reserve(VF0_POLICY.baseBytes,4096);let scratch:Ticket|undefined;
   try{scratch=o.budget.reserve(VF0_POLICY.constructorBytes);this.#registry=freezeData(validateCredentialRegistry(copyData(o.registry,57344),copyData(o.pins,4096)));this.#peer=freezeData(copyData(o.peer,2048));this.#server=freezeData(copyData(o.server,2048));const peer=this.#registry.credentials.find(c=>c.identity.credentialId===this.#peer.credentialId),server=this.#registry.credentials.find(c=>c.identity.credentialId===this.#server.credentialId);need(peer?.direction==='request'&&server?.direction==='reply'&&same(peer.identity,this.#peer)&&same(server.identity,this.#server),'peer_mismatch');this.#lineage=freezeData(copyData(o.lineage,4096));this.#expected=freezeData(parsed(expectedSchema,copyData(o.expected,4096)));this.#floor=Math.min(4500,this.#expected.deadline);

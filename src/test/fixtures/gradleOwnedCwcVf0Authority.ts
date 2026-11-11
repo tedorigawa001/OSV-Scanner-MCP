@@ -1,4 +1,5 @@
 /** VF-0 only. The trusted state owner is explicit; opaque callbacks cannot supply revision evidence. */
+import {performance as monotonicPerformance} from 'node:perf_hooks';
 import {credentialSchema} from './gradleOwnedCprBOwners.js';
 import {copyData,freezeData} from './gradleOwnedCwcLb0Contract.js';
 import {need,parsed,chash,cn} from '../../utils/gradleOwnedCurrentSchema.js';
@@ -35,8 +36,12 @@ export function assertAuthority(owner:Vf0Authority){cell(owner);}
 export function authorityReason(owner:Vf0Authority){return cell(owner).reason;}
 export function authorityView(owner:Vf0Authority){return cell(owner).view;}
 export function sameAuthorityStamp(a:VfAuthorityStamp,b:VfAuthorityStamp){return a.epoch===b.epoch&&a.revision===b.revision&&a.revocation===b.revocation;}
-// A diagnostic owned clock, not a wall-clock performance experiment or an arbitrary clock callback.
-const clocks=new WeakMap<object,{now:number}>();
-export class Vf0Clock {constructor(){clocks.set(this,{now:0});Object.freeze(this);}advance(to:number){const c=clocks.get(this)!;need(Number.isSafeInteger(to)&&to>=c.now,'clock_invalid');c.now=to;}}
-export function readOwnedClock(clock:Vf0Clock){const c=clocks.get(clock);need(c,'codec_profile_unsupported');return c.now;}
+// Fixed fixtures and VF-3 use separate branded profiles. No caller-supplied clock callback.
+const monotonicNow=monotonicPerformance.now.bind(monotonicPerformance);
+const clocks=new WeakMap<object,{now:number;real:boolean}>();
+export class Vf0Clock {constructor(){clocks.set(this,{now:0,real:false});Object.freeze(this);}advance(to:number){const c=clocks.get(this);need(c&&!c.real&&Number.isSafeInteger(to)&&to>=c.now,'clock_invalid');c.now=to;}}
+/** Absolute process monotonic milliseconds, floored exactly like session TTLs. */
+export class VfRealtimeClock extends Vf0Clock {constructor(){super();clocks.set(this,{now:Math.floor(monotonicNow()),real:true});}}
+export function ownedClockKind(clock:Vf0Clock){const c=clocks.get(clock);need(c,'codec_profile_unsupported');return c.real?'owned-monotonic':'fixed';}
+export function readOwnedClock(clock:Vf0Clock){const c=clocks.get(clock);need(c,'codec_profile_unsupported');if(c.real){const n=Math.floor(monotonicNow());need(Number.isSafeInteger(n)&&n>=c.now,'clock_invalid');c.now=n;}return c.now;}
 export type VfAuthDomain=Domain;

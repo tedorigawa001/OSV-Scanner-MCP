@@ -25,3 +25,9 @@ it('CST10: owner lines moved with updated keys and frames fail the class anchor 
 it('CST11: current copies are separated from preflight copies and match owner-check counts',async()=>{const r=await matrix();for(const row of r.rows.filter(x=>x.arm==='sites'&&x.status==='complete')){const entries=Object.entries(row.trace.sites) as [string,any][],copies=entries.filter(([,s])=>s.operation==='structuredClone'&&s.caller.file.endsWith('/gradleOwnedCwcA.ts')&&s.caller.fn==='copy'),current=copies.filter(([key])=>JSON.parse(key)[2]==='current.input');expect(current.reduce((n,[,s])=>n+s.calls,0)).toBe(attributeSites(row.trace,row.outerMs,row.artifact).groups['private-context.rehash'].calls);expect(copies.some(([key])=>JSON.parse(key)[2]!=='current.input')).toBe(true);}});
 
 it('CST12: a gate ancestor ahead of an owner check has its own classification',()=>{const frames=[{file:'src/test/fixtures/gradleOwnedCprASchema.ts',fn:'same',line:1,column:1},{file:'src/test/fixtures/gradleOwnedCwcC.ts',fn:'gate',line:1,column:1},{file:'src/test/fixtures/gradleOwnedCwcA.ts',fn:'#checkOwner',line:1,column:1}];expect(JSON.parse(siteKey('parsed',frames))[2]).toBe('gate.validation');});
+
+it('CST13: only observed TTL digit differences normalize paired wire volume; other byte differences reject',async()=>{
+ const r=structuredClone(await matrix()),row=r.rows.find(x=>x.arm==='composed'&&x.round===0&&x.status==='complete');
+ expect(row.wireTtls[0].ttlMs).toBeGreaterThanOrEqual(1000);const before=row.wireBytes;for(let i=4;i<8;i++)row.wireFrames[i].frame--;row.wireBytes-=4;row.wireTtls[0].ttlMs=999;row.wireTtls[1].ttlMs=999;expect(()=>check(r)).not.toThrow();expect(row.wireBytes).toBe(before-4);
+ row.wireBytes--;expect(()=>check(r)).toThrow('site_wire_total');
+});
