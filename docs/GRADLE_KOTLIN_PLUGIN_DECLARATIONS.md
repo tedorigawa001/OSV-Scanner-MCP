@@ -9605,7 +9605,7 @@ small・h0・single-largeの3 workload×reader／authority-broker、warm-up各1�
 
 2026-11-11にVF-1レビュー修正後のsourceで旧profileを再実行した。warm-up込み216試行中120完了、実測162試行中90完了。方式別の実測完了数はscalar 54/54、full-reference 18/54、bound-live 18/54で、6条件の判定はdefer。smallのquiet総時間中央値はscalar 398.8〜403.7 ms、full-reference 1041.7〜1079.1 ms、bound-live 1041.7〜1059.5 ms。失敗を成功中央値へ混ぜず、理由と打切り時間をJSONへ保持する。旧profileの再検証であり、VF-1の速度改善を測ったものではない。
 
-成功条件のpaired T差（3 roundの中央値）はcounts−quietが-7.7〜26.5 ms、timed−countsが-11.3〜20.3 ms、timed−quietが-4.1〜57.9 msだった。期限停止したbatch条件の差を計測費用・速度改善へ流用しない。construction・transfer・cleanup・capture・handshake・全entry再構成の各時間は個々のrowへ保存し、異なる条件の中央値を合計して判断しない。
+成功条件のpaired T差（3 roundの中央値）はcounts−quietが-4.0〜166.7 ms、timed−countsが-130.3〜11.7 ms、timed−quietが4.1〜38.0 msだった（counts−quiet・timed−countsの最大幅はh0 authority-brokerのscalar）。期限停止したbatch条件の差を計測費用・速度改善へ流用しない。construction・transfer・cleanup・capture・handshake・全entry再構成の各時間は個々のrowへ保存し、異なる条件の中央値を合計して判断しない。
 
 CWC-Dとの差の内訳：CLB-3の総時間はCWC-Dより1桁大きい（smallのscalarはCWC-Dの約28 msに対し約400 ms）。timed記録の内訳では、handshake（RPCごとに1回の接続）は上位に入らず、主因ではない。最大のbucketは`binding.providerGate`で、`json.canonicalOwnedJson`、`binding.scopeGate`が続く。smallのbatch 1転送（4 call）では、challenge・channel・owner署名の検証を含む完全検証（CLB-0の`#inspect`）が1157回、h0のscalar 1転送（18 call）では1002回実行された。CLB-1以降の各provider／scope gateが毎回この完全検証を行うことが総時間の大部分を占める。bound-liveが省くのは追加のwire比較hashと固定identityのcopy／照合だけで、完全検証の回数はfull-referenceと同じなので、両者の差は小さい。次の調査は、期限・認可・完全性を緩めずに、ready後のgateで毎回再検証が必要なものを絞り、この完全検証の反復を減らせるかを対象にする。件数は記録の`audit.fullChecks`、時間は`trace.buckets`から確認できる。
 
