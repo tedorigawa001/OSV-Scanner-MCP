@@ -10630,8 +10630,63 @@ poolの内容をimmutableに保持する証明、copyごとのbegin／endの出�
 
 今回の出口は「超過原因の分解と次のsource変更契約が具体化した」ことに限る。既存LG-0の最大入力拒否とlg0ExitEstablished=falseは変更しない。次は固定consumerでのcommand生成・copy・decode・schema／expected検証の実参照を計測し、3 slot上界とmetadata4096・追加workの共存を証明する。成立したsourceだけを新profileでCWCへ接続し、その後にLG-0の最大条件を再検証する。LG-1・実Session・primary576／bridge144へはまだ進めない。
 
-recordはdocs/validation/gradle-cwc-lg-capacity-2026-11-12.json、再現は`bdo node scripts/check-cwc-lg-capacity.mjs`、照合は`bdo node scripts/check-cwc-lg-capacity.mjs --check`。旧LG-0 recordを入力sourceとしてhashで束縛し、mode×role×3境界×3 recipeの36行、sourceの保持位置・寿命、合成予約・未実行の20 consumer条件を保存する。既存LG-0／VF-3Pの実行source・record・測定値を変更しない。
+recordはdocs/validation/gradle-cwc-lg-capacity-2026-11-12.json、再現は`node scripts/check-cwc-lg-capacity.mjs`、照合は`node scripts/check-cwc-lg-capacity.mjs --check`。旧LG-0 recordを入力sourceとしてhashで束縛し、mode×role×3境界×3 recipeの36行、sourceの保持位置・寿命、合成予約・未実行の20 consumer条件を保存する。既存LG-0／VF-3Pの実行source・record・測定値を変更しない。
 
 監査recordのdigestはobject key辞書順・array順維持のJSON canonical bytesへSHA-256を適用する。余裕や不足slot数には負値を許すが、実budgetの非負counterや本番OwnedManifest schemaを変更しない。単なる予算の不足は失敗frontierと先行消費を残し、合成予約を解放してもwork／initialization／wire／attemptは巻き戻さない。
 
 LG-M0検証（2026-11-12）：容量分解・合成予約12件とrecord改変拒否10件、既存LG-0／関連157件を合わせた179テスト、既存LG-0記録・設計4系列・VF-3P記録21件の照合、型・差分検査が成功した。36行のうち26行は仮説の算術・合成予約で完了、10行は元上限で拒否された。これは実consumerの完了率や速度改善ではない。source保持行の移動、総量を保つregion間移動、最大context縮小、frame二重控除、先行消費の減額、53 Bの丸め、3-slot成立／採用への昇格を拒否する。実consumer接続・3-slot上界・LG-0出口・次段階／本番採用は全て未成立のまま保存した。
+
+### 9.141 LG-M1：実A／B consumerのcommand参照追跡と3 slot拒否
+
+#### 9.141.1 対象と判定
+
+§9.140の仮説を、既存CWC-AのencodeCheckedCommand、CWC-BのplanProof／inspectProof、実CPR command schema・makeCommandで調べた。関数本体・旧承認・planner・LG-0の予約を変更せず、同期の診断wrapperでcopy・parse・expected構築の前後を追跡した。実CwcCReadScopeのclient inventoryとCwcConnectedGrantを使い、Aの私有factとBの閉じたfamily proofを通す。外部storage・providerの実call・Session・LGの両mode runtimeを接続した実証ではない。full-input／owned-inputは、同じconsumerを将来利用する両条件の要求labelであり、LG側の検査件数や配置の同一性をこの記録から主張しない。
+
+**現行の固定consumerには同時に4個の異なるcommand objectが残り、3 slot候補は不採用となった。** 3 slot上界の成立を出口条件としたため、window本体の新profile接続やLG-1へ進めない。これは必要な実参照の下界を示す負例で、全allocationの上界、4×8192 Bの実heap使用量、4 slotでの全領域共存を証明した結果ではない。raw expectedは既存context／rangeの参照も共有するため、異なるroot object数とdeep allocation bytesを同一視しない。
+
+#### 9.141.2 実参照の寿命とcopy前の拒否
+
+callerは私有canonical入力をJSON.parseして得たcommandを、Aのencode・Bのproof・oracle比較の終了まで実際に保持する。Aのcopy(input)はstructuredClone、command／checkCommandは元のZod schema.parseを呼ぶ。コピーとschema resultの実object identityをWeakMapで識別し、予約・実生成・解放を連番で記録した。copy(input)の一時値はcommandの復帰時に解放し、既に不要なcopyを保持して人工的な4参照を作らない。Aが保持するqはfact生成後もB proofの終了まで追跡し、既存のf.q=undefinedによる解放を新たな削減へ数えない。
+
+| expectedのschema parse復帰中に同時に残る値 | 実際の保持元 |
+|---|---|
+| decode済み入力 | 固定callerのdecoded変数。proofとoracle比較にも用いる |
+| Aの私有q | encodeCheckedCommandのlocal q。続いて私有factへ格納される |
+| expected構築値 | 元makeCommandのlocal qとschema parserのinput引数 |
+| expectedのschema結果 | 元Zod parserが返した新しいobject。前3実体と異なることを照合 |
+
+診断guardは全領域の独立ticketを確保してからcommandをdecodeする。structuredClone前、schema.parse前、makeCommand本体への入場前にもslotを取得する。3 slotでは表の最後のparse用予約を拒否し、元parser呼出しの増分が0であることを確認する。実エラーは既存parsed helperによってcurrent_control_schema_invalidへ変換されるため、診断のdeniedAt=expected／deniedBeforeParse=trueも保存して分類を失わない。既に作ったexpectedのraw値は第3slotに入っており、第4slot拒否より前の生成を禁止したとは報告しない。
+
+全19 commandを通す正対照には観測用8 slotを用い、同じ既存A／B・実schema・semantic／canonical一致・元codecのrequest／reply／4 frame幅を照合した。実観測peakは4だが、診断が全V8内部allocation・canonical一時string・Zod内部の中間構造を網羅しているわけではないため、4 slot上界の証明にも使わない。encode／proof／inspect内のlocalは関数復帰まで保守的に保持する。決定的な4実体のwitnessは関数復帰前のexpected parser内で取得し、wrapperによる寿命延長に依存しない。
+
+#### 9.141.3 入力・予算・失敗と未実証範囲
+
+reader／authority-broker、normal／registered-maximum／schema-upper、要求2 mode、3 slot guard／8 slot正対照の24行を各2 attempt、計48 attempt実行する。入力は9 entry・41460 B、19 ordinal・4 rangeを含む固定の有効plan coreである。最大許容のpacking結果を得たとは扱わず、19 commandの固定consumer stress入力として用いる。旧max contextのcid／epoch／参照長／head revisionは縮小せず、元constructorで検証する。
+
+正対照24 attemptは全19 command、合計456 commandで実A／B proofと元codec oracleに一致する。3 slotの24 attemptはいずれもordinal 0のexpected parse前に拒否する。別scope／grantを発行し、同じ実CwcCWorkLedgerに失敗分も残し、156978→313956 unitsを維持する。第3 attemptと親残高の減額はcommand decode／copy前に拒否する。この2 attemptは限定consumerの再実行で、実operation K/D・Sessionの応答紛失／再試行の証拠ではない。
+
+診断用Lb0BudgetはCWC予約とは別で、capacity×8192＋metadata4096を事前予約し、初期化4096 unitsを消費する。閉じるとbytesを回収するが初期化を返還しない。観測trace・spies・WeakMap等をmetadata4096へ収めたという証明はなく、コピー・decode／schema処理の追加work上界も未成立である。既存CWCのworkは従来どおりrequest bytes／ranges／probesの定義を用いる。両者を足さずに元1 MiB・156978 unitsに収まるとは主張しない。旧LG-0の4096 B／初期化4096 units、LG-M0の53 B超過・各region、既存認可・purpose・pin・取消し・元期限・内容検査も変更しない。
+
+parse失敗、内側例外を捕捉したguard再入、実clockの元期限到達、実scope gateでの権限取消しを両labelで拒否する。失敗後もworkは残り、診断ticketを回収し、wrapperをfinallyで復元する。続く正常対照を同じ実consumerで実行して復元を確認する。これは同期診断guardの拒否であり、本番windowの公開経路・dispatch drain・後着・署名／outcome／use／ACKの完全性試験ではない。
+
+#### 9.141.4 回帰条件・証拠照合と次工程
+
+| ID | 実行した回帰条件 |
+|---|---|
+| LMW01 | actual Aのexpected parserで4 distinct objectを捕捉し、3 slotでは元parse呼出し増分0で拒否 |
+| LMW02 | 24行×2 attempt、19 command・4 range・9 entry・41460 B、最大境界、実oracle、別scopeと消費保持を照合 |
+| LMW03 | 診断予約が1 B不足ならconsumer構築前に拒否 |
+| LMW04 | 両labelのparse失敗・捕捉済み再入・元期限・権限取消しで拒否し、初期化／plan消費を保持してbytes回収 |
+| LMW05 | 同一親ledgerの第3 attemptと消費減額をcommand処理前に拒否 |
+| LMW06 | 失敗後のobserver対象復元と、続く実consumerの全19 command成功を照合 |
+| LMR21〜28 | fresh実行との照合、総件数を保つtrace重複／欠落・早期解放・協調的な長さ／消費減額、期限延長・identity流用・case欠落・source位置移動・3 slot採用への昇格を拒否 |
+| LMR29 | 両role・両要求label・拒否／対照で、attempt間のscope ID単独・call ID単独・両IDの交換を、一意性維持・digest更新後も静的検証で拒否 |
+| LMR30 | fresh比較の記録側／再実行側それぞれのID交換を、値の正規化前に拒否。正しい別scopeのfresh実行は受理 |
+
+記録はdocs/validation/gradle-cwc-lg-window-2026-11-12.json、生成は`node scripts/check-cwc-lg-window.mjs`、照合は`node scripts/check-cwc-lg-window.mjs --check`。--checkでも実consumerを再実行し、さらにrecordテストがfreshな別実行へ照合する。grantのscope IDはhash({scope: 実scope番号, actor})、call IDはhash({call: 実scope番号, actor})として元CwcConnectedGrantと同じcanonical digestで独立再導出し、各attemptの実scope番号・client-initial actorとの束縛を照合する。一意性だけでは他attemptとのID交換を拒否できないため、静的検証に加え、fresh比較も両引数でこの束縛を確認してから新しいscope／callの値を正規化する。記録全体の独立性・一意性も別検査する。source閉包・Node／Vitest／Zodと実parser source・元LG-M0 record・実sourceのanchor／行番号／hashを束縛し、元grantのID導出箇所もsource位置に加える。旧記録に含まれるsourceの変更は拒否する。独立署名によるnative実行witnessやheap traceとしては扱わない。
+
+CLM02／03／05／10／12／14／15／20の一部について負例と診断対照が得られたが、CLM01〜20全体を完了へ変更しない。次はこの4実体の重なりを減らせる新consumerの所有・比較方法、または別layoutの契約を設計する。入力・live検査・元期限・budget・完全性を縮小せず、expectedと私有commandの独立検証を維持する必要がある。metadata・追加work・全領域共存が実証できるまでcwc.owned-command-window.v1の承認、LG-0出口、LG-1／2／3・実時間比較・本番採用を保留する。
+
+LG-M1検証（2026-11-12）：実consumer6件・記録8件と既存179件の計193テスト、LG-M0／LG-0記録・設計4系列・既存VF-3P記録21件の照合、型・差分検査が成功した。source位置と実copyの出自を保った負例・正対照を保存したが、3 slot上界・metadata4096・追加work・最大入力の全領域共存は未成立のままである。
+
+LG-M1の記録レビュー修正（2026-11-12）：一意性を保ったgrant ID交換が静的検証・fresh比較を通る問題を、実scope番号・actorからの再導出照合で修正した。LMR29／30はそれぞれ修正前の失敗を確認してから、静的入口・fresh比較両側での拒否を確認した。実consumer6件・記録10件と関連179件の計195テスト、LG-M0／LG-0記録・設計4系列・既存VF-3P記録21件の照合、型・差分検査が成功した。48 attemptを再実行し、24対照での456 command一致と3 slotの24拒否を再確認して記録を更新した。4実体の負例と3 slot拒否の結果、LG-0出口・次段階／本番採用の未成立という判定は変更しない。

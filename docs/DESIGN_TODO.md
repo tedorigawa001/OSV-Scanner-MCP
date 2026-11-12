@@ -3316,7 +3316,7 @@ VF-3Pレビュー修正v2の最終確認：runtime24・記録21を含む497テ�
 - [x] レビュー修正：正常scope終了はLG handle／局所世代／frame／lookup／追加ticketだけを終了し、実call・channel・最終wireを保持して固定full-input最終検証へ進む契約を明記。fatalは実callへ先行伝播し、正常finallyで上書きしない。CLG32／33へ正常成功と競合・後着拒否の両条件を追加。
 - [x] レビュー修正：primary→新workerのbridgeの順、cohort／round／observation・group回転、隣接対のAB／BA、720予定rowのdigest／ordinalと照合keyを固定。CLG44／46へ集合不変の順序交換・実開始witness不一致・phase混在の拒否を追加。予定順序モデルを実測や実時系列witness検証の成立と数えない。
 - [x] LG-0のstandalone helper・owner／port／immutable view・claim／capture／seal／世代／再入拒否を§9.139へ実装。正常LG-local releaseとfatal call失効、初期化4096 units保持・追加4096 Bを既存の実予算内で検証。実providerへの正規化省略・48条件全体・新しい性能測定は未実装／未実行。
-- [ ] LG-0の最大入力layout gateを解決する。通常の両role／両mode・2試行は収まるが、全cid／epochをschema最大にした4例はcapture前に容量不足で拒否。最大fieldの共存条件が未成立なのでLG-0出口・LG-1採用を通さない。§9.140でregion／寿命とschema-upperを分解済み。次はcommand windowの実consumerで3 slot上界・metadata・追加workを実証する。
+- [ ] LG-0の最大入力layout gateを解決する。通常の両role／両mode・2試行は収まるが、全cid／epochをschema最大にした4例はcapture前に容量不足で拒否。最大fieldの共存条件が未成立なのでLG-0出口・LG-1採用を通さない。§9.140で容量を分解し、§9.141で実consumerの同時4参照を確認した。3 slot候補は不採用。次は新consumerの所有・expected比較または別layoutの契約を設計する。
 - [ ] LG-1のprovider／ReadScope接続、LG-2の実Session／fresh snapshot接続、LG-3の共通条件比較はLG-0通過後に進める。CFP-0の単一自己hash置換は別工程のまま。本番・実storage・独立UID／5 process・8 read・CPR-C／CG0／CG3は保留。
 
 文書・source binding・planned条件はdocs/validation/gradle-cwc-lg-design-2026-11-12.jsonへ保存する。設計整合性テストの通過をLG runtime・速度改善の成立として数えない。
@@ -3342,7 +3342,19 @@ LG-0レビュー修正v2（2026-11-12）：未capture／未sealのscope cleanup�
 - [x] 既存最大例に加えてref byteLength65536／head revision256のschema-upperを監査。旧共存上界はreader1119501／broker1138377 B。1 MiBや最大19 command・4 range・sourceサイズは増減しない。
 - [x] 4 slot＋metadata2048 Bはbrokerで53 B超過して拒否。3 slot＋別metadata4096 Bはreader1031760／broker1042485 Bとなる条件付き計算を検証。scope内のcodec／3 core／3 context／旧source領域は減額せず、既存f.q解放も新たな削減と数えない。
 - [x] mode×role×3境界×3 recipeの36行と実Lb0Budgetの合成予約・2 attempt・失敗消費保持を保存。保持sourceの行番号・hash、旧LG-0 record、未実行CLM01〜20を新記録に束縛した。既存のLG-0拒否と実consumerの予約は変更していない。
-- [ ] 次は固定consumerのcommand生成／decode／copy／schema parse／expected生成を実参照で追跡し、3 slotを超えないことを証明する。追加metadata4096 Bとworkの共存・コピー前lease・初期化と失敗の消費保持を実証する。
+- [ ] 3 slot上界・追加metadata4096 Bとworkの共存を証明する。§9.141の実参照追跡では4実体の重なりが見つかり、現方式の3 slot仮説は不採用。先に所有・expected比較またはlayoutの契約改訂が必要。
 - [ ] 成立した場合だけ新source profileでCWC-A／B／plannerとclient initial／sealへ接続し、全19 ordinalのcanonical bytes・bound・work／wireを元oracleと比較してLG-0の最大条件を再検証する。3 slot仮説・合成予約はLG-0出口、LG-1／実Session／性能／本番採用の成立とは数えない。
 
 LG-M0検証（2026-11-12）：容量監査12・record10と関連157の179テスト、既存LG-0記録・設計4系列・VF-3P記録21件・型・差分検査が成功。36行で合成予約26完了／10拒否を記録した。3 slot＋metadata4096のbroker余裕6091 Bは条件付き算術であり、実consumerのslot追跡・追加workは未実証。次の課題は固定consumerのstream生成／parse／copy上界の実証で、LG-0出口とLG-1への進行は保留。
+
+### LG-M1：実A／B consumerの参照追跡・3 slot仮説の拒否（§9.141）
+
+- [x] 元A／B・実schema・実connected grantでcopy／parse／expected構築を観測。入力・私有q・raw expected・expected parse結果の4 distinct objectが同時に生存する負例を得た。
+- [x] 3 slotは第4 parse実行前に拒否。観測用8 slot対照は全19 command・456 oracle照合に成功。2 role×3境界×2要求label×2容量×2 attemptの48実行を保存。要求labelはLG両mode runtime接続の証拠とは数えない。
+- [x] 失敗・再入・元期限・権限取消し、予約不足、親ledgerの消費保持・第3 attempt拒否、observer復元と記録の改変拒否を追加した。実copyの下界であり、全allocation・metadata4096・追加work・全領域共存の上界証明とは扱わない。
+- [ ] 4実体の重なりを減らす所有・expected比較、または別layoutの新契約を設計する。既存の完全性・毎回のlive検査・元期限・予算を維持し、metadataと追加workも前払いできるconsumerだけを次に実装する。
+- [ ] 新profileのCWC／initial・sealへの接続とLG-0最大入力の再検証。現行3 slot候補は不採用、LG-0出口・LG-1〜3・実Session・性能／本番採用は引き続き未成立。
+
+LG-M1検証（2026-11-12）：実consumer6・記録8と既存179の193テスト、LG-M0／LG-0記録・設計4系列・既存VF-3P記録21件の照合、型・差分検査が成功。観測48 attemptのうち24対照で456 commandを照合し、3 slotの24 attemptはexpected parse前に拒否した。LG-0出口と新profile採用を保留し、次は4実体の重なりを減らす契約改訂を行う。
+
+LG-M1の記録レビュー修正（2026-11-12）：grant IDを実scope番号・actorから独立再導出し、静的入口とfresh比較の両引数で照合する。一意性を保ちdigestを更新したattempt間のscope／call ID交換を拒否するLMR29／30を追加した。両回帰は修正前の失敗を確認済み。実consumer6・記録10と関連179の195テスト、LG-M0／LG-0記録・設計4系列・既存VF-3P記録21件の照合、型・差分検査が成功。48 attemptを再実行し、24対照の456 command一致と3 slotの24拒否を再確認した。LG-0出口・次段階／本番採用は保留のまま。
