@@ -10316,3 +10316,212 @@ observerは元methodを捕捉してから進捗wrapperを装着し、cleanupで�
 保存記録の改変回帰は、warm-upを除く測定試行で、最後の受理partが1 byteより長く、未受理entryが残る停止例を選ぶ。選定を修正した後の最終sourceで、回帰・機能oracle24転送・実時間288試行を全て再実行した。途中の別source測定や事前のテスト確認用データは採用証拠に流用しない。
 
 最終確認（2026-11-12）：runtime24・記録21を含む対象・関連497テスト、24系列の記録runnerの--check、型検査・build・差分検査が成功した。基底VF-3と旧profileのsource・記録は変更せず再照合のみとした。今回のv2記録は最終sourceで取得した199/288・測定149/216完了のraw・全署名承認・実行method・機能oracleへ束縛する。認可・取消し・元期限・内容検証・予算を維持し、全6条件defer・同一process／1 RPC/channel・実storage／native隔離未成立の範囲を維持する。
+
+
+### 9.138 CWC-LG：所有live入力の正規化と毎回認可の分離契約（設計）
+
+#### 9.138.1 根拠・対象・非目標
+
+設計のみ。LG runtime、登録port、projection、hash／copy省略は未実装で、CLG01〜48はplanned・未実行の回帰条件である。VF-3P v2（§9.137）の大入力fact-liveでは期限前live gate中央値2083.7〜2099.8 ms、canonical/hash 1406.4〜1416.6 ms、copy 543.5〜547.2 msを観測した。pack包含3729.8〜3771.8 msに対するplanner単体は15.0〜15.7 msである。子処理を除いた分類・親の包含時間・分類別中央値を足さず、計測器込みの打切り観測を削減可能量へ変換しない。
+
+最初の置換対象は、readyなprovider／scopeのCLB live検査にあるpermission入力の不変部分の正規化だけとする。認可結果、現在purpose、pin、epoch、期限、残予算を保存しない。CWC-FP／CFP-0の自己context hash、current.contextのhash、grant.assert、command／wire／source／plan／K/D／全entry digest、初回・ready seal・実Session・transport最終・CLB finishの完全検証は置換対象外である。現行CwcCReadScopeのprivate contextはTypeScript readonlyだけを不変性の証拠にせず、所有が証明できない参照を新しいfactへ昇格しない。
+
+| 現行箇所 | 現在の仕事 | LGで許す変更／維持する境界 |
+|---|---|---|
+| Vf1Owner.environment.permissions | foreign hook／authority stampの前後検査後、現在permission配列をcopyData | 同じhookとstamp検査を保つ登録portを用意し、payloadだけraw copyまたは非公開projection参照に分ける |
+| CwcLb0Session.#live permissions処理 | inputのcopyData・strict permission schema、各rowのlineage canonical比較、api／purpose／delegate判定 | 所有・版が一致したprojectionについてcopy／parse／lineage canonicalだけをcaptureへ移す。現在rowの述語は各gateで必ず再評価 |
+| Vf1Owner.current／check／assertStamp | owner open、source／profile／registry pin、epoch／revision／revocation、clock | 元の位置と回数を維持。viewが同じという理由で成功を共有しない |
+| CwcLb1Binding.providerGate／scopeGate、ReadScope、grant、ledger | current・実call検査・row K/D・期限下限・消費下限・remaining | 内部frameは経路だけを示す。各旧liveノードを維持し、再帰的G→S→Pをまとめない |
+| SessionServer／Client・Link・source pipeline | 認証、内容、pre／post、署名、enqueue、outcome／use／ACK | 省略・移動0。LGの成功でfresh取得や最終検査を代行しない |
+
+#### 9.138.2 採用profileと所有者の契約
+
+候補profile名はcwc.owned-live-permission-input.v1。独立した追加source承認とcurrent pinを要求し、既存VF／CWCの承認だけでは有効化しない。署名manifestはnormalizer source閉包・predicate実装・strict schema版・owned-json.v1・実clock kind・mutation owner・hook／portの固定body・layout／work policy・比較modeを束縛する。現時点で承認済みruntime profileを作成したとは扱わない。
+
+対象は同一process・単一の登録AuthorityOwner・trusted intrinsics・SABなしの所有policy cellとする。生のcallbackが返すunknown、公開snapshot、Object.isFrozen、callerのdigest／revision／valid flagから適格性を推測しない。所有者が全入力を完全copy／strict parseし、全子nodeをfreezeし、private cellだけが保持・交換することをsource閉包で確認する。getter／Proxy／toJSONの評価を安全に一般化できるとは主張せず、出自不明のobjectは登録前にunsupportedとする。JSONからの有界decodeまたは承認したdata-only factoryが入口で、caller objectへのfreezeは行わない。
+
+cellのepoch・revision・revocationはprivateで単調とする。peer／server credential、key epoch、permissions（委任・lineageを含む）、purpose resolver、registry／source／profile pin、callback-policy／port-slotの全権威ある変更を固定mutation entryへ集約する。同値への復元でもrevisionを戻さず、gate開始前の記録済み失効も旧callを救済しない。現行Vf0Authorityのrevision差でactive callが失効する意味を維持し、同callで新viewへrefreshして継続する方式は採らない。
+
+登録portのmutationは、ownerのupdating latch・revision／revocationを進めて旧call／projectionを先に失効させ、その後に有界な入力検査と新しいimmutable viewの構築・公開を行う契約とする。失敗・容量不足・不正schemaでも旧Readyへ戻さず、新callの採用を拒否する。現行Vf0Authority.changeがこの新しい全手順を既に実装しているとは主張しない。mutationの順序や通知の追加はfull-input／owned-input共通の強化で、旧VF-3Pとの差は別bridgeへ分離する。
+
+遠隔authority、別thread、未登録の外部closureがpolicyを直接書き換える構成、通知を迂回できるadapterは候補unsupported。opaqueなCwcCApprovalRegistry等の既存current callbackも毎回呼び、不一致の観測・closeはstickyにするが、呼ぶだけではLG登録資格にならない。そのcallbackが参照する権威ある承認registryも、固定mutation経路・失効通知を同ownerへ線形化できる場合だけprimaryへ採用する。管理外で検査前に変更と復元が完了した履歴をLGが検出したと主張せず、このCFP10型の対照はlegacy bridgeへ分離する。primary内の未通知変化を「未観測対照だから継続可能」と分類せず、通知の完全性が示せないadapterをunsupportedとする。
+
+#### 9.138.3 データ表現・不変性・寿命
+
+許可する共有事実は、完全検査済みのschema／representationと、immutableなpolicy viewの各rowのapi・purpose・delegateInstance・lineageKeyである。lineageKeyはcurrentLineageSchemaの全fieldを既存canonicalで表した正確な文字列とし、選択fieldや短縮hash・object identityで意味を代用しない。キー挿入順だけ異なる入力は同じ文字列になる。各rowを除去・並替え・統合してpermissionの意味を変更しない。
+
+projectionのraw値は登録ownerの既存immutable current viewから借り、privateな有界row tupleとlineage文字列poolをcapture時に作る。string primitive以外のmutable node、Buffer／ArrayBuffer、Map／Set／Date、公開配列・parser出力aliasを持ち込まない。raw viewは元のauthorityが保持する同じ実体を借りるだけで、旧versionの履歴や追加raw copyを残さない。aliasと寿命が一致しない場合は別allocationとして計上し、枠に収まらなければ拒否する。
+
+各gateのborrowはcallbackなしの有界同期区間で、現在cellのowner／view実参照・epoch／revision／revocationを新規に読み、束縛済みviewと一致させてから現在rowを走査する。借りたrow参照を外部へ返さず、await・callback・Promise・IOを跨がない。初回capture後に同viewであることはrepresentation再検査を省く前提であって、認可成功の前提ではない。過去のmatched row／allowed=true／現在purpose／pinCurrent／remainingWork／deadlineValidをprojectionへ保存しない。
+
+#### 9.138.4 非公開helperの入出力と登録締切
+
+以下は将来のprivate helper契約で、公開tool／RPCや任意コード用APIではない。
+
+| helper | 入力・順序・返却 |
+|---|---|
+| registerOwnedLivePort | source承認・登録AuthorityOwner／Vf1Owner／clock・固定mutation／hook実参照・layout policyを受ける。最初のcall捕捉より前に締切。private WeakMapにだけportを登録し、後付け・差替え・caller提供callbackの適格化を拒否 |
+| captureLiveInput | 実control／clbCall／actualCall association／binding・既存の原本検証済み期待値・元期限・parent budgetを受ける。claimをcallback／copy前に確保し、初期化予約・完全検査・freeze・正規化・post fence後にverified-unboundな非公開handleを返す |
+| sealLiveInput | 元ready完全検証後、同call・binding・row・実ReadScope／scope generationへ一度だけ結ぶ。current view／全世代・revisionと元期限を再確認しreadyにする。scope構築前のhandleは利用不可 |
+| matchCurrentPermission | privateなbound handleと同じ操作の内部frameだけを受ける。元permissions hookを呼び、返却直後に世代を検査し、現在viewのmembership・row述語を毎回評価する。外部へhandle・配列・認可receiptを返さず、結果は内部の成功／既存理由の例外だけ |
+| invalidateLiveInput | 登録済み内部理由を必須とし、正常scope終了のLG-local releaseとcall全体のfatal invalidationを§9.138.6の作用表で分ける。両者ともLG handleを先にterminal化しborrow禁止・LG lookup除去・drain／解放するが、実call／channelへの作用を正常終了へ適用しない。callerが理由や作用範囲を選ぶAPIにはしない |
+
+private recordの束縛集合はauthorityRef／authorityEpoch／authorityRevision／revocationEpoch／verificationOwnerRef／portRef／portGeneration／clockRef／controlRef／clbCallRef／actualCallRef／transportAssociationRef／channelRef／channelGeneration／bindingRef／bindingGeneration／scopeRef／scopeGeneration／rowRef／expectedProjectionRef／policyViewRef／profilePin／registryPin／sourcePin／issuedPurpose／originalDeadline／budgetRefである。constructorに存在しないscopeはseal時に追加し、他の実参照を再bindしない。文字列ID・同じcanonical値だけの別call／別authorityは拒否する。
+
+1 callに1 handle、1 scopeに1 bound handleまで。別batch・別RPC・exact retryでも新しいcall捕捉とsealを行い、旧handleのclone／JSON化／spread／prototype偽装を受理しない。再試行は同じK/D・operation row・元期限・残予算を引き継ぐが、representation handleは引き継がない。client initial→sealのCWC fact移管へLG handleを混ぜない。
+
+#### 9.138.5 毎回のlive検査と公開fence
+
+各既存ノードに一対一で以下を対応付ける。これらの呼出し回数・位置・順序の縮小は今回の最適化に含めない。
+
+1. 最初のforeign callbackより前にcallの操作予約を取り、control／binding／scopeの実参照・世代・state、authorityのepoch／revision／revocationを確認する。元のcurrent・承認current・actual Session inspectの読取前guardを全て実行する。
+2. 両credentialとkey epochを現在cellから確認し、実server.permitAPIの返値、現在resolver、issuedPurpose、bindingPurpose、期待projectionのpurposeが一致することを毎回確かめる。read／publicationを両方許可しても、readで捕捉したcallのpurpose変更は拒否する。
+3. 元permissions hookの前後でstampを確認する。full-inputは従来と同じowner側copyとCLB側copy／strict parse／lineage canonicalを実施し、owned-inputは登録handle・現在view・各世代を確認する。どちらもそのgateで現在rowを元の順序で走査し、同じ短絡条件でapi・purpose・lineageKey・delegateInstanceを逐次評価する。最初に成立したrowで終了する元のsome述語の意味を保ち、前回の成功や同じrow番号を再利用しない。captureでは短絡せず全rowを完全検査する。
+4. registry／source／profile pinと承認のcurrent確認を全て保ち、callback返却後に同じ実authorityとcontrol世代を確認する。projectionの発行時pinだけを現在pinの代わりにしない。
+5. operation rowのK/D・state・attempt・wire／workの単調な消費下限、ledger／ticket membershipと実残予算を新規に確認する。logical gateの前払い1・上限4096と独立したgate-work receiptを維持し、安いmodeだけ検査回数やattemptを増やさない。
+6. 信頼する単調clockを毎回新規評価する。deadlineFloorはmin(originalParentDeadline, challengeDeadline, sessionCreated+30000, originalRowDeadline, currentParentDeadline, currentRowDeadline, previousDeadlineFloor)から増やさず、元の4500 msを保つ。有効な期限短縮は受理し、延長試行・時計逆行・非整数・期限到達を拒否する。
+7. callback・normalization・permission走査・コピー・hash後の既存post検査を保つ。最後のclock callback後にもauthority revision／全世代を確認する。最終clock intrinsic→revision／state照合→固定bodyによる同期publicationにはawait・foreign code・getter／Proxy・then／toJSON・追加clock callbackを入れない。gate成功のreceiptを次gateへ渡さない。
+
+上の列挙は既存#liveを一律2回ずつ追加する意味ではない。元のopen／credential-peer／credential-server／purpose／permissions／now、provider current／scope／grant／ledger／Sessionのsite IDとoperation IDを対応表へ固定し、元ノードを同じ順序・回数で実行する。payload正規化だけがmode差で、新たなfence／guardが必要なら両modeへ同じsource・予算・費用で追加する。source pre／post・read前後・署名前後・enqueue・全entry再構成／最終digest後・outcome／use／ACKの独立境界を統合しない。
+
+初回prepare／receive、ordinary inspect、ready seal、CLB finish・Session最終・transport／Client検証は別の固定full-input経路である。候補を使うのはreadyなconnected-provider／connected-scopeのprivate entryだけとし、scope閉鎖後の最終処理で失効したLG handleを復活させない。これは事前に定めた最終完全経路で、ready失敗後のfallbackではない。任意のcallerのsite flagで経路を選ばせない。
+
+#### 9.138.6 状態機械・mutation・再入・回収
+
+| 状態 | 許可・拒否 |
+|---|---|
+| claimed／capturing | call実参照にclaim済み。完全検査と正規化だけ。二重constructor／capture・再入で旧外側も失効 |
+| verified-unbound | 完全検証済みだがscope未登録。sealのみ許可し、gate利用・移管・再captureを拒否 |
+| ready | private lookupと全世代が一致するbound entryだけ許可。外側操作の入場でcheckingへ |
+| checking | 登録済み同期frameの正規P→S→G／ledger→Pを許すが、各gateで新規認可を行う。外部再入は内側例外が捕捉されても外側publication 0 |
+| invalid／released | LG handleのterminal状態。理由を保持しreadyへの復帰・新borrowを常に拒否。正常scope終了ならLG-bound entryだけ利用不可となり、実callは既存の最終完全経路を続行できる。fatal理由なら実callも失効し、新規の原本読取・署名・成功公開・use／ACKを拒否 |
+
+正常な内部frameは経路だけを示し、認可成功・deadline・view versionを持ち回らない。別操作・別call・await後のframeは拒否する。foreignなcurrent／purpose／permissions／clock・source返却値getter・owner／codec callbackからの再入も同じlatchへ結ぶ。別callの正規処理をglobal busyだけで止めない。
+
+登録ownerによるmutationは開始時に旧capを失効させる。同値に復元してもrevocation／revisionを戻さず、失敗したmutationでも旧viewを新しいreadyとして公開しない。private projectionは書換えない。callerの元入力変更は私有データへ影響せず、変更値が新しいcurrentなら旧callを拒否する。全alias除去・deep-freeze・未公開参照をsource検査とfault-injectionで実証し、任意のdebugger／process侵害を検出するとは主張しない。
+
+正常scope終了は、登録providerの正規finallyが内部reason normal-scope-endで行うLG-local releaseである。ready省略経路の寿命が終わっただけで、実callの取消しや失効を意味しない。失敗・timeout・cancel・失効を正常理由へ付け替えてはならず、競合時はfatal latchが優先する。
+
+| 原因・作用対象 | LG-local release（正常scope終了） | call全体のfatal invalidation |
+|---|---|---|
+| LG handle／frame／lookup／世代 | terminalを先行し、新borrow禁止・LG専用lookup除去・LG-local generation更新・全内部frame失効。旧handle復活0 | 同じLG-local処理を同期実行 |
+| 実call／control／scope／binding／channel | LG-local generationとは別物。実call／control・authorityのepoch／revision、binding／channel generation・call lookupを変更せず、channelを停止しない。ReadScope自体の通常closeは既存の局所作用だけ | timeout／cancel・pin／revision不一致・再入・検査失敗等を既存call lifecycleへ同期伝播。実control／callをterminal化し、既存規則の実世代更新・call lookup除去・channel停止をawait前に実行。authority自体のepochは登録mutation契約によってだけ変更 |
+| 原本・署名・最終公開・outcome／use／ACK | LG-bound entryでの再読取・再認可・再開は0。実callの既存CLB finish・Session／transport／Clientの固定full-input検証は続行可能。そこで新たに認可・元期限・内容を確認し、成功時だけ既存outcome／use／ACKへ進む | 新たな原本読取・decode・署名・成功公開・use／ACKは0。後着continuationは実callのfatal latchを先に読む。refused／unknownや既存の失敗記録は元lifecycleの判定に従い、LG release単独から成功／失敗を生成しない |
+| memory／保存wire／消費 | LG-local active readerが0になってpool／tupleへの全強参照を外し、LG追加memory ticketだけ一度解放。Session最終検証用私有wire・call予約・未終了dispatch隔離枠は元の寿命まで保持 | 同じLG回収条件。元callのwire・予約・未終了dispatch隔離枠は既存drain条件まで保持し、早期再利用しない |
+
+正常release後も最終処理は§9.138.5であらかじめ固定した完全経路を使い、LG handleを再seal／lookup復帰しない。これは失敗後のfallbackではない。正常release後から最終公開前にfatal事象が来れば実call latchを立て、固定full-input経路も公開前に停止する。反対にfatal失効後のfinallyがnormal-scope-endを呼んでもterminal理由・実call失効を上書きしない。二重close・後着finallyによるLG ticket解放は一回だけで、Session最終wireをLG ticketとして解放しない。失敗のwork／initialization／wire／attemptとK/Dを巻き戻さず、refused／unknownの意味を失効から勝手に変更しない。
+
+#### 9.138.7 容量・予約・workの契約
+
+候補layoutは既存1 MiBとは別枠を設けない。追加arenaは最大4096 B（row tupleの64×4 reference slot＝2048 B、expected lineageを含むcanonical文字列pool最大1024 B、claim／handle／state／generation／reader／budget／診断metadata最大1024 B）とする。これはlogical layoutの上界候補で、JS heap／RSSの保証ではない。raw policyは既に所有された同一current viewを借り、追加raw copyや旧version保持があるなら別途計上する。fieldのstring payload共有も所有・寿命の一致を証明できる場合だけ認める。
+
+候補は既存schemaの最大64 permission row・raw canonical最大32768 Bを維持し、rowの削除・権限リストの縮小でbenchmarkを有利にしない。全lineageのcanonical poolが1024 Bを超える場合など、表現が4096 Bに収まらなければ新profileはunsupportedとする。対照full-inputにも同じ候補制約・shadow capture／予約を適用し、候補だけ都合のよい入力を選別しない。旧generic profileの意味は変えず、同じ失敗callをgeneric経路で救済しない。
+
+LG capture前に追加memory 4096 Bとinitialization work 4096 unitsを親の実budgetから事前予約する。正規化の構造workは最大2048 node visit＋256 freeze node＋256 tuple write＋65 lineage canonical呼出し＋512固定guard／claim単位＝3137以下とし、入力bytes32768・一時canonical出力総量32768 B・depth12・pool上限も別に制限する。構造unitはCPU時間ではない。初回完全schema検査を行うowner mutationにも有界な構築予約が必要で、authorityの既存policy arenaとconstructor workspaceへ計上する。read／copyの後から無料のlazy captureを行わない。
+
+1 callの元work＋initialization上限156978、logical gate上限4096、provider work1048576・全体work／wire67108864を増やさない。新しいcapture予約を失敗・retryで返還しない。full-inputでも同じprojectionをshadow構築して同じ初期化消費を保持し、元のlogical試行のdebit 1・counter／receiptもそのまま進める。この1は既存#inspectのlogical試行に付くもので、補助#liveや各#activeに新しい1を課す意味ではない。成功時のliveChecks＝logical＋3と途中frontier等、元の独立counter関係を維持する。request byte・ranges／probesのCPR work定義をnormalization件数で置き換えず、追加初期化を別ラベルで記録する。
+
+VF-3P v2で観測したpeakはreader 1034970 B（残13606 B）、broker 1043712 B（残4864 B）だった。4096 Bを加えた例は1039066／1047808 Bとなるが、これは当該入力の算術確認に限る。既存binding 8192 BやVF metadata 4096 Bを再び空きと見なさず、CWC root／fact／codec／source／session／callと同時に存在する全allocationを親layoutで証明する。構築workspaceは既存131072 B内で計上し、追加arenaと重なる期間も証明する。最大field長／両role／2 attemptで証明できなければLG-0の出口は未成立とする。予算不足時は正規化・source IO・root生成前に拒否し、上限拡大や既存検査領域の転用をしない。
+
+#### 9.138.8 拒否分類
+
+| 原因 | 必須結果 |
+|---|---|
+| 未登録authority／opaque callback、追加承認・intrinsic／source不一致、表現上限外 | codec_profile_unsupported。候補入場0、同call fallback 0 |
+| schema・accessor／非対応型・alias／freeze不成立 | schema_invalidまたはcodec_profile_unsupported、capture成功0 |
+| call／scope／owner／port／view・世代・frameの不一致／流用 | source_binding／codec_fact_binding_mismatch、外側もterminal |
+| 現在credential・permission・purpose／委任／lineage不成立 | permission_denied、別purpose許可や古いmatched rowで救済0 |
+| 記録済み失効・owner epoch変更・call close・再入 | 既存理由を保持しfatal terminal。pin／view復元による復活0。正常scope終了だけはLG-local releaseで、実callの失効理由にしない |
+| current registry／source／profile pin不一致 | codec_profile_unsupported、以後一致しても同handleを拒否 |
+| clock逆行／非整数、期限到達・延長試行 | clock_invalid／request_expired。処理時間を理由とした延長0 |
+| memory／work不足、spent巻戻し・負値・attempt超過 | codec_budget_exceeded／operation_budget、最初の失敗理由と消費を保持 |
+
+#### 9.138.9 回帰テスト条件（全48件planned・未実行）
+
+| ID | 条件・必須結果 |
+|---|---|
+| CLG01 | 登録締切前のsource承認・AuthorityOwner／Vf1Owner／clock実参照・port実体を確認し、capture→verified-unbound→readyを順に実行。部分handle公開0 |
+| CLG02 | caller元配列・row・lineageをcapture後に変更してもprivate view／projection不変。次のcurrent変更として通知された場合は旧callを拒否 |
+| CLG03 | accessor／Proxy／toJSON／関数／symbol／循環／Buffer／SAB／Map／Set／異常prototypeを適格化しない。未知のobjectの無評価一般判定を主張せずunsupported |
+| CLG04 | parser出力alias、浅いfreeze、private node漏出、freeze失敗を注入。ready 0、通常JS書込でprojectionが変更されない |
+| CLG05 | キー挿入順だけ違うlineageは同じcanonical keyで同じ結果。field欠落・追加・型・値の変更とlineageのfield省略を拒否 |
+| CLG06 | 全64 rowを保持し、先頭／中間／末尾・不許可api／purpose／delegate／lineageを比較。matched row番号やallowed=trueの前回値再利用0 |
+| CLG07 | 同じview参照・digest・偽revisionだけを渡すcaller、handleのclone／spread／JSON／prototype偽装を拒否 |
+| CLG08 | authority／epoch／Vf1Owner／port／clock／追加承認を同値の別実体へ交換。原本copy／利用前に拒否 |
+| CLG09 | 同じcall値の別control／actualCall／transport association／channel・channel generationへ流用して拒否 |
+| CLG10 | 別scope／binding／row、世代の変更・scope再open、同handleの二重seal／再bindを拒否 |
+| CLG11 | 同callの二重capture・並行constructor・再入をcallback前claimで拒否。初期化失敗後もclaim／消費を戻さない |
+| CLG12 | ready前のprovider／scope利用はfull経路だけ。未seal handleを使う省略は0で、元ready完全検証失敗からfallbackしない |
+| CLG13 | 各元gateで現在permission rowを再評価し、api／purpose／delegate／lineageの変更を各siteへ注入して拒否 |
+| CLG14 | peer／server credential取消し・key epoch変更を各callback前後で拒否。projectionが同じでも成功0 |
+| CLG15 | readとpublicationを両方許可した状態で現在purposeだけ変更。実permit返値・issued／binding／期待purposeの不一致を両modeで拒否 |
+| CLG16 | registry／source／profile pinを順に変更・復元。登録ownerのrevision差／記録済み失効で旧handleを永久拒否 |
+| CLG17 | 最後のclock callbackで権限・pin・purposeを変更し、その例外を捕捉・値を復元しても最終fenceで外側publication 0 |
+| CLG18 | 登録authorityでgate開始前／callback内に変更と復元を完了してもrevisionを戻さず拒否。primary内の未通知変化はunsupportedで、管理外未観測の対照はlegacy bridgeだけに分離 |
+| CLG19 | mutation中・新policyのschema／容量／構築失敗で旧callを先に失効。旧viewへのReady復帰や失効通知の取消し0 |
+| CLG20 | 原本ownerの再起動・revision／revocation overflow、未通知直接書込・遠隔／SAB更新を拒否またはadapter unsupported |
+| CLG21 | current／permission／purpose／now callbackへ再入を注入し、内側例外を捕捉しても外側を失効。field正規化を理由にhookを省かない |
+| CLG22 | source getter・CWC owner／codec callback・Promise後着からの再入を同じ境界で拒否し、公開0 |
+| CLG23 | 正規P→S→G／ledger→P frameは通るが全旧liveノードを実行。別操作・別call・await後・caller frameの流用を拒否 |
+| CLG24 | 別callの正規処理をglobal busyで止めない。scope.close／call.cancel中のfinallyはreadyを書き戻さない |
+| CLG25 | capture／normalization／走査・callback直後・最終fence中の元期限到達を拒否し、期限延長・新origin起算0 |
+| CLG26 | currentRow／親／challenge期限の未到達の短縮を受理し、延長試行・短縮による期限到達・逆行・非整数clockを拒否。deadlineFloorを単調短縮 |
+| CLG27 | row K/D／state・attempt／work／wire下限・ledger／ticket membershipの変更を各gateで拒否。前回残予算の再利用0 |
+| CLG28 | 4096 B arenaまたは4096 initialization units不足をcapture前に拒否。根拠なくbinding／VF枠を重複割当しない |
+| CLG29 | 64 row／32768 raw B／1024 pool B／4096 arena境界、最大field・broker・2 attemptでlayoutを証明。超過は両arm共通拒否 |
+| CLG30 | full-inputとowned-inputのshadow capture・事前消費、失敗分の保持・再試行の連鎖を独立reserve receiptへ照合し、協調減額を拒否 |
+| CLG31 | logical gate試行4096・元debit 1を両armで維持し、正規化を省いた分だけgate数や予算を増やさない |
+| CLG32 | timeout／cancel・pin／revision不一致・再入・検査失敗でLGと実callのfatal latch・実世代／call lookup除去・channel停止をawait前に確認。dispatch保留中のdrain・LG ticket一度解放、元wire隔離、後着no-read／no-publication／no-use／no-ACKを確認。正常releaseとの競合・後着finallyでもfatal理由を上書きしない |
+| CLG33 | 正常scope終了はLG-local generation／frame／lookupだけ失効し、実call／control・authority epoch／revision・binding／channel generation・call lookupは維持、channel停止0。LG再利用0でもCLB finish・Session／transport／Clientの固定full-input検査が元件数・位置で成功しoutcome／use／ACKへ進める。LG ticketのみ一度解放し最終wireを保持。release後のfatal事象では最終公開0。initial／ordinary／ready完全検査も維持 |
+| CLG34 | 署名・command／wireIntent／source内容・未要求entry／plan／K/D／全entry digestの改変を拒否。LGは完全性やfresh snapshotを代行しない |
+| CLG35 | pre／post、source IO・署名・enqueue・最終digest・outcome／use／ACKの各境界の取消し／期限故障を維持 |
+| CLG36 | exact retry・応答紛失で同K/D・元期限・spentを保ち新callを捕捉。旧handle／成功receipt／projection／frameの移管0 |
+| CLG37 | source／profile／normalizer／canonical／schema／method・hook登録の改変、未承認profileを拒否し自己申告validで救済しない |
+| CLG38 | full-inputとowned-inputのcallback・actual Session・live site／phase・gate-work件数を独立counterへ照合し、総数を保つ移動・欠落も拒否 |
+| CLG39 | copy／parse／lineage canonicalだけcaptureへ移り、他のcurrent.context hash・grant.assert・wire／内容hashが減っていないことをsite別に確認 |
+| CLG40 | operation／actor／owner費用の移動・inclusive過大計上・非有限／負値、partitionを保つ改変を外側span／entry witnessへ照合して拒否 |
+| CLG41 | 処理開始前・途中・再構成後・cleanupの停止進捗を保持し、verifiedReplyに対するpart長減額・未受理entry差替えを拒否 |
+| CLG42 | quiet／counts／timedで全entry・複数commit・出力・正規化wire・予約の共通性を確認。失敗を捨てず、完了pairだけ追加費用へ集計 |
+| CLG43 | 追加arena・normalizer・source承認・shadow capture・handshake・capture・計画・再構成・audit・drain／cleanup／observer復元を総時間へ含める |
+| CLG44 | primary576（測定432）をschedule.v1のcohort／round／observation回転・4 group回転・隣接full／ownedのAB／BA交替へ位置ごとに照合。集合・総件数を保つ順序交換、arm label／pairId／比較key／ordinal／phase改変、失敗脱落、実開始witnessとの不一致、承認／原本差を拒否。入力objectのキー挿入順だけの違いは受理 |
+| CLG45 | 候補の全9測定完了と各quiet round・中央値の5%条件を全比較対照で要求。対照の正当な元期限停止は保守下限へ分離しinvalidはdefer |
+| CLG46 | primary完了後の新workerでbridge144（測定108）を固定schedule.v1のold／new隣接AB／BAへ照合し、phase混在・順序交換・pair誤対応・旧時間流用を拒否。両phaseのrunner実開始／終了witness・global ordinal・source／profile対応と観測差分keyを確認。追加信頼・mutation／guard・予約・hook／payload差を明記し、bridgeをprimaryの採用や純粋正規化短縮へ混ぜない |
+| CLG47 | 構築・projection／現在認可・canonical／copy・独立計画／実Session・観測費用と失敗進捗を分解。期限下限を成功中央値／正確な倍率に混ぜない |
+| CLG48 | 条件別candidate-only／deferを再計算し、設計／fixture成功を本番・実storage・独立UID／5 process・8 read・CPR-C／CG0／CG3成立へ昇格しない |
+
+#### 9.138.10 実装順と性能比較計画
+
+| 段階 | 内容と出口（全て未実装） |
+|---|---|
+| LG-0 | strictなowner／port／view／private handle、状態・登録締切・layout／work・mode manifestのfixture contract。CLG01〜12／19〜24／28〜31／37の所有・失効・予算証明を先行し、収まらなければ停止 |
+| LG-1 | ready provider／ReadScopeのpermissions箇所へだけ接続。固定clock故障試験、旧ノードの対応表、full-input／owned-inputの同値性、CLG13〜18／25〜27／33〜40を検証 |
+| LG-2 | 実SessionServer／Client・fresh snapshot・全batch／全entry／複数commitへ接続。CLG32／34〜36／41のretry・元期限・最終検証・回収を両arm／両verification modeで確認 |
+| LG-3 | 同じ最終sourceで静的機能oracleと実時間primary576＋別bridge144を単独workerで測定。CLG38〜48をraw／承認・methods・進捗witnessへ照合し、採用判断を保存 |
+
+primaryはshape scalar／batch × request検証 full-verify／fact-live × 入力 full-input／owned-input の8 armとする。両role、small／h0／single-large、warm-up1＋測定3 round、quiet／counts／timedで計576（warm-up144・測定432）。source承認・owned port／mutation意味・shadow capture・元期限4500 ms・memory1048576・call work156978・provider work1048576・全体work／wire67108864・source fixture・codec／plan・1 RPC/channel・gate境界を全armで共通にする。shapeとrequest検証modeを固定したfull-input→owned-inputだけを正規化差の対照とし、scalarにも候補を適用して有利な対照選択をしない。
+
+実行順はcwc-lg.schedule.v1で固定する。無作為seed・時計による並替えは使わず、単独workerでprimary全576を終えた後、同じ固定host条件の新workerでbridge全144を実行する。並行測定・phase間混在・成功だけの再試行置換はしない。primaryが異常終了して予定試行を欠いた場合は記録全体をinvalid／deferとし、後日の部分測定を継ぎ足さない。通常の期限停止・拒否試行は記録して次の予定位置へ進む。
+
+| 順序要素 | primary／bridgeの閉じた規則 |
+|---|---|
+| cohort | workload index w＝small:0／h0:1／single-large:2、role index r＝reader:0／authority-broker:1、c＝2w+rの0〜5順。cohort内はround q＝-1（warmup）、0、1、2（measured）順、t＝q+1 |
+| observation | slot o＝0、1、2順に、[quiet,counts,timed]のindex u＝(o+c+t) mod 3を実行。各arm／roundは全3 observationを持ち、quietを常に最初に固定しない |
+| primary group | [S/full-verify,S/fact-live,B/full-verify,B/fact-live]を基底とし、slot g＝0〜3順のgroup index j＝(g+c+t+o) mod 4。そのgroupのfull-input／owned-inputを隣接実行し、(c+t+j+u) mod 2＝0ならfull→owned、1ならowned→full。固定cohort／group／observationの測定3 roundで両順序が現れる |
+| bridge pair | B/fact-live固定でgroup slot＝0。[old-VF-3P-v2,new-full-input]を隣接実行し、j＝0として(c+t+j+u) mod 2＝0ならold→new、1ならnew→old。各条件の測定roundで両順序を要求。observationとcohort／round規則はprimaryと同じ |
+| 順番と対 | phase内trialOrdinalは0始まりの連番。runOrdinalはprimary 0〜575、bridge 576〜719。pairId＝phase:c:q:observation:groupは正規化対（bridgeはold／new対）。comparisonKey＝phase:c:q:observationはshape／verificationをまたぐ採用対照、observationKey＝phase:c:q:armはquiet／counts／timedの計測費用差に用いる |
+
+実行前manifestはschedule version・全720予定rowのschedule専用canonical digest・source／profile承認・共通host／runtime条件・worker識別を束縛する。digestはSHA-256(UTF-8(canonical({version,rows:[...primaryRows,...bridgeRows]})))で、canonicalはobject key辞書順・array順序保持・末尾改行なし、整数のwarmup round=-1を許可する。非負数限定の本番OwnedManifest schemaを緩和するものではない。rawはrun IDとtrialSpecを持ち、trialSpecに予定rowの全field（scheduleVersion、phase、両ordinal、cohort、workload／role、round／warmup-measured、observation／slot、group／slot、arm／slot、pairId、comparisonKey、observationKey）を置く。outcome・進捗・時刻witness・auditは既存strict記録schemaで別に検査する。検証runnerは固定規則から全rowを独立生成し、trialSpecを集合比較ではなく位置ごとにfield・型・余分なfieldまで照合する。objectキー挿入順は意味を変えない。source pinに束縛されたrunnerの開始／終了witnessをtrialSpec digestと実行arm／workerへ結び、実時系列の単調ordinal・前試行cleanup完了≦次試行開始・primary終了≦bridge開始も照合する。rawだけを事後sortして合格にしない。時計domainの違うworker間はcontroller側の同一単調clockで順序を照合し、各試行の元期限clockを変換・延長しない。
+
+隣接は実行順の条件で、結果の対照を隣接だけから推測しない。比較はcomparisonKeyと指定arm、正規化差はpairId、計測追加費用はobservationKeyを照合し、同じroundの両完了結果だけを差分化する。異なるcohort／round・bridge／primaryの結果を組み替えない。失敗・期限停止のoutcomeと進捗も予定位置へ残す。3測定roundで全8 armの位置を完全均等化したLatin squareとは主張せず、AB／BAと回転後にも残る位置差・host driftを記録し、5%通過を統計的有意差と呼ばない。
+
+初期化・登録・projection生成・shadow captureを候補だけ事前配備しない。署名鍵／operator承認の配備と独立機能oracleは測定外とし、最初のowner／authority fixture／Endpoint構築前から、全entry再構成・digest・audit・cleanup／drain・observer復元後までをT_totalに含める。normalizerの件数・bytes・node／freeze／tuple操作、live predicateとhook数、actual Session inspect、plan window、canonical／hash／copy、capture・失効・解放を分類する。exclusive＋otherを外側wallへ、inclusiveを独立spanへ照合し、before／after deadline・actor／owner間の移動と計測器追加費用を検査する。所有権強化・normalizer・診断の費用も総時間に残し、引き算した仮想goを作らない。
+
+候補B/fact-live/owned-inputは各workload／roleの全9測定で成功・元期限内・完全性・予算を満たすこと。速度対照はB/fact-live/full-input、S/fact-live/owned-input、S/fact-live/full-input、B/full-verify/owned-inputとし、各quiet roundで厳密に勝ち、中央値でも5%以上を要求する。対照はcomplete／正当なoriginal-deadline-censored／invalidに分け、invalidが一つでもあればdefer。正当な打切り対照はclock domain・開始丸めを含む元期限下限Lを用い、各pairでb≤0.95L、中央値も保守vectorで判定する。失敗totalや4500固定値を成功時間へ使わず、対照の打切りだけで一律deferにもしない。candidate-onlyでもproductionAdopted=false。全6条件で通過しなければ全体の採用はdeferのままにする。
+
+bridgeは旧VF-3P v2と新full-input（batch／fact-live固定）の2 arm×3 workload×2 role×4 round×3 observation＝144（warm-up36・測定108）を別に再測定する。旧sourceの原形・旧profileと新profileの対応、追加信頼／hook・mutation／予約の差、同じ入力・内容／wireの同値性を明示する。576 primaryへ混ぜず、過去の保存recordの時間を再利用しない。橋渡しの差から新normalizationだけの短縮量を推定しない。計測器追加費用は両方完了した同round pairだけで集計し、負の差・不完了pairのattempt差・失敗込み完了率・期限停止時の進捗も全て残す。
+
+LG-0〜3のどの出口も現時点では未成立である。CFP-0の単一自己hash置換は別の保留工程で、今回へ暗黙に組み込まない。CPR-Cの実storage接続・独立UID／5 process・継続8 read・CG0／CG3・本番採用の保留を解除しない。
+
+設計の文書・source binding・baseline raw digest・48 planned条件・4段階・比較matrix・正常release／fatal作用表・予定720 rowとschedule digestはdocs/validation/gradle-cwc-lg-design-2026-11-12.jsonへ保存する。gradleOwnedCwcLgSchedule.mjsは予定順序だけの文書contractモデルで、LG runtimeや実開始witness検証runnerの実装ではない。再生成は`bdo node scripts/check-cwc-lg-design.mjs`、照合は`bdo node scripts/check-cwc-lg-design.mjs --check`。設計整合性のテストをruntimeの48回帰や新しい性能実証として数えない。§9.137の既存コマンド表記は保持し、VF-3Pの実行source・実測本文・raw digestは変更していない。
+
+設計レビュー修正検証（2026-11-12）：LGの文書整合性20件と関連CWC-FP／LB／VFを合わせた42テスト、4系列の設計記録の--check、既存VF-3Pの記録21件の照合、型検査・差分検査が成功した。正常release／fatalの作用対象を文書と記録へ照合し、予定720 rowの順序交換・ordinal補修・pair／phase／型／余分field改変・欠落を拒否、キー挿入順変更を受理した。各固定条件の測定3 roundにAB／BAの両順序があることも確認した。これは予定順序のcontract検証で、実時系列witnessの検証runnerは未実装。LG runtime・48回帰条件・576＋144の実試行は全て未実装／未実行で、今回の通過数へ含めない。

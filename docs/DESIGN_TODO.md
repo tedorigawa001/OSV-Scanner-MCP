@@ -3299,9 +3299,25 @@ VF-3レビュー修正後v2の最終確認（2026-11-11）：runtime18・記録1
 - [x] 元transport検証が成功した応答wireを捕捉し、元Client受理成功後の進捗へ束縛。元callのreplyDigest／応答長から各partを独立に再構成し、長さの減額・未受理entry差替え・証拠の欠落／改変を拒否。
 - [x] 最終sourceで固定clock oracle24転送と実時間288試行を再実行。199/288・測定149/216完了、67元期限停止・invalid 0。全6条件defer。追加費用は完了pairだけを集計し、不完了pairのattempt差も保持。
 - [x] runtime24・記録21の回帰で両modeの再構成後期限停止・part改変を確認。v1のprogress／measurementを拒否し、旧sourceの記録を現行証拠へ流用しない。
-- [ ] 次はlive gate内部の反復する不変入力検証・canonical／コピーの削減契約を設計する。現在認可・purpose・取消し・pin／generation・元期限・残予算の毎回確認を統合対象にしない。途中観測を削減可能な費用へ直接換算しない。
+- [x] live gate内部の反復する不変入力検証・canonical／コピーの削減契約を§9.138へ設計。現在認可・purpose・取消し・pin／generation・元期限・残予算の毎回確認を統合対象にせず、途中観測を削減可能な費用へ直接換算しない。
 - [ ] 速度改善・本番採用、実storage・独立UID／5 process・継続8 read・CPR-C／CG0／CG3は引き続き保留。
 
 VF-3Pレビュー修正v2検証（2026-11-12）：大入力fact-liveの期限前live gate中央値2083.7〜2099.8 ms、canonical/hash 1406.4〜1416.6 ms、copy 543.5〜547.2 ms。pack包含3729.8〜3771.8 msに対し子処理を除くplanner分類は15.0〜15.7 msで、計画中のlive gate側を次の調査対象とする。full-verifyではwire検証が最大。いずれも共通wire証拠と計測器込みの観測で、期限停止から完了転送の速度比を作らない。旧VF-3のsource・記録は変更せず、今回の全110 source・実行method・元raw digestを束縛した新しい記録へ更新する。
 
 VF-3Pレビュー修正v2の最終確認：runtime24・記録21を含む497テスト、24系列の記録照合、型検査・build・差分検査が成功。旧sourceのhashを付け替えず、保存回帰の選定を修正した最終sourceで288試行を再取得した。再構成後の期限停止を両modeで受理し、part長の減額・未受理entry差替えを元transport応答への照合で拒否する。
+
+
+### CWC-LG：所有live入力の正規化と毎回認可の分離（§9.138、設計のみ）
+
+- [x] readyなprovider／scopeのpermission copy／schema／lineage canonicalだけをcaptureへ移す追加profileを設計。raw callback／callerのvalid flagを認可factへ昇格せず、元hook・row順序・同じsome述語と毎gateの認可を維持。
+- [x] AuthorityOwnerの所有immutable view、private projection・実call／scope／channel／世代／view／budgetへの束縛、登録締切・capture／seal・mutation先行失効・再入・timeout／reader drainと後着拒否を具体化。
+- [x] 追加arena候補4096 B・初期化work4096 unitsを元上限内で事前予約する契約、全64 row・raw32768 B・lineage pool1024 Bの上限、shadow captureと完全layout証明を採用条件へ明記。観測brokerの空き4864 Bを全入力の保証にしない。
+- [x] CLG01〜48の回帰条件とLG-0〜3、scalar／batch×full-verify／fact-live×full-input／owned-inputのprimary576試行（測定432）・旧VF-3Pとの別bridge144試行を計画。元期限4500 ms・全候補9試行完了・quiet各round／中央値5%と打切り対照の保守下限を要求。
+- [x] レビュー修正：正常scope終了はLG handle／局所世代／frame／lookup／追加ticketだけを終了し、実call・channel・最終wireを保持して固定full-input最終検証へ進む契約を明記。fatalは実callへ先行伝播し、正常finallyで上書きしない。CLG32／33へ正常成功と競合・後着拒否の両条件を追加。
+- [x] レビュー修正：primary→新workerのbridgeの順、cohort／round／observation・group回転、隣接対のAB／BA、720予定rowのdigest／ordinalと照合keyを固定。CLG44／46へ集合不変の順序交換・実開始witness不一致・phase混在の拒否を追加。予定順序モデルを実測や実時系列witness検証の成立と数えない。
+- [ ] 次はLG-0のstrict fixture contractを実装し、所有・深いalias除去・claim／seal／失効・世代と4096 Bの非重複layout／実予算予約を実証する。LG helper・projection・正規化省略・48 runtime回帰・新しい性能測定は未実装／未実行。
+- [ ] LG-1のprovider／ReadScope接続、LG-2の実Session／fresh snapshot接続、LG-3の共通条件比較はLG-0通過後に進める。CFP-0の単一自己hash置換は別工程のまま。本番・実storage・独立UID／5 process・8 read・CPR-C／CG0／CG3は保留。
+
+文書・source binding・planned条件はdocs/validation/gradle-cwc-lg-design-2026-11-12.jsonへ保存する。設計整合性テストの通過をLG runtime・速度改善の成立として数えない。
+
+CWC-LG設計レビュー修正検証（2026-11-12）：LG20件を含む文書整合性42テスト・4系列の設計記録照合・既存VF-3P記録21件・型検査・差分検査が成功。作用表と予定順序のcontractを検査し、順序交換・ordinal補修・pair／phase／型改変・欠落を拒否、キー挿入順変更を受理。48 runtime条件とLG-0〜3・新primary576／別bridge144はplannedのままで、実時系列witness検証も未実装。次の作業はLG-0のfixture実証である。
