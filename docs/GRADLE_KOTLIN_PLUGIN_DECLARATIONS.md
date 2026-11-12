@@ -11243,3 +11243,185 @@ R0T01〜28（parameter別40テスト）はoracle等価性、CoreHandle実identit
 R0T27のprovider／client×3例外の6ケースは、owner失効・lookup除去・buffer zero・memory解放・比較／公開0、work／初期化の消費保持、元throw値の同一性、旧handle拒否・二重回収防止を確認する。R0T28の4ケースは、正常解析後の65536 B・長さ超過・負offset・不正source型の拒否でtoken0・sourceBound=false・table zero・旧token読取不可となり、続く正常解析で再利用できることを確認する。10ケースは修正前に全て失敗した。両方の実行結果をreview証拠へ保存し、R0R11でownerのlive状態・協調的な消費減額・旧source保持・成功時token数の改変を独立規則とfresh replayへ照合する。元oracle・実証範囲・CCO-R1／R2の未成立判定は維持する。
 
 同日の修正後検証ではruntime40・record11と関連既存149、計200テスト、型・差分検査と旧設計／CCO-0b原本のfresh照合が成功した。レビュー拒否10ケースのgetter／文字列変換評価0・旧binding保持0を確認し、更新記録は242 source／artifactへ束縛する。`reviewedOn=2026-11-13`とreview証拠を保存し、`--check`でも拒否ケースを再実行して照合する。
+
+### 9.147 CCO-R1：所有移管・全領域台帳・事前予約の具体化（設計）
+
+#### 9.147.1 対象と未成立の扱い
+
+§9.146のR0は機能と管理frame／bufferの限定実証である。本節はR1の所有・charge・予約契約、source別の不足証拠、実装順と回帰条件を具体化する設計作業であり、runtimeの移管helper・ledger adapter・読取前gateを実装したとは扱わない。独立registryの11証拠、3 slot／metadata4096／codec overlay／native領域／全work共存、R1 runtime出口・R2・CCO-0出口・本番採用は未成立とする。R0 source／検証記録と§9.145の原本を変更しない。
+
+台帳では、(a)sourceと実bufferによる計量済みのbacking bytes、(b)独立したrepresentationCharge等を条件とする候補、(c)未被覆を区別する。canonical幅W／C／K、実buffer容量、logical charge、JS／nativeの物理heap／RSSは別の量である。未知を0と置かず、未知の上限はnullと明示する。条件付き下限が既に1 MiBを超えればrejected、証拠や上限が未確定ならunsupportedとする。有限oracle一致やreservation成功だけで(c)を(a)へ移さない。
+
+#### 9.147.2 core／contextの所有移管
+
+採用候補はconstruct-privateとinternal-moveの2方式に限る。construct-privateでは承認済みproducerが予約領域内にcontext／coreを直接構築し、callerへ返すのは同じwindowのCoreHandleだけとする。internal-moveは同じ承認閉包内のsource ownerから、実参照を保管する非公開registryを通じて移す方式である。一般JS objectのalias不在をfreeze、callerのcomplete／consumed flag、同じdigest、変数へのnull代入、WeakRef／GC観測で証明しない。raw graphの外部移管は現候補ではunsupportedである。外部graphを入力としてコピーする別adapterを将来認める場合は、元graph・コピー・中間値の全寿命とworkを別に予約し、コピーを所有移管と呼ばない。
+
+| helper案 | 非公開入力・出力と順序 |
+|---|---|
+| registerOwnedIntake | 検証済みtransport／callの私有port、独立承認のsource／layout／cost ref、元期限、実ledger portを入力とする。容量・owner identityだけを持つ固定scope shellを予約済みentry領域へ登録し、raw context／coreを読まない。返却はcall局所のclaimだけ |
+| reserveOwnedVector | shell／claimと承認最大式から全region・全attempt・全namespaceの見積りを固定し、§9.147.7の実親子予約を確定する。返却は限定的なintake reservationで、DispatchPermitではない |
+| constructOwnedState | reservation確定後、同じscope実体をhydrateし、contextとactor別builder／expected coreを固定sinkへ直接構築する。元schema・意味検査・全range被覆・snapshot対応を確認し、元live siteを実行する |
+| moveOwnedState | 既に登録済みのsource／destination実owner、call／scope／actor／root／generation、同じsnapshot・元期限・K/D、ledger vectorを照合。lifetime pinとsourceの新規利用停止を不可分に確定し、sourceの可変／読取portとlookupを先に失効させる。既存borrow終了後に排他的handoff leaseを取り、最後の完全検証を行う。新copyは全重複領域も予約済みの場合だけ。移管receiptは外部の証拠JSONから生成しない |
+| publishOwnedWindow | 最後の完全検証に使った同じ排他的leaseを維持し、backing store／範囲・内容revision・source access epoch・実owner束縛と失効／期限／fatal bitを最終fenceで照合する。検査後にcallback／awaitを挟まず、旧holder除去・同じmemory leaseのcustody移管・destinationへの一度だけのbindを行い、同じwindow実体を公開する。検証済みflagだけの公開は禁止 |
+| retireOwnedState | fatalをcallへ先行伝播し、lookup・新規借用を止める。既存transport／snapshot／factのdrainまで必要な参照を保持し、全frame復帰とzero後にだけmemoryを解放。normal scope終了は局所状態に限定する |
+
+状態はunregistered→registered→capacity-reserved→constructing→owned-ready→borrowed→owned-ready→retiring→drained。失敗／期限／再入は任意の非terminal状態からretiringへ進み、以前の状態へ戻さない。internal-move中もsource／destinationは同時に公開可能なownerにならない。公開前の失敗は両portを閉じて予約を保持したままdrainし、sourceの旧権限を復活させない。同じbacking storeを移すときはdestinationから使用中のbytesをsource側zeroで破壊せず、参照の移管と実bytesの回収を別操作にする。
+
+移管の確定順序は `pin-and-stop-source` → `drain-existing-borrows` → `acquire-exclusive-handoff` → `final-complete-validation` → `bind-destination` → `publish-window` とする。source entryの停止と同時にlifetime pinを既存memory leaseへ束縛し、借用の終了を待つ間もsource側close／zero／解放／arena再利用が先行しないようにする。停止以前に登録済みのborrowが完了するまでの利用は全て台帳へ残し、frame・非同期利用・生viewが0になる前に最後の検証を始めない。管理外のraw aliasが残る場合は排他を証明できず、移管を拒否する。新規entryの失効とroot generationの変更は同一視せず、旧portを無効にする単調なsource access epochを別に照合する。
+
+既存borrow終了後、pinを同じbacking store／範囲・実source／destination・call／scope／actor／root／generation・snapshot・memory親leaseに束縛した排他的handoff leaseへ移す。最後の完全検証はそのleaseのread-only利用だけで実行し、全schema／意味条件・range被覆・snapshot対応・内容を再確認する。構築中の検査や停止前のdigest／complete flagをこの最後の検証の代わりにしない。lease取得後からbind／公開までsource・destination双方の更新／zero portを閉じ、変更・失効・epoch／revision差替え・lease消失を検出したら移管をfatalにする。最後のcallback後の同期fenceで内容revision・access epoch・leaseと認可／元期限を再確認し、そこからbind／公開まではcallback／awaitを許さない。
+
+予約済みcopy方式では、登録されたsource／copy先の両storeをleaseへ束縛し、copyは最後の完全検証前に行う。最後の検証対象は実際にbindするcopy先の実bytesとし、sourceの検証結果を転用しない。copy先のbacking store／範囲を検証後に差し替えず、copy先は検証開始からbind／公開までread-onlyにする。これらのcopy期間・領域・workも既存の台帳／予約条件に含める。
+
+捕捉済みcallbackによる更新／zeroも、現在のlease／port epochを照合して実書込前に拒否する。拒否は単調なfatal bit／revisionへ記録し、callback内側で例外を捕捉した場合や、検査前に値を変更して復元しようとした場合も、移管先を公開しない。bytesの再hash一致や現在値の復元だけでこの状態を解除しない。書込を媒介しないraw Buffer／aliasを外部callbackが保持する構成は、事後のrevision検査で安全とせず入口でunsupportedとする。これらのport・lease・書込媒介は将来の承認sourceに対する契約であり、今回runtimeを実装した証拠ではない。
+
+bindではmemory容量を解放・再予約せず、同じbacking storeと親leaseのcustodyをdestinationへ移す。旧sourceのretireは転送済みstoreをzero／解放できず、destinationがterminalになり全借用を終了した後だけ一度の回収を行う。bind前の失敗はsource／destination双方を閉じ、全borrowと排他的lease利用終了後にcoordinatorがterminal zero／回収を行う。source権限の復活や予約spentの返還は認めない。pin／leaseの役割は既存scratch handle・lease行・固定registryへの対応を要求し、追加public handleは0とする。内部holder／control stateもbridge・work台帳へ含め、別phaseとの重複や承認領域不足を隠さない。新たな無予約objectで排他を表明する実装はunsupportedである。
+
+scope shellを使うのは既存constructorのcontext clone／wire copy前にも予約を置くためである。既存`CwcCReadScope` constructor、context getter、summary、旧p.core／sealed.coreの返却は、現状ではR1の入口としてそのまま呼べない。新承認sourceの同一scope実体を2段階で初期化し、hydrate前のcontext取得・plan／IO／fact APIを閉じる。既存scopeを先に生成するadapterなら、そのconstructorのcopy／hashを既存entry ownerが事前被覆した別証拠が必要で、ない場合はconstructor前に拒否する。identity文字列や空shellだけで実ReadScopeの認可成立と見なさない。新adapterは未実装である。
+
+client initial／sealの4 core、providerの元3 core／3 context floorを維持する。R0がproviderで2 arenaを確保することを統合時の3 Cの減額根拠にしない。initial／sealは別root・別snapshot対応・別計画・別slabで、双方のnは私有core.groups.lengthから別に確定する。CoreHandleはwindowと同一実体、追加handle／ref 0のままで、実call／scope／actor／root／generation・元期限・producer stateを共用する。
+
+#### 9.147.3 全領域台帳とR0の実計量
+
+各台帳rowにregion ID、source closure／実保持site、backing store IDと範囲、実owner／親lease、capacity／charge model ref、phase／actor、最初の確保・最終利用・frame復帰・zero・解放、alias holder、同時保持edge、初期化／失敗cleanup work refを必須にする。同じbacking bytesは一度だけ計上するが、同じobjectを保持する複数fieldの参照chargeは省略しない。serializeしたIDは実参照registryの代用にならない。
+
+| region | source上の対象・owner | 現在分かる量／不足する証拠 |
+|---|---|---|
+| R01 | caller／source ownerのraw context・groups・旧core・snapshot graph | caller／constructor引数／closure／例外／旧API返却の保持期間全体。所有移管・representation chargeは未被覆 |
+| R02 | intake ownerのlgOwnedCopy・Zod検査・canonical／cwcCMemory | R0の131072 B予約はheap／一時文字列の上限ではない。node／string上限、clone／map／join／schema結果の実chargeとworkが不足 |
+| R03 | context ownerのcanonical context bufferと元graph | standalone buffer Kと中間文字列／cloneを別計上。core内のKコピーを別contextの3 K floorへ無条件で重ねない |
+| R04 | actor別R0Core arena・token wrapper／source参照 | 実arenaは2F×C、占有範囲は512＋K＋256×16＋76×64＝9472＋K。Cは元canonical幅でJS graph／wrapperの上限ではない。client4／provider3 C floorは維持 |
+| R05 | actor別candidate slab | 実19×F×W。実処理n＜19でも予約は縮めず、unused rowはzero／未使用 |
+| R06 | window S0／S1／S2 | 実3×8192。S2 indexもrepresentation。phase leaseと全frame復帰後だけ再使用 |
+| R07 | stream chunk／subarray wrapper | chunk4096は別予約。view object／nativeへの借用・final zeroのchargeは不足 |
+| R08 | binary metadata | 実3072。header128＋rows2432＋leases384＋alignment128。全4096 Bのarenaを別に作らない |
+| R09 | JS bridge／8 handle／48 ref・registry／children／buffers／lengths／stack等 | 48×8＋8×32＋384＝1024は独立charge certificateを要する候補。配列／class header／closure／余剰aliasを無料にしない |
+| R10 | grammar／keys／descriptor・parser frame／span／add closure | module常駐分とcall固有分を分離してownerへ割当て。depth32／token512の最大導出とJS／stack chargeが不足 |
+| R11 | projection field走査・digit変換・hash hex／literal一時値 | 16384 overlay候補へ含めるには実最大同時量と旧codecとの非重複証拠が必要 |
+| R12 | native Hash／OpenSSL allocator／stack・module初期化時Hash | state・digest／abort後の解放時刻・再利用・workが未被覆。chunk sizeやviewLive=0は上限証明ではない |
+| R13 | 元codec／A・B／root／fact／wire／source／binding／frame | 既存ownerの承認領域を維持。旧32768 B共有creditを二度引かず、initial／sealとA／Bの同時保持を数える |
+| R14 | trace／stats／oracle／diagnosticRows／cleanup digest copy | R0では診断配列・Bufferコピーが存在する。runtimeで生成しない別sourceか、共存期間の追加reservationが必要 |
+| R15 | 例外・fatal制御・zero／drain／後着処理 | 外部例外graphも保持sourceへ分類。固定理由で先に失効しgetter／文字列変換を呼ばず、最大回収workを成功前に予約 |
+
+Fはprovider1／client2である。R0でclose前にregistryが保持する固定bufferの合計は3072＋4096＋3×8192＋F×(2 C＋19 W)。constructor中には別のcontext buffer Kも重なり、zero／registry除去後もそのためのbootstrap ticket131072 Bは保持される。R0記録24行のclearedBytes／liveBuffersへこの式を照合するが、caller graph・c／groups・native／control object／診断copyを含む全peakではない。
+
+R0Core.tokensのtable／sourceはいずれもarenaを指し、buffer registryも同じarenaを保持する。backing bytesの重複控除と全holderのchargeを分ける。cacheにcontext bytesを含む各coreは別arenaであり、同じdigestでも共有しない。9472＋K≤Cという範囲確認だけではrepresentationChargeを認めない。
+
+全phase DAGにはentry／bootstrap／core construction、capture、normalize、expected、compare、B proof、initial／seal family比較、transport最終検証、正常drain、fatal／後着drainを置く。regionの解放にはsource上の最終利用と全frame／borrowの退出の両方が必要で、GCが早く回収するという推定を使わない。R0のdiagnostic finalRows生成はslab・coreを保持したcleanup中なので、そのrow copy／hash／配列をterminal peakから落とさない。正常系だけのpeakを全terminalの上限にしない。
+
+#### 9.147.4 bridge・overlay・native hashの採用候補
+
+bridgeは§9.145の48役割／8 handleをsourceごとの全holderへ対応付け、field／class header・配列container・closure・registry自身もcharge certificateへ含める。R0の動的children／buffers／trace／encoded配列を1024 Bへ収まると仮定しない。固定tableへ変更してもJS object headerを消したことにならず、実runtime／layout／sourceと同じ独立certificateが必要である。logical representation budgetの証拠とwhole-VM heap上限を混同しない。owner／scope／call・module常駐の領域を別ownerへ移すなら、そのownerの予約と同時保持も台帳へ残す。
+
+codec393216 B内のoverlay16384 Bは、descriptor／cursor候補8192とhash／stack候補8192に分けた提案にとどまる。実採用には旧codec resident＋compile＋proof＋全owner分overlayのphase別合計≤393216と、同じarena範囲のleaseが交差しない証拠を要する。A／B・initial／sealの別arenaを1つと数えず、同じregionを再利用する場合も旧借用・例外保持・native利用終了を先に確認する。overlayが外側へ出るなら全額をdeltaとして加える。R0が16384を予約した事実だけでは被覆しない。
+
+hash backendの第一候補は、固定arena SHA-256と固定出力sinkである。state・schedule・padding・block・hex出力、module初期化、全round／byte走査、final／abort／zeroを原単位へ対応付け、元oracleの値・失敗時の寿命も実証する。実装は本節の対象外。Node/OpenSSLを使い続ける別候補は、同じbinary／library／allocatorに束縛したstate／stack／allocation／work上界と同期的な解放証拠が全てある場合だけで、digest／abort後にGCで解放されることを前提にしない。現R0のnative backendにはその証拠がなく、採用入口ではunsupportedとする。汎用JSON.parse／Zod／再帰canonicalへの無予約fallbackも禁止する。
+
+module初期化はcall gateより前に実行されるため、閉包のload前にdeployment ownerが常駐領域・初期化work・backend承認を確認する。R0 Engine／MemoryのHash prototype取得用createHashを無条件importしてからcall入口で拒否しても「Hash生成前の拒否」にはならない。新採用sourceの閉包からその初期化を除くか、load ownerの事前証拠／予約で被覆する。oracleを診断側へ分離する場合も、同じprocessで共存すればその常駐量を実台帳へ加える。
+
+schemaMaximumは元の完全schemaから独立導出した閉じたgrammarの最大token／depthとcanonical幅を含む。objectは全field、optionalは存在するbranch、nullable／unionは許可branchの最大、arrayは最大長を使い、同じschemaの複数出現をそれぞれ数える。cid128／hash64／safe integer最大16桁・role別origin・selectedの条件を含めてW／C／Kとtoken表・offsetの整数範囲へ結ぶ。R0で観測したtoken128を全有効入力の最大証拠にしない。未知refinement・再帰・未対応文字／型・整数overflowがあれば、schema最大式を使った入場を拒否する。
+
+#### 9.147.5 全work台帳・元処理への置換対応
+
+全siteにsource hash／行・phase・actor・最大呼出し回数・入力最大・終端を含むquantity式、元siteへの対応、既存ticketのunit／owner namespace、追加debit証拠、予約時刻を登録する。(a)同単位・同実ticketで既存被覆内の等価置換、(b)元単位定義に基づく独立承認済み追加、(c)未被覆、の3分類を維持する。semantic equivalenceだけでは(a)へ入れない。R0のbootstrap4096／actor4096は初期化／管理予約の実消費であり、parse／hash／zeroの原単位被覆へ転用しない。
+
+R0 source auditではbootstrap context／groups、幅見積り、core構築、parser再帰／span／keyとsiblingの反復走査、number／hex／literal、projection、native create/update/final、copy／metadata／lease／bridge、全比較、event／stats／export、terminal digest／zeroを対象とする。特にfield lookupはkey表走査とsibling走査を繰り返すため、parser token数を単一線形passへ置き換えない。String(n)、短い連結文字列、span objectや例外controlも全command objectを作らないという理由で0課金にしない。
+
+上界式の変数はF、n≤19、W≤8192、C、K、T≤512、D≤32、固定key数L、source別のpass数Hとする。field走査には呼出し回数×L／T、projection／copy／全比較にはphase別pass×n×W、SHAにはpadding込み最大block数×固定round数、slot zeroには各phaseの回数×8192、family／core／chunk／metadata zeroには実領域幅と終了経路の最大回数を使う。R0 hash件数F×(2＋10n)はB proofや統合経路を含まない観測式で、元ticketへの単位換算でもない。成功prefix・平均・実時間を上界やdebitにせず、traceを省略してmandatory controlまで削らない。
+
+#### 9.147.6 copy／IO前のgate
+
+gateの検査順は、(1)既に予約された固定entryから実call／scope shell・actor・元期限・K/Dとcurrent authorityを確認、(2)独立registryの11証拠とsource／runtime／schema／profile／cost／layout pinを確認、(3)全region・所有custody・phase DAG・work対応にunknownがないことを確認、(4)全実親子ledgerの残高と最大量を見積り、(5)予約vectorを確定、(6)callback前／後とhydrate後に元live検査を実行、とする。条件を満たすまで対象context取得・clone・canonical・core構築・decode・fresh source IOの呼出しは0を要求する。既存wire認証等の先行処理は、そのentry ownerの別の承認予約内で行う。
+
+見積りに未解析contextのcloneや最初のfresh IOを必要とする循環を作らない。W／C／K・Fとbootstrap最大は、既に認証済みcallの私有roleと独立承認schema最大式から保守的に決める。actualサイズはintake後に上界内か確認し、失敗時も前払いを返さない。未信頼manifest／raw objectを読んで必要証拠の有無を調べる処理自体に汎用copyを使わず、固定登録portから証拠refを受ける。証拠・最大式・entry予算が不足する場合は、その読取を始めずunsupportedとする。
+
+intake reservationは限定read入場用で、認証IPC、ReadScope.pre／post、source完全性、独立計画・planProof／inspectProof、全n件・全bytes、昇格後のDispatchPermitを代替しない。毎回のpurpose・両credential・current context／grant／pin・取消しrevision・元期限・残予算、最後のcallback後の同期fenceを元順序で残す。current.context hashのcache化／CFP-0は別工程である。
+
+#### 9.147.7 実親子ledger・複数参加者の事前予約
+
+| namespace／既存実owner | 不変の上限・予約対象 |
+|---|---|
+| Lb0.call／実Lb0Budgetと元mutable balance | work＋initialization≤156978、wire≤163840、attempt≤256。全window増分・両attempt初期化／failure cleanupを同じ実balanceへ先払い |
+| CwcC.plan-parent／実CwcCWorkLedger・ReadScopeのprepaid registry | actorごとのplan156978と同単位の承認済み追加上界。client initial／sealの2 planを別ticketへ束縛。親limitは実設定値で最大67108864 |
+| provider.read-row／実operation K/D row | work1048576以下かつ実row limit以下、wire／残attemptを元規則で維持。retryで元期限・spent／slotをリセットしない |
+| global-work-wire／実global／read親owner | work／wire各67108864以内、同じ実balanceへ全子の最大debitを反映。別call／別namespaceの余裕を借りない |
+
+ledger refはcall局所registryが実instance／mutable balance／親ticket／owner namespace／単位／actor／generationへ束縛する。JSONのowner ID・limit・prepaid=trueやcallerのremaining値は受け付けない。plan156978とLb0 limit156978が同値でも相殺しない。一方、同じ実balanceを複数portが指す場合はregistryが別名を検出し、同namespaceの同じ論理debitは一度だけ、異なる独立義務のdebitは合算する。異なる単位／namespaceが同じbalanceを無許可に共有すればbinding-mismatchであり、二重取り／無料共有のどちらにも逃げない。既存prepaid ticketは親で既にdebitしたreceiptなので、child利用時に同じ156978を再加算しない。別actor／ticketへの流用は禁止する。
+
+手順はcollect→preflight→prepare-hold→commit-debit→issue-intakeの順で、全参加者の実残高・version／spent floorとmemory leaseをcallback／IOなしの固定順で確認する。prepare-holdは容量競合を防ぐ実予約で、既存adapterにそのAPIがなければruntimeはunsupported。全ledgerを見てから先頭だけ予約しIOへ進む実装は認めない。commit中は外部callback・awaitを入れず、全親の確定receiptと失効／期限を再確認してからだけ限定入場を発行する。新adapterとtransaction coordinatorは未実装である。
+
+prepare失敗なら未commitのholdを解放し、対象copy／IOは0。commit途中に失効／故障した場合は入場を発行せず、確定済みwork／initialization／wire／attemptのdebitとfloorを保持し、未確定holdだけ解放する。確保済みmemoryは既存frame／borrow／pending IOのdrain後に一度だけ返す。部分成功を逆算してspentを巻き戻さず、再試行は同じ予約operation・K/D・元期限・既確定receiptで解決する。参加者のcommitが観測不能なら回復までそのcallを停止し、新しいoperation IDで二重予約しない。独立processを跨ぐ永続transactionをこの同期契約の成立範囲へ含めない。
+
+元の151554・残5424・各attempt2712は過去の条件付き算術としてのみ残す。実owner／原単位の対応なしにR0の4096をそこへ足したり引いたりしない。missing-proofはprofile-unsupported、単位被覆不足はcost-model-unsupported、承認済み量の超過はbudget-exceeded、実参照違いはbinding-mismatch、失効／期限／再入は元terminal理由を保持する。全て成功・公開・署名・use／ACKを0とし、失敗時の診断getter／文字列変換から再入させない。
+
+#### 9.147.8 回帰条件（R1C01〜48、runtime未実行）
+
+| ID | 実装時の条件・必須結果 |
+|---|---|
+| R1C01 | source／runtime／schema／profile／11証拠の欠落・差替えを自己digest／署名更新後もcopy／decode／IO前に拒否する |
+| R1C02 | raw graph、freeze／complete／consumed flag、GC観測を排他所有の証拠にする入力を拒否する |
+| R1C03 | construct-privateがcallerへcore／context／view／tokenを返さず、固定sinkと同一window CoreHandleだけを使うことを確認する |
+| R1C04 | internal-moveの実call／scope／actor／root／generation／snapshot／ledger違いとcloneしたreceiptを拒否する |
+| R1C05 | sourceの新規利用停止・lifetime pin→旧frame／borrow／非同期利用終了→排他的lease→最後の完全検証→同じleaseでbind／公開、の順を確認する。停止／終了前の最後の検証、最後の完全検証後からbindまでの更新・zero・lease消失・revision／epoch差替え、最終fence後のcallback／awaitを拒否する。移管先の公開・署名・use／ACKは0とし、失敗後のsource権限復活も拒否する |
+| R1C06 | 捕捉済みcallbackによる更新／zeroを実書込前に拒否し、内側で例外を捕捉しても、更新値を元へ戻してもfatal bit／revisionを復元せず移管先を公開しない。管理外raw aliasは入口で拒否する。同じbacking storeとmemory leaseはbindでcustodyだけ移し、destination drain前のsource zero／解放・二重回収を拒否する。copy方式なら元graph／copy／中間値の全重複を計上し、spentを保持する |
+| R1C07 | 外部closure／例外／旧API返却によるcaller core／context保持を0扱いせず、未被覆ならcopy前に拒否する |
+| R1C08 | client4 core／provider3 core・3 context floor、別initial／seal計画と各n、同一CoreHandle／8 handleを維持する |
+| R1C09 | 既存ReadScope constructor／context getter／summaryが予約前にclone／hash／copyする入口を拒否する |
+| R1C10 | 固定scope shellのhydrate前のdata／plan／IO API、別scopeへの差替え、未完了shellでの認可採用を拒否する |
+| R1C11 | R0の2F arena・19FW・3 slot・3072／4096 buffer量を実source／原本へ照合し、全heap上界への昇格を拒否する |
+| R1C12 | core内K／token cacheと別context、同じbacking bytesと複数holder chargeを区別して全aliasを計上する |
+| R1C13 | 19×W予約と実n処理を分離し、n不足／重複／超過、未使用rowの利用、失敗時のwork返還を拒否する |
+| R1C14 | 全regionにowner・親lease・範囲・phase・最後の利用／frame復帰／zeroを要求し、未知を0へ変更する計算を拒否する |
+| R1C15 | 最大context／範囲で9472＋K≤Cを検証し、Cの文字列幅をJS core graph上界に読み替えない |
+| R1C16 | bridgeの全48 ref／8 handle・class／container／closureを計上し、別wrapper・隠れたtable／第9handleを拒否する |
+| R1C17 | binary3072＋bridge1024候補と実chargeを分け、3072の空き・旧fact／LG領域を無料共有する主張を拒否する |
+| R1C18 | module常駐descriptor／Hashをload前に確認し、call固有状態・key／span／digit／hex／Buffer viewと全schema token／depth／幅最大式の未計上を拒否する |
+| R1C19 | resident／compile／proof／overlayのphase別全owner合計とarena範囲を照合し、16384候補だけでの採用を拒否する |
+| R1C20 | A／B・initial／sealの同時borrow／例外／native利用残存中のoverlay再使用と32768二重控除を拒否する |
+| R1C21 | R0 native backendのallocation／stack／deallocation／work証拠欠落をHash生成前に拒否する |
+| R1C22 | 固定arena SHA候補のstate／schedule／padding／round／hex／abort／zero全量を予約し、全境界の値を元oracleへ照合する |
+| R1C23 | digest成功／viewLive=0／GC後のRSSだけでnative release／上界を表明することを拒否する |
+| R1C24 | parser／hash故障時の未知scratch・汎用parse／canonical／native fallbackを生成前に拒否する |
+| R1C25 | trace／stats／diagnostic export／cleanup digestが元slab／coreと重なる量を計上し、label変更／記録省略の値引きを拒否する |
+| R1C26 | exception graphとgetter／文字列変換の失敗・捕捉済み再入で、先行失効／frame退出／zero／消費保持を維持する |
+| R1C27 | 全source siteを同単位置換／承認追加／未被覆へ分類し、missing siteと宣言外のhelper呼出しを拒否する |
+| R1C28 | semantic一致、hash件数、R0管理4096、時間／CPU重みを既存work単位へ自己換算することを拒否する |
+| R1C29 | F／n／W／C／K／T／D／L／Hの最大式と反復field走査・全比較を検証し、平均／成功prefix／単一passへの省略を拒否する |
+| R1C30 | 各ordinalのslot zeroと最終family／core／context／terminal zeroを区別し、失敗経路の回収work欠落を拒否する |
+| R1C31 | 台帳の実instance／balance／親ticket／namespace／actor／generation違いを同じID／数値でも拒否する |
+| R1C32 | 同namespaceの同じ実balance aliasを一度だけdebitし、別義務の合算と無許可な異namespace共有の拒否を確認する |
+| R1C33 | 既存plan receiptのchild利用で二重debitせず、別actor／別ticket流用・Lb0残高との相殺を拒否する |
+| R1C34 | 全親のpreflight／prepare-holdが完了する前の対象copy／decode／fresh IOを0とする |
+| R1C35 | 1 B／1 unit／1 attempt不足を全参加者で事前拒否し、後払い・別namespaceの借用を拒否する |
+| R1C36 | callbackなしcommit中の失効／故障で入場0、確定debit保持・未確定hold解放・memory drainを確認する |
+| R1C37 | 予約応答不明／再試行でも同じoperation・K/D・元期限・receiptを保持し、二重予約・期限延長を拒否する |
+| R1C38 | 2 attempt分の初期化／追加work・wire／attempt消費を全親へ保持し、旧5424／2712の自動適用を拒否する |
+| R1C39 | intake reservationをDispatchPermit／source pre/post／独立計画・proofの代替として使うことを拒否する |
+| R1C40 | 毎回のpurpose／両credential／current context・pin／grant／取消し／元期限／残予算と最後のcallback後fenceを維持する |
+| R1C41 | full schema・canonical／hash・全n件／全bytes・B proof・transport最終検証／outcome／use／ACKの省略を拒否する |
+| R1C42 | normal scope終了とfatal call失効、pending wire／snapshot drain・後着拒否・二重回収防止を維持する |
+| R1C43 | 最大入力・両role／両mode・2 attemptの1 MiB／workを全同時owner込みで再計算し、入力縮小による採用を拒否する |
+| R1C44 | caller core1残存のclient1057397 B、provider余裕1995 Bを1 B超える増分の拒否を確認する |
+| R1C45 | unknownの上限をnullで残し、既知下限超過と証拠不足をrejected／unsupportedへ区別する |
+| R1C46 | source anchor／行・phase／actor／region・costの協調差替え、総件数を保った欠落／重複を原本とfresh照合へ結ぶ |
+| R1C47 | 条件付き算術fit・buffer量・設計整合性をruntime gate／bridge／work／R1／R2出口の成立へ昇格しない |
+| R1C48 | R0・旧設計／原本を更新して不足証拠を承認済みにせず、新source／証拠の独立承認まで本番採用falseを保つ |
+
+#### 9.147.9 実装順・設計検証記録
+
+| 手順 | 必要な成果と現在の状態 |
+|---|---|
+| R1-O | scope shell／登録port・construct-private／internal-move・全外部holderのcustody契約を実装し、raw graph非採用と予約前copy0を実証する。未実装 |
+| R1-M | bridge／core／context charge、全region DAG、codec overlay、固定arena hashまたは承認native証拠を実装・取得する。未成立 |
+| R1-W | 原単位の全site被覆と実ledger vector adapter・hold／commit／retry／cleanupを実装する。未実装 |
+| R1-G | R1-O／M／Wの独立承認を束縛した入口の拒否・正常対照を実証し、R1C01〜48とCCR対応を保存する。R1 runtime出口は未成立 |
+
+今回追加するR1Dの検証は、文書の48回帰条件・15領域・4手順、R0原本24行の明示buffer量、source別未被覆site、未知を保持した条件付き算術とnamespace別work算術の整合性だけである。work例の既知156978×2／過去の5424は条件付き例で、provider／globalの未確定追加量・合計上限はnullとし、R1の追加上界0とはしない。実helper／移管／hold／debit／copy／IO拒否を実行していないため、呼出し0や実ledger予約を達成した証拠とは数えない。条件付き算術関数は常にruntimeAdmitted=falseとし、11証拠の承認やpermitを発行しない。
+
+記録は`docs/validation/gradle-cwc-r1-design-2026-11-13.json`。再生成は`node scripts/check-cwc-r1-design.mjs`、照合は同じcommandの`--check`で行う。新節、追加sourceと旧参照閉包、R0／CCO-R設計原本・実Node binaryを束縛する。R0 source／記録と以前の設計節は更新せず、R0のnative／bridge／全work未成立を不足証拠として引き継ぐ。
+
+2026-11-13にR1D01〜18の設計整合性18チェックと関連既存200、合計218テスト、型・差分検査、R0／CCO-R設計の原本照合が成功した。記録は15領域・26 source群・R0原本のbuffer24行・246 source／artifactへ束縛する。48 runtime条件と4実装手順はplanned／executed=falseであり、R1の実予約／移管／拒否の実証や採用ではない。次はR1-Oの登録port／scope shell・所有custodyを限定実装し、後続R1-M／W／Gの証拠が揃うまでR1 runtime出口を通さない。
+
+同日の設計レビュー修正では、source停止・borrow終了を最後の完全検証より前へ移し、pinによるlifetime保護とbindまでの排他を明記した。R1C05／06に検証後の更新・zero、捕捉済みcallback・内側で捕捉した例外・値の復元、旧sourceによる転送済みstoreの回収を拒否する条件を追加した。R1D19／20は修正前に失敗し、契約の順序・lease／fatal属性と回帰条件の整合性を検査する。実bufferへの変更試行やruntime拒否を実行した証拠ではなく、48条件のplanned／executed=falseとR1 runtime未成立を維持する。
+
+レビュー修正後はR1D01〜20の20設計チェックと関連既存200、合計220テスト、型・差分検査、R0／旧設計記録の照合が成功した。更新記録は修正後の順序・handoff属性・R1C05／06と246 source／artifactへ束縛し、再生成／`--check`でも20チェックを実行する。runtimeの移管・更新／zero拒否・予約は引き続き未実装である。
