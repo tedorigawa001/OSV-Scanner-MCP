@@ -3365,7 +3365,8 @@ LG-M1の記録レビュー修正（2026-11-12）：grant IDを実scope番号・a
 - [x] WindowHandleだけをcallerへ渡すhelperの入出力、root／call／scope／actor／generation・元期限／budgetへの束縛、candidate→factの条件、initial／sealの別root・別slabと全件比較を定義した。
 - [x] slot以外のcanonical／hash一時値も別regionへ計上し、metadata4096のlayout候補・固定参照table・scratch非重複・追加workの独立承認／事前予約・失敗時の消費保持を明記した。原上限と単位を変えず、残5424 unitsやbroker余裕6091 Bを統合適合の証明に使わない。
 - [x] CCO01〜40の回帰条件とCCO-0〜2の出口を追加。元live site・最後のcallback後の同期fence・fatal先行失効・drain／後着拒否を維持する。
-- [ ] CCO-0：strict recipe・所有cell／candidate slab・phase／lease・metadata／costのfixtureを実装し、実参照・未予約scratch・追加workの拒否を検証する。
+- [x] CCO-0a（§9.143）：strict fixture recipe・独立source pin・所有cell／candidate slab・packed metadata・phase／lease／retire・独立expected比較を実装。24ケース・684 commandと未予約scratch／第4lease・再入／期限・消費保持・後着拒否を検証する。成功はstorage比較までで、B proof／fact採用を生成しない。
+- [ ] CCO-0b：元Cpr関数内部の全参照・canonical／hash scratch、JS bridge／実参照table、総追加workをsource別に束縛する。管理対象peak3と追加bridge262144 Bは4096 B目標や元領域共存の証明ではなく、CCO-0出口は未成立。
 - [ ] CCO-1：新source承認の実A／B・固定consumer、独立initial／seal・provider計画へ接続し、全canonical bytes・live site・元oracleと消費を照合する。
 - [ ] CCO-2：最大入力・両role／両LG mode・2 attemptの全領域／親子ledger共存を実証し、LG-0最大layoutを再判定する。新profile・3 slot・metadata／work・LG-0出口・LG-1〜3・実Session／性能／本番採用は未成立。
 

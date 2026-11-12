@@ -10848,3 +10848,71 @@ manifestに必要な最低項目は、profile／recipe版、actor、source閉包
 今回追加したのは設計・回帰条件で、candidate slab／新normalizer／expected encoder・新profileは全て未実装である。3 slot・metadata4096・追加work・最大入力の全領域共存は未成立で、LG-M1の4実体と3 slot拒否の記録を変更しない。設計表のslot目標や容量算術を実参照の上界と数えない。CCO01〜40は全てplanned・未実行とし、LG-0出口・LG-1〜3・primary576／bridge144・実storage・独立UID／5 process・継続8 read・本番採用の保留を維持する。
 
 CWC-CO設計確認（2026-11-12）：40条件・9 helper・CCO-0〜2の文書構造と、metadata4096／row64 Bの設計算術を確認した。既存195テストとLG-M1／LG-0／LG-M0記録・設計4系列の照合、差分検査が成功した。これは新runtimeの実参照上界や40条件の実行結果ではない。既存source・実測記録は変更していない。
+
+### 9.143 CCO-0a：所有storage・managed phaseの基礎fixture
+
+#### 9.143.1 実装した範囲と閉じた採用gate
+
+§9.142の最初の実装として、独立pin付きfixture専用source承認、strict recipe、私有candidate slab／packed metadata、BudgetClaim／WindowHandle、固定child helper・managed cellのlease／retireと、元Cpr command schemaを使う独立expected比較を追加した。Co0Ownerはtest fixtureであり、scanner／本番adapterから参照されない。承認schemaはcwc-co0.source.v1、recipeのcoverageはmanaged-cells-onlyに限定する。提案profile cwc.owned-command-window.v2の本番承認や、完全cost certificateとしては受理しない。
+
+成功はstorage-comparedまでで、encoded／proved・B proof・実callのdispatch permitを生成しない。finishはco0_proof_unavailableで必ず拒否する。実CwcA／CwcB・AuthenticatedSessionCall／ReadScope・SourceOwner／SessionServerは未接続で、publish／署名／use／ACKは0である。full-input／owned-inputは同じ基礎protocolを利用する要求labelであり、LGの両mode runtimeを実行した結果ではない。clockは固定、同一process、入力sourceは固定のsyntheticデータに限る。
+
+CCO-0全体の出口は未成立である。今回の段階をCCO-0aとし、CCO-0bで元Cpr関数の内部一時値・hash／canonical scratch・JS bridge／実参照table・総追加workの上界を確認するまでCCO-1へ採用しない。managed cellのpeak3を、全command representationや実heapの3 slot上界へ昇格しない。
+
+#### 9.143.2 私有storage・phase・実行結果
+
+claimはcoreを受け取る前に最大19件のfamilyと管理領域を先行予約する。providerは1 claim／1 family、clientは別identity・root／call／scope tokenへ束縛した2 child claim／2 familyを持つ。これらのtokenは合成の実参照で、文字列IDやコピーで代用しない。openはclaimを一度だけ消費し、identity照合後にcoreを所有コピーする。client-sealはinitialのstorage比較完了・全cell／scratch終了前に開始できない。
+
+全19 candidateを元Cpr builder／checkCommandで構築し、19×W(context)の専用slabへcanonical bytesを保存する。外部へ値やBufferを返さず、全build完了後にprocessへ進む。ownerが持つbuilder context／coreと、expected用の別コピーを使い、decode→normalize→input-retired→expected→compare→ordinal-endの順に処理する。比較はactual／expected textの完全一致と、actual textと保存bytesの全位置一致を要求する。
+
+capture／decode／expected／compareの一時cellは、各child helperが復帰した後のframe-exitでretireする。normalize後の入力cellもchild復帰後に除去する。既存関数の内部raw expected用には呼出し前にleaseを取るが、内部objectの実identityや全canonical／hash一時値を観測したとは扱わない。inputを残す負例では第4leaseをexpected構築前に拒否し、input-retiredを偽って記録しない。元関数内部の全allocation追跡はCCO-0bの課題である。
+
+2 role×3境界（normal／registered-maximum／schema-upper）×2要求label×provider／clientの24ケースを実行する。各familyは19 command、4 rangeを含む9 entry・41460 Bの固定coreを処理し、合計684 commandを比較する。clientの2 familyは別slab・別私有coreで作り、最後に全core・全bytesを比較する。一度だけのstorage-equalは認可・計画採用を表すreceiptではない。異なるseedの有効な2 familyも不一致として拒否する。
+
+固定hookによる捕捉済み再入、元期限4500到達、source承認の失効、claim再利用・identity偽装はowner全体を先行失効させる。pending継続が残る場合は領域を保持し、一度のlate-rejected処理後に回収する。通常のdiagnostic closeもstorageを破棄し、成功callの終了をモデル化しない。実transport・SourceOwnerのdrain／認可siteとの対応はCCO-1以降の課題である。
+
+#### 9.143.3 metadata・scratch・workの未成立部分
+
+metadata4096 Bのslabを実際に確保し、各row64 Bへoffset／length／ordinal／family／state／u64 generation／requestDigestを書き込む。これはmetadataと全JS bridgeが4096 Bに収まった証明ではない。参照table16件はreferenceTargetで、全strong referenceをこの枠へ収める実装は未完成である。
+
+基礎fixtureは別の診断trace／bridge領域262144 B、diagnostic scratch予約65536 B、owned data予約131072 Bを明示的に追加する。traceは64 B×最大4096行のpacked bufferで、diagnostic copyには私有bytesを返さず、返却copyの改変を元traceへ反映しない。診断exportのcopy・hash・保存は基礎protocol外の観測費用で、これを除いた実heap／性能適合を主張しない。実際のhash／parser内部一時値をscratch65536 Bへ収めた証明もまだない。
+
+単独のlogical予約は487424＋family数×19×W(context) Bとなる。実Lb0Budgetの1 MiBを超える場合はcandidate確保前に拒否するが、旧CWC・session／call／binding／LG領域との共存は検証していない。これを§9.140の1031760／1042485 Bという候補へそのまま接続してはいけない。
+
+workはfixture専用co0.managed-operations.v1で、初期化4096、actorごとの管理操作4096を実Lb0Budgetへ前払いし、記録したentry／lease／retire／phase操作の範囲を検査する。公開protocol entryは256回まで、childの管理操作も上限を超えれば拒否する。通常のproviderは管理操作458、clientは916で、前払いworkは4096／8192のまま返還しない。失敗や別fixture ownerの生成でも、同じ親budgetのwork／initializationは減額しない。
+
+この単位は元CWCのrequest bytes／ranges／probesの完全な被覆証明ではない。元Cprのparse・canonical・hash・byte比較loop・JS allocationの総workは未被覆で、CWCの156978 plan ticketを代替しない。4096という同じ値でもLG初期化と共有しない。recipeに完全coverageを自己申告したり、digestだけを更新したりして、未被覆を0 workとして採用することはできない。実K/D・応答紛失のretry・親子ledger全体の適合は未成立である。
+
+#### 9.143.4 実行した回帰と再現方法
+
+| ID | 基礎fixtureの回帰内容 |
+|---|---|
+| COF01 | strict recipeの追加field・完全coverage偽装・getterを読取なしで拒否 |
+| COF02 | 私有slabの全19 command比較と、proof／公開を生成しない境界 |
+| COF03 | 24ケース・684 command、別familyのstorage比較とclose後の回収 |
+| COF04 | memory／管理work予約不足でcandidate確保0、先行初期化の消費保持 |
+| COF05 | 返却した診断trace／child copyの改変が私有stateへ反映されないこと |
+| COF06 | child frame復帰後のretireと、input-retired／expected phaseの順序 |
+| COF07 | input残存で第4leaseをexpected構築前に拒否し、偽のretired記録を出さないこと |
+| COF08 | 未予約scratch・expected不一致・row改変・capture例外の拒否と消費保持 |
+| COF09 | claim／identityの偽造・コピーをcore getterの読取前に拒否 |
+| COF10 | 外部context／core変更が所有済みcommand／expectedへ反映されないこと |
+| COF11 | sealの早期入場とchild claim再利用を拒否 |
+| COF12 | 各storage境界で内側例外を捕捉しても外側の処理を停止する再入拒否 |
+| COF13 | 元固定期限・owned source失効後の新処理拒否と消費保持 |
+| COF14 | pending時の領域保持、一度だけの後着drain、二重継続拒否 |
+| COF15 | family比較の二重完了拒否 |
+| COF16 | 前払い枠を越える公開protocol entryの繰返しを拒否 |
+| COF17 | 独立pinに対するsource／recipe差替えと失効後の再利用を拒否 |
+| COF18 | 別fixture ownerでも同じ親の先行work／初期化を保持し、不足時の再発行を拒否 |
+| COF19 | 別の有効coreから構築した2 familyの比較不一致 |
+| COF20 | normalize後の同長保存byte改変を全candidate比較で拒否 |
+| COR01〜08 | 独立した全command canonical digest・管理trace recipe・fresh実行への照合、trace重複／欠落・phase／ordinal移動・協調消費減額・bytes差替え・case欠落・採用昇格の拒否 |
+
+再現は`node scripts/check-cwc-co0.mjs`、記録照合は`node scripts/check-cwc-co0.mjs --check`。記録はdocs/validation/gradle-cwc-co0-2026-11-12.jsonへ保存する。--checkでも新しいfixtureを実行し、記録回帰はさらに別のfresh実行へ照合する。validatorは元builderを呼ばない別のcommand projectionで全row digestを再現し、管理traceも独立したsource recipeで照合する。実source閉包・Node・設計section・未実行の40条件と、LG-M1の4実体記録をhashで束縛する。旧sourceや既存の測定記録を変更しない。
+
+入力contextのregistryDigestにはfixture専用の固定synthetic pinを使い、実credential registryのpinとは区別する。元service fixtureの鍵は毎process生成されるため、そのregistry digestをこのSession未接続fixtureの固定入力として流用しない。validatorも固定pinを検査し、fresh比較からcontextやdigestを除外せず全fieldを照合する。source承認用の独立operator鍵とこのsynthetic入力pinを混同しない。
+
+2026-11-12の検証ではCOF20件・COR8件と既存195件、合計223件が成功した。typecheck・diffの空白検査と、記録runnerのfresh照合も成功した。これは固定clockの基礎fixture検証であり、実時間性能比較や既存Session経路の再測定ではない。既存LG-M1のsource閉包・4実体の記録は変更していない。
+
+CCO01〜40は基礎fixtureに対応する一部を確認した段階で、全体を実行済みにしない。realAandB／actualReadScope／actualSession／normalizerTemporariesBound／metadataBridgeWithin4096／completeWorkCoverage／threeSlotBoundEstablished／budgetCoexistenceProvedはいずれもfalse。CCO-0出口・CCO-1採用・LG-0出口・本番採用は未成立として保存する。次はCCO-0bの全参照／scratch／bridge／追加workの上界調査である。
