@@ -10542,7 +10542,7 @@ captureはcallback前にcallのclaimを保持し、4096 B・初期化4096 units�
 
 したがって基礎helper・状態機械・拒否動作の限定実証は行ったが、§9.138の最大field／両role／2 attemptについての全体layout採用条件は未成立で、LG-0の出口・LG-1の採用をまだ通さない。次は入力範囲と既存layoutの対応を再検討し、入力縮小で比較を有利にせず、許容する最大入力で全領域が共存する証明を固める必要がある。元の1 MiBやwork上限は増やしていない。
 
-検証recordはdocs/validation/gradle-cwc-lg0-2026-11-12.json。再現は`bdo node scripts/check-cwc-lg0.mjs`、保存済み証拠の照合は`bdo node scripts/check-cwc-lg0.mjs --check`。runtime回帰とrecord改変拒否を分け、mode／role／caseの閉じた36件の証拠とschema最大4件、元source・追加承認・検証method・設計recordを束縛する。primary576／bridge144、実Session・実storage・独立UID・本番採用は実行／成立していない。
+検証recordはdocs/validation/gradle-cwc-lg0-2026-11-12.json。再現は`node scripts/check-cwc-lg0.mjs`、保存済み証拠の照合は`node scripts/check-cwc-lg0.mjs --check`。runtime回帰とrecord改変拒否を分け、mode／role／caseの閉じた36件の証拠とschema最大4件、元source・追加承認・検証method・設計recordを束縛する。primary576／bridge144、実Session・実storage・独立UID・本番採用は実行／成立していない。
 
 回帰の対応範囲：LG001〜030はCLG01〜12の基礎的な所有・capture／seal、CLG19〜24のmutation／再入・別call、CLG28〜31の予約・上限・消費保持、CLG32／33の正常release／fatal、CLG37の追加承認とmethod差替え拒否に対応する性質をfixtureで検査する。各CLGの実provider／実Sessionまで含めた全条件を通過したとは数えず、site対応・実署名／transport最終検査は未実証のままにする。保存済み証拠には8成功・28拒否とschema最大4拒否を残し、反例を成功記録や速度比較へ昇格しない。
 
