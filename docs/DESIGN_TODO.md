@@ -3369,7 +3369,8 @@ LG-M1の記録レビュー修正（2026-11-12）：grant IDを実scope番号・a
 - [x] CCO-0b調査（§9.144）：元sourceを変更せずschema／hash・canonicalの実呼出しを観測。normalizeでは3 full command＋1 shallow preimageの4 distinct rootをsource holder／future useへ対応付け、現recipeの3 slot仮定を不採用とした。expectedの4参照はobserverがraw寿命を延ばす保守的frame観測で、同じ強参照下界とは数えない。metadata＋traceの明示buffer266240 Bも4096 Bを超える。12対照・342 command・24拒否と、source別保持箇所・primitive量・回帰／fresh照合を記録する。
 - [x] CCO-0出口の契約再設計（§9.145）：提案v3の所有producer／有界consumer・固定hash projection、S2 token indexを含む3 slot、chunk4096とcodec overlay16384、binary metadata3072＋JS bridge charge1024、48実参照／8 handleを具体化。client4 coreとcaller残存graphを計上し、元予算の成立条件・棄却条件・原単位cost被覆・CCR01〜48を設計した。算術fitは採用証明ではなく、新runtimeと回帰条件は未実行。
 - [x] CCO-Rレビュー修正：CoreHandleを各actorの既存windowと同一実体の役割aliasにし、追加handle／refを0、lookup／generation／stateを共通化。予約19×Wと実処理n=batchCountを分離し、CCR26／27・CCR08／20へ反映。欠落・重複・n超過と別CoreHandle発行の拒否、14整合性チェック・元plannerの2 batch対照・検証記録を追加した。
-- [ ] CCO-R0：所有producer／bounded parser・projection／encoder・独立expectedを限定実証し、完全schema／canonical oracleとの等価性・全representation／frame寿命を確認する。実A／Bへは未接続。
+- [x] CCO-R0限定実証（§9.146）：所有packed core・有界parser・stream projection／encoder・別storageの独立expectedを実装。24例・378 commandと元完全schema／canonical oracle、nested差分corpus、同一CoreHandle・19×W予約／実n=2／19・管理frame／借用の寿命を照合する。全source holderを棚卸しし、native／JS bridge／全work上界は未成立としてR1へ残す。実A／Bへは未接続。
+- [x] CCO-R0レビュー修正：例外診断より先にownerを失効し、message getter／文字列変換を呼ばず回収・元throw値・消費を保持する。parserは正常解析後の入力拒否でも旧token／sourceをclearする。追加10拒否・記録改変1条件とfresh再現を検証し、R1／R2の実証範囲を拡大しない。
 - [ ] CCO-R1：core／contextの移管・全bridge charge・codec overlay／native領域・原単位cost被覆・実owner／親子ledgerの証拠を具体化し、未対応ならcopy／IO前に拒否する。CCO-0aのopaque処理・traceを新recipeへ流用しない。
 - [ ] CCO-R2：改訂fixtureの最大入力・両role／両mode・2 attemptで全領域／消費保持とCCR01〜48／元CCO01〜40を検証し、CCO-0出口を判定する。元1 MiB／work枠に収まらない、または検証・認可を弱めないと成立しない場合は3 slot案を棄却し、CCO-1へ進めない。
 - [ ] CCO-1：新source承認の実A／B・固定consumer、独立initial／seal・provider計画へ接続し、全canonical bytes・live site・元oracleと消費を照合する。
@@ -3380,3 +3381,7 @@ CWC-CO設計確認（2026-11-12）：CCO01〜40・9 helper・3段階の文書構
 CCO-0b調査検証（2026-11-12）：runtime13・record12と既存223の248テスト、12対照・342 command・24 guard拒否、型・差分・既存CCO-0a記録の照合が成功した。20 source anchorと225 source／artifactを新記録へ束縛し、normalizeの4 rootとexpectedの保守的raw保持を区別する。source代入上のclient保持は3 context・4 coreで、既存3 core枠へ自動で重ねない。physical heap／全参照／scratch／総追加workの上界は未成立。現recipeとCCO-0出口を不採用とし、次は所有consumer・bridge／scratch／cost契約の見直しで、CCO-1へ先行しない。
 
 CCO-R設計検証・レビュー修正（2026-11-12）：CRD14件と既存248の262テスト、型・差分・CCO-0bのfresh照合が成功。CoreHandle aliasで8 handle内に収める契約、n=1／2／19の予約／完了算術と元plannerの5 entry／5 B→2 commandを確認した。48条件／3段階と新producer／consumerはplanned・未実行。6境界の条件付き算術では最大brokerのprovider余裕1995 B、caller core1追加時のclientは8821 B超過となる。binary3072＋bridge charge1024という候補と全原単位cost被覆の実装証拠は未成立で、算術fitからCCO-0出口や本番採用を認めない。次はCCO-R0の所有producer／有界consumer限定実証である。
+
+CCO-R0限定実証（2026-11-12）：runtime30・record10と関連既存149の189テスト、型・差分と旧設計／CCO-0b記録のfresh照合が成功。24例・378 command、差分4372件を元完全schema／canonical oracleへ照合し、最大76 rangeの追加対照、同一CoreHandle、19×W予約／実n=2／19、管理3 slot・frame退出／実buffer zeroを確認した。241 source／artifactと全source holderの棚卸しを新記録へ束縛する。次はCCO-R1で、bootstrap／native hash・JS bridge／全参照charge・全work・実ledger共存を具体化し、未被覆なら入場を拒否する。R2・CCO-0出口・実A／B／Session・本番採用へは進めない。
+
+CCO-R0レビュー修正検証（2026-11-13）：message getter／toString／Symbol.toPrimitiveが失敗する6ケースと、正常解析後に入力検査で拒否する4ケースの修正前失敗・修正後成功を確認。runtime40・record11と関連既存149の200テスト、型・差分・旧記録照合が成功した。getter／変換評価0、ownerの失効・実buffer zero／memory回収・消費保持、旧token／source保持0と再解析を確認し、review証拠と242 source／artifactを記録へ束縛した。次のCCO-R1と未成立の範囲は変えない。

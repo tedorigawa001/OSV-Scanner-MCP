@@ -11197,3 +11197,49 @@ source／schema／profile不一致はprofile-unsupported、正しいprofileで�
 設計記録はdocs/validation/gradle-cwc-co-redesign-2026-11-12.json。再生成は`node scripts/check-cwc-co-redesign.mjs`、照合は同じcommandの`--check`で行う。2026-11-12にCRD01〜14の14整合性チェックと既存248件、合計262テスト、型・差分・CCO-0b原本のfresh照合が成功した。新記録は本節・229 source／artifact・CCO-0b／LG-M0原本のhashへ束縛する。これは48 runtime条件の実行、3 slot／4096 B／workの実装成立や性能・本番採用の検証ではない。
 
 設計レビュー修正ではCCR26／27にCoreHandleの同一window実体・同じregistry／generation／stateと追加handle拒否を、CCR08／20に19×W予約と全n件の完了条件を反映した。CRD13／14は修正前の失敗を確認し、修正後に成功した。記録にはn=1／2／19の件数算術（fullCoreValidated／runtimeAdmittedはいずれもfalse）と、元plannerを実行した5 entry／5 B→2 commandの対照を別項目に保存する。後者は既存plannerの検証であり、新CCO-R producer／consumerのruntime回帰を実行したとは数えない。`--check`も元plannerを再実行し、保存したbatchCount／coreGroups／command数と19×W予約例を照合する。
+
+### 9.146 CCO-R0：所有producer・有界parser・独立expectedの限定実証
+
+§9.145の最初の実装として、既存source／記録を変更せず、`gradleOwnedCwcR0*`にstandalone fixtureを追加した。成功は所有storageの全bytes比較までで、B proof・fact・dispatch permit・署名・use／ACKを生成しない。固定clock・同一process・合成contextでの実証であり、実call／ReadScope／Session・fresh snapshot・LGの両modeへの接続ではない。CCO-R1／R2、CCO-0出口と本番採用はfalseのままである。
+
+#### 9.146.1 所有producerと完全schema／canonical対照
+
+producerは別々のbuilder／expected coreを固定bufferへ保持する。header512 B、canonical context K、context用256×16 B token cache、最大76 range×64 Bを、既存C幅の内側に配置する。coreのcoverageを検査し、元`planCore`の全fieldを固定順でstream hashする。encoderはoperation ID、requestDigestを除いたcommand projectionとdomain wrapper、最終commandを順に生成する。prepared command object、object rest、full preimage wrapper、JSON.parse、Zodによるcommand再構築、command全体のcanonical文字列を所有経路へ追加しない。
+
+S0／S1／S2は各8192 Bで、S0がprepared bytes、S1が独立expected bytes、S2が512×16 B token tableである。parserは全field・optional origin・bindingのmode／selectedの組合せ・safe integer・rangeの意味条件を確認する。保存wireは空白、キー順違い、重複／未知／欠落field、escape、不正文字、-0、overflow、末尾余剰を拒否する。この閉じたschemaの全stringはASCIIのcid／hash／literalに限られる。通常objectの挿入順はbootstrapでcanonical化するため、逆順でも同じ保存bytesになる。数字の上限MAX_SAFE_INTEGERも対照に含める。
+
+元の完全`cprCommandSchema`／`checkCommand`／canonical関数はharness側だけで実行し、全正常rowのbytesとdigestを照合する。reader／broker、normal／registered-maximum／schema-upper、n=2／19、provider／clientの24例・378 commandを比較する。clientはinitial／sealの別core・別slabを使い、双方の全n件を比較する。これは同じコピー済み入力から独立したstorageを作る実証であり、fresh snapshotから別々に計画した証拠にはしない。
+
+別の差分corpusでは、nested全fieldの欠落・型変更・未知field、数値／文字列の境界、非canonical wireを元schemaへ照合する。seed／transfer変更、plan／inventory／entry digest変更、ordinal・byteBudget・bounds・context違いにはhashを再計算した意味検査も行う。元`checkCommand`だけではplan／inventory digestの実計画への対応を証明しないため、その段階で元oracleが受理する値は新consumerも受理し、別coreから生成したexpectedの全bytes比較を追加の拒否境界とする。有限corpusでの等価性を記録し、任意入力の形式証明とはしない。
+
+#### 9.146.2 CoreHandle、19×W予約と実n件
+
+CoreHandleはopen済みwindowそのものを返す。同じ私有registryからbuilder／expectedを選び、追加のhandle発行は0、全handle capacityは8である。コピーしたwrapper、別ownerのwindow、claimの再使用、initial完了前のseal、close／失効後の旧aliasを拒否する。実call／scope／rootへの束縛とgenerationの安全整数上限まで検証したとは扱わない。
+
+各actorは生成前に19×Wを予約し、slabも実際に19×Wを確保する。childのnはcore.groups.lengthから確定してmetadata header byte8／9へ記録し、capture・normalize・expected・compareは0〜n−1だけを処理する。n=2でも予約・workを19件未満へ縮めず、全n件のcapture前のprocess、n超過capture、sealの早期開始を拒否する。元profileの最低5 entryと1 command最大4 rangeのため、このfixtureの小入力は2 batchである。設計のn=1算術例を有効なfull coreのruntime例へ読み替えない。
+
+親の既存`Lb0Budget`へbootstrap131072 B／初期化4096 unitsを予約し、さらに19×F×W、provider3 C／client4 Cの保守的floor、3 K、3 slot、chunk4096、overlay候補16384、metadata候補4096とF×4096 workを事前予約する。Fはprovider1／client2である。予算不足はcore／family確保前に拒否し、失敗後も初期化／workを返さない。ただしこの4096という数値は全primitive work被覆の証明ではなく、overlay／bridgeも予約値にすぎない。元live ledgerとの共存は未実証である。
+
+#### 9.146.3 全source holderとframeの棚卸し
+
+source auditにownerの全cross-phase holder、core／token cache／buffer registryのalias、command中の借用、bootstrap local、close後に残るcontrol／診断参照を列挙する。core／family／slot／chunk／metadata bufferは実registryへ登録し、退出時にparser source・sink target／hash・child／handle lookupを切り、全登録bufferをzeroした実bytesを検査してからmemoryを解放する。外部windowはraw coreやownerへのclosureを持たない。closed ownerにはclock／budget／hook／ticket、数値trace、診断digestが残り得るため、全JS参照0とは報告しない。
+
+managed frameはenter／exitをfinallyで対にし、実stackが空になるまでslotを回収しない。normalize終了後のS2 token借用を終了・zeroしてからexpectedを生成し、S0／S1／S2の最大3 slotを確認する。source rowをnormalize後に変える負例は三者比較で拒否し、S2借用を残す負例はexpected生成前に拒否する。parserの再帰frameとsinkのnative chunk viewもfinallyで終了する。Buffer／Hashの操作はmodule初期化時のintrinsicを使い、後からprototypeを変更して私有bufferを借用する負例を拒否する。
+
+callbackの再入を内側で捕捉した場合、最後のcallbackでclose／期限到達した場合も外側の比較完了を拒否し、lookupを失効して実bufferを回収する。記録はphase／actor／ordinal別の全frame・slot lease・hash件数、実row digest、予約／消費とzero確認を保存する。件数を保ったevent重複／欠落・phase移動、協調的な消費減額、oracle／保存rowの同時差し替えは独立規則とfresh replayの両方で拒否する。
+
+この棚卸しは管理したprotocol frameとsource holderの証拠で、VM内部の全参照・stack・heapの物理上界ではない。parserの小さなkey span object／closure、固定descriptor、JS control array／trace、native SHA-256 state／stack、bootstrapのcontext検査／canonical copyを明示的に未被覆へ分類する。diagnostic exportは比較完了後のコピーで、oracle object・記録配列を3 slotやbridge1024へ無料で含めない。3072 Bの実metadata bufferを確保した事実から、JS bridge込み4096 Bやcodec overlayの実共存を認めない。これらを解決するのがCCO-R1である。
+
+#### 9.146.4 回帰・再現と判定
+
+R0T01〜28（parameter別40テスト）はoracle等価性、CoreHandle実identity、予約と実n、getter／未知入力・型coercion、caller mutation、intrinsic差し替え、独立expectedの故障、live token借用、row改変、捕捉済み再入、最後のcallback後の失効／期限、予算不足・消費保持と解放を確認する。Hash prototypeの差し替えはcleanupの診断digestでも無効とし、trace上限前にframe退出／失効／drain分の枠を残す。24例とは別に、9 entry／76 rangeを19個の4 range commandへ詰めた最大packed rangeの例も全bytesで元oracleへ照合する。R0R01〜11は保存記録のphase／actor／件数・予算・oracle・lifetime・source anchor・未実証flagと、レビュー修正の拒否／回収証拠の改変を確認する。CCR01〜48全体を実行済みにしたり、R1／R2の出口を通したりしない。
+
+検証記録は`docs/validation/gradle-cwc-r0-2026-11-12.json`。`node scripts/check-cwc-r0.mjs`で再生成し、`node scripts/check-cwc-r0.mjs --check`で元oracle・差分corpus・runtime／record回帰を再実行して照合する。新sourceの参照閉包、実Node binary／依存artifact、§9.145とCCO-0b原本を束縛し、旧source／旧記録を変更しない。性能改善・実Gradle／実Session・認可gate・本番採用は今回の検証対象外である。
+
+2026-11-12の検証ではruntime30・record10と関連既存149、計189テスト、型・差分検査、CCO-R設計／CCO-0b原本のfresh照合が成功した。24例・378 commandの全bytes、差分4372件（両oracle受理1508・拒否2864）が一致し、管理対象の最大token128・slot3、追加CoreHandle 0、19×W予約と実n=2／19、退出時の登録buffer zero／参照除去を確認した。記録は241 source／artifactへ束縛する。CCO-R0の限定実証を完了とし、全VM参照上界・bridge charge・native領域・全workと実ownerの共存はCCO-R1へ残す。
+
+2026-11-13のレビュー修正では、例外診断中のthrowでowner失効が省略される問題と、parserの入力preflight拒否で旧source／tokenが残る問題を修正した。ownerは固定理由で先に失効し、例外のown data propertyだけを診断へ使用する。message getter・toString・Symbol.toPrimitiveは呼ばず、元のthrow値を再throwし、constructorも同じ拒否処理とfinallyで回収する。先行する再入等の失効理由は上書きしない。parserはlive frameがないことを確認後、旧bindingをclearしてから入力検査し、拒否時にもclearする。sourceBoundはraw sourceを返さない診断booleanである。
+
+R0T27のprovider／client×3例外の6ケースは、owner失効・lookup除去・buffer zero・memory解放・比較／公開0、work／初期化の消費保持、元throw値の同一性、旧handle拒否・二重回収防止を確認する。R0T28の4ケースは、正常解析後の65536 B・長さ超過・負offset・不正source型の拒否でtoken0・sourceBound=false・table zero・旧token読取不可となり、続く正常解析で再利用できることを確認する。10ケースは修正前に全て失敗した。両方の実行結果をreview証拠へ保存し、R0R11でownerのlive状態・協調的な消費減額・旧source保持・成功時token数の改変を独立規則とfresh replayへ照合する。元oracle・実証範囲・CCO-R1／R2の未成立判定は維持する。
+
+同日の修正後検証ではruntime40・record11と関連既存149、計200テスト、型・差分検査と旧設計／CCO-0b原本のfresh照合が成功した。レビュー拒否10ケースのgetter／文字列変換評価0・旧binding保持0を確認し、更新記録は242 source／artifactへ束縛する。`reviewedOn=2026-11-13`とreview証拠を保存し、`--check`でも拒否ケースを再実行して照合する。
