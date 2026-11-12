@@ -10525,3 +10525,29 @@ LG-0〜3のどの出口も現時点では未成立である。CFP-0の単一自�
 設計の文書・source binding・baseline raw digest・48 planned条件・4段階・比較matrix・正常release／fatal作用表・予定720 rowとschedule digestはdocs/validation/gradle-cwc-lg-design-2026-11-12.jsonへ保存する。gradleOwnedCwcLgSchedule.mjsは予定順序だけの文書contractモデルで、LG runtimeや実開始witness検証runnerの実装ではない。再生成は`node scripts/check-cwc-lg-design.mjs`、照合は`node scripts/check-cwc-lg-design.mjs --check`。設計整合性のテストをruntimeの48回帰や新しい性能実証として数えない。§9.137の既存コマンド表記は保持し、VF-3Pの実行source・実測本文・raw digestは変更していない。
 
 設計レビュー修正検証（2026-11-12）：LGの文書整合性20件と関連CWC-FP／LB／VFを合わせた42テスト、4系列の設計記録の--check、既存VF-3Pの記録21件の照合、型検査・差分検査が成功した。正常release／fatalの作用対象を文書と記録へ照合し、予定720 rowの順序交換・ordinal補修・pair／phase／型／余分field改変・欠落を拒否、キー挿入順変更を受理した。各固定条件の測定3 roundにAB／BAの両順序があることも確認した。これは予定順序のcontract検証で、実時系列witnessの検証runnerは未実装。LG runtime・48回帰条件・576＋144の実試行は全て未実装／未実行で、今回の通過数へ含めない。
+
+### 9.139 LG-0：所有live入力のstandalone契約・状態機械・容量gateの限定実証
+
+§9.138の基礎契約を新しいstandalone fixtureへ実装した。既存VF-3P／provider／ReadScope／Sessionの実装・source承認・実測recordは変更しない。固定clock・同一process・登録済み単一ownerと実Lb0Budgetを対象とし、診断用のcall／scope／associationで所有・失効・回収を実証する。実call／transport／署名・outcome／use／ACKの本物への接続はLG-1／LG-2の後続課題である。
+
+ownerはdescriptor検査→有界copy→strict parse→全子nodeのfreezeを通したviewだけを私有cellへ保存する。元入力やoptionsのaliasを保持せず、unknown objectのgetter／Proxy／toJSON、Buffer／SAB等を評価せず拒否する。固定portの登録は最初のcapture前までで、authority／verification owner／clock／追加承認の実参照を照合する。署名したsource閉包・policy・Node版を独立pinへ照合する追加profileを用意したが、LG-0専用で本番profileの承認ではない。診断hookは承認済みfixtureの故障注入であり、任意callbackのadapter資格を与えない。
+
+captureはcallback前にcallのclaimを保持し、4096 B・初期化4096 unitsを実parent budgetから前払いしてから正規化する。private handleはverified-unbound→同call／scope／associationへの一度だけのseal→readyと進む。seal本体と最後のlive fenceの両方の成功をcallの私有状態に記録し、正常scope終了はready・seal成功・bound実体が揃う場合だけ許可する。未capture／未sealのcleanupはcodec_fact_binding_mismatchによるabortとし、finalizeでもseal成功と正常releaseの両方を必須にする。clone・同値の偽実体・別scope・二重capture／seal・外部再入を拒否し、内側例外を捕捉しても外側をterminalにする。private projectionは完全lineageのcanonical文字列と全rowの順序を保持し、各fixture gateで現在permissionを再評価する。full-inputにも同じshadow captureと前払いを行う。fixtureの固定内部nested経路は通すが、実P→S→G／ledgerのsite対応表の成立とは数えない。
+
+正常scope終了はLG-local世代・lookup・handle／projectionを失効し、active readerが0になって追加ticketを一度だけ解放する。実call／channelは保持し、固定full-inputの最終モデル検査へ進む。取消し・元期限・owner mutation・source承認失効・再入等はcall全体へ同期伝播し、正常finallyで上書きしない。call全体の失効中に未終了dispatchがある場合はLGだけを先に回収し、元wire・scope・session領域とslotは後着drainまで保持する。後着は新読取・成功公開・use／ACKを開始しない。mutationは旧callの失効とrevision／revocation進行を入力検査前に実行し、schema・保存領域不足でもupdatingを残して旧Readyや新callを救済しない。
+
+容量証明はlogicalな予約と参照寿命の確認で、JS heap／RSSの保証ではない。既存call98304 Bの内訳はwire／copy57344、旧VF metadata4096、control metadata4096、共有frame workspace32768。旧VF／controlやbinding8192をLGの空きへ転用しない。CWC-Cのscope必要量から元の共有frame32768を引き、session131072・call98304・binding8192・LG4096を実際に別ticketで保持する。constructorのscratch131072はsession131072との同時予約を検査し、ownerの最大copy二面114688＋固定metadata4096はその枠内で扱う。予算APIは登録時の実methodへ束縛し、prototype上のgetter／method差替えをdescriptorで拒否する。失効後の回収は捕捉済みの元release／endSlotを使い、差替えたコードを呼ばずに行う。LG側class／prototypeも固定する。captureは64 row・raw32768 B・lineage pool1024 B・depth12を維持し、構造workの3137上界に対し初期化4096 unitsを返還しない。構造unitをCPU時間と解釈しない。
+
+通常fixtureではreader peak1039066 B／authority-broker1047808 Bとなる。両mode／両roleの2回の逐次試行ではinitialization36864＋work114690＝151554 units、wire114688、attempts2を保持する。未完了callを隔離したまま新しいscopeを予約する場合は、回収前の領域を再利用せず容量不足で拒否する。最大cid128文字・unbounded epochのschema最大値を全対応fieldへ適用したcontextは、reader必要量1118753 B（70177 B超過）・broker1137629 B（89053 B超過）となる。両mode共通でcapture前にcodec_budget_exceededを返し、このprofileではunsupportedとして扱う。予約失敗時のpeakも上限以下で、normalizer／初期化capture・原本読取は始めない。
+
+したがって基礎helper・状態機械・拒否動作の限定実証は行ったが、§9.138の最大field／両role／2 attemptについての全体layout採用条件は未成立で、LG-0の出口・LG-1の採用をまだ通さない。次は入力範囲と既存layoutの対応を再検討し、入力縮小で比較を有利にせず、許容する最大入力で全領域が共存する証明を固める必要がある。元の1 MiBやwork上限は増やしていない。
+
+検証recordはdocs/validation/gradle-cwc-lg0-2026-11-12.json。再現は`bdo node scripts/check-cwc-lg0.mjs`、保存済み証拠の照合は`bdo node scripts/check-cwc-lg0.mjs --check`。runtime回帰とrecord改変拒否を分け、mode／role／caseの閉じた36件の証拠とschema最大4件、元source・追加承認・検証method・設計recordを束縛する。primary576／bridge144、実Session・実storage・独立UID・本番採用は実行／成立していない。
+
+回帰の対応範囲：LG001〜030はCLG01〜12の基礎的な所有・capture／seal、CLG19〜24のmutation／再入・別call、CLG28〜31の予約・上限・消費保持、CLG32／33の正常release／fatal、CLG37の追加承認とmethod差替え拒否に対応する性質をfixtureで検査する。各CLGの実provider／実Sessionまで含めた全条件を通過したとは数えず、site対応・実署名／transport最終検査は未実証のままにする。保存済み証拠には8成功・28拒否とschema最大4拒否を残し、反例を成功記録や速度比較へ昇格しない。
+
+LG-0レビュー修正v2（2026-11-12）：未capture／未sealの成功公開と、最大context記録のschema／role照合不足の2件を修正した。LG030で両mode・capture有無・cleanup有無の8経路を検証し、cleanup後もpublication／署名／use／ACKが0となり、消費を戻さないことを確認する。LGR13／14は両mode・両roleでevidenceDigestを更新してから、追加field・型不正・禁止role・roleラベル交換、lineage／選択snapshot／provider boot／catalog不一致、head範囲外・最大field短縮・origin不整合を、それぞれschema／role／binding／最大入力の理由で拒否する。
+
+保存証拠のcontext検証は、実constructorのCPR schema・意味制約に対応したNodeから読めるstrict contractを用いる。正常／最大の両方へ適用し、peer roleと記録role、provider role、broker origin、selected snapshot／checkpoint、lineageとbinding、provider boot、catalogを照合してから容量を計算する。最大contextではさらに、factoryと共有する全cid／unbounded epochの最大化対象を検査する。元constructorとの一致は保存済み全contextで照合する。部分的な長さ確認だけでschema不正を容量不足へ分類しない。
+
+検証recordとevidenceはv2へ更新した。未capture終了・未seal終了をmode×role別の8拒否例として加え、36ケースは8成功・28拒否となった。v1は新検証で受理しない。現在の最大context4例はstrict contractを満たした上で容量不足となり、出口未成立の判定と必要量は変わらない。runtime30件・record14件と関連113件の157テスト、設計4系列・既存VF-3P記録21件の照合、型・差分検査が成功した。最大入力layout／LG-0出口／次段階採用／本番採用はいずれもfalseのままとし、実Session・実storage・実時間比較は実行していない。

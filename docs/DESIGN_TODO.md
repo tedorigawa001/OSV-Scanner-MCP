@@ -3315,9 +3315,23 @@ VF-3Pレビュー修正v2の最終確認：runtime24・記録21を含む497テ�
 - [x] CLG01〜48の回帰条件とLG-0〜3、scalar／batch×full-verify／fact-live×full-input／owned-inputのprimary576試行（測定432）・旧VF-3Pとの別bridge144試行を計画。元期限4500 ms・全候補9試行完了・quiet各round／中央値5%と打切り対照の保守下限を要求。
 - [x] レビュー修正：正常scope終了はLG handle／局所世代／frame／lookup／追加ticketだけを終了し、実call・channel・最終wireを保持して固定full-input最終検証へ進む契約を明記。fatalは実callへ先行伝播し、正常finallyで上書きしない。CLG32／33へ正常成功と競合・後着拒否の両条件を追加。
 - [x] レビュー修正：primary→新workerのbridgeの順、cohort／round／observation・group回転、隣接対のAB／BA、720予定rowのdigest／ordinalと照合keyを固定。CLG44／46へ集合不変の順序交換・実開始witness不一致・phase混在の拒否を追加。予定順序モデルを実測や実時系列witness検証の成立と数えない。
-- [ ] 次はLG-0のstrict fixture contractを実装し、所有・深いalias除去・claim／seal／失効・世代と4096 Bの非重複layout／実予算予約を実証する。LG helper・projection・正規化省略・48 runtime回帰・新しい性能測定は未実装／未実行。
+- [x] LG-0のstandalone helper・owner／port／immutable view・claim／capture／seal／世代／再入拒否を§9.139へ実装。正常LG-local releaseとfatal call失効、初期化4096 units保持・追加4096 Bを既存の実予算内で検証。実providerへの正規化省略・48条件全体・新しい性能測定は未実装／未実行。
+- [ ] LG-0の最大入力layout gateを解決する。通常の両role／両mode・2試行は収まるが、全cid／epochをschema最大にした4例はcapture前に容量不足で拒否。最大fieldの共存条件が未成立なのでLG-0出口・LG-1採用を通さず、次は入力範囲と既存layoutの対応を整理する。
 - [ ] LG-1のprovider／ReadScope接続、LG-2の実Session／fresh snapshot接続、LG-3の共通条件比較はLG-0通過後に進める。CFP-0の単一自己hash置換は別工程のまま。本番・実storage・独立UID／5 process・8 read・CPR-C／CG0／CG3は保留。
 
 文書・source binding・planned条件はdocs/validation/gradle-cwc-lg-design-2026-11-12.jsonへ保存する。設計整合性テストの通過をLG runtime・速度改善の成立として数えない。
 
 CWC-LG設計レビュー修正検証（2026-11-12）：LG20件を含む文書整合性42テスト・4系列の設計記録照合・既存VF-3P記録21件・型検査・差分検査が成功。作用表と予定順序のcontractを検査し、順序交換・ordinal補修・pair／phase／型改変・欠落を拒否、キー挿入順変更を受理。48 runtime条件とLG-0〜3・新primary576／別bridge144はplannedのままで、実時系列witness検証も未実装。次の作業はLG-0のfixture実証である。
+
+### LG-0：基礎helper・状態機械・実予算の限定実証（§9.139）
+
+- [x] 追加source承認／独立pinと固定port、data-only ownership・strict schema・deep freeze・private handleを実装。caller入力・診断copyへの変更と、偽handle／scope／association・capture／seal再使用を拒否。
+- [x] mutationの先行失効と失敗時のupdating保持、例外を捕捉した外部再入、元期限・正常scope終了／call全体失効の分離、未完了dispatchのdrain・LG領域の一度だけ解放を検証。
+- [x] full-inputも同じshadow capture・初期化4096 unitsを前払い。旧VF4096はcall内の既存metadataへ占有済みとして計上し、LG4096を別ticketへ予約。通常reader1039066 B・broker1047808 B、2逐次試行でwork＋初期化151554 unitsとなる。
+- [x] runtime／record改変拒否、mode×role×9 caseの36証拠とschema最大4拒否、source閉包・署名承認・method・元設計recordを新規検証recordへ保存。過去VF-3Pのsource／実測記録は変更しない。
+- [ ] 最大contextの全領域共存証明と採用範囲の整理。現状は4例とも元1 MiBに収まらずunsupported。上限拡大・旧領域の重複利用・入力縮小による有利な比較は行わず、LG-0出口とLG-1への進行は保留。
+- [ ] LG-1の実provider／ReadScope・CWC root／fact／ledger接続、LG-2の実Session・fresh snapshot・署名／outcome／use／ACK、LG-3のprimary576＋bridge144は後続。実storage・独立UID／5 process・8 read・本番採用は未成立。
+
+LG-0検証（2026-11-12）：runtime29・record12と関連113の154テスト、4系列の設計記録照合・既存VF-3P記録21件・型・差分検査が成功。通常28ケースは8成功／20拒否、最大context4例は容量超過で拒否。基礎fixtureの実装と回帰記録は完了したが、最大入力layoutのLG-0出口は未成立。次はこの容量gateの整理で、LG-1接続や性能比較へ自動で進めない。
+
+LG-0レビュー修正v2（2026-11-12）：未capture／未sealのscope cleanupをabortとし、seal本体・post fence成功と正常releaseを確認したcallだけがfinalizeできるよう修正。両modeの未capture／未sealで成功公開・署名・use／ACKが0となる回帰を追加した。最大contextには実constructor相当のstrict schema・role／origin・binding照合と全最大化対象field検査を適用し、両mode・両roleでdigest更新済みの不正記録も拒否する。runtime30・record14と関連113の157テスト、設計4系列・既存VF-3P記録21件・型・差分検査が成功。新v2記録は36例（8成功／28拒否）＋最大context4拒否。最大layoutの出口とLG-1への進行は引き続き保留。
