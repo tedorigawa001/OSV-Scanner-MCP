@@ -10690,3 +10690,161 @@ CLM02／03／05／10／12／14／15／20の一部について負例と診断対�
 LG-M1検証（2026-11-12）：実consumer6件・記録8件と既存179件の計193テスト、LG-M0／LG-0記録・設計4系列・既存VF-3P記録21件の照合、型・差分検査が成功した。source位置と実copyの出自を保った負例・正対照を保存したが、3 slot上界・metadata4096・追加work・最大入力の全領域共存は未成立のままである。
 
 LG-M1の記録レビュー修正（2026-11-12）：一意性を保ったgrant ID交換が静的検証・fresh比較を通る問題を、実scope番号・actorからの再導出照合で修正した。LMR29／30はそれぞれ修正前の失敗を確認してから、静的入口・fresh比較両側での拒否を確認した。実consumer6件・記録10件と関連179件の計195テスト、LG-M0／LG-0記録・設計4系列・既存VF-3P記録21件の照合、型・差分検査が成功した。48 attemptを再実行し、24対照での456 command一致と3 slotの24拒否を再確認して記録を更新した。4実体の負例と3 slot拒否の結果、LG-0出口・次段階／本番採用の未成立という判定は変更しない。
+
+### 9.142 CWC-CO：command所有・expected比較のphase分割契約（設計のみ）
+
+#### 9.142.1 目的・採用範囲と変更しない検証
+
+LG-M1の4実体は、callerがdecode済み入力を保持したまま、Aの私有q・raw expected・expectedのparse結果が重なることで生じた。次の候補は、callerへcommand objectを渡さない所有protocolと、入力の消費・expected生成・比較を分ける固定consumerである。候補profileを`cwc.owned-command-window.v2`、recipeを`cwc.command-owned-phases.v1`とする。§9.140のv1仮説・既存CWC／LG承認からの自動移行は認めない。
+
+候補は独立したcanonical familyをclientで2組（initial／seal）、providerで1組保持する。全command object配列を返さず、既に予約したfamilyの各rowをcandidate bytesとして構築し、検証完了後に同じ私有bytesをfactとして扱う。candidateからfactへの状態変更はstorage所有の変更に限り、認可成功・B proof・dispatch permit・transport成功を生成しない。外部のraw object、callbackの返却値、既存call内のcommandをこの所有protocolへ無条件に移管しない。
+
+以下の検証は全て残す。実装変更時は元sourceのsite／phase／ordinalに対応表を作る。
+
+- plannerのinventory検証・全entry／range coverage・packing・plan core・K/D、および全ordinalのcommand schema・wireIntent・context／operation整合性。
+- Aの完全なcommand schemaとcheckCommand、私有context／coreからのmakeCommandとその完全なschema・意味検証、全canonical内容の一致。
+- BのplanProof／inspectProofの完全検証、同じrootのA factとの束縛、owner request／reply・4 auth frameの幅、全19件の証明完了条件。
+- 毎回のpermission・purpose・両credential・current context／grant・registry／profile／source pin・取消し・元期限・残予算、source pre／postと署名・transport最終検証、outcome／use／ACK。
+
+expectedをactual qから組み立てる、長さ・digest一致だけで全内容比較を置き換える、schema検査を私有flagだけで省略する、以前の認可結果を再利用する変更は対象外である。constructor fingerprint固定のCFP-0も別工程のままとする。
+
+#### 9.142.2 所有単位・helperの入出力と束縛
+
+登録は最初のcandidate構築前に完了する。独立に承認したsource閉包・実builder／normalizer／expected encoder／B consumer・copy／decode／canonical recipe・layout／cost model・runtime版を、実root／call／ReadScope／actor・clock・元期限・generation・budget ownerへ束縛する。root／scope等は実参照で照合し、同値のID・digest・callerのvalid flagで代用しない。診断recordのgrant IDも§9.141と同じ実scope番号・actorから再導出し、一意性と束縛を確認してからfresh比較用の値を正規化する。
+
+callerが持つのはopaqueなWindowHandleと既存のfact handleだけである。candidate rowには外部へ渡すcommand handleを発行せず、owner内部のnext ordinalで選ぶ。prepared q・input・expected text・slotの可変値、Buffer／ArrayBuffer／subarray、getter、任意のborrow callbackは返さない。内部helperは固定sourceからのみ呼び、内部frame tokenは認可成功を表さない。
+
+clientでは同じreadのWindowOwnerが2 family・metadata4096・3 slotを一括予約し、client-initial／client-sealそれぞれに一度だけ使える別BudgetClaimを発行する。各claimは対応する実call／scope・actorへ個別に束縛し、open時には別rootのWindowHandleとなる。providerは1 actor／1 familyである。clientの処理中actorは最大1とし、initialの全borrow・codec scratchの終了後にだけsealへ処理領域を渡す。これはmemory所有の逐次利用で、root・plan・認可成功・factを共有しない。initial family・必要なcontextと実callはseal全比較と元drainまで保持し、実際の同時保持が増えれば全領域計算へ追加する。共有できることを未証明のままmetadata4096や3 slotを2 actor共通として採用しない。
+
+| private helper案 | 必須入出力・状態・解放条件 |
+|---|---|
+| claimOwnedCommandBudget | 対象fresh取得のread入場で、実call／ReadScope・actor・contextから計算したW・最大19件・承認cost上界・元期限・親budgetへ束縛し、family・3 slot・metadata／scratch・初期化／追加workを全て先行予約する。core／inventoryの内容を読んで見積りを縮めず、providerには1 claim、clientには各actor専用の2 child claimを返す。claimをcallbackより先に置き、これはIO許可・認可成功を表さない |
+| openOwnedCommandPlan | BudgetClaimを一度だけ消費し、fresh取得後のprivate core／inventoryと実rootを、予約時と同じcall／scope／actor・承認profile・元期限・親budgetへ結ぶ。claimとrootのlatchをcallback後にも照合し、成功時だけWindowHandleを返す。元予算にない追加領域が判明した場合は拒否し、IO後の再見積りで予約を増やす経路にしない |
+| captureNextCandidate | private planner context／coreから次ordinalを生成し、元build検査後のcanonical bytesを予約済みrowへ書く。返却はvoid。command object・一時textを保持する全builder frameの復帰を確認してrowをcapturedへ進める |
+| prepareNextOwnedCommand | 次の私有rowをdecodeし、元command／checkCommandを完全実行してAのprepared cellへqを格納する。公開値は返さない。decode text・入力・copy／parse一時値を持つchild frameが復帰した後にのみ入力cellを消費・解放する |
+| encodeIndependentExpected | Aが所有する別のcontext／core、検証済みseed／transferId・ordinal・plan digestから元makeCommandを実行し、canonical expected textを私有cellへ置く。actual q／candidate bytesをexpected値の生成入力にせず、返却値はvoid。raw／parsed expectedの全frame復帰後に次phaseへ進む |
+| compareAndEncodeOwnedFact | prepared qの完全canonical textを作り、expected textとの完全一致と、同じtextとcandidate rowの全bytes一致を確認する。元encodeのpost gate完了後にだけ既存rootへencoded factを結ぶ。expected／actual textはBへ入る前に全参照を除去する |
+| proveAndCloseOrdinal | prepared qを固定B consumerだけに渡し、planProof／inspectProof・元幅検査を実行する。既存f.q解放の位置を保ち、全B frame復帰・borrow終了後にslotを回収する。失敗ではrootを失効させ、次ordinalへ進めない |
+| compareOwnedPlanFamilies | 別root・別計画・別予約のinitial／sealについてcore・全ordinalのcanonical bytes・bound・work／wireを比較する。providerでは再現した全planと要求ordinalを元実callへ照合する。partial familyや同じfamilyの二重登録を受理しない |
+| closeOwnedCommandPlan | 正常終了はwindow局所stateだけを終了し、必要なfact・実call・wireを既存の最終検証／drainまで保つ。fatalは実callへ先行伝播し、lookup除去・後着拒否を行う。全borrow終了・強参照除去後に一度だけ回収し、消費は返還しない |
+
+private context／coreは各ownerが完全に所有し、外部aliasや可変診断copyから変更できないことを証明する。readonly表明だけでは足りない。schema・data-only入力・全descriptor／prototype・通常ArrayBufferと捕捉済みintrinsicを検査し、Proxy・accessor・toJSON・SharedArrayBuffer・Buffer.copy等の差替えを経由しない。deep freeze等を追加する場合も、その走査・copy・workを別途計上する。既存3 context／3 coreの予約を不変共有の仮定で減額しない。
+
+#### 9.142.3 phase順序と3 slotの証明義務
+
+元plannerでは全build検査がA／Bの処理より先に行われる。この順序を維持するため、まず元と同じbuild loopで全candidate rowを構築し、その後に各ordinalを正規化・比較・証明する。command object配列を残すことや、build側の認可callbackを全て事前に呼ぶdry runへの置換は認めない。captureのcanonical化は元builderの最後のcopyとの置換候補だが、等価性・追加費用は実証対象とする。
+
+| phase | 同時保持の目標・次phaseに進む条件 |
+|---|---|
+| capture | 予約済みfamilyへ1 rowずつ生成。builderのschema一時値・canonical textもslotまたは明示scratchへ計上。全build frameが復帰してから次rowへ進む |
+| decode | rowのUTF-8 textとJSON.parse結果を別leaseで追跡。decode child復帰後にtextを除去し、ownerだけが入力objectを保持する |
+| normalize | 入力・commandのschema結果q・checkCommandのschema一時値を追跡。新decodeは元Aのinput copyとの置換候補で、外部object向けcopy省略APIにはしない。child復帰後、入力を持つcell・local・closure・親frameが全て消えたことを確認し、qだけを残す |
+| expected | q・raw expected・parsed expectedが重なる。makeCommand復帰でraw expectedを除去した後にexpected textを生成する。encoder child復帰後はqとexpected textだけを残す |
+| compare | q・expected text・actual canonical textを保持し、完全一致を検査。expected objectを比較frameへ返さず、4番目の全command representationを作らない。両textを除去してからBへ進む |
+| proof | q・Bのcopy・Bのparse結果、またはq・Bの私有parse結果・checkCommandのparse一時値を追跡。元Bの検証を残し、copyの寿命終了をparse helperの実復帰に結ぶ |
+| ordinal-end | 元f.q解放を維持し、全source frame／borrowの終了後にslotを回収。canonical family bytesとfactは各rootの既存寿命まで保持する |
+
+表はphase計画上の目標であり、3 slot上界の証明ではない。全command object、部分preimageのshallow copy、decode／canonical text、hash preimage、UTF-8変換／join一時値、戻り値・例外・closureの強参照まで、allocation前のleaseとsource上の最終利用／frame復帰へ対応付ける。「childから戻った」というflagだけでは解放しない。外側の引数input、配列要素、返却値、Promise、observerが値を保持していればleaseを残す。第4slotが必要なら読取・copy・parse前に拒否し、countを3へ丸めない。
+
+canonical／hashの一時値をslot以外へ置く場合は、承認layoutに別regionと寿命を明示する。既存codec393216 Bのscratchを使う場合も、resident tree・fragment・compile／proof scratchとの非重複と合計上界を独立に証明し、scratch leaseを生成前に取得する。AとBの別ownerが同じ領域を同時所有すること、full-size textをmetadata扱いにすること、record／LG領域や既存frameを再度控除することは禁止する。別regionへ割り当てられない値は追加slotとして数え、元上限を超える場合はunsupportedとする。
+
+expectedのcanonical化をactualより先に行うのは、同じ元encode pre／post gate内にある純粋処理の順序変更に限る。入力は所有済みdata-onlyで、元encoder／hashがforeign callbackを呼ばず、schema・意味検証・値が同じことが前提となる。最後のcallback後にも実generation・失効latch・元期限・予算を確認し、成功公開までは有界な同期処理だけを行う。
+
+#### 9.142.4 candidate bytesの完全性と独立検証
+
+各familyは専用ArrayBufferを持つ私有slabとし、予約は19×W(context) Bを維持する。Wは元command幅上界の承認済み計算式に束縛し、actual bytesがWまたは8192 Bを超えれば拒否する。ordinalごとの固定offsetとlength・stateを記録し、隣row・別familyへの越境や再書込を禁止する。candidate領域は既に予約した最終family領域の同じbytesであり、別の入力familyを無料で追加しない。initial／sealのslabは別実体で、同じ内容でも共有しない。
+
+candidateをdecodeした結果に元の完全schema・wireIntent・range／byteBudget／plan ordinal・context／operation照合を実行する。expectedの全fieldはAの私有context／coreから独立に導出し、requestDigestも元makeCommandで独立計算する。actualのfieldをexpectedへコピーして一致させることはしない。追加field・欠落・role／origin・selected refs・全range・plan digest／seed／transferIdを含め、選択fieldだけの比較にはしない。
+
+比較はcanonical text同士の完全一致に加え、actual textと保存candidate bytesのlength・全byte一致を要求する。現行CWC-Bの閉じたASCII command familyでは、全文字がASCIIであることを検証した上でcharCodeと私有bytesを全位置比較できる。追加の全長Bufferを無予約で作らない。非ASCII・escape規則変更・未知schemaはこのrecipeで受理せず、別の承認とUTF-8／scratch上界が必要となる。入力objectのキー挿入順変更はcapture時のcanonical化で受理し、保存bytes自体の非canonicalなキー順・escape・空白は拒否する。
+
+比較完了前のbytesはcandidateであり、schema成功・長さ一致・hash一致だけではfactへ進めない。元Aのencode post gate完了、同じroot／ordinalのB proofと幅検査、全ordinal完了・grant.finish・fresh inventoryとのcheckCore等の元条件を順に満たす。失敗したrowだけを成功familyへ混ぜず、hole・重複・省略・順序交換があればroot全体を拒否する。initial／seal比較は各々の独立計画と全canonical bytes・bound・work／wireを対象とし、共有したplan結果やhashだけの一致で代用しない。
+
+#### 9.142.5 毎回のlive検査・状態・取消し
+
+状態はroot単位のclaimed→capturing→captured→processing→all-proved→sealed／retained→closedとし、processing内はdecode→normalize→input-retired→expected→compared→encoded→provedの単調遷移とする。input-retiredは実参照除去後だけ成立する。失敗・期限到達・取消し・再入・pin／generation不一致は、任意の状態からterminal-failedへ先行遷移し、同値への復元やfinallyによる正常終了で戻さない。
+
+WindowOwnerはactive actor・残存child・借用数とterminal latchを別に持つ。client-initialの失敗は同じreadに依存するsealも停止し、seal失敗からinitialを成功へ戻さない。別readのownerへ失効を広げない。正常なinitial処理終了はsealの開始条件にはなるが、initial familyや親callの早期解放、initialの検証結果をsealで再利用する根拠にはならない。
+
+元planner／A／B／grant／ReadScope／Sessionの全live siteについてsource・phase・ordinal・前後関係・回数を対応付ける。per-range／per-build、Aのencode pre／post、Bのproof／inspect pre／post、current／pin／purpose、source pre／post、署名前後・transport最終検証を保持する。authority viewや残予算をcandidate／prepared／factに保存して次のgateへ持ち越さない。新profileの入場・予約・失効fenceを追加する場合は別siteとして両比較armへ共通化し、元siteの削除・移動の代用にしない。
+
+claimとbusy状態をcallback前に確定する。固定内部helperはprivate frame token・実owner・phase・ordinalで識別し、外部再入を内部呼出しとして通さない。内側の例外を捕捉されてもroot／callを先行失効し、外側の成功公開・dispatch・署名・use／ACKを0にする。元clock／deadline floorは再発行せず、callback／IO後と最後のcallback後の同期fenceも維持する。所有authorityが通知する取消しrevisionは復元しても単調に進め、未観測の第三者状態の変更・復元まで検出したとは主張しない。
+
+通常scope終了はwindow局所state／borrowだけを終え、必要なfamily・child fact・実call／channel／最終wireを元規則どおり残す。fatalは実callの失効・lookup除去・channel停止を先行し、新たなdecode／read／公開を禁止する。既にdispatchした元wire・snapshotは元drainまで保持する。後着はlatch検査を最初に行い、callbackを再実行せず、borrow／familyをdrain後に一度だけ回収する。exact retryは新root／call／window／familyとし、旧handleを再利用せず、元K/D・期限floor・消費を親ledgerに保持する。
+
+#### 9.142.6 metadata・memory・追加workの契約
+
+metadataの設計枠は別予約の4096 Bで、header／実参照table512、2 family×19 row×64＝2432、3 active lease×128＝384、bitmap／終了・借用state512、alignment／予備256とする。合計4096 Bはlogical layout候補であり、実装済みサイズやheap／RSSの証明ではない。row64 Bはoffset u32・length u32・ordinal u16・family u8・state u8・row generation u64・requestDigest32 B・flags u32・borrow count u16・予約6 Bとする。generationは元のsafe integer範囲を保ち、u32への切詰め・wrap・再利用を拒否する。
+
+root／call／scope／owner／clock／budget等の実参照は固定header tableのindexへ束縛し、最大16参照を目標とする。candidateごとの外部handleや可変Map／配列・closureを増やさない。必要なJS bridge・handle registry・強参照追跡・digest／indexは全てlayoutへ含め、tableが不足すれば追加領域を計上して元上限で再判定する。metadata4096を既存root／fact8192・LG4096・record16384の空きと仮定して重複使用しない。既存fact handleのstateを流用する場合も、同時個数・寿命・別用途との非重複をsource recipeで証明する。
+
+元memory上限1048576 B、codec393216、3 core・3 context、source wire65536・source copies2×41460・source metadata4096、session／call／binding／LG・元frame共有を保持する。実traceでcontext／core／bridge等の同時保持が従来計上より増えれば、その分を追加する。3 slot＋metadata4096のreader1031760／broker1042485 Bという§9.140の値は、scratchを含め全regionが元上界へ収まる場合だけの算術値である。brokerの余裕6091 Bや4 slot案の53 B超過を採用証明に使わず、追加regionを省略してfitさせない。
+
+workは次の契約で扱う。
+
+- CWCのrequest bytes／ranges／probesという既存のwork定義、156978 unitsのplan ticket、親read ledgerの上限・非返還条件を変更しない。別定義のcopy／CPU計測値を同じticketに無料で含めたとは扱わない。
+- call work156978・provider work1048576・read／global work／wire67108864、既存logical checkの1 units／check・4096上限をそれぞれ維持する。数値が同じplan ticketとcall workも、owner・namespace・親子関係を照合せずに共用しない。
+- 登録manifestにcost model digest、初期化上界、追加work上界、元処理と置換処理の対応、未被覆操作の上界を必須とする。captureのcanonical化、decode、descriptor／lease操作、全bytes比較、hash／scratch管理、失敗時のzero／解放も対象に含める。heap計測や実時間だけでwork上界を決めない。
+- 元copy／fact bytes書込を置き換える場合、同じ実ticket・同じ単位・sourceに対応する既存被覆範囲内かを独立承認する。元ticketが前払い済みという理由だけで新処理を0 unitsにせず、節約見積りでspentを減らさない。被覆不明の処理は追加上界を確保するか、cost-model未対応として拒否する。
+- 全family・slot・metadata・bridge／scratchと、window初期化・全ordinalの追加workを最初のcopy／decode前に事前予約する。予約失敗・plan失敗・再入・期限停止でも初期化／work／wire／attemptを返還しない。memoryの解放は消費の返還を意味しない。
+- providerの対象fresh取得より前にBudgetClaimを既存read入場へ接続する。client側も対象readで必要なinitial／seal分を先行確保し、actorごとの独立root／ticketへ分配する。rootやplan coreの生成後に初めて不足を検知する予約だけでは採用しない。元SourceOwnerの認可・pre／post・IO許可は別途必要で、BudgetClaimをReadScope／DispatchPermitへ昇格しない。
+- LGの初期化4096とwindowの初期化を別項にする。元standaloneの2 attempt合計151554・残5424 unitsは参照値で、統合consumerのbaselineや追加window workの保証ではない。実際の親・子ledgerごとに全消費と残予算を照合し、異なるowner／単位の余裕を相殺しない。追加上界が元枠へ収まらない場合はmemoryがfitしても採用を拒否する。
+
+manifestに必要な最低項目は、profile／recipe版、actor、source閉包／固定consumer、root・call・scopeの実参照対応、generationと元期限、family数／command幅式／slot数、metadata／bridge／scratchのsource別layout、cost modelと各上界、全live site対応表である。各項目は独立承認registryのcurrent pinへ結び、自己更新したdigest・署名だけでは承認profileを変更できない。full-input／owned-inputは同じ所有recipe・予約・失敗条件を共通の前提とし、認可や正常終了の省略を片方だけへ入れない。未対応時は入場前に拒否し、同一call内で未予約の旧配列経路へfallbackしない。
+
+#### 9.142.7 回帰条件（CCO01〜40、全てplanned・未実行）
+
+| ID | 実装時の条件・必須結果 |
+|---|---|
+| CCO01 | 未承認source／recipe／cost modelと、digest・署名だけを更新した別profileを、copy／decode前に拒否する |
+| CCO02 | 実root／call／scope／actor／clock／budgetの別参照・clone・同値ID、旧generationのhandleを拒否する |
+| CCO03 | grant IDのscope単独・call単独・両方の交換を、一意性維持・digest更新後も拒否し、fresh比較の両引数で束縛を検査する |
+| CCO04 | 全build gateを元順序で実行し、dry-runへの移動・command配列保持・少数rowだけのcaptureを拒否する |
+| CCO05 | private builderのlocal・返却値・closure・observerがcommandを保持する場合、frame復帰flagだけでslotを解放しない |
+| CCO06 | decode text・JSON結果・schema出力の実identity／寿命を追跡し、input-retired前のexpected入場を拒否する |
+| CCO07 | 外側input引数・cell・copy temporaryの残存を検出し、第4参照が残るconsumerをunsupportedとする |
+| CCO08 | data-only／prototype検査を保ち、getter・Proxy・toJSON・Buffer.copy差替え・SharedArrayBufferの読取を拒否する |
+| CCO09 | actual qのfieldをexpectedへ流用する実装を拒否し、私有context／coreが異なる場合の不一致を検出する |
+| CCO10 | actualとexpectedのschema・意味検査を保ち、未知field・欠落・role／origin・selected refs・context／operation不一致を拒否する |
+| CCO11 | ranges／byteBudget／ordinal／seed／transferId／plan／inventory digestの各改変を全canonical比較で拒否する |
+| CCO12 | expected objectを外側へ返す実装と、raw／parsed expectedが残る状態でのactual text生成を拒否する |
+| CCO13 | actual／expected textのlength・全内容とcandidate全bytesを照合し、同長・同じ選択fieldだけの一致を受理しない |
+| CCO14 | objectキー挿入順変更は受理し、保存bytesの非canonicalキー順・空白・escape・未知の非ASCII recipeは拒否する |
+| CCO15 | schema成功・hash／幅一致・candidate storage成功だけではencoded／proved／dispatchへ進めない |
+| CCO16 | 元BのplanProof／inspectProof・同じA rootへの束縛・request／reply／4 frame幅・全件完了を照合する |
+| CCO17 | caller inputを保持するLG-M1対照では4実体を再現し、新方式では実sourceの全copy／parse／text／preimageのbegin／endを追跡する |
+| CCO18 | 第4slotと未予約scratchを生成前に拒否し、count clamp・metadataへのfull-size値移動を拒否する |
+| CCO19 | scratchのresident／compile／proofとの重複、A／B二重所有、旧frame共有の二重控除を拒否する |
+| CCO20 | 2 role・normal／登録済み最大／schema-upper、19 command・4 range・全9 entry・41460 Bを縮小せず検証する |
+| CCO21 | 19×Wのfamily予約と実bytes幅を照合し、slot8192・row offset／length・隣row境界の超過を拒否する |
+| CCO22 | candidate rowの再書込・partial family・hole・重複・順序交換、失敗prefixを混ぜた成功を拒否する |
+| CCO23 | initial／sealを別root・別計画・別slabで作り、共有bytes／同じfamilyの二重登録・hashだけの比較を拒否する |
+| CCO24 | provider独立計画の全ordinalと要求ordinalを元実callへ照合し、別call／古いsnapshot／retryのfact流用を拒否する |
+| CCO25 | permission／purpose／両credential／全current pin／grant／取消し／残予算の元site・phase・順序・回数を維持する |
+| CCO26 | source pre／post・署名前後・transport最終検証・outcome／use／ACKが元どおり必要なことを確認する |
+| CCO27 | builder・decode・expected・B検証・最後のcallback後で元期限到達を拒否し、再試行でclock origin／期限floorを更新しない |
+| CCO28 | 捕捉済み外部再入・callback中の取消し／pin変更・世代変更と復元で外側公開0、内部frame偽装も拒否する |
+| CCO29 | normal scope終了とfatal call失効の作用を分離し、finallyによるfatalの上書き・正常終了への昇格を拒否する |
+| CCO30 | pending dispatch・旧wire／snapshotを元drainまで保持し、後着read／decode／公開と二重回収を拒否する |
+| CCO31 | metadata全4096 Bのrow・参照table・handle／bridge／scratchを計上し、隠れたMap／配列／closureや他領域の重複使用を拒否する |
+| CCO32 | generationの2^32超・MAX_SAFE_INTEGER境界を検証し、切詰め・overflow・旧index再利用を拒否する |
+| CCO33 | 既存codec／3 core／3 context／source／session／call／binding／LGを維持し、増えた同時保持を省略しない |
+| CCO34 | work上界未表明・別単位の相殺・未被覆操作の0課金・先行消費の減額を拒否する |
+| CCO35 | memory／初期化／追加workが1不足ならcopy／decode・対象fresh IO前に拒否。BudgetClaimをread入場で確保し、IO後の再見積り・予約をIO許可に見立てることを拒否して親ledgerのfloorを保つ |
+| CCO36 | 2 attemptの初期化・plan／追加work・wire／attempt・K/Dを保持し、新window発行による残高resetと旧handle流用を拒否する |
+| CCO37 | 全phaseの例外・保存失敗・容量不足でcandidateを隔離し、参照除去・drain後の一度だけの回収を確認する |
+| CCO38 | 両LG modeのsource承認・所有recipe・予約を共通化し、frame／mode／rootを跨ぐ不変factの転用を拒否する |
+| CCO39 | trace重複／欠落・phase移動・actor／region間移動・消費協調減額を、件数・総量・digest更新後も拒否する |
+| CCO40 | 未実行条件や条件付き容量算術を、3 slot／metadata／work／LG-0出口・実Session・性能／本番採用の成立へ昇格しない |
+
+#### 9.142.8 実装順・採用gateと今回の検証範囲
+
+| 段階 | 必要な出口 |
+|---|---|
+| CCO-0 | strict recipe／所有cell・candidate slab・phase／lease・metadata／cost契約のfixture。旧4実体対照と新参照traceを照合し、frame・scratch・追加workの未対応を拒否する |
+| CCO-1 | 新承認sourceの実A／B・固定consumerと独立initial／seal・provider計画へ接続。全canonical bytes・元oracle・全live site・work／wireを照合する |
+| CCO-2 | 全最大入力・両role／両LG mode・2 attemptで全領域／親子ledgerの共存を実証し、CCO01〜40・CLM01〜20の出口を確認してからLG-0最大layoutを再判定する |
+
+今回追加したのは設計・回帰条件で、candidate slab／新normalizer／expected encoder・新profileは全て未実装である。3 slot・metadata4096・追加work・最大入力の全領域共存は未成立で、LG-M1の4実体と3 slot拒否の記録を変更しない。設計表のslot目標や容量算術を実参照の上界と数えない。CCO01〜40は全てplanned・未実行とし、LG-0出口・LG-1〜3・primary576／bridge144・実storage・独立UID／5 process・継続8 read・本番採用の保留を維持する。
+
+CWC-CO設計確認（2026-11-12）：40条件・9 helper・CCO-0〜2の文書構造と、metadata4096／row64 Bの設計算術を確認した。既存195テストとLG-M1／LG-0／LG-M0記録・設計4系列の照合、差分検査が成功した。これは新runtimeの実参照上界や40条件の実行結果ではない。既存source・実測記録は変更していない。
