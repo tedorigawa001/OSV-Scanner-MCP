@@ -1,0 +1,30 @@
+import {it,expect,beforeAll} from 'vitest';
+import {readFileSync} from 'node:fs';
+import {runCo0bMatrix} from '../fixtures/gradleOwnedCwcCo0b.js';
+import {validateCo0bEvidence,compareCo0bReplay} from '../fixtures/gradleOwnedCwcCo0bValidation.mjs';
+import {packCo0b,unpackCo0b} from '../fixtures/gradleOwnedCwcCo0bPacked.mjs';
+let saved:any,fresh:any;
+beforeAll(()=>{const r=JSON.parse(readFileSync(process.env.CWC_CO0B_RECORD_PATH??'docs/validation/gradle-cwc-co0b-2026-11-12.json','utf8'));
+ saved=unpackCo0b(r.packed);fresh=runCo0bMatrix();},60000);
+const verify=(e:any)=>{validateCo0bEvidence(e);compareCo0bReplay(e,fresh);};
+const reject=(edit:(e:any)=>void)=>{const e=structuredClone(saved);edit(e);expect(()=>verify(e)).toThrow();};
+it('CBR01: original record agrees with unchanged-source control, independent primitive model and exact fresh replay',()=>{verify(saved);expect(unpackCo0b(packCo0b(saved))).toEqual(saved);});
+it('CBR02: aliasing a retained root cannot preserve the four-identity witness',()=>{reject(e=>{const w=e.rows[0].observed.witnesses[0];w.ids[3]=w.ids[2];});});
+it('CBR03: phase exchange preserving global call totals is rejected',()=>{reject(e=>{const ps=e.rows[0].observed.primitives,a=ps.find((p:any)=>p.phase==='expected'&&p.kind==='hash'),b=ps.find((p:any)=>p.phase==='normalize'&&p.kind==='hash');a.phase='normalize';b.phase='expected';});});
+it('CBR04: coordinated raw/result relabeling cannot change source-supported object lifetimes',()=>{reject(e=>{const r=e.rows[0].observed,p=r.parses.find((p:any)=>p.phase==='expected'),w=r.witnesses.find((w:any)=>w.phase==='expected');[p.input,p.output]=[p.output,p.input];[w.ids[1],w.ids[2]]=[w.ids[2],w.ids[1]];});});
+it('CBR05: coordinated primitive/model reductions preserving aggregate totals require exact fresh evidence',()=>{reject(e=>{const r=e.rows[0].observed,ps=r.primitives.filter((p:any)=>p.work.stringifies>1),a=ps[0],b=ps[1];a.work.stringifies--;a.model.work.stringifies--;b.work.stringifies++;b.model.work.stringifies++;});});
+it('CBR06: actual hash input bytes cannot be replaced by output length or a smaller model',()=>{reject(e=>{const r=e.rows[0].observed,p=r.primitives.find((p:any)=>p.kind==='hash');const delta=p.work.hashInputBytes-64;p.work.hashInputBytes=64;p.model.work.hashInputBytes=64;p.model.inputBytes=64;r.work.hashInputBytes-=delta;});});
+it('CBR07: excluding the mandatory trace buffer cannot promote metadata fit',()=>{reject(e=>{e.audit.layout.traceCapacity=0;e.audit.layout.explicitBuffers=4096;});});
+it('CBR08: moving an owner source location and updating its digest is rejected',()=>{reject(e=>{e.audit.sites[0].line++;e.audit.sites[0].sourceDigest='a'.repeat(64);});});
+it('CBR09: coordinated protocol/control mutation is checked against the immutable baseline',()=>{reject(e=>{e.rows[0].observed.protocol.familyDigests[0][0]='a'.repeat(64);e.rows[0].control.familyDigests[0][0]='a'.repeat(64);});});
+it('CBR10: negative/nonfinite quantities and unsupported adoption flags are rejected',()=>{
+ for(const value of [-1,NaN,Infinity])reject(e=>{e.rows[0].observed.primitives[0].work.charReads=value;e.rows[0].observed.primitives[0].model.work.charReads=value;});
+ reject(e=>{e.rows[0].observed.scope.threeSlotEstablished=true;});
+ reject(e=>{const w=e.rows[0].observed.witnesses.find((w:any)=>w.phase==='expected');w.sourceSupportedRoots=4;w.observerExtendedRaw=false;w.lifetimePolicy='source-holder-and-future-use';});
+});
+it('CBR11: diagnostic refusal cannot refund or reset the prepaid parent budget',()=>{reject(e=>{const r=e.rows[0].guards[0].result;r.finalBudget.work=0;r.protocol.budget.work=0;});});
+it('CBR12: coordinated scratch reduction and missing/duplicate packed records are rejected',()=>{
+ reject(e=>{const r=e.rows[0].observed,p=r.primitives.find((p:any)=>p.scratch?.partUnits>1);for(const s of [p.scratch,p.model.scratch]){s.partUnits--;s.logicalUnits--;}const s=r.scratch.find((s:any)=>s.seq===p.seq);s.partUnits--;s.logicalUnits--;});
+ const p=packCo0b(saved);p.evidence.rows[0].observed.primitiveTuples[1]=p.evidence.rows[0].observed.primitiveTuples[0];expect(()=>verify(unpackCo0b(p))).toThrow();
+ const unused=packCo0b(saved);unused.shapes.push(structuredClone(unused.shapes[0]));expect(()=>unpackCo0b(unused)).toThrow('co0b_packed_noncanonical');
+});

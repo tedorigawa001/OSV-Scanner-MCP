@@ -3366,8 +3366,11 @@ LG-M1の記録レビュー修正（2026-11-12）：grant IDを実scope番号・a
 - [x] slot以外のcanonical／hash一時値も別regionへ計上し、metadata4096のlayout候補・固定参照table・scratch非重複・追加workの独立承認／事前予約・失敗時の消費保持を明記した。原上限と単位を変えず、残5424 unitsやbroker余裕6091 Bを統合適合の証明に使わない。
 - [x] CCO01〜40の回帰条件とCCO-0〜2の出口を追加。元live site・最後のcallback後の同期fence・fatal先行失効・drain／後着拒否を維持する。
 - [x] CCO-0a（§9.143）：strict fixture recipe・独立source pin・所有cell／candidate slab・packed metadata・phase／lease／retire・独立expected比較を実装。24ケース・684 commandと未予約scratch／第4lease・再入／期限・消費保持・後着拒否を検証する。成功はstorage比較までで、B proof／fact採用を生成しない。
-- [ ] CCO-0b：元Cpr関数内部の全参照・canonical／hash scratch、JS bridge／実参照table、総追加workをsource別に束縛する。管理対象peak3と追加bridge262144 Bは4096 B目標や元領域共存の証明ではなく、CCO-0出口は未成立。
+- [x] CCO-0b調査（§9.144）：元sourceを変更せずschema／hash・canonicalの実呼出しを観測。normalizeでは3 full command＋1 shallow preimageの4 distinct rootをsource holder／future useへ対応付け、現recipeの3 slot仮定を不採用とした。expectedの4参照はobserverがraw寿命を延ばす保守的frame観測で、同じ強参照下界とは数えない。metadata＋traceの明示buffer266240 Bも4096 Bを超える。12対照・342 command・24拒否と、source別保持箇所・primitive量・回帰／fresh照合を記録する。
+- [ ] CCO-0出口の契約見直し：hash用shallow preimage・canonical一時値を含む所有consumer、実参照table／JS bridgeとscratchの上界、既存単位へ対応する追加workを具体化する。Zod／native crypto・copy／freeze・zero等の未被覆を0課金にせず、元1 MiB／work枠に収まらなければ3 slot案を棄却する。現CCO-0aは採用せず、CCO-1へ進めない。
 - [ ] CCO-1：新source承認の実A／B・固定consumer、独立initial／seal・provider計画へ接続し、全canonical bytes・live site・元oracleと消費を照合する。
 - [ ] CCO-2：最大入力・両role／両LG mode・2 attemptの全領域／親子ledger共存を実証し、LG-0最大layoutを再判定する。新profile・3 slot・metadata／work・LG-0出口・LG-1〜3・実Session／性能／本番採用は未成立。
 
 CWC-CO設計確認（2026-11-12）：CCO01〜40・9 helper・3段階の文書構造とmetadata4096／row64 Bの算術を確認。既存195テスト、LG-M1／LG-0／LG-M0記録・設計4系列の照合、差分検査が成功した。新runtimeと40条件は未実行で、既存source・実参照／性能記録のhashを更新して新方式の証拠へ流用していない。
+
+CCO-0b調査検証（2026-11-12）：runtime13・record12と既存223の248テスト、12対照・342 command・24 guard拒否、型・差分・既存CCO-0a記録の照合が成功した。20 source anchorと225 source／artifactを新記録へ束縛し、normalizeの4 rootとexpectedの保守的raw保持を区別する。source代入上のclient保持は3 context・4 coreで、既存3 core枠へ自動で重ねない。physical heap／全参照／scratch／総追加workの上界は未成立。現recipeとCCO-0出口を不採用とし、次は所有consumer・bridge／scratch／cost契約の見直しで、CCO-1へ先行しない。

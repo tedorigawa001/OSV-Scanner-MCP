@@ -10916,3 +10916,72 @@ workはfixture専用co0.managed-operations.v1で、初期化4096、actorごと�
 2026-11-12の検証ではCOF20件・COR8件と既存195件、合計223件が成功した。typecheck・diffの空白検査と、記録runnerのfresh照合も成功した。これは固定clockの基礎fixture検証であり、実時間性能比較や既存Session経路の再測定ではない。既存LG-M1のsource閉包・4実体の記録は変更していない。
 
 CCO01〜40は基礎fixtureに対応する一部を確認した段階で、全体を実行済みにしない。realAandB／actualReadScope／actualSession／normalizerTemporariesBound／metadataBridgeWithin4096／completeWorkCoverage／threeSlotBoundEstablished／budgetCoexistenceProvedはいずれもfalse。CCO-0出口・CCO-1採用・LG-0出口・本番採用は未成立として保存する。次はCCO-0bの全参照／scratch／bridge／追加workの上界調査である。
+
+### 9.144 CCO-0b：内部参照・canonical／hash scratch・追加workの調査
+
+#### 9.144.1 判定と実証範囲
+
+CCO-0aのCo0Owner／元Cpr schema／canonical／hash sourceを変更せず、実呼出しへ同期observerを挿入した。管理対象のpeak3は全representationの上界ではなく、現consumerに3 slotを適用する仮定は不採用とする。normalizeでは3つのfull command rootと、payloadを共有する1つのshallow preimage rootを元holder／future useへ対応付けた。これは4 full deep copyの意味ではない。expectedのraw値は最終利用後もobserverが保持する可能性があり、その4参照は保守的frame観測に限定する。浅いpreimageを別の明示scratchへ収容する将来案まで不可能とした判定ではなく、現在のsource／recipeがその上界を証明できないという判定である。
+
+metadata4096 Bと別trace／bridge262144 Bは、claimからreclaimまで実Bufferとして共存する。合計266240 Bは4096 B目標を満たさない。traceだけを将来除去できると仮定して、残るJS bridge・handle registry・強参照tableが4096 Bに収まったとは扱わない。workも管理tick以外の完全な被覆がなく、completeWorkCoverageはfalseのままとする。
+
+診断は固定clock・同一process・synthetic core・私有storageに限定する。実A／B・ReadScope／Session／SourceOwner、LG両mode runtimeは未接続。Co0Ownerのsource承認は既存fixture用のままで、本observerや提案profileを本番承認したものではない。CCO-0出口、CCO-1採用、LG-0出口、本番採用はいずれもfalseである。
+
+#### 9.144.2 実identityとsource上の保持根拠
+
+| 観測位置 | 同時保持する実rootとsource上の根拠 |
+|---|---|
+| normalizeのcheckCommand内部 | child.inputに残るdecode結果、managed lease.valueに格納するprepared schema結果、hash後にq.requestDigestと比較する新しいschema結果、wireIntentのrestで作るrequestDigest除外root。4つのsource-supported root |
+| expectedのmakeCommand内部 | child.qに残るprepared結果、commandの新しいschema結果、wireIntentのrest rootの3つに加え、observerがmakeCommandのraw commandをframe終了まで保持。rawの元GC livenessは未証明で、4つ目は保守的観測 |
+
+cprCommandSchema.parseの実入力・返却値を観測し、wireIntentがhashへ渡す実preimageと同じ時点でWeakMap identityを照合する。rest.payloadとschema結果.payloadが同じ実参照であることも確認する。元sourceのchild／lease holder、local、最終利用を20箇所のanchor・行／列・source hashへ対応付ける。normalizeはsourceSupportedRoots=4、expectedはsourceSupportedRoots=3／observerExtendedRaw=true／conservative-active-frameと区別し、expectedの4参照を元sourceの4強参照下界へ昇格しない。V8 GC root／物理heapの同時生存上界はどちらも証明しない。診断終了後に値を証拠objectへ保存せず、ID・canonical幅・alias関係だけを返す。
+
+3-rootの診断guardは4 rootの観測後、当該hash.updateより前に拒否する。この時点でpreimage objectは既に生成済みであり、allocation前の3 slot制御や新しい実装上界の証拠ではない。normalize／expectedを別々にguardした24ケースでは成功command比較・proof・公開は0で、memoryを回収しても元initialization／actor workを保持する。guardを置かない実行だけを全件対照へ照合する。
+
+#### 9.144.3 canonical／hash scratchと保持参照
+
+元canonical実装のObject.keys、Array.map／join、JSON.stringify、String.charCodeAt、および実Hash.updateを観測する。外側のcanonical呼出しと、ownedDigest内部のcanonical＋hashを別rootとして数え、後者の内部canonicalをもう一度top-level rootへ数えない。実Hash.updateの入力size／digestを独立したcanonical再帰modelへ照合し、hash出力64文字を入力量の代わりに使わない。
+
+joinが復帰する時点の実map結果配列とjoined文字列について、partsの文字数合計・joined文字数・両者のlogical unitsを保存する。独立modelは実canonical関数やそのobserverを呼ばず、別の再帰でkeys／map／join／stringify・文字走査を再現する。最大logical join payloadはreader通常14796、reader schema-upper18836、broker schema-upper19693 code unitsである。これらは論理的な文字列値の量で、V8 rope／interning／GC・JS object header・native crypto workspaceの物理bytesではない。65536 Bのscratch予約へ実際の全一時値が収まった証明に昇格しない。
+
+source監査にはcanonicalのactive Setと再帰frame、keys／encoded parts／join、hash wrapper、copy／freezeの配列と再帰、Co0Ownerのchildren／lease／retired配列、claim／windowのWeakMapとcallbackを含める。WeakMapのkeyがweakでも、外部handleが生きている間のvalue／ownerの保持上界は自動では減らない。参照table16件は依然targetに過ぎず、実装済みの固定tableではない。Zod内部のschema一時値とnative cryptoの全allocationは未観測・未被覆として残す。installed Zod v4／jsonc-parserのJS artifact、lockfile、Node版／binary digestも記録するが、そのpinだけで内部上界を認めない。
+
+trace容量262144 Bに対し、正常close後のtrace使用量はprovider58880 B、client117568 Bである。診断traceを外した将来layoutは別recipeで実証する必要がある。既存codec・3 core・3 context・source／session／call／binding／LG領域の余裕をbridge／scratchへ無断転用せず、元1 MiBでの共存は未成立とする。
+
+source代入から分かるclose直前の所有graphも別記する。owner contextとchild contextを合わせてproviderは2／clientは3 context、expected用とbuilder用を各childが保持するためproviderは2／clientは4 plan coreとなる。これは私有fieldのruntime全列挙や全strong reference数の測定ではなく、source上の代入・reclaim対応である。fixtureのcaller入力context／coreも外側に保持される。clientの4 coreを既存3 core枠へ自動で重ねず、統合時は増分を再計上する必要がある。
+
+#### 9.144.4 追加workの数量と未被覆
+
+| 量 | provider 1 family | client initial＋seal |
+|---|---:|---:|
+| 比較command | 19 | 38 |
+| 実command schema parse境界 | 95 | 190 |
+| 実Hash.update | 247 | 494 |
+| top-level canonical（reader） | 594 | 1190 |
+| top-level canonical（broker） | 672 | 1346 |
+
+clientのcanonicalには独立family core比較の2呼出しを含める。Hash.update入力bytesはreader通常863040／1726080、broker schema-upper1307906／2615812である。全candidate bytes比較の実charCodeAtは、reader通常146410／292820、broker schema-upper230010／460020回で、成功比較bytesの2倍へ独立に照合する。canonical内部の文字検査は別counterで、同じcharCodeAtをこの直接比較counterへ重複計上しない。
+
+keysの数、map／joinの数・logical payload量、stringifyの数・出力文字数、hash入力bytes、parse境界、比較文字読取は異なるquantityである。inclusive時間や同じwork単位と見なして合算しない。このprimitive-quantities.v1をCWCのrequest bytes／ranges／probes、156978 plan ticket、LG4096 initializationへ換算・相殺しない。元Co0Ownerの4096管理work／actorにこれらが無料で含まれたとも扱わない。
+
+Zod内部、native crypto、descriptor copy／freeze、buffer copy／zero、全strong reference bridge、親子ledger全体の追加上界は未成立である。これらを未被覆0として採用する経路は追加しない。observerのidentity表・再帰model・検証hash・診断copy・export／保存は観測側の追加費用で、counter領域から除外する一方、元budgetに収まった処理とは扱わない。今回、実時間の速度比較・heap上界・実Session性能は測定していない。
+
+#### 9.144.5 回帰・対照・再現
+
+2 role×3境界×provider／clientの12ケースについて、全19 ordinalの実行と観測なしの対照を別々に行う。合計342 command・9 entry／41460 source bytesの各familyを処理し、全family digest・比較bytes・元trace digest・状態・予算をCCO-0aの保存済み原本と照合する。要求labelを2倍にしてLG両mode接続の証拠とすることはしない。CCO-0a／LG-M1のsource・検証原本は更新しない。
+
+| ID | 回帰・必須照合 |
+|---|---|
+| COB01〜04 | normalizeのsource holderとexpectedのobserver延長の区別、実canonical／hash数量と別model、3-root guard、観測なし対照と95 parse／全19 commandの一致 |
+| COB05〜07 | 266240 Bの明示buffer、拒否後のintrinsic／spy復元、同じ親の非返還消費と新ownerの不足拒否 |
+| COB08〜10 | 保存bytes改変、期限・source失効・捕捉済み再入、expected guardとallocation済みである範囲の区別 |
+| COB11〜13 | 保持source anchor欠落・未成立の昇格拒否、12対照と24 guard拒否 |
+| CBR01〜04 | 別fresh実行、rootのalias偽装、総件数を保つphase交換、raw／parsed IDの協調的交換の拒否 |
+| CBR05〜08 | quantity／modelの協調減額・hash入力過少申告、trace領域除外、source行／hash移動の拒否 |
+| CBR09〜12 | 対照も変えたprotocol改変、非有限／負値・採用flag、消費返還、scratch協調減額・packed event重複／欠落の拒否 |
+
+再現は`node scripts/check-cwc-co0b.mjs`、保存原本とのfresh照合は`node scripts/check-cwc-co0b.mjs --check`。記録はdocs/validation/gradle-cwc-co0b-2026-11-12.json。保存時だけ共通counter shapeを辞書化し、全rootのphase／actor／ordinal・実測／model参照・digestをlosslessなtupleへ格納する。decode→re-encodeの完全一致・未使用／重複shape拒否・strict tupleと全fresh再現を要求する。この保存形式の削減はruntimeのmetadata4096 Bやwork削減ではない。
+
+2026-11-12の検証で、COB13件・CBR12件と既存223件、合計248テストが成功した。12対照の342 commandと24 guard拒否、独立quantity model／fresh再現、型検査、既存CCO-0aの記録照合・差分検査も成功した。記録は225 source／artifactと20保持anchorを束縛する。expected側の保守的保持をsource-supportedな4参照へ書き換える記録も拒否する。実時間・物理heap・全追加workの上界を実証した結果ではない。
+
+CCO-0bの調査結果は現recipeを不採用とし、CCO-0aを変更せず残す。次はshallow hash preimage・canonical一時値を含む所有consumerと、実bridge／参照table・scratch・追加costの契約見直しである。元上限・完全schema／独立expected／全bytes比較・毎回の認可／元期限を維持できる案が得られなければ、3 slotという前提を棄却する。CCO-1やLG-1へ先行接続しない。
