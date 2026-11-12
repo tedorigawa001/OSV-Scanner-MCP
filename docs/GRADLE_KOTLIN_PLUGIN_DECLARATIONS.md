@@ -10522,6 +10522,6 @@ bridgeは旧VF-3P v2と新full-input（batch／fact-live固定）の2 arm×3 wor
 
 LG-0〜3のどの出口も現時点では未成立である。CFP-0の単一自己hash置換は別の保留工程で、今回へ暗黙に組み込まない。CPR-Cの実storage接続・独立UID／5 process・継続8 read・CG0／CG3・本番採用の保留を解除しない。
 
-設計の文書・source binding・baseline raw digest・48 planned条件・4段階・比較matrix・正常release／fatal作用表・予定720 rowとschedule digestはdocs/validation/gradle-cwc-lg-design-2026-11-12.jsonへ保存する。gradleOwnedCwcLgSchedule.mjsは予定順序だけの文書contractモデルで、LG runtimeや実開始witness検証runnerの実装ではない。再生成は`bdo node scripts/check-cwc-lg-design.mjs`、照合は`bdo node scripts/check-cwc-lg-design.mjs --check`。設計整合性のテストをruntimeの48回帰や新しい性能実証として数えない。§9.137の既存コマンド表記は保持し、VF-3Pの実行source・実測本文・raw digestは変更していない。
+設計の文書・source binding・baseline raw digest・48 planned条件・4段階・比較matrix・正常release／fatal作用表・予定720 rowとschedule digestはdocs/validation/gradle-cwc-lg-design-2026-11-12.jsonへ保存する。gradleOwnedCwcLgSchedule.mjsは予定順序だけの文書contractモデルで、LG runtimeや実開始witness検証runnerの実装ではない。再生成は`node scripts/check-cwc-lg-design.mjs`、照合は`node scripts/check-cwc-lg-design.mjs --check`。設計整合性のテストをruntimeの48回帰や新しい性能実証として数えない。§9.137の既存コマンド表記は保持し、VF-3Pの実行source・実測本文・raw digestは変更していない。
 
 設計レビュー修正検証（2026-11-12）：LGの文書整合性20件と関連CWC-FP／LB／VFを合わせた42テスト、4系列の設計記録の--check、既存VF-3Pの記録21件の照合、型検査・差分検査が成功した。正常release／fatalの作用対象を文書と記録へ照合し、予定720 rowの順序交換・ordinal補修・pair／phase／型／余分field改変・欠落を拒否、キー挿入順変更を受理した。各固定条件の測定3 roundにAB／BAの両順序があることも確認した。これは予定順序のcontract検証で、実時系列witnessの検証runnerは未実装。LG runtime・48回帰条件・576＋144の実試行は全て未実装／未実行で、今回の通過数へ含めない。

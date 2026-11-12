@@ -5,7 +5,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.138 CWC-LG：所有live入力の正規化と毎回認可の分離契約（設計）",
-    "sectionSha256": "8ee0ad2043174ab487755d7cd32fe562f4180862ced390d09f969c25808c67d5"
+    "sectionSha256": "01d3620c0332cd67ac7ecc9247347b55c0225b4583baaadc2083581ecbc2c509"
   },
   "sourceBindings": {
     "src/test/fixtures/gradleOwnedCwcVf0Authority.ts": "6d941efead3999299e00a2a17ea006e7704dedcaeac05714a6ffde81faa61a4f",
