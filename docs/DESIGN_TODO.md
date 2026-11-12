@@ -3316,7 +3316,7 @@ VF-3Pレビュー修正v2の最終確認：runtime24・記録21を含む497テ�
 - [x] レビュー修正：正常scope終了はLG handle／局所世代／frame／lookup／追加ticketだけを終了し、実call・channel・最終wireを保持して固定full-input最終検証へ進む契約を明記。fatalは実callへ先行伝播し、正常finallyで上書きしない。CLG32／33へ正常成功と競合・後着拒否の両条件を追加。
 - [x] レビュー修正：primary→新workerのbridgeの順、cohort／round／observation・group回転、隣接対のAB／BA、720予定rowのdigest／ordinalと照合keyを固定。CLG44／46へ集合不変の順序交換・実開始witness不一致・phase混在の拒否を追加。予定順序モデルを実測や実時系列witness検証の成立と数えない。
 - [x] LG-0のstandalone helper・owner／port／immutable view・claim／capture／seal／世代／再入拒否を§9.139へ実装。正常LG-local releaseとfatal call失効、初期化4096 units保持・追加4096 Bを既存の実予算内で検証。実providerへの正規化省略・48条件全体・新しい性能測定は未実装／未実行。
-- [ ] LG-0の最大入力layout gateを解決する。通常の両role／両mode・2試行は収まるが、全cid／epochをschema最大にした4例はcapture前に容量不足で拒否。最大fieldの共存条件が未成立なのでLG-0出口・LG-1採用を通さず、次は入力範囲と既存layoutの対応を整理する。
+- [ ] LG-0の最大入力layout gateを解決する。通常の両role／両mode・2試行は収まるが、全cid／epochをschema最大にした4例はcapture前に容量不足で拒否。最大fieldの共存条件が未成立なのでLG-0出口・LG-1採用を通さない。§9.140でregion／寿命とschema-upperを分解済み。次はcommand windowの実consumerで3 slot上界・metadata・追加workを実証する。
 - [ ] LG-1のprovider／ReadScope接続、LG-2の実Session／fresh snapshot接続、LG-3の共通条件比較はLG-0通過後に進める。CFP-0の単一自己hash置換は別工程のまま。本番・実storage・独立UID／5 process・8 read・CPR-C／CG0／CG3は保留。
 
 文書・source binding・planned条件はdocs/validation/gradle-cwc-lg-design-2026-11-12.jsonへ保存する。設計整合性テストの通過をLG runtime・速度改善の成立として数えない。
@@ -3335,3 +3335,14 @@ CWC-LG設計レビュー修正検証（2026-11-12）：LG20件を含む文書整
 LG-0検証（2026-11-12）：runtime29・record12と関連113の154テスト、4系列の設計記録照合・既存VF-3P記録21件・型・差分検査が成功。通常28ケースは8成功／20拒否、最大context4例は容量超過で拒否。基礎fixtureの実装と回帰記録は完了したが、最大入力layoutのLG-0出口は未成立。次はこの容量gateの整理で、LG-1接続や性能比較へ自動で進めない。
 
 LG-0レビュー修正v2（2026-11-12）：未capture／未sealのscope cleanupをabortとし、seal本体・post fence成功と正常releaseを確認したcallだけがfinalizeできるよう修正。両modeの未capture／未sealで成功公開・署名・use／ACKが0となる回帰を追加した。最大contextには実constructor相当のstrict schema・role／origin・binding照合と全最大化対象field検査を適用し、両mode・両roleでdigest更新済みの不正記録も拒否する。runtime30・record14と関連113の157テスト、設計4系列・既存VF-3P記録21件・型・差分検査が成功。新v2記録は36例（8成功／28拒否）＋最大context4拒否。最大layoutの出口とLG-1への進行は引き続き保留。
+
+### LG-M0：最大contextの容量監査とcommand保持window候補（§9.140）
+
+- [x] 現行CWC-C上界をcodec・3 core・3 context・command families・source／call／binding／LGへ分解し、sourceの保持箇所・寿命・既存解放を束縛した。context共有だけでは不足し、全command配列とcanonical fact bytesの二重保持を削減対象とした。
+- [x] 既存最大例に加えてref byteLength65536／head revision256のschema-upperを監査。旧共存上界はreader1119501／broker1138377 B。1 MiBや最大19 command・4 range・sourceサイズは増減しない。
+- [x] 4 slot＋metadata2048 Bはbrokerで53 B超過して拒否。3 slot＋別metadata4096 Bはreader1031760／broker1042485 Bとなる条件付き計算を検証。scope内のcodec／3 core／3 context／旧source領域は減額せず、既存f.q解放も新たな削減と数えない。
+- [x] mode×role×3境界×3 recipeの36行と実Lb0Budgetの合成予約・2 attempt・失敗消費保持を保存。保持sourceの行番号・hash、旧LG-0 record、未実行CLM01〜20を新記録に束縛した。既存のLG-0拒否と実consumerの予約は変更していない。
+- [ ] 次は固定consumerのcommand生成／decode／copy／schema parse／expected生成を実参照で追跡し、3 slotを超えないことを証明する。追加metadata4096 Bとworkの共存・コピー前lease・初期化と失敗の消費保持を実証する。
+- [ ] 成立した場合だけ新source profileでCWC-A／B／plannerとclient initial／sealへ接続し、全19 ordinalのcanonical bytes・bound・work／wireを元oracleと比較してLG-0の最大条件を再検証する。3 slot仮説・合成予約はLG-0出口、LG-1／実Session／性能／本番採用の成立とは数えない。
+
+LG-M0検証（2026-11-12）：容量監査12・record10と関連157の179テスト、既存LG-0記録・設計4系列・VF-3P記録21件・型・差分検査が成功。36行で合成予約26完了／10拒否を記録した。3 slot＋metadata4096のbroker余裕6091 Bは条件付き算術であり、実consumerのslot追跡・追加workは未実証。次の課題は固定consumerのstream生成／parse／copy上界の実証で、LG-0出口とLG-1への進行は保留。

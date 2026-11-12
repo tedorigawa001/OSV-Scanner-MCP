@@ -10551,3 +10551,87 @@ LG-0レビュー修正v2（2026-11-12）：未capture／未sealの成功公開�
 保存証拠のcontext検証は、実constructorのCPR schema・意味制約に対応したNodeから読めるstrict contractを用いる。正常／最大の両方へ適用し、peer roleと記録role、provider role、broker origin、selected snapshot／checkpoint、lineageとbinding、provider boot、catalogを照合してから容量を計算する。最大contextではさらに、factoryと共有する全cid／unbounded epochの最大化対象を検査する。元constructorとの一致は保存済み全contextで照合する。部分的な長さ確認だけでschema不正を容量不足へ分類しない。
 
 検証recordとevidenceはv2へ更新した。未capture終了・未seal終了をmode×role別の8拒否例として加え、36ケースは8成功・28拒否となった。v1は新検証で受理しない。現在の最大context4例はstrict contractを満たした上で容量不足となり、出口未成立の判定と必要量は変わらない。runtime30件・record14件と関連113件の157テスト、設計4系列・既存VF-3P記録21件の照合、型・差分検査が成功した。最大入力layout／LG-0出口／次段階採用／本番採用はいずれもfalseのままとし、実Session・実storage・実時間比較は実行していない。
+
+### 9.140 LG-M0：最大contextの容量分解とcommand保持windowの候補契約
+
+LG-0の出口保留を受け、既存の保持量・source上の寿命を監査した。今回の実装は容量監査と合成予約の限定実証で、LG-0・CWC-A／B／planner／実Sessionの予約や保持方法を変更していない。1 MiB・元期限・初期化／work／wire上限、最大64 permission row、最大19 command・4 range・source41460 Bを維持する。条件付きの計算上のfitを採用・実consumerの3-slot証明と数えない。
+
+#### 9.140.1 保持量・寿命と超過の原因
+
+旧CWC-Cの上界をclient／provider別に分解する。codec393216 B、plan coreの3組、private contextの3組、frame32768 B、record16384 B、root／fact metadata8192 Bを保持する。commandはclient57個分（19×3組）、provider38個分（19×2組）で、providerはさらにsource wire65536 B・sourceとcopyの2×41460 B・metadata4096 Bを持つ。合計の大きいactorにsession131072・call98304・binding8192・LG4096を加え、既存CLBで証明された共有frame32768だけを一度控除する。これは現行のconservative logical layoutで、heap／RSSや新consumerの実allocation traceではない。
+
+sourceの保持箇所も束縛する。CPlannerのcommands配列は全commandを構築後も返却し、providerは要求ordinalとの比較に使う。client initialのp.commandsはsealとの全比較まで残り、sealed.commandsは転送用へ返される。Aのcanonical fact bytesはroot disposal／childの利用終了まで必須で、initialとsealの独立性を失う共有はできない。Aがconnected proof後にf.qをundefinedにする既存の解放は、今回の新たな削減量へ数えない。private contextは現状のreadonly表明だけで不変共有を認めず、3組とも残す。
+
+旧LG-0 recordの通常入力、登録済み最大例に加え、参照byteLength65536・selected head revision256も適用したschema-upperを別境界として調べる。全cid128文字・unbounded epochのMAX_SAFE_INTEGER、seed／transferId最大長、4 range×19 commandの既存上界を保つ。role／origin、選択参照、lineage／binding、provider boot、catalogの整合性は実constructorと照合する。登録済み最大例のbyteLengthやhead revisionがすべてのschema上限だったとは扱わない。
+
+| peer role・境界 | command上界 B | core上界 B | client scope B | provider scope B | LGを含む旧共存上界 B |
+|---|---:|---:|---:|---:|---:|
+| reader・登録済み最大 | 6110 | 18956 | 873395 | 909857 | 1118753 |
+| broker・登録済み最大 | 6539 | 19385 | 900422 | 928733 | 1137629 |
+| reader・schema-upper | 6127 | 18973 | 874466 | 910605 | 1119501 |
+| broker・schema-upper | 6556 | 19402 | 901493 | 929481 | 1138377 |
+
+表の数値は再現harnessで計算し、recordへ保存する。contextを1組にしても超過を解消できず、contextとcoreの両方を仮に1組にしてもschema-upperでは1 MiBを超える。codec393216 Bは最大の固定項だが、closed familyのtree／fragment／scratch上界を再証明せずに減額できない。最大例の超過はLG追加4096 Bより大きく、source上で重複保持箇所を特定できるcommandの全配列とcanonical fact bytesを最初の削減対象にする。
+
+#### 9.140.2 条件付きwindow候補と厳密な不採用境界
+
+候補は独立したcanonical familyをclientで2組（initial／seal）、providerで1組保持し、全commandの追加object配列を残さず順次処理する。コピー・decode・schema検証・期待値構築を含むactive command領域は1 slot8192 B単位で別予約し、pool index・root／generation・lease追跡等のmetadataも別に確保する。既存codec、3 core、3 context、source／call／binding／LG領域を減額しない。
+
+| 候補・境界 | reader共存上界 B | broker共存上界 B | 判定 |
+|---|---:|---:|---|
+| 4 slot＋metadata2048、登録済み最大 | 1037479 | 1048204 | 登録済み例のfitだけでは不足 |
+| 4 slot＋metadata2048、schema-upper | 1037904 | 1048629 | brokerで53 B超過、拒否 |
+| 3 slot＋metadata4096、schema-upper | 1031760 | 1042485 | 算術上fit、実consumerのslot上界は未成立 |
+
+brokerで3 slot候補の余裕は6091 B、readerは16816 B。53 Bの超過を丸めたり、metadataや最大入力を都合よく縮小したりしてfitへ変えない。3 slotは仮説で、現行A／Bのcopy・schema parse・expected command生成の途中を含めた実参照の上界ではない。追加window metadata4096は旧recordやLG4096とは別に計上する。
+
+合成予約は実Lb0Budgetに各regionを別ticketとして予約し、frameの既存共有だけを反映する。default上限の2逐次試行では従来のinitialization36864＋work114690＝151554、wire114688を保持し、容量・work不足時の失敗と初期化消費を返還しない。実際のstream処理は行わず、追加処理のwork上界をこの数値から無料と推測しない。実consumerの認可・元期限・budget検査やsource IO、署名・publicationは実行していない。
+
+#### 9.140.3 実装前に必要な所有・lease契約
+
+次工程の候補profileはcwc.owned-command-window.v1（未承認）とし、LG-0の既存source承認を流用しない。追加source閉包・layout版・actor・固定consumer／builder・metadata上界・copy／decode recipeと現pinを承認対象に含める。
+
+| private helper案 | 必須入出力・完全性・寿命 |
+|---|---|
+| openCommandWindow | source承認・親の実reservation・実root／call／scope／generation・actor・core／inventory・元期限へ束縛する。raw valid flagや同値IDでは入場しない。全family bytes・3 slot・metadata4096をcopy前に確保する |
+| appendCheckedCommand | 全19 ordinalを元順序で処理し、完全schema・semantic／K/D・canonical一致・同じA／B proofを保つ。data-only builderと所有済みimmutable context／coreから生成する。1 commandずつ原本factへ保存し、object配列を全件保持しない |
+| borrowCommandSlot | decode・コピー・schema parse・expected生成ごとに必要slotを事前取得する。固定source consumer以外へ可変object／Buffer／callbackを渡さず、readonlyだけで解放を表明しない。4番目は実読取／copy前に拒否する |
+| compareInitialAndSeal | initial／sealの別root・別reservation・別計画を保持し、core・全ordinalのcanonical bytes・bound・work／wireを完全比較する。共通immutable schemaは共有可能でも、認可成功・root／fact・plan結果を移管しない |
+| closeCommandWindow | 全borrow終了・全強参照除去を確認して回収する。callback再入・期限・pin／世代不一致は先行失効し、内側例外を捕捉しても外側公開0。pending dispatch・元wire・source snapshotは旧drain条件まで残す。失敗・retryの消費を戻さない |
+
+poolの内容をimmutableに保持する証明、copyごとのbegin／endの出自、複数階層からの同時参照、parse中の例外・再入・後着も必要である。現行consumerに第4参照が残るなら3 slot候補を採用せず停止する。既存のpermission／purpose／credential／source current／pin／元期限・残予算・内容／署名検査の位置と回数を縮めない。windowのstorage証明をcontent／authority／transportの成功receiptへ変換しない。
+
+#### 9.140.4 次工程の回帰条件（全20件planned・未実行）
+
+| ID | consumer実装時の条件・必須結果 |
+|---|---|
+| CLM01 | 現行sourceの全region・actor・frame共有と新windowを対応付け、実copy／保持量のtraceを独立reservationへ照合する |
+| CLM02 | 全cid／epoch・ref byteLength／head revisionのschema-upperを両role／両mode・2 attemptで検証し、最大例の縮小を拒否する |
+| CLM03 | 19 command・4 range・全entry・41460 source Bを保ち、少ないcommandだけの成功を最大条件へ昇格しない |
+| CLM04 | windowのroot／call／scope／actor・source pin・実reservationを照合し、clone／別実体／自己申告validを拒否する |
+| CLM05 | builder／decode／copy／parse／expected生成の全begin／endでslotを追跡。第4slotはgetter・読取・copyの前に拒否する |
+| CLM06 | 4 slot＋metadata2048のschema-upper超過53 Bを再現し、丸め・digest更新後の容量減額も拒否する |
+| CLM07 | metadata4096の全index／digest／handle／generation／lease stateを計上し、旧LG／record領域の重複使用を拒否する |
+| CLM08 | codec393216・3 core・3 context・source／snapshot／call／bindingの保持を維持し、既存f.q解放を新たな削減へ数えない |
+| CLM09 | initial／sealを別root・別計画・別reservationで作り、全canonical bytes／ordinal／bound／work／wireを比較する |
+| CLM10 | 実A／Bのschema・semantic・canonical bytes・length proofを元結果へ照合し、storage成功によるcontent／署名省略0 |
+| CLM11 | permission・purpose・両credential・全current pinを元site／phaseで検査し、両modeの件数・位置・順序を保つ |
+| CLM12 | callback中の取消し・再入・pin変更を捕捉し、内側例外を捕捉しても外側publication 0、borrowを早期解放しない |
+| CLM13 | root／call／scope／generationを変更・復元し、旧window・lease・initial factの別call／retry移管を拒否する |
+| CLM14 | copy／parse・全command処理後・最後のcallback後の元期限到達を拒否し、期限やclock originを更新しない |
+| CLM15 | window追加処理を含むworkを前払いし、2 attemptの初期化・work・wire／K/Dと失敗消費を保持する |
+| CLM16 | 例外・fatal・pending dispatchでslot／pool／旧wireを寿命別に保持・回収し、後着読取／公開と二重解放を拒否する |
+| CLM17 | 未capture／未sealの終了はabort、正常LG scope終了はLGのみ解放し、実call最終検証とfatal優先を維持する |
+| CLM18 | 外部へ漏れた可変alias・Promise／awaitを跨ぐborrow・未記録copy・参照保持を拒否またはprofile unsupportedにする |
+| CLM19 | source承認・fixture・最大入力・期限・予算を両modeで共通化し、出力／wire／oracle比較を同条件で行う |
+| CLM20 | trace・source位置・全case・消費／regionの協調改変を拒否し、容量算術／合成予約をLG-0出口・実Session・性能・本番採用へ昇格しない |
+
+#### 9.140.5 判定と再現方法
+
+今回の出口は「超過原因の分解と次のsource変更契約が具体化した」ことに限る。既存LG-0の最大入力拒否とlg0ExitEstablished=falseは変更しない。次は固定consumerでのcommand生成・copy・decode・schema／expected検証の実参照を計測し、3 slot上界とmetadata4096・追加workの共存を証明する。成立したsourceだけを新profileでCWCへ接続し、その後にLG-0の最大条件を再検証する。LG-1・実Session・primary576／bridge144へはまだ進めない。
+
+recordはdocs/validation/gradle-cwc-lg-capacity-2026-11-12.json、再現は`bdo node scripts/check-cwc-lg-capacity.mjs`、照合は`bdo node scripts/check-cwc-lg-capacity.mjs --check`。旧LG-0 recordを入力sourceとしてhashで束縛し、mode×role×3境界×3 recipeの36行、sourceの保持位置・寿命、合成予約・未実行の20 consumer条件を保存する。既存LG-0／VF-3Pの実行source・record・測定値を変更しない。
+
+監査recordのdigestはobject key辞書順・array順維持のJSON canonical bytesへSHA-256を適用する。余裕や不足slot数には負値を許すが、実budgetの非負counterや本番OwnedManifest schemaを変更しない。単なる予算の不足は失敗frontierと先行消費を残し、合成予約を解放してもwork／initialization／wire／attemptは巻き戻さない。
+
+LG-M0検証（2026-11-12）：容量分解・合成予約12件とrecord改変拒否10件、既存LG-0／関連157件を合わせた179テスト、既存LG-0記録・設計4系列・VF-3P記録21件の照合、型・差分検査が成功した。36行のうち26行は仮説の算術・合成予約で完了、10行は元上限で拒否された。これは実consumerの完了率や速度改善ではない。source保持行の移動、総量を保つregion間移動、最大context縮小、frame二重控除、先行消費の減額、53 Bの丸め、3-slot成立／採用への昇格を拒否する。実consumer接続・3-slot上界・LG-0出口・次段階／本番採用は全て未成立のまま保存した。
