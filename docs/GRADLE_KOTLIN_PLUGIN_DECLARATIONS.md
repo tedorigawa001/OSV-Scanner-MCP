@@ -11596,3 +11596,157 @@ lowerBoundにはlowerだけを加え、upperBoundはbaseを含む全upperが既�
 初回の2026-11-13検証ではinventory24・record8と関連既存267、合計299テスト、型・差分検査、R0／R1設計／R1-Oの旧記録照合が成功した。初回記録は15領域・43行・19 fileの76 anchor、R0 24例・R1-O 36例・pending12例、268 source／artifactと実Node binary・新文書節へ束縛した。上限unknownをnullのまま保存し、R1-M runtime出口・R1-W／G・R2・本番採用は未成立とした。
 
 同日のレビュー修正ではR1M25〜30の6回帰が修正前に失敗し、修正後に成功した。inventory30・record11と関連既存267、合計308テスト、型・差分検査、旧R0／R1設計／R1-O記録の照合が成功した。更新記録は15領域・45行・19 fileの79 anchor・268 source／artifactへ束縛し、5算術例・3 hook保持例を追加する。upper-only値の既知lowerへの加算をなくし、upper未確定／条件付きupper枠超過／既知lower超過を区別した。hook保持例は全て、最初のcallのbuffer／ticketが0になった後も別callの5 callbackから2 MiB viewとcontext／core markerへ到達できた。これはruntimeによる捕捉graphの保持の有限実証で、一般capture上限・GC解放・layout／native／work承認や本番採用は未成立のままである。
+
+### 9.150 R1-H：hook捕捉graph・保持構造の有界化とcharge（設計）
+
+本節は§9.149.6の第1項を具体化する**設計**である。既存R1-O／R0を変更せず、M15〜22／30〜38／44〜45の未被覆holderを、新しい所有runtimeの入場条件・容量・回収条件へ対応付ける。任意closureの環境を列挙するhelper、JS／native上界certificate、実親子ledgerの予約、runtime gateは未実装である。新しい候補subprofileは `cwc.owned-retention-core.v1` と `cwc.owned-retention-summary.v1`。元の `cwc.owned-command-window.v3`／recipe、1 MiB・work・元期限を広げず、いずれも独立承認前には採用しない。以下の件数は**設計上の発行／保持上限**であり、byte上界の証拠ではない。
+
+#### 9.150.1 入場条件とhookの扱い
+
+採用候補は任意のcaller提供hook／callback／function、Promise／thenable、raw graphを受け取らない。`hook` fieldはundefinedでも許可しない。入力はdescriptorと私有factoryの実brandを確認し、getter・文字列変換・callback・thenへ触れる前、対象copy／IOより前に拒否する。Proxy、派生型、操作差し替えも同じ扱いとする。freeze／typeof／toString／source hash／callerの「no capture」flagでは、関数の捕捉環境を証明できない。
+
+毎回必要なlive検査は削除しない。独立承認された閉じたmodule関数と所有portへ、実clock・authority・purpose・pin・取消し・元期限・残予算を束縛する。callerの関数をwrapperへ入れ直す方法、未監査の既存gate／now callbackの転用、subclass dispatchによる置換は許可しない。承認するsource閉包・loader・allocation routeとport factoryを別証拠で固定する。既存の実call／ReadScope・root／factへの接続は後続段階で実証する。
+
+M44のruntime→hook参照をなくしても、M45のcaller→closure→graphが消えた証拠にはならない。入力producer・consumer・外部observerが保持するgraphは承認された所有者の台帳へ残す。汎用callerが任意に保持する場合はuncoveredとして拒否する。whole VM heap、他processの量、GCによる解放の上界は本設計から導かない。既存のhook保持例の2 MiBは有限観測であり、一般上限でも新profileの許容量でもない。
+
+#### 9.150.2 所有者・寿命・保持上限
+
+Gは固定read容量Rを独立承認する。候補はR=1〜4、最大4であり、現本番の並列数を変更したものではない。実親ticketのnamespaceはG／R／W／T／D／C／Fの**所有関係**と結び、名前の一致や診断ticketだけで実ownerと認めない。
+
+| owner | 所有するもの・容量 | 生成・寿命・回収条件 | charge／未被覆 |
+| --- | --- | --- | --- |
+| G deployment/runtime | 固定active／retiring registry R行、module／port factory・root edge | module load前に予約。read行は全tail debt消滅まで再利用不可。deployment終了までのmodule residencyは別保持 | registry本体・backing容量・root参照・module全閉包を計上。Map／WeakMapへの無限履歴追加を禁止 |
+| R logical read | 一つのlogical readと最大2 attempt、retirement／exportの全debt | 初回copy／IO前に全最大量を予約。全child／frame／borrow／transport／consumerの最後の利用後だけ解放 | 元実親vector内。再試行ごとの新予算・期限・初期化creditを作らない |
+| W attempt/window | 各48 role slot・8 private opaque identity・binary3072の完全な本体をread当たり2組予約 | attemptごとに新identityを発行。正常window終了はlocal。initial／seal family・factの最後の利用を早めない。旧本体が残る第2 attemptも予約で被覆 | 各本体のbridge1024は候補。2組分のbinary／table／container／16 identityを計上。wrapper／stack aliasの独立chargeも必要 |
+| T retirement | read全体で16 unique private identity（現在の8も含む）、失効した最小状態 | W→Tは同じidentityの所有移管。raw core／context／closure／authority lookupへのbackedgeを残さない。全承認holderの参照終了まで保持 | 16 identityはW×2に含め一度だけ計上。retirement containerは別加算し、さらに8 handleを重ねない |
+| D summary export | 有効時のみterminal 256 B×2 record、固定送信／配送状態 | sender・転送・承認consumerの保持終了まで。借用中recordの上書き不可。export debtがある間G／R行を再利用しない | payload512 Bを事前予約。wrapper・queue・marshal・receiver copyとworkは別charge |
+| C approved consumer／元root-fact owner | 元A／B・snapshot／family／receipt・外部に残る承認済み参照 | transport最終検証・outcome／use／ACKと実holderのlast useまで。ACK単独でconsumer copy解放を推定しない | 元root／fact8192などと分離せず、追加holding分も計上。固定件数からbyte fitを推論しない |
+| F frame/scratch | constructor／parser／helper／cleanupの局所参照・span・closure | 正常／例外を含む全frame復帰とnative borrower終了まで。counter減少だけで解放済みとしない | sourceで最大同時frame／alias数と領域を証明。未確定upperはnull |
+
+activeな権限lookupと、cleanup用のretiring容量行を区別する。fatal時は権限lookupを先に除去し、同じslotにcleanup用の実参照と予約を残す。registry満杯ならcopy／IO前にbusyまたはunsupportedとし、未完了readの追い出しやoverflow tableを作らない。弱参照・FinalizationRegistry・GC待ちを容量回収の根拠にしない。
+
+8 handleは**attemptごと**の上限である。最大2 attemptに新しい8 identityずつを発行するためread全寿命の発行上限は16。stale aliasの残る同じobjectを新generationへ再利用しない。CoreHandleは既存windowと同一実体の役割aliasを維持し、第9handleを作らない。Tの16は現在8を含むため24として二重計上せず、Wの8だけでread全寿命を被覆したとも扱わない。
+
+第1 attemptのbyte borrowerが終了しても、そのWのbinary3072・48参照table・container・wrapperが全て回収されたとは限らない。現契約は完全なW×2を常に事前予約し、1 attemptで終わる場合も予約を1組へ縮めない。48 roleは各Wの役割数で、2組のtableは最大96 role slotである。同じ参照先でも二つの保持fieldは別chargeとする。Tの最小状態へ移れない旧Wもcleanup／frame／consumerの実drainまで保持・計上する。旧本体が回収済みというcaller flagでは減額しない。1組だけに共用する最適化は本契約外であり、全holder・frame・wrapperの終端と再利用を証明した別source／layout承認を必要とする。
+
+元fact／length receipt／rootはこの私有8 handleと別の義務である。最大19 command×client2 family×2 attemptで、clientのread全発行上限はfact76・length receipt76・root4、providerはfact38・length receipt38・root2とする。これは全同時生存量の保守的上限候補であり、元8192 B内に収まる証明ではない。actual nが小さくても最大予約を減らさず、n件だけを処理する。必要なfamily・初期証拠・transport receiptを早期に捨てない。
+
+n=1／2／19の件数算術と正常runtime条件を区別する。`r1hBatchArithmetic`はfamilyごとの実処理候補n件と、read最大19×family×2の予約を比較する純粋な設計算術である。n=1の算術成功をfull core／inventoryのruntime成功へ昇格しない。元profileは最低5 entry・1 command最大4 rangeなので正常full inventoryには最低2 batchが必要で、n=1を自己申告した欠落・不完全inventoryは完全schema／全range被覆で拒否する。正常runtimeの計画条件はn=2／19とし、それらも全inventory・独立expected・全bytes検証が必要である。`batchCases`は全てruntimeExecuted=false、6件のrole別算術例はruntimeExecuted=false／fullCoreValidated=falseとし、実行済みruntime証拠へ読み替えない。
+
+#### 9.150.3 wrapper・参照table・chargeの契約
+
+§9.145.4の48 roleを維持する。0〜47の対応を `R1H_REF_ROLES` へ固定し、owner・call・ReadScope・clock・親ledger・authority・source承認・binding／channel・fresh snapshot・lifecycle、child claim／window、A root／grant／owner・B codec、3 context、clientの4 core、family、S0／S1／S2・chunk、overlay・binary arena・registry・drain／receipt／wire・reservation／私有handleを個別に対応付ける。CoreHandleのaliasを新参照・新lookupへ水増ししない。
+
+48 slotはrole table内の辺数であり、全VM参照数ではない。owner→table、class field、array backing、registry key／value、buffer view wrapper、closure reaction、stack alias、例外／finally／cleanup frameなど**table外の全辺**もsource site・owner・多重度・利用phaseへ登録する。aggregate object／Map／wrapper／closureの内側へ隠して1参照と数えることを禁止する。同じbacking bytesは一度だけ計上し、複数holderと各wrapperは個別に計上する。
+
+候補算術はbinary3072＋bridge1024=4096、bridgeは48×8＋8×32＋container384=1024である。8／32は論理chargeの候補で、実pointer幅やV8 objectサイズを表さない。container384はowner・table・lookup・backing slot・root edge等の実表現を独立certificateで全て被覆する必要があり、「7種類だから384 B」等とは認めない。追加retirement／G共有module／F frame／D exportの量をこの1024 Bへ無条件に埋め込まない。
+
+representationCharge certificateは、独立承認されたsource閉包・runtime image／flags・schema／profile／layout・実owner namespace、object／reference／containerのupper、最大多重度とresidency DAG、release／reuseの成立条件、loader承認と原単位work対応を束縛する。発行者とcallerの自己表明を分離する。logical chargeとphysical heap上界は別証拠で、後者は未成立のままnull。module初期化前のload gate、codec overlay・native hashの独立証拠も必要で、本節だけで被覆しない。
+
+upper-only値は既知lowerへ足さない。設計関数 `r1hUpperExample` は各項の非負safe integer上限またはnullを受け、未知を伝播する条件付き算術だけである。window1組のupperをB=3072＋48×referenceUpper＋8×handleUpper＋windowContainerUpperとし、予約は必ず2×Bとする。旧metadata4096に対する追加upperはmax(0,2×B−4096)＋retirementContainerUpper＋D有効時の(512＋summaryWrapperUpper)＋moduleShareUpper＋frameUpperである。16 identityは2×B内に含まれるため、T移管時に追加8 handleを再加算しない。いずれかの必要upperがnullなら有限upperを作らず、旧W回収flagやactual attempt数で2×Bを1×Bへ縮めない。
+
+例としてreference8・handle32・window container384ならB=4096、2×B=8192 B。retirement container128・summary wrapper128・G配賦128・F128、summary payload512 Bを仮置きすると、追加upperは5120 B、対象保持構造のenvelopeは4096＋5120=9216 Bとなる。旧式の5376 Bは旧Wのbinary3072＋参照384＋container384、計3840 Bを落としていた。この例は仮定上の上限算術であり、core／context・codec／native等を含むread全体の上界ではない。上限を0と仮置きした計算も承認証拠ではない。余裕・旧32768 B creditを再使用せず、既知lower超過・条件付きupper超過・unknownを§9.149のintervalと区別し、read全体fitは未判定とする。
+
+#### 9.150.4 helperの入出力・登録締切・失効
+
+以下は将来実装するhelper契約であり、今回のdesign moduleからcapabilityやruntime許可は発行しない。所有port以外のcallback／awaitを挟まず、認可・purpose・pin・取消し・元期限・残予算・全内容・独立計画・transport最終検証・outcome／use／ACKを維持する。最後のcallback後の同期fenceから成功公開の間へdiagnosticsを挿入しない。
+
+| helper | 入力・出力 | 制約・失敗時 |
+| --- | --- | --- |
+| preflightRetentionProfile | 独立source／loader／layout／charge承認、実G／R／consumer／authority port → 固定profile候補 | descriptor・brand・保持上限を対象getter／copy／IO前に確認。承認不明／任意hook／unknownを拒否。preflight自体の有界bootstrapもGへ計上 |
+| reserveRetentionRead | 固定G slot・実親vector・call K/D／元期限 → 私有read登録 | 完全なW本体×2（各binary／48参照table／container／8 identity）・T container・D・C／F／module配賦の最大共存を全実親へ事前hold。Tの16 identityをさらに加算しない。commit失敗は入場不可。実ledger接続とtransactionの実証はR1-Wへ残す |
+| issueRetentionWindow | 同一read／actual call／scope／actor／root／generation・既存claim → Wと8 private identity | handle objectの外部コピー・別read／attempt流用・再入を拒否。世代overflow前に拒否し、新runtime incarnationで旧pointerを復元しない |
+| enterRetentionPhase | 私有identity・現在purpose・phase・実live port → 同期処理frame | guardをlookup／利用前に行う。毎回live検査し、外部再入を内側で捕捉してもfatal解除／公開不可。内部呼出しだけを承認 |
+| finishNormalWindow | W・全必要利用の終端 → local closed／T移管 | 他window／actor／readの正常権限を失効させない。family・borrowが残るなら保持し、早期zero／ticket解放をしない |
+| revokeRetentionRead | R・固定reason enum → read全体invalid／retiring | 最初に失効・authority lookup除去・新発行停止。後着は応答公開0。raw Error graph・message getter／文字列変換を保持／評価しない |
+| emitTerminalSummary | D予約・固定counter／digest・承認recipient → 不変256 Bの配送ordinal | attemptにつき1回、read計2回まで。同じordinalの応答紛失再試行は同じbytesまたは解放後unavailable。新allocation fallback不可 |
+| releaseRetentionRead | 実borrow／frame／transport／consumer／export終了証拠 → zero・holder除去・memory解放 | 順序は失効→実drain→zero／参照除去→一度だけ解放。cleanup失敗はquarantineしてslot／debit保持。確定work／initialization／wire／attemptは返さない |
+
+正常scope終了はそのWだけに作用し、fatal・取消し・期限はcall／read全体へ作用する。2 attemptでもK/D・元期限・残予算を保持し、元attemptのbyte borrowerが終わる前に新attemptへbackingを再利用しない。失効済みの空identityはTの上限内で共存できるが、旧authorityは復活しない。timeoutは取消しとlookup除去の起点であり、未完了Promiseや実transportのdrainを強制完了した証拠ではない。
+
+候補runtimeの未完了transportはread当たり最大1。任意Promise supplierは受理せず、承認controllerのdrain証拠を必要とする。drainが来なければ有限slotとdebitを保持し、新入場を止める。無限に新slot／tombstoneを積むことも、期限到達だけでmemoryを返すこともない。容量の有界性と有限時間での回収可能性を区別する。固定ID／generationの再利用や再起動時のin-memory identity復元も禁止する。
+
+#### 9.150.5 診断exportの二つの候補profile
+
+core profileはruntime hook、trace object列、任意回数の `stats()` コピー、`diagnosticRows()` のraw Bufferコピーを作らない。認可revision・generation・borrow・予算消費・固定拒否理由など処理に必須の有界binary状態は残す。全内容転送・本来のreceipt／ACKを診断とみなして削除しない。
+
+summary profileだけはattempt終端に1 record、read最大2 recordを許す。payloadは1件256 B、予約は512 B固定であり、actual attempt数で減額しない。固定schema `cwc.retention-summary.v1` は以下とし、既に束縛されたdigest bytesと非負safe integer counterだけを使う。整数はbig-endian、version=1・flags=0を固定し、reasonは承認profileの固定enumへ束縛する。未知reason／version／flagを拒否し、enum拡張は別承認を必要とする。
+
+| field | offset | bytes | 条件 |
+| --- | --- | --- | --- |
+| magic | 0 | 4 | ASCII R1HS |
+| version／flags | 4 | 4 | u16×2、既知version／flagのみ |
+| counters | 8 | 120 | u64×15：readSeq／attempt／generation／reason enum／captured／proved／work／initialization／wire／attempts／heldBytes／pending／borrow／zeroedBytes／exportOrdinal。全てsafe integer範囲 |
+| sourceDigest | 128 | 32 | 既存承認へ束縛済みbytes |
+| profileDigest | 160 | 32 | 同上 |
+| layoutDigest | 192 | 32 | 同上 |
+| reserved | 224 | 32 | 全zero、将来fieldは別schema／承認 |
+
+summary生成のための新canonical／hash、全frame stringify、toJSON、例外message評価は行わない。新hash経路を避けたことは、元native hashの未被覆を解消した証拠にはならない。summaryはauthority witness・fact・成功receiptではなく、後続認可へ流用しない。端末に保存する検証recordと、このruntime summaryも区別する。
+
+raw object／Buffer view／private handleを汎用callerへ渡さず、承認済み内部consumerまたは既存の有界認証transportを使う。senderとreceiverはそれぞれの保持量・queue・marshal copyを計上し、配送中とconsumer保持中の重なりを含める。consumerの任意保存を許すならその経路はunsupported。ACKや「送信済み」だけではcopy消滅を証明しない。二つの固定slotが借用中なら上書き・追加配列を禁止し、read入場を待機拒否するか任意exportを固定理由で利用不可にする。全export debtがなくなるまでRとGの容量を返さない。
+
+診断生成／保存失敗は本来の失効・cleanupを妨げず、authoritative readの成功／拒否判定を変えない。固定diagnosticUnavailable状態だけを残し、外部例外graphを捕捉しない。失効後の配送は独立した限定diagnostic purposeとrecipient／deadlineへ束縛し、read権限を復活／延長しない。比較用observer・oracle・JSON recordは別のcharged ownerまたは隔離境界へ置く。同じprocessで同居する量を「計測用だから0」としない。性能比較を行う後続段階では同一観測条件と追加費用を両armで分離する。
+
+#### 9.150.6 source対応と採用出口
+
+`R1H_SOURCE_ACTIONS` はM15〜22／30〜38／44〜45の19行へ対応し、旧holder・lifetime・source pinを新しいrecordへそのまま結ぶ。M20のbudget WeakMap rowとM21のmodule schema graph、M22のparser frameはhookの除外だけではなくならない。M30の元接続義務、M31の診断ticket、M32／33のtraceとdigest、M34／35の繰返しexport、M36のterminal hash／M37のharness／M38の外部例外も別の所有者・上限・回収条件を必要とする。未完了PromiseのclosureはM19、任意hookと捕捉graphはM44／45である。
+
+採用には少なくとも、閉じた所有port／固定registry／退役identity／summary配送のruntime実装、全edgeとframeの独立charge・residency証拠、caller／consumer境界の実証、元親vectorの事前予約と全cost対応、最大role・両mode・2 attempt・失敗／後着を含む統合検証が必要である。source変更だけで「GC解放済み」「metadata4096成立」「R1-M出口成立」としない。任意closureを受け入れる必要がある、保持上界が未知、原予算に収まらない場合はunsupportedとし、3 slot案・LG-0出口を保留または棄却する。
+
+#### 9.150.7 回帰テスト条件（全てplanned・runtime未実行）
+
+| ID | 条件 |
+| --- | --- |
+| RHC01 | 任意hook fieldをundefined／function／捕捉2 MiB graphで渡してもgetter・callback・copy／IO前に拒否する |
+| RHC02 | freeze／source hash／noCapture flagでclosureを承認せず、未知の外部graphをuncoveredに残す |
+| RHC03 | getter／Proxy／派生型／port操作差し替えを対象値の評価前に拒否する |
+| RHC04 | 所有portを使う両modeで全live site・認可revision・purpose・pin・取消し・元期限・残予算を維持する |
+| RHC05 | G容量R=1／4と最大retiring行で上限を守り、満杯時のcopy／IOとoverflow allocationを0にする |
+| RHC06 | authority lookupを除去してもcleanup参照・slotを残し、cleanup完了前のG行再利用を拒否する |
+| RHC07 | module／registry／WeakMap ticket rowの未計上・source閉包変更を独立承認更新なしで拒否する |
+| RHC08 | 正常終了後の反復readでregistry／tombstone／wrapperが累積せず、未回収debtがあれば入場拒否する |
+| RHC09 | attempt当たり8 handle・read全体16 identityを守り、第9／17発行とsame-object再利用を拒否する |
+| RHC10 | CoreHandleが既存windowと同一実体で、別wrapper／lookup／generationの追加を拒否する |
+| RHC11 | 第2 attemptでも旧handleを拒否し、W→Tの同一identityを一度だけchargeする |
+| RHC12 | 外部holderへhandleを無制限exportする経路を拒否し、stale aliasが残る間の再利用を禁止する |
+| RHC13 | client76／76／4とprovider38／38／2のfact／receipt／root最大発行・最後の利用を個別に計上する |
+| RHC14 | n=1は算術確認だけとし、full core／inventoryのruntime成功へ昇格せず、不完全inventoryを拒否する。正常runtimeはn=2／19で完全schema／全range被覆・全n件を確認し、どの場合も最大19×family×2の予約を減らさない |
+| RHC15 | 48 roleの欠落・重複・別call／scope／actor／root／generationへの差し替えを拒否する |
+| RHC16 | table外のroot edge／class field／array backing／wrapper／stack aliasを隠したchargeを拒否する |
+| RHC17 | aggregate object／Map／closureの内側へ参照を隠し48 slotと装う証拠を拒否する |
+| RHC18 | 同じbacking bytesは一度だけ、複数holderとview wrapperは個別に計上し、二重creditを拒否する |
+| RHC19 | 独立charge certificateのsource／runtime image／flags／layout／owner namespace不一致を拒否する |
+| RHC20 | upper-onlyをlowerへ足さず、nullを0へ置換せず、window fitをread全体の採用へ昇格しない |
+| RHC21 | W本体2組とT・D・G・F量を旧bridge1024や旧32768 creditへ無証拠で重ねず、W×2内の16 identityに追加8 handleを二重計上することも拒否する |
+| RHC22 | 全実親の予約不足ではconstruction／copy／IOを0にし、部分失敗でも確定消費を保持する |
+| RHC23 | retryでK/D・元期限・work／wire／initialization／attempt消費を保持し、第3 attemptを拒否する |
+| RHC24 | 正常W終了が他window／actor／readを失効させず、必要なfamily／transport receiptを保持する |
+| RHC25 | fatal／取消し／期限ではread全体のlookupを先に除去し、外部再入の内側例外捕捉でも公開を拒否する |
+| RHC26 | 最後のcallback後に認可／pinが変われば同期fenceで拒否し、診断処理をfenceと公開の間へ入れない |
+| RHC27 | 実borrow／frameが残る間のzero・memory解放・新attemptのbacking再利用を拒否する。byte borrower終了だけで旧W本体の回収済みとせず、第2 attemptでbinary／48参照table／containerを2組計上し、caller flag・旧W残存の隠蔽による減額を拒否する |
+| RHC28 | 未完了transportをread当たり1以内に保ち、timeoutだけでdrain済みとせずslot／debitを保持する |
+| RHC29 | 任意Promise／thenable／reaction closureを採用せず、承認controllerのdrain証拠欠落を拒否する |
+| RHC30 | cleanup／zero／参照除去の失敗でquarantineと予約を保持し、再試行でも二重解放しない |
+| RHC31 | 世代上限・新runtime incarnation・後着の旧identityを拒否し、再起動で旧authorityを復元しない |
+| RHC32 | core profileでhook／trace object列／statsコピー／diagnosticRows exportを生成しない |
+| RHC33 | summary profileで256 B×2のpayloadをread開始前に予約し、wrapper／queue／marshal分も別計上する |
+| RHC34 | summaryのoffset・version／flag・全15 counter・safe integer・digest・reserved zeroをstrict照合する |
+| RHC35 | export ordinalの重複・第3record・借用中の上書き・無予約fallbackを拒否する |
+| RHC36 | 応答紛失時は同じordinal／bytesだけを再送し、解放後の再生成で新quotaを取得しない |
+| RHC37 | sender／転送中／receiver copyの同時保持を計上し、ACK単独によるconsumer charge解放を拒否する |
+| RHC38 | raw view／handle／任意callerへのsummary object exportとreceiverの無制限保存を拒否する |
+| RHC39 | export debtが残る間G／R行を再利用せず、ring満杯で追加配列／queueを生成しない |
+| RHC40 | summary生成のcanonical／hash／toJSON／Error message getter評価を0にする |
+| RHC41 | 診断保存失敗でもreadの失効・cleanupを完了し、判定変更や外部例外graphの保持をしない |
+| RHC42 | summaryをfact／authority witness／use／ACKの代用にせず、失効後配送がread権限を復活させない |
+| RHC43 | 任意closure除外後もcallerの捕捉graphが残る負例を台帳化し、hook edge除去をgraph回収と偽らない |
+| RHC44 | oracle／observer／JSON recordが同一processに残る場合に別ownerへchargeし、除外や無制限同居を拒否する |
+| RHC45 | 同一実体の所有移管と最後の参照除去・zero・一度だけのmemory解放を照合し、work等の返金を拒否する |
+| RHC46 | 最大client4 core・3 context・initial／seal・両mode・2 attemptの全領域共存とoriginal unitを検証する |
+| RHC47 | 未被覆JS／native／frame upperが残る場合、条件付き算術fitでもR1-M／R1／LG-0出口を認めない |
+| RHC48 | core／summaryと診断observerの費用・sourceを分離し、同条件比較なしに速度・memory改善や本番採用を宣言しない |
+
+設計記録は `docs/validation/gradle-cwc-r1h-design-2026-11-13.json`。`node scripts/check-cwc-r1h-design.mjs` と `--check` は新節・旧R1-M baselineのsource閉包・19 source行・所有者／各Wの48 role・条件付き算術とR1HD01〜28の**設計整合性**を照合する。R1HD25／26は2組のW本体・16 identityの一度だけの計上・unknown保持・無証拠の共用／減額拒否を、R1HD27／28はn=1の算術／拒否とn=2／19の正常runtime計画条件の分離を確認する。RHC01〜48の拒否runtimeやchargeを実行した結果とは数えない。実装・physical upper・実親vector・性能・R1-M／R1出口・本番採用は全て未成立である。
+
+2026-11-13の設計レビュー修正ではR1HD25〜28の4件が修正前に失敗し、修正後に成功した。設計整合性28件と関連242件の合計270テスト・型・差分検査、旧R1設計記録の照合が成功した。更新記録は272 source／artifact・旧R1-M baseline・実Node binary・本節を束縛し、W本体×2の条件付きupper8192 Bと保持envelope9216 B、旧式が落としていた3840 B、両role×n=1／2／19の6件の純粋算術例を保存する。n=1の不完全inventory拒否・n=2／19の正常runtime条件、全RHC01〜48は引き続きplanned／未実行であり、runtimeの回収・独立charge・元1 MiB／workへの適合・R1-M出口・本番採用の証拠へ昇格しない。
