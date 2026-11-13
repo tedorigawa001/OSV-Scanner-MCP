@@ -11750,3 +11750,83 @@ raw object／Buffer view／private handleを汎用callerへ渡さず、承認済
 設計記録は `docs/validation/gradle-cwc-r1h-design-2026-11-13.json`。`node scripts/check-cwc-r1h-design.mjs` と `--check` は新節・旧R1-M baselineのsource閉包・19 source行・所有者／各Wの48 role・条件付き算術とR1HD01〜28の**設計整合性**を照合する。R1HD25／26は2組のW本体・16 identityの一度だけの計上・unknown保持・無証拠の共用／減額拒否を、R1HD27／28はn=1の算術／拒否とn=2／19の正常runtime計画条件の分離を確認する。RHC01〜48の拒否runtimeやchargeを実行した結果とは数えない。実装・physical upper・実親vector・性能・R1-M／R1出口・本番採用は全て未成立である。
 
 2026-11-13の設計レビュー修正ではR1HD25〜28の4件が修正前に失敗し、修正後に成功した。設計整合性28件と関連242件の合計270テスト・型・差分検査、旧R1設計記録の照合が成功した。更新記録は272 source／artifact・旧R1-M baseline・実Node binary・本節を束縛し、W本体×2の条件付きupper8192 Bと保持envelope9216 B、旧式が落としていた3840 B、両role×n=1／2／19の6件の純粋算術例を保存する。n=1の不完全inventory拒否・n=2／19の正常runtime条件、全RHC01〜48は引き続きplanned／未実行であり、runtimeの回収・独立charge・元1 MiB／workへの適合・R1-M出口・本番採用の証拠へ昇格しない。
+
+### 9.151 R1-H0：所有port・固定registry・終了／失効／回収の限定実装
+
+§9.150の最初の限定実装として、旧R1-H設計／R1-M／R1-Oのsource・記録を変更せず、`gradleOwnedCwcR1h.ts` と専用harness／validatorを追加する。対象は所有port・固定registry・2組のwindow container・16 identityと、正常終了／fatal／managed drainの状態機械である。**独立charge・全領域上界・元単位work・実親子ledger・本番profileの実装ではない。** 実認証call／ReadScope・CWC root／fact・fresh snapshot・summary配送には未接続で、本番採用とsummary exportは常にunsupportedを返す。
+
+#### 9.151.1 閉じた所有portと両modeの範囲
+
+`createR1hPorts` は私有brandを持つ固定clock／authority／pin／purpose／revisionと、固定enumによる故障programだけを構築する。constructorは私有tokenと実prototypeを照合し、runtime・portの派生型／コピー／Proxy、任意hook field（undefinedも含む）・accessor・未知fieldを対象値の評価前に拒否する。caller function・Promise・thenable・raw context／coreを保持しない。clock前進・purpose変更・不可逆revoke・pin変更は所有portの固定操作で行い、pinを元へ戻してもrevisionは戻さない。
+
+`full-input` は私有bindingの固定field・frozen状態を各live siteで確認し、`owned-input` はconstructor所有viewの実参照を確認する。両分岐とも毎回、readの権限・purpose・pin／revision・取消し状態・元期限を確認する。これは**合成bindingの二つのfixture分岐**であり、既存LGの実入力・CWC current入力・remaining work／wire ledgerの検証を置換した実証ではない。対象データのschema・完全性・独立expectedは未接続である。
+
+故障portは公開直前に取消し／期限到達／revoke／pin変更と復元を行うほか、実際に同じruntimeのpublic publish／openAttempt／reclaimへ再入し、内側の例外を意図的に捕捉する。任意callbackを受理する経路を作らずに、入口guardのfatal latchと外側の公開0を検証する。最終live fenceからpublication counter更新の間にcallback／awaitを置かない。実wire・署名・use／ACKの公開を確認した証拠には数えない。
+
+#### 9.151.2 固定registryと状態遷移
+
+Gはconstructorで長さ1〜4の固定registryを作る。read開始前に空き行とdeadlineのsafe integer範囲を検査し、その後に2 body slotをholdして対象binaryを確保する。満杯・不正port・不正actor・期限overflowではbinary allocationを行わない。完了履歴・tombstone配列・Map／WeakMapへreadを追加しない。回収済み行は新しいsequenceと新identityで再利用し、旧identityを復活させない。
+
+| 操作 | 状態・作用対象 | 保持・拒否 |
+| --- | --- | --- |
+| beginRead | 一つのreadをactiveで登録、attempt=0 | 2 body container／16 identityを一括保持。read-controlは第1 bodyのowner identityの役割aliasで、第17 handleを発行しない |
+| openAttempt | attempt 1、正常window終了後にだけattempt 2 | attemptごとに別の8 identityを使用。第3 attempt・未終了windowからの次attemptを拒否。元deadlineを延ばさない |
+| closeWindow | 対象first／seal windowだけをclosedへ | 同readの他window・別readを閉じない。必要なborrow・旧bodyを保持 |
+| closeRead | active→closing | 権限lookupキーを除去し、新しい公開・window利用を停止。回収用owner identityとG行は残す |
+| cancel／fatal | 対象read→retiring | 権限キーを最初に除去し、そのreadの全windowを失効。別readの正常権限には作用しない。最初のfatal理由を保持 |
+| endBorrow／endTransport | closing／retiringでも所有leaseを完了できる | clone・別attempt・終了済み・回収後のidentityを拒否。データ利用・公開の権限にはならない |
+| reclaim | closing／retiringかつ実borrow／transport終了後 | managed cleanup frame以外が残る早期回収を拒否。zero・参照除去後、最後のmanaged frame退出でG行と2 slotを一度だけ解放 |
+| cleanup失敗 | retiring／quarantine | partial zero後もG行・両body・slotを保持。再試行で未完了部分をzeroし、二重解放／byte数の二重加算をしない |
+
+第1 bodyのowner identityはread全体の回収controlにだけ継続使用する。第1 attemptのclosed windowを第2 attemptのデータ権限として使うことはできない。権限キーとcleanup用aliasを明示的に分離し、失効後はauthoritative lookupでcleanup側へfallbackしない。close／cancel／lease completion／reclaimは固定cleanup操作としてのみ回収用aliasを使える。
+
+#### 9.151.3 実保持量・lease・回収
+
+各bodyは専用の `Uint8Array(3072)`、48 role位置の固定参照table、8 opaque objectを持つ。read当たりbinaryは実6144 B、tableは96位置、distinct private identityは16で、attemptを開始する前から2組を確保する。第1 attemptの実借用を残したまま、**異なる第2 body**で処理できる。borrowは実際の第1 binaryへの私有参照を保持し、observerは参照一致をbooleanとして確認する。各private handleは固定kindだけを持ち、owner／bufferへ戻るclosureを持たない。
+
+この段階ではbody slotの個数holdと既知binary量だけを確認する。§9.150のbridge1024×2・T container・G／F・wrapper chargeを証明したものではない。48位置のうち実call／CWC root／fact等の未接続roleはnullであり、全role layout成立とも扱わない。既存の8192 Bという2 windowの論理候補・9216 Bの条件付き保持例を、実測された全体byte量へ読み替えない。
+
+borrowとtransportは、各attemptにつきそれぞれ一度だけ発行する限定契約とした。既存のscratch／drain identityを役割aliasとして使い、read当たり未完了transportは最大1。終了済みleaseを同じattemptで再使用する経路はunsupportedとして拒否する。第1 attemptの完了通知は第2 attemptのleaseと実参照が異なり、その債務を解除できない。複数回のlease発行・実Session transportの復旧契約は未実装である。
+
+正常終了・fatal・期限到達だけではbinaryをzeroしない。borrow／transportが残れば容量をholdしたままにする。回収では捕捉したnative typed-array fillで全6144 Bをzeroし、各byteを確認し、両tableの全位置をnullにしてbinary holderを除去する。最後のmanaged frame退出後にG行を削除する。これはsource管理下の参照終端・zeroと有限slot再利用の確認であり、VMの全frame・GC完了・physical heap解放の証明ではない。
+
+#### 9.151.4 再入・組込み操作差し替えと診断境界
+
+public entryはlookup前にbusy guardを行う。再入が内側で捕捉されても対象readはretiringのままとし、公開0、cleanup前のzero0、active frame中の2 body保持を確認する。正常first window終了後にはseal windowを使え、別readも継続できる。closed／旧attempt／別read／cloneのwindow、回収後のread、終了済みcompletionは再利用できない。windowのpublication witnessは各window一度だけで、再公開を拒否する。
+
+private arrayはindex loopと捕捉したdefinePropertyで扱い、callerが差し替えたArray.prototypeのfindやnumeric setterへregistry／handle／tableを渡さない。typed arrayの生成・zero primitiveと例外constructorもmodule所有のintrinsicを使い、差し替えたError constructorを拒否時に実行しない。これは試験した経路の私有参照保護であり、loader／VM全体の独立承認証拠ではない。
+
+`observeR1h` と `r1hMatrix` は**検証harness側のcopying observer**である。runtime内にtrace object列を積まないが、observerのコピー・JSON record・caller graphのupperは未被覆でnullのままとする。本番core profileへこのobserverを無条件で含めない。診断exportのbounded recipient／queue／512 B summary、独立process境界とchargeは次の実装・証明へ残す。既存の任意closure捕捉graphを一般に列挙・回収したとも扱わない。
+
+#### 9.151.5 回帰条件と再現記録
+
+以下のR1H001〜20を両fixture modeで実行する。RHC01〜48は旧設計のfull contractとして未成立を維持し、新recordのcoverageは限定fixtureで触れた項目とplannedを区別する。全項目のfullContractExecutedはfalseである。n=1の算術／不完全inventory拒否とn=2／19の正常full-schema条件も、今回のlifecycleだけの実行へ昇格しない。
+
+| ID | 限定fixtureで確認する条件 |
+| --- | --- |
+| R1H001 | 正常終了まで両body・実6144 B・distinct16 identityを保持し、正常drainで一度だけ回収する |
+| R1H002 | 第1 attemptの実借用中も第2 bodyを別実体として保持し、96位置・16 identityを減額せず早期回収を拒否する |
+| R1H003 | publish／openAttempt／reclaimへの実再入を内側で捕捉しても外側公開0・active frame保持・zero0を維持する |
+| R1H004 | fatalで権限キーを除去し、transport終了までG行・body slotを保持して新入場と後着公開を拒否する |
+| R1H005 | 第1 bodyだけzero後の故障でもquarantineし、再試行で全zero・一度だけの回収を確認する |
+| R1H006 | first windowの正常closeはseal／別readを失効させず、cancelは選択read全体にだけ作用する |
+| R1H007 | registry容量1／4の満杯をallocation前に拒否し、反復readの回収済み行再利用で履歴を蓄積しない |
+| R1H008 | closed／旧attempt／別read／cloneのidentityを拒否し、別readの正常利用を保持する |
+| R1H009 | 2 attemptでも元4500 ms deadlineを維持し、第3 attemptと期限到達後の公開を拒否する |
+| R1H010 | 両immutable-check分岐で現認可・purpose・pin／revisionを毎回確認し、変更と復元も拒否する |
+| R1H011 | healthy readの早期reclaimを拒否し、zeroせず正常なwindow利用を継続できる |
+| R1H012 | read内の第2 pending transportとclone completionを拒否し、実債務を保持する |
+| R1H013 | 公開直前の取消し・期限・revoke・pin復元を最後のfenceで拒否し、公開0を維持する |
+| R1H014 | hook／getter／Proxy／fake port／派生runtimeとdeadline overflowをbody確保前に拒否する |
+| R1H015 | charge／ledger／本番profile・summaryが未対応であることを、body確保なしのunsupportedで維持する |
+| R1H016 | Array.prototype.findやError constructorの差し替えを実行せず、私有registryをcaller操作へ渡さない |
+| R1H017 | 継承したnumeric setterを実行せず、private table／handle／registryを構築・回収する |
+| R1H018 | leaseを同attemptで再発行せず、旧borrow／transport completionで新attemptの実債務を解除しない |
+| R1H019 | 同じopen windowの第2 publicationを拒否し、成功witnessを水増ししない |
+| R1H020 | 両mode×両actor×容量1／4の正常8例、公開拒否28例、partial cleanup4例をfresh再現する |
+
+記録は `docs/validation/gradle-cwc-r1h0-2026-11-13.json`。`node scripts/check-cwc-r1h0.mjs` で40 runtimeテストと10 recordテスト・有限観測を再実行して生成し、`--check` で新節・旧R1-H baseline・source閉包・実Node binaryと全観測を照合する。record検査はbody／identity／tableの過小計上、同数のcase重複、fatal後のlookup／公開、早期回収、債務隠蔽、再入frameの消去、partial zeroの成功化、未知upperの0化、full-contract実証への昇格を拒否する。live-check counter等の変更もfresh再実行との全体照合で拒否する。
+
+今回の出口は限定lifecycleの動作確認までである。次は独立した保持構造charge・owned port／observerの採用境界・summary配送、その後にcodec scratch／residency・native hash・R1-W／R1-Gの実親予約を検証する。R1-M／R1出口・元1 MiB／work適合・CCO-R2／実CWC接続・性能／本番採用は未成立のままである。
+
+2026-11-13の検証ではruntime40・record10と関連既存270、合計320テスト、型・差分検査、新記録のfresh照合と旧R1-H設計記録の照合が成功した。正常8例・公開拒否28例・partial cleanup4例、12 source anchor・279 source／artifact・実Node binary・本節へ新記録を束縛した。両modeでの2 body保持、実borrow／transportのdrain前の回収拒否、捕捉済み再入のfatal保持、partial zero後のquarantineと一度だけの回収、旧completion／prototype操作による流用の拒否を確認した。これは固定clock・同一process・合成bindingと専用metadata binaryでの実証であり、実Session／readデータ／CWC proof・完全なRHC01〜48・一般closure上界・独立charge・GC完了の証明ではない。
