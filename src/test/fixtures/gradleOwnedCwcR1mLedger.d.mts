@@ -1,0 +1,12 @@
+export const R1M_SCOPE:Readonly<Record<string,boolean>>;
+export function r1mSourceInventory():any[];
+export function r1mBuildLedger():any;
+export function validateR1mLedger(input:any):any;
+export function verifyR1mSourceInventory(input:any):void;
+export function r1mR0Bytes(input:{F:number;K:number;C:number;W:number;n:number}):any;
+export type R1mBounds={lowerBytes:number;upperBytes:number|null};
+export function r1mConditionalBound(profile:string,base:R1mBounds,additional:Record<string,R1mBounds>):any;
+export function r1mArithmeticExamples():any;
+export function validateR1mArithmetic(input:any):any;
+export function validateR1mObservation(input:any):any;
+export function compareR1mObservation(saved:any,fresh:any):void;

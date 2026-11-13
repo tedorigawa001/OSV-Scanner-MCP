@@ -11479,3 +11479,120 @@ R1OT21〜28（parameter展開12件）を追加し、派生型・偽予約・外�
 2026-11-13の検証ではruntime23・record10と関連既存220、合計253テスト、型・差分検査が成功した。正常36例・拒否42例のfresh再実行と、R1設計／R0／CCO-R設計の旧記録照合も成功した。新記録は253 source／artifact、12 source anchor、実Node binaryと新文書節へ束縛する。今回の成立範囲はR1-Oの限定的な所有移管であり、R1全体の出口・本番採用はfalseを維持する。
 
 レビュー修正後はR1OT21〜23の7ケースで修正前の失敗・修正後の成功を確認し、追加対照を含むruntime35・record12と関連既存220、合計267テスト、型・差分検査が成功した。正常36／元拒否42に加えてレビュー拒否31（constructor3・操作16・Promise12）を再実行し、変更操作の呼出し・callback書込／公開は0、通常Promiseのpending中は2 bufferと196608 Bを保持し、settle後にzero／memory回収・消費保持・後着拒否を確認した。更新記録は254 source／artifactと16 anchorへ束縛し、旧R1設計／R0／CCO-R設計の記録も照合した。R1-M／W／G・R2・本番採用の未成立は変えない。
+
+### 9.149 R1-M：全領域台帳・所有者・寿命・上限と未被覆の具体化
+
+#### 9.149.1 今回の成果と証拠の種類
+
+R1-Mの第一段階として、§9.147の15領域を、R0・R1-O・共有helper・module・harness・統合候補の45行（M01〜45）へ分解した。`gradleOwnedCwcR1mLedger.mjs`はowner・実保持field・生成／最後の利用／clear／残存終端・量の式・未被覆理由を持つ台帳を生成する。79個の手動source anchorを全一致箇所のoffset／行番号・fragment digest・全file hashへ束縛する。元sourceとR0／R1設計／R1-Oの記録は変更しない。
+
+これは**領域対応付け・source整合性・有限buffer観測**である。ASTによる全allocation検出、全V8参照graphの観測、JS／nativeの物理heap上界、charge certificate発行、予算変更・採用gate実装ではない。全15分類を持つことと、全allocation／dependencyの被覆証明を分ける。未解析の依存内部はM43へ明示し、source hashの参照閉包を保存してもallocation完全性をtrueにしない。台帳／検査／JSON記録自身の領域もM37の診断process負担であり、実runtimeから無料で除外しない。
+
+量は次のように区別する。
+
+- **view bytes**：Buffer.length／byteLengthとして検査・zeroする範囲。R0／R1-Oの既存実counterと照合する。
+- **dedicated／pooled／alias**：`Buffer.alloc`の独立したview、`Buffer.from`のpool共有があり得るview、既存storeを指すだけのholderを分ける。同じbytesは二度足さず、各holder／wrapperのJS chargeは残す。
+- **logical reservation**：実ticketに確保した容量。実際のallocation、whole-heap上限、原単位workの被覆ではない。
+- **representation／physical upper**：独立した証拠がない全行でnullを保持する。安全なbuffer範囲・object件数・digest長からheader／allocator／stack量を自己換算しない。
+
+#### 9.149.2 全領域台帳の対応
+
+各行の完全なsource位置・field／holder名・寿命・未被覆理由は検証JSONに保存する。以下は45行を15領域へ集約した対応表である。
+
+| 領域・台帳行 | 実owner・source上の対応 | 寿命と上限／未被覆 |
+|---|---|---|
+| R01：M01〜02・M45 | R0 caller／fixtureのcontext・groups・core・commands、R1-O producerのf／ctx／groups／core、runtime hookが捕捉するcaller graph／Buffer | caller保持とproducer frame・hook捕捉graphを分ける。call drain後も捕捉graphは残り得る。全体の上限／JS chargeはnull |
+| R02：M03〜04 | R0 bootstrap copy／schema frame、R1-O排他検証のcs／ps・parse結果・schema clone・entries・canonical比較 | 最後のvalidationまで同居するgraph／文字列を残す。131072 Bや診断ticketをgraph上限にしない。例外escapeもM38へ残す |
+| R03：M05〜06 | R0のctx=Buffer.from(canonical(c))、R1-Oのstore.context／buffers[0] | R0のKはview長でpool全体の上限ではない。R1-Oは8192 B以下のview、borrow／pending／frame終了後にzero。wrapper／allocatorはnull |
+| R04：M07〜09 | R0の2F個のbuilder／expected arena、R1-Oのstore.core／buffers[1]、R0Core.tokens.table／#source | R0は2F×C、occupied=9472+K。embedded context／token tableは追加K／4096 Bではないがalias chargeは必要。R1-O coreは65536 B以下のcanonical bufferで、R0 packed coreと同じ表現ではない |
+| R05：M10 | actorごとのslabとbuffers registry | 19F×Wを確保し実F×n件だけ処理する。n減少による予約返還なし。全比較・terminal処理まで保持 |
+| R06：M11 | slots[0..2]、parser.table=S2、parser.#source=S0／S1／slab | 3×8192 B。token借用／frame復帰前のS2再使用は禁止。source/tableのholderを別計上 |
+| R07：M12〜13 | hash chunk、sink.chunk、flushのsubarray view／native update引数 | chunk4096 Bと共有viewを区別。view=undefined／viewLive=0はwrapper／native解放証拠ではない |
+| R08：M14 | metadataとbuffers registry | binary arena3072 B。metadata4096 B全体をもう一つ確保した扱いにしない。JS bridgeは別行 |
+| R09：M15〜20・M42・M44 | R0 control／children、R1-O #calls／Call／shell／Store／handles／borrow／pin／exclusive／stamp、runtime.#hook／closure環境、Promise反応／settled closure、budgetのregistry／ticket | call局所alias・runtime所有callback・module弱参照tableを区別する。48 ref／8 handle・bridge1024 Bは未承認候補。件数上限とJS byte上限を分ける |
+| R10：M21〜22・M43 | grammar moduleのdescriptor／R0_KEYS／keys・seen Set、再帰parserのspec・key/span・add closure、依存schema／runtime | module常駐とframeを分離。depth≤32はrootを含め#value同時33 frameまで許す。token512件やdescriptor数はstack／heap byte上界ではない |
+| R11：M23〜24・M41 | String(n)・literal連結・op/digest文字列、generic canonicalのactive Set／keys／map／join／出力、codec overlay候補 | safe integer16桁／digest64文字も全scratch量を保証しない。generic canonicalのmaxBytesはencode後の検査であり事前allocation上界ではない。overlay16384 Bは候補 |
+| R12：M25〜29 | Engine／Memory moduleのHash prototype取得用Hash、sink.#hash、diagnosticSha、generic ownedSha256／module spec digest | load時のHashをcall gate後の検査で被覆しない。digest／abort／#hash=undefined／GC／RSSでallocator・stack・同期解放を証明しない。全native上限はnull |
+| R13：M30〜31 | 既存codec／call／session／source／A-B／root/factの元owner、R1-O診断ticket | codec393216 B等の元領域と32768 B共有creditを維持し二重控除しない。196608 B・initialization4096／work4096は実ticketでも全領域charge／全親ledgerの証明ではない |
+| R14：M32〜37 | 両ownerのtrace／digest、返却stats、diagnosticRows、cleanupのout／finalRows、oracle・検証JSON | 内部trace上限と、回数制限のないcaller exportを分ける。cleanupのout最大Wとnative hashは全family／core／windowと重なる。診断を除いたsource候補には新承認が必要 |
+| R15：M38〜40 | 外部例外graph、fatal／borrow／pending drain coordinator、zero／frame復帰／後着制御 | 書込拒否・実buffer zero・memory ticket解放と、control／例外／nativeの解放を分ける。borrow／通常Promiseが完了しなければfiniteな解放時刻上限はない |
+
+R13は容量モデルの式だけでなく、実Aのr.core／fact bytes・f.q・dispose、CPlanner／provider／clientのcommands、ReadScopeの私有contextとgetter clone、snapshotのscope／bundle／data保持にもsource anchorを結ぶ。proof後のf.q除去や条件付きdisposeを、全fact／child・caller配列が同時に解放された証拠にはしない。R1-Oをこれらへ接続して実行した観測ではなく、元の保持・解放義務を消さないための対応付けである。
+
+#### 9.149.3 R1-Oの実参照・drain後の残存
+
+store.context／coreの実bytesをM06／08へ一度だけ対応付け、buffers配列、source／destination.store、borrow.store／context／core、pin、exclusive、stamp.store、同期local変数の参照をM18へ対応付ける。`borrowReferences=2`は直接の2 fieldであり全参照数ではない。sourceからdestinationへのbindでstoreのcustodyだけが変わり、元source holderの除去は新allocation／解放として数えない。個々のJS参照・scope／Store wrapperのchargeは別途必要である。
+
+drain後はbufferとstore holderをclearするが、`#calls`のMap entry・Call・source／destination shell・8 handle・trace・sourcePin／corePin／entriesPin・bound digestは削除されない。1 runtimeで累計8 callまでという制限で、closeによるrow再利用やcontrol byte解放の証拠ではない。最大64 handle／32768 trace rowという件数も、header／配列容量・closure・hash文字列のbyte上界へ読み替えない。返却statsはcallerが任意回数保持でき、1 callのtrace件数上限から全exportの保持量を有限化できない。
+
+M44はconstructorで保存する`runtime.#hook`と関数／closure環境、M45はその環境が保持する任意のcaller graph・context／core・Bufferを担当する。生成時点はcreateCall／診断ticketより前で、寿命は最後のhook利用とruntime／外部callback保持まで及ぶ。`close(call)`は#hookをclearせず、raw graphの登録拒否・8 call上限・同期callbackのstack退出では捕捉graphを解放しない。捕捉graphが他rowのgraph／backingを指す場合は同じ実体を二度足さず、保持edgeとwrapper chargeを別に残す。個々のcaptureを列挙する公開APIや一般上限の証明はなく、全体の上限・物理解放時刻はnullとする。
+
+通常native Promiseの拒否observerは、Promise反応・settled closureからc／thisを保持する。callerがsourceZeroの例外を捕捉しても公開0を維持するが、settlementは元期限4500で強制されない。borrowも明示完了しなければ同様であり、pending中の196608 B保持を4500ms以内の解放保証へ変更しない。ticketのreleaseはWeakMap rowのremainingを変えるだけで、budget／ticket wrapper・弱参照containerのallocator解放を表さない。独自thenable等の非同期lifecycleは前節の未対応を維持する。
+
+#### 9.149.4 有限観測と条件付き算術
+
+`gradleOwnedCwcR1mObservation.ts`は元fixtureを変更せずR0の24例・R1-Oの36例・pending Promiseの12例を再実行する。R0の成功例では、専用registered viewの合計を`3072+4096+3×8192+F×(2C+19W)`とterminal実zero量へ照合する。bootstrap K viewは成功時に先にzero／registryから除去されるためこの合計へ再加算しない。bootstrap失敗時にpooled viewがregistryへ残る経路とcaller graphの上限まで、この成功例の式で被覆したとはしない。providerのactual arena2と必要floor3、clientのactual4とfloor4を区別する。
+
+R1-Oのcontext／core個別view長は、別のrecipe生成・canonical oracle・digestから導出し、その合計を実ownerのallocatedBytes／zeroedBytesに照合する。これはowner内部の個別bufferを直接instrumentした観測ではない。R0のK／C／WとR1-Oのcanonical長を同じ表現の上限として混ぜない。pendingの12例では、未完了／close後の2 buffer・196608 B保持、完了後のbuffer／held memory 0とwork／initialization保持を保存する。
+
+hook保持の3 actor例では、IIFE内のcontext／core markerと2 MiBの専用Bufferをhookだけに捕捉させ、raw graph／Buffer／hook関数を外へ返さない。1 callを正常公開・drainした後に別callを実行し、同じhookから捕捉Bufferの長さ・先頭byte・両markerを再読取する。両callの管理buffer／held ticketが0でも、drain後の5回のhook呼出しでgraphへ到達できることを記録する。この2 MiBはfixtureの既知view量であり、任意callbackの捕捉graph全体の上限ではない。WeakRef／GC／RSSを所有・解放証拠にせず、runtimeやcaptured graphのlayout承認・強制回収を実装した扱いにもしない。
+
+grammarのreachable descriptor／field tuple／key数と、別の1 B `Buffer.from`／`Buffer.alloc` probeも保存する。poolのbacking長がviewより大きい実行例はKを全backing上界にできない例証であり、全環境のpoolサイズ式やallocator footprintの測定ではない。probeのbyteOffsetやidentityは安定証拠として保存せず、Node binary／version・Buffer.poolSizeとfresh再実行へ束縛する。descriptor件数もrepresentation chargeを発行しない。
+
+今回の有限corpusではR1-Oのcontext view最大6345 B・core view最大9620 B、R0のdedicated registered view合計最大358480 Bを観測した。grammarはreachable descriptor50・field tuple113・key75である。別probeのpooled viewは1 Bに対しbacking65600 B、Buffer.poolSize65536 Bで、専用allocの1 B view／backingとは異なる。いずれもこの実行条件での値であり、観測最大やpool設定値を全有効入力・全allocatorの上界へ昇格しない。
+
+条件付き算術はR0-provider／R0-client／R1O-call／integrationを別profileとして扱い、baseとbootstrap／bridge／canonical／native／diagnostics／dependenciesの各成分を`{lowerBytes, upperBytes}`の包含区間で受ける。lowerは明示した非負safe integer、upperはlower以上のsafe integerまたは未確定のnullとする。確定量は両端を同値、上限だけならlowerを保守的な0、下限だけならupperをnullとする。旧scalar形式、欠落field、負値／負0・非有限値・矛盾区間を拒否し、scalarを暗黙に確定量へ読み替えない。
+
+lowerBoundにはlowerだけを加え、upperBoundはbaseを含む全upperが既知の場合だけ加算する。upper-only値はlowerを増やさず、baseのlowerを有限upperへ転用しない。既知lowerが1 MiBを超えたときだけ`rejected-known-lower-bound`、upperが未確定なら`unsupported-uncovered`、lowerは枠内でも有限upperが超える場合は`conditional-upper-bound-exceeds-limit`として区別する。最後の結果は指定した上限枠でfitを保証できない意味で、実量の既知下限超過ではない。
+
+保存する5例は、source guard由来のbase=[0,73728]と未確定追加量、base確定1 MiBと追加確定0の条件付きfit、native=[0,1]で他upperが未確定のunsupported、native=[0,1]で全upperが既知の上限枠超過、native確定1で他upperが未確定の既知lower超過である。73728=8192+65536は専用viewのguard上限だけであり、既知下限やwhole-heap上限として保存しない。baseGuardのbasis／source ref・5例のintervalと判定をdigestとfresh算術へ束縛する。全upperが枠内のfitでも`conditional-arithmetic-only`であり、runtimeAdmitted／actualParentLedgerVectorはfalseを維持する。異なるprofileの余裕を合算せず、同居DAG／独立したcharge証拠が揃うまで全領域peakを計算済みと表明しない。
+
+#### 9.149.5 回帰条件と記録
+
+以下は今回実行するinventory／source／算術／有限観測の回帰条件であり、R1-M runtime出口の実証条件を達成した意味ではない。
+
+| ID | 検査条件・期待結果 |
+|---|---|
+| R1M01 | 15領域・45行・79 siteを保持し、runtime採用falseを確認する |
+| R1M02 | 全rowのowner・holder・4寿命境界とsource参照を解決する |
+| R1M03 | 全source occurrenceのoffset／行・fragment／全file digestを原本へ照合する |
+| R1M04 | owner／site移動・行移動を自己hash更新後も拒否する |
+| R1M05 | unknown上限の0・非有限値・負0化、未承認chargeへの変更を拒否する |
+| R1M06 | overlay16384／bridge1024の算術を実allocation証拠へ昇格しない |
+| R1M07 | drain後のCall／shell／handle／trace／digest残存を隠さない |
+| R1M08 | storeの全aliasとbacking bytesの重複計上を分け、直接borrow field数を全参照数にしない |
+| R1M09 | embedded context／token表とS2、pool共有context viewを区別する |
+| R1M10 | provider／clientの19F予約・実F×n処理・2F arenaと必要floorを分離する |
+| R1M11 | 不正F／n／W／K／C・余分なflag・safe integer overflowを拒否する |
+| R1M12 | 未被覆JS／native／診断領域が残ればupper=null／unsupportedを保持する |
+| R1M13 | unknownがあってもknown lowerの1 MiB超過を拒否する |
+| R1M14 | 全値指定の算術fitでもruntime／親ledgerを承認しない |
+| R1M15 | 欠落／追加quantity・getter／Proxy・不正数値を評価なしで拒否する |
+| R1M16 | callerへの反復exportとterminalコピーを内部trace上限で被覆しない |
+| R1M17 | module／sink／diagnostic／genericの全native経路を未承認とし、viewLive=0を解放証拠にしない |
+| R1M18 | depth32のroot込み33再帰frameと、期限で強制解放されないpending寿命を区別する |
+| R1M19 | R0の24例・R1-Oの36例・pending12例とbuffer probeをfresh実行し、view量・zero・保持を照合する |
+| R1M20 | 元codec・共有frame credit・診断ticketを別義務として維持する |
+| R1M21 | close-time解放／4500ms上限／診断コピーをzero後へ移した寿命偽装を拒否する |
+| R1M22 | 総件数を保ったrow／source重複・欠落を拒否する |
+| R1M23 | pooled view長・reservation・canonical事後上限をwhole-heap上限にしない |
+| R1M24 | source inventoryとruntime／native／bridge／work／Session／性能の未成立を明確に分ける |
+| R1M25 | base確定1 MiBに追加native上限1 Bだけを与えてもknown lowerは増えず、他upperが未確定ならunsupportedを保つ |
+| R1M26 | source guardの73728 Bをbase上限へだけ結び、既知下限として保存しない |
+| R1M27 | baseがlowerだけの場合に有限upper／fitを生成せず、baseの未確定もunknownへ残す |
+| R1M28 | native確定1 Bによる既知lower超過と、native上限1 Bによる条件付きupper枠超過を分離する |
+| R1M29 | runtime hookと捕捉graphをM44／45へ対応付け、call drain後の寿命・一般上限nullを保持する |
+| R1M30 | 管理buffer／ticket解放後に別callから同じhookが捕捉graphへ到達できることを観測し、解放済みや上限証明へ改変する記録を拒否する |
+
+記録は`docs/validation/gradle-cwc-r1m-2026-11-13.json`。`bdo node scripts/check-cwc-r1m.mjs`で30 inventoryチェック・11 recordチェックと有限観測を再実行して生成し、`--check`で新節・source閉包・旧baseline・実Node binary・全観測を再照合する。recordチェックはsource／lifetime／unknownの自己digest改変、件数を保つ欠落、byte減額、drain後の診断残存隠蔽、pendingの早期解放・期限上限化を拒否する。個別view長を+1／-1して合計を保った変更とgrammar件数の変更もfresh再実行で拒否する。R1MR09〜11でinterval／判定の自己digest更新、hook row省略・寿命短縮、捕捉graphへの到達の隠蔽・2 MiB観測値の一般上限化も拒否する。
+
+#### 9.149.6 R1-Mを成立させるための次の実装単位
+
+1. **保持構造とcharge**：M15〜22／32〜38の全実holder・class／container／closure・caller exportへchargeを結ぶ。採用用sourceから診断export／残存registryを切り離す場合も、同居する診断ownerの領域または独立processの境界を証明する。8 handleや48参照の算術だけで1024 Bを表明しない。
+2. **codecの有界scratchとresidency DAG**：M03〜04／21〜24／41を、有界producer／consumerの実領域・phase・borrow／frame復帰・失敗経路へ結ぶ。元codec393216 B内のresident／compile／proofと16384候補、initial／seal・A／Bの同時保持を確認し、余裕や旧32768 B creditを二度使わない。
+3. **hash backend**：M25〜29のload時・更新・digest／abort・zero・解放を被覆する固定arena SHA-256を実装するか、同じNode／OpenSSL／allocatorへの独立上界・同期解放証拠を取得する。moduleを無条件loadした後のgateや汎用native fallbackで代用しない。
+4. **全領域の承認と統合**：未知の量・寿命・実親ownerが残らない状態で全領域の同居上限を証明し、R1-Wの原単位cost／全実親子ledger、R1-Gの独立承認入口へ進む。R2／CCO-0出口・本番採用は引き続き未成立である。
+
+初回の2026-11-13検証ではinventory24・record8と関連既存267、合計299テスト、型・差分検査、R0／R1設計／R1-Oの旧記録照合が成功した。初回記録は15領域・43行・19 fileの76 anchor、R0 24例・R1-O 36例・pending12例、268 source／artifactと実Node binary・新文書節へ束縛した。上限unknownをnullのまま保存し、R1-M runtime出口・R1-W／G・R2・本番採用は未成立とした。
+
+同日のレビュー修正ではR1M25〜30の6回帰が修正前に失敗し、修正後に成功した。inventory30・record11と関連既存267、合計308テスト、型・差分検査、旧R0／R1設計／R1-O記録の照合が成功した。更新記録は15領域・45行・19 fileの79 anchor・268 source／artifactへ束縛し、5算術例・3 hook保持例を追加する。upper-only値の既知lowerへの加算をなくし、upper未確定／条件付きupper枠超過／既知lower超過を区別した。hook保持例は全て、最初のcallのbuffer／ticketが0になった後も別callの5 callbackから2 MiB viewとcontext／core markerへ到達できた。これはruntimeによる捕捉graphの保持の有限実証で、一般capture上限・GC解放・layout／native／work承認や本番採用は未成立のままである。
