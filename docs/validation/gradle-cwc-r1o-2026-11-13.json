@@ -6,7 +6,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.148 R1-O：所有登録・scope shell・排他的移管の限定実装",
-    "sha256": "a2e3c012da768dbc2cd6b17ffaaeb60efde11abf55d491713058e166f7c9755f"
+    "sha256": "daf736e777c33c29228b14776be66e96858d6768b94115d64fcaab63e6e9e947"
   },
   "baselines": [
     {

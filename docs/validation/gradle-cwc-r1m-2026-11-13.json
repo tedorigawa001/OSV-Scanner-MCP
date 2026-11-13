@@ -6,12 +6,12 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.149 R1-M：全領域台帳・所有者・寿命・上限と未被覆の具体化",
-    "sha256": "0479124414308adfb13d20351c7d49ff5d0de5157d6d88ab31eeda05d68f6ff9"
+    "sha256": "2bc70d7e4b248f940cc97cd6300b85a5504e98f0dedf1112c68a865d82a6f2d7"
   },
   "baselines": [
     {
       "path": "docs/validation/gradle-cwc-r1o-2026-11-13.json",
-      "sha256": "450ca419f1fc12a13dfa2a3009728d569e904d91eb2ddede9cbba098a9a529ed"
+      "sha256": "5714e70763c669f70bccba059c4e6b5544b9297947beef0f9df6bf619be96138"
     },
     {
       "path": "docs/validation/gradle-cwc-r1-design-2026-11-13.json",

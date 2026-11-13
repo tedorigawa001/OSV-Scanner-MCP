@@ -11472,7 +11472,7 @@ runtime回帰R1OT01〜20（parameter展開23件）で、登録・shell同一性�
 
 R1OT21〜28（parameter展開12件）を追加し、派生型・偽予約・外部balance、4操作の値／getter差し替え、最後のcallbackでのcheck差し替え、非同期hookの公開拒否・close後の遅延回収・reject完了、then getter非評価を検証する。保存review matrixはconstructor拒否3例、ready／before-bind×value／getter×4操作の16拒否、3 actor×2 site×Promiseのfulfill／rejectの12拒否である。変更操作の実行・callbackの実書込／公開は0で、pending時の実buffer保持からsettle後のzero／解放・後着拒否までを保存する。R1OR11／12ではpendingの隠蔽・早期zero・公開・消費減額と、byte量を協調更新した記録を独立条件／fresh再現で拒否する。件数は検証済み配列と観測counterから算出する。
 
-記録は`docs/validation/gradle-cwc-r1o-2026-11-13.json`。`bdo node scripts/check-cwc-r1o.mjs`でruntime／record回帰とmatrixを再実行して生成し、`--check`でfresh再現・source／文書節・Node binary・旧R1設計／R0記録を照合する。旧source閉包と旧記録を更新して不足証拠を埋めない。性能比較はこの段階の対象外である。
+記録は`docs/validation/gradle-cwc-r1o-2026-11-13.json`。`node scripts/check-cwc-r1o.mjs`でruntime／record回帰とmatrixを再実行して生成し、`--check`でfresh再現・source／文書節・Node binary・旧R1設計／R0記録を照合する。旧source閉包と旧記録を更新して不足証拠を埋めない。性能比較はこの段階の対象外である。
 
 次はR1-Mの全領域・実参照／bridge charge・codec overlay／native領域の上界を具体化・実装する。R1-Wの原単位costと実親子ledger、R1-Gの独立承認入口、R2／CCO-0出口・本番採用はいずれも未成立である。
 
@@ -11584,7 +11584,7 @@ lowerBoundにはlowerだけを加え、upperBoundはbaseを含む全upperが既�
 | R1M29 | runtime hookと捕捉graphをM44／45へ対応付け、call drain後の寿命・一般上限nullを保持する |
 | R1M30 | 管理buffer／ticket解放後に別callから同じhookが捕捉graphへ到達できることを観測し、解放済みや上限証明へ改変する記録を拒否する |
 
-記録は`docs/validation/gradle-cwc-r1m-2026-11-13.json`。`bdo node scripts/check-cwc-r1m.mjs`で30 inventoryチェック・11 recordチェックと有限観測を再実行して生成し、`--check`で新節・source閉包・旧baseline・実Node binary・全観測を再照合する。recordチェックはsource／lifetime／unknownの自己digest改変、件数を保つ欠落、byte減額、drain後の診断残存隠蔽、pendingの早期解放・期限上限化を拒否する。個別view長を+1／-1して合計を保った変更とgrammar件数の変更もfresh再実行で拒否する。R1MR09〜11でinterval／判定の自己digest更新、hook row省略・寿命短縮、捕捉graphへの到達の隠蔽・2 MiB観測値の一般上限化も拒否する。
+記録は`docs/validation/gradle-cwc-r1m-2026-11-13.json`。`node scripts/check-cwc-r1m.mjs`で30 inventoryチェック・11 recordチェックと有限観測を再実行して生成し、`--check`で新節・source閉包・旧baseline・実Node binary・全観測を再照合する。recordチェックはsource／lifetime／unknownの自己digest改変、件数を保つ欠落、byte減額、drain後の診断残存隠蔽、pendingの早期解放・期限上限化を拒否する。個別view長を+1／-1して合計を保った変更とgrammar件数の変更もfresh再実行で拒否する。R1MR09〜11でinterval／判定の自己digest更新、hook row省略・寿命短縮、捕捉graphへの到達の隠蔽・2 MiB観測値の一般上限化も拒否する。
 
 #### 9.149.6 R1-Mを成立させるための次の実装単位
 
