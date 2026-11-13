@@ -11993,3 +11993,59 @@ unitはpayload-byte・object-count・reference-count・logical-byte・physical-b
 記録は `docs/validation/gradle-cwc-r1hb-design-2026-11-13.json`。専用checkerは旧baseline・新節・source anchor・18 region・40 planned条件、typed envelopeと宣言topologyの整合性を照合する。**実importの解析／実loader・allocation・role発行・quota・GC／解放・拒否runtimeは未実行**であり、承認certificateやpermitを発行しない。
 
 2026-11-13に設計整合性24件と関連既存320件、合計344テスト、型・差分検査、旧R1-H0記録と新設計記録の照合が成功した。18 region・6 source site・283 source／artifact・実Node binary・本節を新記録へ束縛する。source上のdescriptor literal114評価・persistent array5、同artifactのobserver／fault、guard前callback生成を記録し、byte上界へ昇格しない。候補quotaの通常240／cleanup16を含む条件付き算術、単位混同・unknown消去・graph境界違反の拒否を設計checkerで確認した。これらはHBC01〜40やHB-1〜4のruntime実証ではなく、charge／load／roleの承認・R1-M出口・本番採用は未成立である。
+
+
+### 9.153 R1-S：有界summary配送の限定実装
+
+§9.150.5の固定recordを、R1-H0とは別の同一process・固定clock fixtureとして実装する。対象は**合成producer receiptの配送・保持・回収**であり、実CWCのcounter／digest取得、R1-H0への接続、独立recipient承認、認証IPC、HB-1のartifact／role分離、全charge／元親ledgerへの予約は未成立である。R1-H0のsummary未対応という旧記録・sourceは変更しない。
+
+#### 9.153.1 固定recordとreceiptの境界
+
+schemaは`cwc.retention-summary.v1`、big endianの256 B。magic R1HS・version1・flags0、15個の非負safe-integer u64、source／profile／layoutのdigest各32 B、末尾32 Bのreserved zeroを固定する。15 counterはreadSeq／attempt／generation／reason／captured／proved／work／initialization／wire／attempts／heldBytes／pending／borrow／zeroedBytes／exportOrdinal。getter・Proxy・共有backing・不正counter／digestを拒否し、record生成にhash・canonical・JSON・toJSON・例外message変換を使用しない。公開codecは256 B spanを検査するが、ネットワークframing parserの実証ではない。
+
+producerは閉じた合成モデルで、attempt aに対しcaptured=proved=2a、work=17a、initialization=3a、wire=256a、heldBytes=6144などを与える。これらは**実CWCの計測値でも元単位の消費でもない**。digestは固定合成literal（11／22／33の各32 B）で、記録が別途束縛する実source hash／profile承認とは無関係である。main outcomeもモデル信号で、診断拒否・encode失敗がこの既存値を変更しないことだけを確認する。summaryをauthority証拠・成功receiptとして採用しない。
+
+producer receiptはfreezeした私有objectとして保持する。full-inputはseq／attempt／generation／ordinalを照合、owned-inputは所有receiptの同一性を照合し、両方でheader・全counter・digest・reservedを全byte検証する。どちらも完全性を省略しない。独立record oracleはruntime codecを使わず、別のBuffer／u64読取で全256 Bを照合する。このoracle・記録側hashの費用は採用配送経路の費用ではない。
+
+#### 9.153.2 保持と状態遷移
+
+read開始時、sender512 B・単一transfer256 B・receiver512 Bの**専用backing計1280 B**を全て確保する。recordは最大2、各attemptで1回だけ発行し、同じrecordの再発行とimmutable再送を区別する。固定registryは容量1〜4、最大residentの既知binary payloadは5120 B。この値はwrapper／receipt／entry frame／JS bridge／copying observer／Error／native費用を含む上界ではない。全領域・physical heap・元1 MiBへの適合はunknownのまま残す。zero確認もallocator／GC releaseの証拠へ昇格しない。
+
+readごとにcontrol1・record2・borrow2の計5 opaque identityを持ち、recipient identityはruntimeごとに1個である。これらは配送D側の追加保持で、既存Wの16 identityへ無料で含めない。2 item・sender／receiver各2 slot、transfer1本を固定し、単一flight以外を拒否する。consumerへraw viewやdecoded graphを返さず、opaque leaseから私有receiver backingの実参照を保持して検証する。
+
+配送はemit → dispatch → receive → ACK／transfer完了 → consumer解放 → reclaim。ACK・transfer完了・consumer解放は別操作であり、ACKだけでborrowやrecipient queueを解放しない。借用前のqueued consumerにも債務を残し、cancel後は閉じたdiscardで明示的に排出する。再送は同一sender slotを使い、最大2 dispatch／record、受信済みordinalは**copy前にdedup**する。consumer解放後も再送でコピー・consumerを再生成しない。転送中・consumer保持中・main未終端の回収、旧read／record／borrow・clone recipient・別owner／readの流用を拒否する。
+
+正常回収は全transfer／consumer債務の終了後、3 backing計1280 Bをzeroして全byte確認し、receipt alias・lookupを除去する。記録のzeroedBytesは最終bank zero確認量であり、中間のzero書込回数やGC回収量ではない。失敗・再入・recipient失効・purpose無効・期限到達時はretiringとして保持し、cleanupまで早期回収しない。内側で再入例外を捕捉しても外側receiveのcopyは0とする。
+
+診断TTLはread開始から6000、モデルmainの期限4500とは別で、main expired後も診断TTL内の配送を許すが元read authorityは発行しない。通常entry240・cleanup16、epoch内read発行64・拒否Error64をlocal fixtureで制限する。cleanup上限後はquarantineしてbankを保持する。これは承認済みglobal quota／元workへの換算や全Error allocation証拠ではない。新runtimeでのresetを許す採用契約も成立していない。
+
+#### 9.153.3 検証・採用範囲
+
+専用runner `scripts/check-cwc-r1s.mjs` は両modeのruntime40件とrecord10件、正常8・配送拒否16・cancel4・encode unavailable2の有限観測をfresh再現する。case閉包・source閉包・旧R1-HB baseline・実Node image・本節・全packetを束縛する。記録は `docs/validation/gradle-cwc-r1s-2026-11-14.json`。別digestへ更新してもcounter／保持／case／未知上界の改変を拒否する。RHC33〜42の配送局所条件へ部分対応するが、全RHC／HBCやR1-H／R1-M出口の成立とは数えない。
+
+| ID | 条件 |
+| --- | --- |
+| R1S01 | 独立u64 oracleで固定256 B・15 counter・3 digest・reservedを照合する |
+| R1S02 | sender512・transfer256・receiver512を先行確保し2 recordを配送する |
+| R1S03 | ACK後も実borrowとregistry容量を保持し早期回収を拒否する |
+| R1S04 | 応答紛失から同一recordを再送し受信copyを増やさない |
+| R1S05 | consumer解放後の再送でもconsumerとcopyを再生成しない |
+| R1S06 | cancel後もtransfer／consumer債務を保持しmain成功を変更しない |
+| R1S07 | recipient clone・別owner／readのrecord流用を送信前に拒否する |
+| R1S08 | mode別receipt束縛と両modeの全wire検証を維持する |
+| R1S09 | cancelされた借用前queueを明示discardまで保持する |
+| R1S10 | encode失敗はunavailableとしてordinalを消費しmain成功を維持する |
+| R1S11 | 容量1／4・read epoch上限64・回収後の旧capability拒否を確認する |
+| R1S12 | 発行重複・3回目dispatchを拒否し受信copyを増やさない |
+| R1S13 | 全counter・digest・header・reserved改変とu64 overflow・短い入力を拒否する |
+| R1S14 | getter・Proxy・共有backing偽装・coercionを実行せず拒否する |
+| R1S15 | 内側で再入例外を捕捉しても外側receiveのcopyを0にする |
+| R1S16 | 診断独自TTL・recipient失効・purpose無効を拒否しcleanupを維持する |
+| R1S17 | 改変packetはreceiverへcopyせずretiring後に回収する |
+| R1S18 | 通常entry不足・cleanup不足で消費を保持しquarantineする |
+| R1S19 | 合成receipt／digest・非authority・未採用の境界を明示する |
+| R1S20 | 両modeの全有限case・実packet・保持段階をfresh再現し記録へ保存する |
+
+copying observer／packet export／fault programは同じfixture artifactに残り、採用reader APIではない。callerコピーの容量・寿命・全wrapper・診断work mappingは未被覆で、別process recipient・認証IPC・実CWC receipt・独立profile／registry pin・読取前gate・元全親予約への統合が次の課題である。性能は測定せず、採用・予算fit・元readの成功を宣言しない。
+
+2026-11-14に新規runtime40件・record10件と関連既存344件、合計394テスト（20ファイル）、型検査・差分／新規source空白検査・旧R1-H0／R1-HB記録の照合が成功した。9 source anchor・291 source／artifact・本節・旧baseline・実Node binaryと正常8／拒否16／cancel4／unavailable2を新記録へ束縛した。2 recordの同時実borrow、一方のrecipient slotの解放後も他方を検証できること、各counter／digest改変・case同数重複・consumer／転送債務の隠蔽・copy／保持の過小計上・合成scopeの昇格を拒否することを確認した。費用・速度は測定せず、既知binary payloadの1280 B／read・resident5120 Bを全領域／元予算の上界へ昇格しない。実CWC counterと承認digest・認証IPC・独立recipient・全charge・元親ledger・本番採用は引き続き未成立である。
