@@ -3373,7 +3373,9 @@ LG-M1の記録レビュー修正（2026-11-12）：grant IDを実scope番号・a
 - [x] CCO-R0レビュー修正：例外診断より先にownerを失効し、message getter／文字列変換を呼ばず回収・元throw値・消費を保持する。parserは正常解析後の入力拒否でも旧token／sourceをclearする。追加10拒否・記録改変1条件とfresh再現を検証し、R1／R2の実証範囲を拡大しない。
 - [x] CCO-R1契約具体化（§9.147）：construct-private／internal-moveとscope shell、15領域・26 source群の未被覆、bridge／overlay／native候補、原単位cost・全実親子ledgerのhold／commit／retry、copy／IO前の拒否条件を設計。R1C01〜48とR1-O／M／W／Gの4手順、原本24行・未知を保持する算術・設計検証記録を追加した。runtimeの移管／予約／拒否は未実装。
 - [x] CCO-R1設計レビュー修正：source停止・lifetime pin／旧borrow終了を最後の完全検証前へ置き、同じ排他的leaseでbind／公開まで更新・zeroを禁止する。R1C05／06へ捕捉済みcallback・例外捕捉・値の復元でもfatal解除／公開を拒否する条件を追加。R1D19／20と記録を更新し、runtime実証へ昇格しない。
-- [ ] CCO-R1 runtime：具体化した契約に沿ってcore／context移管・全bridge charge・codec overlay／native領域・原単位cost被覆・実owner／親子ledgerの証拠を実装・取得し、未対応ならcopy／IO前に拒否する。CCO-0aのopaque処理・traceを新recipeへ流用しない。
+- [x] R1-O限定実装（§9.148）：閉じた所有producer、登録／同一scope shell、実buffer／borrow、source停止・borrow終了・排他的完全検証・同一store／memory ticketのbind／公開を実装。捕捉済みcallbackの更新／zero・例外捕捉／復元・再入・期限を公開前に拒否する。36正常／42拒否のmatrixとruntime／record回帰を新記録へ束縛する。固定clock・同一process・合成callでの所有移管だけであり、oracleの一時領域・native hash・診断tableは未被覆。
+- [x] R1-Oレビュー修正：私有factory発行のbudget／balanceと固定操作だけを受理し、派生型・外部base owner・操作の値／getter差し替えを評価前に拒否する。hookの非同期戻り値は成功公開前に拒否し、通常native Promiseのsettleまでbuffer／予約を保持する。constructor3・操作差し替え16・Promise12の拒否証拠とR1OT21〜28／R1OR11〜12を追加。独自thenableや本番の非同期lifecycle対応へ昇格しない。
+- [ ] CCO-R1 runtimeの残り：次はR1-Mの全bridge charge・codec overlay／native領域。その後R1-Wの原単位cost被覆・実owner／全親子ledgerとR1-Gの独立承認／copy・IO前gateを実装・検証する。R1-Oの診断ticket196608 B／initialization4096／work4096を全予算成立へ昇格しない。CCO-0aのopaque処理・traceを新recipeへ流用しない。
 - [ ] CCO-R2：改訂fixtureの最大入力・両role／両mode・2 attemptで全領域／消費保持とCCR01〜48／元CCO01〜40を検証し、CCO-0出口を判定する。元1 MiB／work枠に収まらない、または検証・認可を弱めないと成立しない場合は3 slot案を棄却し、CCO-1へ進めない。
 - [ ] CCO-1：新source承認の実A／B・固定consumer、独立initial／seal・provider計画へ接続し、全canonical bytes・live site・元oracleと消費を照合する。
 - [ ] CCO-2：最大入力・両role／両LG mode・2 attemptの全領域／親子ledger共存を実証し、LG-0最大layoutを再判定する。新profile・3 slot・metadata／work・LG-0出口・LG-1〜3・実Session／性能／本番採用は未成立。
@@ -3391,3 +3393,7 @@ CCO-R0レビュー修正検証（2026-11-13）：message getter／toString／Sym
 CCO-R1契約具体化検証（2026-11-13）：設計整合性18件と関連既存200の218テスト、型・差分・R0／旧設計記録の照合が成功。15領域・26 source群と原本buffer24行、246 source／artifactへ新記録を束縛した。work／memoryの未知はnullで保持し、全11証拠と実owner／ledgerが揃うまでcopy／IO前に拒否する契約を具体化した。48回帰条件・4実装手順は未実行で、R1 runtime・R2・本番採用は未成立。次はR1-Oの所有登録／scope shellの限定実装である。
 
 CCO-R1設計レビュー修正検証（2026-11-13）：sourceの新規利用停止・既存borrow終了を最後の完全検証前へ移し、lifetime pinと同じ排他的leaseをbind／公開まで維持する契約へ修正した。R1C05／06へ検証後の更新・zero・lease失効、捕捉済みcallback／例外捕捉／値の復元でも公開不可となる条件を追加。R1D19／20の修正前失敗・修正後成功、設計20件を含む関連220テスト・型・差分・旧記録照合が成功した。記録は246 source／artifactへ束縛し、runtime拒否実証とは数えない。
+
+R1-O限定実装検証（2026-11-13）：runtime23・record10と関連既存220の253テスト、型・差分検査、R1設計／R0／CCO-R設計記録の照合が成功した。正常36例・拒否42例をfresh再現し、253 source／artifact・12 anchor・Node binary・新節へ記録を束縛する。source停止→既存borrow終了→排他的完全検証→同期bind／公開、検証後の更新／zero・捕捉済みcallbackの拒否、同じstore／ticketの移管とdrain後の実zeroを確認した。次はR1-Mであり、R1-W／G・R2・本番採用は未成立。
+
+R1-Oレビュー修正検証（2026-11-13）：R1OT21〜23の7ケースは修正前に失敗し、修正後は追加対照を含むruntime35・record12と既存220の267テスト、型・差分検査、旧記録照合が成功した。constructor3・操作差し替え16・非同期Promise12の31拒否をfresh再現し、pending時の2 buffer／196608 B保持、settle後のzero／memory回収と消費保持、差し替え操作・callback書込／公開0を確認する。更新記録は254 source／artifact・16 anchorへ束縛する。外部ledger・独自thenableのlifecycle・native並行性を採用せず、次のR1-M／W／Gと本番採用の未成立を維持する。

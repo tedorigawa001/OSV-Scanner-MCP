@@ -11425,3 +11425,57 @@ prepare失敗なら未commitのholdを解放し、対象copy／IOは0。commit�
 同日の設計レビュー修正では、source停止・borrow終了を最後の完全検証より前へ移し、pinによるlifetime保護とbindまでの排他を明記した。R1C05／06に検証後の更新・zero、捕捉済みcallback・内側で捕捉した例外・値の復元、旧sourceによる転送済みstoreの回収を拒否する条件を追加した。R1D19／20は修正前に失敗し、契約の順序・lease／fatal属性と回帰条件の整合性を検査する。実bufferへの変更試行やruntime拒否を実行した証拠ではなく、48条件のplanned／executed=falseとR1 runtime未成立を維持する。
 
 レビュー修正後はR1D01〜20の20設計チェックと関連既存200、合計220テスト、型・差分検査、R0／旧設計記録の照合が成功した。更新記録は修正後の順序・handoff属性・R1C05／06と246 source／artifactへ束縛し、再生成／`--check`でも20チェックを実行する。runtimeの移管・更新／zero拒否・予約は引き続き未実装である。
+
+### 9.148 R1-O：所有登録・scope shell・排他的移管の限定実装
+
+#### 9.148.1 実装範囲と登録
+
+`gradleOwnedCwcR1o.ts`は独立した診断fixtureで、R0と旧source／検証記録を変更しない。閉じたlocal producerのconstruct-privateと、同じbacking storeを移すinternal-moveだけを実装する。callerのraw graph、Proxy、getter、complete flagを登録の証拠にせず、raw引数は評価せず拒否する。外へ返すのはopaque handleとscalar／digestの診断値だけで、core／context bytes・parsed graph・tokenを返さない。copy移管、外部producerや管理外raw aliasの取込は未対応である。
+
+`createCall`→source／destinationの`registerOwnedIntake`→`reserveDiagnostic`→`constructOwnedState`の順に進む。登録では固定scope shellとwindowの実体だけを作り、対象contentを生成しない。hydrate前のdata APIとticketなしの構築はproducer呼出し・content buffer割当より前に拒否する。同じsource shellをhydrateし、同じdestination shellへbindする。CoreHandleはそれぞれの既存windowと同一実体である。
+
+handleはcall／source claim／destination claim／両window／私有scratch／borrow control／certificateの8個を固定発行する。cloneや別callのclaimでscopeを選べない。ただし実参照table・wrapper・container・closureまで含めた48 ref／8 handleのcharge成立を表明するものではない。scratch役の全利用配置と親ledgerへの束縛も後続R1-M／Wで検証する。callは最大8、borrowは各callで1回、診断eventは4096件、更新は32回に制限する。
+
+#### 9.148.2 source停止・borrow drain・排他的完全検証
+
+実装の順序は以下である。
+
+1. `beginBorrow`は実source storeのcontext／core bufferへの強参照を保持する。`moveOwnedState`が同じstoreにlifetime pinを置き、epochを進めてsourceの新規更新入口を停止する。
+2. 既存borrowはquiescing中も終了できる。borrowが残る間のpublishは拒否し、fatalでもbufferをzero／解放しない。`completeBorrow`が実参照を除去してからだけdrainする。microtaskを跨ぐborrowの保持・終了も対照とする。
+3. borrow／管理frameが0になった後、同じstoreにexclusive handoff leaseを設定する。その下で現bufferを再読取し、元の完全context／planCore schema、canonical bytes、context binding、inventoryとsource時の全byte digestを検証する。cached complete flagを採用しない。
+4. private certificateをstore／revision／epochへ束縛する。最後のcallback後に生存・元期限・budget・同じpin／exclusive lease／certificate／source holder・空のdestinationを再確認する。
+5. 同期fence→bind→公開の間にcallback／awaitを置かない。storeと実memory ticketは同一実体のままcustodyだけを移し、source holderを除去する。handoffで追加のcontent buffer割当やbyte copyを行わない。旧sourceをretireしてもdestination bytesをzeroしない。destinationを含むcall drainでだけ実zeroとmemory解放を1回行う。
+
+完全検証後とbind直前のcallbackが捕捉済みsource portから更新／zeroを試みた場合、書込前にfatalへ進む。内側で例外を捕捉しても外側は公開せず、corruptとrestoreを続けて呼んでも両方を書込前に拒否する。callback終了前に実bufferを回収せず、callback／管理frame／borrowの終了後に回収する。再入、close、元期限到達、message getterがthrowする例外も公開0とする。例外診断getter／文字列変換を呼ばず、先行失効とcleanupを維持する。
+
+#### 9.148.3 台帳・完全性検査と未成立の境界
+
+fixture内の`createR1oBudget`が私有balanceと実`Lb0Budget`を発行し、196608 B・initialization4096・work4096の診断ticketを対象生成前に予約する。外部balanceを持つbase instance、派生型、Proxyや複製は発行registryで拒否し、class brandだけで所有の証拠にしない。constructor前・各live／予約入口でprototypeと全操作のdescriptorを照合し、getterを評価せず変更を拒否する。操作は捕捉した固定実装で呼び、変更検出後の回収／受動statsにも差し替えたrelease／statsを使わない。既存のLb0Budget sourceやprototypeをfreeze／変更する実装ではない。
+
+memory／work不足でproducer呼出し0を確認し、失敗後もinitialization／workを返さない。この数値はR1-Wの原単位cost被覆・全実親子ledger vector・追加費用上界ではなく、R0の4096や過去の5424との換算を行わない。全ownerとの1 MiB共存を証明したものでもない。外部ledgerの接続を再開する場合はR1-Wの所有port契約・独立証拠が必要で、今回のfactory registryを親ledgerの承認と見なさない。
+
+context／coreにはprivateな専用bufferを2個使い、実buffer割当数・byte量、source／destination holder、borrowの実参照、pin／lease、管理frameとzeroを観測する。`borrowReferences=2`はborrowが直接保持するcontext／core fieldの数で、store／table／pinを含む全aliasのchargeではない。producerと最終oracleには既存の汎用parse／canonical／schemaとnative hashを使う。これらの一時JS graph・canonical string・native scratch、診断trace／control tableのchargeは未被覆である。これはR1-Oの所有移管実証のための**unbounded diagnostic workspace**で、R0の有界parser／encoderの置換、R1-Mの承認codec overlay／native backendではない。観測の2 bufferを全heap上界へ読み替えない。
+
+固定clock・同一process・合成local call／scopeでの実行であり、実認証call、ReadScope、root／fact、独立source承認、fresh SourceSnapshot、実IO、Session、署名／use／ACKには未接続である。`freshSourceReads=0`はIO経路が接続されていないことを表し、実serviceに対するIO前拒否の実証ではない。`adoptProduction`は常にprofile未対応として対象構築前に拒否する閉じた入口で、R1-Gの11証拠を扱う採用gateの実装ではない。
+
+#### 9.148.4 回帰・記録
+
+runtime回帰R1OT01〜20（parameter展開23件）で、登録・shell同一性、未予約／未hydrate／raw graph拒否、claim clone／別call拒否、実borrowの保持・停止・終了、早すぎる検証拒否、close時の遅延回収、旧source retire、現bytes／schema／inventory／contextの完全検証、変更・zero・復元・再入・期限・例外、消費保持・後着拒否・二重回収防止を検査する。R1C02〜06／10／26の所有移管に関する部分を具体化したもので、R1C01〜48全件の達成ではない。
+
+保存matrixは2 role×3 context境界×2 workload×3 actor labelの正常36例と、3 actor×2 callback位置×7故障の拒否42例である。正常例ではborrow中の2実参照・保持中memory、完全検証後のstore／ticket／scope同一性、buffer割当数の不変、公開1回、close後の実zero／全管理buffer参照0を記録する。拒否は更新・zero・corrupt／restore、close・期限・再入・診断getterを持つ例外で、bind／公開0・実書込0・消費保持を確認する。client-initial／sealは別local callのactor labelであり、独立initial／seal計画とclient4 coreの同時共存の実証ではない。
+
+独立record validatorはstrictなfield・matrix・phase順・実観測counter・消費floorとcleanupを照合し、runtime fresh再実行とも比較する。R1OR01〜10で件数を保つ欠落／重複、borrow drain前への検証移動、借用参照の隠蔽、store／lease／shell同一性の偽装、消費の協調減額、callback中のzero／早期解放、digestを揃えた内容変更、未証明scopeの採用昇格、公開／回収回数の改変を拒否する。これは記録整合性の診断で、独立controller署名や認証IPCの証拠ではない。
+
+同日のレビュー修正ではhookを同期専用（戻り値undefined）として検証する。Promiseやthenable等を返す場合は`async_callback_unsupported`で先行失効し、bind／公開へ進まない。通常のnative Promiseだけはcaptured `Promise.prototype.then`で成功・失敗の完了を観測し、pendingCallbacksが0になるまで既存borrow／frameと同様にbuffer・memory ticketを保持する。callerのthen getterやPromise.resolveのthenable同化を使わない。完了後の更新試行も実書込前に拒否し、元のfatal理由・work／initializationを保持する。未完了のままcloseしても早期zero／memory解放しない。
+
+これは非同期hookの対応追加ではない。独自thenable・Promise subclass／constructor／species差し替えは成功経路として扱わず、呼出し・getter同化もしない。完了観測は通常native Promiseに限定し、それ以外の非同期処理のlifecycle・キャンセル・外部resource回収を実証したとは扱わない。callbackにはraw bufferを渡さず、拒否後のopaque portも使用できない。未完了Promiseの強制終了・期限による強制回収、native並行処理や本番Session接続はこのfixtureの範囲外である。
+
+R1OT21〜28（parameter展開12件）を追加し、派生型・偽予約・外部balance、4操作の値／getter差し替え、最後のcallbackでのcheck差し替え、非同期hookの公開拒否・close後の遅延回収・reject完了、then getter非評価を検証する。保存review matrixはconstructor拒否3例、ready／before-bind×value／getter×4操作の16拒否、3 actor×2 site×Promiseのfulfill／rejectの12拒否である。変更操作の実行・callbackの実書込／公開は0で、pending時の実buffer保持からsettle後のzero／解放・後着拒否までを保存する。R1OR11／12ではpendingの隠蔽・早期zero・公開・消費減額と、byte量を協調更新した記録を独立条件／fresh再現で拒否する。件数は検証済み配列と観測counterから算出する。
+
+記録は`docs/validation/gradle-cwc-r1o-2026-11-13.json`。`bdo node scripts/check-cwc-r1o.mjs`でruntime／record回帰とmatrixを再実行して生成し、`--check`でfresh再現・source／文書節・Node binary・旧R1設計／R0記録を照合する。旧source閉包と旧記録を更新して不足証拠を埋めない。性能比較はこの段階の対象外である。
+
+次はR1-Mの全領域・実参照／bridge charge・codec overlay／native領域の上界を具体化・実装する。R1-Wの原単位costと実親子ledger、R1-Gの独立承認入口、R2／CCO-0出口・本番採用はいずれも未成立である。
+
+2026-11-13の検証ではruntime23・record10と関連既存220、合計253テスト、型・差分検査が成功した。正常36例・拒否42例のfresh再実行と、R1設計／R0／CCO-R設計の旧記録照合も成功した。新記録は253 source／artifact、12 source anchor、実Node binaryと新文書節へ束縛する。今回の成立範囲はR1-Oの限定的な所有移管であり、R1全体の出口・本番採用はfalseを維持する。
+
+レビュー修正後はR1OT21〜23の7ケースで修正前の失敗・修正後の成功を確認し、追加対照を含むruntime35・record12と関連既存220、合計267テスト、型・差分検査が成功した。正常36／元拒否42に加えてレビュー拒否31（constructor3・操作16・Promise12）を再実行し、変更操作の呼出し・callback書込／公開は0、通常Promiseのpending中は2 bufferと196608 Bを保持し、settle後にzero／memory回収・消費保持・後着拒否を確認した。更新記録は254 source／artifactと16 anchorへ束縛し、旧R1設計／R0／CCO-R設計の記録も照合した。R1-M／W／G・R2・本番採用の未成立は変えない。
