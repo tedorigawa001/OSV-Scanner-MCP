@@ -12208,3 +12208,171 @@ Pはordinary／cleanup／error／payload debtの累積counterを持ち、各meta
 専用runnerは `scripts/check-cwc-hb2-quota.mjs`、再現は `scripts/run-cwc-hb2.mjs` と固定case用 `scripts/run-cwc-hb2-case.mjs`。記録は `docs/validation/gradle-cwc-hb2-quota-2026-11-14.json`。両modeのruntime48件・record12件、44 native case・18新台帳anchorと旧HB-1 baseline・source閉包・実Node binary／case flagsを束縛する。counter合計とper-ticket／ownerの分布、case集合、失敗・停止・quarantineを独立oracleで照合し、自己digestとrow合計を更新した協調的な減額も拒否する。HBC01〜40のfull contract、HB-2の独立charge／元単位mapping、HB-3／4・R1-M出口・本番採用は未成立のまま。性能は測定しない。
 
 2026-11-14に新規runtime48件・record12件と関連既存444件、計504テスト（24ファイル）、型・差分／新規source空白検査、旧HB-1／R1-S記録の照合が成功した。18更新台帳anchor・323 source／artifact、4 candidate pinと別diagnostic digest、44 native caseで実観測したNode image／flags／環境、本節・旧baselineを記録へ束縛する。通常240とcleanup16の分離、Q64・G4・global R4・D64、D飽和後の予約済みcleanup失敗／回収、初期化／通常／cleanupの失敗・retry・partial zero・捕捉再入・新G／bootstrap再loadでの消費保持を両modeで確認した。総数を保つper-ticket費用移動、合計とrowを併せた減額、quarantine／borrow／debtの隠蔽、入場拒否後のcurrent呼出し、source／型・未知上界・単位の改変を拒否する。Pの固定64 metadataとlogical drainを確認するが、全Native allocation／caller graph・byte上界・独立charge／実親予約・durable restart・R1-M出口・本番採用は未成立である。性能は測定していない。
+
+
+### 9.156 HB-2：18領域の独立charge・単位対応・寿命証拠契約（設計）
+
+HB-2aの論理quota・source台帳を、独立chargeの取得契約へ具体化する。対象は**必須証拠・取得方法・単位／寿命・拒否条件の設計**であり、collector・署名検証・allocator receipt検証・実親予約は実装しない。旧HB-2aの18領域とsource／native記録を変更せず、新しい設計catalogueと整合性記録を追加する。現在、18領域すべての独立logical／physical／original-work上界はnullである。source量・有限trace・quota成功から、元1 MiB／work適合や本番permitを生成しない。
+
+#### 9.156.1 独立性・証拠packet・取得可能性
+
+証拠を作る主体はproducer／reader／通常callerとは独立した承認権限・書込権限・保存先を持つ。異なるUID・key・署名だけでは、計量方法の正しさや閉包の完全性を証明しない。独立registryはissuerに加え、取得tool／方法、証明の対象・限界、実source／toolchainとの対応を承認する。sourceを計量後に変更して同じproofを流用することも、callerのverified／complete／upper flagや自己更新したdigestを承認とすることも禁止する。
+
+subjectはsourceClosure・actualArtifact・loaderWitness・runtimeImage・runtimeFlags・nativeDependencies・allocator・profile・layout・costModel・deployment・実P／G／incarnation・clockDomain・authorityLineage・registryRevisionを固定する。V8 build、GC／JIT／コードcache・native crypto／libuv／allocator設定など、上界に影響する条件をruntimeImage／依存閉包・flagsへ含める。新Gや再起動で旧debtが残る場合はdurableな実namespace／fencingへ束縛する。実行image一致だけでもproofの真偽やunit mappingの承認にはならない。
+
+各regionは6共通bundle（subject-and-loader、independent-approval、resource-and-edge-identity、representation-unit-map、allocation-and-lifetime、all-parent-vector）と2専門bundleの計8 refsを必須にする。refは中身の証拠／対象を持つbundleへの参照であり、同じhashを貼った8項目やsignatureだけの書類で充足させない。既存packet `cwc.retention-charge.v1` の最大8 refs／regionを維持し、bundle案 `cwc.retention-evidence-bundle.v1` に次を持たせる。
+
+| 要素 | 必須の内容・照合 |
+| --- | --- |
+| method／provenance | acquisition ID・tool image／version／設定・取得scope／phase・input／output digest・独立controller／issuer・method承認ref |
+| subject | 上記subjectの全pinと、取得時／利用時の実allocation domain・P／G／generation対応。source labelだけで実体を識別しない |
+| resource claims | region内のsubresource template／予約slotと、生成後のissuer-bound allocation identity／generationとの対応、backing／wrapper／edge、allocation class、全holder、最大shape／multiplicity、例外・失敗path |
+| typed bounds | 元source unit、対象ledger unitと定義／cost-model ref、lower／upperの区別、最大quantity・overlap・新規allocation／reuseの扱い。unknownはnull |
+| lifetime claims | birth／last-use／drain／escape、allocation debt保持、解放／再利用の必要witness、残るalias・async／Error／caller graphの扱い |
+| parent plan | 必須の実parent role・unit定義・namespace binding・P/G/read/phase・必要上限。数値一致による共用や移転を禁止 |
+| approval／freshness | 独立method／issuer承認、validity・current registryRevision、失効・再送・receipt消費防止の条件。署名だけで上界を真としない |
+
+メタデータ候補capはmodule64・region32・edge256・refs8／region・全metadata65536 B、subresource256・holder1024・mapping64・depth16。edge256はloader dependency edgeのcapで、resource／holder graphにはsubresource／holder capと全metadata capを別途適用する。全capを同時に満たす必要があり、各最大値を並べれば65536 Bへ収まるとは仮定しない。truncation・省略・未知fieldを受理しない。collector／parser／署名・hash workspace自体も独立bootstrapの実親へ前払いし、証拠不足ならmetadata取得／core評価へ進まない。HB-2aのG4は、失敗したpreflightやcallerの全呼出し費用の上限証明ではない。
+
+**循環を作らない証拠順序。** A＝charge／method certificateはparentの要求plan refsを含めるが、将来の支払済みreceiptを含めない。B＝実予約vectorはAのdigest・実P/G/read・parent state version・resource集合へ片方向に束縛する。C＝解放／再利用receiptはA・Bとallocation identity／generation・holder drain／fence・durable reconciliationへ束縛する。AへB/Cの将来digestを埋め戻さない。v1のparentReservations参照を支払済みflagとして扱わず、利用gateで別途Bの全実予約を要求する。
+
+**生成前／生成後の分離。** Aは、これから作る資源についてresource template／完全recipeの上界を証明し、存在しないallocation IDを要求しない。Bでそのtemplateのslotと全実親を生成前に予約する。承認済みhelperで生成した後、actual identity／generation・owner／全holderとslotを結ぶinstantiation witnessを検査してからuse／公開へ進む。上界証明のために資源を先に確保しない。既存root／source等は既に存在する実identityと所有証拠をgateで照合する。新規実体対応の取得失敗・余分なallocationは未公開でquarantineし、debtを保持する。module自身も承認済みbootstrapの事前容量内でのみ生成し、実load witnessをuse前へ結ぶ。
+
+取得経路は次の3候補とし、現repositoryではどれも独立chargeの採用済み経路ではない。
+
+| 経路 | 必要な取得と限界 |
+| --- | --- |
+| engine-proof | exact runtime／allocatorに対するvendorまたは独立検証可能なallocation・representation・work／lifetime証明と実体対応。現在そのprovider／証明packageはない |
+| bounded-recipe | 固定arena／有界container等の新recipeへ置換し、元の完全検証・内容・独立計画・現認可／期限・拒否意味の等価性と全wrapper／native費用を再証明する。arena以外を無料にしない |
+| capacity-domain | 別owner／serviceの実容量境界を独立controllerが取得する候補。通信・controller・resident／共有資源・OOM時の停止／後着拒否まで必要で、logical unit／元親mappingの代替にはしない |
+
+公開APIのsource inventory・使用量・snapshotは、違反発見とdiagnosticに使える。Nodeの[process.memoryUsage](https://nodejs.org/api/process.html#processmemoryusage)ではarrayBuffersがexternalに含まれるため、両者をそのまま加算して独立資源量としない。RSS／heap／externalは範囲も異なる。[heap snapshot](https://nodejs.org/api/v8.html#v8getheapsnapshotoptions)はisolate単位の観測で、取得に約2倍のheap量を必要とし得る。この仕様から、観測値／有限最大値だけで固定sourceのworst-case上界や全capture閉包を証明しない、と本設計では判断する。snapshot用workspaceと停止時間も対象ownerへ含め、OOMを引き起こして得られなかった証拠を0にしない。参照した公開資料は実fixture imageそのものの承認ではない。
+
+Linuxの[memory.max](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html#memory-interface-files)も、容量制御／OOMのpolicy候補で一時超過があり得る。設定値だけを厳密な瞬間RSS上界やoriginal logical-byteへ読み替えない。kernel・charge scope・共有page・超過／OOMとfencingを満たす別証拠が必要で、成立しない物理要件はunsupportedにする。このturnではAPI probe・heap取得・Linux配備を実行しない。
+
+#### 9.156.2 18領域の必須証拠・取得・寿命／拒否
+
+以下は6共通bundleに追加する専門要件。各regionの全subresourceとholderを分類し、region番号1個に単一のallocation class／倍率を押し付けない。
+
+| region | 専門証拠・取得方法・寿命／拒否条件 |
+| --- | --- |
+| HB01 | module-code-bound／loader-residency。候補4 sourceだけでなく、Gごとの実module／JIT／cache・native依存・preflight一時値の上界をengine-proofまたは新loader recipeで取得。residentとbootstrap-tempを分け、source長・import申告だけでは拒否 |
+| HB02 | closure-capture-bound／role-issuance。cell・port・factory／module環境のhidden capture、両側holder・実role発行を独立解析と実行witnessへ束縛。freeze／null-prototype／field9だけでwrapperや捕捉量を算定しない |
+| HB03 | container-layout-bound／namespace-quota。Pのmetadata64実体、G別registryのheader／backing／shape遷移・実parentを固定layoutまたはarena証明へ結ぶ。R4／Q64・distinct64からbyteやdurable namespaceを導かない |
+| HB04 | partial-allocation-bound／durable-debt。発行ごとのRead・counter・初期化失敗の一時値を完全recipeとallocation traceへ照合。P metadataのaliasを重ねず、新G／row削除でもread-epoch debtを残す |
+| HB05 | closure-capture-bound／alias-holder-map。binding1・scope1とroot／call／port・ownedViewの実edge、推移captureを取得。ownedViewの同一実体だけを一度計上し、追加holderを無料にせず、digest一致をidentity証明としない |
+| HB06 | backing-wrapper-bound／allocator-domain。2 backingとview、alignment／allocator overhead、alias／partial構築をallocator／arena receiptとwrapper証明へ結ぶ。6144 payload-byte・zero・ACKだけでは全charge／解放を拒否 |
+| HB07 | container-layout-bound／alias-holder-map。table2のheader／backing・96位置・table外edge・element-kind遷移を完全layoutとedge証拠で取得。96×pointer幅ではhidden欄やwrapperを価格付けしない |
+| HB08 | identity-layout-bound／caller-capacity。16 identityとarray2、read-control／CoreHandleのalias・generation・C保持を発行witnessとlayout／consumer容量へ結ぶ。lookup除去や新identity発行で旧caller aliasを消さない |
+| HB09 | container-layout-bound／partial-allocation-bound。Body2・body listとHB07/08のarray5、views・途中構築を最大shape recipeへ対応付け、同一資源を二重計上しない。source個数を物理下限／上界にしない |
+| HB10 | durable-debt／holder-drain。retiringが同一row/bodyならidentityを維持し、別containerがあれば追加。quarantine／partial zero／retryの全寿命を取得し、state flagだけでallocator creditを返さない |
+| HB11 | temporary-allocation-bound／closure-capture-bound。114 descriptor評価に加えbuilder closure・projection・catch／中断構築をengine証明または新recipeへ対応。read生成とentry生成を分け、scope退出を解放にしない |
+| HB12 | operation-cost-map／dispatch-bound。begin／通常240／cleanup16・retry・guard前後のhelperを元unit定義と全実parent debitへ照合。E256・RPC数・CPU時間を元workへ自己換算しない |
+| HB13 | native-frame-bound／reuse-witness。JS/native stack、current view／descriptor・scratch、再入・async／例外frameの最大重なりと同一arena resetを取得。証明がなければ有界allocation debtが別途証明できる場合だけ保守計上し、なければ拒否 |
+| HB14 | bootstrap-capacity／verifier-workspace。read／parse・署名／hash・VM compile・collectorの実workspaceを独立bootstrap image／容量と有界recipeへ結び、core loadより先に予約。無料の検証・無制限preflightを認めない |
+| HB15 | error-stack-bound／dispatch-bound。入場済みErrorと入場前primitive frame、lazy stack／cause／message・engine/OOMを別subresource化。固定error表現またはruntime証明と外部有界dispatcherがなく、D64後のframe／caller生成が不明なら拒否 |
+| HB16 | receiver-capacity／copy-protocol-bound。診断resident・queue・marshal・sender／transit／receiver・snapshot／caller exportを独立D容量または実隔離境界とcodec／holder証明へ結ぶ。別artifact／processだけで0としない |
+| HB17 | caller-capacity／holder-drain。handle・Error・copy／wrapper・関連捕捉graphをclosed consumerの発行／容量・holder registryへ結ぶ。任意caller graphはunsupported。ACK／timeout／WeakRef／producer終了だけで解放しない |
+| HB18 | original-context-map／operation-cost-map。実root／fact／lease／sourceと元全親・baseline、client4 core・両attemptの重なりを実ReadScope／所有witnessとcost定義へ結ぶ。合成identity・診断ticket・同じ予算数値では拒否 |
+
+同一backingはallocation identity／allocator domain／generationで1 resourceとし、別view／holder edgeを別claimにする。異なるresource IDの内容が同じでも統合しない。反対にHB08とHB17が同じopaqueを指すときobjectを二重加算せず、Cのholder／copy義務を残す。無関係なcaller自身のheapを無条件にcoreへ課すことはしないが、返却値・関連copy・元resourceの寿命延長を所有policyなしで除外もしない。独立capacityのC/D parentへ移す場合も、実全親mappingと境界・通信copyの証拠が必要である。
+
+HB15のError本体は入場済みentry debt、拒否frameはrefusal側、callerが後でmaterializeするlazy stackはその実生成owner／operationへ分ける。caller側に有界admissionがなければ、coreのEだけでstack生成や任意captureを有界としない。HB13のframe-reusable、HB14のbootstrap-reusableも候補classであり、receiptなしに再利用を確定しない。regionを分けたことだけで、新Native allocationやunbounded holderが消えたとは扱わない。
+
+#### 9.156.3 単位・実親・allocation debt
+
+source-object／reference-slot／identity／array／literal／view-call／retention-entry／refusalの数は、logical-byte・physical-byte・original-workと異なる。8 B／32 Bの経験値、pointer幅、heap差分、実行時間を換算係数にしない。unit mapにはsource定義・対象ledger定義／cost-model hash、最大shape／event範囲、alignment／metadata／wrapper／native／例外path、coverageと重複除外、実owner／全parentを固定する。sourceUnitとtargetUnitの名前が同じでも、対象／scope／定義の証拠は必要である。upper-onlyをlowerへ足さず、nullを0にしない。
+
+元call-memory 1048576 logical bytes、verificationのwork＋initialization 156978、provider work 1048576、global work 67108864等の数値は既存契約の参照値で、今回の実namespace／unit bindingではない。wire・attempt・logical check／CPR構造workの勘定を別に維持する。同じ156978のplanとverificationを共通財布にせず、actual parent vectorと既存の型／定義が取得できなければunit-map-unavailableとする。特にglobal workの具体unitを新文字列で捏造せず、実定義へ照合するまでnullを残す。
+
+per-operation mapはbegin／capture／通常／publication fence／close／cleanup／retry／refusal／bootstrap／diagnostic exportと内部primitiveを漏れなく覆い、initialization・work・wire・attemptの確定消費を保持する。取得traceは実行順・件数照合に使い、有限traceだけでworst-case costを導かない。alias edgeを減らしても元root／fact／source・codec／frameのbaselineを除去せず、既存1 MiB内へ共存する全領域を維持する。各parentで独立に充足し、余りの相殺やg/Rによる割引をしない。
+
+allocation classはresource単位に一つだけ割り当てる。P/G resident、Rごとのread-epoch、entry／refusalごとのepoch、認証されたreuse arena、bootstrap容量、C/Dの実生成・保持を分け、同一allocationをdebtとreuseの両方へ加算／控除しない。engineの回収上界がなければ、sourceから参照が切れてもdebtを残す。Q/E/Dがlogicalに有界でも、bootstrap失敗の反復・D到達後のJS呼出し・任意callerのallocationまで有界になったとはしない。新G／epoch名／再起動をまたぐ実debtは独立authorityのdurable記録・fencingが必要で、HB-2aのprocess-local singletonは代替ではない。
+
+#### 9.156.4 解放／再利用の必要十分条件
+
+**解放**はresourceIdentity・allocatorDomain・generation、全holder／borrow／transport／async drain、escaped copyの分離と同一resourceの外部holderなし、current owner fence、durable debt reconciliation、allocatorReleaseReceiptとreceiptの一度だけの消費を全て要求する。zero・lookup除去・managed frame退出・ACK・timeout・GC観測・WeakRef消失はlogical eventで、どれも単独ではcreditを返さない。別resourceへのcopyが外部で課金済みでも、元resourceにholderが残るなら元を解放しない。所有移管は全親reservationを継続する別witnessを要し、physical releaseと混同しない。resourceごとに同じ親reservationへ一度だけ反映し、応答紛失・再送・store失敗で二重creditしない。
+
+process終了も単独では十分でない。実allocator domainの停止、外へ共有されたFD／backing／receiver copy・C/D holder、kernel側charge・残存service、旧actor／後着のfenceを確認する。allocatorReleaseReceiptのdomain-disposal型を使う場合も、contained resourceと実domain停止／全holderについて独立証拠が成立するときだけ対象範囲のreleaseへ進める。producerが死んでも外部copyや共有backingは残り得る。解放の確認に失敗したらdebtを保持し、新しいnamespaceで再発行しない。
+
+**再利用**はsameResourceIdentity、boundedArena、全lifetime overlap、exclusiveGenerationLease、未完了holderなし、resetPostcondition、allocatorReuseReceipt、atomicReservationTransfer、wrapper／temporary debtを要求する。同じbufferへの新view生成はwrapperの新allocationを伴い得る。arena予約を保持したままgenerationを進め、元親を一度unreserveして取り直す隙間を作らない。reuseは親refundではなく、Q/E/Dやcaller debtのresetにもならない。allocatorやleaseの対応が未証明なら、上限が証明されたepoch debtとして保持するかunsupportedにする。
+
+#### 9.156.5 判定順・拒否・実装順
+
+固定bootstrapの容量・認可を最初に確保し、boundedな構造検査 → subject／実load対応 → 独立methodとissuer／registry → unit map／全resource・holder coverage → lifetime／debt → 全実parent予約 → 現認可・purpose・pin／取消し・元期限・current registryRevisionを確認する。最後のcallback後にもcurrent revisionと予約を確認し、値を復元しても失効を取り消さない。対象copy／decode／fresh IOやunapproved core評価の後からpermitを補わない。
+
+| 拒否 | 判定・作用 |
+| --- | --- |
+| evidence-schema-invalid | 型・未知field・上限超過・truncation・同数重複・orphan refsなど構造不正。意味上のmapping未取得と区別 |
+| source-boundary-unsupported／proof-subject-mismatch | 実artifact／loader／runtime／flags／allocator／profile／scope不一致。再署名・自己digest更新でも拒否 |
+| issuer-unapproved／revoked-or-expired | method／issuer権限、独立保存／現在registryRevision・validityが不足／失効。署名単独では通さない |
+| charge-unit-mismatch／unit-map-unavailable | 寸法・parent定義が違う、または正規のmappingが未取得。retention-entry／CPU／OS容量から元work／logical-byteへ代替しない |
+| charge-evidence-unavailable／lifetime-witness-unavailable | schemaは正規でも、必要な上界／capture／native／holder／解放証拠がない。creditとadmissionを出さない |
+| parent-reservation-unavailable／original-budget-exceeded | 実全親に未束縛、または承認済み上限が元枠を超える。別namespaceや別unitの余りで相殺しない |
+| bootstrap-budget-exceeded | collector／verifierの事前容量がない。追加probe／heap取得やmetadata本体読取で穴埋めしない |
+
+取得失敗・collector crash／snapshot OOM・期限超過・署名不正・失効・保存失敗時はgateを閉じ、既存reservation／debtを保持する。metricsやsource個数へfallbackして成功にしない。承認されたcleanup以外の新しい取得・copy・IOを止め、独立authorityと整合するまで新epochを発行しない。
+
+| 段階 | 必須の出口（全てplanned） |
+| --- | --- |
+| ED-1 | 18領域のsubresource／holder・単位・寿命と取得methodの実現性を棚卸しし、取得不能な経路をunsupportedとして固定する |
+| ED-2 | representation／全operation costの独立証拠、method／runtime／sourceに対するregistry承認とtyped boundを取得する |
+| ED-3 | allocator release／reuse・closed caller／diagnostic capacity・durable epoch／fenceの実witnessを取得する |
+| ED-4 | 実verifier・全parent予約・load／copy／IO前gateへ接続し、最大入力・両role／mode・2 attempt・失敗／後着を統合する |
+
+#### 9.156.6 回帰条件（全てplanned・証拠runtime未実行）
+
+| ID | 条件 |
+| --- | --- |
+| HBEC01 | HB01の実module／native依存・JIT/cache・bootstrap一時値をsource長／import申告だけで承認しない |
+| HBEC02 | HB02のwrapper／factory／module hidden capture・実role発行欠落をfreeze／field数で補わない |
+| HBEC03 | HB03のtable header／backing／shape・実P/G namespace欠落とR4/Q64だけのbyte表明を拒否する |
+| HBEC04 | HB04のRead新規allocation・初期化失敗・durable debt欠落とmetadata alias二重計上を拒否する |
+| HBEC05 | HB05のbinding／scope／ownedViewの実体・全holder／capture対応不足とdigest一致だけの共有を拒否する |
+| HBEC06 | HB06のbacking／wrapper／alignment／allocator／部分構築の欠落をpayload6144 Bで補わない |
+| HBEC07 | HB07の96位置・header／backing・table外edge欠落とpointer幅による換算を拒否する |
+| HBEC08 | HB08の16 identity・array2・read-control aliasとC保持の欠落、旧handleを消した新規発行を拒否する |
+| HBEC09 | HB09のBody2／array5／viewと失敗途中の一時値を一つでも落とした最大shape証拠を拒否する |
+| HBEC10 | HB10のretiring移動・新container・quarantine／partial zero／retryをstate flagで解放する表明を拒否する |
+| HBEC11 | HB11の114 source評価を物理allocation下限／上界へ変換し、closure／projection／catchを省く証拠を拒否する |
+| HBEC12 | HB12のbegin／通常／cleanup／retry・guard前後の処理と元operation cost対応の欠落を拒否する |
+| HBEC13 | HB13のJS/native frame・current／descriptor・再入／asyncをmanaged frame0だけでreuseする表明を拒否する |
+| HBEC14 | HB14のmetadata／hash／署名／compile／collector workspace未予約とcoreを先にloadする経路を拒否する |
+| HBEC15 | HB15のadmitted Error・primitive frame・lazy stack／caller materialization・engine/OOM欠落を拒否する |
+| HBEC16 | HB16のD resident・queue・sender／transit／receiver・marshal／exportを別artifact／processだけで0にしない |
+| HBEC17 | HB17の任意caller graph・旧handle／Error／copy保持をACK／timeout／WeakRefで解放する表明を拒否する |
+| HBEC18 | HB18の実root／fact／lease／source・client4 core／両attempt・元baseline／parent欠落を拒否する |
+| HBEC19 | producer自己承認、同UID/keyでの偽装独立性、署名だけでmethodの真実性を保証する表明を拒否する |
+| HBEC20 | 承認から取得／利用までのsource・実artifact／loader閉包の差替えとhidden importを再署名後も拒否する |
+| HBEC21 | exact runtime／V8／native／allocator／GC/JIT flags不一致と公開資料版一致だけの承認を拒否する |
+| HBEC22 | retention-entry／RPC数／CPU時間を元workへ換算し、同じ数値の別parentを共用する表明を拒否する |
+| HBEC23 | logical-byteとphysical-byteの無証拠換算、heap limitを全process上界とする表明を拒否する |
+| HBEC24 | 同一backingの二重計上と追加wrapper／holderの無料化を両方拒否する |
+| HBEC25 | 最大shape／両attempt／失敗pathのallocation multiplicityをactual nや終了済みrowで減額する証拠を拒否する |
+| HBEC26 | bootstrap／collectorが自分の証明取得前に無予約allocationし、G4だけでpreflight反復を有界とする経路を拒否する |
+| HBEC27 | instrumented診断artifactの結果を候補artifactのallocation／byte proofへ流用することを拒否する |
+| HBEC28 | recipient／callerのcopyと保持寿命・実容量境界をsummary512 BやACKだけで完了としない |
+| HBEC29 | closure／module環境・Error／Promise／table外edgeの未被覆をsource上の未exportで消す証拠を拒否する |
+| HBEC30 | logical drain・新G／epoch名・再起動による未回収allocation debtのresetを拒否する |
+| HBEC31 | reuseとreleaseを混同した親refund、未解放wrapper／scratchの除外、unreserve／再reserveの隙間を拒否する |
+| HBEC32 | producer終了や別課金だけで同一resourceの外部holder／escaped FD／backing・C/D保持・kernel chargeを解放する表明を拒否する |
+| HBEC33 | GC観測・WeakRef消失・heap差分からrelease時刻／上界／creditを生成しない |
+| HBEC34 | D64後の固定primitiveをnative frame／engine allocationの独立証拠なしに無料とする表明を拒否する |
+| HBEC35 | metadata65536 B・module64・region32・edge256・refs8・subresource256／holder1024／mapping64／depth16超過とtruncationを拒否する |
+| HBEC36 | unknownを0へ、upper-onlyをknown lowerへ移し、8 B／32 B等の経験係数でfitする証拠を拒否する |
+| HBEC37 | 最後のcallback後の失効・registryRevision／pin変更と復元を公開前に検出し旧許可を再利用しない |
+| HBEC38 | 生成前templateをactual identityと偽る証拠、生成前無予約・生成後use前witness欠落とallocator receiptのdomain／generation不一致・再送／二重creditを拒否する |
+| HBEC39 | 元baseline除去・g/R割引・異unit／別namespaceの余り相殺と、一つのresourceのdebt／reuse二重控除を拒否する |
+| HBEC40 | memoryUsageのexternal／arrayBuffers重複やRSS／heapの異scopeを足して独立chargeにしない |
+| HBEC41 | cgroup memory.maxの値を瞬間RSS／元logical-byte上界と読み替え、超過／OOM／共有資源・fenceを省く証拠を拒否する |
+| HBEC42 | source／profileが同じでも実P/G／incarnation／authorityLineage・validity／現在registryへの束縛が違うproofを拒否する |
+| HBEC43 | collector取得失敗／crash・OOM・保存障害後に証拠0やmetrics fallbackで新permitを出さずdebtを保持する |
+| HBEC44 | 構造不正と、正規schemaだがmapping／lifetime／parentが未取得の場合の拒否理由を分離する |
+| HBEC45 | partial allocation・lazy stack／cause／message getter・非同期残存の未被覆を成功pathの量で補わない |
+| HBEC46 | cleanup／retry／refusal／bootstrap／diagnosticの全operationを元cost modelへ照合し、失敗後もwork／initialization等を返さない |
+| HBEC47 | 必須proof欠落時にsource count・heap snapshot・自己署名へfallbackするoptional経路を拒否する |
+| HBEC48 | 18領域の全必要証拠・元全親予約・現認可／元期限・最大条件・両role／modeを満たさずR1-M出口／本番採用へ昇格しない |
+
+設計catalogueは `gradleOwnedCwcHb2EvidenceDesign.mjs`、整合性runnerは `scripts/check-cwc-hb2-evidence-design.mjs`、記録は `docs/validation/gradle-cwc-hb2-evidence-design-2026-11-14.json`。32設計チェックと108の取得route例を検査し、各routeのcertificateVerified／actualParentReserved／runtimeAdmittedをfalse、upperをnull、creditを0に保つ。route helperは取得案の分類だけで、certificateを受け付ける本番verifierではない。HBEC01〜48・ED-1〜4は全てplannedであり、証拠collector／署名／allocator検証・実ledger・native lifetime実証を実行したとは数えない。
+
+2026-11-14に新規設計整合性32件と関連既存504件、計536テスト（25ファイル）、型・差分／新規source空白検査、旧HB-2a記録の照合が成功した。18領域・6共通＋2専門bundle、108の取得route例、48 planned条件・4 planned段階、327 source／artifact・本節・旧baseline・実checker Node binaryを新記録へ束縛する。単位・method・unknown／creditの扱い、logical signalでのdebt保持、生成前template／予約と生成後実体対応、同一resourceの外部holder・domain-disposal／reuse要件を検査した。公開一次資料は観測API／容量policyの意味確認に使い、実imageのcharge証拠へ昇格しない。32件は設計チェックであり、HBEC01〜48のruntime・独立collector／署名／allocator／実親検証・1 MiB適合・R1-M出口・本番採用は未成立である。
