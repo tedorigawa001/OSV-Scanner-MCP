@@ -12049,3 +12049,68 @@ readごとにcontrol1・record2・borrow2の計5 opaque identityを持ち、reci
 copying observer／packet export／fault programは同じfixture artifactに残り、採用reader APIではない。callerコピーの容量・寿命・全wrapper・診断work mappingは未被覆で、別process recipient・認証IPC・実CWC receipt・独立profile／registry pin・読取前gate・元全親予約への統合が次の課題である。性能は測定せず、採用・予算fit・元readの成功を宣言しない。
 
 2026-11-14に新規runtime40件・record10件と関連既存344件、合計394テスト（20ファイル）、型検査・差分／新規source空白検査・旧R1-H0／R1-HB記録の照合が成功した。9 source anchor・291 source／artifact・本節・旧baseline・実Node binaryと正常8／拒否16／cancel4／unavailable2を新記録へ束縛した。2 recordの同時実borrow、一方のrecipient slotの解放後も他方を検証できること、各counter／digest改変・case同数重複・consumer／転送債務の隠蔽・copy／保持の過小計上・合成scopeの昇格を拒否することを確認した。費用・速度は測定せず、既知binary payloadの1280 B／read・resident5120 Bを全領域／元予算の上界へ昇格しない。実CWC counterと承認digest・認証IPC・独立recipient・全charge・元親ledger・本番採用は引き続き未成立である。
+
+
+### 9.154 HB-1：core／診断artifact・reader role境界の限定実装
+
+§9.152のHB-1を、**実ES moduleのsource／artifact分離と公開readerの到達経路**に限定して実装する。旧R1-H0・R1-Sのsource／証拠を変更せず、新しい候補coreと別のinstrumented diagnostic artifactを作る。Nodeのcontrolled linker・固定clock・同一process・合成call／scopeでの検証であり、独立deployment issuer、署名registry、OS／別UIDによる隔離、production loader／charge／元親ledgerの成立は表明しない。Node VMを敵対するhostからのsecurity boundaryとして採用しない。
+
+#### 9.154.1 artifactと読込閉包
+
+| artifact | 役割・公開範囲 |
+| --- | --- |
+| gradleOwnedCwcHb1Core.mjs | 候補core。唯一のexportは固定reader。observer・stats・故障program・任意callback・issuer／factory／classを公開しない |
+| gradleOwnedCwcHb1ReaderPort.mjs | coreがimportできる唯一のport。readonly current関数と不変な実owner／call／root／incarnationを内部へ渡し、cellやwriterをexportしない |
+| gradleOwnedCwcHb1ScalarReader.mjs | 純粋なcurrent読取コード。controllerへのimport・writer・raw cell返却を持たず、scalar値の固定viewだけを返す |
+| gradleOwnedCwcHb1Controller.mjs | trusted fixture bootstrapだけが使うissuer／更新側。scalar cellとcontrollerを発行し、coreのlinkerへ渡さない |
+| gradleOwnedCwcHb1Observer.mjs | 別diagnostic artifactの生成側。候補の2箇所の固定anchorへ閉じた故障programを追加し、copying inspectを別exportへ追加する |
+| gradleOwnedCwcHb1Bootstrap.mjs | fixture issuer・外部fixture pin・controlled linkerを所有。core／port／scalar-readerの検証後に純粋helperとcoreを評価する |
+
+候補の実link記録はcore → reader-port → injected-readerの2 edge。injected-readerのcurrent実関数は、検証済みscalar-reader artifactを別moduleとして評価して取得する。factoryを保持するのはbootstrapだけで、consumerへはreader以外のmodule namespaceを渡さない。scalar-reader factoryはcellを閉じ込めたreadonly関数だけを返し、controller codeを同じartifactに置かない。cellにはnow／revision／pin／purpose／revoked／approvalRevision／approved／memory／workのscalar値だけを置き、function・controller・任意graphへのbackedgeを持たせない。
+
+診断側は追加のcore → diagnostic-control edge、diagnostic export・故障programを持ち、候補とは異なる実bytes／digestになる。diagnostic-controlにはtrusted hostがcontrollerを渡す。**候補にはこのedgeもcontrol objectも渡さない**。診断artifactのdigestを候補として採用せず、同artifactのflag／未使用exportによる分離とは数えない。正常操作のobservable behaviorを候補／診断で対照するが、診断側のcounterや保持観測を異なる候補artifactのallocation／byte証明へ流用しない。
+
+外部fixture approval JSONはcore・port・scalar-readerの3 digestを固定する。callerの更新したproposal／自己digestでは承認を更新できない。Node自身のmoduleRequestsで全static import・side-effect import・re-exportを列挙し、許可edgeの完全一致を要求する。未承認sourceの1文字の変更、到達不能なdynamic import／require／eval、別port／scalar-reader、診断artifactへの交換も固定pin不一致または閉包違反で評価前に拒否する。これは汎用AST安全性証明ではなく、**固定されたfixture sourceの検証**である。動的importは実行時callbackでも拒否し、consumerへhost Errorを渡さず固定primitiveだけを返す。拒否例外のconstructor／Function経由でhost processを得る負例を両modeで再現し、修正前の2件失敗・修正後の成功を確認する。署名・独立registryによる本番承認は未成立である。
+
+#### 9.154.2 reader発行・所有権・現状態
+
+候補moduleにはconstructor／factory exportを置かない。trusted bootstrapが実G相当のowner／incarnation・合成call／rootを発行し、sealed injectionだけをlinkする。readerはnull-prototypeのfrozen object、12操作もnull-prototypeのfrozen arrow functionである。prototype.constructor・static・getter・symbol・own propertyをたどってcontroller／factory／raw cellを取得できないことを有限reflectionで確認する。opaque read／window／leaseもnull-prototypeで、ownerへのclosureを持たない。callerが同値object・clone・別Gのhandleを渡しても実identityに一致せず拒否する。未定義identityは検索前に拒否し、失効済みのundefined authorityへ一致して正常closingのrowをfatalへ変更しない。HB1C06の両modeで修正前失敗・修正後成功を確認する。
+
+consumer用linkerはreaderだけを許可し、controller／bootstrap／diagnostic-control／reader-port／injected-readerの直接importを拒否する。Function／evalのコード生成を無効にし、readerのmethod／prototype差し替えとconstructorからのfactory生成を拒否する。consumerがVM内のObject／Array prototype操作を差し替えても、coreが捕捉済みintrinsicとindexed loopを使うため、current検査へcallbackを差し込めない。対象は公開property／prototypeとこのcontrolled linkerの経路であり、敵対host・debugger・OS権限の完全隔離証明ではない。
+
+portの不変対応と毎回の現状態を分ける。entryでclock・現認可・purpose・pin／revision・承認revision／有効性・model残memory／workを確認し、公開直前の同期fenceでも検査する。pin／purpose／approvalを変更して元の値へ復元してもrevisionを戻さず、元readの公開を拒否する。元deadline4500を延ばさず、失効後は権限lookupでcleanup identityへfallbackしない。cell viewは採用authority certificateや実ledger残高ではなく、固定fixture内のscalar modelである。実認証call／ReadScope・CWC root／fact・lineage・元単位workとの接続は未成立のまま。
+
+#### 9.154.3 lifecycleと観測の境界
+
+R1-H0に対応する2 body（実payload6144 B）・96参照位置・16 identityを保持し、read-controlは第1 bodyの既存identityを使う。容量1／4を実際に満杯にし、第1 attemptの実borrow／transportを残した第2 attempt、provider／clientのfirst／seal、正常closeとfatal、早期回収・旧handle・別ownerの拒否を両modeで比較する。公開前の再入を診断artifactで発生させ、内側の例外を捕捉しても外側publicationが0であること、frame退出後の回収を確認する。partial zero失敗は両bodyとrowを保持し、再試行で一度だけ回収する。zero／lookup除去はGC／allocator release証拠ではない。
+
+診断observer・故障program・記録validatorは別source／artifactへ置くが、trusted host内にはcontroller・harnessとともにresidentである。その保持量を0にせず、copying observer・wrapper／closure・module resident・loader／parser／hash workspace・Error・epoch debtの全上界はunknownとする。通常entry／cleanup／拒否の承認quota、元全親予約・全work証拠はHB-2／3へ残す。新runtime生成によるquota／debt resetを認める本番契約にも昇格しない。R1-Sの合成summary配送は今回のcoreへ接続しない。
+
+#### 9.154.4 回帰条件・記録
+
+| ID | 条件 |
+| --- | --- |
+| HB1C01 | 候補の唯一のexportをreaderとし、診断exportを候補へ含めない |
+| HB1C02 | reader／操作の公開property・prototype・constructor・staticからcontrollerへ到達しない |
+| HB1C03 | reader／functionをfreezeしmethod／prototype変更とfactory生成を拒否する |
+| HB1C04 | controller・bootstrap・diagnostic・port・cellのconsumer importを拒否する |
+| HB1C05 | dynamic import・eval・Functionコード生成と拒否例外からのhost参照取得を拒否する |
+| HB1C06 | 別G／clone／未定義identityを拒否し、正常closingを変更せず、VM内intrinsic変更で検査を差し替えない |
+| HB1C07 | 候補core・readonly helper・診断artifactの実digestと実link edgeを分離する |
+| HB1C08 | 候補／診断の正常observable lifecycleを両mode・両actorで対照する |
+| HB1C09 | 容量1／4を満たし2 body・96参照・16 identityを早期に解放しない |
+| HB1C10 | 第1 bodyのborrow／transportを第2 attempt中も保持しmode別検査件数を照合する |
+| HB1C11 | 権限lookup除去・zero・managed drainを確認しallocator解放へ昇格しない |
+| HB1C12 | 診断artifact内の再入を捕捉しても外側publicationを0にする |
+| HB1C13 | 公開前cancelの最初のfatal理由と保持・回収を維持する |
+| HB1C14 | 候補／診断とも元期限到達と旧handleの後着を拒否する |
+| HB1C15 | pin／purposeの変更と復元をrevisionで検出する |
+| HB1C16 | revoke・承認復元・model残予算0で公開を拒否する |
+| HB1C17 | cleanup部分失敗で両bodyを保持し再試行で一度だけzero／回収する |
+| HB1C18 | core／helperの隠れたside-effect import・re-exportを評価前に拒否する |
+| HB1C19 | callerのdigest更新・dynamic loader・diagnostic／port／scalar-reader交換を評価前に拒否する |
+| HB1C20 | source／artifactの有限証拠と独立issuer・全charge・本番採用の未成立を分離する |
+
+専用runnerは `scripts/check-cwc-hb1.mjs`、実module実行は `node --experimental-vm-modules scripts/run-cwc-hb1.mjs`。検証childはNODE_OPTIONS／NODE_PATHを空に固定し、実行したNode binary digest・version／platform／arch・execArgv・環境値をchild自身が観測して親側と照合する。検証記録は `docs/validation/gradle-cwc-hb1-2026-11-14.json`。正常8・診断公開拒否28・現認可拒否12・cleanup2・公開面2・source拒否10の有限観測を保存し、candidate／diagnostic／port／scalar-readerの実digestとloader edge・export一覧・独立fixture pin、mode別live件数、body／borrow保持、source評価回数0を照合する。記録の自己digest更新だけでは改変を受理しない。HBC01〜11等の境界局所条件へ部分対応するが、HBC01〜40全体やHB-1の独立配備issuer／本番loader、HB-2〜4・R1-M出口・本番採用の成立とは数えない。性能は測定しない。
+
+2026-11-14に新規runtime40件・record10件と関連既存394件、計444テスト（22ファイル）、型・差分／新規source空白検査、旧R1-H0／R1-HB／R1-S記録の照合が成功した。9 source anchor・305 source／artifact、core／port／scalar-readerの固定fixture pinと別diagnostic digest、実Node binary・child flags／環境、本節・旧baselineへ記録を束縛する。両mode・両actor、満杯の容量1／4、2 attemptの実borrow／transport保持、正常drain・公開前再入／現認可・期限拒否・partial cleanup、禁止import・source／自己digest更新・診断交換の評価前拒否を確認した。HB1C05のhost Error経由の参照取得とHB1C06の未定義identityによるclosing変更は、それぞれ修正前の両mode2件失敗・修正後成功を確認した。これは固定sourceとcontrolled linker内のAPI境界・有限behaviorの証拠であり、独立deployment authority・production loader・OS隔離・全charge／元親適合・R1-M出口・本番採用は未成立である。

@@ -1,0 +1,5 @@
+/** Pure injected-reader code artifact: no writer, controller import, issuing authority or raw-cell return. */
+const freeze=Object.freeze,create=Object.create,define=Object.defineProperty,setPrototype=Object.setPrototypeOf;
+function view(cell){const out=create(null);define(out,'now',{value:cell.now,enumerable:true});define(out,'revision',{value:cell.revision,enumerable:true});define(out,'pin',{value:cell.pin,enumerable:true});define(out,'purpose',{value:cell.purpose,enumerable:true});define(out,'revoked',{value:cell.revoked,enumerable:true});define(out,'approvalRevision',{value:cell.approvalRevision,enumerable:true});define(out,'approved',{value:cell.approved,enumerable:true});define(out,'memory',{value:cell.memory,enumerable:true});define(out,'work',{value:cell.work,enumerable:true});return freeze(out);}
+// Only trusted bootstrap supplies the privately owned scalar cell. This factory conveys no writer capability.
+export function makeHb1CurrentReader(cell){const read=()=>view(cell);setPrototype(read,null);return freeze(read);}
