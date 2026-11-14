@@ -159,6 +159,9 @@ test('P0S30 post-copy evidence and sealed input are required before exec metadat
 function sealed(){const f=p0Fixture();f.preflight.payload.phase='sealed';f.preflight.payload.result={status:'success',propertyClosureDigest:digest(f.lock.configuration!.properties),loopClosureDigest:digest(f.lock.configuration!.loops)};
  f.preflight.payload.drainWitness={id:'drain',sha256:digest('drain'),byteLength:128};f.preflight.payload.sealWitness={id:'seal',sha256:digest('seal'),byteLength:128};f.resignPreflight();return f;}
 
+const phases=['reserved','copied','result-validated','drained','sealed'] as const,gates=['pre-copy','pre-exec','pre-publish'] as const;
+/** The only gate at which each preflight phase may be presented; intermediate stages have none. */
+const ownGate:Record<typeof phases[number],typeof gates[number]|null>={reserved:'pre-copy',copied:'pre-exec','result-validated':null,drained:null,sealed:'pre-publish'};
 function atPhase(phase:ReturnType<typeof p0Fixture>['preflight']['payload']['phase']){
  const f=sealed(),p=f.preflight.payload;p.phase=phase;
  if(phase==='reserved'||phase==='copied'){p.result=null;p.drainWitness=null;p.sealWitness=null;}
@@ -185,8 +188,9 @@ test.each(['propertyClosureDigest','loopClosureDigest'] as const)('P0S34 altered
 
 test.each(['result-validated','drained','sealed'] as const)('P0S35 deadline after %s cannot be extended by seal/tool success',phase=>{
  const f=atPhase(phase);f.live.now=600001;
- // The final metadata stage must be sealed, but neither case can publish anything.
- const r=f.verifier().check(f.wire(),phase==='sealed'?'pre-publish':'pre-copy');denied(r,'revoked-or-expired');
+ // Intermediate stages have no accepting gate; sealed metadata reaches the original-deadline check at pre-publish.
+ if(phase==='sealed'){denied(f.verifier().check(f.wire(),'pre-publish'),'revoked-or-expired');return;}
+ for(const gate of gates)denied(f.verifier().check(f.wire(),gate),'invalid');
 });
 
 test('P0S36 revocation during the live-port callback is checked before returning and reentry poisons outer validation',()=>{
@@ -268,11 +272,18 @@ test.each(inconsistentCases)('P0S45 $phase with $value $field violates phase evi
  denied(f.verifier().check(f.wire()),field==='result'&&value==='missing'?'failed-no-success-envelope':'invalid');
 });
 
-test.each(['reserved','copied','result-validated','drained','sealed'] as const)('P0S46 valid %s evidence remains statically valid without a runtime permit',phase=>{
+test.each(phases)('P0S46 valid %s evidence is schema-valid and statically valid only at its own gate without a runtime permit',phase=>{
  const f=atPhase(phase);expect(p0PreflightSchema.safeParse(f.preflight).success).toBe(true);
- const r=f.verifier().check(f.wire());expect(r.status).toBe('static-valid');expect(r.jobPermitIssued).toBe(false);
- if(phase==='copied')expect(f.verifier().check(f.wire(),'pre-exec').status).toBe('static-valid');
- if(phase==='sealed')expect(f.verifier().check(f.wire(),'pre-publish').status).toBe('static-valid');
+ const own=ownGate[phase];
+ if(own){const r=f.verifier().check(f.wire(),own);expect(r.status).toBe('static-valid');expect(r.jobPermitIssued).toBe(false);}
+ else for(const gate of gates)expect(f.verifier().check(f.wire(),gate).status).toBe('invalid');
+});
+
+const gateReason={'pre-copy':'pre-copy-reserved-phase-required','pre-exec':'post-copy-evidence-required','pre-publish':'drain-seal-evidence-required'} as const;
+test.each(phases.flatMap(phase=>gates.map(gate=>({phase,gate}))))('P0S48 $phase preflight at $gate is accepted only by its own gate',({phase,gate})=>{
+ const f=atPhase(phase),r=f.verifier().check(f.wire(),gate);
+ if(ownGate[phase]===gate){expect(r.status).toBe('static-valid');expect(r.jobPermitIssued).toBe(false);expect(r.operations.publications).toBe(0);}
+ else{denied(r,'invalid');expect(r.reasons).toEqual([gateReason[gate]]);}
 });
 
 test('P0S47 malformed failure metadata stays invalid rather than hiding shape errors',()=>{

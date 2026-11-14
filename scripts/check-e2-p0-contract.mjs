@@ -26,14 +26,15 @@ const runtime={node:process.version,platform:process.platform,arch:process.arch,
 const scope={metadataOnly:true,syntheticKeysAndEvidence:true,actualToolsAcquired:false,imagesBuilt:false,proofExecuted:false,workspaceEnforced:false,
  independentAuthorityDeployed:false,nativeConditionsExecuted:[],jobPermitIssued:false,runtimeAdmitted:false,physicalBoundProved:false,credit:0};
 const fixed={schema:'cwc.e2-p0.contract-record.v1',date:'2026-11-14',status:'static-contract-only-unsupported',baseline,document,sourceBindings,runtime,scope,
- expectations:{testGroups:47,metadataTests:172,recordTests:6,actualState:old.plan.actualState,missing:old.plan.missing,
+ expectations:{testGroups:48,metadataTests:187,recordTests:6,actualState:old.plan.actualState,missing:old.plan.missing,
   staticValidIs:'signed-and-pinned-metadata-consistent-not-runtime-ready',candidateOperations:{candidateReads:0,copies:0,execs:0,publications:0},
   redGreen:{tests:['P0S41','P0S42'],before:{passed:144,failed:2},after:{passed:146,failed:0}},
   reviewRegressions:{negativeDeadline:{group:'P0S43',beforeFailed:2,afterPassed:2,effectiveDeadline:null,status:'revoked-or-expired',latched:true},
    failedPhase:{group:'P0S44',beforeFailed:10,afterPassed:10,allPhases:5,allGates:3},
    phaseEvidence:{reserved:['absent','absent','absent'],copied:['absent','absent','absent'],
     'result-validated':['success','absent','absent'],drained:['success','required','absent'],sealed:['success','required','required']},
-   phaseEvidenceColumns:['result','drainWitness','sealWitness'],contradictionCases:8,normalPhaseCases:5,malformedFailureCases:1}}};
+   phaseEvidenceColumns:['result','drainWitness','sealWitness'],contradictionCases:8,normalPhaseCases:5,malformedFailureCases:1,
+   gatePhase:{group:'P0S48',cases:15,accepted:{reserved:'pre-copy',copied:'pre-exec',sealed:'pre-publish'},beforeFailed:6,afterPassed:15,adjusted:['P0S35','P0S46'],adjustedBeforeFailed:4}}}};
 let record={...fixed,verification:null};
 if(process.argv.includes('--check')){record=JSON.parse(await readFile(output));if(canonical(Object.keys(record).sort())!==canonical([...Object.keys(fixed),'verification'].sort()))throw Error('p0_contract_record_keys');
  for(const k of Object.keys(fixed))if(canonical(record[k])!==canonical(fixed[k]))throw Error('p0_contract_saved_'+k);}
@@ -46,8 +47,8 @@ try{
   throw Error('p0_contract_tests '+JSON.stringify(failed)+' '+String(e.stderr??''),{cause:e});}
  const t=JSON.parse(await readFile(report)),names=t.testResults.flatMap(t=>t.assertionResults.map(a=>a.fullName)).sort();
  const groups=[...new Set(names.map(n=>n.match(/^P0[SR]\d{2}/)?.[0]))].sort();
- const expected=[...Array.from({length:47},(_,i)=>'P0S'+String(i+1).padStart(2,'0')),...Array.from({length:6},(_,i)=>'P0R'+String(i+1).padStart(2,'0'))].sort();
- if(!t.success||t.numPassedTests!==178||t.numFailedTests!==0||canonical(groups)!==canonical(expected)||new Set(names).size!==names.length)throw Error('p0_contract_test_closure');
+ const expected=[...Array.from({length:48},(_,i)=>'P0S'+String(i+1).padStart(2,'0')),...Array.from({length:6},(_,i)=>'P0R'+String(i+1).padStart(2,'0'))].sort();
+ if(!t.success||t.numPassedTests!==193||t.numFailedTests!==0||canonical(groups)!==canonical(expected)||new Set(names).size!==names.length)throw Error('p0_contract_test_closure');
  const verification={passed:t.numPassedTests,failed:t.numFailedTests,success:t.success,names,groups};
  if(process.argv.includes('--check')&&canonical(record.verification)!==canonical(verification))throw Error('p0_contract_saved_verification');record.verification=verification;
  for(const [p,h]of Object.entries(sourceBindings))if(sha(await readFile(p))!==h)throw Error('p0_contract_source_changed_'+p);

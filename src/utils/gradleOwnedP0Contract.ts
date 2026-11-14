@@ -191,10 +191,12 @@ export class P0Verifier{
      if(p.bootstrapCapacity)need(ownedDigest(p.bootstrapCapacity)===t.bootstrapDigest,'bootstrap-pin-mismatch');
      if(p.clockMappingReceipt)need(ownedDigest(p.clockMappingReceipt)===t.clockReceiptDigest,'clock-pin-mismatch');
      if(c.lock?.configuration)need(p.sealedInputDigest===c.lock.configuration.sealedInputDigest,'sealed-input-mismatch');
+     // Each gate accepts only its own stage: later-stage evidence never re-enters the pre-copy gate.
+     if(phase==='pre-copy')need(p.phase==='reserved','pre-copy-reserved-phase-required');
      if(phase==='pre-exec')need(p.phase==='copied','post-copy-evidence-required');
      if(phase==='pre-publish'){
-      if(p.result?.status!=='success')throw new Rejected('failed-no-success-envelope','full-success-result-required');
       need(p.phase==='sealed'&&p.drainWitness!==null&&p.sealWitness!==null,'drain-seal-evidence-required');
+      if(p.result?.status!=='success')throw new Rejected('failed-no-success-envelope','full-success-result-required');
       need(c.lock?.configuration&&p.result.propertyClosureDigest===ownedDigest(c.lock.configuration.properties)&&p.result.loopClosureDigest===ownedDigest(c.lock.configuration.loops),'result-closure-mismatch');
      }
     }

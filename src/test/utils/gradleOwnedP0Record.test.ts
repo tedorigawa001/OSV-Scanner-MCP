@@ -35,11 +35,12 @@ test('P0R05 schema profile constants retain design flags roles and original reso
  expect(w.originalCallBudget.verificationWork).toBe(156978);expect(w.originalCallBudget.globalUnit).toBeNull();
 });
 test('P0R06 record distinguishes regressions from planned native deployment conditions',()=>{
- expect(r.expectations.testGroups).toBe(47);expect(r.expectations.metadataTests).toBe(172);expect(r.expectations.recordTests).toBe(6);
+ expect(r.expectations.testGroups).toBe(48);expect(r.expectations.metadataTests).toBe(187);expect(r.expectations.recordTests).toBe(6);
  expect(r.expectations.redGreen).toEqual({tests:['P0S41','P0S42'],before:{passed:144,failed:2},after:{passed:146,failed:0}});
  expect(r.expectations.reviewRegressions).toEqual({negativeDeadline:{group:'P0S43',beforeFailed:2,afterPassed:2,effectiveDeadline:null,status:'revoked-or-expired',latched:true},
   failedPhase:{group:'P0S44',beforeFailed:10,afterPassed:10,allPhases:5,allGates:3},
   phaseEvidence:{reserved:['absent','absent','absent'],copied:['absent','absent','absent'],'result-validated':['success','absent','absent'],drained:['success','required','absent'],sealed:['success','required','required']},
-  phaseEvidenceColumns:['result','drainWitness','sealWitness'],contradictionCases:8,normalPhaseCases:5,malformedFailureCases:1});
+  phaseEvidenceColumns:['result','drainWitness','sealWitness'],contradictionCases:8,normalPhaseCases:5,malformedFailureCases:1,
+  gatePhase:{group:'P0S48',cases:15,accepted:{reserved:'pre-copy',copied:'pre-exec',sealed:'pre-publish'},beforeFailed:6,afterPassed:15,adjusted:['P0S35','P0S46'],adjustedBeforeFailed:4}});
  expect(r.scope.nativeConditionsExecuted).toEqual([]);expect(P0_PLAN.scope.jobPermitIssued).toBe(false);
 });

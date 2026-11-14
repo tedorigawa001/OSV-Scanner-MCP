@@ -10,7 +10,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.160 E2-P0：取得lock・承認envelope・preflightの静的contract",
-    "sha256": "ef8c56e402a4770d7f29c50da20c5c5a416e5540773614438e5e026799c29461"
+    "sha256": "36663bc3b6c93e3fe1366458da3c2481db2e3933308f9e2f4c4d06e35d3e0701"
   },
   "sourceBindings": {
     "src/test/utils/gradleOwnedCwcHb2EvidenceDesign.test.ts": "7a507950884821ac3d4853fade92ffd4c65fd2bab28a807187c03b853af158be",
@@ -359,11 +359,11 @@
     "src/test/fixtures/gradleOwnedCwcHb2P0Design.mjs": "8337e809aca2acfad6fd278f8024df2ce066aa7361d2c2c2279a536c9fb1b494",
     "scripts/check-cwc-hb2-p0-design.mjs": "9cf45776e20d0a09f93af081a6d687e5760c0e7ae1319d12e44317dcf6577d6f",
     "src/test/fixtures/gradleOwnedCwcHb2P0Design.d.mts": "c8e21999601621678896c7b1d68d479d6e0c45a80f584207505fcb9f14cca6bb",
-    "src/test/utils/gradleOwnedP0Contract.test.ts": "805136a3cb6a846729d77cea379555a9de71e3551d2adf86356e27dbd0f907d3",
-    "src/utils/gradleOwnedP0Contract.ts": "be191333b461bcff1c61fc1f7c72e56d65f2e8d11598c64e435d0b7ed978585f",
+    "src/test/utils/gradleOwnedP0Contract.test.ts": "cecfbaf896acfd71a286dcaf07a207aada222589d3500696110a84f5f5d67164",
+    "src/utils/gradleOwnedP0Contract.ts": "a2a23ab06e2303ad93427ac93704002bd4dfcfca2b0b6305038e3fc79eb9f7bd",
     "src/test/fixtures/gradleOwnedP0Fixture.ts": "21cb8d694aa042b1d334df6b809bc5dbb2ba3703765fd859e8044733f7653d3d",
-    "src/test/utils/gradleOwnedP0Record.test.ts": "fbb96a10eb50e43aa6c1172a49086d05ff4220d6d7d8a3641438f89b1891e8b1",
-    "scripts/check-e2-p0-contract.mjs": "a7739c440cf5553c868bd464831160a5de2c94e9d4c13469892351393955699e"
+    "src/test/utils/gradleOwnedP0Record.test.ts": "4f1ab1ec270e7b82a24c6916bd0f58867380448ce30c9698304822813250c560",
+    "scripts/check-e2-p0-contract.mjs": "92e60a12a1af513ddb2996eb42eb30f1be0786d478b52712ffd4a532c081e0bc"
   },
   "runtime": {
     "node": "v26.12.1",
@@ -390,8 +390,8 @@
     "credit": 0
   },
   "expectations": {
-    "testGroups": 47,
-    "metadataTests": 172,
+    "testGroups": 48,
+    "metadataTests": 187,
     "recordTests": 6,
     "actualState": {
       "toolLock": null,
@@ -508,11 +508,27 @@
       ],
       "contradictionCases": 8,
       "normalPhaseCases": 5,
-      "malformedFailureCases": 1
+      "malformedFailureCases": 1,
+      "gatePhase": {
+        "group": "P0S48",
+        "cases": 15,
+        "accepted": {
+          "reserved": "pre-copy",
+          "copied": "pre-exec",
+          "sealed": "pre-publish"
+        },
+        "beforeFailed": 6,
+        "afterPassed": 15,
+        "adjusted": [
+          "P0S35",
+          "P0S46"
+        ],
+        "adjustedBeforeFailed": 4
+      }
     }
   },
   "verification": {
-    "passed": 178,
+    "passed": 193,
     "failed": 0,
     "success": true,
     "names": [
@@ -688,12 +704,27 @@
       "P0S45 result-validated with missing result violates phase evidence requirements",
       "P0S45 result-validated with witness drainWitness violates phase evidence requirements",
       "P0S45 sealed with missing sealWitness violates phase evidence requirements",
-      "P0S46 valid copied evidence remains statically valid without a runtime permit",
-      "P0S46 valid drained evidence remains statically valid without a runtime permit",
-      "P0S46 valid reserved evidence remains statically valid without a runtime permit",
-      "P0S46 valid result-validated evidence remains statically valid without a runtime permit",
-      "P0S46 valid sealed evidence remains statically valid without a runtime permit",
-      "P0S47 malformed failure metadata stays invalid rather than hiding shape errors"
+      "P0S46 valid copied evidence is schema-valid and statically valid only at its own gate without a runtime permit",
+      "P0S46 valid drained evidence is schema-valid and statically valid only at its own gate without a runtime permit",
+      "P0S46 valid reserved evidence is schema-valid and statically valid only at its own gate without a runtime permit",
+      "P0S46 valid result-validated evidence is schema-valid and statically valid only at its own gate without a runtime permit",
+      "P0S46 valid sealed evidence is schema-valid and statically valid only at its own gate without a runtime permit",
+      "P0S47 malformed failure metadata stays invalid rather than hiding shape errors",
+      "P0S48 copied preflight at pre-copy is accepted only by its own gate",
+      "P0S48 copied preflight at pre-exec is accepted only by its own gate",
+      "P0S48 copied preflight at pre-publish is accepted only by its own gate",
+      "P0S48 drained preflight at pre-copy is accepted only by its own gate",
+      "P0S48 drained preflight at pre-exec is accepted only by its own gate",
+      "P0S48 drained preflight at pre-publish is accepted only by its own gate",
+      "P0S48 reserved preflight at pre-copy is accepted only by its own gate",
+      "P0S48 reserved preflight at pre-exec is accepted only by its own gate",
+      "P0S48 reserved preflight at pre-publish is accepted only by its own gate",
+      "P0S48 result-validated preflight at pre-copy is accepted only by its own gate",
+      "P0S48 result-validated preflight at pre-exec is accepted only by its own gate",
+      "P0S48 result-validated preflight at pre-publish is accepted only by its own gate",
+      "P0S48 sealed preflight at pre-copy is accepted only by its own gate",
+      "P0S48 sealed preflight at pre-exec is accepted only by its own gate",
+      "P0S48 sealed preflight at pre-publish is accepted only by its own gate"
     ],
     "groups": [
       "P0R01",
@@ -748,7 +779,8 @@
       "P0S44",
       "P0S45",
       "P0S46",
-      "P0S47"
+      "P0S47",
+      "P0S48"
     ]
   }
 }
