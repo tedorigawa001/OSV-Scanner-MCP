@@ -3391,7 +3391,8 @@ LG-M1の記録レビュー修正（2026-11-12）：grant IDを実scope番号・a
 - [x] E2-P0の取得・独立承認・workspace契約の具体化（§9.159、設計のみ）：CBMC 6.8.0／組込みMiniSat・Clang21.1.8／Linux amd64 image候補、全source／tool／依存lock、固定argv／環境・全loop／property、8 roleの権限分離と未割当key／registry、8 GiB runner・2 GiB job disk・4 slot／8 GiB store・600秒期限とclock換算／watchdog・controller枠を定義。実digest・実主体・全予約／enforcement未取得なら8理由でunsupportedとする。46 planned回帰条件・設計46テスト（レビュー修正含む）・診断記録を追加し、取得／build／proof／承認／配備完了とは数えない。
 - [x] E2-P0のgate順序レビュー修正：全予約後のpre-copy live gateをcandidate読取前へ置き、copy後・exec前も再照合する。予約中失効は読取／copy／exec／公開0。結果検証／drain／seal後は元job／lease／approval期限・停止latch・epoch／予約fenceを公開transactionで再検査し、期限同値とkill猶予内／終了時も公開0とする。P0C41〜46と12 planned例、強化既存3＋追加6の設計チェックを追加し、実controller検証とは分離する。
 - [x] E2-P0記録のレビュー修正：P0 checkerの保存観測差を `p0_saved_<key>` と差異field path（tool名単位・値なし）で報告し、PATH差・tool導入・compiler／Node更新を区別できるようにした。clang不在時はcompiler診断nullをP0D02で受理する。ED-2記録の再生成に必要な2権限domain監査と `--audits` の手順、旧7 path変更時は別記録とする条件を§9.159へ追記し、P0記録を再生成した。
-- [ ] E2-P0の実provision：独立custodian／method・environment authority／registry／controller／storeの実principal・key・ACL、取得image／solver組込みlock・有界bootstrap／全workspace・watchdog／quota証拠を取得し、実行前gateとP0C01〜46を検証する。未取得時はunsupportedを残し、E2-P1のsource準備を証明成功へ昇格しない。
+- [x] E2-P0の取得lock・承認envelope・preflight静的contract（§9.160）：wire-only strict schema、8群の不足／不正／失効／容量拒否、独立pinとEd25519署名・role／subject／profile・job／予約／元期限の束縛を実装。P0S01〜47（172件、レビュー修正26件を含む）と記録6件を追加し、全出力permit0・実操作0。fixture署名claimの整合確認であり、実tool／独立authority／enforcement・実IO gate採用は未成立。
+- [ ] E2-P0の実provision・独立backend接続：独立custodian／method・environment authority／registry／controller／storeの実principal・key・ACL、取得image／solver組込みlock・有界bootstrap／全workspace・watchdog／quota証拠を取得し、実行前gateとP0C01〜46を検証する。未取得時はunsupportedを残し、E2-P1のsource準備を証明成功へ昇格しない。
 - [x] HB-1〜ED-1レビュー修正：HB-1／HB-2a coreのattempt0で `bodies[-1]` がArray.prototypeへ委譲し、consumerのgetterからrow／registry／portが漏れて未開始attemptの公開・閉じたreadの復活が成立した欠陥を、添字参照前のattempt検査で塞いだ。HB1T06の既存witnessとHB2T19のfresh childへ負添字getter攻撃を加え、candidate pinと4記録を依存順に再生成した。ED-1のEPERM／255／66は制限付き実行環境の非再現な失敗で、再測定（3 toolともexit 0）とpreviewのpath／PID秘匿、fresh tool結果・余分keyの照合を追加した。route helperはretention-entry→元work／logical-byteをcharge-unit-mismatchへ分類し、HB-2a oracleの拒否範囲（中間段階はfresh再実行で拒否）・HBC部分対応集合・記録pathの記述を実装へ合わせた。
 - [ ] HB-2の残り：新台帳のunknownを保ったまま、全wrapper／closure／module・loader／Error・caller／native領域の独立charge・unit mapping・allocator release／reuse証拠を取得する。local quotaを独立承認profile・実namespace／durable fencingへ接続し、元親ledgerと全処理costの被覆を証明する。
 - [ ] HB-1の配備採用条件：fixture issuer／外部pinを独立bootstrap・署名registry・実deploymentのrole発行／loader witnessへ接続する。敵対host／別UID隔離、実認証call／scope／lineage、controller／診断の実容量境界を証明し、HB-3の読取前gateと合わせて採用判定する。
@@ -3458,3 +3459,9 @@ HB-2 E2-P0契約の設計検証（2026-11-14）：新規40・関連既存628の�
 
 
 HB-2 E2-P0 gate順序レビュー修正検証（2026-11-14）：設計整合性46・関連既存628の計674テスト（29ファイル）、型・差分・旧ED-2の52チェック照合が成功した。346 source／artifactと本節、予約後copy前／copy後exec前のfresh gate、drain／seal後の元期限・current承認・停止／失効／epoch／予約fence付き公開gate、46 planned条件と12 planned例を更新記録へ束縛する。修正前の9設計失敗を確認し、予約中失効のcandidate読取／copy0と、後処理中の期限到達・kill猶予での公開0を期待条件として固定した。実IO／controller race／proof・独立承認／workspace強制は未実行で、8不足理由・unsupported・permit0を維持する。
+
+E2-P0静的contract検証（2026-11-14）：metadata回帰146・記録6・関連既存674の計826テスト（31ファイル）、型・差分検査、旧ED-2／P0の52／46チェックと新記録152件再照合が成功した。351 source／artifact、旧346 source・baselineと新§9.160・実Node imageを固定。key別表記／40桁commitの2失敗→成功も確認した。証拠不足8群と実状態nullを保持し、実provision／独立IPC・IO gate／enforcement、job permit・本番採用は未成立。
+
+E2-P0静的contractのレビュー修正：負の換算期限はeffectiveDeadline null・revoked-or-expiredでstrictに返しinstanceを失効する。preflight schemaでphaseごとのresult／drain／sealの必須・禁止を検査し、failed／unknownを全phase・全gateで拒否する。P0S43〜47の26回帰を追加し、負期限2件・失敗phase10件の修正前失敗と修正後成功、未来証拠／必須欠落8件・正常5 phase・不正形状1件を確認する。172 metadata＋6記録へ更新し、旧346 source／baseline・実状態null・permit0とnative未成立は維持する。
+
+E2-P0レビュー修正の検証（2026-11-14）：26追加回帰を含むmetadata172・記録6・関連既存674の計852テスト（31ファイル）、型・空白検査、旧ED-2／P0の52／46チェックが成功。178件・351 sourceの新記録を再照合し、旧346 source／baseline不一致0。実provision・native条件・本番採用は未成立、unsupported・permit0を維持する。

@@ -12717,3 +12717,57 @@ E2-P0レビュー修正：copy直前のcurrent gateとdrain／seal後の最終�
 レビュー修正の検証では、設計整合性46件と関連既存628件の計674テスト（29ファイル）、型・差分／空白検査、旧ED-2記録の52チェック照合が成功した。346 source／artifact・新しいgate契約／順序・46 planned条件と12 planned例を更新記録へ束縛する。強化した既存3チェックと追加6チェックの修正前9失敗・修正後成功を確認した。candidate読取0や期限後公開0は将来の実controllerで検証すべき期待条件であり、今回そのnative実行・独立承認／workspace強制・job permit発行を実証したとは数えない。
 
 記録の再生成手順・診断差の報告（レビュー修正）：上流のsourceや記録を正当に変更した場合は、上流の記録から順に各checkerをflagなしで再実行し、測定していないhashへ差し替えない。ED-2記録は2権限domainの監査を要するため、`node scripts/audit-cwc-hb2-ed2.mjs <監査出力>` を、保存記録と同じ権限条件（ED-1 `--check` が成功）と、process検査toolが拒否される制限付き条件（ED-1 `--check` が `ed1_tool_outcome_changed` で拒否）でそれぞれ1回実行する。そのうえで `node scripts/check-cwc-hb2-ed2-design.mjs --audits <監査1> <監査2>` を実行する（2件の順序は問わない）。監査scriptはreview commit `ec9348a` と旧commit `53e82db` に対する旧7 pathの一致を要求する。そのpathを変更した場合は旧監査を流用・hash更新せず、照合対象を定め直した別記録とする。制限付き条件を用意できない環境ではED-2と、それをbaselineとするP0記録を再生成できないため、既存記録を保持する。P0 checkerは保存済み観測との差異を拒否するとき、`p0_saved_observation` 等の理由に続けて差異のあるfield path（tool行はtool名、最大8件、値は出力しない）を示す。これにより、PATHの違い・tool導入・compiler更新・Node更新を区別できる。clangが検出されない環境ではcompiler診断をnullとし、P0D02はその場合nullを要求する。
+
+### 9.160 E2-P0：取得lock・承認envelope・preflightの静的contract
+
+#### 9.160.1 範囲・入口・出力
+
+`src/utils/gradleOwnedP0Contract.ts` に取得lock・method／environment承認envelope・署名付きpreflight・gate結果のstrict schemaとmetadata専用 `P0Verifier` を実装する。MCP tool／launcherではない。constructorの独立registry ownerのpinとlive portを提出control packetから分離する。trusted入口へproducerの値を渡す契約ではなく、実registry／認証IPCの接続は未実装である。
+
+入力はJSON wire文字列のみ。producer objectのgetter／toJSON／型変換を呼ばない。上限1048576 B・depth24・65536 node、参照は固定schema内の256件以下。duplicate key・未知field・coercion・非有限値・欠落fieldを拒否し、schemaで許可した明示nullの未取得とは分ける。これは有界parserであって独立bootstrapの実容量確保／強制ではない。既に呼出し元が有界に取得したmetadata wireを対象とし、candidate本体の取得／hashにはアクセスしない。
+
+`cwc.e2-p0.gate-result.v1` はstatic-valid／unsupported／invalid／revoked-or-expired／workspace-budget-exceeded／failed-no-success-envelopeを区別する。static-validは署名・独立pin・metadata間の整合のみで、reasonはindependent-validation-required-not-ready。全結果でjob permit・runtime採用・physical上界false、credit0、candidate読取・copy・exec・公開0のliteralを返す。countはこのvalidatorにcandidate操作機能がない事実で、実IO race／native controllerで停止した証拠ではない。
+
+#### 9.160.2 lock・承認の束縛
+
+`cwc.e2-p0.acquisition-lock.v1` は公式tagged-source経路、CBMC6.8.0／Clang21.1.8、Linux amd64／LP64-little-endian-char8を固定する。binary fallback／emulationは別schema／profileと再承認を要する。両source commitは40桁または64桁hex。source archive・dependency／builder／build argv・base／sysroot／tool binaries・shared library／loader／rootfs／runner image／kernel・quarantine／custody予約のdigestを要求する。組込みMiniSatのcomponent版／source／buildと含有binary／imageを結ぶ。lock全体のcanonical digestを独立registry pinへ照合し、同版ラベルのまま自己digestを更新した置換も拒否する。
+
+完全設定は絶対tool path、sealed input／output path、entrypoint、全property一覧、loop ID／bound／終了条件、preprocessor／headers／default／capability receipt／出力schemaのdigestと正確なargv／環境を含む。初期recipeは `/sealed/bin/cbmc`＋§9.159 prefix＋`--function <entrypoint> --unwindset <各id:bound> <input>`、`/sealed/bin/clang`＋prefix＋`<input> -o <output>` のみ。追加・重複／上書きflag、shell／response file、PATH／preload／plugin等を拒否する。これはargvとpinの静的照合であり、実binaryが設定を有効にしたreceiptではない。3073等のfixture値は架空のモデル用で、実kernelのloop上限を証明した値ではない。
+
+`cwc.e2-p0.approval.v1` の11署名fieldをpayloadとし、Ed25519でcanonical bytesを検証する。kind・issuer・keyId・subject・profile・envelope全体digest・registry revisionを別々に照合する。キー挿入順変更は同じcanonical bytesとして受理する。producerの埋込みkey／verified flagは使わない。8 roleのprincipal／keyId／実public key／storeの重複と、SPKIの非正規base64表記を拒否する。同じ鍵への空白追加で別roleを装えない。ACL digestや分離宣言は、実ACLや意味的な独立性の証明ではない。
+
+#### 9.160.3 preflight・拒否gate
+
+`cwc.e2-p0.preflight.v1` はcontroller署名にjobId／nonce／incarnation／sequence・source／input manifest・元admittedAt／lease期限、tool lock／両承認、registry pin／revision、controller revision／reservation fence、workspace profile・全capacity・job／store／controller／watchdog／bootstrap予約ref、enforcement／clock／bootstrap証拠ref、sealed input digest、phase・result／drain／seal refを束縛する。独立trusted pinへも照合し、controllerの再署名だけで別job／古い予約／別toolへ移せない。
+
+不足はtool／solver／method／environment／registry／workspace／enforcement／bootstrapの8理由でunsupported。存在する設定／署名の不正はinvalid、同profileの容量変更はworkspace-budget-exceeded。pre-execにはcopied phaseとsealed input対応、pre-publishにはsealed phase・success結果・全property／loopのdigest閉包・drain／seal refを要求する。実body／filesystem／process／FDを読んだwitnessではなく、まだcontrollerの署名claimである。
+
+metadata検証後、trusted live portのcurrent registry・controller revision／incarnation・予約fence／ref・enforcement／bootstrap／clock receipt・取消し／停止／fatal・monotonic nowを照合する。期限はmin（元admittedAt+600000、元lease、元method／environment validUntilのmonotonic換算−最大誤差）。換算誤差1000 ms以下、validFromも安全側に検査する。時計巻戻し・期限同値／kill grace内外・失効・revision／fence変更を拒否しinstanceへlatchする。再入を内側で捕捉しても外側を失効する。retryのadmittedAt変更やpin値復元で再有効化しない。
+
+live portの真正性、単調revision／clock、取消しとIOの直列化は独立controller／registry接続の責務。実IOへ渡せるpermit／publication stampを返さない。静的成功後に非同期予約／copy／exec／drain／seal／保存へ進む実装には、各境界のfresh gateと最終authority transactionが依然必要。§9.159のP0C01〜46を実行済みとはしない。
+
+#### 9.160.4 回帰・検証記録
+
+`gradleOwnedP0Contract.test.ts` のP0S01〜42（parameter展開146件）は8群の未取得、nullと欠落／未知field、同版別digest、origin／ABI／solver変更、無効flag／環境注入、property／loop縮小、署名改変・再署名後のsubject／kind／key／role差替え、job／予約／全証拠ref、容量、current失効／復元、元期限／早いlease／approval、時計巻戻し、retry、copy／exec／result／drain／seal metadata条件、再入・wire上限・canonical等価を検証する。P0S41（同鍵の別表記）／P0S42（正常40桁LLVM commit）は追加時に2失敗・既存144成功、修正後146成功を確認した。
+
+記録回帰P0R01〜06は旧346 source／baseline・新節・実Node image・未取得実状態・design定数を照合する。`bdo node scripts/check-e2-p0-contract.mjs` で記録生成、`bdo node scripts/check-e2-p0-contract.mjs --check` でsource・本節・保存した全test名／件数を再照合し152件を再実行する。baselineはffbc66eに固定し、旧346 source・旧§9.159・旧記録を書き換えない。新記録は `docs/validation/gradle-e2-p0-contract-2026-11-14.json`。
+
+tool取得／image build・実verifier／solver・kernel compile・独立service・Linux quota／実予約／kill-drain・physical上界・元unit／実親予約・本番採用は未実施。実状態8群はnull・unsupportedを維持する。次は独立custodian／approval registry／controllerの実証拠取得とfresh gate接続、またはunsupportedを保ったE2-P1モデル専用source準備である。
+
+2026-11-14の検証では、新規metadata回帰146＋記録6と関連既存674の計826テスト（31ファイル）、型検査・差分検査、旧ED-2の52チェック／E2-P0の46チェック、新checkerの152件再照合が成功した。351 source／artifactと旧346 source、旧baseline・新節・実Node imageを束縛した。旧source・旧記録の変更は0。署名はfixture用の実Ed25519演算で、独立authorityの配備・証明成功・物理／元unit上界を取得した結果ではない。
+
+E2-P0静的contractのレビュー修正：換算期限は局所変数で検査し、負値をgate結果へ代入しない。monotonic起点より前に承認が失効した場合は、`revoked-or-expired`・`effectiveDeadline: null` のstrict結果を返し、verifierを失効へlatchする。無効な換算値のcatchで結果schemaが再び例外になる経路を避ける。P0S43はmethod／environment別の2テスト内でpre-copy／pre-exec／pre-publishと再試行を確認し、live portを呼ぶ前に拒否できること・全操作0を検査する。
+
+preflight payloadのschemaへphaseと証拠の対応検査を追加した。failed／unknown結果は全phase・全gateで拒否し、strict形状が正しい場合だけfailed-no-success-envelopeへ分類する。未知fieldなどの形状不正を伴う失敗はinvalidとする。未来stageの証拠の先取り、必須証拠の欠落も拒否する。
+
+| phase | result | drainWitness | sealWitness |
+| --- | --- | --- | --- |
+| reserved | null | null | null |
+| copied | null | null | null |
+| result-validated | success | null | null |
+| drained | success | 必須 | null |
+| sealed | success | 必須 | 必須 |
+
+署名が正しいことだけでは矛盾したphaseを受理しない。P0S44は5 phase×failed／unknownの10件を全3 gateで再署名後も拒否する。P0S45は先取り／欠落8件、P0S46は正常5 phase、P0S47は形状不正を伴う失敗1件を追加する。既存P0S35はresult-validated／drainedで未来stageのrefを持たない正常metadataへ直し、期限拒否がphase不正で隠れないようにした。負の期限の2件、phase／失敗の10件は各修正前に失敗し、修正後に同じテストが成功することを確認した。metadata回帰は172件・記録回帰6件、checkerはP0S01〜47／P0R01〜06と全178 test名／件数を照合する。8実状態のnull、静的contract限定・permit0・実provision／native実行未成立は維持する。
+
+レビュー修正後の検証（2026-11-14）：metadata172＋記録6＋関連既存674の計852テスト（31ファイル）、型検査、旧ED-2／P0の52／46チェック、差分／新規source空白検査が成功した。新checkerは178件・351 source／artifactを更新記録に束縛し、旧346 source／baselineと旧設計節の不一致0を確認した。署名済み失敗結果を静的成功へ昇格せず、負の承認期限も例外ではなくstrictな期限切れ結果へ収める。実authority／tool／workspace強制は未取得であり、native条件は未実行・8実状態null・permit0を維持する。
