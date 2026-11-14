@@ -12114,3 +12114,97 @@ R1-H0に対応する2 body（実payload6144 B）・96参照位置・16 identity�
 専用runnerは `scripts/check-cwc-hb1.mjs`、実module実行は `node --experimental-vm-modules scripts/run-cwc-hb1.mjs`。検証childはNODE_OPTIONS／NODE_PATHを空に固定し、実行したNode binary digest・version／platform／arch・execArgv・環境値をchild自身が観測して親側と照合する。検証記録は `docs/validation/gradle-cwc-hb1-2026-11-14.json`。正常8・診断公開拒否28・現認可拒否12・cleanup2・公開面2・source拒否10の有限観測を保存し、candidate／diagnostic／port／scalar-readerの実digestとloader edge・export一覧・独立fixture pin、mode別live件数、body／borrow保持、source評価回数0を照合する。記録の自己digest更新だけでは改変を受理しない。HBC01〜11等の境界局所条件へ部分対応するが、HBC01〜40全体やHB-1の独立配備issuer／本番loader、HB-2〜4・R1-M出口・本番採用の成立とは数えない。性能は測定しない。
 
 2026-11-14に新規runtime40件・record10件と関連既存394件、計444テスト（22ファイル）、型・差分／新規source空白検査、旧R1-H0／R1-HB／R1-S記録の照合が成功した。9 source anchor・305 source／artifact、core／port／scalar-readerの固定fixture pinと別diagnostic digest、実Node binary・child flags／環境、本節・旧baselineへ記録を束縛する。両mode・両actor、満杯の容量1／4、2 attemptの実borrow／transport保持、正常drain・公開前再入／現認可・期限拒否・partial cleanup、禁止import・source／自己digest更新・診断交換の評価前拒否を確認した。HB1C05のhost Error経由の参照取得とHB1C06の未定義identityによるclosing変更は、それぞれ修正前の両mode2件失敗・修正後成功を確認した。これは固定sourceとcontrolled linker内のAPI境界・有限behaviorの証拠であり、独立deployment authority・production loader・OS隔離・全charge／元親適合・R1-M出口・本番採用は未成立である。
+
+
+### 9.155 HB-2a：分離後artifactの保持台帳・entry／epoch quotaの限定実装
+
+§9.152の保持・quota契約を、HB-1で分離したartifactに対する**source台帳と論理的なentry／epoch admission**へ限定して実装する。旧HB-1／R1-H0／R1-Sのsource・pin・検証記録は変更しない。新しいHB-2候補core・port・admission helper・外部fixture pinと別diagnostic artifactを用意し、real ES moduleとして評価する。元memory／work単位のcost、独立charge certificate、全領域byte上界、実親ledger・実CWC、process再起動をまたぐdurable epoch／独立namespaceの成立は表明しない。
+
+#### 9.155.1 分離後のowner・全領域台帳
+
+`gradleOwnedCwcHb2Inventory.mjs` がHB01〜18を新sourceへ対応付け、18 source anchor・実source digest／行番号・slice digestとtyped quantityを保存する。Pは一つのprocess-local epoch、Gはreader owner、Rは一つのread、Wは2 body、Tは退役、Fはentry frame、Dは診断、Cはcallerである。新しいPを追加するが、実親namespaceの独立承認があるとは扱わず、Gのresident量をread数で割って無料にしない。
+
+| region | 新source／owner・資源 | 確認する量と未被覆 |
+| --- | --- | --- |
+| HB01 | P/G・core／port／scalar-reader／admission | 候補source artifact4。実module instance・bytecode・全resident上界はunknown |
+| HB02 | P/G・current cellとadmission port | current9 scalar field・固定admission8操作。両側wrapper・捕捉環境は別義務 |
+| HB03 | P/G・固定metadataとregistry | Pの64 metadata実体、G発行最大4、global active R最大4。Gごとのregistry backingも残す |
+| HB04 | R/P・Read rowと累積debt | core rowは発行ごとに生成。Pのpreallocated metadataはHB03と同一実体で二重計上しない |
+| HB05 | R・binding／scope | binding1・scope1、ownedViewはalias。root／call／ownerへのedgeを別に残す |
+| HB06 | W・binary backing／view | 完全なreadで6144 payload-byte、Q64の最大request量393216 payload-byte。wrapper／allocator byte証拠ではない |
+| HB07 | W・48位置×2の参照table | 96 reference-slotと各header／backing。byteへ無証拠換算しない |
+| HB08 | W/C・16 opaque identity | read-controlは第1 bodyのowner alias。回収後のcaller aliasもdebtから消さない |
+| HB09 | W・Body wrapper／array | body list・handle2・refs2のpersistent array5とBody2、typed-array wrapperを区別する |
+| HB10 | T・退役／quarantine | 同じrow／bodyを保持。新containerのないstate移動で信用を発行しない |
+| HB11 | F・descriptor／construction closure | 2＋16＋96＝114のsource literal評価を新recipeで再計算。V8 allocation下限／byte上界ではない |
+| HB12 | F/P・entry admission | 通常240＋cleanup16＝256 retention-entry/read、Q64で最大16384。元work unitsへ換算しない |
+| HB13 | F・current view／JS／native frame | 通常entry当たり最大2 current呼出し、viewのdefine9・descriptor読取8。再利用／byte上界はunknown |
+| HB14 | P/bootstrap・metadata／hash／loader | source検証・VM compile・owner発行workspaceは実親未被覆。trusted bootstrapの再試行を無料にしない |
+| HB15 | F/P・拒否／Error／stack | 入場前D64は固定primitive。入場済みの制御可能なErrorをEへ計上。engine／OOM／stack費用は未証明 |
+| HB16 | D・observer／snapshot／queue | 最大64 metadata行のcopy、slice／map・JSON・呼出し元保持をcore外の義務として残す |
+| HB17 | C・公開reader／opaque／例外 | Gごとのreader12操作、caller-held handle／Error graphの寿命とepoch debtを保持する |
+| HB18 | R/C・元root／fact／lease | 合成call／rootへの実参照束縛だけ。実ReadScope／CWC fact／元全親・unit mappingは未対応 |
+
+全regionのlogicalByteUpper／physicalByteUpperはnull、independentEvidenceはfalseである。quantityは完全構築pathのsource-semantic countまたは固定capであり、初期化失敗時まで同数の実体が生成された下限とは扱わない。source-object-count・literal-evaluation・reference-slot・payload-byte・retention-entryを混ぜて加算せず、既知のpayload request量を物理heapのlower／upperや全read上界へ昇格しない。upperだけの値を既知lowerへ足さず、unknownを0にしない。source anchorの被覆はformal reference closure／全allocation検出の証明ではない。
+
+#### 9.155.2 P／Gと入場契約
+
+`gradleOwnedCwcHb2EpochOwner.mjs` のcanonical moduleが一つのP cellを所有する。Gを再発行したりbootstrapをquery付きURLで再loadしても、この同じowner module・実P identityを使い、Q／E／D／debtを戻さない。controller／readerにreset・renew・quota変更APIを出さない。Pのquota metadataは固定64 rowで、消費済みrowを消して新しいticketへ再利用しない。G発行自体にも累積4のfixture capを置き、drain後に元へ戻さない。
+
+candidate coreはsealed portを通じてcurrent-readerとdecreasing-only admission capabilityを持つ。admission関数は別のpure artifactで評価し、boundedなP cell・実G owner identity・ordinalだけを捕捉する。cellにcontroller関数／raw core／任意callbackを置かず、readerへport・ticket・cell・observerを公開しない。quota変更・epoch生成・writer mint・raw statsをhelperの公開操作へ含めない。logical active Rのreleaseだけは正常drain後に許すが、Q／E／D／payload debtのcreditではない。
+
+Gごとのlocal registryとは別に、P全体で同時保持R≤4・read発行Q≤64・入場前拒否D≤64を維持する。beginReadはactor／local slotを固定scalar dispatchで検査した後、PでR／Qと通常1を確定してからcurrent view・Read row・body・bindingを生成する。成功readごとに通常240・cleanup16の最大slotを論理予約し、初期化は通常1として数える。admission portは固定arityのarrowで、rest配列・caller callbackを入場前に生成しない。per-entry descriptor／closure・current／payloadの生成前に対応するslotを使い、失敗しても返さない。
+
+通常操作は権限用lookup、cleanupは所有owner aliasにだけ束縛する。無効／別G／未定義identityはentryを取らず固定primitiveで拒否する。ticketはcore内部のscalarで、pure helperが実G identityと固定rowへ再照合する。既存readのentryを前払いしてから、現認可・purpose・pin／revision・承認revision・元期限4500・model残memory／workを確認する。公開直前fenceも維持する。model値やretention-entryを実work残高として採用しない。
+
+#### 9.155.3 通常・cleanup・拒否と失敗
+
+| 状態・境界 | 消費・保持 |
+| --- | --- |
+| 通常entry | readごとに最大240、beginReadを含む。認可・内容検証・公開の失敗も1回分を保持 |
+| 通常240到達 | 次の通常entryはcurrent／payload生成前に固定primitiveで拒否し、対象readをretiringへ。cleanup16は残す |
+| cleanup | closeRead／cancel／lease完了／reclaimだけが最大16を使う。早期回収・部分zero失敗・再試行も毎回消費 |
+| cleanup16到達 | 追加cleanupを拒否しquarantine。実borrow／transport・両body・global active slotを保持する |
+| Q64到達 | 65回目をcurrent・body生成前に拒否する。zero／row再利用・新G・bootstrap再loadでQを戻さない |
+| D64到達 | core retention dispatchをstopし、以降の入場前拒否も固定primitiveのみ。新G／通常entryは停止し、既存cleanup枠とその範囲内の失敗処理は使える |
+| 入場済み失敗 | 通常／cleanupと制御可能なNativeError生成をEへ記録し、Dへ重複計上しない |
+| 入場前の再入 | 外側Eは消費済みのまま、内側をD1で拒否。内側を捕捉しても外側publication0 |
+| 初期化の失敗 | Q1・通常1・cleanup予約を保持しquarantine。公開handleがなくてもR slotを返さない |
+| 正常drain | zero・参照除去・managed frame退出後にlogical active Rだけをrelease。固定metadata・累積消費・read／payload debtは残す |
+
+Pはordinary／cleanup／error／payload debtの累積counterを持ち、各metadata rowの合計と一致させる。entryのopen flagは実行中だけtrue、制御可能なErrorは同entryで1回だけ記録する。Dはcore retentionへの入場前拒否だけを数え、trusted bootstrapのload・owner発行・callerのVM操作の全費用まで被覆したとは扱わない。D以後に明示的なcore Error objectを無制限生成せず、primitiveで拒否するが、JS／native frame・engine例外／OOM・allocator境界の独立charge証拠は未成立である。
+
+この実装は単一process・単一JS agent・固定clock・閉じた同期portでのquota modelである。実再起動で失われないnamespace、別module URLの敵対的host load、別UID／別service・認証IPC・署名registry・独立承認profileは未対応。44 native caseは互いに独立した検証用processで実行し、processを跨いでdebtが保存されることを意味しない。R1-Sのsummaryは接続せず、診断artifact／copying observerの保持を0としても扱わない。
+
+#### 9.155.4 回帰条件・検証記録
+
+| ID | 条件 |
+| --- | --- |
+| HB2C01 | readerだけの候補exportと別diagnostic artifact／実link閉包を維持する |
+| HB2C02 | 両mode・両actor・容量1／4で候補／診断の正常observable behaviorを対照する |
+| HB2C03 | 第1 bodyのborrow／transportを第2 attemptまで保持し、drain後もepoch debtを残す |
+| HB2C04 | 通常240・cleanup16を別に予約し通常上限後もcleanupを残す |
+| HB2C05 | 通常の予算不足では追加current／payload／Error生成前に拒否する |
+| HB2C06 | 通常上限後もlease完了／zero／drainを行い確定消費を戻さない |
+| HB2C07 | cleanup16到達で両body・borrow・rowをquarantineする |
+| HB2C08 | cleanup再試行で枠・Error予算を増やさず、追加生成を拒否する |
+| HB2C09 | 通常失敗のE消費と後着retryのD消費を分離し両方を保持する |
+| HB2C10 | 早期reclaim再試行ごとにcleanupを消費し、解放後も戻さない |
+| HB2C11 | partial zero失敗時の両body保持・再試行消費・一度だけのzero／回収を確認する |
+| HB2C12 | Q64到達後の65回目を追加current／payload生成前に拒否する |
+| HB2C13 | 新G／bootstrap再loadでPをresetせず、G発行cap4もdrainで戻さない |
+| HB2C14 | 複数Gでglobal active R4を共有し、logical slot再利用で累積debtを消さない |
+| HB2C15 | 無効identity64回はDだけを消費し、E／制御可能なErrorを生成しない |
+| HB2C16 | D飽和後の通常／owner発行を停止し、既存cleanupとdebtを維持する |
+| HB2C17 | 捕捉した再入でもD1と外側E1を分離し、外側publication0を確認する |
+| HB2C18 | 初期化失敗後も前払いticket・cleanup予約・R slotを保持し、未定義handleで解放しない |
+| HB2C19 | 別G／未定義identity・raw quota／controller import・reset／caller quota指定を拒否する |
+| HB2C20 | 現認可・取消し・pin／purpose／承認の復元・元期限の拒否と消費保持を維持する |
+| HB2C21 | 64 metadata実体・予約slot・実消費・R slot・payload debtを別に照合する |
+| HB2C22 | 固定arityとguard順、明示的NativeErrorの入場済み経路をsourceへ束縛する |
+| HB2C23 | payload／entryをlogical-byte／元work／durable restart証拠へ昇格しない |
+| HB2C24 | 実Node image／case flags・環境と44 native caseの完全な集合を照合する |
+
+専用runnerは `scripts/check-cwc-hb2-quota.mjs`、再現は `scripts/run-cwc-hb2.mjs` と固定case用 `scripts/run-cwc-hb2-case.mjs`。記録は `docs/validation/gradle-cwc-hb2-quota-2026-11-14.json`。両modeのruntime48件・record12件、44 native case・18新台帳anchorと旧HB-1 baseline・source閉包・実Node binary／case flagsを束縛する。counter合計とper-ticket／ownerの分布、case集合、失敗・停止・quarantineを独立oracleで照合し、自己digestとrow合計を更新した協調的な減額も拒否する。HBC01〜40のfull contract、HB-2の独立charge／元単位mapping、HB-3／4・R1-M出口・本番採用は未成立のまま。性能は測定しない。
+
+2026-11-14に新規runtime48件・record12件と関連既存444件、計504テスト（24ファイル）、型・差分／新規source空白検査、旧HB-1／R1-S記録の照合が成功した。18更新台帳anchor・323 source／artifact、4 candidate pinと別diagnostic digest、44 native caseで実観測したNode image／flags／環境、本節・旧baselineを記録へ束縛する。通常240とcleanup16の分離、Q64・G4・global R4・D64、D飽和後の予約済みcleanup失敗／回収、初期化／通常／cleanupの失敗・retry・partial zero・捕捉再入・新G／bootstrap再loadでの消費保持を両modeで確認した。総数を保つper-ticket費用移動、合計とrowを併せた減額、quarantine／borrow／debtの隠蔽、入場拒否後のcurrent呼出し、source／型・未知上界・単位の改変を拒否する。Pの固定64 metadataとlogical drainを確認するが、全Native allocation／caller graph・byte上界・独立charge／実親予約・durable restart・R1-M出口・本番採用は未成立である。性能は測定していない。
