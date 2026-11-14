@@ -5,22 +5,22 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.157 HB-2 ED-1：現行runtime・公開API・既存toolの証拠取得可能性",
-    "sha256": "6db9f39bce0e90cb0e69c83bbdf5b581dda0dad6a2c0f5a48a0845ea80798c57"
+    "sha256": "0e7b4fe9b301b9b1af5c9a19261bbf2a2e4938cab9ca19a69d1527cf6d7d1976"
   },
   "baseline": {
     "path": "docs/validation/gradle-cwc-hb2-evidence-design-2026-11-14.json",
-    "sha256": "c7a035df1b1ecd9f3022cbed229b46680bda84f26834c6011a806bc3da5d76e3"
+    "sha256": "9ef5f2c610f8f1e61c3a7e3e8c6bbc8d38ed8d6d9857ee33028bba58de3fe26e"
   },
   "sourceBindings": {
-    "src/test/utils/gradleOwnedCwcHb2EvidenceDesign.test.ts": "c0ed0d4800f54771dbe507dd8a0b55bbd86c30512da01f52b132e221a1f25d12",
-    "src/test/fixtures/gradleOwnedCwcHb2EvidenceDesign.mjs": "009df8a43f3b9d0b106b6e8255840d8556c30b4355a093dbc27fc480ff5ee6c3",
+    "src/test/utils/gradleOwnedCwcHb2EvidenceDesign.test.ts": "7a507950884821ac3d4853fade92ffd4c65fd2bab28a807187c03b853af158be",
+    "src/test/fixtures/gradleOwnedCwcHb2EvidenceDesign.mjs": "a88bcd381814639c09bd3c322c5964464c5f301fa77399bdbda9b002d6089317",
     "src/test/fixtures/gradleOwnedCgpS0Bound.mjs": "f1530986cf57994fd288767896c9a973e83c96fc79e540f1d6d5750e83a0048f",
     "scripts/check-cwc-hb2-evidence-design.mjs": "acc8db1d8cc4c3f2605691741833e3d4c1e0ceb569585517bdc954bb73bed7a2",
     "src/test/fixtures/gradleOwnedCwcCo0Validation.mjs": "24e897203f09ade07b4cb6fa90703cbb17fd07227e104cb785ca7a9a7e44023f",
     "src/test/fixtures/gradleOwnedCwcLg0Context.mjs": "b3c367684f6f5a7119fe5f23936bd48642a4cf6aa2cd45c2fa8cfa74b90884f4",
     "src/test/fixtures/gradleOwnedCwcLg0Validation.mjs": "7feaea5427cb77b31cd982f0dd6d821cb5dfbc1e3951195bc53ee98015dd4b0f",
     "src/test/fixtures/gradleOwnedCwcHb2EvidenceDesign.d.mts": "294270e5e4c54bbced7f2a4ee019a22c185f4115e217655f3146d60a7831f586",
-    "src/test/utils/gradleOwnedCwcHb2.test.ts": "348d7e4e62ae6028686481edd8d87aa875876e947b2ce69722c34f361603836c",
+    "src/test/utils/gradleOwnedCwcHb2.test.ts": "348f5b2c10735bdf831486a31534f7812ab73a5a8e16e2b7e07758fc3a185066",
     "src/test/utils/gradleOwnedCwcHb2Record.test.ts": "a21796d820239420fb6f4d4613a8296f2e225048d5d2312aea1e05f7401a1f34",
     "src/test/fixtures/gradleOwnedCwcHb2Validation.mjs": "6a1e8000fea1b67302fb34e81094779cce906a783af6b595c3baf4184ad96655",
     "src/test/fixtures/gradleOwnedCwcHb2Inventory.mjs": "64dce8f7187cd77ce970eb2ad4f04f0f1b6f8266b09451d78abef68c6081efa9",
@@ -35,23 +35,23 @@
     "src/test/fixtures/gradleOwnedCwcHb2LedgerObserver.mjs": "db07e3f7e8df625b15e05e0e88fa376073dfd252eade406904310fc054643e69",
     "src/test/fixtures/gradleOwnedCwcHb2Inventory.d.mts": "9a3e1d4eb462274375bd59893c1a9226e23d7556c4d2ff1dde5730f435c89752",
     "src/test/fixtures/gradleOwnedCwcHb2Validation.d.mts": "494c4f9f44bd00fb9d2ed6ca6d37be1487b993732af8c71421e0657f8a984f77",
-    "src/test/fixtures/gradleOwnedCwcHb2Core.mjs": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+    "src/test/fixtures/gradleOwnedCwcHb2Core.mjs": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
     "src/test/fixtures/gradleOwnedCwcHb2Admission.mjs": "950979a780cea9d17ec75ed090d0e0b4abf71aaddf30588472382aec4b0724ec",
     "src/test/fixtures/gradleOwnedCwcHb2ReaderPort.mjs": "23db31397c6a4ea4a9bf52117603058fff6f93ae025caf1251db55b22a74d2d5",
-    "src/test/fixtures/gradleOwnedCwcHb2Approval.json": "b5f18cf40317ff1743c84281d8a6f5696c5b1f64c5a641ffebf1c100ef3d0959",
+    "src/test/fixtures/gradleOwnedCwcHb2Approval.json": "71de3ee74a7ea31b72132e4ee099961fe2ec575b8521ea5104443aa35aab45e6",
     "src/test/utils/gradleOwnedCwcHb1.test.ts": "6a736cc761874875e02b83f9484dd555cfe3982472ebe800c22ed7e39ed71ee8",
     "src/test/utils/gradleOwnedCwcHb1Record.test.ts": "ab4ac83df8753aa7586a7fd7b02f9e1d0584d72a5feec111984b26f76cf324ac",
     "src/test/fixtures/gradleOwnedCwcHb1Validation.mjs": "65421c87a363f189df034c095ae567bad0537089dcdf4f65ca00cdd0b44cf546",
     "scripts/check-cwc-hb1.mjs": "9ba9750e8b3158c0c2a106bd74d6da549ac2c8c54ae32ace229fa74a47fa28ef",
     "src/test/fixtures/gradleOwnedCwcHb1Observer.mjs": "7c61489488175fb7696b95887b076ba2aa3804d1709b6be4e813f641261f2bce",
     "scripts/run-cwc-hb1.mjs": "4cc5f235788bb1cb0a096cc6101570e43b7e54c2bc546154731a90829ac1d4ee",
-    "src/test/fixtures/gradleOwnedCwcHb1Fixture.mjs": "f98c13f6284306913ef288c4cbd3e04bf9e52574cfa7e2f52d5073ea7c08d8a7",
+    "src/test/fixtures/gradleOwnedCwcHb1Fixture.mjs": "ba2147943a5ddc03c9425561234714da2863ac84ad845f0b071c595725badf9f",
     "src/test/fixtures/gradleOwnedCwcHb1Bootstrap.mjs": "051eac82e19048605c1d02f6537296bd64525a765bcf937a16833d1f40af0dab",
     "src/test/fixtures/gradleOwnedCwcHb1Validation.d.mts": "64bae0c55c2e1652ffb531a1275811fa17181f67a2632d599ba9ce37af5e997c",
-    "src/test/fixtures/gradleOwnedCwcHb1Core.mjs": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+    "src/test/fixtures/gradleOwnedCwcHb1Core.mjs": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
     "src/test/fixtures/gradleOwnedCwcHb1ReaderPort.mjs": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
     "src/test/fixtures/gradleOwnedCwcHb1ScalarReader.mjs": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
-    "src/test/fixtures/gradleOwnedCwcHb1Approval.json": "73b264fe50cdc98cc5ad690d2bcfbd9de82e4613cf312d3f7ee3021474e4ea33",
+    "src/test/fixtures/gradleOwnedCwcHb1Approval.json": "c7df0b517fdd6fba82e88c779247da9e6a4a305dc7b57a9f909141fe58757b4c",
     "src/test/utils/gradleOwnedCwcR1s.test.ts": "eba6d4a6f6a35b2385b8532cc7646192aa7507f7e2f471c9dc5a097a92505aa5",
     "src/test/fixtures/gradleOwnedCwcR1sWire.ts": "f9c4eabb8a93d79e7f6fdee7cda3a2f813ccc2d2492fe6a6b6f45911d9b56e23",
     "src/test/fixtures/gradleOwnedCwcR1s.ts": "abd34ad435aef27d1eaa52c6a007b82c22eeed3aafb4c309976f58a182cd3261",
@@ -341,10 +341,10 @@
     "src/test/fixtures/gradleOwnedCwcCoRedesign.d.mts": "9250bb073e7966cb3237795d29595a2ebab9b050879ea332baeb1781f7305b7f",
     "src/test/utils/gradleOwnedCwcHb2Ed1.test.ts": "d0d1e0c48a96c097e6c3d97a0a4eb4bb19e070311ba9f23bec893b5bf9d142af",
     "src/test/fixtures/gradleOwnedCwcHb2Ed1.mjs": "0f24ca065fcfde9fb683007cdd99a7d66fc8cdd2c4ca7722002f95f79eca27ff",
-    "scripts/check-cwc-hb2-ed1.mjs": "7c858aa34da717632b04b7a950bbbe5fb920da1f1ec45bac02bfa58f1cfb17f1",
-    "scripts/run-cwc-hb2-ed1.mjs": "a641abd8c483ac685c2936df2039041a512465de334e6aa7c6c65af85c7aadfd",
+    "scripts/check-cwc-hb2-ed1.mjs": "0d3bf6a4673dec6418415e256b2ca7ca87fa59ae3d42a8490608a24ae7dc22bc",
+    "scripts/run-cwc-hb2-ed1.mjs": "45067ed4ea843187303b80a361e103fcc1db31e35ce87f934683642ad4eabd40",
     "scripts/run-cwc-hb2-ed1.d.mts": "65477e770bdf06ac208b3af7a6dd9a6b4644db31549cfbb58eec910489367504",
-    "scripts/probe-cwc-hb2-ed1.mjs": "9d44a48a083234414767f61f8abe147b122949096fe7f1ac4fa21641da53863a",
+    "scripts/probe-cwc-hb2-ed1.mjs": "3e8a99927b5afbfb0b25a6b88ef97d7beb2a0843dc1128445b129246793deb03",
     "src/test/fixtures/gradleOwnedCwcHb2Ed1.d.mts": "50f61db51eaa2fe66d8fa36467289b6803c7f6b44a16661b0528266c0265b593"
   },
   "runtime": {
@@ -860,7 +860,7 @@
         "first": "const ticket=admission.begin()",
         "last": "try{r=",
         "startLine": 33,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "edc1f1422d7f252f7a09fbee272aca1ee8894e1bf522b8eb82ac35eaccdd610b"
       },
       {
@@ -869,7 +869,7 @@
         "first": "const owner=r.bodies[0]",
         "last": "r.owner=owner;",
         "startLine": 37,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "43bee7d511aa12c82c790e7464fd34c36bf48150a006fb6dffa17e05f3302b15"
       },
       {
@@ -878,7 +878,7 @@
         "first": "for(let i=0;i<2;i++){const buffer=",
         "last": "const owner=r.bodies[0]",
         "startLine": 36,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "032a5b8c00a73b28c270bf4dad0f8002c69bf93586fec39b97bf452bbfe892a7"
       },
       {
@@ -887,7 +887,7 @@
         "first": "for(let i=0;i<2;i++){const b=r.bodies[i];b.refs[0]",
         "last": "return owner;",
         "startLine": 39,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "4f87f6ed3ead8c930c405b01bb0b8ca5fe363fc87a665f719dd8b16b23754970"
       },
       {
@@ -896,7 +896,7 @@
         "first": "handles:freeze(fixed(8,opaque))",
         "last": "borrow:undefined,transport:undefined",
         "startLine": 36,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "88db3cdb0a55a869485352cc153d625c6ba7b818239d7eac4f1487029f7e5e28"
       },
       {
@@ -905,8 +905,8 @@
         "first": "const r=",
         "last": "rows[index]=r;",
         "startLine": 22,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
-        "sliceDigest": "7a5a7afdedd914661aa17bac8afec73ab29cc680d2f94ca4757f6f57e0f0c7fb"
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
+        "sliceDigest": "33223cf272e15d5f7acd27a4ccf15b1517b5c484af4c0d61a70bc220ca364fb3"
       },
       {
         "id": "HB10",
@@ -914,7 +914,7 @@
         "first": "function fatal(",
         "last": "function guard(",
         "startLine": 20,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "b6bd7cda192acfdfc5aae8dd28131be0eef6e4d7c44f4041850eaf99f0487e45"
       },
       {
@@ -923,7 +923,7 @@
         "first": "function fixed(",
         "last": "function opaque(",
         "startLine": 9,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "880596a9f0741648e2f4e29f5da7eda7c4d79554f4593278078dcdc82084b0b5"
       },
       {
@@ -977,7 +977,7 @@
         "first": "const api=create(null);",
         "last": "export const reader=freeze(api);",
         "startLine": 67,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "0a62d90e0e867565053651423dcbd65942c173762d58625598e67b2342547d89"
       },
       {
@@ -986,7 +986,7 @@
         "first": "const binding=freeze(",
         "last": "r.owner=owner;",
         "startLine": 37,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "d718efc6101504e6b5a05a7229834ea6bce2894c221cd6d3bf425b3c5fef26fd"
       }
     ],
@@ -1122,18 +1122,18 @@
               "phase": "before-bootstrap",
               "value": {
                 "memory": {
-                  "rss": 66486272,
-                  "heapTotal": 8536064,
-                  "heapUsed": 6376984,
-                  "external": 2852316,
+                  "rss": 66797568,
+                  "heapTotal": 9060352,
+                  "heapUsed": 6382928,
+                  "external": 2852394,
                   "arrayBuffers": 209807
                 },
                 "heap": {
-                  "total_heap_size": 8536064,
+                  "total_heap_size": 9060352,
                   "total_heap_size_executable": 524288,
-                  "total_physical_size": 8536064,
-                  "total_available_size": 230578256,
-                  "used_heap_size": 6382888,
+                  "total_physical_size": 9060352,
+                  "total_available_size": 230572304,
+                  "used_heap_size": 6388832,
                   "heap_size_limit": 234881024,
                   "malloced_memory": 434272,
                   "peak_malloced_memory": 716800,
@@ -1143,11 +1143,11 @@
                   "total_global_handles_size": 8192,
                   "used_global_handles_size": 3616,
                   "external_memory": 2839061,
-                  "total_allocated_bytes": 26158416
+                  "total_allocated_bytes": 24584160
                 },
                 "code": {
                   "code_and_metadata_size": 127752,
-                  "bytecode_and_metadata_size": 782440,
+                  "bytecode_and_metadata_size": 782560,
                   "external_script_source_size": 2652671,
                   "cpu_profiler_metadata_size": 0
                 },
@@ -1162,16 +1162,16 @@
                   {
                     "space_name": "new_space",
                     "space_size": 2097152,
-                    "space_used_size": 785192,
-                    "space_available_size": 1311832,
+                    "space_used_size": 791000,
+                    "space_available_size": 1306024,
                     "physical_space_size": 2097152
                   },
                   {
                     "space_name": "old_space",
-                    "space_size": 4456448,
-                    "space_used_size": 4360408,
-                    "space_available_size": 95680,
-                    "physical_space_size": 4456448
+                    "space_size": 4718592,
+                    "space_used_size": 4360664,
+                    "space_available_size": 357576,
+                    "physical_space_size": 4718592
                   },
                   {
                     "space_name": "code_space",
@@ -1189,10 +1189,10 @@
                   },
                   {
                     "space_name": "trusted_space",
-                    "space_size": 1310720,
-                    "space_used_size": 1019576,
-                    "space_available_size": 291032,
-                    "physical_space_size": 1310720
+                    "space_size": 1572864,
+                    "space_used_size": 1019704,
+                    "space_available_size": 553032,
+                    "physical_space_size": 1572864
                   },
                   {
                     "space_name": "shared_trusted_space",
@@ -1253,24 +1253,24 @@
                   "detail_level": "brief"
                 }
               },
-              "elapsedMs": 0.6624170000000049
+              "elapsedMs": 0.8277080000000012
             },
             {
               "phase": "after-bootstrap",
               "value": {
                 "memory": {
-                  "rss": 67895296,
-                  "heapTotal": 10108928,
-                  "heapUsed": 7557024,
+                  "rss": 68157440,
+                  "heapTotal": 9846784,
+                  "heapUsed": 7563176,
                   "external": 2839061,
                   "arrayBuffers": 209807
                 },
                 "heap": {
-                  "total_heap_size": 10108928,
+                  "total_heap_size": 9846784,
                   "total_heap_size_executable": 524288,
-                  "total_physical_size": 10108928,
-                  "total_available_size": 229403744,
-                  "used_heap_size": 7557248,
+                  "total_physical_size": 9846784,
+                  "total_available_size": 229397656,
+                  "used_heap_size": 7563400,
                   "heap_size_limit": 234881024,
                   "malloced_memory": 426080,
                   "peak_malloced_memory": 716800,
@@ -1280,11 +1280,11 @@
                   "total_global_handles_size": 13304,
                   "used_global_handles_size": 4896,
                   "external_memory": 2839061,
-                  "total_allocated_bytes": 31440488
+                  "total_allocated_bytes": 32259920
                 },
                 "code": {
                   "code_and_metadata_size": 143364,
-                  "bytecode_and_metadata_size": 802400,
+                  "bytecode_and_metadata_size": 802520,
                   "external_script_source_size": 2652671,
                   "cpu_profiler_metadata_size": 0
                 },
@@ -1299,16 +1299,16 @@
                   {
                     "space_name": "new_space",
                     "space_size": 2097152,
-                    "space_used_size": 999880,
-                    "space_available_size": 1097144,
+                    "space_used_size": 1005648,
+                    "space_available_size": 1091376,
                     "physical_space_size": 2097152
                   },
                   {
                     "space_name": "old_space",
-                    "space_size": 5767168,
-                    "space_used_size": 5249872,
-                    "space_available_size": 516800,
-                    "physical_space_size": 5767168
+                    "space_size": 5505024,
+                    "space_used_size": 5250128,
+                    "space_available_size": 254464,
+                    "physical_space_size": 5505024
                   },
                   {
                     "space_name": "code_space",
@@ -1327,8 +1327,8 @@
                   {
                     "space_name": "trusted_space",
                     "space_size": 1572864,
-                    "space_used_size": 1049056,
-                    "space_available_size": 523680,
+                    "space_used_size": 1049184,
+                    "space_available_size": 523552,
                     "physical_space_size": 1572864
                   },
                   {
@@ -1390,15 +1390,15 @@
                   "detail_level": "brief"
                 }
               },
-              "elapsedMs": 0.5664579999999972
+              "elapsedMs": 0.7496670000000023
             },
             {
               "phase": "held",
               "value": {
                 "memory": {
-                  "rss": 67993600,
-                  "heapTotal": 10108928,
-                  "heapUsed": 8278792,
+                  "rss": 68304896,
+                  "heapTotal": 10371072,
+                  "heapUsed": 8373544,
                   "external": 2845205,
                   "arrayBuffers": 215951
                 },
@@ -1406,8 +1406,8 @@
                   "total_heap_size": 10371072,
                   "total_heap_size_executable": 524288,
                   "total_physical_size": 10371072,
-                  "total_available_size": 228419832,
-                  "used_heap_size": 8279016,
+                  "total_available_size": 228325128,
+                  "used_heap_size": 8373768,
                   "heap_size_limit": 234881024,
                   "malloced_memory": 434272,
                   "peak_malloced_memory": 716800,
@@ -1417,11 +1417,11 @@
                   "total_global_handles_size": 13304,
                   "used_global_handles_size": 4896,
                   "external_memory": 2845205,
-                  "total_allocated_bytes": 34439432
+                  "total_allocated_bytes": 34891800
                 },
                 "code": {
-                  "code_and_metadata_size": 153969,
-                  "bytecode_and_metadata_size": 813304,
+                  "code_and_metadata_size": 147303,
+                  "bytecode_and_metadata_size": 813480,
                   "external_script_source_size": 2652671,
                   "cpu_profiler_metadata_size": 0
                 },
@@ -1436,22 +1436,22 @@
                   {
                     "space_name": "new_space",
                     "space_size": 2359296,
-                    "space_used_size": 1049776,
-                    "space_available_size": 1047248,
+                    "space_used_size": 1055576,
+                    "space_available_size": 1041448,
                     "physical_space_size": 2359296
                   },
                   {
                     "space_name": "old_space",
                     "space_size": 5767168,
-                    "space_used_size": 5531832,
-                    "space_available_size": 234840,
+                    "space_used_size": 5532144,
+                    "space_available_size": 234576,
                     "physical_space_size": 5767168
                   },
                   {
                     "space_name": "code_space",
                     "space_size": 524288,
-                    "space_used_size": 277376,
-                    "space_available_size": 246848,
+                    "space_used_size": 361760,
+                    "space_available_size": 162464,
                     "physical_space_size": 524288
                   },
                   {
@@ -1464,8 +1464,8 @@
                   {
                     "space_name": "trusted_space",
                     "space_size": 1572864,
-                    "space_used_size": 1290112,
-                    "space_available_size": 282624,
+                    "space_used_size": 1294368,
+                    "space_available_size": 278368,
                     "physical_space_size": 1572864
                   },
                   {
@@ -1527,15 +1527,15 @@
                   "detail_level": "brief"
                 }
               },
-              "elapsedMs": 0.5271669999999915
+              "elapsedMs": 0.6572910000000007
             },
             {
               "phase": "drained",
               "value": {
                 "memory": {
-                  "rss": 68108288,
+                  "rss": 68435968,
                   "heapTotal": 10371072,
-                  "heapUsed": 7683480,
+                  "heapUsed": 7687784,
                   "external": 2845205,
                   "arrayBuffers": 215951
                 },
@@ -1543,10 +1543,10 @@
                   "total_heap_size": 10371072,
                   "total_heap_size_executable": 524288,
                   "total_physical_size": 10371072,
-                  "total_available_size": 229015144,
-                  "used_heap_size": 7683704,
+                  "total_available_size": 229010888,
+                  "used_heap_size": 7688008,
                   "heap_size_limit": 234881024,
-                  "malloced_memory": 426080,
+                  "malloced_memory": 487520,
                   "peak_malloced_memory": 716800,
                   "does_zap_garbage": 0,
                   "number_of_native_contexts": 6,
@@ -1554,11 +1554,11 @@
                   "total_global_handles_size": 13304,
                   "used_global_handles_size": 4896,
                   "external_memory": 2845205,
-                  "total_allocated_bytes": 39198960
+                  "total_allocated_bytes": 38957384
                 },
                 "code": {
-                  "code_and_metadata_size": 172579,
-                  "bytecode_and_metadata_size": 814840,
+                  "code_and_metadata_size": 171147,
+                  "bytecode_and_metadata_size": 815016,
                   "external_script_source_size": 2652671,
                   "cpu_profiler_metadata_size": 0
                 },
@@ -1573,22 +1573,22 @@
                   {
                     "space_name": "new_space",
                     "space_size": 2359296,
-                    "space_used_size": 1055160,
-                    "space_available_size": 1041864,
+                    "space_used_size": 1060960,
+                    "space_available_size": 1036064,
                     "physical_space_size": 2359296
                   },
                   {
                     "space_name": "old_space",
                     "space_size": 5767168,
-                    "space_used_size": 5272080,
-                    "space_available_size": 494592,
+                    "space_used_size": 5272328,
+                    "space_available_size": 494392,
                     "physical_space_size": 5767168
                   },
                   {
                     "space_name": "code_space",
                     "space_size": 524288,
-                    "space_used_size": 156704,
-                    "space_available_size": 367520,
+                    "space_used_size": 155904,
+                    "space_available_size": 368320,
                     "physical_space_size": 524288
                   },
                   {
@@ -1601,8 +1601,8 @@
                   {
                     "space_name": "trusted_space",
                     "space_size": 1572864,
-                    "space_used_size": 1069840,
-                    "space_available_size": 502896,
+                    "space_used_size": 1068896,
+                    "space_available_size": 503840,
                     "physical_space_size": 1572864
                   },
                   {
@@ -1664,7 +1664,7 @@
                   "detail_level": "brief"
                 }
               },
-              "elapsedMs": 0.47358300000000497
+              "elapsedMs": 0.6622500000000002
             }
           ],
           "witness": {
@@ -1683,8 +1683,8 @@
                 "to": "hb2:injected-reader"
               }
             ],
-            "core": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
-            "candidate": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+            "core": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
+            "candidate": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
             "port": "23db31397c6a4ea4a9bf52117603058fff6f93ae025caf1251db55b22a74d2d5",
             "cell": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
             "admission": "950979a780cea9d17ec75ed090d0e0b4abf71aaddf30588472382aec4b0724ec",
@@ -1755,18 +1755,18 @@
           },
           "candidateInstrumented": false
         },
-        "totalMs": 5.537333000000004,
+        "totalMs": 7.622749999999996,
         "diagnosticOnly": true
       },
       "execution": {
         "exitCode": 0,
         "signal": null,
         "error": null,
-        "wallMs": 89.94675000000001,
-        "stdoutBytes": 13443,
+        "wallMs": 148.33037499999998,
+        "stdoutBytes": 13441,
         "stderrBytes": 173,
-        "stdoutDigest": "ea6d0cb46e931c5394d92bd702cb352b75883f139fe5ea168023ddab769a5371",
-        "stderrDigest": "1616bcc929fd369567693eb1d147090ad9e1170f9b74d5b4d85ae40b5894d888"
+        "stdoutDigest": "d2851c76698e0ddd3fccd015c3f457b26d2c1d33135b3b00c45015509e0b26be",
+        "stderrDigest": "f056167cae81ecb74ff4a30d7b279d51a6356b235a4139f746203e978ebda965"
       }
     },
     {
@@ -1834,18 +1834,18 @@
               "phase": "before-bootstrap",
               "value": {
                 "memory": {
-                  "rss": 66519040,
-                  "heapTotal": 8798208,
-                  "heapUsed": 6375648,
-                  "external": 2852316,
+                  "rss": 66732032,
+                  "heapTotal": 9060352,
+                  "heapUsed": 6386064,
+                  "external": 2852394,
                   "arrayBuffers": 209807
                 },
                 "heap": {
-                  "total_heap_size": 8798208,
+                  "total_heap_size": 9060352,
                   "total_heap_size_executable": 524288,
-                  "total_physical_size": 8798208,
-                  "total_available_size": 230579600,
-                  "used_heap_size": 6381552,
+                  "total_physical_size": 9060352,
+                  "total_available_size": 230569152,
+                  "used_heap_size": 6391968,
                   "heap_size_limit": 234881024,
                   "malloced_memory": 434272,
                   "peak_malloced_memory": 716800,
@@ -1855,11 +1855,11 @@
                   "total_global_handles_size": 8192,
                   "used_global_handles_size": 3616,
                   "external_memory": 2839061,
-                  "total_allocated_bytes": 26898384
+                  "total_allocated_bytes": 23977928
                 },
                 "code": {
                   "code_and_metadata_size": 127752,
-                  "bytecode_and_metadata_size": 782440,
+                  "bytecode_and_metadata_size": 782560,
                   "external_script_source_size": 2652671,
                   "cpu_profiler_metadata_size": 0
                 },
@@ -1874,15 +1874,15 @@
                   {
                     "space_name": "new_space",
                     "space_size": 2097152,
-                    "space_used_size": 783856,
-                    "space_available_size": 1313168,
+                    "space_used_size": 793816,
+                    "space_available_size": 1303208,
                     "physical_space_size": 2097152
                   },
                   {
                     "space_name": "old_space",
                     "space_size": 4718592,
-                    "space_used_size": 4360408,
-                    "space_available_size": 357816,
+                    "space_used_size": 4360736,
+                    "space_available_size": 357488,
                     "physical_space_size": 4718592
                   },
                   {
@@ -1901,10 +1901,10 @@
                   },
                   {
                     "space_name": "trusted_space",
-                    "space_size": 1310720,
-                    "space_used_size": 1019576,
-                    "space_available_size": 291048,
-                    "physical_space_size": 1310720
+                    "space_size": 1572864,
+                    "space_used_size": 1019704,
+                    "space_available_size": 553032,
+                    "physical_space_size": 1572864
                   },
                   {
                     "space_name": "shared_trusted_space",
@@ -1965,24 +1965,24 @@
                   "detail_level": "brief"
                 }
               },
-              "elapsedMs": 0.7001660000000101
+              "elapsedMs": 1.8698340000000115
             },
             {
               "phase": "after-bootstrap",
               "value": {
                 "memory": {
-                  "rss": 67911680,
-                  "heapTotal": 9584640,
-                  "heapUsed": 7555680,
+                  "rss": 68091904,
+                  "heapTotal": 9846784,
+                  "heapUsed": 7566064,
                   "external": 2839061,
                   "arrayBuffers": 209807
                 },
                 "heap": {
-                  "total_heap_size": 9584640,
+                  "total_heap_size": 9846784,
                   "total_heap_size_executable": 524288,
-                  "total_physical_size": 9584640,
-                  "total_available_size": 229405176,
-                  "used_heap_size": 7555904,
+                  "total_physical_size": 9846784,
+                  "total_available_size": 229394768,
+                  "used_heap_size": 7566288,
                   "heap_size_limit": 234881024,
                   "malloced_memory": 426080,
                   "peak_malloced_memory": 716800,
@@ -1992,11 +1992,11 @@
                   "total_global_handles_size": 13304,
                   "used_global_handles_size": 4896,
                   "external_memory": 2839061,
-                  "total_allocated_bytes": 30641000
+                  "total_allocated_bytes": 31218680
                 },
                 "code": {
                   "code_and_metadata_size": 143364,
-                  "bytecode_and_metadata_size": 802400,
+                  "bytecode_and_metadata_size": 802520,
                   "external_script_source_size": 2652671,
                   "cpu_profiler_metadata_size": 0
                 },
@@ -2011,15 +2011,15 @@
                   {
                     "space_name": "new_space",
                     "space_size": 2097152,
-                    "space_used_size": 998536,
-                    "space_available_size": 1098488,
+                    "space_used_size": 1008464,
+                    "space_available_size": 1088560,
                     "physical_space_size": 2097152
                   },
                   {
                     "space_name": "old_space",
                     "space_size": 5505024,
-                    "space_used_size": 5249872,
-                    "space_available_size": 254712,
+                    "space_used_size": 5250200,
+                    "space_available_size": 254392,
                     "physical_space_size": 5505024
                   },
                   {
@@ -2038,10 +2038,10 @@
                   },
                   {
                     "space_name": "trusted_space",
-                    "space_size": 1310720,
-                    "space_used_size": 1049056,
-                    "space_available_size": 261568,
-                    "physical_space_size": 1310720
+                    "space_size": 1572864,
+                    "space_used_size": 1049184,
+                    "space_available_size": 523552,
+                    "physical_space_size": 1572864
                   },
                   {
                     "space_name": "shared_trusted_space",
@@ -2102,24 +2102,24 @@
                   "detail_level": "brief"
                 }
               },
-              "elapsedMs": 0.5364579999999961
+              "elapsedMs": 0.6483340000000055
             },
             {
               "phase": "held",
               "value": {
                 "memory": {
-                  "rss": 68026368,
-                  "heapTotal": 9846784,
-                  "heapUsed": 8308392,
+                  "rss": 68255744,
+                  "heapTotal": 10371072,
+                  "heapUsed": 8309568,
                   "external": 2845205,
                   "arrayBuffers": 215951
                 },
                 "heap": {
-                  "total_heap_size": 9846784,
+                  "total_heap_size": 10371072,
                   "total_heap_size_executable": 524288,
-                  "total_physical_size": 9846784,
-                  "total_available_size": 228652440,
-                  "used_heap_size": 8308616,
+                  "total_physical_size": 10371072,
+                  "total_available_size": 228389104,
+                  "used_heap_size": 8309792,
                   "heap_size_limit": 234881024,
                   "malloced_memory": 434272,
                   "peak_malloced_memory": 716800,
@@ -2129,148 +2129,11 @@
                   "total_global_handles_size": 13304,
                   "used_global_handles_size": 4896,
                   "external_memory": 2845205,
-                  "total_allocated_bytes": 33459872
+                  "total_allocated_bytes": 33744392
                 },
                 "code": {
                   "code_and_metadata_size": 153073,
-                  "bytecode_and_metadata_size": 813304,
-                  "external_script_source_size": 2652671,
-                  "cpu_profiler_metadata_size": 0
-                },
-                "spaces": [
-                  {
-                    "space_name": "read_only_space",
-                    "space_size": 0,
-                    "space_used_size": 0,
-                    "space_available_size": 0,
-                    "physical_space_size": 0
-                  },
-                  {
-                    "space_name": "new_space",
-                    "space_size": 2097152,
-                    "space_used_size": 1048432,
-                    "space_available_size": 1048592,
-                    "physical_space_size": 2097152
-                  },
-                  {
-                    "space_name": "old_space",
-                    "space_size": 5767168,
-                    "space_used_size": 5531864,
-                    "space_available_size": 234840,
-                    "physical_space_size": 5767168
-                  },
-                  {
-                    "space_name": "code_space",
-                    "space_size": 524288,
-                    "space_used_size": 309408,
-                    "space_available_size": 214816,
-                    "physical_space_size": 524288
-                  },
-                  {
-                    "space_name": "shared_space",
-                    "space_size": 0,
-                    "space_used_size": 0,
-                    "space_available_size": 0,
-                    "physical_space_size": 0
-                  },
-                  {
-                    "space_name": "trusted_space",
-                    "space_size": 1310720,
-                    "space_used_size": 1288992,
-                    "space_available_size": 21632,
-                    "physical_space_size": 1310720
-                  },
-                  {
-                    "space_name": "shared_trusted_space",
-                    "space_size": 0,
-                    "space_used_size": 0,
-                    "space_available_size": 0,
-                    "physical_space_size": 0
-                  },
-                  {
-                    "space_name": "new_large_object_space",
-                    "space_size": 0,
-                    "space_used_size": 0,
-                    "space_available_size": 2097152,
-                    "physical_space_size": 0
-                  },
-                  {
-                    "space_name": "large_object_space",
-                    "space_size": 147456,
-                    "space_used_size": 131088,
-                    "space_available_size": 0,
-                    "physical_space_size": 147456
-                  },
-                  {
-                    "space_name": "code_large_object_space",
-                    "space_size": 0,
-                    "space_used_size": 0,
-                    "space_available_size": 0,
-                    "physical_space_size": 0
-                  },
-                  {
-                    "space_name": "shared_large_object_space",
-                    "space_size": 0,
-                    "space_used_size": 0,
-                    "space_available_size": 0,
-                    "physical_space_size": 0
-                  },
-                  {
-                    "space_name": "shared_trusted_large_object_space",
-                    "space_size": 0,
-                    "space_used_size": 0,
-                    "space_available_size": 0,
-                    "physical_space_size": 0
-                  },
-                  {
-                    "space_name": "trusted_large_object_space",
-                    "space_size": 0,
-                    "space_used_size": 0,
-                    "space_available_size": 0,
-                    "physical_space_size": 0
-                  }
-                ],
-                "cpp": {
-                  "committed_size_bytes": 131072,
-                  "resident_size_bytes": 131072,
-                  "used_size_bytes": 128968,
-                  "space_statistics": [],
-                  "type_names": [],
-                  "detail_level": "brief"
-                }
-              },
-              "elapsedMs": 0.5057500000000061
-            },
-            {
-              "phase": "drained",
-              "value": {
-                "memory": {
-                  "rss": 68157440,
-                  "heapTotal": 10108928,
-                  "heapUsed": 7682136,
-                  "external": 2845205,
-                  "arrayBuffers": 215951
-                },
-                "heap": {
-                  "total_heap_size": 10108928,
-                  "total_heap_size_executable": 524288,
-                  "total_physical_size": 10108928,
-                  "total_available_size": 229016552,
-                  "used_heap_size": 7682360,
-                  "heap_size_limit": 234881024,
-                  "malloced_memory": 426080,
-                  "peak_malloced_memory": 716800,
-                  "does_zap_garbage": 0,
-                  "number_of_native_contexts": 6,
-                  "number_of_detached_contexts": 0,
-                  "total_global_handles_size": 13304,
-                  "used_global_handles_size": 4896,
-                  "external_memory": 2845205,
-                  "total_allocated_bytes": 37746248
-                },
-                "code": {
-                  "code_and_metadata_size": 172579,
-                  "bytecode_and_metadata_size": 814840,
+                  "bytecode_and_metadata_size": 813480,
                   "external_script_source_size": 2652671,
                   "cpu_profiler_metadata_size": 0
                 },
@@ -2285,22 +2148,22 @@
                   {
                     "space_name": "new_space",
                     "space_size": 2359296,
-                    "space_used_size": 1053816,
-                    "space_available_size": 1043208,
+                    "space_used_size": 1058392,
+                    "space_available_size": 1038632,
                     "physical_space_size": 2359296
                   },
                   {
                     "space_name": "old_space",
                     "space_size": 5767168,
-                    "space_used_size": 5272080,
-                    "space_available_size": 494624,
+                    "space_used_size": 5532232,
+                    "space_available_size": 234488,
                     "physical_space_size": 5767168
                   },
                   {
                     "space_name": "code_space",
                     "space_size": 524288,
-                    "space_used_size": 156704,
-                    "space_available_size": 367520,
+                    "space_used_size": 299072,
+                    "space_available_size": 225152,
                     "physical_space_size": 524288
                   },
                   {
@@ -2312,10 +2175,10 @@
                   },
                   {
                     "space_name": "trusted_space",
-                    "space_size": 1310720,
-                    "space_used_size": 1069840,
-                    "space_available_size": 240784,
-                    "physical_space_size": 1310720
+                    "space_size": 1572864,
+                    "space_used_size": 1290176,
+                    "space_available_size": 282560,
+                    "physical_space_size": 1572864
                   },
                   {
                     "space_name": "shared_trusted_space",
@@ -2376,7 +2239,144 @@
                   "detail_level": "brief"
                 }
               },
-              "elapsedMs": 0.4987079999999935
+              "elapsedMs": 0.5698750000000103
+            },
+            {
+              "phase": "drained",
+              "value": {
+                "memory": {
+                  "rss": 68370432,
+                  "heapTotal": 10371072,
+                  "heapUsed": 7692776,
+                  "external": 2845205,
+                  "arrayBuffers": 215951
+                },
+                "heap": {
+                  "total_heap_size": 10371072,
+                  "total_heap_size_executable": 524288,
+                  "total_physical_size": 10371072,
+                  "total_available_size": 229005896,
+                  "used_heap_size": 7693000,
+                  "heap_size_limit": 234881024,
+                  "malloced_memory": 426080,
+                  "peak_malloced_memory": 716800,
+                  "does_zap_garbage": 0,
+                  "number_of_native_contexts": 6,
+                  "number_of_detached_contexts": 0,
+                  "total_global_handles_size": 13304,
+                  "used_global_handles_size": 4896,
+                  "external_memory": 2845205,
+                  "total_allocated_bytes": 38398936
+                },
+                "code": {
+                  "code_and_metadata_size": 172711,
+                  "bytecode_and_metadata_size": 815016,
+                  "external_script_source_size": 2652671,
+                  "cpu_profiler_metadata_size": 0
+                },
+                "spaces": [
+                  {
+                    "space_name": "read_only_space",
+                    "space_size": 0,
+                    "space_used_size": 0,
+                    "space_available_size": 0,
+                    "physical_space_size": 0
+                  },
+                  {
+                    "space_name": "new_space",
+                    "space_size": 2359296,
+                    "space_used_size": 1063776,
+                    "space_available_size": 1033248,
+                    "physical_space_size": 2359296
+                  },
+                  {
+                    "space_name": "old_space",
+                    "space_size": 5767168,
+                    "space_used_size": 5272416,
+                    "space_available_size": 494304,
+                    "physical_space_size": 5767168
+                  },
+                  {
+                    "space_name": "code_space",
+                    "space_size": 524288,
+                    "space_used_size": 156832,
+                    "space_available_size": 367392,
+                    "physical_space_size": 524288
+                  },
+                  {
+                    "space_name": "shared_space",
+                    "space_size": 0,
+                    "space_used_size": 0,
+                    "space_available_size": 0,
+                    "physical_space_size": 0
+                  },
+                  {
+                    "space_name": "trusted_space",
+                    "space_size": 1572864,
+                    "space_used_size": 1070056,
+                    "space_available_size": 502680,
+                    "physical_space_size": 1572864
+                  },
+                  {
+                    "space_name": "shared_trusted_space",
+                    "space_size": 0,
+                    "space_used_size": 0,
+                    "space_available_size": 0,
+                    "physical_space_size": 0
+                  },
+                  {
+                    "space_name": "new_large_object_space",
+                    "space_size": 0,
+                    "space_used_size": 0,
+                    "space_available_size": 2097152,
+                    "physical_space_size": 0
+                  },
+                  {
+                    "space_name": "large_object_space",
+                    "space_size": 147456,
+                    "space_used_size": 131088,
+                    "space_available_size": 0,
+                    "physical_space_size": 147456
+                  },
+                  {
+                    "space_name": "code_large_object_space",
+                    "space_size": 0,
+                    "space_used_size": 0,
+                    "space_available_size": 0,
+                    "physical_space_size": 0
+                  },
+                  {
+                    "space_name": "shared_large_object_space",
+                    "space_size": 0,
+                    "space_used_size": 0,
+                    "space_available_size": 0,
+                    "physical_space_size": 0
+                  },
+                  {
+                    "space_name": "shared_trusted_large_object_space",
+                    "space_size": 0,
+                    "space_used_size": 0,
+                    "space_available_size": 0,
+                    "physical_space_size": 0
+                  },
+                  {
+                    "space_name": "trusted_large_object_space",
+                    "space_size": 0,
+                    "space_used_size": 0,
+                    "space_available_size": 0,
+                    "physical_space_size": 0
+                  }
+                ],
+                "cpp": {
+                  "committed_size_bytes": 131072,
+                  "resident_size_bytes": 131072,
+                  "used_size_bytes": 128968,
+                  "space_statistics": [],
+                  "type_names": [],
+                  "detail_level": "brief"
+                }
+              },
+              "elapsedMs": 0.6322499999999991
             }
           ],
           "witness": {
@@ -2395,8 +2395,8 @@
                 "to": "hb2:injected-reader"
               }
             ],
-            "core": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
-            "candidate": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+            "core": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
+            "candidate": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
             "port": "23db31397c6a4ea4a9bf52117603058fff6f93ae025caf1251db55b22a74d2d5",
             "cell": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
             "admission": "950979a780cea9d17ec75ed090d0e0b4abf71aaddf30588472382aec4b0724ec",
@@ -2467,18 +2467,18 @@
           },
           "candidateInstrumented": false
         },
-        "totalMs": 5.374499999999998,
+        "totalMs": 8.54787499999999,
         "diagnosticOnly": true
       },
       "execution": {
         "exitCode": 0,
         "signal": null,
         "error": null,
-        "wallMs": 88.84870899999999,
-        "stdoutBytes": 13437,
+        "wallMs": 140.42000000000002,
+        "stdoutBytes": 13441,
         "stderrBytes": 173,
-        "stdoutDigest": "96e9a7a22208b4873c5c498cafaf33eae7b7960c28204745a55eae671892dc0a",
-        "stderrDigest": "d228d6470b14ee6e49cecde4d09c0be4bd3cdc28f3f1a02e05450402ed3769f0"
+        "stdoutDigest": "d559dc6072c38f7791c5dcd6b7e415cbe2c13f9e949346d715143e10aa486342",
+        "stderrDigest": "44a73b47ba6355efc844c7429db3e2d17a18d425756422768d6000cb91141d0a"
       }
     },
     {
@@ -2557,8 +2557,8 @@
                 "to": "hb2:injected-reader"
               }
             ],
-            "core": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
-            "candidate": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+            "core": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
+            "candidate": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
             "port": "23db31397c6a4ea4a9bf52117603058fff6f93ae025caf1251db55b22a74d2d5",
             "cell": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
             "admission": "950979a780cea9d17ec75ed090d0e0b4abf71aaddf30588472382aec4b0724ec",
@@ -2598,8 +2598,8 @@
           "markerCount": 1,
           "aliasSame": true,
           "heldWindow": true,
-          "bytes": 6983169,
-          "sha256": "3ed44c451777169bfa853b51aba5c9781eeb50ce4dd26faf49a747dd7cf7b197",
+          "bytes": 6983373,
+          "sha256": "8e7f8a530cc856b14938f99538b229c7e52fc9746d85bc1e03944d6a7e6ec572",
           "nodeFields": [
             "type",
             "name",
@@ -2613,15 +2613,15 @@
             "name_or_index",
             "to_node"
           ],
-          "nodeCount": 79948,
-          "edgeCount": 352678,
-          "edgeSum": 352678,
-          "selfBytes": 8328088,
+          "nodeCount": 79953,
+          "edgeCount": 352699,
+          "edgeSum": 352699,
+          "selfBytes": 8328664,
           "counts": {
             "synthetic": 34,
             "hidden": 5799,
-            "string": 15612,
-            "object shape": 7661,
+            "string": 15616,
+            "object shape": 7662,
             "code": 34231,
             "array": 1569,
             "number": 112,
@@ -2631,26 +2631,26 @@
             "concatenated string": 906,
             "native": 200,
             "bigint": 33,
-            "regexp": 47,
-            "sliced string": 3
+            "sliced string": 3,
+            "regexp": 47
           },
-          "elapsedMs": 84.890458,
+          "elapsedMs": 154.60616700000003,
           "rawRetained": false,
           "completeNativeHeap": false,
           "releaseReceipt": false
         },
-        "totalMs": 109.707666,
+        "totalMs": 189.78125,
         "diagnosticOnly": true
       },
       "execution": {
         "exitCode": 0,
         "signal": null,
         "error": null,
-        "wallMs": 194.25374999999997,
-        "stdoutBytes": 3227,
+        "wallMs": 425.4719160000001,
+        "stdoutBytes": 3235,
         "stderrBytes": 281,
-        "stdoutDigest": "5508fc19e6fbbac81c1cbfeb588ce75b43262fbf1a8953b6098f725fd2920165",
-        "stderrDigest": "db701ae4bc8ab53a10b217d317cfa3db2bde0843809286c491383614c663e4bf"
+        "stdoutDigest": "28d9a36463116c3b6da9ca75aa99753f17a2a1c3c9f1ff5b1ffab8e5aaea214f",
+        "stderrDigest": "cfc6fa0f6e72bc5db5593c02fad31e6e258b41980ba36368b252db7f8b1ca7ca"
       }
     },
     {
@@ -2716,36 +2716,36 @@
           "methods": [
             {
               "method": "HeapProfiler.enable",
-              "elapsedMs": 0.0798329999999936
+              "elapsedMs": 0.13808299999999463
             },
             {
               "method": "HeapProfiler.startSampling",
-              "elapsedMs": 0.024709000000001424
+              "elapsedMs": 0.046750000000002956
             },
             {
               "method": "HeapProfiler.stopSampling",
-              "elapsedMs": 1.2226670000000013
+              "elapsedMs": 3.3142919999999947
             }
           ],
           "samplingInterval": 1024,
-          "nodes": 6,
-          "selfSize": 79024,
-          "samples": 73,
+          "nodes": 14,
+          "selfSize": 92464,
+          "samples": 78,
           "kept": 256,
           "completeAllocationTrace": false,
           "originalWorkMapping": false
         },
-        "totalMs": 1.6255000000000024,
+        "totalMs": 4.113207999999986,
         "diagnosticOnly": true
       },
       "execution": {
         "exitCode": 0,
         "signal": null,
         "error": null,
-        "wallMs": 88.67475000000002,
-        "stdoutBytes": 1503,
+        "wallMs": 188.43320799999992,
+        "stdoutBytes": 1504,
         "stderrBytes": 0,
-        "stdoutDigest": "04a55894f4df6d2368a7d16370b293408505e341b75dd757feaf7fa79b380f71",
+        "stdoutDigest": "d0c70b18112504fb43c3106a06e4268269f80a8b9853da66eb62bd906144206e",
         "stderrDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
     },
@@ -2815,15 +2815,15 @@
               "path": "/bin/ps",
               "discoveryStatus": 0,
               "execution": {
-                "status": null,
+                "status": 0,
                 "signal": null,
-                "errorCode": "EPERM",
-                "stdoutBytes": 0,
+                "errorCode": null,
+                "stdoutBytes": 17,
                 "stderrBytes": 0,
-                "stdoutDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "stdoutDigest": "69f9ff7d1c754d3e440236bfc683a98ec5ed30c862b9e5b41442396d8c9aaca6",
                 "stderrDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                "preview": "",
-                "elapsedMs": 0.18654200000000287
+                "preview": " 65408 489667024\n",
+                "elapsedMs": 2.1127500000000055
               },
               "notRunReason": null
             },
@@ -2832,15 +2832,15 @@
               "path": "/usr/bin/vmmap",
               "discoveryStatus": 0,
               "execution": {
-                "status": 255,
+                "status": 0,
                 "signal": null,
                 "errorCode": null,
-                "stdoutBytes": 0,
-                "stderrBytes": 191,
-                "stdoutDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                "stderrDigest": "af55eaf3e15df43b5e87808746e855c4822cde3d7c819f15ac1a983592799f85",
-                "preview": "vmmap[20907]: vmmap cannot examine process <diagnostic-pid> (node) for unknown reasons, even though it appears to exist; try running with `sudo`.\nvmmap[20907]: [fatal] mach port for process 0 not valid\n",
-                "elapsedMs": 3.048374999999993
+                "stdoutBytes": 5519,
+                "stderrBytes": 0,
+                "stdoutDigest": "5c981ce116e940a08532d9dbb568c64c062eb331ea22b44f91b647f784f72a66",
+                "stderrDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "preview": "Process:         node [<diagnostic-pid>]\nPath:            <local-path>\nLoad Address:    0x1009d8000\nIdentifier:      node\nVersion:         0\nCode Type:       ARM64\nPlatform:        macOS\nParent Process:  node [<pid>]\nTarget Type:     corpse\n\nDate/Time:       2026-11-14 12:50:42.867 +0900\nLaunch Time:     2026-11-14 12:50:42.578 +0900\nOS Version:      macOS 27.2 (26B123)\nReport Version:  7\nAnalysis Tool:   /usr/bin/vmmap\n\nPhysical footprint:         18.3M\nPhysical footprint (peak):  18.3M\nIdle exit:                  untracked\n----\n\nReadOnly portion of Libraries: Total=2.0G resident=147.2M(7%) swapped_out_or_unallocated=1.9G(93%)\nWritable regions: Total=445.1M written=1891K(0%) resident=16.5M(4%) swapped_out=0K(0%) unallocated=428.5M(96%)\n\n                                VIRTUAL RESIDENT    DIRTY  SWAPPED VOLATILE   NONVOL    EMPTY   REGION \nREGION TYPE                        SIZE     SIZE     SIZE     SIZE     SIZE     SIZE     SIZE    COUNT (non-coalesced) \n===========                 ",
+                "elapsedMs": 1089.122417
               },
               "notRunReason": null
             },
@@ -2849,15 +2849,15 @@
               "path": "/usr/bin/footprint",
               "discoveryStatus": 0,
               "execution": {
-                "status": 66,
+                "status": 0,
                 "signal": null,
                 "errorCode": null,
-                "stdoutBytes": 0,
-                "stderrBytes": 282,
-                "stdoutDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                "stderrDigest": "887022ecc59a8ee42d02b442199e2df3796d8e6d1e983abede489246dfa183c3",
-                "preview": "Unable to configure physical footprint data collection: Operation not permitted\ntask_read_for_pid (?/?)  (ffffffff)\nfootprint: Unable to analyze process with pid <diagnostic-pid> (try as root?)\nfootprint: Unable to find any processes matching the supplied process names or pids (try as root?)\n",
-                "elapsedMs": 3.7027499999999947
+                "stdoutBytes": 1829,
+                "stderrBytes": 0,
+                "stdoutDigest": "4626df8cd426f3d8141e222227d7bf87d5055c6be761d0421af8584e2e6aa0b4",
+                "stderrDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "preview": "======================================================================\nnode [<diagnostic-pid>]: 64-bit    Footprint: 18 MB (16384 bytes per page)\n======================================================================\n\n  Dirty      Clean  Reclaimable    Regions    Category\n    ---        ---          ---        ---    ---\n8496 KB        0 B          0 B         57    App-Specific Tag 16\n5424 KB        0 B          0 B          7    Malloc Small\n1731 KB        0 B          0 B          1    page table\n1120 KB        0 B          0 B         19    Untagged\n 496 KB        0 B          0 B          9    Malloc Metadata\n 496 KB        0 B          0 B        301    __DATA\n 303 KB        0 B          0 B        337    __DATA_DIRTY\n 272 KB        0 B          0 B         22    Stack\n 256 KB        0 B          0 B          1    Malloc Tiny\n  83 KB        0 B          0 B       1129    unused dyld shared cache area\n  48 KB        0 B          0 B          4    __TPRO_CONST\n  36 KB        0 B   ",
+                "elapsedMs": 26.042374999999993
               },
               "notRunReason": null
             },
@@ -2902,17 +2902,17 @@
           "externalProviderSearched": "no-external-proof-bundle-supplied",
           "certifiedProviderFound": false
         },
-        "totalMs": 16.479167000000004,
+        "totalMs": 1132.126875,
         "diagnosticOnly": true
       },
       "execution": {
         "exitCode": 0,
         "signal": null,
         "error": null,
-        "wallMs": 99.1120840000001,
-        "stdoutBytes": 3532,
+        "wallMs": 1253.6535000000001,
+        "stdoutBytes": 5072,
         "stderrBytes": 0,
-        "stdoutDigest": "89c86d9b66cbbbb4a53e3eef351700ab58b70dc36cf15f0b63d14be147c4b0e5",
+        "stdoutDigest": "0d2943e398d4ad3daf0e20742f7ec69454a87fc083bcff3e59fc206b34a69bee",
         "stderrDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
     }
@@ -3211,7 +3211,7 @@
         "first": "const ticket=admission.begin()",
         "last": "try{r=",
         "startLine": 33,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "edc1f1422d7f252f7a09fbee272aca1ee8894e1bf522b8eb82ac35eaccdd610b"
       },
       "sourceQuantities": [
@@ -3296,7 +3296,7 @@
         "first": "const owner=r.bodies[0]",
         "last": "r.owner=owner;",
         "startLine": 37,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "43bee7d511aa12c82c790e7464fd34c36bf48150a006fb6dffa17e05f3302b15"
       },
       "sourceQuantities": [
@@ -3387,7 +3387,7 @@
         "first": "for(let i=0;i<2;i++){const buffer=",
         "last": "const owner=r.bodies[0]",
         "startLine": 36,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "032a5b8c00a73b28c270bf4dad0f8002c69bf93586fec39b97bf452bbfe892a7"
       },
       "sourceQuantities": [
@@ -3481,7 +3481,7 @@
         "first": "for(let i=0;i<2;i++){const b=r.bodies[i];b.refs[0]",
         "last": "return owner;",
         "startLine": 39,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "4f87f6ed3ead8c930c405b01bb0b8ca5fe363fc87a665f719dd8b16b23754970"
       },
       "sourceQuantities": [
@@ -3565,7 +3565,7 @@
         "first": "handles:freeze(fixed(8,opaque))",
         "last": "borrow:undefined,transport:undefined",
         "startLine": 36,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "88db3cdb0a55a869485352cc153d625c6ba7b818239d7eac4f1487029f7e5e28"
       },
       "sourceQuantities": [
@@ -3649,8 +3649,8 @@
         "first": "const r=",
         "last": "rows[index]=r;",
         "startLine": 22,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
-        "sliceDigest": "7a5a7afdedd914661aa17bac8afec73ab29cc680d2f94ca4757f6f57e0f0c7fb"
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
+        "sliceDigest": "33223cf272e15d5f7acd27a4ccf15b1517b5c484af4c0d61a70bc220ca364fb3"
       },
       "sourceQuantities": [
         {
@@ -3733,7 +3733,7 @@
         "first": "function fatal(",
         "last": "function guard(",
         "startLine": 20,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "b6bd7cda192acfdfc5aae8dd28131be0eef6e4d7c44f4041850eaf99f0487e45"
       },
       "sourceQuantities": [],
@@ -3811,7 +3811,7 @@
         "first": "function fixed(",
         "last": "function opaque(",
         "startLine": 9,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "880596a9f0741648e2f4e29f5da7eda7c4d79554f4593278078dcdc82084b0b5"
       },
       "sourceQuantities": [
@@ -4347,7 +4347,7 @@
         "first": "const api=create(null);",
         "last": "export const reader=freeze(api);",
         "startLine": 67,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "0a62d90e0e867565053651423dcbd65942c173762d58625598e67b2342547d89"
       },
       "sourceQuantities": [
@@ -4431,7 +4431,7 @@
         "first": "const binding=freeze(",
         "last": "r.owner=owner;",
         "startLine": 37,
-        "sourceDigest": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+        "sourceDigest": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
         "sliceDigest": "d718efc6101504e6b5a05a7229834ea6bce2894c221cd6d3bf425b3c5fef26fd"
       },
       "sourceQuantities": [],

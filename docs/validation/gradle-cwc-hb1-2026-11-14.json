@@ -5,7 +5,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.154 HB-1：core／診断artifact・reader role境界の限定実装",
-    "sha256": "0d05bcbc164dc03e30c79eef14159bc42617e38c54ab5b08c209aee7bf5d5b59"
+    "sha256": "5c23b553d870d79ba11b6a45e0fb802e66ba0e4e3c7bd91558e0995aa6026b9b"
   },
   "baseline": {
     "path": "docs/validation/gradle-cwc-r1s-2026-11-14.json",
@@ -22,14 +22,14 @@
     "scripts/check-cwc-hb1.mjs": "9ba9750e8b3158c0c2a106bd74d6da549ac2c8c54ae32ace229fa74a47fa28ef",
     "src/test/fixtures/gradleOwnedCwcHb1Observer.mjs": "7c61489488175fb7696b95887b076ba2aa3804d1709b6be4e813f641261f2bce",
     "scripts/run-cwc-hb1.mjs": "4cc5f235788bb1cb0a096cc6101570e43b7e54c2bc546154731a90829ac1d4ee",
-    "src/test/fixtures/gradleOwnedCwcHb1Fixture.mjs": "f98c13f6284306913ef288c4cbd3e04bf9e52574cfa7e2f52d5073ea7c08d8a7",
+    "src/test/fixtures/gradleOwnedCwcHb1Fixture.mjs": "ba2147943a5ddc03c9425561234714da2863ac84ad845f0b071c595725badf9f",
     "src/test/fixtures/gradleOwnedCwcHb1Bootstrap.mjs": "051eac82e19048605c1d02f6537296bd64525a765bcf937a16833d1f40af0dab",
     "src/test/fixtures/gradleOwnedCwcHb1Controller.mjs": "fbffa7218f59f3f6402d197132bdda3bd67ec43e423827e3d01591cd55de6101",
     "src/test/fixtures/gradleOwnedCwcHb1Validation.d.mts": "64bae0c55c2e1652ffb531a1275811fa17181f67a2632d599ba9ce37af5e997c",
-    "src/test/fixtures/gradleOwnedCwcHb1Core.mjs": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+    "src/test/fixtures/gradleOwnedCwcHb1Core.mjs": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
     "src/test/fixtures/gradleOwnedCwcHb1ReaderPort.mjs": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
     "src/test/fixtures/gradleOwnedCwcHb1ScalarReader.mjs": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
-    "src/test/fixtures/gradleOwnedCwcHb1Approval.json": "73b264fe50cdc98cc5ad690d2bcfbd9de82e4613cf312d3f7ee3021474e4ea33",
+    "src/test/fixtures/gradleOwnedCwcHb1Approval.json": "c7df0b517fdd6fba82e88c779247da9e6a4a305dc7b57a9f909141fe58757b4c",
     "src/test/utils/gradleOwnedCwcR1s.test.ts": "eba6d4a6f6a35b2385b8532cc7646192aa7507f7e2f471c9dc5a097a92505aa5",
     "src/test/fixtures/gradleOwnedCwcR1sWire.ts": "f9c4eabb8a93d79e7f6fdee7cda3a2f813ccc2d2492fe6a6b6f45911d9b56e23",
     "src/test/fixtures/gradleOwnedCwcR1s.ts": "abd34ad435aef27d1eaa52c6a007b82c22eeed3aafb4c309976f58a182cd3261",
@@ -330,10 +330,10 @@
     "nodePath": ""
   },
   "artifacts": {
-    "core": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+    "core": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
     "port": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
     "cell": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
-    "diagnostic": "c408897f66b4bf0eafb61abd227c7a009fcd9f88e43e915157181991aa9f5b6e"
+    "diagnostic": "9b4db324e27758c8c797a64b113fc1d9ec632a7f8de3838531e610593dab1333"
   },
   "sourceAudit": [
     {
@@ -969,8 +969,8 @@
         },
         "candidate": {
           "kind": "candidate",
-          "coreDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -1020,8 +1020,8 @@
         },
         "diagnostic": {
           "kind": "diagnostic",
-          "coreDigest": "c408897f66b4bf0eafb61abd227c7a009fcd9f88e43e915157181991aa9f5b6e",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "9b4db324e27758c8c797a64b113fc1d9ec632a7f8de3838531e610593dab1333",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -1221,8 +1221,8 @@
         },
         "candidate": {
           "kind": "candidate",
-          "coreDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -1272,8 +1272,8 @@
         },
         "diagnostic": {
           "kind": "diagnostic",
-          "coreDigest": "c408897f66b4bf0eafb61abd227c7a009fcd9f88e43e915157181991aa9f5b6e",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "9b4db324e27758c8c797a64b113fc1d9ec632a7f8de3838531e610593dab1333",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -1473,8 +1473,8 @@
         },
         "candidate": {
           "kind": "candidate",
-          "coreDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -1524,8 +1524,8 @@
         },
         "diagnostic": {
           "kind": "diagnostic",
-          "coreDigest": "c408897f66b4bf0eafb61abd227c7a009fcd9f88e43e915157181991aa9f5b6e",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "9b4db324e27758c8c797a64b113fc1d9ec632a7f8de3838531e610593dab1333",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -1725,8 +1725,8 @@
         },
         "candidate": {
           "kind": "candidate",
-          "coreDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -1776,8 +1776,8 @@
         },
         "diagnostic": {
           "kind": "diagnostic",
-          "coreDigest": "c408897f66b4bf0eafb61abd227c7a009fcd9f88e43e915157181991aa9f5b6e",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "9b4db324e27758c8c797a64b113fc1d9ec632a7f8de3838531e610593dab1333",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -1977,8 +1977,8 @@
         },
         "candidate": {
           "kind": "candidate",
-          "coreDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -2028,8 +2028,8 @@
         },
         "diagnostic": {
           "kind": "diagnostic",
-          "coreDigest": "c408897f66b4bf0eafb61abd227c7a009fcd9f88e43e915157181991aa9f5b6e",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "9b4db324e27758c8c797a64b113fc1d9ec632a7f8de3838531e610593dab1333",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -2229,8 +2229,8 @@
         },
         "candidate": {
           "kind": "candidate",
-          "coreDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -2280,8 +2280,8 @@
         },
         "diagnostic": {
           "kind": "diagnostic",
-          "coreDigest": "c408897f66b4bf0eafb61abd227c7a009fcd9f88e43e915157181991aa9f5b6e",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "9b4db324e27758c8c797a64b113fc1d9ec632a7f8de3838531e610593dab1333",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -2481,8 +2481,8 @@
         },
         "candidate": {
           "kind": "candidate",
-          "coreDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -2532,8 +2532,8 @@
         },
         "diagnostic": {
           "kind": "diagnostic",
-          "coreDigest": "c408897f66b4bf0eafb61abd227c7a009fcd9f88e43e915157181991aa9f5b6e",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "9b4db324e27758c8c797a64b113fc1d9ec632a7f8de3838531e610593dab1333",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -2733,8 +2733,8 @@
         },
         "candidate": {
           "kind": "candidate",
-          "coreDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -2784,8 +2784,8 @@
         },
         "diagnostic": {
           "kind": "diagnostic",
-          "coreDigest": "c408897f66b4bf0eafb61abd227c7a009fcd9f88e43e915157181991aa9f5b6e",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "9b4db324e27758c8c797a64b113fc1d9ec632a7f8de3838531e610593dab1333",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -5357,8 +5357,8 @@
         "prototypeMutation": true,
         "witness": {
           "kind": "candidate",
-          "coreDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -5453,8 +5453,8 @@
         "prototypeMutation": true,
         "witness": {
           "kind": "candidate",
-          "coreDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
-          "candidateDigest": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+          "coreDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
+          "candidateDigest": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
           "portDigest": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
           "cellDigest": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
           "injectedReaderOrigin": "separate-scalar-reader-artifact",
@@ -5593,7 +5593,7 @@
       "nodePath": ""
     }
   },
-  "evidenceDigest": "17bfef62614693e4b9be3c415ce665cc026d4f5e25f8073036eff73c491b21bf",
+  "evidenceDigest": "4b4c8075c583d5b418d4c07da053f30620c745641060d71a52b08793cc810793",
   "summary": {
     "normal": 8,
     "rejection": 28,

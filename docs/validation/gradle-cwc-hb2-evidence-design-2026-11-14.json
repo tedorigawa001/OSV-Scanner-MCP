@@ -5,11 +5,11 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.156 HB-2：18領域の独立charge・単位対応・寿命証拠契約（設計）",
-    "sha256": "907e3166b34285e11c205d72db566ddfcbc3b8903a510b3ea6f3d6896a4a3721"
+    "sha256": "81abd9a69261e0bef65e2c2687fc28ada2b449af0c62ace4214632a07c3e4506"
   },
   "baseline": {
     "path": "docs/validation/gradle-cwc-hb2-quota-2026-11-14.json",
-    "sha256": "ac4d934c7a3c4346d0f416c994fb8e9a67ebe0a21a417263a1a5c754f2a5f53e"
+    "sha256": "e3276d96d059eb44fae2067ea945d18c6fc03911ca1b85dab4cd700ab6d64bb2"
   },
   "baselineScope": {
     "modes": 2,
@@ -29,15 +29,15 @@
     "productionAdopted": false
   },
   "sourceBindings": {
-    "src/test/utils/gradleOwnedCwcHb2EvidenceDesign.test.ts": "c0ed0d4800f54771dbe507dd8a0b55bbd86c30512da01f52b132e221a1f25d12",
-    "src/test/fixtures/gradleOwnedCwcHb2EvidenceDesign.mjs": "009df8a43f3b9d0b106b6e8255840d8556c30b4355a093dbc27fc480ff5ee6c3",
+    "src/test/utils/gradleOwnedCwcHb2EvidenceDesign.test.ts": "7a507950884821ac3d4853fade92ffd4c65fd2bab28a807187c03b853af158be",
+    "src/test/fixtures/gradleOwnedCwcHb2EvidenceDesign.mjs": "a88bcd381814639c09bd3c322c5964464c5f301fa77399bdbda9b002d6089317",
     "src/test/fixtures/gradleOwnedCgpS0Bound.mjs": "f1530986cf57994fd288767896c9a973e83c96fc79e540f1d6d5750e83a0048f",
     "scripts/check-cwc-hb2-evidence-design.mjs": "acc8db1d8cc4c3f2605691741833e3d4c1e0ceb569585517bdc954bb73bed7a2",
     "src/test/fixtures/gradleOwnedCwcCo0Validation.mjs": "24e897203f09ade07b4cb6fa90703cbb17fd07227e104cb785ca7a9a7e44023f",
     "src/test/fixtures/gradleOwnedCwcLg0Context.mjs": "b3c367684f6f5a7119fe5f23936bd48642a4cf6aa2cd45c2fa8cfa74b90884f4",
     "src/test/fixtures/gradleOwnedCwcLg0Validation.mjs": "7feaea5427cb77b31cd982f0dd6d821cb5dfbc1e3951195bc53ee98015dd4b0f",
     "src/test/fixtures/gradleOwnedCwcHb2EvidenceDesign.d.mts": "294270e5e4c54bbced7f2a4ee019a22c185f4115e217655f3146d60a7831f586",
-    "src/test/utils/gradleOwnedCwcHb2.test.ts": "348d7e4e62ae6028686481edd8d87aa875876e947b2ce69722c34f361603836c",
+    "src/test/utils/gradleOwnedCwcHb2.test.ts": "348f5b2c10735bdf831486a31534f7812ab73a5a8e16e2b7e07758fc3a185066",
     "src/test/utils/gradleOwnedCwcHb2Record.test.ts": "a21796d820239420fb6f4d4613a8296f2e225048d5d2312aea1e05f7401a1f34",
     "src/test/fixtures/gradleOwnedCwcHb2Validation.mjs": "6a1e8000fea1b67302fb34e81094779cce906a783af6b595c3baf4184ad96655",
     "src/test/fixtures/gradleOwnedCwcHb2Inventory.mjs": "64dce8f7187cd77ce970eb2ad4f04f0f1b6f8266b09451d78abef68c6081efa9",
@@ -52,23 +52,23 @@
     "src/test/fixtures/gradleOwnedCwcHb2LedgerObserver.mjs": "db07e3f7e8df625b15e05e0e88fa376073dfd252eade406904310fc054643e69",
     "src/test/fixtures/gradleOwnedCwcHb2Inventory.d.mts": "9a3e1d4eb462274375bd59893c1a9226e23d7556c4d2ff1dde5730f435c89752",
     "src/test/fixtures/gradleOwnedCwcHb2Validation.d.mts": "494c4f9f44bd00fb9d2ed6ca6d37be1487b993732af8c71421e0657f8a984f77",
-    "src/test/fixtures/gradleOwnedCwcHb2Core.mjs": "1472d22d21c4f6add4206a1de253618fd52b1b7de9297ef786461ea8c8786d6f",
+    "src/test/fixtures/gradleOwnedCwcHb2Core.mjs": "914ad3e43e21508aa38cfdaf6f84b908fb52262b405ce30fef4962a26fb0bc9e",
     "src/test/fixtures/gradleOwnedCwcHb2Admission.mjs": "950979a780cea9d17ec75ed090d0e0b4abf71aaddf30588472382aec4b0724ec",
     "src/test/fixtures/gradleOwnedCwcHb2ReaderPort.mjs": "23db31397c6a4ea4a9bf52117603058fff6f93ae025caf1251db55b22a74d2d5",
-    "src/test/fixtures/gradleOwnedCwcHb2Approval.json": "b5f18cf40317ff1743c84281d8a6f5696c5b1f64c5a641ffebf1c100ef3d0959",
+    "src/test/fixtures/gradleOwnedCwcHb2Approval.json": "71de3ee74a7ea31b72132e4ee099961fe2ec575b8521ea5104443aa35aab45e6",
     "src/test/utils/gradleOwnedCwcHb1.test.ts": "6a736cc761874875e02b83f9484dd555cfe3982472ebe800c22ed7e39ed71ee8",
     "src/test/utils/gradleOwnedCwcHb1Record.test.ts": "ab4ac83df8753aa7586a7fd7b02f9e1d0584d72a5feec111984b26f76cf324ac",
     "src/test/fixtures/gradleOwnedCwcHb1Validation.mjs": "65421c87a363f189df034c095ae567bad0537089dcdf4f65ca00cdd0b44cf546",
     "scripts/check-cwc-hb1.mjs": "9ba9750e8b3158c0c2a106bd74d6da549ac2c8c54ae32ace229fa74a47fa28ef",
     "src/test/fixtures/gradleOwnedCwcHb1Observer.mjs": "7c61489488175fb7696b95887b076ba2aa3804d1709b6be4e813f641261f2bce",
     "scripts/run-cwc-hb1.mjs": "4cc5f235788bb1cb0a096cc6101570e43b7e54c2bc546154731a90829ac1d4ee",
-    "src/test/fixtures/gradleOwnedCwcHb1Fixture.mjs": "f98c13f6284306913ef288c4cbd3e04bf9e52574cfa7e2f52d5073ea7c08d8a7",
+    "src/test/fixtures/gradleOwnedCwcHb1Fixture.mjs": "ba2147943a5ddc03c9425561234714da2863ac84ad845f0b071c595725badf9f",
     "src/test/fixtures/gradleOwnedCwcHb1Bootstrap.mjs": "051eac82e19048605c1d02f6537296bd64525a765bcf937a16833d1f40af0dab",
     "src/test/fixtures/gradleOwnedCwcHb1Validation.d.mts": "64bae0c55c2e1652ffb531a1275811fa17181f67a2632d599ba9ce37af5e997c",
-    "src/test/fixtures/gradleOwnedCwcHb1Core.mjs": "49fc5490b17247855e44fc5767077b48e335f90932cc9df48a3e9dd316e8fe98",
+    "src/test/fixtures/gradleOwnedCwcHb1Core.mjs": "2656398688c4239465e8b9c8328cf3ee0882c0f8272df0bf847f14ae5318f450",
     "src/test/fixtures/gradleOwnedCwcHb1ReaderPort.mjs": "34fa062626267d31829e505045ecfd4a2d5160a8555d324044983aa8bd8fa917",
     "src/test/fixtures/gradleOwnedCwcHb1ScalarReader.mjs": "0371a265a5c63cbff9c24389744252caace21178b28746b404ade6c9eaba625e",
-    "src/test/fixtures/gradleOwnedCwcHb1Approval.json": "73b264fe50cdc98cc5ad690d2bcfbd9de82e4613cf312d3f7ee3021474e4ea33",
+    "src/test/fixtures/gradleOwnedCwcHb1Approval.json": "c7df0b517fdd6fba82e88c779247da9e6a4a305dc7b57a9f909141fe58757b4c",
     "src/test/utils/gradleOwnedCwcR1s.test.ts": "eba6d4a6f6a35b2385b8532cc7646192aa7507f7e2f471c9dc5a097a92505aa5",
     "src/test/fixtures/gradleOwnedCwcR1sWire.ts": "f9c4eabb8a93d79e7f6fdee7cda3a2f813ccc2d2492fe6a6b6f45911d9b56e23",
     "src/test/fixtures/gradleOwnedCwcR1s.ts": "abd34ad435aef27d1eaa52c6a007b82c22eeed3aafb4c309976f58a182cd3261",

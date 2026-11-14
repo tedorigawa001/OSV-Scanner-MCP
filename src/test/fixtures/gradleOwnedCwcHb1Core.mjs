@@ -25,7 +25,7 @@ function live(r){need(r.state==='active',r.reason??'closed');const v=current();
  if(port.mode==='full-input'){r.fullChecks++;need(isFrozen(r.binding)&&r.binding.owner===r.owner&&r.binding.scope===r.scope&&r.binding.root===port.root&&r.binding.call===port.call&&r.binding.generation===r.sequence&&r.binding.portOwner===port.owner&&r.binding.actor===r.actor,'full_binding');}
  else{r.ownedChecks++;need(r.ownedView===r.binding&&r.binding.portOwner===port.owner&&r.binding.call===port.call,'owned_binding');}
 }
-function body(r,w){const b=r.bodies[r.attempt-1];need(b&&b.issued&&!b.closed&&(w===b.handles[3]&&b.first||w===b.handles[4]&&b.seal),'window');return b;}
+function body(r,w){need(r.attempt===1||r.attempt===2,'window');const b=r.bodies[r.attempt-1];need(b&&b.issued&&!b.closed&&(w===b.handles[3]&&b.first||w===b.handles[4]&&b.seal),'window');return b;}
 function release(r){need(r.ready&&r.frames===0,'drain');for(let i=0;i<2;i++){const b=r.bodies[i];need(!b.buffer&&!b.borrow&&!b.transport,'drain');for(let j=0;j<48;j++)need(b.refs[j]===null,'drain');}for(let i=0;i<rows.length;i++)if(rows[i]===r)rows[i]=undefined;held-=2;reclaims++;}
 function begin(actor='provider'){guard();need(actor==='provider'||actor==='client','actor');const v=current();permitted(v);let index=-1;for(let i=0;i<rows.length;i++)if(rows[i]===undefined){index=i;break;}need(index>=0,'registry_full');need(sequence<64&&integer(v.now+4500),'epoch');
  const bodies=fixed(2,i=>{const buffer=new Bytes(3072);apply(fill,buffer,[i+1]);return {handles:freeze(fixed(8,opaque)),refs:fixed(48,()=>null),buffer,issued:false,first:false,seal:false,closed:false,zeroed:false,borrowIssued:false,transportIssued:false,firstPublished:false,sealPublished:false,borrow:undefined,transport:undefined};});
@@ -38,7 +38,7 @@ function begin(actor='provider'){guard();need(actor==='provider'||actor==='clien
 function run(op,h,arg){guard();const completion=op==='endBorrow'||op==='endTransport'||op==='closeRead'||op==='cancel'||op==='reclaim';const r=find(h,completion);busy=true;active=r;r.frames++;
  try{if(!completion)live(r);
   if(op==='openAttempt'){need(r.attempt<2&&(r.attempt===0||r.bodies[r.attempt-1].closed),'attempt');const b=r.bodies[r.attempt++];b.issued=true;b.first=true;b.seal=r.actor==='client';return b.handles[0];}
-  if(op==='window'){need(arg==='first'||arg==='seal','window');const b=r.bodies[r.attempt-1];need(b?.issued&&!b.closed&&(arg==='first'?b.first:b.seal),'window');return b.handles[arg==='first'?3:4];}
+  if(op==='window'){need((arg==='first'||arg==='seal')&&(r.attempt===1||r.attempt===2),'window');const b=r.bodies[r.attempt-1];need(b?.issued&&!b.closed&&(arg==='first'?b.first:b.seal),'window');return b.handles[arg==='first'?3:4];}
   if(op==='beginBorrow'){const b=body(r,arg);need(!b.borrowIssued&&b.buffer,'borrow');b.borrowIssued=true;b.borrow=b.buffer;return b.handles[5];}
   if(op==='beginTransport'){const b=body(r,arg);let pending=0;for(let i=0;i<2;i++)if(r.bodies[i].transport)pending++;need(!b.transportIssued&&b.buffer&&pending===0,'transport');b.transportIssued=true;b.transport=b.buffer;return b.handles[6];}
   if(op==='endBorrow'||op==='endTransport'){const at=op==='endBorrow'?5:6,key=op==='endBorrow'?'borrow':'transport';let b;for(let i=0;i<2;i++)if(r.bodies[i].handles[at]===arg)b=r.bodies[i];need(b?.[key],key);b[key]=undefined;return;}
