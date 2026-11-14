@@ -9,6 +9,8 @@ import {P0_PLAN,P0_CONDITIONS} from '../src/test/fixtures/gradleOwnedCwcHb2P0Des
 import {designSection} from '../src/test/fixtures/gradleOwnedCgpS0Bound.mjs';
 import {co0Canonical as canonical} from '../src/test/fixtures/gradleOwnedCwcCo0Validation.mjs';
 const sha=b=>createHash('sha256').update(b).digest('hex');async function imageHash(path){const h=createHash('sha256');for await(const b of createReadStream(path,{highWaterMark:65536}))h.update(b);return h.digest('hex');}
+/** Field paths (tool rows by name, at most 8) that differ between the saved and fresh observation; values are not echoed. */
+function differences(saved,fresh,path,out){if(out.length>=8)return out;const obj=v=>v!==null&&typeof v==='object';if(obj(saved)&&obj(fresh)&&Array.isArray(saved)===Array.isArray(fresh)){for(const k of [...new Set([...Object.keys(saved),...Object.keys(fresh)])].sort()){const n=Array.isArray(saved)?(saved[k]?.name??fresh[k]?.name??k):k;differences(saved[k],fresh[k],path+'.'+n,out);}}else if(saved===undefined||fresh===undefined||canonical(saved)!==canonical(fresh))out.push(path);return out;}
 const out='docs/validation/gradle-cwc-hb2-p0-design-2026-11-14.json',test='src/test/utils/gradleOwnedCwcHb2P0Design.test.ts';
 const baseline={path:'docs/validation/gradle-cwc-hb2-ed2-design-2026-11-14.json'},base=await readFile(baseline.path),old=JSON.parse(base);baseline.sha256=sha(base);
 const baselineCommit=execFileSync('git',['rev-parse',P0_PLAN.baselineCommit],{encoding:'utf8'}).trim();execFileSync('git',['merge-base','--is-ancestor',baselineCommit,'HEAD']);
@@ -27,7 +29,7 @@ const references=[
  {url:'https://raw.githubusercontent.com/diffblue/cbmc/cbmc-6.8.0/src/cbmc/cbmc_parse_options.cpp',role:'candidate-method-reference-not-provision-or-approval',consulted:'2026-11-14'},
  {url:'https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html#memory-interface-files',role:'candidate-method-reference-not-provision-or-approval',consulted:'2026-11-14'}];
 const fixed={schema:'cwc.hb2.e2-p0.design-record.v1',date:'2026-11-14',status:'design-only-unsupported',document,baseline,baselineCommit,sourceBindings,runtime,observation,plan:P0_PLAN,conditions:P0_CONDITIONS,reviewCases:P0_PLAN.reviewCases,references,readiness:{status:'unsupported',reasons:P0_PLAN.missing,independentEvidenceVerified:false,jobPermitIssued:false}};
-let record={...fixed,verification:null};if(process.argv.includes('--check')){record=JSON.parse(await readFile(out));if(canonical(Object.keys(record).sort())!==canonical([...Object.keys(fixed),'verification'].sort()))throw Error('p0_saved_keys');for(const k of Object.keys(fixed))if(canonical(record[k])!==canonical(fixed[k]))throw Error('p0_saved_'+k);}
+let record={...fixed,verification:null};if(process.argv.includes('--check')){record=JSON.parse(await readFile(out));if(canonical(Object.keys(record).sort())!==canonical([...Object.keys(fixed),'verification'].sort()))throw Error('p0_saved_keys');for(const k of Object.keys(fixed))if(canonical(record[k])!==canonical(fixed[k])){const d=differences(record[k],fixed[k],k,[]);throw Error('p0_saved_'+k+' '+(d.length?d:[k]).join(','));}}
 const dir=await mkdtemp(resolve(tmpdir(),'cwc-hb2-p0-design-'));
 try{
  const candidate=resolve(dir,'record.json'),report=resolve(dir,'tests.json');await writeFile(candidate,JSON.stringify(record));

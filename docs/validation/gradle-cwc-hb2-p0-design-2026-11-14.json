@@ -5,7 +5,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.159 HB-2 E2-P0：tool取得・image／設定・独立承認・検証workspace契約（設計）",
-    "sha256": "b24d8a6da6ccba3803dc0b235979d1df51419a8eba58a83ba64baf794a3ac99a"
+    "sha256": "e79f6ebe3991eb5983b66bc8e73ae7c15d2c4bd2ee481e799318238fa171af70"
   },
   "baseline": {
     "path": "docs/validation/gradle-cwc-hb2-ed2-design-2026-11-14.json",
@@ -355,9 +355,9 @@
     "src/test/fixtures/gradleOwnedCwcHb2Ed2Design.d.mts": "898beb2e149cefcecf95e68e15877e838674f6929bc78a007c86dd99e0a362f3",
     "src/test/fixtures/gradleOwnedCwcHb2Ed2NativeValidation.d.mts": "200f65ebf2d15d09cf8a54e6b2c127aabc09156923ea24f00eca9eae64297a41",
     "src/test/utils/gradleOwnedCwcHb2Ed2NativeRecord.test.ts": "fae980ebbb0374a412202f751328e864c89c056a974a8d6f909cf4aaeb032576",
-    "src/test/utils/gradleOwnedCwcHb2P0Design.test.ts": "c5356cf8b8b08b23d951f4cab675c47b8c208686f6cb82f3b9a9bb2d9a97c2b1",
+    "src/test/utils/gradleOwnedCwcHb2P0Design.test.ts": "caded92d325aee298db61f9babc37f97cffcf4bf0c5cde74619d81d11a9b744a",
     "src/test/fixtures/gradleOwnedCwcHb2P0Design.mjs": "8337e809aca2acfad6fd278f8024df2ce066aa7361d2c2c2279a536c9fb1b494",
-    "scripts/check-cwc-hb2-p0-design.mjs": "5c8b4d7afe9cc0762d20cb8e7abd1560ba805bf4f698f2c836eca91d04103007",
+    "scripts/check-cwc-hb2-p0-design.mjs": "9cf45776e20d0a09f93af081a6d687e5760c0e7ae1319d12e44317dcf6577d6f",
     "src/test/fixtures/gradleOwnedCwcHb2P0Design.d.mts": "c8e21999601621678896c7b1d68d479d6e0c45a80f584207505fcb9f14cca6bb"
   },
   "runtime": {
