@@ -12376,3 +12376,59 @@ process終了も単独では十分でない。実allocator domainの停止、外
 設計catalogueは `gradleOwnedCwcHb2EvidenceDesign.mjs`、整合性runnerは `scripts/check-cwc-hb2-evidence-design.mjs`、記録は `docs/validation/gradle-cwc-hb2-evidence-design-2026-11-14.json`。32設計チェックと108の取得route例を検査し、各routeのcertificateVerified／actualParentReserved／runtimeAdmittedをfalse、upperをnull、creditを0に保つ。route helperは取得案の分類だけで、certificateを受け付ける本番verifierではない。HBEC01〜48・ED-1〜4は全てplannedであり、証拠collector／署名／allocator検証・実ledger・native lifetime実証を実行したとは数えない。
 
 2026-11-14に新規設計整合性32件と関連既存504件、計536テスト（25ファイル）、型・差分／新規source空白検査、旧HB-2a記録の照合が成功した。18領域・6共通＋2専門bundle、108の取得route例、48 planned条件・4 planned段階、327 source／artifact・本節・旧baseline・実checker Node binaryを新記録へ束縛する。単位・method・unknown／creditの扱い、logical signalでのdebt保持、生成前template／予約と生成後実体対応、同一resourceの外部holder・domain-disposal／reuse要件を検査した。公開一次資料は観測API／容量policyの意味確認に使い、実imageのcharge証拠へ昇格しない。32件は設計チェックであり、HBEC01〜48のruntime・独立collector／署名／allocator／実親検証・1 MiB適合・R1-M出口・本番採用は未成立である。
+
+### 9.157 HB-2 ED-1：現行runtime・公開API・既存toolの証拠取得可能性
+
+#### 9.157.1 対象と結論の範囲
+
+§9.156のED-1を、Node v26.12.1／V8 14.6.202.34-node.40、macOS arm64上の有限な診断として実施する。実Node image・flags・候補artifact・loader edge・旧18領域source anchorを新しい記録へ束縛する。候補core／旧記録は変更しない。現行runtimeのAPIは実呼出しで確認し、文書の公開版v26.13.1を実行image承認へ使わない（実queryObjectsのexperimental warningも版差の一例）。
+
+取得できるのはsource単位の位置／個数、現在heapの集計／node、sampled allocation、有限操作のstate／debtとtoolの成功／失敗である。独立したrepresentation上界・全operationの元work対応・全holder／allocator寿命証拠はこの経路では取得できない。**18領域とも `unsupported-current-acquisition-route`、logical／physical／original-work upperはnull、creditは0、permit／本番採用はfalse** とする。全公開APIや他環境についての不可能性証明ではなく、今回のruntime・列挙route・供給証拠での不成立である。利用不能を0 Bに置換しない。
+
+#### 9.157.2 再現可能な取得方法と診断自体の境界
+
+`check-cwc-hb2-ed1.mjs` は `run-cwc-hb2-ed1.mjs` を用い、5つのfresh childを順次実行する。各childは `--experimental-vm-modules --max-old-space-size=128`、NODE_OPTIONS／NODE_PATHを空にして起動する。stdio上限1 MiB／64 KiB、外側30秒、tool各5秒、snapshot stream上限32 MiB。失敗・timeout・truncation・未知schemaは検証失敗とし、部分結果から成功や上界を作らない。OS toolの通常の権限エラーは、取得失敗として値と区別する。
+
+- `full-input`／`owned-input`：実HB-2候補artifactをVM linkerで起動し、bootstrap前／後、clientのfirst／seal保持中、borrow／transportをdrainしてreclaim後の4時点で `memoryUsage`、heap／space／code／CppHeap statisticsを取得する。早期reclaimと後着publishの拒否、active=0でもreadDebt=1・payloadDebt=6144を確認する。callerのopaque参照は保持したまま。候補へのobserver書換えは行わない。
+- `snapshot`：実候補がwindowを保持した同じisolateに所有markerを1個置き、queryObjectsとgetHeapSnapshotを実行する。動的node／edge metadataを検査し、marker・alias、node count合計とedge countを照合する。synthetic markerは実scopeの完全holder証拠にしない。raw dumpは保存せず、量・digest・schema・集計のみ保存するため、後日raw dumpの再解析はできない。fresh再実行で取得経路と整合性を再確認する。
+- `inspector`：外部debugger portを開かず、自己SessionでHeapProfiler enable→startSampling→stopSampling。所有256入力の有限割当をsampled profileで観測する。全allocationのtraceや独立した元work写像ではない。
+- `tools`：ps／vmmap／footprintを診断child自身へ実行し、存在・exit／signal／error・bytes／digest・有界previewを記録する。現権限ではpsはEPERM、vmmap／footprintも取得失敗。heap／leaks／dockerはPATH上の存在だけで実行しない。prlimit／systemd-runとcgroup memory.maxは現環境にない。Docker executableの存在からdaemon／VM／容量policyを推定しない。privilege変更・sudo・外部serviceへの接続は行わない。
+
+Node imageのhashは64 KiB scratchで取得し、巨大なimage全読込を測定heapへ持ち込まない。ただしimport／hash／collector／Inspector／snapshot／JSON parse自体の費用は含む診断値であり、差引いてcore単独量にしない。stream capは生成後のbytes制限であり、同期snapshot生成前のメモリ予約ではない。old-space指定も全JS／native／RSS／子processの容量制限ではない。snapshotの生成・parse・native workspaceを元1 MiB親に適合したとせず、production verifierでは使用しない。queryObjects／snapshot／samplingがGC・配置・時間を変え得るため非干渉計測・性能比較も主張しない。
+
+#### 9.157.3 18領域のroute・不足証拠・代替案
+
+sourceは旧 `hb2Inventory` のsubresource・quantity・source/slice digest、表のmetricsは両modeの実測、snapshot／samplingは上記の有限probeを参照する。source／artifact digestは独立承認済みの期待bytesが別途あれば対象一致の検査入力として使える。現fixture pinそのものは独立承認ではなく、観測値は不足箇所の発見・反例候補までである。完全なsource edge mapやformal reference closureへの昇格は行わない。6共通＋2専門bundleの必要条件は維持する。
+
+| 領域 | 取得できる情報 | 独立上界に不足する証拠／代替案（未実装・未承認） |
+| --- | --- | --- |
+| HB01 | module source／実link edge、code／bytecode集計、現在code node | JIT／loader／native residencyの全配置証明なし。対応engine／bounded loaderの独立proofが必要。 |
+| HB02 | port／cell sourceと現在closure／context node | hidden capture全閉包・role発行証拠なし。閉じたcapture表現と承認済layout／issuerへ変更。 |
+| HB03 | P/G固定table capと現在array／object node | backing／shape遷移・実namespace・durable incarnation不明。固定arenaと独立authorityが必要。 |
+| HB04 | 新Readのentry／payload debt、drain後も残る債務 | partial allocation・再起動後の債務証拠なし。有界recipeとdurable debt service。 |
+| HB05 | binding／scopeのsource edgeとmarker alias | 実call／root／portの全holder閉包ではない。実identityと独立edge／layout proof。 |
+| HB06 | 6144 payload要求、arrayBuffers／external集計、現在wrapper／native node | wrapper／alignment／allocator・解放receiptなし。承認allocator／arena＋wrapper証明。 |
+| HB07 | 96位置のsource、現在array／edge集計 | header・element kind・外部holderをpointer幅で換算不能。有界tableと完全alias証明。 |
+| HB08 | 16 identityのsource、所有constructorの現時点count | queryObjectsは指定context／constructorの観測で全opaque／caller容量ではない。issuerと閉じたconsumer。 |
+| HB09 | Body／list／array構築箇所、現在heap node | 失敗時中間値を含む全shape上界なし。有界構築recipeと等価性証明。 |
+| HB10 | 早期回収拒否、active減少、debt保持 | zero／lookup除去はallocator解放ではない。fenced durable debtと全holder／allocator receipt。 |
+| HB11 | literal／call位置、sampled stack、現在closure | 死んだ短命値・未sample operationは未被覆。engine allocation proofか新bounded recipe。 |
+| HB12 | entry／cleanup／retry counter、sampled site | E／CPU／sampleから元workへの変換なし。完全cost modelと実親debit。 |
+| HB13 | sample stack、現在frame／context | native／asyncの最大同時生存とsame-arena再利用は不明。runtime boundとreuse witness。 |
+| HB14 | bootstrap artifactとphase統計、OS tool取得結果 | loader／parser／sig／collector自身のworkspace上界なし。まず独立したverifier容量を確保。 |
+| HB15 | primitive refusal／admitted errorのsourceと現在node | lazy stack／engine failure／refusal frame上界なし。有界error protocolとdispatcher。 |
+| HB16 | 診断stream／出力cap、copy行、tool結果 | snapshot生成前・marshal／native／receiver／callerはcap対象外。閉じた配送ownerと全copy証明。 |
+| HB17 | callerが保持するhandle／marker alias | arbitrary graph／escaped copyの全容量・drainなし。独立容量を持つ閉じたconsumer以外unsupported。 |
+| HB18 | synthetic scope・親vector未接続の明示 | actual root／fact／lease／元親・元unit証拠なし。baseline／両attemptを残し実親へ別途接続。 |
+
+#### 9.157.4 一次資料と取得値の使い分け
+
+[Node process](https://nodejs.org/api/process.html#processmemoryusage)の定義ではarrayBuffersはexternalに含まれるため加算しない。heap／external／RSSはscopeが異なる。CppHeap statisticsも全native allocatorを被覆する証拠ではない。[Node V8](https://nodejs.org/api/v8.html)のsnapshotは現isolateの診断で、形式はengine依存、生成にはheapに比して大きな追加メモリを要する。queryObjectsはGC後の指定constructor／contextの観測であり、count／summaryから非観測値の上界を作らない。[Node Inspector](https://nodejs.org/api/inspector.html)の自己Sessionによるprofileも観測routeで、完全cost modelではない。2026-11-14参照、公開文書v26.13.1と実imageは別に保存する。
+
+[Linux cgroup v2](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html#memory-interface-files)の容量domainは別deploymentの代替候補に留める。memory.maxは一時超過等を伴い得る物理policyで、per-resource logical／original-work写像や解放証明を与えない。今回Linux配備やOOM試験は実施しない。第三者engine／allocator証明providerの網羅的市場調査ではなく、今回指定routeに独立承認済proof bundleの供給がないという判定である。
+
+#### 9.157.5 回帰・記録と次の段階
+
+`gradleOwnedCwcHb2Ed1.test.ts` のED1T01〜40を実行する。source／runtime／artifact／loader pin、5 probe閉包、phase移動・欠落、nonfinite／負値、snapshot metadata／marker／edge総数、cap／timeout／出力digest、samplingの完全trace偽装、toolの存在・取得失敗・未実行の混同を拒否する。両modeで早期／後着拒否、drain後のdebt、instrumented差替えを確認する。統計・heap limit・pointer幅・snapshot self_size・queryObjects・CPU・entry数による上界換算、zero／GC／ACK／lookup除去によるcredit、synthetic親・代替案の自己承認を拒否する。fresh5子processの取得も回帰へ含む。
+
+記録は `validation/gradle-cwc-hb2-ed1-2026-11-14.json`。旧design／327 sourceを継承し、新source・本節・実runtime・5子processのexit／外側wall／出力hash・取得情報・18判定を束縛する。checkerは変動するheap値／sampling件数／時間の完全一致を要求せず、保存記録を再検証しfresh経路を別実行する。最大観測値は保証最大値にしない。旧HBEC01〜48の独立証明runtime条件を完了扱いせず、ED-2の独立representation／work proofと承認、ED-3のallocator／caller／durable lifetime、ED-4の実親事前予約／load-copy-IO gateは残る。現行JSのまま証拠が取得できない場合はbounded recipeへ設計変更するか、その領域をunsupportedとして採用を止める。
