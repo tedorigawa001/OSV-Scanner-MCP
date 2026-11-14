@@ -12432,3 +12432,113 @@ sourceは旧 `hb2Inventory` のsubresource・quantity・source/slice digest、�
 `gradleOwnedCwcHb2Ed1.test.ts` のED1T01〜40を実行する。source／runtime／artifact／loader pin、5 probe閉包、phase移動・欠落、nonfinite／負値、snapshot metadata／marker／edge総数、cap／timeout／出力digest、samplingの完全trace偽装、toolの存在・取得失敗・未実行の混同を拒否する。両modeで早期／後着拒否、drain後のdebt、instrumented差替えを確認する。統計・heap limit・pointer幅・snapshot self_size・queryObjects・CPU・entry数による上界換算、zero／GC／ACK／lookup除去によるcredit、synthetic親・代替案の自己承認を拒否する。fresh5子processの取得も回帰へ含む。
 
 記録は `docs/validation/gradle-cwc-hb2-ed1-2026-11-14.json`。旧design／327 sourceを継承し、新source・本節・実runtime・5子processのexit／外側wall／stdout hash・stderr量・取得情報・18判定を束縛する。stderrは本文を保存しないためhashは形式だけを検査する。checkerはrecord・case・executionの余分なkeyを拒否する。checkerは変動するheap値／sampling件数／時間の完全一致を要求せず、保存記録を再検証しfresh経路を別実行する。最大観測値は保証最大値にしない。旧HBEC01〜48の独立証明runtime条件を完了扱いせず、ED-2の独立representation／work proofと承認、ED-3のallocator／caller／durable lifetime、ED-4の実親事前予約／load-copy-IO gateは残る。現行JSのまま証拠が取得できない場合はbounded recipeへ設計変更するか、その領域をunsupportedとして採用を止める。
+
+### 9.158 HB-2 ED-2：対象領域・証拠取得方式・最小実証・棄却条件（設計）
+
+#### 9.158.1 前提の再照合と版の固定
+
+前回確認時のHB-1／HB-2未コミット7 pathは、今回開始時点ではreview commit `ec9348a` に整理済みで作業ツリーはcleanだった。`53e82db` からの差分は、attempt0でbody配列を読む前にwindow／publishを拒否する修正、その負添字getter回帰、candidate承認pin、HB-1→HB-2a→evidence-design→ED-1の記録更新を含む。以前差分が見えたHB2Caseは最終的に同commit前後でnet changeなしであり、7 pathすべてを変更済みと数えない。新作業ではこのcommitと旧記録を保存し、既存artifactや過去記録を再生成しない。
+
+独立再計算で4記録の305／323／327／334 source pin・baseline hash・対象設計節hashに不一致0、HB-1／HB-2 coreと承認pinの一致を確認した。制限付き実行環境ではED-1 `--check` が `ed1_tool_outcome_changed` で拒否し、保存記録と同じ権限条件では40回帰を含め成功した。source一致とtool取得権限の一致を別条件にする。制限付き失敗を記録不正と断定せず、別domain成功で制限付き失敗を成功に書き換えない。いずれも独立charge承認ではない。
+
+#### 9.158.2 対象の選択と依存領域
+
+初回経路は **bounded-recipeの固定native kernel候補** とする。既存V8 objectのサイズを測り続ける方式は選ばない。現在、承認済engine-proof providerは供給されていない。Clangは検出されたが、cbmc／goto-cc／frama-c／z3はPATH上にない。未導入のtoolを使った証明成功、compiler存在からのmethod承認、外部solverの必須性は主張しない。CBMCの組込みsolverを用いる候補も含め、実tool／solver image・optionsと独立承認をE2-P0で固定する。今回インストール・compile・model checker実行は行わない。
+
+| 初回対象 | 証明したい限定claim | 残るもの／昇格禁止 |
+| --- | --- | --- |
+| HB06.payload | 3072 byte×2のaddressable storageと新kernelの明示header／padding／局所一時値のCモデル上の配置・bounds／alias | 6144はpayload量。実backing総量は未取得null。JS view／wrapper・allocator overhead・native stack／code・collectorは別依存。HB06全体の上界にしない |
+| HB12.kernel | 初期化・成功・拒否・seal／zero・retryを含むkernel transition／loop edgeの意味的step上界 | `bounded-kernel-step.v1` は新しい中間unit。元work・entry・RPC・CPU時間と等置しない。既存全entry／guard／bootstrap／transport費用の被覆ではない |
+
+HB02／03／04／05／07／08／09／10／11／13／14／15／16／17／18とHB01の全てを、除外して無料にする領域ではなく **必要な未成立依存** として保持する。特にHB03／07／08／09のmetadata／identity、HB13のstack、HB14のverifier、HB16／17のcopy／caller、HB18の元親が成立しなければ部分kernelを本番へ接続しない。新headerも既存tableと同一実体である証拠がない限り追加資源として扱い、HB03へ名前を移して課金を消さない。
+
+現recipeの6共通＋2専門bundleを省略しない。初回成果はpartial-claim bundleであり、HB06／HB12 region packet全体のcompleteをtrueにしない。他regionへの流用、署名だけによるfull coverage、元1 MiB／work適合・3 slot出口・本番permit発行を禁止する。
+
+#### 9.158.3 kernel候補の境界と取得方式
+
+対象言語は制限C17候補。fresh・privateな固定arenaと明示headerのみを用い、sizeof／alignment／offsetを実target ABIで取得する。CHAR_BIT=8・固定幅integerの条件はcompile時とverifier modelの両方で照合し、不一致は対象外とする。`sizeof(State)` の成功出力だけではallocation・stack・native residencyやoriginal logical-byteを証明しない。実allocated bytesは、独立layout／allocator証明が揃うまでnullとする。
+
+kernel入力は有界integerのopcode／slot／index／valueに限定し、任意object・raw pointer・callbackを公開入口にしない。内部候補operationはinitialize／write-byte／compare-byte／seal／retire／zero。read-byteは検証harness内部のみで、reader公開面へraw storageやcontrollerを追加しない。heap allocation・VLA・recursion・async・IO・dynamic loader・未モデル化external callを認めない。compilerがlibcall／stack temporary等を追加した場合も、その完全閉包を証明するかcandidateを棄却する。malloc文字列の検索やimport数0だけでは閉包証明にしない。
+
+generation／read／attempt・状態を明示し、2 bodyを2 attemptと対応付ける。初期化・seal後write・overflow・別generation・期限切れ・closing／fatal・後着の扱いを固定する。kernel内callbackがないことはJS wrapperや時計callbackの安全性を証明しない。既存のsource停止→borrow終了→排他的完全検証→bind／公開、CWCの独立expected・同一CoreHandle aliasと全live siteを保つ。全新handleを含む元16 identityの対応が証明できなければ接続を拒否する。
+
+証拠は次の3層を分ける。
+
+| 層 | 必須の取得／検証 | その層だけでは示せないこと |
+| --- | --- | --- |
+| C model／semantics | 独立したspec／harness／cost model、全入力値・無効値・全到達state／拒否path、bounds／pointer／UB／overflow・loop義務、counterexampleと完全なproperty一覧、実verifier／solver image・options | 実object codeのallocation／stack／loader・元unit |
+| build／object／loader | source/include→model→実compiler/options/ABI→object/link closure→実行image／loaderの対応とtranslation evidence、header／padding／局所一時値・native依存／code residencyの被覆 | 元logical-byte／original-work・actual parent、独立method承認 |
+| approval／unit mapping | producerとは別のmethod／subject承認・writer／key／store、current registryRevision／validity、元unit定義と対象parentごとのapproved conversion | 実支払済み予約、allocator解放／再利用、全依存領域の完全性 |
+
+CBMCはCモデルの候補toolである。公式[概要](https://www.cprover.org/cbmc/)と[loop unwinding](https://diffblue.github.io/cbmc/cprover-manual/md_cbmc-unwinding.html)を参照し、全loop IDの上限とunwinding assertionsを必須化する。modelがfull3072 byte×2を含むこと、loop条件評価・短絡・reject path・上限到達を含むことを検査する。1 byteへの縮小・`assume`で不都合なpathを落とすこと・partial loop・unknown／timeoutを成功とすることを禁止する。1 invocationの完全transitionとinvariant初期化／保存・状態遷移の閉包を証明し、到達性を自己申告したstate集合に限定しない。有限sample traceだけでは任意の再試行列を被覆したとしない。無制限caller／refusal dispatchは初回kernelの対象外でありHB13／15／17へ未被覆として残す。
+
+[Clangのmanual](https://clang.llvm.org/docs/UsersManual.html)はcompile／toolchainの仕様確認に使う。Cモデルの証明とClangが生成した実objectの対応証明は別義務であり、compile成功・sanitizer成功・同じ出力の有限native実行でtranslation evidenceを代替しない。Cモデルだけが成立した場合は「model-only partial result」と報告して停止し、実object採用はunsupportedのままにする。
+
+#### 9.158.4 最小実証の順序と保存証拠
+
+| 段階 | 実施する最小内容 | 出口／停止条件 |
+| --- | --- | --- |
+| E2-P0 | verifier／solver／compiler・spec／methodの独立provisionと承認、検証workspace・期限／保存capを先に固定 | tool／承認／workspace未取得ならunsupported。今回のtool探索はprovision／承認の代替ではない |
+| E2-P1 | 固定arena kernel・header／padding・step model・harnessを限定実装し、全source/includeとcall closureをmanifest化 | public adapterや任意callerへ公開しない。余分なallocation／callback／IO・不明temporaryは拒否 |
+| E2-P2 | 全property／loop義務のmodel proof、拒否path・UBとmutation controls | false／unknown／timeout・未証明property・生存mutantがあれば候補棄却。最大値を下げて正常化しない |
+| E2-P3 | 実object／link／loaderへの対応とunit mappingを独立確認 | model-only／compiler-only／自己署名だけなら採用不可。元unit不明はnull |
+| E2-P4 | 元oracleの内容／拒否・独立expected・全live siteを両mode／role・2 attemptで照合し、partial取得報告 | 全依存・ED-3／4未完了ならfull region／HB-2出口はfalse |
+
+nativeの最小対照は12 scenario×両mode×両role＝48 caseを予定し、各caseに2 attemptを含む。empty/full・境界／上限超過・負値／overflow・alias・stale generation・seal後write・早期retire・partial初期化失敗・zero失敗・debt保持retry・捕捉再入・close後後着を含める。境界値0／1／3071／3072／3073／6143／6144／6145は成功値と不正値を区別する。これはruntime回帰の予定件数で、model proofの全入力／全path被覆の代用ではない。48 caseは今回未実行である。
+
+manifestはrecipe/spec/harness/costのsource閉包、全tool/solver/compiler image・flags、target ABI／object/link／loader、runtime/allocator/native依存、scope/generation・全property／unwinding表、proof output・失敗／timeout、native対照・mutation controlの対応を持つ。未知・orphan・余分なref・truncation・source更新後の再署名・違うobjectの流用を拒否する。初回全領域proofが揃わないことを、partialという語だけで隠さない。
+
+Aはtemplate／取得method／必要parent planまで、BはAに束縛した生成前の全実予約、生成後witnessで実体対応、Cは後続のlifetime／allocator証拠とする。Aに将来B/Cをhashし戻さない。proofを検証するparse／hash／署名／loader workspaceも生成前に独立親で予約する。新kernel・toolをロードしてから自分の上限を証明する手順を認めない。ED-3前はzero／ACK／GC／lookup除去／process終了による解放creditを0に保つ。
+
+元memory 1048576 B、verification work 156978、providerの `cpr.request-bytes-ranges-probes.v1` 1048576、global 67108864（元unit未確定null）は別親として保持する。中間unit `native-arena-byte.v1`／`bounded-kernel-step.v1` は元unitではない。後者はpinしたverifier frontendのGOTO instruction identity／source位置表に従い、実行した各GOTO program instructionを1 stepとする候補。load／storeや算術等のexpression内部を独立instructionと誤認して二重計上せず、逆にinstruction数だけでexpression評価費用を被覆したともしない。expression単位のcost対応は別の必須義務として未取得nullで残し、無料扱いを拒否する。reject pathも数え、未知instruction・counter overflowは拒否する。このmodel step数はnative instruction数・CPU時間・元workではなく、元unit mappingが独立承認されるまで元予算への上限はnullである。client4 core・完全W本体2組・16 identity・19×W予約と実n件、JS bridge／codec overlay／native hash・失敗／retry／cleanup・既存baselineを残す。別unitや同じ数値の余りで相殺しない。全額不足・未取得ならcopy／IO前に拒否し、source countや実測peakで穴埋めしない。
+
+#### 9.158.5 棄却条件と回帰条件（planned）
+
+取得不能（tool／method／layout／translation／unit／lifetime／parentの不足）はunsupported、構造・subject・counterexample・不完全loop・改変／余分なcallはinvalid、予算超過はbudget拒否に分類する。失敗／期限停止・unknownを成功へ丸めず、費用・debtを保持する。CBMCのexit 0やJSON成功flagだけでなく、期待property閉包・全結果とcounterexample／mutantの出自を独立に検査する。method署名は意味的真実を保証しない。
+
+今回追加するのはこの契約と設計整合性テストであり、下表のnative／proof-runtime条件を実行したとは数えない。
+
+| 条件 | 必須の回帰内容 |
+| --- | --- |
+| E2C01 | HB-1→HB-2a→evidence-design→ED-1のsource／baseline hashを独立再計算し、1 byte変更を拒否 |
+| E2C02 | 旧未コミット7 pathの現状態とreview commitを照合し、未解決差分を解決済みとしない |
+| E2C03 | attempt0のwindow／publishは添字参照前に拒否し、負添字getter到達0を両modeで維持 |
+| E2C04 | ED-1 command・summaryの全schema／baseline由来件数・probe／tool閉包をhash更新後も照合し、権限domain差を別domain成功で隠蔽しない |
+| E2C05 | HB06 payload部分・HB12 kernel部分だけを対象とし、wrapper等と全18領域を被覆済みにしない |
+| E2C06 | 6144 payload・sizeof・alignment観測をoriginal logical／physical upperへ直接変換しない |
+| E2C07 | kernel header・padding・partial初期化・compiler temporaryの未計上を拒否 |
+| E2C08 | cbmc等の未導入・method未承認・verifier workspace不足は実行前unsupported |
+| E2C09 | source／include／harness／spec／cost model／tool imageの交換を再署名後も拒否 |
+| E2C10 | 実target ABI・compiler options・object／link／loaderの不一致を拒否 |
+| E2C11 | 完全loop上限の不足・unwinding assertion欠落・assumeで経路を除外したproofを拒否 |
+| E2C12 | counterexample・solver unknown／timeout／部分出力は成功にせず、最大入力を下げて救済しない |
+| E2C13 | 全input byte値・無効index・整数overflow・pointer／UB義務欠落を拒否 |
+| E2C14 | 追加malloc／VLA／recursion／external call・callback／IOの未モデル化を拒否 |
+| E2C15 | bounds guard削除・zero欠落・state／generation検査除去mutantが生存すれば候補を棄却 |
+| E2C16 | C model passだけで実object／native stack／resident上界を成立させない |
+| E2C17 | 独立issuer／method／subject／registryの承認欠落をproducer署名・別UIDだけで補わない |
+| E2C18 | native-arena-byte／bounded-kernel-stepから元unit／実parentへの未承認mappingを拒否 |
+| E2C19 | 成功・拒否・cleanup／retry・guard前後の処理を元workへ完全対応し、EやCPU時間で代替しない |
+| E2C20 | 元1 MiB／work・client4 core・2 body／16 identity・両attemptの重なりを保持 |
+| E2C21 | 新CoreHandle追加・scope／actor／generation流用・同一resourceの重複加算を拒否 |
+| E2C22 | source停止・既存borrow終了・完全検証からbindまでの更新／zero／捕捉callbackを拒否 |
+| E2C23 | 両mode・両roleで元oracleの内容・独立expected・拒否意味を照合し、live site削減を拒否 |
+| E2C24 | 認可・purpose・pin／revision・取消し・元期限・残予算の変更を公開直前まで検出 |
+| E2C25 | seal後write・早期retire・後着・内側捕捉済み再入でも公開0を維持 |
+| E2C26 | partial構築／zero／検証失敗と再試行後もdebt／workを返さない |
+| E2C27 | zero／ACK／GC／logical closeをallocator release／reuse receiptへ置換しない |
+| E2C28 | template A→事前予約B→実体witness→後続lifetime Cの順序と循環ref拒否を維持 |
+| E2C29 | proofファイルのparse／hash／signature・loader費用を生成前に予約できなければ拒否 |
+| E2C30 | 容量domain・sanitizer・finite native実測をrepresentation／全operation証明へ昇格しない |
+| E2C31 | 部分証明が正規でも全8 bundle／全親／依存領域不足ならcopy／IO許可0 |
+| E2C32 | 最大条件・依存領域・ED-3／4未完了でHB-2出口・3 slot・本番採用を成立させない |
+
+記録は `docs/validation/gradle-cwc-hb2-ed2-design-2026-11-14.json`。旧4記録／source pinとreview commit、7 pathの解決状態、2権限条件でのED-1再照合結果、現toolの存在と未実行proof、18領域の対象／依存判定・本節・新sourceを保存する。権限domainはtool実結果の異なる診断観測であり、署名済deployment authorityの表明ではない。採取側と再照合側は共通validatorでcommandを `scripts/check-cwc-hb2-ed1.mjs --check` の2引数へ厳密照合する。成功summaryは全fieldをpin確認済みED-1 baselineから導き、status／18領域／sourceBindings件数／成功回帰数／5 probeの順序と全件／8 toolの順序と全件・available／executed／success／独立上界0・credit0・採用falseを一致させる。fresh envelope・summary・tool行の未知／欠落field、同数の重複・入替、command交換／追加引数、件数減額を拒否する。これらの意味照合をstdout bytes／hash照合とは分離し、hash・bytesを再計算しても意味改変を受理しない。正常な入力key挿入順の違いは受理し、その順序で再encodeしたstdoutをbytes／hashへ照合する。拒否記録にも同じcommand照合を適用し、null summaryと空stdout・専用理由を維持する。過去stdoutは保存しているsummaryを再encodeしてhashと照合し、保存していないstderr本文のhashは形式確認までとする。測定時間・RSSの比較やnative上界証明は行わない。
+
+次はE2-P0の独立method／tool／workspace取得を成立させるか、未取得を明示したままE2-P1のモデル専用候補を準備する。モデル専用候補の実装着手をED-2成立／実object採用と呼ばない。全region upperはnull、credit0、実全親予約・ED-3／4・HB-2／R1-M出口・本番採用はfalseのまま維持する。
+
+2026-11-14に新規設計整合性32件と関連既存576件、計608テスト（27ファイル）、型・差分／新規source空白検査、旧証拠設計記録の照合が成功した。339 source／artifactと本節、旧4記録のsource／baseline／document照合、review commitと旧7 pathの解決状態、2権限条件の診断を新記録へ束縛する。ED-1の40回帰を伴う同domain再照合成功と、制限付きのtool結果相違による拒否を併記し、後者を消さない。32件は設計整合性であり、E2C01〜32のproof／native runtimeや予定48 case、C kernel構築・CBMC実行・独立証明／承認・元unit／実親・全領域／本番採用の成立とは数えない。
+
+ED-2記録レビュー修正：再照合commandとsummaryの一部だけを検査していたため、command・sourceBindings・probe／tool一覧を変更しstdout bytes／hashも更新すると受理される問題を修正した。共通の `gradleOwnedCwcHb2Ed2NativeValidation.mjs` を採取・再照合の両入口へ接続し、baselineから導く完全な期待summaryを照合する。新規E2N01〜20は実 `--check` の入力だけを一時的に差し替え、追跡fileを上書きせず、不正recordがvalidator固有理由で拒否されることと、正常成功／権限差拒否・key順変更の対照を検査する。修正前には追加した12回帰がすべて誤受理で失敗した。stderr本文は保存しないためdigestの真偽や実行の独立attestationを証明しないという限界は維持し、この記録検証をcharge承認・本番permitへ昇格しない。
+
+レビュー修正の検証では、新規記録回帰20件・設計整合性32件と関連既存576件の計628テスト（28ファイル）、型・差分検査が成功した。修正前の12件の失敗を確認してから実装し、修正後はcommand差し替え・非負source件数減額・probe／toolの欠落／同数重複／順序変更・tool結果変更・未知fieldをstdout hash／bytes更新後も拒否した。正常成功・権限差拒否・summary key挿入順の対照も成功した。342 source／artifact、厳密な期待command／summary、2権限条件の再採取を更新記録へ束縛した。これは記録validatorの回帰で、予定48 native kernel case・独立上界証明・本番採用の実行ではない。

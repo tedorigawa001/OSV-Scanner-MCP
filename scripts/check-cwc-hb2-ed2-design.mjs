@@ -1,0 +1,33 @@
+/** ED-2 plan and immutable baseline reconciliation checker. Does not execute any ED-2 proof/native kernel. */
+import {readFile,writeFile,mkdtemp,rm} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import {resolve,dirname,relative} from 'node:path';
+import {tmpdir} from 'node:os';
+import {ED2_PLAN,ED2_CONDITIONS} from '../src/test/fixtures/gradleOwnedCwcHb2Ed2Design.mjs';
+import {ED2_ED1_COMMAND,ed2ExpectedEd1Summary,validateEd2FreshEd1} from '../src/test/fixtures/gradleOwnedCwcHb2Ed2NativeValidation.mjs';
+import {auditEd2} from './audit-cwc-hb2-ed2.mjs';
+import {designSection} from '../src/test/fixtures/gradleOwnedCgpS0Bound.mjs';
+import {co0Canonical as canonical} from '../src/test/fixtures/gradleOwnedCwcCo0Validation.mjs';
+const sha=b=>createHash('sha256').update(b).digest('hex'),out='docs/validation/gradle-cwc-hb2-ed2-design-2026-11-14.json',test='src/test/utils/gradleOwnedCwcHb2Ed2Design.test.ts';
+const baseline={path:'docs/validation/gradle-cwc-hb2-ed1-2026-11-14.json'},base=await readFile(baseline.path),old=JSON.parse(base);baseline.sha256=sha(base);
+const document={path:'docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md',heading:'### 9.158 HB-2 ED-2：対象領域・証拠取得方式・最小実証・棄却条件（設計）'};document.sha256=sha(designSection(await readFile(document.path,'utf8'),document.heading));
+const sourceBindings={};async function bind(p){if(p in sourceBindings)return;const b=await readFile(p),h=sha(b);if(p in old.sourceBindings&&old.sourceBindings[p]!==h)throw Error('ed2_legacy_changed_'+p);sourceBindings[p]=h;if(p.startsWith('node_modules/'))return;for(const m of b.toString().matchAll(/(?:from|import|export)\s*(?:[^'";]*?from\s*)?['"]([^'"\n]+)['"]/g)){if(!m[1].startsWith('.'))continue;let q=resolve(dirname(p),m[1]);if(q.endsWith('.js'))q=q.slice(0,-3)+'.ts';await bind(relative(process.cwd(),q));}}
+for(const p of [...Object.keys(old.sourceBindings),test,'scripts/check-cwc-hb2-ed2-design.mjs','scripts/audit-cwc-hb2-ed2.mjs','src/test/fixtures/gradleOwnedCwcHb2Ed2Design.d.mts','src/test/fixtures/gradleOwnedCwcHb2Ed2NativeValidation.d.mts','src/test/utils/gradleOwnedCwcHb2Ed2NativeRecord.test.ts'])await bind(p);
+const staticAudit=await auditEd2(),references=[
+ {url:'https://www.cprover.org/cbmc/',role:'method-semantics-not-proof-or-image-approval',consulted:'2026-11-14'},
+ {url:'https://diffblue.github.io/cbmc/cprover-manual/md_cbmc-unwinding.html',role:'method-semantics-not-proof-or-image-approval',consulted:'2026-11-14'},
+ {url:'https://clang.llvm.org/docs/UsersManual.html',role:'method-semantics-not-proof-or-image-approval',consulted:'2026-11-14'}];
+const fixed={schema:'cwc.hb2.ed2.design-record.v1',date:'2026-11-14',status:'design-only-with-baseline-reconciliation',document,baseline,sourceBindings,plan:ED2_PLAN,conditions:ED2_CONDITIONS,references,ed1RecheckContract:{command:[...ED2_ED1_COMMAND],summary:ed2ExpectedEd1Summary(old),semanticsBeforeDigest:true,independentlyAttested:false}};
+let nativeAudits,record;if(process.argv.includes('--check')){record=JSON.parse(await readFile(out));if(canonical(Object.keys(record).sort())!==canonical([...Object.keys(fixed),'reconciliation','verification'].sort())||canonical(Object.keys(record.reconciliation).sort())!==canonical(['nativeAudits','staticAudit']))throw Error('ed2_saved_keys');for(const k of Object.keys(fixed))if(canonical(record[k])!==canonical(fixed[k]))throw Error('ed2_saved_'+k);if(canonical(record.reconciliation.staticAudit)!==canonical(staticAudit))throw Error('ed2_saved_static_audit');nativeAudits=record.reconciliation.nativeAudits;}else{const at=process.argv.indexOf('--audits'),paths=at<0?[]:process.argv.slice(at+1);if(paths.length!==2)throw Error('ed2_two_native_audit_paths_required');nativeAudits=await Promise.all(paths.map(async p=>JSON.parse(await readFile(p))));record={...fixed,reconciliation:{staticAudit,nativeAudits},verification:null};}
+if(nativeAudits.length!==2||canonical(nativeAudits.map(x=>x.freshEd1?.status).sort())!==canonical(['permission-domain-mismatch-refused','same-domain-check-passed']))throw Error('ed2_domain_closure');for(const a of nativeAudits){if(canonical(Object.keys(a).sort())!==canonical([...Object.keys(staticAudit),'freshEd1'].sort()))throw Error('ed2_audit_keys');for(const k of Object.keys(staticAudit))if(canonical(a[k])!==canonical(staticAudit[k]))throw Error('ed2_native_static_mismatch_'+k);validateEd2FreshEd1(a.freshEd1,old);}
+const dir=await mkdtemp(resolve(tmpdir(),'cwc-hb2-ed2-design-'));
+try{
+ const candidate=resolve(dir,'record.json'),report=resolve(dir,'tests.json');await writeFile(candidate,JSON.stringify(record));
+ try{execFileSync(process.execPath,['node_modules/vitest/vitest.mjs','run',test,'src/test/utils/gradleOwnedCwcHb2Ed2NativeRecord.test.ts','--maxWorkers=1','--reporter=json','--outputFile='+report],{stdio:'pipe',timeout:120000,maxBuffer:8388608,env:{...process.env,CWC_HB2_ED2_RECORD_PATH:candidate}});}catch(e){let failures='';try{failures=JSON.stringify(JSON.parse(await readFile(report)).testResults.flatMap(t=>t.assertionResults.filter(a=>a.status==='failed').map(a=>({name:a.fullName,messages:a.failureMessages}))));}catch{}throw Error('ed2_tests '+failures+' '+String(e.stderr??''),{cause:e});}
+ const t=JSON.parse(await readFile(report)),ids=t.testResults.flatMap(t=>t.assertionResults.map(a=>a.fullName.match(/^E2[DN]\d{2}/)?.[0])).sort(),expected=[...Array.from({length:32},(_,i)=>'E2D'+String(i+1).padStart(2,'0')),...Array.from({length:20},(_,i)=>'E2N'+String(i+1).padStart(2,'0'))];if(!t.success||t.numPassedTests!==52||t.numFailedTests!==0||canonical(ids)!==canonical(expected))throw Error('ed2_test_ids');
+ const verification={success:t.success,passed:t.numPassedTests,failed:t.numFailedTests,ids};if(process.argv.includes('--check')&&canonical(record.verification)!==canonical(verification))throw Error('ed2_verification');record.verification=verification;
+ for(const [p,h]of Object.entries(sourceBindings))if(sha(await readFile(p))!==h)throw Error('ed2_source_changed_'+p);
+ if(!process.argv.includes('--check'))await writeFile(out,JSON.stringify(record,null,2)+'\n');
+ console.log(JSON.stringify({status:record.status,baselinePinAudits:staticAudit.records.map(x=>({sources:x.sources,mismatches:x.mismatches.length})),resolvedPaths:staticAudit.resolved.length,permissionObservations:nativeAudits.map(x=>x.freshEd1.status),partialTargets:ED2_PLAN.targets.map(x=>x.region),deferredDependencies:16,plannedConditions:32,plannedNativeCases:48,designChecks:32,recordRegressionChecks:20,sources:Object.keys(sourceBindings).length,proofExecuted:false,runtimeAdmitted:false}));
+}finally{await rm(dir,{recursive:true,force:true});}
