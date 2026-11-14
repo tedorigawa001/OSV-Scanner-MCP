@@ -12750,7 +12750,7 @@ live portの真正性、単調revision／clock、取消しとIOの直列化は�
 
 `gradleOwnedP0Contract.test.ts` のP0S01〜42（parameter展開146件）は8群の未取得、nullと欠落／未知field、同版別digest、origin／ABI／solver変更、無効flag／環境注入、property／loop縮小、署名改変・再署名後のsubject／kind／key／role差替え、job／予約／全証拠ref、容量、current失効／復元、元期限／早いlease／approval、時計巻戻し、retry、copy／exec／result／drain／seal metadata条件、再入・wire上限・canonical等価を検証する。P0S41（同鍵の別表記）／P0S42（正常40桁LLVM commit）は追加時に2失敗・既存144成功、修正後146成功を確認した。
 
-記録回帰P0R01〜06は旧346 source／baseline・新節・実Node image・未取得実状態・design定数を照合する。`bdo node scripts/check-e2-p0-contract.mjs` で記録生成、`bdo node scripts/check-e2-p0-contract.mjs --check` でsource・本節・保存した全test名／件数を再照合し193件（現行：metadata187＋記録6）を再実行する。baselineはffbc66eに固定し、旧346 source・旧§9.159・旧記録を書き換えない。新記録は `docs/validation/gradle-e2-p0-contract-2026-11-14.json`。
+記録回帰P0R01〜06は旧346 source／baseline・新節・実Node image・未取得実状態・design定数を照合する。`node scripts/check-e2-p0-contract.mjs` で記録生成、`node scripts/check-e2-p0-contract.mjs --check` でsource・本節・保存した全test名／件数を再照合し193件（現行：metadata187＋記録6）を再実行する。baselineはffbc66eに固定し、旧346 source・旧§9.159・旧記録を書き換えない。新記録は `docs/validation/gradle-e2-p0-contract-2026-11-14.json`。
 
 tool取得／image build・実verifier／solver・kernel compile・独立service・Linux quota／実予約／kill-drain・physical上界・元unit／実親予約・本番採用は未実施。実状態8群はnull・unsupportedを維持する。次は独立custodian／approval registry／controllerの実証拠取得とfresh gate接続、またはunsupportedを保ったE2-P1モデル専用source準備である。
 
@@ -12778,7 +12778,7 @@ gate／phase対応のレビュー修正：pre-copy gateがpreflightのphaseを�
 
 #### 9.161.1 実装した取得範囲と非採用
 
-`gradleOwnedP0Runner.ts`、`gradleOwnedP0Backend.ts`、`gradleOwnedP0Socket.ts` とoperator用 `src/cli/e2P0Preflight.ts` を追加した。registry／acquisition-custodian／workspace-controllerの独立pinへ接続し、取得lock・独立承認・予約済みpreflightのmetadataを取得して§9.160のvalidatorへ渡す。実行入口は `bdo npm run build` 後の `bdo node dist/cli/e2P0Preflight.js`。設定がない場合はunsupported・exit 2・全candidate操作0で終了する。
+`gradleOwnedP0Runner.ts`、`gradleOwnedP0Backend.ts`、`gradleOwnedP0Socket.ts` とoperator用 `src/cli/e2P0Preflight.ts` を追加した。registry／acquisition-custodian／workspace-controllerの独立pinへ接続し、取得lock・独立承認・予約済みpreflightのmetadataを取得して§9.160のvalidatorへ渡す。実行入口は `npm run build` 後の `node dist/cli/e2P0Preflight.js`。設定がない場合はunsupported・exit 2・全candidate操作0で終了する。
 
 これはmetadata取得／preflight接続の限定実装であり、tool archive／binary／image本体のdownload・展開・build・起動を実装／実施したものではない。実custodianの取得済みlock、独立承認者・実key／ACL、実bootstrap／workspace・quota／watchdogの強制証拠は未取得。完全なfixture metadataが揃ってもrunnerはunsupported・`staticMetadataVerified: true`・permit0とする。静的署名claimを検証済みenforcementへ昇格しない。tool／image取得とjob実行には別の独立取得capacity・runtime検証ownerが必要であり、その証拠がない間は進めない。
 
@@ -12815,7 +12815,7 @@ P0B01〜31（51件）で未設定・API別未取得、承認欠落、同版lock�
 
 P0N01〜08（9件）は実Unix socketと別processのcompile済みCLIで、3 ownerの署名付きmetadata取得、未配備socket、過大frame、未設定CLI exit2、完全fixtureでもunsupported、symlink／key権限／未知optionの拒否を確認する。最初の制限付き実行はlisten EPERMで5失敗・3成功だった。socket作成が許可された条件で初期8件が成功したことと分けて保存し、制限環境の失敗をskipや署名成功へ変換しない。同一UID・fixture鍵／metadataであり、独立配備・実tool／image取得・強制容量・native proofの採用は未成立である。
 
-P0V01〜06は旧351 source、新source／新節、baselineの許可された件数表記修正、実Node／TypeScript compiler image・emitしたCLIの依存artifact、未設定CLIの実exit2／JSON、実状態8群nullとscopeを照合する。`bdo node scripts/check-e2-p0-runner.mjs` で記録生成、`--check` で90件（現行：protocol／runner55＋native／CLI29＋記録6）・全test名とsource closureを再照合する。native testsを含むためsocket作成が許可される実行環境が必要。生成側／照合側ともcompiler・CLIは一時領域にbuildし、そのhashとnative診断を保存する。これはローカルCLI構築の証拠でありCBMC／Clang／solverや独立builderの承認ではない。
+P0V01〜06は旧351 source、新source／新節、baselineの許可された件数表記修正、実Node／TypeScript compiler image・emitしたCLIの依存artifact、未設定CLIの実exit2／JSON、実状態8群nullとscopeを照合する。`node scripts/check-e2-p0-runner.mjs` で記録生成、`--check` で90件（現行：protocol／runner55＋native／CLI29＋記録6）・全test名とsource closureを再照合する。native testsを含むためsocket作成が許可される実行環境が必要。生成側／照合側ともcompiler・CLIは一時領域にbuildし、そのhashとnative診断を保存する。これはローカルCLI構築の証拠でありCBMC／Clang／solverや独立builderの承認ではない。
 
 baselineはcommit59d5447の静的記録。旧351 sourceは変更せず、§9.160の再実行手順の152件表記だけを現行193件（追加gate修正後のmetadata187＋記録6）へ訂正し、旧checkerで再生成した記録のdocument.sha256差だけを許可する。178件はレビュー修正時の履歴として保持し、最新値へ誤って上書きしない。新記録は `docs/validation/gradle-e2-p0-runner-2026-11-14.json`。
 
@@ -12838,3 +12838,5 @@ P0N10はconfig／keyそれぞれのFIFO・directory・Unix socketの6件を、wr
 現在の新規checkerはprotocol／runner55・native／CLI29・記録6の90件。file検査と結果確定の追加24回帰を含み、既存のsource・静的contract193件、未取得8群・permit0を維持する。fileの一時改変が全観測の間に完了・復元される敵対host、任意filesystem／kernelの原子的snapshot、全保持量・独立chargeを実証したとはしない。設定load前の独立bootstrap、隔離・実tool本体取得・quota／watchdog・durable backend・job permitは引き続き未成立である。
 
 レビュー修正後の検証（2026-11-14）：追加24回帰を含むprotocol／runner55＋native／CLI29＋記録6の90件、既存867件との計957テスト（34ファイル）、型検査、旧ED-2／P0設計52／46・静的contract193件の記録照合、差分／新規file空白検査が成功した。新記録は366 source／artifactへ更新し、元351 source・baselineの不一致0を維持する。nativeでは無注入の通常対照と試験専用preloadの拒否対照を分け、実socket・別process CLI／実file・FDでの拒否を確認した。元deadlineを延長せず、拒否時の検証済みflag false・消費保持・candidate操作0を確認し、独立配備・全物理上界・job実行／公開の許可へ昇格しない。
+
+公開文書のcommand表記のレビュー修正：§9.160と本節のoperator向けcommandに、作業環境固有のcommand prefixが含まれていたため、`node …`／`npm run build` の素のcommandへ改めた。§9.160の変更は件数表記の修正とこのprefix除去だけに限り、runner checkerは両方の置換を厳密に照合し、残存prefixを拒否する（P0V02）。契約記録は設計節hashだけが変わるため、flagなしの再実行で再生成し、そのうえで本記録を再生成した。

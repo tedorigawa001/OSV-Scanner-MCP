@@ -10,11 +10,12 @@ test('P0V01 record binds all inherited and new source bytes',()=>{
  for(const [p,h]of Object.entries(r.sourceBindings))expect(sha(readFileSync(p)),p).toBe(h);
  for(const p of ['src/utils/gradleOwnedP0Runner.ts','src/utils/gradleOwnedP0Backend.ts','src/utils/gradleOwnedP0Socket.ts','src/cli/e2P0Preflight.ts','scripts/check-e2-p0-runner.mjs'])expect(r.sourceBindings[p]).toMatch(/^[a-f0-9]{64}$/);
 });
-test('P0V02 document and the regenerated baseline allow only the current-count correction',()=>{
+test('P0V02 document and the regenerated baseline allow only the current-count and command-prefix corrections',()=>{
  const text=readFileSync(r.document.path,'utf8'),old=JSON.parse(readFileSync(r.baseline.path,'utf8'));
  expect(sha(designSection(text,r.document.heading))).toBe(r.document.sha256);expect(sha(readFileSync(r.baseline.path))).toBe(r.baseline.sha256);
  expect(sha(designSection(text,old.document.heading))).toBe(old.document.sha256);
- expect(r.baseline).toMatchObject({commit:'59d5447',allowedChanges:['document.sha256'],oldCount:152,requestedHistoricalCount:178,currentCount:193});expect(old.verification.passed).toBe(193);
+ expect(designSection(text,old.document.heading)).not.toContain('bdo ');expect(designSection(text,r.document.heading)).not.toContain('bdo ');
+ expect(r.baseline).toMatchObject({commit:'59d5447',allowedChanges:['document.sha256'],documentCorrections:['current-count','operator-command-prefix'],oldCount:152,requestedHistoricalCount:178,currentCount:193});expect(old.verification.passed).toBe(193);
 });
 test('P0V03 real CLI diagnostic is unsupported without a backend and never starts a tool',()=>{
  expect(r.unconfiguredCLI.exitCode).toBe(2);expect(r.unconfiguredCLI.result).toEqual({schema:'cwc.e2-p0.runner-result.v1',status:'unsupported',reasons:['independent-backend-unconfigured'],calls:0,wireBytes:0,staticMetadataVerified:false,jobPermitIssued:false,runtimeAdmitted:false,candidateOperations:{reads:0,copies:0,execs:0,publications:0}});

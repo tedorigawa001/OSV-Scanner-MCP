@@ -6,9 +6,13 @@
     "path": "docs/validation/gradle-e2-p0-contract-2026-11-14.json",
     "commit": "59d5447",
     "committedSha256": "e3bd93f0200424205dec6f62135a21fcd5ab5aa3f28128a015a7df3223b7ca4f",
-    "sha256": "a059961aef421056342bacdaac18c055a04d630b2f9eff4d86b33f239008c7ce",
+    "sha256": "ce2efd78baadb299d4cd23da255fed4fb9c82efcd852e4edad2f47fb758c2d9a",
     "allowedChanges": [
       "document.sha256"
+    ],
+    "documentCorrections": [
+      "current-count",
+      "operator-command-prefix"
     ],
     "oldCount": 152,
     "requestedHistoricalCount": 178,
@@ -17,7 +21,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.161 E2-P0：取得metadata・preflight runnerと独立backend接続",
-    "sha256": "5521adfbb151d51fdecdcd641bfc79c9e25a7c7ce6ffa841aed090772c9fc795"
+    "sha256": "9abce24edcbc9ad1b17c46d1a1f41d6080002db1f847ab1a2719fd34a053fc62"
   },
   "sourceBindings": {
     "src/test/utils/gradleOwnedCwcHb2EvidenceDesign.test.ts": "7a507950884821ac3d4853fade92ffd4c65fd2bab28a807187c03b853af158be",
@@ -377,8 +381,8 @@
     "src/utils/gradleOwnedP0Runner.ts": "de112472d679f6ab5d86e6506c85bdf5b2e1f23f01ea78b17942d7036009af83",
     "src/test/fixtures/gradleOwnedP0BackendFixture.ts": "555f250a1d29d004cf6ecb00b69688c06d0d557ab1ffbc84195bddf8640bca36",
     "src/test/utils/gradleOwnedP0RunnerNative.test.ts": "c98e155f44cdf6da2c2178bbcc83587a04674d5b39c131f410a8d24c35e8c870",
-    "src/test/utils/gradleOwnedP0RunnerRecord.test.ts": "b6690db1a2ee0b43dd142f5623e8001f05176d85551b061c4d185d4587b15d92",
-    "scripts/check-e2-p0-runner.mjs": "8d486c3f5cf9bb5539b22cf88ac262efc36c9eac1ef6bd232f2d2bf2d170d72c",
+    "src/test/utils/gradleOwnedP0RunnerRecord.test.ts": "85ab56c413b1a7485694cb5f15d69a15a70175d79120d598dba492eb35099d53",
+    "scripts/check-e2-p0-runner.mjs": "ef9a86b4745a9be1d09924368ce4382be2a2bdda30ebd413945ad9ec00bf0476",
     "src/cli/e2P0Preflight.ts": "f2cf86190b30ea085827466f13319636c8bafd693bce42fe4adff28106f2237a",
     "src/test/fixtures/gradleOwnedP0CliFault.mjs": "3e17619b1c0c27450cb7722dd0bb24057882ea4fae9ead41786a62928975cbe8",
     "tsconfig.build.json": "49e7f5e2be44cc034bf5ef401064bf3b1588070e80aacfe1e1c8dde541c3117f",
@@ -659,7 +663,7 @@
       "P0N12 separate CLI process rejects final-close during final verification",
       "P0N12 separate CLI process rejects final-expiry during final verification",
       "P0V01 record binds all inherited and new source bytes",
-      "P0V02 document and the regenerated baseline allow only the current-count correction",
+      "P0V02 document and the regenerated baseline allow only the current-count and command-prefix corrections",
       "P0V03 real CLI diagnostic is unsupported without a backend and never starts a tool",
       "P0V04 native socket / separate process observations do not imply independent deployment",
       "P0V05 protocol retains bounded metadata and the original client deadline",

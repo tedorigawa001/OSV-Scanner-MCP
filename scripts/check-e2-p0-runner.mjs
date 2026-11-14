@@ -21,8 +21,10 @@ const heading='### 9.160 E2-P0：取得lock・承認envelope・preflightの静�
 const originalSection=designSection(execFileSync('git',['show',commit+':'+before.document.path],{encoding:'utf8',maxBuffer:16777216}),heading);
 const doc=await readFile(before.document.path,'utf8'),corrected=designSection(doc,heading);
 const oldText='でsource・本節・保存した全test名／件数を再照合し152件を再実行する。',newText='でsource・本節・保存した全test名／件数を再照合し193件（現行：metadata187＋記録6）を再実行する。';
-if(!originalSection.includes(oldText)||corrected!==originalSection.replace(oldText,newText)||sha(corrected)!==old.document.sha256)throw Error('p0_runner_document_correction');
-const baseline={path:basePath,commit,committedSha256:sha(committed),sha256:sha(base),allowedChanges:['document.sha256'],oldCount:152,requestedHistoricalCount:178,currentCount:193};
+// Allowed §9.160 corrections only: the current-count wording and removal of the local command prefix from operator commands.
+const corrections=[[oldText,newText],['`bdo node scripts/check-e2-p0-contract.mjs`','`node scripts/check-e2-p0-contract.mjs`'],['`bdo node scripts/check-e2-p0-contract.mjs --check`','`node scripts/check-e2-p0-contract.mjs --check`']];
+if(corrections.some(([a])=>originalSection.split(a).length!==2)||corrected!==corrections.reduce((s,[a,b])=>s.replace(a,()=>b),originalSection)||corrected.includes('bdo ')||sha(corrected)!==old.document.sha256)throw Error('p0_runner_document_correction');
+const baseline={path:basePath,commit,committedSha256:sha(committed),sha256:sha(base),allowedChanges:['document.sha256'],documentCorrections:['current-count','operator-command-prefix'],oldCount:152,requestedHistoricalCount:178,currentCount:193};
 const document={path:before.document.path,heading:'### 9.161 E2-P0：取得metadata・preflight runnerと独立backend接続'};document.sha256=sha(designSection(doc,document.heading));
 const sourceBindings={};async function bind(p){if(p in sourceBindings)return;const bytes=await readFile(p),h=sha(bytes);if(p in old.sourceBindings&&old.sourceBindings[p]!==h)throw Error('p0_runner_inherited_source_changed_'+p);sourceBindings[p]=h;
  if(p.startsWith('node_modules/'))return;

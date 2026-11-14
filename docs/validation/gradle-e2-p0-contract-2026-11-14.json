@@ -10,7 +10,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.160 E2-P0：取得lock・承認envelope・preflightの静的contract",
-    "sha256": "36dd07a0f3fe57613d8c7baac1b0da89d412060d1ddb01f2817882b031519805"
+    "sha256": "351dd767edbb04a00d0577685616e46ed5d95de40dea818580178088a2e3f1ef"
   },
   "sourceBindings": {
     "src/test/utils/gradleOwnedCwcHb2EvidenceDesign.test.ts": "7a507950884821ac3d4853fade92ffd4c65fd2bab28a807187c03b853af158be",
