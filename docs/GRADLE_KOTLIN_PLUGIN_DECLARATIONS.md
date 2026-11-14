@@ -12542,3 +12542,176 @@ Aはtemplate／取得method／必要parent planまで、BはAに束縛した生�
 ED-2記録レビュー修正：再照合commandとsummaryの一部だけを検査していたため、command・sourceBindings・probe／tool一覧を変更しstdout bytes／hashも更新すると受理される問題を修正した。共通の `gradleOwnedCwcHb2Ed2NativeValidation.mjs` を採取・再照合の両入口へ接続し、baselineから導く完全な期待summaryを照合する。新規E2N01〜20は実 `--check` の入力だけを一時的に差し替え、追跡fileを上書きせず、不正recordがvalidator固有理由で拒否されることと、正常成功／権限差拒否・key順変更の対照を検査する。修正前には追加した12回帰がすべて誤受理で失敗した。stderr本文は保存しないためdigestの真偽や実行の独立attestationを証明しないという限界は維持し、この記録検証をcharge承認・本番permitへ昇格しない。
 
 レビュー修正の検証では、新規記録回帰20件・設計整合性32件と関連既存576件の計628テスト（28ファイル）、型・差分検査が成功した。修正前の12件の失敗を確認してから実装し、修正後はcommand差し替え・非負source件数減額・probe／toolの欠落／同数重複／順序変更・tool結果変更・未知fieldをstdout hash／bytes更新後も拒否した。正常成功・権限差拒否・summary key挿入順の対照も成功した。342 source／artifact、厳密な期待command／summary、2権限条件の再採取を更新記録へ束縛した。これは記録validatorの回帰で、予定48 native kernel case・独立上界証明・本番採用の実行ではない。
+
+### 9.159 HB-2 E2-P0：tool取得・image／設定・独立承認・検証workspace契約（設計）
+
+#### 9.159.1 採用範囲と現状
+
+E2-P0の取得／承認／workspace契約を具体化する。対象は§9.158のHB06.payload／HB12.kernel部分claimを検証するための準備条件で、installer・image build・verifier実行・native kernel compile・registry／独立service・容量制御は今回実装しない。旧342 sourceとED-2記録を保存し、新しい本節・catalogue・設計整合性テスト・診断記録を追加する。
+
+現環境のPATH探索ではApple Clang 21.0.0（arm64-apple-darwin27.2.0）が存在し、cbmc／goto-cc／frama-c／z3・systemd-run／prlimitはない。Docker executableは存在するがdaemon／Linux VM／cgroup／quotaの稼働は調査・承認していない。Apple Clangの版・実体をLinux向けClangの承認へ流用しない。toolの存在／版確認と、取得済みimage・独立承認・実行準備完了を分離する。
+
+**現時点の判定はunsupported。** 実tool lock・solver component identity・method／environment承認・current registry pin・workspace予約・enforcement witness・bootstrap容量が未取得である。新たなlogical／physical／original-work上界はなく、job permit・charge credit・本番採用は発行しない。記録上の容量候補値やrole名を実際の予約／承認にしない。
+
+#### 9.159.2 選択版・取得元・image lock
+
+| 対象 | 初期候補と取得方法 | 実行前に必須のlock／現状 |
+| --- | --- | --- |
+| verifier／GOTO frontend | CBMC 6.8.0、公式 `cbmc-6.8.0` sourceをcustodianがquarantineへ取得し、独立buildする経路を第一候補とする。binary release利用は別の明示承認recipe | source commit・archive digest・build dependency／flags・実cbmc／frontend binary・image digest。actualVersion／imageはnullで未取得 |
+| solver | 上記buildに含まれるMiniSat backendのみ。CBMC 6.8.0の版に加え、実solver component source／build設定と含有binary/imageをlockする | component独自version・source digest・組込み対応は未取得null。MiniSatという名前だけでは不可。外部SMT／Z3への自動fallbackなし |
+| compiler／linker | LLVM/Clang 21.1.8、公式 `llvmorg-21.1.8` のsourceまたは版付きbinary packageから独立imageを作る | compiler/linkerの実binary・resource headers・sysroot・共有library／loader閉包・target ABI・flags。Apple Clangの同等扱いなし |
+| verification image | 候補profile `cwc.e2-p0.linux-x86_64.v1`、Linux amd64・LP64／little-endian／CHAR_BIT=8、Ubuntu 24.04 LTS amd64の固定snapshotを候補にする | base／rootfs／sysroot／tool／runner imageと実kernel profileはdigestで固定。現時点は全て未取得。host arm64やemulationは別profileで再承認 |
+
+公式[CBMC release](https://github.com/diffblue/cbmc/releases/tag/cbmc-6.8.0)と[LLVM release](https://github.com/llvm/llvm-project/releases/tag/llvmorg-21.1.8)を版選択の一次資料とする。tag・GitHubのverified表示・upstream署名は取得元／整合性の材料であり、このprojectのmethod／environment採用承認ではない。tag名を可変のまま実行せず、解決したcommitと実bytes・全依存を別途固定する。ここではarchive／imageを取得していないため、架空のSHAを埋めない。
+
+取得主体はacquisition-custodianに限定する。ネットワーク許可のあるquarantineでorigin／署名／digestを照合し、source／package・dependency lock・builder image／argv・sysroot・solver組込み・実binary／共有依存のmanifestを作る。再現buildや不一致検査の結果・限界もreview対象にする。custodian自身は自己buildを採用承認できない。fetch／buildのworkspaceは独立したcustody profile／実予約が別途必要で、proof jobの8 GiBや元callの予算を無料で流用しない。この予約も現在未取得である。
+
+runnerには取得権限・package manager・動的pullを与えず、独立registryで承認されたdigest指定imageだけをofflineで起動する。latest・浮動tag・PATH上の代用品・同版別binary・未記録library追加を拒否する。実host kernel／loader／runtimeとimageの両方を対象にし、container image digestだけでhost隔離を証明しない。
+
+#### 9.159.3 verifier／solver／compiler設定
+
+候補verifier argv prefixはcatalogueに固定する：`--c17 --LP64 --little-endian --bounds-check --pointer-check --div-by-zero-check --signed-overflow-check --unsigned-overflow-check --undefined-shift-check --unwinding-assertions --json-ui --trace`。取得後にpinした6.8.0のhelp／有効default・frontend設定を取得し、選択した全optionとbackendが実際に有効であることを確認してから完全argvをlockする。未対応option・不明default・component不一致はunsupportedで、黙ってoptionを落とさない。[CBMCの版固定config](https://raw.githubusercontent.com/diffblue/cbmc/cbmc-6.8.0/src/util/config.cpp)と[option処理](https://raw.githubusercontent.com/diffblue/cbmc/cbmc-6.8.0/src/cbmc/cbmc_parse_options.cpp)を候補仕様の確認に使うが、未取得binaryの動作証拠にはしない。
+
+entrypoint・seal済みsource/include／preprocessed input・全property manifest・全loop ID→必要上限を別々に固定し、完全argv digestへ束縛する。kernel未実装の現段階ではloop表・proof argv digestはnullである。3072 byte等から一律のunwind値を推定せず、終了条件評価・短絡・拒否を含めて各loopのunwinding assertionを証明する。無効化flag、cover・partial loop・depth制限・任意property選別、未承認assume／slicing、外部solverへの切替を拒否する。全property成功と結果の閉包が必要で、exit 0や単一成功flagを採用判定にしない。
+
+compiler prefix候補は `-std=c17 --target=x86_64-unknown-linux-gnu --sysroot=/sealed/sysroot -ffreestanding -fno-builtin -fno-lto -fno-stack-protector -O0 -g0 -fno-ident -c`。後続input／output pathもmanifestで固定し、compiler／linker・resource headers・有効なdefault config／plugins・sysroot／ABIと全実argvをlockする。flagsだけでlibcall・stack・translationの正当性を証明せず、E2-P3の独立義務を残す。署名後のflagsやtarget変更も新subjectとして再承認する。
+
+runnerは絶対tool pathとfresh private `/job` を用い、shellやresponse fileを介さない。環境はLC_ALL=C・TZ=UTC・job専用TMPDIR等の承認済み列挙値だけとし、CPATH／C_INCLUDE_PATH／CPLUS_INCLUDE_PATH／LIBRARY_PATH／LD_PRELOAD／LD_LIBRARY_PATH／DYLD系／NODE_OPTIONSや未承認compiler config／pluginsを継承しない。環境・argv・version表示の観測receiptをjob identityへ結ぶが、そのreceiptの自己申告だけでimage一致／承認を成立させない。
+
+#### 9.159.4 独立承認主体・権限と署名
+
+次のroleは必要な責任分離を定義する論理名であり、実在の承認者を登録したものではない。全roleのprincipal／credential・key binding・保存先／ACLは現在null。未指定の人物やuserを自動的な承認者にしない。権限を持つwriter identity・key／storeをproducer／runner等から分離し、共有group／ACL・host権限で迂回できないdeployment証拠を要求する。別UIDだけで意味的正しさを証明しない。
+
+| role | 許可する責任 | 禁止する責任 |
+| --- | --- | --- |
+| producer | recipe／spec／harness／costの提案 | method／environment自己承認・registry更新・authority key読取 |
+| acquisition-custodian | 取得・quarantine・build・lock manifest | 自分のbuildの採用承認・proof実行・registry更新 |
+| method-review-authority | spec／harness／assumptions・全property／loop・verifier／solverの方法と限界を独立reviewし承認 | 自身が作成／実行するjobの自己承認・run receipt偽造 |
+| environment-review-authority | image／kernel／controller・quota／clock／kill／storage policyの独立review | controller自身のenforcement表明を検証なしで承認・run receipt生成 |
+| workspace-controller | 予約・preflight・起動・監視・停止・drain・seal | method／environment承認・registry変更・失敗債務消去 |
+| runner | lockしたargvとseal済みinputでのみ検証 | network・install・承認署名・registry／sealed store変更・quota上書き |
+| registry-authority | 両承認のcurrent pin登録・失効・fencing | method承認の捏造・job実行・旧revision採用 |
+| evidence-store | controllerがsealした証拠のappend・保持債務管理 | 採用承認・sealed record書換え・自己判断GC |
+
+method approvalとenvironment approvalを別kind・別subjectで発行する。候補envelope `cwc.e2-p0.approval.v1` はdomain・kind・issuer・subjectDigest・method/environment profile・validFrom/Until・registryRevision・limitations・algorithm/keyIdを署名対象とし、候補方式はEd25519。署名自身と将来のjob結果をsubject hashへ循環させない。authorityの実public keyは独立registryのpinから取得し、producerが渡したkeyやverified flagを使わない。実key／registryは未取得である。runner等のcredentialは認証用であり、承認署名keyをrunnerに配る設計ではない。
+
+method承認はC model／assumptions／property閉包と限界、environment承認は実image・host runtime・quota／watchdog／storageの適用範囲を対象にする。署名は承認者の判断を認証するもので、証明の意味的真実を自動生成しない。current revision・validity・失効をcandidate読取前と公開前に確認し、実行中／seal後の取消しも公開0にする。authorityやproof providerの実配備・認証IPCは今回成立させず、既存registry実装があることだけで接続済みとしない。
+
+#### 9.159.5 検証workspace・期限・保存上限
+
+以下は **初期proposalの資源policy** であり、実予約・強制・厳密な物理上界の取得結果ではない。全数値と適用範囲をenvironment profileへ束縛し、controllerが読取／copy／execより前に全枠を予約する。原callの計量unitとは別で、余ったjob容量を元予算へ移さない。
+
+| 項目 | 1 jobまたはowner全体の候補上限・条件 |
+| --- | --- |
+| 同時実行／未解決 | active jobは1、失敗・保存・drain／債務未解決を含むoutstandingは4まで。停止／reconcileできなければ新起動しない |
+| runner memory／swap | cgroup subtreeのmemory.max 8589934592 B（8 GiB）、memory.swap.max 0。子processも同subtree、host逃走不可 |
+| process／CPU | pids.max 64、cpu.max 200000/100000 μs（2 CPU分のquota）。fork前から同じdomainへ所属 |
+| wall期限 | controllerのmonotonic clockで600000 ms、job／lease／approvalの元期限の最短を採用。取消し／到達時は停止、最大5000 msでkillへ移る。graceを成功公開の猶予にしない |
+| scratch／証拠 | 各1073741824 B（1 GiB）、job全体で2147483648 Bを予約。metadata・一時log／partial出力も含め、別mount／tmpfsへ逃がさない |
+| inode／stream | job全体8192 inode、stdout／stderrは各16777216 B。上限到達は失敗、不完全JSON／proofを成功へ丸めない |
+| control metadata | 最大1048576 B・depth24・refs256。candidate読取前の独立bootstrap workspaceは16777216 Bを別予約。署名・parse・hash・cap確認用の上限証拠がなければ読まない |
+| controller | controllerは別の268435456 B、外部manager／watchdogはさらに67108864 Bを別予約し、独立profileが必要。per-job descriptor／stream管理の論理枠は16777216 B。これだけでcontrollerのnative量を証明したとせず、reader／watchdog／collector自体をfreeにしない |
+| evidence store | outstanding最大4 slot×2147483648 B＝8589934592 B、inodeも4×8192＝32768を確保。通常保持168時間はGC候補時刻に留める。replica／backupは別予約 |
+
+Linux cgroup v2・独立watchdog／kill-drain・hard block／inode quotaを備えたfilesystem・有界stream collector・先払いstore slot・network／exec制限をenforcementとして選ぶ。collectorのapplication queueは65536 B chunk×各stream最大2 chunk×2 stream＝262144 Bをper-job descriptor枠内に予約し、diskへ有界に流す。stdout全体を後から一括コピーせず、backpressure／cap拒否を行う。pipe／native wrapperやcontroller自体の量はこのpayload計数では被覆せず、独立environment／bootstrap証拠を別に要求する。disk使用量の後追いscan、timeout processへのsignal送信、Docker executableの存在だけでは強制の証拠にならない。symlink／mount／path置換・未記録file・partial保存・quota／時計設定変更を検出し、原本のquota設定・process membership・controller identity・適用前後を独立controllerとenvironment authorityで照合する。
+
+[Linux memory policy](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html#memory-interface-files)の制限値は一時超過等を伴い得るため、8 GiBを厳密な瞬間RSS／全native上界と呼ばない。要求が厳密上界なら別途その証拠が必要で、なければunsupported。kernel／共有page／controller／storeも含む物理domain証明と、logical-byte・original-workのmapは別義務である。
+
+承認validUntilの時刻domainをcontrollerのmonotonic期限へ結ぶ対応証拠もenvironment profileに含める。最大換算誤差の候補は1000 msで、その分を安全側に差し引く。対応が取得できない・誤差が超える・時計が巻き戻る場合はunsupported／停止とし、自己申告のnowで期限を延ばさない。controller自身の停止／OOM時には外部manager／watchdogがsubtreeを失効・停止させ、durable reconciliationまで公開・再利用を拒否する。watchdogの64 MiBも実予約未取得であり、controller枠や独立host管理を無料としない。停止要求だけでdrainedとせず、全子process・FD・書込・外部holderを確認してからseal／次jobへ進む。kill／zero／process終了や168時間経過だけで解放creditを出さない。GC／reuseには独立drain・fence・allocator／store receiptと全債務照合が必要。4 slot満杯なら新jobを拒否する。failed／timeout／quota／capture／保存失敗はwork／reservation／debtを保持し、無制限に同じjobをやり直さない。新試行は別job IDで予約し、旧試行の停止と債務を残す。
+
+元memory 1048576 B・verification work156978・provider unit `cpr.request-bytes-ranges-probes.v1` 1048576・global67108864（unit未確定null）は維持する。ここでの8 GiB／2 GiBやmodel stepは元callのlogical-byte／workへ変換しない。proof生成側が外部capacityを予約できても、proof消費側のparse／署名／hash／loaderとHB14・実全親gateを満たしたことにはならない。
+
+#### 9.159.6 lifecycle・missing evidenceの判定
+
+request→quarantine→lock→review→reserve→metadata-only preflight→pre-copy live gate→copy→post-copy live gate→run→結果検証→drain→seal→final live gate／publishの順を守る。最初の有界control metadata検証は、既に独立配備されたbootstrap容量内で行う。予約・preflightまでに扱えるのは署名control metadata・承認／予約metadataで、candidate本体やそのhash取得のためのopen／read／map／copyは行わない。未承認toolを先にロードして自分のworkspace上界を証明しない。
+
+**copy直前のgate。** 元jobのdeadlineは、control metadataが受理されたrequestの時点で、最初の非同期予約より前にcontroller私有状態へ固定する。job／lease／時刻domain換算済みapprovalの最短期限と許容誤差控除、jobId／nonce／incarnation・revision、全予約identity／fenceを固定し、予約応答・copy開始・tool起動・sealで新しい期限を計算しない。全枠の予約完了後にcurrent registry・両承認のsubject／有効性／失効、元期限、停止／失効状態、controller／job epoch、予約fence／残予算をfreshに照合してから最初のcandidate IOを開始する。予約結果のready flagや、予約前の承認snapshotを読取許可にしない。
+
+予約待ち中に失効・期限到達・revision／incarnation変更が起きた場合、予約callbackが成功を返してもcandidate open／read／map／copy・exec・公開は全て0。pin値が復元されても旧revision／epochのgrantを流用しない。取消しと読取入場の順序は独立authorityのfence付きgrantとcontrollerの直列化した入場判定へ結び、最終live snapshotから最初のIOの間に任意callback／awaitを挟まない。非同期処理が必要ならstampを破棄して入場時に再照合する。予約／既消費workは既存reconciliation契約に従って保持する。
+
+copy開始後の失効は、開始済み操作数を0へ書き換えず、停止・次のIO／exec／公開の拒否として記録する。copyがyield／awaitした場合は次のIO前に同じfresh gateを通し、copy終了後も実input identity／digestと元の全live条件をexec直前に再検査する。これにより、copy前失効の読取0と、copy中失効のexec／公開0を分離する。
+
+controller発行jobId／nonce／incarnation／sequence、source/input manifest・tool lock・両承認・workspace profile・全予約ref・元monotonic deadline・registryRevisionをexecution witnessと保存結果へ結ぶ。restartでは失効・fenceと旧debtを保存してから新jobを受け付け、古いpermit／response／cacheを公開しない。原結果のfull property／loop／subject closureを再確認し、drain／seal後の最終公開gateでも元期限を含む全live条件を検査する。静的schemaの整合やself signatureだけでは実行witnessを採用しない。
+
+**公開直前のgate。** toolの成功終了は公開資格を確定せず、watchdog／元期限の監視はrunner終了後の結果検証・drain・sealから公開／拒否の終端まで継続する。全result閉包・drain・sealが揃った後、最後のcallback／await／IO応答より後の公開transactionで、信頼された対応済みmonotonic clockの `now < min(original job deadline, original lease deadline, original effective approval deadline)` を再検査する。同値は期限切れ。current registry／両承認・controller／job epoch／revision・全予約identity／fence・停止／失効／fatal latchも同じ判定へ含める。停止／期限切れlatchはtool成功やseal完了で解除しない。
+
+最終live gateと可視な公開を直列化した1つの判定／commitにし、間に任意callback／awaitを挟まない。保存先への非同期処理が挟まるなら古いstampは使わず、公開authorityの受理transaction内で同じjob／fenceと元期限を再検査する。callerのnowや期限・success flagを使わない。期限後に残るseal済みartifactは非公開・quarantine/debtとして保持し、成功envelope／公開receiptを発行しない。
+
+例として、toolが599000 msで成功しても、結果検証／drain／sealで600000 msへ達した場合は、approval自体が3600000 msまで有効でも公開0。元期限600000 msと同値、600001 msのkill猶予内、605000 msの猶予終了時も公開0とし、5000 msのgraceは停止・cleanup専用とする。jobより早い元lease／effective approval期限も同じ最短比較で拒否する。これらは実controller／store実装前の契約であり、現在は予定条件として保存する。
+
+| 状態／不足 | 判定と実行制限 |
+| --- | --- |
+| tool lock／実image未取得 | tool-image-unavailable。版名があってもunsupported、candidate loadなし |
+| solver componentの版／source／build対応なし | solver-identity-unavailable。外部solverへfallbackしない |
+| method主体／権限／key／subject承認なし | independent-method-unapproved。role名や別UIDで補わない |
+| environment主体／image／quota承認なし | environment-unapproved。数字だけのquota設定で補わない |
+| current registry pinなし | registry-current-pin-unavailable。callerのcurrent flagで補わない |
+| 全workspace／store／controller実予約なし | workspace-unavailable。copy／exec前に拒否 |
+| quota／watchdog／kill／drainの実証なし | enforcement-unavailable。設定文書を実適用としない |
+| 有界bootstrap／署名・parse容量なし | bootstrap-capacity-unavailable。candidate本体を読まない |
+| schema／subject／argv／署名の不正 | invalid、未取得と区別し再署名／自己digest更新で受理しない |
+| current承認失効／元期限到達 | revoked-or-expired、実行停止・公開0・debt保持 |
+| cap超過／timeout／不明結果／保存失敗 | budget／failed、成功envelopeなし。入力を縮めて同一profile成功にしない |
+
+全fieldに値があるだけなら「独立検証を要するclaim」でありreadyではない。実provision・承認・enforcementの証拠と、独立した検証ownerの全実親予約gateが揃うまでjob permit0を維持する。これはMCP元callのruntime採用gateとは別であり、将来job側だけの実行許可が成立しても、元callのunit mapping／HB14／全実親・全依存の検査を省略しない。E2-P1のモデル専用source準備は可能だが、それをtool取得／proof実行・compiled object採用と呼ばない。
+
+#### 9.159.7 回帰条件・記録
+
+下表46条件はproof／deployment runtimeの予定であり今回未実行。追加する設計整合性テストと現在環境の診断は、実Linux enforcement／verifier／solver証明とは分ける。
+
+| 条件 | 必須の内容 |
+| --- | --- |
+| P0C01 | official取得元と選択版を固定しlatest／浮動tag／任意mirrorへ変更したlockを拒否 |
+| P0C02 | source commit／archive／dependency／builder／tool／image digestの未取得はunsupported |
+| P0C03 | 版表示一致だけでは別binary／Apple Clang／別ABIの代替を受理しない |
+| P0C04 | 組込みsolverのsource／build／containing imageの対応欠落・外部solver fallbackを拒否 |
+| P0C05 | 署名済upstream packageを独立method／環境承認へ昇格しない |
+| P0C06 | base image／sysroot／linker／shared library／loader／kernel profileの未被覆を拒否 |
+| P0C07 | 実Linux amd64／LP64／little-endian／CHAR_BITとmodel・compilerの不一致を拒否 |
+| P0C08 | argv／有効default／preprocessor／headers／entrypoint／loop表未固定時は実行前unsupported |
+| P0C09 | 検査無効化・cover／partial loop／depth／property限定と未知solver設定を拒否 |
+| P0C10 | shell／response file／環境変数／PATH／compiler pluginによる引数・code注入を拒否 |
+| P0C11 | 全property・全loopと終了条件を被覆せず最大値を縮めたjobを拒否 |
+| P0C12 | 取得・buildをquarantineで行い署名／digest検証前にjobを実行しない |
+| P0C13 | producer／custodian／runnerによるmethod・環境の自己承認を拒否 |
+| P0C14 | 実principal／key／store ACLの欠落はrole名があってもunsupported |
+| P0C15 | 別UID／署名だけで意味的証明や実容量制御を成立させない |
+| P0C16 | methodとenvironment承認のsubject／kind／key／profile取り違えを拒否 |
+| P0C17 | registryの旧revision・失効／期限切れ・未承認keyへの切替を拒否 |
+| P0C18 | 承認が読取後・実行中・seal後公開前に失効した場合も公開0 |
+| P0C19 | job ID／nonce／incarnation／source／tool／approval／予約の異なる結果流用を拒否 |
+| P0C20 | 有界bootstrap・制御metadata容量がない場合はcandidateを読まずunsupported |
+| P0C21 | copy／exec前にmemory・disk・inode・store・controllerの全枠を予約できなければ拒否 |
+| P0C22 | 8 GiB memory.max等のpolicy値を厳密な瞬間physical上界や元1 MiBへ換算しない |
+| P0C23 | runnerがquota／watchdog／clock／network設定を変更できるdeploymentを拒否 |
+| P0C24 | scratch／evidence双方とinodeの上限超過・scanだけの容量判定を拒否 |
+| P0C25 | stdout／stderrの各16 MiB上限・metadata capを超えた不完全結果を成功にしない |
+| P0C26 | 600秒・承認／leaseの早い期限で停止し、clock換算未取得／誤差1000 ms超を拒否、retry／再起動で元期限を延長しない |
+| P0C27 | 停止要求だけでdrainedとせず子process／FD／書込残存中の公開・枠再利用を拒否 |
+| P0C28 | 失敗・timeout・kill・保存失敗・不明solver結果から成功envelopeを発行しない |
+| P0C29 | 再試行前に旧jobの停止／fence・debt保存を確認し旧枠を無料再初期化しない |
+| P0C30 | controller終了時は外部watchdogで停止し、再起動後は旧permit／response／cache採用を拒否して失効を先に保存 |
+| P0C31 | 保持4 slot・168時間経過だけで解放せずstore満杯時は新jobを拒否 |
+| P0C32 | 別replica／backup／診断receiver・caller copyを無料にしない |
+| P0C33 | symlink／mount／path置換／未記録file・atomic保存失敗時はseal／公開を拒否 |
+| P0C34 | controllerの容量・watchdog・stream capture自体の未予約をrunner枠で隠蔽しない |
+| P0C35 | 元memory／work／provider／global親と中間unitを維持しjob容量の余りで相殺しない |
+| P0C36 | proof生成と読取／hash／署名／消費の予約を分離しHB14未成立で本番読取しない |
+| P0C37 | tool導入／image build／method承認／quota制御の未実施を設計flagで成功にしない |
+| P0C38 | model proofとcompiled object／native stack／全18領域の採用判定を分離 |
+| P0C39 | ED-1再照合のcommand・summary全件とhash更新後の拒否、旧source pinを維持 |
+| P0C40 | P0条件が揃わなければunsupportedを保持しE2-P1準備を証明／permitへ昇格しない |
+| P0C41 | 全予約完了後・最初のcandidate IO直前にcurrent registry／両承認・元期限・epoch／fenceを再検査 |
+| P0C42 | 予約中の取消し／期限切れ／revision変更時はcandidate open／read／map／copy・exec・公開を全て0 |
+| P0C43 | copy後もexec直前にfreshな同条件と実input identityを再検査し、copy中の失効ならexec／公開0 |
+| P0C44 | tool成功後の結果検証・drain・seal中に元job／lease／approval期限へ達した場合は公開0 |
+| P0C45 | 元期限と同値・kill猶予内・猶予終了時も成功公開を拒否しtool終了／sealで期限を再設定しない |
+| P0C46 | 最後のcallback／await／IO後の公開transactionで元期限・current承認・停止／失効・epoch／予約fenceを照合し、間に非同期処理が入れば再検査 |
+
+`gradleOwnedCwcHb2P0Design.mjs` と `scripts/check-cwc-hb2-p0-design.mjs`、記録 `docs/validation/gradle-cwc-hb2-p0-design-2026-11-14.json` を追加する。旧342 source・ED-2 baseline・本節・新sourceと実checker Node image／現tool探索を束縛し、選択版／候補capと未取得digest／未承認principalを分離する。現Macでの診断はcompilerのversion表示とPATH探索までで、外部toolのdownload・image build・proof／kernel compile・Linux quota／OOM試験・独立承認・workspace予約は行わない。checkerは現在のtool／version／platformの診断差を黙って吸収せず、旧観測との差異として拒否する。将来の実provisionは別の取得記録へ保存する。P0の設計具体化をP0の配備完了・ED-2証明・本番採用へ昇格しない。
+
+2026-11-14に新規設計整合性40件と関連既存628件の計668テスト（29ファイル）、型・差分／新規source空白検査、旧ED-2記録の52チェック照合が成功した。346 source／artifact・新節・旧baseline・実Node image／host tool探索を束縛した。選択版と未取得image、8 roleと未割当principal／key、候補容量と未予約／未強制を区別する。40件は契約の整合性検証で、P0C01〜40の実deployment／proofや独立承認・8 GiBの厳密物理上界を実証したとは数えない。8種類の不足理由とunsupported・permit0を維持する。
+
+E2-P0レビュー修正：copy直前のcurrent gateとdrain／seal後の最終公開gateを契約データ・順序へ追加した。予約中の失効／期限到達／revision変更、結果検証・drain・seal中の期限到達、元期限と同値・kill猶予内／終了時・早いlease／approval期限、copy中失効を12件のplanned例に分ける。予約中失効ではcandidate読取／copy／exec／公開0、copy中失効では開始済み操作数を残してexec／公開0を要求する。例のcountは操作開始数でありbytes／完了数ではない。予定P0C41〜46と、順序・gate要素・予定例の設計整合性P0D41〜46を追加した。新設計を適用する前に、強化した既存3件と追加6件の計9設計チェックが失敗することを確認した。実copy／controller／deadline race・proofのnative実行を行ったとは数えない。
+
+レビュー修正の検証では、設計整合性46件と関連既存628件の計674テスト（29ファイル）、型・差分／空白検査、旧ED-2記録の52チェック照合が成功した。346 source／artifact・新しいgate契約／順序・46 planned条件と12 planned例を更新記録へ束縛する。強化した既存3チェックと追加6チェックの修正前9失敗・修正後成功を確認した。candidate読取0や期限後公開0は将来の実controllerで検証すべき期待条件であり、今回そのnative実行・独立承認／workspace強制・job permit発行を実証したとは数えない。
