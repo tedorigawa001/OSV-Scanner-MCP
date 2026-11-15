@@ -12840,3 +12840,242 @@ P0N10はconfig／keyそれぞれのFIFO・directory・Unix socketの6件を、wr
 レビュー修正後の検証（2026-11-14）：追加24回帰を含むprotocol／runner55＋native／CLI29＋記録6の90件、既存867件との計957テスト（34ファイル）、型検査、旧ED-2／P0設計52／46・静的contract193件の記録照合、差分／新規file空白検査が成功した。新記録は366 source／artifactへ更新し、元351 source・baselineの不一致0を維持する。nativeでは無注入の通常対照と試験専用preloadの拒否対照を分け、実socket・別process CLI／実file・FDでの拒否を確認した。元deadlineを延長せず、拒否時の検証済みflag false・消費保持・candidate操作0を確認し、独立配備・全物理上界・job実行／公開の許可へ昇格しない。
 
 公開文書のcommand表記のレビュー修正：§9.160と本節のoperator向けcommandに、作業環境固有のcommand prefixが含まれていたため、`node …`／`npm run build` の素のcommandへ改めた。§9.160の変更は件数表記の修正とこのprefix除去だけに限り、runner checkerは両方の置換を厳密に照合し、残存prefixを拒否する（P0V02）。契約記録は設計節hashだけが変わるため、flagなしの再実行で再生成し、そのうえで本記録を再生成した。
+
+### 9.162 E2-P0 backend：job認可・永続保存・boot／current pinの契約
+
+#### 9.162.1 対象・信頼境界
+
+本節は§9.161の次段の設計である。基準commitは `7f32ab1`、基準記録は `docs/validation/gradle-e2-p0-runner-2026-11-14.json`（366 source／artifact、runner関連90テスト）とする。現serverのlookup callback、メモリ内replay集合、operator rootのboot pinは、job別authorizer・永続store・独立current authorityをまだ実装していない。既存957テスト／34ファイルの実証範囲を広げず、実tool・workspace強制・job permitは引き続き未成立とする。
+
+新profile `cwc.e2-p0.backend-state.v2` とrequest／reply v2を用い、v1は診断metadata専用のまま固定する。grant欠落時のv1 fallback、診断署名の本番権限への昇格、未承認profileへの自動移行を禁止する。本節の固定値は提案値で、配備証拠や物理上界ではない。全8実配備項目（jobGrants／ownerStores／epochAnchor／bootstrapAuthority／rootACLs／replayLedger／debtLedger／bootReceipts）はnull、unsupported・permit0を維持する。
+
+registry・custodian・controllerは、別の保存owner／root／writer lock、protocol署名鍵・journal認証鍵・local checkpoint鍵を持つ。reader認証鍵はmethod／environment承認鍵、registry／custodian／controller／storeの権限鍵と共有しない。承認のkind・subject・profileは§9.160の独立pinで検証し、認証されたreader自身の承認を受理しない。
+
+追加のbootstrap-authorityはoperator root／boot descriptorを承認する主体であり、method／environment承認者を代替しない。epoch-anchorは3 ownerとbootstrap managerから鍵・保存root・巻戻し領域を分離する。bootstrap managerは起動／旧process・FDのfenceを行い、anchorは選択済みepoch vectorと保存headの単調性を管理する。どちらも自称bootや自己署名だけでは採用しない。実principal／鍵／ACL／独立anchorは未取得である。
+
+`gradleOwnedStoreDisk.ts`・`gradleOwnedStageStore.ts`・`gradleOwnedServiceStages.ts` の認証journal、同期、stage冪等性は再利用候補とする。ただしC3bの既存配備を本profileの承認と数えず、local checkpointを独立した同時巻戻し防止と数えない。複数roleの鍵／storeを一つのfactoryへ持ち込まず、E2用domainとstrict schema・上限を別に定義する。既存C3bの64 stage等を無断で増やさない。
+
+#### 9.162.2 識別子・record・循環のない参照
+
+| record | 必須入力／束縛 | 更新・参照の制約 |
+| --- | --- | --- |
+| JobDescriptor v2 | realmId、controllerJobId＋randomNonceのjobId、source／inputManifest／toolLock digest、要求するapproval subject集合、initialEpochVector、admittedAt／clockDomain、元wall／lease期限 | 登録後は不変。同じsourceでも新jobId。jobDigestに将来のpin・grant・preflight・result・anchor receiptを含めない |
+| JobAuthRecord | jobDigest、状態、authRevision、grant取消し集合、revoke要求／fence／drain refs | revision単調増加。元の権限内容を復元しても旧revisionへ戻さない |
+| ReaderGrant v1 | job／realm／grantId、認証credential ID／SPKI digest／keyEpoch、API／purpose／sourceRef集合、authRevision／selectionRevision／epochVectorDigest、workflow上限、元期限、issuer／keyId | 独立ACLが許可したissuerだけが発行。集合拡張・別job委譲不可。grantはmetadata読取専用 |
+| WorkflowBudget v1 | workflowId、grant／job、固定8 ticket、owner／API／operationId、元deadline、wire・work・保存・cleanupの実予約refs | 初回発行で全親へ予約。session／nonce／boot変更で再発行・resetしない |
+| CurrentPin v2 | realm／job、selectionRevision、選択済みdescriptor・approval・custody・reservation refs、epochVectorDigest、前選択ref | 独立anchorが選択したpayloadだけがcurrent。未来preflight・未来receiptを含めない |
+| OwnerEpochRecord | principal、instanceId、bootEpoch、storageEpoch、keyEpoch、rootPairDigest | bootは起動単位、storageEpochは保存世代、keyEpochは鍵世代。起動ごとにstoreを空にしない |
+| ReplayIntent | operationKey／intentDigest、stage、source refs、response-ready ref、予約／消費／不明効果、元期限 | transport署名のhashとsemantic intentを分離。失敗でも消さない |
+| DebtRecord | job／workflow／元epoch、予約refs、heldCapacity／spentCounters／unknownEffectFloor、pending writes、capture／reply／fence／drain／reconciliation refs | 未確定・解放待ち・消費済みを別管理。失効・再起動だけで減額しない |
+| OwnerJournal | realm／owner／storageEpoch、ownerRevision／previousDigest、operationDomain／tag付きtargetSubject／authStateRef、operationKey／intentDigest／stageId、transitionDigest／payloadRef／consumptionDelta | read／controlを識別し、job recordはjob revision、realm controlはrealm revisionを束縛。架空job／workflowを補わず、strict bounded record・認証chain・同一writer・状態遷移と容量を検証 |
+| ControlDebtRecord | realm／owner、control origin K／D、init admission ref、予約／消費／不明効果、fence／drain／reconciliation refs | workflow発行前もcontrol Kで保持する。発行済みならjob／workflow債務とjoinし、未発行を架空workflowや消費0へ変換しない |
+| EpochAnchor | epoch vector、semantic selection、ownerごとのdurable head high-watermark、revocationRevision、origin operation receipt | semantic selectionと保存headを分離。metadata読取のjournal追記だけで全grantのselectionを変更しない |
+
+各schemaは未知field／role／enum・重複ref・過剰depth／件数／bytesを拒否する。canonical規則とdomain付きdigest、署名対象、除外する外側signatureを固定する。jobDigest・authRevision・selectionRevision・ownerHeadRevision・boot／storage／keyEpochを相互の代用にしない。
+
+参照順序は **job／source facts → approval／reservation descriptors → current pin payload → preflight record → response semantic body → response-ready receipt → outer delivery signature** とする。reservationが前のpinを参照する場合は、そのpredecessorを固定し、次pinから未来preflightへ戻る参照を作らない。response-readyへ後で得るcommit receiptや外側署名を埋め込まない。outer deliveryにresponse-ready refと現在のdelivery contextを束縛する。ReadLiveの最終clock／epoch witnessは新規観測としてouter deliveryへ結び、過去bodyのnowをfreshとして再署名しない。
+
+#### 9.162.3 API認可・読取前gate
+
+認証はアクセス許可の一部である。credential registryのrouting ACLと現在のepochを承認済み有界indexから確認した後、**job・grant・API・purpose・sourceRef・authRevision・selectionRevision・epoch vector・元期限**の全照合を行う。global indexの復旧／検証は別のmaintenance予約で実施し、unauthorized要求からjob rootを開かない。不明jobと未許可jobは同じ拒否分類とし、他jobの存在やpayloadを返さない。
+
+読取前の認可はrequest内の署名grantと、復旧済みcontrol index／fresh authority viewで判定する。認可に必要なfieldを得るためにjob payloadを先読みしない。必要なcontrol情報がindexにない場合は、有界なcontrol契約で取得・検証できるまで拒否し、job fileを開いて補完しない。以下の「intent保存前のjob IO 0」はjob source／payloadのIOを指し、事前予約済みcontrol／anchor通信を無計上にする意味ではない。
+
+| read API | 保存owner | 固定purpose | job状態・取得対象 |
+| --- | --- | --- | --- |
+| ReadPins | registry | job-pins | metadata-ready／preflight-ready、選択済みjob／pin／approvalだけ |
+| ReadAcquisition | custodian | job-acquisition | 同上、registryが選んだcustody recordだけ |
+| ReadPreflight | controller | job-preflight | preflight-ready、選択済み予約／preflightだけ |
+| ReadLive | registry | job-live | metadata-ready／preflight-ready、fresh anchor／auth view。保存nowの流用不可 |
+
+全readはexact-job-reader grantが必要である。v2 requestはprofileDigest／realm／job／grantRef／workflowRef／operationId／K／D／currentPinRef／authRevision／expectedEpochVector／budgetSliceRef／元deadlineを持ち、既存のclient credential・keyEpoch／serverBoot／session／sequence／nonceと両端署名へ束縛する。replyはrequest digestと全束縛、source refs、消費、response-ready ref、delivery witnessを照合する。
+
+| 管理API | 許可caller role → owner | 固定purpose／許可される効果 |
+| --- | --- | --- |
+| RegisterJob | producer-registration → registry | register-unapproved。不変descriptorと未承認auth recordだけ |
+| InstallApproval | approval-ingest → registry | install-exact-approval。独立kind／subject／keyを検証。自己承認不可 |
+| RecordReservation | workspace-controller → controller | record-reservation。実予約の証拠登録。readerが予約を発生させない |
+| PublishCurrentPin | registry-activation → registry | select-metadata。local prepare→anchor CAS→local adoption |
+| IssueReaderGrant | job-access-issuer → registry | delegate-exact-job。Enrollment／ACLに登録されたjob・API・範囲内だけ |
+| BeginWorkflow | job-reader → registry | reserve-metadata-workflow。grantの範囲内で全ticket・保存／cleanup予約 |
+| RevokeReaderGrant | job-access-revoker → registry | revoke-grant。対象grant終端化＋authRevision増加 |
+| RevokeJob | job-revoker → registry | revoke-job。revokingを先に保存し、完了ACKは全owner fence／drain後 |
+| QueryOperation | recovery-auditor → 対象record owner | audit-origin-operation。自分の許可されたoperationのhistorical／pending refsだけ |
+| ReconcileDebt | debt-reconciler → registry | settle-exact-debt。全owner・allocator／store・drain証拠が必要 |
+| ReportBootPrepared | registered-service-owner → registry | report-recovery。自分の復旧証拠だけ。自bootの採用権限は持たない |
+| ActivateEpoch | bootstrap-authority → epoch-anchor | activate-recovered-vector。独立boot承認＋expected vector CAS |
+| ReadRecoveryStatus | recovery-auditor → registry | audit-recovery。別の有界control grantで復旧状態だけ |
+
+管理APIもrole名の自己申告を認めず、独立credential registryのprincipal／keyEpoch／API／purpose／realm／対象jobまたはowner範囲・期限を照合する。**BeginWorkflowと、その初回応答紛失を照会するQueryOperationは専用init-control枠**を使い、metadata 8 RPCのticketを消費しない。metadata readのoriginを照会するQueryOperationはmetadata側の2監査ticketへ、他の管理操作／そのorigin照会は別のcontrol／maintenance予約へ対応付ける。APIが同じでもbudget sliceの種別と対象originをDへ束縛し、callerによる付替え・二重使用を拒否する。すべて無料ではなく、IO前の独立承認・親予約・期限・replay／保存／cleanup上限を要求する。
+
+管理requestの共通headerはprofile／realm／targetOwner／tag付きtargetSubject、認証credential／keyEpoch／controlGrantRef、API／purpose、stable operationId／**control K／D**、expectedState／owner head／元epoch vector、元control deadline／controlBudgetSliceRef、deliveryのserverBoot／session／sequence／nonceとする。control K／Dにはmetadata-read用K／Dを流用しない。
+
+| 管理識別子 | canonical digestの入力 | 不変条件 |
+| --- | --- | --- |
+| control K | domain `cwc.e2-p0.control-operation-key.v1`、profileDigest、realmId、targetOwner、targetSubject、clientCredentialId、clientKeyEpoch、API、operationId | workflowIdは不要。targetSubjectは下表のjob／realm tagと識別子を含む。serverBoot／session／sequence／nonceを含めず、起動後も元operationの監査照会が可能 |
+| control D | domain `cwc.e2-p0.control-intent.v1`、control K digest、purpose、controlGrantRef、**全API payloadのcanonical digest**、expectedState、expectedOwnerHead、元epoch vector、元control deadline、controlBudgetSliceRef | session／sequence／nonce／serverBoot／maxWaitMs／外側signatureを含めない。delivery bootは別途署名・live gateで照合する。元epoch／期限・期待状態は固定し、current値で書換えない |
+
+| API群 | targetSubject／expectedState | API別payloadの必須内容 |
+| --- | --- | --- |
+| RegisterJob | `{kind:job, jobDigest}`／job-absent | 不変descriptor。jobDigestを先に導出できるが、job recordやworkflowの存在を要求しない |
+| InstallApproval／RecordReservation／PublishCurrentPin | job／job-exact-revision | approval ref／reservation ref／pin payload＋expected selection。いずれも全payloadをDへ束縛 |
+| IssueReaderGrant／BeginWorkflow | job／job-exact-revision | 委譲範囲／init admission ref＋ticket予約要求。BeginWorkflowでは既存workflowIdを要求しない |
+| RevokeReaderGrant／RevokeJob／ReconcileDebt | job／job-exact-revision | 対象ID＋expected authRevision／全解放証拠refs。取消し・解放対象の差替えを拒否 |
+| ReportBootPrepared／ActivateEpoch／ReadRecoveryStatus | `{kind:realm, realmId}`／realm-exact-revision | boot／fence／recovery refs＋expected vector／照会owner範囲。jobDigest・workflowId・job revisionを補わず、不要fieldは拒否 |
+| QueryOperation | originと同じtag付きsubject／現在のaudit状態 | 下記origin tuple。jobならcurrent audit job-state revision、realmならcurrent audit realm revisionを検査し、originの古いCAS期待revisionとは分離 |
+
+control同K別Dはmutation前にconflict、同K同Dの保存stage再試行はfreshな認可・予算・期限の下で元receiptをhistoricalとして解決する。別job／realm tag・owner・payload・期待状態・期限・予算への交換は別Kまたは別Dとなり、元operationとして受理しない。job／workflowのないrealm controlでもOwnerJournal／失敗債務のsubjectをそのまま保存し、架空IDや空文字のsentinelを導入しない。
+
+**query自身のcontrol K／Dとorigin K／Dを別field**にする。QueryOperationのpayload `origin={domain:metadata-read|control, owner, subject, operationKey, intentDigest}` 全体をquery自身のDへ含める。queryは新しいoperationId、現在のaudit grant／epoch／元query期限／予約で認可し、originのK／Dを自分のheaderにコピーしない。originのclient／元epoch／元期限／expected revisionは保存済みintentと完全一致させ、当時の値を現在値へ置換しない。許可されたoriginだけを読み、grant取消し後・旧epochでも監査照会と旧操作の再実行を区別する。
+
+通常管理stageの再試行では、current認可・対象範囲を確認してからorigin ledgerを解決し、未実行と確認できた新規operationだけに新CASを行う。後続transaction後も、元control K／Dのreceiptを返すために古いexpected revisionでCASを再実行しない。QueryOperationもoriginのmutation／grant／workflowを再適用・再発行しない。BeginWorkflowの元workflow refを監査で得ても、新metadata開始には元init admission・現在のjob認可・元deadline・残ticketの全検査を要求する。
+
+管理replyはrequest digest／K／D／対象revision、結果種別、元stage receipt／anchor receipt／local adoption refs、消費／不明債務、delivery epochを署名する。mutationのcommittedはdurable adoption済みの場合だけで、pending／historicalは通常readや新grantの発行結果として流用できない。IssueReaderGrant／BeginWorkflowの結果は保存済みgrant／workflow ref、revokeの完了結果は全fence／drainを含むeffective revisionに限定する。初回応答紛失後の照会は監査receiptだけを返し、grantやworkflowの存在が確認できても、その元期限・current認可の再検査なしに使用できない。
+
+本番ownerのsource portは、authorizerが所有するopaque admission、選択済みref集合、元期限／残ticketを受け、上限付きimmutable metadataとcapture receipt／消費を返す。readerの引数から任意path／jobを解決するlookup callbackを渡さない。store portはowner固有のreserve／commitStage／queryStage／recover／installFenceに分離し、readerには書込capabilityを公開しない。anchor portもowner headのCAS／origin照会と、独立activation roleだけが使うsemantic selection／epoch vector CASを分離する。QueryCurrentは現在vector・selection・headを認証するが、それ自体をjob grantとしない。
+
+読取の順序は、bounded bootstrap frame → client／API認証 → fresh global epoch／routing ACL → exact job grant／purpose → intent／replay／全予算／cleanup予約 → **intentとanchor headのdurable確定** → 保存待ち後のfresh認可／期限確認 → bounded source capture → capture後の認可／epoch／期限確認 → response-ready保存／anchor確定 → delivery整形／署名 → 最後のlocal admission／元期限確認 → enqueueとする。
+
+予約中の取消し・authRevision変更・期限到達はsource lookup開始0とする。最終local gateとIO開始は同じownerの直列化領域で行い、その間にcallback／awaitを置かない。非同期保存・anchor照会・署名callbackが挟まればstampを捨てて再検査する。読取・copy・全result検証・drain／close・署名整形後にも元期限を検査し、後着成功を公開しない。remote署名viewだけで分散した「同時刻の認可」を保証したとしない。runner側にも終了時のfresh anchor／auth確認が必要であり、metadataの成功自体は実行permitを与えない。
+
+#### 9.162.4 状態機械・永続ACK・current選択
+
+jobは `registered → awaiting-approval → metadata-ready → preflight-ready` と進み、各非終端状態から `revoking → fenced → settled`、回収不確定なら `fenced → quarantined → settled` とする。承認・予約の不足で先へ進まない。job全体の取消し／旧epochは終端で、同じjobを復活させない。grantのみの取消し後にjobが有効なら、新grantId・高いauthRevisionで再委譲できるが、元期限／累積quotaは保持する。pin変更はselectionRevisionを増やし、新pinに束縛したgrantを明示発行する。
+
+serviceは `created → recovering → control-ready → operational → draining → closed` とし、保存不明／検証失敗は `blocked` へ移る。blockedを新handleで解除しない。control-readyは復旧APIだけを許可し、realm servingには全ownerのlocal recovery、旧epoch失効の保存、managerによる旧process／FD fence、新anchor vectorの選択、全local adoption receiptの同期、承認済みroot pinの導入を要求する。
+
+通常mutation／read記録のACK境界は次の順序とする。
+
+1. exact expected revision／intentを照合し、payload・journal・checkpoint・temp・anchor・復旧／失効の容量を事前予約する。
+2. owner-only rootに排他的tempを作成し、payload／journalを全bytes認証・file同期する。immutable pathへ公開し、関係directoryを同期する。
+3. local checkpointとdirectoryを同期し、独立anchorへowner durable headをCASする。応答不明は同origin transactionを照会する。
+4. anchor receiptをlocal adoption recordへ保存・同期する。最後に現認可／epoch／元期限を検査して署名・応答する。
+
+失敗したfile／directory同期、公開後の再同期不足、anchor結果不明では成功ACKを返さない。ownerはblocked／債務保持となり、origin照会と必要な再同期が完了するまで通常受付を止める。同期済み記録があっても期限超過・失効なら通常replyを返さず、許可された監査照会だけがhistorical receiptを取得する。
+
+response-readyの保存には、配送が外へ出る可能性を持つ消費下限を含める。最初のenqueueより前にresponse-may-have-escapedの保守的状態をdurable確定し、その後に署名／最終gateへ進む。enqueue直前／直後のkillで送信済みか不明でも、応答未送信・未消費と推定しない。配送状態recordは外側signatureのhashを要求せず、参照循環を作らない。確定後に送信しなかった場合も、解放には通常の債務照合を要求する。
+
+anchorはsemantic selectionとownerごとのhead high-watermarkを分ける。ownerが未来headをprepareしても、それだけでcurrent pin／bootを選択しない。local journal／checkpointを同時に巻き戻しても外部headと一致しなければ拒否する。anchor自体の巻戻し領域が独立していなければunsupportedである。write-ahead prepare→anchor CAS→local adoptionの各中断を復旧し、後続transaction確定後の同stage再試行は元receiptを返すだけで旧imageを再適用しない。CAS競合時は現在headとorigin receiptを照合し、別intentを同じoperationとして扱わない。
+
+#### 9.162.5 再送台帳・失敗債務・容量
+
+wire replay keyはcredential／keyEpoch／serverBoot／session／sequence／nonceであり、同じ署名wireをsource lookup前に拒否する。**metadata-read用**semantic Kはrealm／job／credential／keyEpoch／workflow／API／operationId、Dはpurpose／exact source refs／currentPin／authRevision／元epoch vector／元deadline／budget sliceを含む。nonce・session・sequence・maxWaitMs・transport署名はDへ混ぜない。同K別Dはconflict、同K同Dは自動的なfresh reply再発行としない。管理APIには§9.162.3の別domainのcontrol K／Dを用い、QueryOperation自身もcontrol domainへ属する。
+
+台帳stageはintent-reserved／source-captured／response-ready／response-may-have-escaped／failed-or-unknown／historicalを区別する。応答紛失は現在のaudit grantでQueryOperationを行い、元operationのpending／historical状態だけを返す。再読取が必要なら、同workflowの元期限・残予算のまま**新operationIdで最大1回**消費する。新nonceや新client handleでは8 RPC枠や元期限をresetしない。ReadLiveの古いnow／保存bodyを新署名でfreshに見せない。QueryOperationの監査権限は失効したreader grantと独立であり、旧jobを再開させない。
+
+失敗債務はheld（未解放予約）、spent（完了／開始済み消費）、unknownEffectFloor（書込／転送結果不明の下限）を別々に保存する。予約待ち／partial capture／署名後の転送不明／kill中も0と推測しない。解放には現在のcontrol認可、全ownerの同一job／workflow／epochの債務join、fence／drain、allocator／storeの解放証拠、reconciliationとanchorへの保存が必要である。spentは返金せず、使用済みID・旧epoch・操作receiptのtombstoneを保持する。timeout／close／TTL／新boot／zero／GC時刻だけでは再利用できない。
+
+v2の初期化＋metadata取得では、**init-control 2 RPC＋metadata 8 RPC＝最大10 RPC**を別ticket集合で事前予約する。元wire親上限8,388,608 B（8 MiB）は拡張せず、次の二つのsliceに分割する。この10 RPC配分は新profileの承認対象であり、現v1 handleの8 call上限を書換えない。未承認ならunsupportedとする。
+
+| slice | ticket／request・reply cap（署名envelopeを含む） | 最悪wire／hard slice |
+| --- | --- | --- |
+| init-control | BeginWorkflow 1＋そのorigin query 1。request16,384 B、reply65,536 B、片方向header4 B | `2×(16384＋65536＋8)＝163,856 B`を親から先に確保 |
+| metadata | 5通常read＋1再読取＋metadata-originの監査query 2。request16,384 B、通常reply1,048,576 B、query reply65,536 B、片方向header4 B | 最悪 `6×(16384＋1048576＋8)＋2×(16384＋65536＋8)＝6,553,664 B`。hard sliceは親残額 `8,388,608−163,856＝8,224,752 B` |
+| 合算 | 全10 request／reply、全20方向のheader | 最悪 `163,856＋6,553,664＝6,717,520 B ≤ 8,388,608 B`。実wireで各sliceと親の両方を消費 |
+
+controlもmetadataも同じ `e2-p0.metadata-transport-bytes.v1` で計上し、metadata側だけを測ってcontrolを無料にしない。初期化用2枠は通常metadata query2枠と交換しない。counterはtransport試行開始前に実codec上限で予約し、実際の署名／frame bytesで照合する。初回BeginWorkflowは1回だけdispatchでき、応答紛失時は残るorigin query1回で元receiptを解決する。BeginWorkflowの再送で別workflowを作ったり、別のcontrol reservationで同じinitの枠を増やしたりしない。queryも紛失／pending／不明なら失敗債務を保持して通常取得を停止する。
+
+初期化枠はQueryOperationのaudit認可を付与しない。初回IO前にBeginWorkflow用のjob-reader権限と、元Begin operationだけを照会できる独立したaudit grantの範囲を確認する。同じprincipalに両roleを許可する場合も、別grant／purposeとして検査する。init admission refは元control K／D・t0・親予約へ束縛し、同じ初期化を別K／nonceで再登録してquotaを回復させない。
+
+init admissionの発行は承認済み親ledgerの所有portで行い、BeginWorkflow自身に自分のcontrol容量を作らせない。descriptorは事前発行したinitId、beginControlKey、t0／元deadline、親reservation refsを持ち、未来のcontrol D／workflowRefを含めない。descriptor refを含むBegin payloadからDを導出してから、所有portが同じinitIdへのDを一度だけsealする。seal recordへの未来refをBegin payloadへ戻さず、descriptor→D→sealの順で循環を避ける。serverは許可済みcontrol indexでsealとrequest Dを照合し、未seal・異なるD・予約中失効はdispatch／job IO前に拒否する。このport／index／sealの取得・検証費用もcapacity certificateの対象とし、独立証拠がなければcallerの自称予約を採用しない。
+
+**t0は初期化予約の前**に固定する。init-controlとmetadataのdeadlineはともにt0＋5,000 ms、元job／lease期限、grant／approval／reservation期限の最小値に固定し、BeginWorkflow応答やorigin query完了時から新しい5秒を与えない。clientの予約待機・Begin／query待機も同じ元deadlineで停止し、maxWaitMsやkill猶予で延長しない。期限後の照会は別の事前予約済みaudit control callだけに限定し、historicalを得ても旧workflowを開始しない。別process間の時計は§9.159の独立承認済みclock-domain対応・誤差上限で換算し、monotonic値を直接比較しない。換算証拠欠落／負の残時間／期限同値は拒否し、current pinやgrant更新でも開始時期限を再計算して延長しない。
+
+最初のcontrol IO前に、init admission refを使って全親へcontrol／metadataのwire・保持・work、replay／stage／file／cleanup容量を確保し、確保後にも認可・期限を再検査する。workflowの発行前はcontrol origin Kで予約・消費・不明効果を保持し、発行後はその同じinit admissionとworkflow refをjoinする。新session・新nonce・close・再起動・応答紛失・未発行で枠／消費をresetしない。現時点のcontrol work unit／upper・保持量upperはnullであり、独立certificateと実親予約が得られなければIO前にunsupportedとする。2 RPC／wire算術をwork・物理保持量の証明へ換算しない。初期化以外の管理callも別の有界maintenance予約を必要とし、この2枠を無期限の管理poolにしない。
+
+ownerごとの同時lookup4、replay256行、realm job64／grant64、未解決workflow4・active1を候補とする。owner disk64 MiBをpayload32＋journal16＋checkpoint8＋scratch4＋emergency4 MiBへ分割し、stage256を通常192＋cleanup64とする。**cleanup64は十分性の証明ではない**。全owner／anchorの最悪stage・file・temp・writer lock・復旧走査・drainまで導いた容量certificateと実予約がなければ、normal admission前に拒否する。自動GC／tombstone削除・世代移行はこの段階で採用しない。満杯時も無期限履歴追加や上限引上げで回避せず、停止と有界な復旧／外部承認済み移行を要求する。
+
+metadata用 `e2-p0.metadata-transport-bytes.v1`／`e2-p0.metadata-store-bytes.v1` は元callのmemory1,048,576 B／verification work156,978／provider1 MiB（`cpr.request-bytes-ranges-probes.v1`）／global64 MiB（unit未確定）と別単位である。tool jobの8 GiB runner・2 GiB disk・4 store slot、元600秒job期限とも分離する。source取得・認証・hash・journal再検証・anchor通信・回復のworkと保持量は別の承認／実親予約を要し、metadata byteや本設計の算術で元work・物理上界・未知unitを埋めない。
+
+#### 9.162.6 取消し・再起動・拒否分類
+
+取消し要求は、(1)revokingと高いauthRevisionを保存してanchorへ反映、(2)新規central admissionを停止、(3)全ownerへlocal fenceを導入してACK保存、(4)in-flightのdrainまたは隔離、(5)effective revocationを保存してanchor確定、(6)fresh control ACKの順とする。要求受付と取消し完了を同じ状態／ACKにしない。**新source読取0の境界は各ownerへのlocal fence導入時**である。導入前に認可済みのIOは開始済みとして記録・債務を保持し、開始済みbytesを0と報告しない。既に送信されたmetadataを取り消せたとはしない。owner不明／partition／drain未完了ではrevoking・非servingのままで、完了ACK／容量再利用を許可しない。終端化後は旧replyをfresh成功や実行権限へ昇格しない。
+
+再起動は以下を順序付きで行う。復旧制御portは独立したbootstrap／recovery grantで起動でき、通常job grantを要求して循環させない。
+
+1. 通常受付を閉じ、managerが旧endpoint／process／FDをfenceする。協調ACKだけを実OS隔離の証拠としない。
+2. owner固有writer lock／bootstrapを取得し、全journal／checkpoint／payloadの認証・上限・独立anchor headを検証する。未解決origin transactionを照会し、必要な再同期を行う。
+3. 旧epochのgrant・pending／ready responseを失効し、未完了workflowをfailed／unknownとした債務と失効記録を**durable確定するまで新jobを受け付けない**。
+4. manager承認の新instance／boot descriptorを用意する。保存世代は同じstorageEpochを継続する。key rotation／新storageEpochは別の承認済み移行手順で、未完了履歴を空storeで消さない。
+5. independent anchorのexpected epoch vector CAS、全ownerのlocal adoption同期、承認済みoperator root pinの配布を完了してからrealm servingへ進む。いずれかが不明ならcontrol-ready／blockedに留める。
+6. 新jobId／新grant／新workflowだけを許可する。旧actor・credential epoch・request・reply・実行許可を新nonce／再署名で流用しない。旧jobはhistorical監査専用である。
+
+旧monotonic deadlineを新bootの時計へ写して延長しない。recovery自身は別の有界maintenance期限であり、旧jobの継続時間ではない。新jobも過去債務・容量を引き継いでから新時計／期限を承認する。全owner復旧中の停止・epoch選択応答紛失・adoption途中SIGKILLは、origin照会によって一意に復旧し、都合のよい旧pinへfallbackしない。
+
+拒否は、未取得／未承認証拠＝unsupported、未許可＝permission-denied-before-job-IO、schema不正＝invalid、失効／期限／旧epoch＝revoked-or-expired、同K別D＝operation-conflict、予約不足＝budget-exceeded-before-IO、保存不明／復旧不成立＝blocked-recovery-required、監査結果＝audit-only-not-currentに分ける。外側のstrict診断は秘密や他jobを含めず、どの分類でもjobPermitIssued=false／runtimeAdmitted=false／candidate操作0を維持する。
+
+#### 9.162.7 実装順・出口条件
+
+| 段階 | 実装単位 | 出口／限界 |
+| --- | --- | --- |
+| PB0 | v2 strict schema、read／control K／D・query originの分離、API／purpose／ACL、状態遷移、参照DAG、init-control／metadataのbounded serializer・予算fixture | job別認可・保存の形式検査。実authorityの採用とはしない |
+| PB1 | single-owner journal／checkpoint／anchor port、同stage冪等性、保存容量・故障復旧 | ACK前の同期・不明状態停止を実diskで確認。local diskは独立巻戻し防止ではない |
+| PB2 | registry job authorizer、grant、不変descriptor、atomic workflow ticketと全親予約 | 未許可／予約中失効でjob source読取0。tool本体IOは導入しない |
+| PB3 | custodian／controllerのrole別lookup、再送／債務、取消しbarrier、復旧状態機械 | partial drain解放0、旧epoch非serving、全ownerの保存／headをjoinする |
+| PB4 | v2認証IPC／client、durable response、fresh anchor、再起動／SIGKILL／応答紛失 | native実証。same UID／合成authorityではmetadata-only・permit0を維持 |
+| PB5 | 独立principal／鍵／ACL／manager／anchor、bootstrap・quota／watchdogの実配備証拠 | 未取得はunsupported。artifact読取・copy・execの採用は別のreview済みgateを要求 |
+
+段階を飛ばしてruntimeを承認しない。PB0〜PB5は本節では未実装。次の作業はPB0であり、下記EB条件をfixture／disk／native／実配備へ段階別に割り当てる。
+
+#### 9.162.8 回帰条件・検証記録
+
+EB01〜EB48はすべてplanned・未実行のruntime条件である。設計整合性テストはcatalogueと文書・算術・baseline不変性を照合するもので、native拒否を実行した件数に含めない。
+
+| ID | planned回帰条件（runtime未実行） |
+| --- | --- |
+| EB01 | v1診断要求・旧署名をv2永続jobへの権限へ昇格せず、空grant／legacy fallbackを拒否 |
+| EB02 | 認証済みでも別job・別realm・未登録credentialの要求はjob file読取0で拒否 |
+| EB03 | 同じjobでもAPI・purpose・sourceRef集合・委譲先の不一致を読取前に拒否 |
+| EB04 | reader認証鍵とmethod／environment承認鍵・owner署名鍵の共有／役割交換を拒否 |
+| EB05 | grantの自己申告・未知issuer/key・未選択pin・失効credentialを拒否 |
+| EB06 | request／replyのjob・realm・grant・workflow・nonce・epoch vectorを全field照合 |
+| EB07 | 予約待ち中のauthRevision変更・取消し・元期限到達後はsource lookup開始0 |
+| EB08 | 初期ACL/indexの未承認・bootstrap容量未取得ならjob rootを開かずunsupported |
+| EB09 | 承認不足・kind／subject／profile交換・有効期限不正ではmetadata-readyへ遷移しない |
+| EB10 | job descriptorのsource・nonce・元期限・初期epoch vectorを再署名／digest更新でも変更しない |
+| EB11 | 同内容pin／権限の復元でも旧authRevision／grantを再使用しない |
+| EB12 | current pin・preflight・reply receiptの循環参照と未来ref要求を拒否 |
+| EB13 | 保存／checkpoint／anchor／local adoption完了前の成功応答を拒否 |
+| EB14 | read／controlを分離し、control同K同Dの再試行・別query Kによるorigin照会は元receiptだけを返し、originのdomain／owner／subject／K／D交換を拒否 |
+| EB15 | 後続transaction後のcontrol再試行・origin照会で元receiptを解決し、旧expected revisionでの再CAS・旧image再適用・二重grant／workflow発行を拒否 |
+| EB16 | file／directory同期・公開後再同期・保存結果不明でblockedとなり成功署名しない |
+| EB17 | journal／checkpoint改変・欠落・巻戻し・同時巻戻しを独立anchorで拒否 |
+| EB18 | writer二重起動・root alias／symlink／FIFO／path置換・未記録fileを拒否 |
+| EB19 | realm／job／owner／store epochをまたぐrecord／key／checkpoint流用を拒否 |
+| EB20 | 通常枠を使い切る前に復旧／失効枠を確保し、不足なら新workflowをIO前に拒否 |
+| EB21 | exact wire replayは署名が正しくてもsource読取前に拒否し履歴を消さない |
+| EB22 | 新nonce／sessionでもread／control同K別Dを拒否し、control payload・target subject／owner・expected state・元期限／予算の差替えとquery自身のK／Dへのorigin混入を拒否 |
+| EB23 | 応答紛失後のQueryOperationはhistorical／pendingに限定し通常replyへ変換しない |
+| EB24 | 許可された1回の再読取も同workflowの元予算／期限を消費し新handleでresetしない |
+| EB25 | ReadLiveの保存body／nowを新しい署名やnonceでfreshに再利用しない |
+| EB26 | pending／unknown／保存失敗をno-effect・未消費0と推測しない |
+| EB27 | metadata quota・stage／file／replay上限と全実親予約の不足を最初のIO前に拒否 |
+| EB28 | BeginWorkflow＋初回origin照会2とmetadata8の計10 RPC、control163856 B＋metadata上限8224752 Bを8 MiB親へ事前予約し、全header・実codec・t0期限・消費保持の不一致を拒否 |
+| EB29 | 新session／boot・timeout・TTL・GC時刻でspent／held／不明債務を減らさない |
+| EB30 | drain／fence／allocator／store receiptの欠落・別job・部分集合による解放を拒否 |
+| EB31 | revoke開始後は新central admissionを止め、owner fence後は新source読取0 |
+| EB32 | fence前のin-flight消費は保持し、旧replyをfresh成功／job permitへ昇格しない |
+| EB33 | owner応答不明・partition・drain未完了ではeffective revoke ACKや容量再利用を拒否 |
+| EB34 | grantだけの取消し／job全体の取消しと権限復元を区別し、terminal jobを復活させない |
+| EB35 | 最後の検証／同期cleanup後の期限到達・再closeで検証済み結果を返さない |
+| EB36 | guard後にawait／callback／保存処理が入ればstampを捨てて同じ元期限で再検査 |
+| EB37 | 再起動は通常受付を閉じ、journal／checkpoint／anchor検証前にjobを読まない |
+| EB38 | 旧epochのgrant／pending／ready replyの失効と債務を保存する前に新jobを受け付けない |
+| EB39 | 新bootの自己申告・旧bootstrap pin・key epochの巻戻しを採用しない |
+| EB40 | 新bootや新storageEpochで未完了履歴を消した再起動・空store再初期化を拒否 |
+| EB41 | control-readyの復旧portに通常job grantを要求せず、通常metadata readはservingまで拒否 |
+| EB42 | epoch vector CAS／全local adoption／旧process fenceの途中故障は非servingのまま復旧 |
+| EB43 | 再起動後の旧actor／credential／request／replyの再署名・新nonce流用を拒否 |
+| EB44 | 旧monotonic期限を新bootの時刻へ写して延長せず、旧jobは監査用に限定 |
+| EB45 | SIGKILL・応答紛失・同期障害の各保存境界で復旧し、旧成功を新bootから返さない |
+| EB46 | 同UID process・署名・local checkpoint・設計テストを独立隔離／capacity証明へ昇格しない |
+| EB47 | metadata byte／stage単位を元memory／work／global unitへ換算せずunknownを維持 |
+| EB48 | 実principal・anchor・store・approval／enforcement不足時はunsupported・permit0を維持 |
+
+設計記録は `docs/validation/gradle-e2-p0-backend-design-2026-11-15.json`、再生成は `node scripts/check-e2-p0-backend-design.mjs`、照合は `node scripts/check-e2-p0-backend-design.mjs --check` とする。基準commitのrunner記録／366 sourceと§9.161のhashを変更せず、新catalogue・整合性テスト・checker・本節を束縛する。実principal／store／anchor／grant／boot receiptの取得は行わず、設計検査結果を実配備／永続ACK／旧epoch拒否の証明へ昇格しない。
+
+設計検証（2026-11-15）：設計整合性24件と既存関連957件の計981テスト（35ファイル）、型検査を確認した。新記録は370 source／artifactと本節・実Node binary・全test名へ束縛する。EB01〜48の実行済み件数は0であり、永続backend・独立anchor・job authorizer／quota／旧epoch fenceのruntime採用は未成立のまま。
+
+設計レビュー修正：管理用control K／D・tag付きjob／realm subjectとquery自身／originの識別を分離し、後続transaction後も元CASを再実行せずreceiptを解決する。BeginWorkflow 1＋初回origin query 1をinit-controlへ置き、metadata 8と合わせた最大10 RPC・wire親8 MiB・t0起点期限・消費保持を具体化した。EB14／15／22／28とEBD25〜30を更新／追加し、追加6件は修正前に失敗、修正後に成功した。現行checkerは設計30件を再実行し、review前24件の履歴と区別する。runtimeのEB条件は引き続き全48件planned・実行0であり、実backend／独立charge／本番採用の成立とは数えない。
+
+レビュー修正後の検証（2026-11-15）：追加6回帰を含む設計30件＋関連既存957件、計987テスト（35ファイル）、型・空白検査と記録再照合を確認した。更新記録は370 source／artifact・元の366 source／baseline不変・現行の本節へ束縛する。runtime API／保存service／nativeの新規採用を実装したものではなく、unsupported・permit0を維持する。
