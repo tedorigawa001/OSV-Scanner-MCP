@@ -145,3 +145,17 @@ test.each(casAPIs)('PBC19 %s historical origin lookup never reapplies its stale 
  expect(pb0CheckOrigin(seal(q),J(l),100)).toMatchObject({status:'historical',receiptRef:R('receipt'),reapply:false});
  expect(pb0CheckReplay(original,J(l))).toMatchObject({status:'historical',reapply:false});
 });
+test('PBC20 a lost RegisterJob reply is auditable against the current absent job state and resolves only by tombstone',()=>{
+ const desc={schema:'cwc.e2-p0.job-descriptor.v2',jobId:{realmId:'realm',controllerJobId:'job1',randomNonce:H('1')},sourceDigest:H('2'),inputManifestDigest:H('3'),toolLockDigest:H('4'),requestedApprovalSubjects:{method:H('5'),environment:H('6')},initialEpochVector:V,admittedAt:0,clockDomain:'clock',originalWallDeadline:9000,originalLeaseDeadline:9000};
+ const subject={kind:'job',jobDigest:ownedDigest(desc)},reg=JSON.parse(seal({...controlDraft('RegisterJob',{descriptor:desc}),targetSubject:subject,expectedState:{kind:'job-absent'}}));
+ const origin={domain:'control',owner:'registry',subject,operationKey:reg.operationKey,intentDigest:reg.intentDigest};
+ const q=seal({...controlDraft('QueryOperation',{origin}),targetSubject:subject,expectedState:{kind:'job-absent'}});
+ const audit={...policy(publicKey),subject,role:'recovery-auditor',apiSet:['QueryOperation'],purposeSet:['audit-origin-operation'],allowedOrigins:[origin],jobView:null};
+ expect(pb0Authorize(q,J(audit),100).jobPermitIssued).toBe(false);
+ expect(()=>pb0Authorize(q,J({...audit,jobView:policy(publicKey).jobView}),100)).toThrow('audit-current-state');
+ expect(()=>pb0Authorize(seal({...controlDraft('QueryOperation',{origin}),targetSubject:subject,expectedState:{kind:'job-exact-revision',revision:1}}),J(audit),100)).toThrow('audit-current-state');
+ expect(()=>pb0ValidateNewCAS(q,J(audit),100)).toThrow('mutation-required');
+ for(const api of ['InstallApproval','BeginWorkflow'])expect(()=>seal({...controlDraft(api,api==='InstallApproval'?{approvalKind:'method',approvalRef:R('approval')}:undefined),expectedState:{kind:'job-absent'}})).toThrow('job-state');
+ const tomb={schema:'cwc.e2-p0.pb0-origin-record.v1',origin,stage:'absent-tombstoned',originalRequestWire:null,receiptRef:null,tombstoneRef:R('tombstone'),anchorRef:R('anchor'),adoptionRef:R('adoption')};
+ expect(pb0CheckOrigin(q,J(tomb),100)).toMatchObject({status:'absent',reapply:false});expect(()=>pb0CheckReplay(seal({...controlDraft('RegisterJob',{descriptor:desc}),targetSubject:subject,expectedState:{kind:'job-absent'}}),J(tomb))).toThrow('origin-tombstoned');
+});

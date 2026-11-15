@@ -103,7 +103,8 @@ function consistent(r:Draft){
  const p=PB0_CONTROL_POLICY[r.api];pb0Need(r.purpose===p.purpose&&(p.owner==='origin'||r.targetOwner===p.owner),'control-api-purpose');
  pb0Need(p.subject==='origin'||r.targetSubject.kind===p.subject,'control-subject');
  if(r.targetSubject.kind==='realm')pb0Need(r.targetSubject.realmId===r.realmId&&r.expectedState.kind==='realm-exact-revision','realm-state');
- else pb0Need(r.expectedState.kind===(r.api==='RegisterJob'?'job-absent':'job-exact-revision'),'job-state');
+ // QueryOperation checks the CURRENT audit state, which is job-absent when a lost RegisterJob never executed.
+ else pb0Need(r.api==='QueryOperation'?r.expectedState.kind!=='realm-exact-revision':r.expectedState.kind===(r.api==='RegisterJob'?'job-absent':'job-exact-revision'),'job-state');
  if(r.api==='RegisterJob')pb0Need(r.targetSubject.kind==='job'&&r.targetSubject.jobDigest===digest(r.payload.descriptor)&&r.payload.descriptor.jobId.realmId===r.realmId,'descriptor-binding');
  if(r.api==='RevokeJob')pb0Need(r.targetSubject.kind==='job'&&r.payload.jobDigest===r.targetSubject.jobDigest,'revoke-job-binding');
  if(r.api==='BeginWorkflow')pb0Need(r.controlBudgetSliceRef.kind==='init-control','begin-slice');
@@ -182,7 +183,7 @@ export function pb0Authorize(requestWire:string,policyWire:string,now:number){
   }
   if(r.api==='QueryOperation'){
    pb0Need(p.allowedOrigins.some(x=>same(x,r.payload.origin)),'origin-grant');
-   if(r.targetSubject.kind==='job')pb0Need(p.jobView&&r.expectedState.kind==='job-exact-revision'&&r.expectedState.revision===p.jobView.revision,'audit-current-state');
+   if(r.targetSubject.kind==='job')pb0Need(r.expectedState.kind==='job-absent'?p.jobView===null:p.jobView!==null&&r.expectedState.kind==='job-exact-revision'&&r.expectedState.revision===p.jobView.revision,'audit-current-state');
    else pb0Need(r.expectedState.kind==='realm-exact-revision'&&r.expectedState.revision===p.realmRevision,'audit-current-state');
   }
  }

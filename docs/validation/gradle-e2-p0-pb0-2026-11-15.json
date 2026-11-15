@@ -10,7 +10,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.163 E2-P0 PB0：strict contract・認可・状態・参照と実codec",
-    "sha256": "5d9be1cb8f1c8b6056821827347a9f59bc21afd19e98dba8f233ec852f050b19"
+    "sha256": "904a9eeffb6ba7d48cf0d94a2e24f1c2213a2d811ed43a4f761b78ec319b6185"
   },
   "sourceBindings": {
     "src/test/utils/gradleOwnedCwcHb2EvidenceDesign.test.ts": "7a507950884821ac3d4853fade92ffd4c65fd2bab28a807187c03b853af158be",
@@ -383,16 +383,16 @@
     "src/test/fixtures/gradleOwnedP0BackendDesign.mjs": "6958f1355bd84724a3b84789feebe249ef251f1864ff1bb703faa85c1aed6342",
     "src/test/fixtures/gradleOwnedP0BackendDesign.d.mts": "a916bca6d1756e90f49c3dc1cc9c1a4e34fcf5d942b9344b087914013e32ff57",
     "scripts/check-e2-p0-backend-design.mjs": "b4fe3ea5b8820af250527e1511500f2871fdf00e6d3f8a2eaf2a459a0f4da036",
-    "src/test/utils/gradleOwnedP0StateContract.test.ts": "57d42ba10518684755a6806701700a098cb9635e9f05a865ae3b9f43362bc311",
-    "src/utils/gradleOwnedP0StateContract.ts": "77784158f375d558343247adba203c1dbc594b33f3634e86ecd57bf28b87acaf",
+    "src/test/utils/gradleOwnedP0StateContract.test.ts": "33135baf37c6961a529ca8f86b600395669d0a09fc024aedaeedca8821bac162",
+    "src/utils/gradleOwnedP0StateContract.ts": "4e9dc201a655b240635ee67242ac885da7b4e670b767afc5fdb9fb5deb49a57f",
     "src/test/fixtures/gradleOwnedP0StateFixture.ts": "9c7b51c453618fa8559596e7467d805c5a9562d58eb2651ba20feffcf003ba7b",
     "src/utils/gradleOwnedP0StateMachine.ts": "d147ac9818ba28dfd0ba113bf735f85f908f722ce9423c4b84790aee2b765712",
     "src/test/utils/gradleOwnedP0StateGraph.test.ts": "4775ce3d7914058e41ea9869b4b4909cf1c4719d92f20f8354e7b5baaf055091",
     "src/utils/gradleOwnedP0StateGraph.ts": "400d4cc5444b253f7abeda6e934deb289aa07adcecf68aab05eeab89cee51f65",
-    "src/test/utils/gradleOwnedP0StateCodec.test.ts": "d33844b7aaf2d79a47c67c09c52b6ca61c89240477c26fe4b796909ba33511a9",
-    "src/utils/gradleOwnedP0StateCodec.ts": "3c7514b75cf9063745735f78f4e8279e8940bbb7ce7b979c68734718ef3654d9",
-    "src/test/utils/gradleOwnedP0StateRecord.test.ts": "0b910675f1c54b2a862d973ac5095c381b3d63c22ae61a109de2d0ced34d13ad",
-    "scripts/check-e2-p0-pb0.mjs": "10d67d32594574451bc5e15db452a8892ac33b6174505b454b48988095032a69"
+    "src/test/utils/gradleOwnedP0StateCodec.test.ts": "d464a2f89eca281ca616c4447962aa7c4a6f551f5e67529f833774fdb25fa2d5",
+    "src/utils/gradleOwnedP0StateCodec.ts": "134caaa03c14f473379c633f084d408f5819709fbd911497a595a9b1945cfce9",
+    "src/test/utils/gradleOwnedP0StateRecord.test.ts": "43045a5f406bf91ac79f9becd45c11f00982f07877e0189a71ed09e53c1dd535",
+    "scripts/check-e2-p0-pb0.mjs": "47c85420977187d783671e7de46a24168b5fa6e06cf10b4b8425c4779d1a2476"
   },
   "runtime": {
     "node": "v26.12.1",
@@ -436,10 +436,10 @@
     }
   ],
   "artifacts": {
-    "gradleOwnedP0StateContract.js": "3832ba58d5cccea5f458911ca44b1be5e1c85fc750f18d08bbd310e9522e92ae",
+    "gradleOwnedP0StateContract.js": "383e7ea95f986d6d749e745ba4a6dc0f416161892cfed1f4be67cc430ea320a5",
     "gradleOwnedP0StateGraph.js": "53da743184d5a702acb4e8dd565eb56a0f4e80a71ce2c190a2287d63ae653e6e",
     "gradleOwnedP0StateMachine.js": "2fb5938ebba50772dfd0564e48134cec0b53374bd79ada39b058aee6b88a2ca6",
-    "gradleOwnedP0StateCodec.js": "c6987bca54c7ad7dcb239f870268bf2067b17c65c1e9c0a79f87e360d1da371e",
+    "gradleOwnedP0StateCodec.js": "0232fb26caa15cc23a441a7d9af5ea90d6836065ceec6d2fb84469a4f35419e6",
     "gradleOwnedJson.js": "98fd09a9e7cb12f86d169610a80597de34bdf10227ac3f482d0a924357f54173"
   },
   "contract": {
@@ -865,6 +865,36 @@
     "historicalLookupPreserved": true,
     "ownershipScope": "single-bundle-not-durable-or-cross-bundle"
   },
+  "secondReviewRegressions": {
+    "groups": [
+      "PBC20",
+      "PBW15",
+      "PBW16",
+      "PBR07"
+    ],
+    "adjusted": [
+      "PBW06",
+      "PBW08",
+      "PBW09",
+      "PBW10",
+      "PBW11",
+      "PBW13"
+    ],
+    "before": {
+      "passed": 0,
+      "failed": 4
+    },
+    "after": {
+      "passed": 4,
+      "failed": 0
+    },
+    "fixes": [
+      "query-current-job-absent-state",
+      "metadata-after-established-begin-workflow",
+      "loss-gated-retry-init-query-and-audit"
+    ],
+    "historicalIssuedRefIsIssuance": false
+  },
   "codecObservation": {
     "calls": 10,
     "counts": {
@@ -878,7 +908,7 @@
       "init": 163856,
       "metadata": 6553664
     },
-    "actualWire": 38320,
+    "actualWire": 34595,
     "parentWire": 8388608,
     "worstCombinedWire": 6717520,
     "largestReplyFrame": 1048580,
@@ -890,7 +920,7 @@
   },
   "verification": {
     "kind": "static-contract-and-real-codec-fixture",
-    "passed": 73,
+    "passed": 77,
     "failed": 0,
     "success": true,
     "names": [
@@ -929,6 +959,7 @@
       "PBC19 PublishCurrentPin historical origin lookup never reapplies its stale payload CAS",
       "PBC19 RevokeJob historical origin lookup never reapplies its stale payload CAS",
       "PBC19 RevokeReaderGrant historical origin lookup never reapplies its stale payload CAS",
+      "PBC20 a lost RegisterJob reply is auditable against the current absent job state and resolves only by tombstone",
       "PBG01 complete descriptor through escaped delivery has exact reference closure",
       "PBG02 missing duplicated unreachable or changed nodes are refused",
       "PBG03 cycles are refused before self updated digest claims can hide them",
@@ -953,6 +984,7 @@
       "PBR04 fixture success does not imply current authorization durability or IO admission",
       "PBR05 exact signed codec measurements are reconciled with all ten prepaid calls",
       "PBR06 executing images and dependency entry pins are local verification evidence only",
+      "PBR07 second review fixes are recorded as static fixture regressions only",
       "PBW01 real Ed25519 framed codec binds the request and response without issuing a permit",
       "PBW02 signature corruption wrong peers and reply reuse across nonces are rejected",
       "PBW03 noncanonical frames invalid UTF8 and truncated or excess headers are refused",
@@ -966,7 +998,9 @@
       "PBW11 token cross-fixture use request swapping and coordinated budget reduction are refused",
       "PBW12 body substitutions source replacements and false query issuance fail before framing",
       "PBW13 origin owner cannot be exchanged while preserving its K D and recomputing query identity",
-      "PBW14 embedded metadata JSON obeys the same depth bound as outer protocol JSON"
+      "PBW14 embedded metadata JSON obeys the same depth bound as outer protocol JSON",
+      "PBW15 metadata reads start only on a workflow established by Begin or its bounded historical query",
+      "PBW16 retry initial query and metadata audit slots require a lost or unresolved original"
     ],
     "groups": [
       "PBC01",
@@ -988,6 +1022,7 @@
       "PBC17",
       "PBC18",
       "PBC19",
+      "PBC20",
       "PBG01",
       "PBG02",
       "PBG03",
@@ -1009,6 +1044,7 @@
       "PBR04",
       "PBR05",
       "PBR06",
+      "PBR07",
       "PBW01",
       "PBW02",
       "PBW03",
@@ -1022,7 +1058,9 @@
       "PBW11",
       "PBW12",
       "PBW13",
-      "PBW14"
+      "PBW14",
+      "PBW15",
+      "PBW16"
     ],
     "runtimeConditionsCompleted": 0
   }

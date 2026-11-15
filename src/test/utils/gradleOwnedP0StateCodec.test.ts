@@ -41,15 +41,16 @@ function init(){
   t0:0,originalDeadline:5000,jobDeadline:5000,grantDeadline:5000,approvalDeadline:5000,reservationDeadline:5000,prepaidRefs:{wire:R('wire'),memory:R('memory'),work:R('work'),store:R('store'),cleanup:R('cleanup')},sliceDigests:{initControl:H('4'),metadataRead:H('4'),metadataRetry:H('4'),metadataAudit:H('4')},parentWire:8388608,initWire:163856,metadataWire:8224752,initCalls:2,metadataCalls:8,workUpper:null,memoryUpper:null};
  return {begin,plan,budget:new PB0BudgetFixture(J(plan))};
 }
+function ready(){const x=init(),t=x.budget.reserve(x.begin,10),a=pb0EncodeRequest(x.begin,client.privateKey),b=pb0EncodeReply(x.begin,J(committed()),J(pin),server.privateKey);x.budget.complete(t,a,b,J(pin),11);return x;}
 function committed(){return {kind:'control',outcome:'committed',origin:null,receiptRef:R('receipt'),anchorRef:R('anchor'),adoptionRef:R('adoption'),tombstoneRef:null,issuedRef:R('workflow')};}
 function query(origin:Record<string,unknown>,kind='metadata-audit',op='query1'){return request({...controlDraft('QueryOperation',{origin}),operationId:op,controlBudgetSliceRef:{kind,sha256:H('4')}});}
 const origin=(r:string)=>{const p=JSON.parse(r);return {domain:p.domain==='cwc.e2-p0.backend-request.v2'?'metadata-read':'control',owner:p.targetOwner,subject:{kind:'job',jobDigest:H()},operationKey:p.operationKey,intentDigest:p.intentDigest};};
 test('PBW06 all ten calls consume separate slices and match actual signed codec bytes',()=>{
  const {begin,budget}=init();let actual=0,now=100;
  const complete=(r:string,result:unknown)=>{const t=budget.reserve(r,now++),a=pb0EncodeRequest(r,client.privateKey),b=pb0EncodeReply(r,J(result),J(pin),server.privateKey);actual+=a.length+b.length;budget.complete(t,a,b,J(pin),now++);};
- complete(begin,committed());const first=request();
- const oi=origin(begin),qinit=query(oi,'init-control','init-query');complete(qinit,{...committed(),outcome:'historical',origin:oi,issuedRef:null});
- for(let i=0;i<5;i++)complete(request({...readDraft(),operationId:'read'+(i+1)}),metadata());
+ complete(begin,{...committed(),outcome:'pending',receiptRef:null,issuedRef:null});const first=request();
+ const oi=origin(begin),qinit=query(oi,'init-control','init-query');complete(qinit,{...committed(),outcome:'historical',origin:oi,issuedRef:null,historicalIssuedRef:R('workflow')});
+ budget.lose(budget.reserve(first,now++),now++);for(let i=1;i<5;i++)complete(request({...readDraft(),operationId:'read'+(i+1)}),metadata());
  complete(request({...readDraft(),operationId:'retry',budgetSliceRef:{kind:'metadata-retry',sha256:H('4')}}),metadata());
  for(let i=0;i<2;i++){const o=origin(first);complete(query(o,'metadata-audit','audit'+i),{...committed(),outcome:'historical',origin:o,issuedRef:null});}
  const s=budget.inspect();expect(s.counts).toEqual({begin:1,initQuery:1,read:5,retry:1,audit:2});expect(s.heldWire).toEqual({init:163856,metadata:6553664});expect(s.wireBytesObserved).toBe(actual);expect(actual).toBeLessThanOrEqual(6717520);expect(s.jobPermitIssued).toBe(false);expect(s.realReservationVerified).toBe(false);
@@ -63,24 +64,24 @@ test('PBW07 lost initialization holds its charge and only the bounded origin que
  expect(budget.inspect().heldWire.init).toBe(163856);expect(()=>budget.reserve(query(origin(begin),'init-control','query2'),105)).toThrow('budget-init-query-count');
 });
 test('PBW08 retry consumes a new slot but the same original deadline and workflow',()=>{
- const {budget}=init(),first=request();budget.lose(budget.reserve(first,100),101);
+ const {budget}=ready(),first=request();budget.lose(budget.reserve(first,100),101);
  const retry=request({...readDraft(),operationId:'retry',budgetSliceRef:{kind:'metadata-retry',sha256:H('4')}});budget.lose(budget.reserve(retry,102),103);
  expect(budget.inspect().heldWire.metadata).toBe(2*1064968);expect(()=>budget.reserve(request({...readDraft(),operationId:'retry2',budgetSliceRef:{kind:'metadata-retry',sha256:H('4')}}),104)).toThrow('budget-call-count');
  expect(()=>budget.reserve(request({...readDraft(),operationId:'different',workflowId:'new-workflow'}),104)).toThrow('budget-workflow-change');
  expect(()=>budget.reserve(request({...readDraft(),operationId:'extended',originalDeadline:5001}),104)).toThrow('budget-read-binding');
 });
 test('PBW09 failed verification preserves observed bytes and all held capacity and refuses late tickets',()=>{
- const {budget}=init(),r=request(),t=budget.reserve(r,100),a=pb0EncodeRequest(r,client.privateKey),b=pb0EncodeReply(r,J(metadata()),J(pin),server.privateKey);
- expect(()=>budget.complete(t,a,b,J({...pin,boot:H('9')}),101)).toThrow();const s=budget.inspect();expect(s.closed).toBe(true);expect(s.wireBytesObserved).toBe(a.length+b.length);expect(s.heldWire.metadata).toBe(1064968);
+ const {budget}=ready(),before=budget.inspect().wireBytesObserved,r=request(),t=budget.reserve(r,100),a=pb0EncodeRequest(r,client.privateKey),b=pb0EncodeReply(r,J(metadata()),J(pin),server.privateKey);
+ expect(()=>budget.complete(t,a,b,J({...pin,boot:H('9')}),101)).toThrow();const s=budget.inspect();expect(s.closed).toBe(true);expect(s.wireBytesObserved-before).toBe(a.length+b.length);expect(s.heldWire.metadata).toBe(1064968);
  expect(()=>budget.complete(t,a,b,J(pin),102)).toThrow('budget-ticket');expect(()=>budget.reserve(request({...readDraft(),operationId:'late'}),102)).toThrow('budget-expired-or-closed');
 });
 test('PBW10 deadline reached during capture and close never recover spent reservations',()=>{
- const {budget}=init(),r=request(),t=budget.reserve(r,100),a=pb0EncodeRequest(r,client.privateKey),b=pb0EncodeReply(r,J(metadata()),J(pin),server.privateKey);
+ const {budget}=ready(),r=request(),t=budget.reserve(r,100),a=pb0EncodeRequest(r,client.privateKey),b=pb0EncodeReply(r,J(metadata()),J(pin),server.privateKey);
  expect(()=>budget.complete(t,a,b,J(pin),5000)).toThrow('budget-expired-or-closed');expect(budget.inspect().heldWire.metadata).toBe(1064968);expect(budget.inspect().unknownAttempts).toBe(1);
  const x=init();x.budget.lose(x.budget.reserve(x.begin,100),101);x.budget.close();expect(()=>x.budget.reserve(query(origin(x.begin),'init-control'),102)).toThrow();expect(x.budget.inspect().heldWire.init).toBe(81928);
 });
 test('PBW11 token cross-fixture use request swapping and coordinated budget reduction are refused',()=>{
- const x=init(),y=init(),r=request(),t=x.budget.reserve(r,100),a=pb0EncodeRequest(r,client.privateKey),b=pb0EncodeReply(r,J(metadata()),J(pin),server.privateKey);
+ const x=ready(),y=ready(),r=request(),t=x.budget.reserve(r,100),a=pb0EncodeRequest(r,client.privateKey),b=pb0EncodeReply(r,J(metadata()),J(pin),server.privateKey);
  expect(()=>y.budget.complete(t,a,b,J(pin),101)).toThrow('budget-ticket');
  expect(()=>x.budget.complete(t,pb0EncodeRequest(request({...readDraft(),nonce:H('9')}),client.privateKey),b,J(pin),101)).toThrow('budget-request-swap');
  for(const change of [{initCalls:1},{parentWire:6717520},{metadataWire:8388608},{originalDeadline:5001},{workUpper:0},{memoryUpper:0},{prepaidRefs:{...x.plan.prepaidRefs,cleanup:null}}])expect(()=>new PB0BudgetFixture(J({...x.plan,...change}))).toThrow();
@@ -94,10 +95,27 @@ test('PBW12 body substitutions source replacements and false query issuance fail
 test('PBW13 origin owner cannot be exchanged while preserving its K D and recomputing query identity',()=>{
  const x=init();x.budget.lose(x.budget.reserve(x.begin,100),101);const oi={...origin(x.begin),owner:'controller'};
  const qi=request({...controlDraft('QueryOperation',{origin:oi}),targetOwner:'controller',controlBudgetSliceRef:{kind:'init-control',sha256:H('4')}});expect(()=>x.budget.reserve(qi,102)).toThrow('budget-init-query-origin');
- const y=init(),r=request();y.budget.lose(y.budget.reserve(r,100),101);const or={...origin(r),owner:'controller'};
+ const y=ready(),r=request();y.budget.lose(y.budget.reserve(r,100),101);const or={...origin(r),owner:'controller'};
  const qr=request({...controlDraft('QueryOperation',{origin:or}),targetOwner:'controller',controlBudgetSliceRef:{kind:'metadata-audit',sha256:H('4')}});expect(()=>y.budget.reserve(qr,102)).toThrow('budget-audit-origin');
 });
 test('PBW14 embedded metadata JSON obeys the same depth bound as outer protocol JSON',()=>{
  const bodyWire='['.repeat(25)+'0'+']'.repeat(25),result={...metadata(),bodyWire,bodyDigest:sha(bodyWire)};
  expect(()=>pb0EncodeReply(request(),J(result),J(pin),server.privateKey)).toThrow('wire-depth');
+});
+test('PBW15 metadata reads start only on a workflow established by Begin or its bounded historical query',()=>{
+ const x=init();expect(()=>x.budget.reserve(request(),100)).toThrow('budget-workflow-unestablished');
+ const t=x.budget.reserve(x.begin,101),a=pb0EncodeRequest(x.begin,client.privateKey),b=pb0EncodeReply(x.begin,J({...committed(),outcome:'pending',receiptRef:null,issuedRef:null}),J(pin),server.privateKey);x.budget.complete(t,a,b,J(pin),102);
+ expect(()=>x.budget.reserve(request(),103)).toThrow('budget-workflow-unestablished');
+ const y=ready();expect(()=>y.budget.reserve(request({...readDraft(),workflowId:'self-declared'}),100)).toThrow('budget-workflow-change');expect(y.budget.reserve(request(),101)).toBeTruthy();
+ const q=query(origin(x.begin),'init-control','init-query');
+ expect(()=>pb0EncodeReply(x.begin,J({...committed(),historicalIssuedRef:R('workflow')}),J(pin),server.privateKey)).toThrow('historical-issued-ref');
+ expect(()=>pb0EncodeReply(q,J({...committed(),outcome:'pending',origin:origin(x.begin),receiptRef:null,issuedRef:null,historicalIssuedRef:R('workflow')}),J(pin),server.privateKey)).toThrow('historical-issued-ref');
+});
+test('PBW16 retry initial query and metadata audit slots require a lost or unresolved original',()=>{
+ const x=ready();expect(()=>x.budget.reserve(request({...readDraft(),operationId:'retry',budgetSliceRef:{kind:'metadata-retry',sha256:H('4')}}),100)).toThrow('budget-retry-without-loss');
+ expect(()=>x.budget.reserve(query(origin(x.begin),'init-control','init-query'),100)).toThrow('budget-init-query-without-loss');
+ const r=request(),t=x.budget.reserve(r,100),a=pb0EncodeRequest(r,client.privateKey),b=pb0EncodeReply(r,J(metadata()),J(pin),server.privateKey);x.budget.complete(t,a,b,J(pin),101);
+ expect(()=>x.budget.reserve(query(origin(r)),102)).toThrow('budget-audit-origin');
+ const lost=request({...readDraft(),operationId:'lost'});x.budget.lose(x.budget.reserve(lost,103),104);
+ expect(x.budget.reserve(query(origin(lost)),105)).toBeTruthy();expect(x.budget.reserve(request({...readDraft(),operationId:'retry',budgetSliceRef:{kind:'metadata-retry',sha256:H('4')}}),106)).toBeTruthy();
 });

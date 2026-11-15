@@ -36,3 +36,7 @@ test('PBR06 executing images and dependency entry pins are local verification ev
  for(const h of Object.values(r.artifacts))expect(h).toMatch(/^[a-f0-9]{64}$/);
  for(const e of r.dependencyEntryPins){expect(sha(readFileSync(e.packagePath))).toBe(e.packageDigest);expect(sha(readFileSync(e.entryPath))).toBe(e.entryDigest);}
 });
+test('PBR07 second review fixes are recorded as static fixture regressions only',()=>{
+ expect(r.secondReviewRegressions).toEqual({groups:['PBC20','PBW15','PBW16','PBR07'],adjusted:['PBW06','PBW08','PBW09','PBW10','PBW11','PBW13'],before:{passed:0,failed:4},after:{passed:4,failed:0},fixes:['query-current-job-absent-state','metadata-after-established-begin-workflow','loss-gated-retry-init-query-and-audit'],historicalIssuedRefIsIssuance:false});
+ expect(r.codecObservation.counts).toEqual({begin:1,initQuery:1,read:5,retry:1,audit:2});
+});

@@ -9,7 +9,7 @@ const signature=z.string().regex(/^[A-Za-z0-9+/]{86}==$/),sigPlaceholder='A'.rep
 const refs=z.array(ref).max(128).refine(a=>new Set(a.map(r=>r.id)).size===a.length,'duplicate-ref');
 const requestEnvelope=z.object({payload:pb0RequestSchema,signature}).strict();
 const pinSchema=z.object({principal:id,keyEpoch:uint.positive(),owner:z.enum(['registry','custodian','controller','epoch-anchor']),boot:hash,spki:z.string().min(1).max(128)}).strict();
-const controlResult=z.object({kind:z.literal('control'),outcome:z.enum(['committed','historical','pending','absent']),origin:pb0OriginSchema.nullable(),receiptRef:ref.nullable(),anchorRef:ref.nullable(),adoptionRef:ref.nullable(),tombstoneRef:ref.nullable(),issuedRef:ref.nullable()}).strict();
+const controlResult=z.object({kind:z.literal('control'),outcome:z.enum(['committed','historical','pending','absent']),origin:pb0OriginSchema.nullable(),receiptRef:ref.nullable(),anchorRef:ref.nullable(),adoptionRef:ref.nullable(),tombstoneRef:ref.nullable(),issuedRef:ref.nullable(),historicalIssuedRef:ref.optional()}).strict();
 const resultSchema=z.discriminatedUnion('kind',[
  z.object({kind:z.literal('metadata'),sourceRefs:refs,bodyWire:z.string().max(1048576),bodyDigest:hash,responseReadyRef:ref,escapeRef:ref}).strict(),controlResult,
  z.object({kind:z.literal('rejected'),reason:z.enum(['unsupported','invalid','permission-denied','revoked-or-expired','operation-conflict','budget-exceeded','blocked-recovery-required']),jobPermitIssued:z.literal(false),runtimeAdmitted:z.literal(false)}).strict()
@@ -53,6 +53,8 @@ function checkResult(r:PB0Request,v:z.infer<typeof resultSchema>){
  if(v.outcome==='committed'||v.outcome==='historical')pb0Need(v.receiptRef&&v.anchorRef&&v.adoptionRef&&v.tombstoneRef===null,'reply-durable-refs');
  if(v.outcome==='pending')pb0Need(v.receiptRef===null&&v.issuedRef===null&&v.tombstoneRef===null,'pending-result');
  if(v.outcome==='absent')pb0Need(v.receiptRef===null&&v.tombstoneRef&&v.anchorRef&&v.adoptionRef&&v.issuedRef===null,'absent-tombstone');
+ // A query never issues; it may only report the ref an earlier committed Begin / grant already issued.
+ pb0Need(v.historicalIssuedRef===undefined||(r.api==='QueryOperation'&&v.outcome==='historical'),'historical-issued-ref');
  if(r.api==='BeginWorkflow'||r.api==='IssueReaderGrant')pb0Need(v.outcome==='committed'?v.issuedRef!==null:v.issuedRef===null,'reply-issued-ref');
  else pb0Need(v.issuedRef===null,'unexpected-issued-ref');
 }
@@ -74,11 +76,12 @@ const budgetSchema=z.object({schema:z.literal('cwc.e2-p0.pb0-budget.v1'),profile
  parentWire:z.literal(8388608),initWire:z.literal(163856),metadataWire:z.literal(8224752),initCalls:z.literal(2),metadataCalls:z.literal(8),workUpper:z.null(),memoryUpper:z.null()
 }).strict();
 export type PB0FixtureTicket=Readonly<{kind:'pb0-fixture-ticket'}>;
-type Ticket={owner:PB0BudgetFixture;requestWire:string;reserved:number;active:boolean;replyCap:number};
+type Group='begin'|'initQuery'|'read'|'retry'|'audit';
+type Ticket={owner:PB0BudgetFixture;requestWire:string;reserved:number;active:boolean;replyCap:number;group:Group;operationKey:string;intent:string;targetOwner:string};
 const tickets=new WeakMap<PB0FixtureTicket,Ticket>();
 /** Transport accounting simulation ONLY: supplied prepaid refs are never verified as real parent reservations. */
 export class PB0BudgetFixture{
- #plan:z.infer<typeof budgetSchema>;#last:number;#closed=false;#counts={begin:0,initQuery:0,read:0,retry:0,audit:0};#held={init:0,metadata:0};#observed=0;#unknown=0;#seen=new Map<string,{intent:string;domain:string;owner:string}>();#workflow:string|null=null;
+ #plan:z.infer<typeof budgetSchema>;#last:number;#closed=false;#counts={begin:0,initQuery:0,read:0,retry:0,audit:0};#held={init:0,metadata:0};#observed=0;#unknown=0;#seen=new Map<string,{intent:string;domain:string;owner:string}>();#workflow:string|null=null;#beginUnresolved=false;#lost=new Map<string,{intent:string;owner:string}>();#retryable=0;
  constructor(wire:string){this.#plan=pb0Decode(budgetSchema,wire);const p=this.#plan;
   pb0Need(p.originalDeadline===Math.min(p.t0+5000,p.jobDeadline,p.grantDeadline,p.approvalDeadline,p.reservationDeadline)&&p.originalDeadline>p.t0,'budget-original-deadline');this.#last=p.t0;
  }
@@ -87,13 +90,14 @@ export class PB0BudgetFixture{
   this.#current(now);const r=pb0ParseRequest(requestWire),p=this.#plan;
   pb0Need(r.realmId===p.realmId&&r.clientCredentialId===p.credentialId&&r.clientKeyEpoch===p.credentialKeyEpoch,'budget-call-scope');
   const prior=this.#seen.get(r.operationKey);pb0Need(!prior,prior?.intent===r.intentDigest?'budget-repeat-operation':'operation-conflict');
-  let group:'begin'|'initQuery'|'read'|'retry'|'audit',init=false,cap=1048576;
+  let group:Group,init=false,cap=1048576;
   if(r.domain==='cwc.e2-p0.backend-request.v2'){
    pb0Need(r.jobDigest===p.jobDigest&&r.originalDeadline===p.originalDeadline,'budget-read-binding');
-   pb0Need(this.#workflow===null||r.workflowId===this.#workflow,'budget-workflow-change');
+   // Metadata starts only on the workflow ref issued by a committed Begin or reported by its bounded historical query.
+   pb0Need(this.#workflow!==null,'budget-workflow-unestablished');pb0Need(r.workflowId===this.#workflow,'budget-workflow-change');
    group=r.budgetSliceRef.kind==='metadata-retry'?'retry':'read';
    pb0Need(r.budgetSliceRef.sha256===(group==='retry'?p.sliceDigests.metadataRetry:p.sliceDigests.metadataRead),'budget-slice-binding');
-   pb0Need(this.#counts[group]<(group==='retry'?1:5),'budget-call-count');this.#workflow=r.workflowId;
+   pb0Need(this.#counts[group]<(group==='retry'?1:5),'budget-call-count');if(group==='retry')pb0Need(this.#retryable>0,'budget-retry-without-loss');
   }else{
    pb0Need(r.targetSubject.kind==='job'&&r.targetSubject.jobDigest===p.jobDigest&&r.originalControlDeadline===p.originalDeadline,'budget-control-binding');cap=65536;
    if(r.api==='BeginWorkflow'){
@@ -101,9 +105,10 @@ export class PB0BudgetFixture{
    }else{
     pb0Need(r.api==='QueryOperation','budget-maintenance-excluded');const origin=r.payload.origin;
     if(r.controlBudgetSliceRef.kind==='init-control'){
-     pb0Need(origin.domain==='control'&&origin.owner==='registry'&&origin.operationKey===p.beginControlKey&&origin.intentDigest===p.beginControlIntent&&this.#counts.begin===1,'budget-init-query-origin');group='initQuery';init=true;pb0Need(this.#counts.initQuery===0,'budget-init-query-count');
+     pb0Need(origin.domain==='control'&&origin.owner==='registry'&&origin.operationKey===p.beginControlKey&&origin.intentDigest===p.beginControlIntent&&this.#counts.begin===1,'budget-init-query-origin');pb0Need(this.#beginUnresolved,'budget-init-query-without-loss');group='initQuery';init=true;pb0Need(this.#counts.initQuery===0,'budget-init-query-count');
     }else{
-     const saved=this.#seen.get(origin.operationKey);pb0Need(r.controlBudgetSliceRef.kind==='metadata-audit'&&origin.domain==='metadata-read'&&saved?.domain==='cwc.e2-p0.backend-request.v2'&&saved.intent===origin.intentDigest&&saved.owner===origin.owner,'budget-audit-origin');group='audit';pb0Need(this.#counts.audit<2,'budget-audit-count');
+     // Audit is only for a metadata read whose reply was lost; a completed read has nothing unresolved to query.
+     const saved=this.#lost.get(origin.operationKey);pb0Need(r.controlBudgetSliceRef.kind==='metadata-audit'&&origin.domain==='metadata-read'&&saved?.intent===origin.intentDigest&&saved.owner===origin.owner,'budget-audit-origin');group='audit';pb0Need(this.#counts.audit<2,'budget-audit-count');
     }
    }
    pb0Need(r.controlBudgetSliceRef.sha256===(init?p.sliceDigests.initControl:p.sliceDigests.metadataAudit),'budget-slice-binding');
@@ -111,18 +116,24 @@ export class PB0BudgetFixture{
   const reserved=16384+cap+8,side=init?'init':'metadata';
   pb0Need(this.#held[side]+reserved<=(init?p.initWire:p.metadataWire)&&this.#held.init+this.#held.metadata+reserved<=p.parentWire,'budget-wire');
   // All bounded slot/parent charges precede signing or accepting a result. They survive loss and failure.
-  this.#counts[group]++;this.#held[side]+=reserved;this.#seen.set(r.operationKey,{intent:r.intentDigest,domain:r.domain,owner:r.targetOwner});
-  const h=Object.freeze({kind:'pb0-fixture-ticket' as const});tickets.set(h,{owner:this,requestWire:canonical(r,16384),reserved,active:true,replyCap:cap});return h;
+  this.#counts[group]++;this.#held[side]+=reserved;if(group==='retry')this.#retryable--;this.#seen.set(r.operationKey,{intent:r.intentDigest,domain:r.domain,owner:r.targetOwner});
+  const h=Object.freeze({kind:'pb0-fixture-ticket' as const});tickets.set(h,{owner:this,requestWire:canonical(r,16384),reserved,active:true,replyCap:cap,group,operationKey:r.operationKey,intent:r.intentDigest,targetOwner:r.targetOwner});return h;
  }
  complete(h:PB0FixtureTicket,requestFrame:Buffer,replyFrame:Buffer,pinWire:string,now:number){
   const t=tickets.get(h);pb0Need(t&&t.owner===this&&t.active,'budget-ticket');t.active=false;
   try{const req=copy(requestFrame,16384),rep=copy(replyFrame,t.replyCap);this.#observed+=req.length+rep.length;this.#current(now);
    pb0Need(canonical(parseRequestFrame(req).payload,16384)===t.requestWire,'budget-request-swap');
    pb0Need(req.length+rep.length<=t.reserved&&this.#observed<=this.#plan.parentWire,'budget-actual-wire');
-   const result=pb0DecodeReply(rep,t.requestWire,pinWire);this.#current(now);return result;
+   const result=pb0DecodeReply(rep,t.requestWire,pinWire);this.#current(now);const v=result.result;
+   if(t.group==='begin'){if(v.kind==='control'&&v.outcome==='committed')this.#workflow=v.issuedRef!.id;else if(v.kind==='control')this.#beginUnresolved=true;}
+   if(t.group==='initQuery'&&v.kind==='control'&&v.outcome==='historical'&&v.historicalIssuedRef)this.#workflow=v.historicalIssuedRef.id;
+   return result;
   }catch(e){this.#closed=true;this.#unknown++;throw e;}
  }
- lose(h:PB0FixtureTicket,now:number){const t=tickets.get(h);pb0Need(t&&t.owner===this&&t.active,'budget-ticket');t.active=false;this.#unknown++;this.#current(now);}
+ lose(h:PB0FixtureTicket,now:number){const t=tickets.get(h);pb0Need(t&&t.owner===this&&t.active,'budget-ticket');t.active=false;this.#unknown++;
+  if(t.group==='begin')this.#beginUnresolved=true;
+  if(t.group==='read'||t.group==='retry'){this.#lost.set(t.operationKey,{intent:t.intent,owner:t.targetOwner});if(t.group==='read')this.#retryable++;}
+  this.#current(now);}
  close(){this.#closed=true;}
  inspect(){return {counts:{...this.#counts},heldWire:{...this.#held},wireBytesObserved:this.#observed,unknownAttempts:this.#unknown,closed:this.#closed,originalDeadline:this.#plan.originalDeadline,jobPermitIssued:false as const,runtimeAdmitted:false as const,realReservationVerified:false as const,workUpper:this.#plan.workUpper,memoryUpper:this.#plan.memoryUpper};}
 }
