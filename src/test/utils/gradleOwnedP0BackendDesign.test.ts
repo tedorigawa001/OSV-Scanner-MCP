@@ -39,7 +39,7 @@ test('EBD07 grant and v2 request bind the complete job and delivery context',()=
  for(const f of ['profileDigest','realmId','jobDigest','grantRef','workflowRef','operationKey','intentDigest','currentPinRef','authRevision','expectedEpochVector','budgetSliceRef','originalDeadline','clientCredentialId','clientKeyEpoch','serverBoot','session','sequence','nonce'])expect(p.requestFields).toContain(f);
 });
 test('EBD08 authorization and durable intent precede job IO with a fresh gate after persistence',()=>{
- expect(p.gateOrder).toEqual(['bounded-bootstrap-frame','authenticate-client-and-api','fresh-global-epoch-and-routing-ACL','exact-job-grant-and-purpose','reserve-intent-replay-budget-cleanup','durable-intent-and-anchor-head','fresh-after-persistence-before-job-IO','bounded-source-capture','post-capture-auth-epoch-deadline','persist-response-ready-and-anchor-head','format-and-sign-delivery-context','final-local-admission-and-original-deadline','enqueue-or-refuse']);
+ expect(p.gateOrder).toEqual(['bounded-bootstrap-frame','authenticate-client-and-api','fresh-global-epoch-and-routing-ACL','exact-job-grant-and-purpose','reserve-intent-replay-budget-cleanup','durable-intent-and-anchor-head','fresh-after-persistence-before-job-IO','bounded-source-capture','post-capture-auth-epoch-deadline','persist-response-ready-and-anchor-head','persist-response-may-have-escaped-and-anchor-head','format-and-sign-delivery-context','final-local-admission-and-original-deadline','enqueue-or-refuse']);
  expect(p.gate.jobReadsBeforeAuthorization).toBe(0);expect(p.gate.jobReadsAfterReservationRevocation).toBe(0);expect(p.gate.perJobIOBeforeIntentDurable).toBe(0);expect(p.gate.callbacksBetweenLocalGateAndIO).toBe(false);expect(p.gate.asyncGapRequiresNewGate).toBe(true);expect(p.gate.finalClientAnchorReadRequired).toBe(true);
  expect(doc).toContain('認可に必要なfieldを得るためにjob payloadを先読みしない');
 });
@@ -62,8 +62,8 @@ test('EBD12 digest DAG excludes future preflight and outer delivery signatures',
  expect(p.persistence.noCycle).toEqual(['job contains no current pin','current pin contains no future preflight','response-ready contains no outer signature or delivery receipt']);expect(p.persistence.frozenPredecessorRetry).toContain('never reapply after later transaction');
 });
 test('EBD13 semantic operation identity excludes envelope nonce but preserves original deadlines',()=>{
- expect(p.replay.operationKey).toEqual(['realmId','jobDigest','clientCredentialId','clientKeyEpoch','workflowId','api','operationId']);expect(p.replay.frameKey).toEqual(['clientCredentialId','clientKeyEpoch','serverBoot','session','sequence','nonce']);
- expect(p.replay.intentIncludes).toEqual(['purpose','exactSourceRefs','currentPinRef','authRevision','originalEpochVector','originalDeadline','budgetSliceRef']);expect(p.replay.intentExcludes).toEqual(['session','sequence','nonce','maxWaitMs','transportSignature']);expect(p.replay.sameKeyDifferentIntent).toBe('conflict-no-source-read');
+ expect(p.replay.operationKey).toEqual(['profileDigest','realmId','jobDigest','clientCredentialId','clientKeyEpoch','workflowId','api','operationId']);expect(p.replay.frameKey).toEqual(['clientCredentialId','clientKeyEpoch','serverBoot','session','sequence','nonce']);
+ expect(p.replay.intentIncludes).toEqual(['operationKeyDigest','purpose','exactSourceRefs','currentPinRef','authRevision','originalEpochVector','originalDeadline','budgetSliceRef']);expect(p.replay.intentExcludes).toEqual(['session','sequence','nonce','maxWaitMs','transportSignature']);expect(p.replay.sameKeyDifferentIntent).toBe('conflict-no-source-read');
 });
 test('EBD14 replay recovery returns historical state without inventing fresh live observations',()=>{
  expect(p.replay.sameKeySameIntent).toContain('no automatic fresh reply');expect(p.replay.liveBodyReuse).toBe(false);expect(p.replay.originalTimerPreserved).toBe(true);expect(p.replay.newHandleResetsWorkflowBudget).toBe(false);expect(p.replay.unknownIsNoEffect).toBe(false);expect(p.replay.lostReply).toContain('SAME workflow deadline/budget');
@@ -146,4 +146,33 @@ test('EBD30 review conditions explicitly cover control origin and initialization
  expect(conditions.find(x=>x.id==='EB14')?.condition).toContain('origin');expect(conditions.find(x=>x.id==='EB15')?.condition).toContain('後続transaction');expect(conditions.find(x=>x.id==='EB22')?.condition).toContain('payload');
  const wire=conditions.find(x=>x.id==='EB28')?.condition;expect(wire).toContain('BeginWorkflow');expect(wire).toContain('10 RPC');expect(wire).toContain('8 MiB');
  expect(r.reviewRegressions).toEqual({groups:['EBD25','EBD26','EBD27','EBD28','EBD29','EBD30'],before:{passed:0,failed:6},after:{passed:6,failed:0},kind:'design-consistency-not-runtime',fixes:['separate-control-K-D-and-query-origin','prepaid-init-control-slice-within-original-wire-parent'],nativeConditionsExecuted:0});
+});
+test('EBD31 BeginWorkflow consumes the pre-reserved init admission and never reserves capacity itself',()=>{
+ const m=p.management.find((x:any)=>x.api==='BeginWorkflow'),c=p.budget.initControl;expect(m.effect).toContain('never reserves new capacity');expect(m.effect).not.toMatch(/^reserve/);
+ expect(c.reservationOwner).toBe('init-admission-parent-ledger-port');expect(c.beginReservesCapacity).toBe(false);expect(c.reserveBeforeFirstControlIO).toBe(true);
+ expect(doc).not.toContain('grantの範囲内で全ticket・保存／cleanup予約');expect(doc).toContain('BeginWorkflow自身は新たな容量を予約しない');
+});
+test('EBD32 response-may-have-escaped is its own durable step before signing and enqueue',()=>{
+ const g=p.gateOrder,i=(x:string)=>{expect(g,x).toContain(x);return g.indexOf(x);};
+ const order=['persist-response-ready-and-anchor-head','persist-response-may-have-escaped-and-anchor-head','format-and-sign-delivery-context','final-local-admission-and-original-deadline','enqueue-or-refuse'].map(i);
+ expect(order).toEqual([...order].sort((a,b)=>a-b));expect(new Set(g).size).toBe(g.length);
+ expect(p.persistence.escapeBeforeEnqueue).toEqual({stage:'response-may-have-escaped',separateDurableWrite:true,after:'response-ready',before:'format-and-sign-delivery-context',anchorHeadRequired:true,freshGateAfter:true,unsentStillDebt:true});
+ expect(p.replay.readyStages.indexOf('response-ready')).toBeLessThan(p.replay.readyStages.indexOf('response-may-have-escaped'));
+ expect(doc).toContain('response-ready保存／anchor確定 → response-may-have-escaped保存／anchor確定 → delivery整形／署名');
+});
+test('EBD33 metadata-read K D have their own digest domains and D binds K',()=>{
+ expect(p.replay.keyDomain).toBe('cwc.e2-p0.read-operation-key.v1');expect(p.replay.intentDomain).toBe('cwc.e2-p0.read-intent.v1');
+ expect(new Set([p.replay.keyDomain,p.replay.intentDomain,p.control.keyDomain,p.control.intentDomain,...Object.values(p.domains).filter(x=>typeof x==='string')]).size).toBe(4+Object.values(p.domains).filter(x=>typeof x==='string').length);
+ expect(p.replay.operationKey[0]).toBe('profileDigest');expect(p.replay.intentIncludes[0]).toBe('operationKeyDigest');
+ expect(doc).toContain('`cwc.e2-p0.read-operation-key.v1`');expect(doc).toContain('`cwc.e2-p0.read-intent.v1`');
+});
+test('EBD34 control debt is machine-readable and an absent origin is answered only after a durable tombstone',()=>{
+ expect(p.debt.controlFields).toEqual(['realmId','ownerId','targetSubject','controlOperationKey','controlIntentDigest','initAdmissionRef','reservationRefs','heldCapacity','spentCounters','unknownEffectFloor','fenceRefs','drainRefs','reconciliationRef','joinedWorkflowRef']);
+ for(const x of ['jobDigest','workflowId'])expect(p.debt.controlFields).not.toContain(x);
+ expect(p.control.absentOrigin).toEqual({answer:'absent-only-after-durable-origin-tombstone',tombstoneKey:'origin-domain-owner-subject-K',lateOriginal:'refuse-before-mutation',tombstoneRetained:true,absentIsNoEffectBeforeTombstone:false});
+ expect(doc).toContain('origin tombstoneを保存・anchor確定してから');
+});
+test('EBD35 second review conditions are recorded as design consistency only',()=>{
+ expect(r.secondReviewRegressions).toEqual({groups:['EBD31','EBD32','EBD33','EBD34','EBD35'],strengthened:['EBD13'],before:{passed:0,failed:5},after:{passed:5,failed:0},kind:'design-consistency-not-runtime',
+  fixes:['begin-consumes-pre-reserved-init-admission','separate-durable-escape-step-before-enqueue','read-K-D-digest-domains','control-debt-fields-and-absent-origin-tombstone'],nativeConditionsExecuted:0});
 });

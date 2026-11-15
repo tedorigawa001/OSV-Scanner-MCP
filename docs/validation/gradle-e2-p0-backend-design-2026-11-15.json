@@ -10,7 +10,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.162 E2-P0 backend：job認可・永続保存・boot／current pinの契約",
-    "sha256": "bd81720534e8fd38c2aa8c34b3a7e9867ea7230ea8bef665426fb7af0d2ce576"
+    "sha256": "1c6b9bffe5ecdf4a5a9bc8c55bacfdc9a757ed440fecaaba608b1e8be0d4477f"
   },
   "sourceBindings": {
     "src/test/utils/gradleOwnedCwcHb2EvidenceDesign.test.ts": "7a507950884821ac3d4853fade92ffd4c65fd2bab28a807187c03b853af158be",
@@ -379,10 +379,10 @@
     "node_modules/typescript/bin/tsc": "2219f428a7e55aaf1f7ad85b9b0f0cf5078aeb76ccc9a7c6036c92d48f492ffd",
     "node_modules/typescript/lib/tsc.js": "cbdfbf11c26ed00dfc073155e316a42d6d6d8a387be61006b82fa9aa93ac572e",
     "node_modules/typescript/lib/getExePath.js": "96c10fd3a18e165d7323de8e314ac8d755ad96811f9fbc304a5b3ba4e05285cc",
-    "src/test/utils/gradleOwnedP0BackendDesign.test.ts": "6cfd8c469015904f395ae39379bc5ceb81ba38de9de548bd5c4ee4268df3e3ba",
-    "src/test/fixtures/gradleOwnedP0BackendDesign.mjs": "cc9eae3116bc945bcaad9e5d7958f040c546552f163c3474cb10bbafe7f9d078",
+    "src/test/utils/gradleOwnedP0BackendDesign.test.ts": "866e77938e47b8b09233f30e403702d177edb400d6129cce1046d5ef6edb1d2d",
+    "src/test/fixtures/gradleOwnedP0BackendDesign.mjs": "6958f1355bd84724a3b84789feebe249ef251f1864ff1bb703faa85c1aed6342",
     "src/test/fixtures/gradleOwnedP0BackendDesign.d.mts": "a916bca6d1756e90f49c3dc1cc9c1a4e34fcf5d942b9344b087914013e32ff57",
-    "scripts/check-e2-p0-backend-design.mjs": "34494eeb6263a457ea59d16003eda280b7bb6f20cad2c54c96f0e1ccfa37a889"
+    "scripts/check-e2-p0-backend-design.mjs": "b4fe3ea5b8820af250527e1511500f2871fdf00e6d3f8a2eaf2a459a0f4da036"
   },
   "runtime": {
     "node": "v26.12.1",
@@ -584,7 +584,7 @@
         "caller": "job-reader",
         "owner": "registry",
         "purpose": "reserve-metadata-workflow",
-        "effect": "reserve fixed tickets and all persistence/cleanup capacity"
+        "effect": "bind the pre-reserved init admission to one workflow and charge its tickets; never reserves new capacity"
       },
       {
         "api": "RevokeReaderGrant",
@@ -706,6 +706,13 @@
       "originLookupBeforeNewCAS": true,
       "queryMayReapply": false,
       "queryMayIssueGrant": false,
+      "absentOrigin": {
+        "answer": "absent-only-after-durable-origin-tombstone",
+        "tombstoneKey": "origin-domain-owner-subject-K",
+        "lateOriginal": "refuse-before-mutation",
+        "tombstoneRetained": true,
+        "absentIsNoEffectBeforeTombstone": false
+      },
       "queryMayResetDeadline": false,
       "sameKeyDifferentIntent": "conflict-before-mutation",
       "sameKeySameIntent": "fresh-authorized-historical-receipt-no-reapply",
@@ -768,6 +775,7 @@
       "bounded-source-capture",
       "post-capture-auth-epoch-deadline",
       "persist-response-ready-and-anchor-head",
+      "persist-response-may-have-escaped-and-anchor-head",
       "format-and-sign-delivery-context",
       "final-local-admission-and-original-deadline",
       "enqueue-or-refuse"
@@ -913,6 +921,15 @@
         "current pin contains no future preflight",
         "response-ready contains no outer signature or delivery receipt"
       ],
+      "escapeBeforeEnqueue": {
+        "stage": "response-may-have-escaped",
+        "separateDurableWrite": true,
+        "after": "response-ready",
+        "before": "format-and-sign-delivery-context",
+        "anchorHeadRequired": true,
+        "freshGateAfter": true,
+        "unsentStillDebt": true
+      },
       "frozenPredecessorRetry": "historical stage receipt plus fresh gate; never reapply after later transaction",
       "readerWritesJournalDirectly": false
     },
@@ -926,7 +943,10 @@
         "nonce"
       ],
       "exactReplay": "reject-before-source-lookup",
+      "keyDomain": "cwc.e2-p0.read-operation-key.v1",
+      "intentDomain": "cwc.e2-p0.read-intent.v1",
       "operationKey": [
+        "profileDigest",
         "realmId",
         "jobDigest",
         "clientCredentialId",
@@ -936,6 +956,7 @@
         "operationId"
       ],
       "intentIncludes": [
+        "operationKeyDigest",
         "purpose",
         "exactSourceRefs",
         "currentPinRef",
@@ -1045,6 +1066,8 @@
         "sameWireUnit": "e2-p0.metadata-transport-bytes.v1",
         "beginUsesMetadataTicket": false,
         "reserveBeforeFirstControlIO": true,
+        "reservationOwner": "init-admission-parent-ledger-port",
+        "beginReservesCapacity": false,
         "deadlineOrigin": "before-initialization-reservation",
         "deadlineMs": 5000,
         "beginOrQueryResetsDeadline": false,
@@ -1114,6 +1137,22 @@
         "fenceRefs",
         "drainRefs",
         "reconciliationRef"
+      ],
+      "controlFields": [
+        "realmId",
+        "ownerId",
+        "targetSubject",
+        "controlOperationKey",
+        "controlIntentDigest",
+        "initAdmissionRef",
+        "reservationRefs",
+        "heldCapacity",
+        "spentCounters",
+        "unknownEffectFloor",
+        "fenceRefs",
+        "drainRefs",
+        "reconciliationRef",
+        "joinedWorkflowRef"
       ],
       "mayNotReleaseOn": [
         "timeout",
@@ -1527,9 +1566,37 @@
     ],
     "nativeConditionsExecuted": 0
   },
+  "secondReviewRegressions": {
+    "groups": [
+      "EBD31",
+      "EBD32",
+      "EBD33",
+      "EBD34",
+      "EBD35"
+    ],
+    "strengthened": [
+      "EBD13"
+    ],
+    "before": {
+      "passed": 0,
+      "failed": 5
+    },
+    "after": {
+      "passed": 5,
+      "failed": 0
+    },
+    "kind": "design-consistency-not-runtime",
+    "fixes": [
+      "begin-consumes-pre-reserved-init-admission",
+      "separate-durable-escape-step-before-enqueue",
+      "read-K-D-digest-domains",
+      "control-debt-fields-and-absent-origin-tombstone"
+    ],
+    "nativeConditionsExecuted": 0
+  },
   "verification": {
     "kind": "design-consistency-not-runtime",
-    "passed": 30,
+    "passed": 35,
     "failed": 0,
     "success": true,
     "names": [
@@ -1562,7 +1629,12 @@
       "EBD27 query identity and current authorization never replace the original K D or CAS receipt",
       "EBD28 BeginWorkflow and its recovery query have a prepaid separate slice within the original parent",
       "EBD29 initialization and lost-reply recovery preserve the start deadline and all parent consumption",
-      "EBD30 review conditions explicitly cover control origin and initialization accounting"
+      "EBD30 review conditions explicitly cover control origin and initialization accounting",
+      "EBD31 BeginWorkflow consumes the pre-reserved init admission and never reserves capacity itself",
+      "EBD32 response-may-have-escaped is its own durable step before signing and enqueue",
+      "EBD33 metadata-read K D have their own digest domains and D binds K",
+      "EBD34 control debt is machine-readable and an absent origin is answered only after a durable tombstone",
+      "EBD35 second review conditions are recorded as design consistency only"
     ],
     "groups": [
       "EBD01",
@@ -1594,7 +1666,12 @@
       "EBD27",
       "EBD28",
       "EBD29",
-      "EBD30"
+      "EBD30",
+      "EBD31",
+      "EBD32",
+      "EBD33",
+      "EBD34",
+      "EBD35"
     ],
     "plannedRuntimeConditions": 48,
     "executedRuntimeConditions": 0

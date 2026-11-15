@@ -12868,7 +12868,7 @@ registry・custodian・controllerは、別の保存owner／root／writer lock、
 | ReplayIntent | operationKey／intentDigest、stage、source refs、response-ready ref、予約／消費／不明効果、元期限 | transport署名のhashとsemantic intentを分離。失敗でも消さない |
 | DebtRecord | job／workflow／元epoch、予約refs、heldCapacity／spentCounters／unknownEffectFloor、pending writes、capture／reply／fence／drain／reconciliation refs | 未確定・解放待ち・消費済みを別管理。失効・再起動だけで減額しない |
 | OwnerJournal | realm／owner／storageEpoch、ownerRevision／previousDigest、operationDomain／tag付きtargetSubject／authStateRef、operationKey／intentDigest／stageId、transitionDigest／payloadRef／consumptionDelta | read／controlを識別し、job recordはjob revision、realm controlはrealm revisionを束縛。架空job／workflowを補わず、strict bounded record・認証chain・同一writer・状態遷移と容量を検証 |
-| ControlDebtRecord | realm／owner、control origin K／D、init admission ref、予約／消費／不明効果、fence／drain／reconciliation refs | workflow発行前もcontrol Kで保持する。発行済みならjob／workflow債務とjoinし、未発行を架空workflowや消費0へ変換しない |
+| ControlDebtRecord | realm／owner、tag付きtargetSubject、control origin K／D、init admission ref、予約refs、held／spent／unknownEffectFloor、fence／drain／reconciliation refs、発行後のjoined workflow ref | workflow発行前もcontrol Kで保持する。発行済みならjob／workflow債務とjoinし、未発行を架空workflowや消費0へ変換しない |
 | EpochAnchor | epoch vector、semantic selection、ownerごとのdurable head high-watermark、revocationRevision、origin operation receipt | semantic selectionと保存headを分離。metadata読取のjournal追記だけで全grantのselectionを変更しない |
 
 各schemaは未知field／role／enum・重複ref・過剰depth／件数／bytesを拒否する。canonical規則とdomain付きdigest、署名対象、除外する外側signatureを固定する。jobDigest・authRevision・selectionRevision・ownerHeadRevision・boot／storage／keyEpochを相互の代用にしない。
@@ -12897,7 +12897,7 @@ registry・custodian・controllerは、別の保存owner／root／writer lock、
 | RecordReservation | workspace-controller → controller | record-reservation。実予約の証拠登録。readerが予約を発生させない |
 | PublishCurrentPin | registry-activation → registry | select-metadata。local prepare→anchor CAS→local adoption |
 | IssueReaderGrant | job-access-issuer → registry | delegate-exact-job。Enrollment／ACLに登録されたjob・API・範囲内だけ |
-| BeginWorkflow | job-reader → registry | reserve-metadata-workflow。grantの範囲内で全ticket・保存／cleanup予約 |
+| BeginWorkflow | job-reader → registry | reserve-metadata-workflow。事前確保済みinit admissionを1 workflowへ結び付けticketを計上。BeginWorkflow自身は新たな容量を予約しない |
 | RevokeReaderGrant | job-access-revoker → registry | revoke-grant。対象grant終端化＋authRevision増加 |
 | RevokeJob | job-revoker → registry | revoke-job。revokingを先に保存し、完了ACKは全owner fence／drain後 |
 | QueryOperation | recovery-auditor → 対象record owner | audit-origin-operation。自分の許可されたoperationのhistorical／pending refsだけ |
@@ -12930,11 +12930,13 @@ control同K別Dはmutation前にconflict、同K同Dの保存stage再試行はfre
 
 通常管理stageの再試行では、current認可・対象範囲を確認してからorigin ledgerを解決し、未実行と確認できた新規operationだけに新CASを行う。後続transaction後も、元control K／Dのreceiptを返すために古いexpected revisionでCASを再実行しない。QueryOperationもoriginのmutation／grant／workflowを再適用・再発行しない。BeginWorkflowの元workflow refを監査で得ても、新metadata開始には元init admission・現在のjob認可・元deadline・残ticketの全検査を要求する。
 
+照会結果の「未実行」は、owner固有の直列化領域でorigin（domain／owner／subject／K）のorigin tombstoneを保存・anchor確定してから返す。tombstone前の不在観測をno-effectとして扱わず、tombstone後に遅れて届いた元requestはmutation前に拒否する。tombstoneは削除せず、同じoriginの再実行・別Dへの付替えにも使わせない。
+
 管理replyはrequest digest／K／D／対象revision、結果種別、元stage receipt／anchor receipt／local adoption refs、消費／不明債務、delivery epochを署名する。mutationのcommittedはdurable adoption済みの場合だけで、pending／historicalは通常readや新grantの発行結果として流用できない。IssueReaderGrant／BeginWorkflowの結果は保存済みgrant／workflow ref、revokeの完了結果は全fence／drainを含むeffective revisionに限定する。初回応答紛失後の照会は監査receiptだけを返し、grantやworkflowの存在が確認できても、その元期限・current認可の再検査なしに使用できない。
 
 本番ownerのsource portは、authorizerが所有するopaque admission、選択済みref集合、元期限／残ticketを受け、上限付きimmutable metadataとcapture receipt／消費を返す。readerの引数から任意path／jobを解決するlookup callbackを渡さない。store portはowner固有のreserve／commitStage／queryStage／recover／installFenceに分離し、readerには書込capabilityを公開しない。anchor portもowner headのCAS／origin照会と、独立activation roleだけが使うsemantic selection／epoch vector CASを分離する。QueryCurrentは現在vector・selection・headを認証するが、それ自体をjob grantとしない。
 
-読取の順序は、bounded bootstrap frame → client／API認証 → fresh global epoch／routing ACL → exact job grant／purpose → intent／replay／全予算／cleanup予約 → **intentとanchor headのdurable確定** → 保存待ち後のfresh認可／期限確認 → bounded source capture → capture後の認可／epoch／期限確認 → response-ready保存／anchor確定 → delivery整形／署名 → 最後のlocal admission／元期限確認 → enqueueとする。
+読取の順序は、bounded bootstrap frame → client／API認証 → fresh global epoch／routing ACL → exact job grant／purpose → intent／replay／全予算／cleanup予約 → **intentとanchor headのdurable確定** → 保存待ち後のfresh認可／期限確認 → bounded source capture → capture後の認可／epoch／期限確認 → response-ready保存／anchor確定 → response-may-have-escaped保存／anchor確定 → delivery整形／署名 → 最後のlocal admission／元期限確認 → enqueueとする。
 
 予約中の取消し・authRevision変更・期限到達はsource lookup開始0とする。最終local gateとIO開始は同じownerの直列化領域で行い、その間にcallback／awaitを置かない。非同期保存・anchor照会・署名callbackが挟まればstampを捨てて再検査する。読取・copy・全result検証・drain／close・署名整形後にも元期限を検査し、後着成功を公開しない。remote署名viewだけで分散した「同時刻の認可」を保証したとしない。runner側にも終了時のfresh anchor／auth確認が必要であり、metadataの成功自体は実行permitを与えない。
 
@@ -12953,13 +12955,13 @@ serviceは `created → recovering → control-ready → operational → drainin
 
 失敗したfile／directory同期、公開後の再同期不足、anchor結果不明では成功ACKを返さない。ownerはblocked／債務保持となり、origin照会と必要な再同期が完了するまで通常受付を止める。同期済み記録があっても期限超過・失効なら通常replyを返さず、許可された監査照会だけがhistorical receiptを取得する。
 
-response-readyの保存には、配送が外へ出る可能性を持つ消費下限を含める。最初のenqueueより前にresponse-may-have-escapedの保守的状態をdurable確定し、その後に署名／最終gateへ進む。enqueue直前／直後のkillで送信済みか不明でも、応答未送信・未消費と推定しない。配送状態recordは外側signatureのhashを要求せず、参照循環を作らない。確定後に送信しなかった場合も、解放には通常の債務照合を要求する。
+response-readyの保存には、配送が外へ出る可能性を持つ消費下限を含める。最初のenqueueより前にresponse-may-have-escapedの保守的状態をdurable確定する。これはresponse-readyとは別のdurable書込みでanchor headも確定し、その後に署名／最終gateへ進む。この保存待ちの後も最終gateで認可／epoch／元期限を再検査する。enqueue直前／直後のkillで送信済みか不明でも、応答未送信・未消費と推定しない。配送状態recordは外側signatureのhashを要求せず、参照循環を作らない。確定後に送信しなかった場合も、解放には通常の債務照合を要求する。
 
 anchorはsemantic selectionとownerごとのhead high-watermarkを分ける。ownerが未来headをprepareしても、それだけでcurrent pin／bootを選択しない。local journal／checkpointを同時に巻き戻しても外部headと一致しなければ拒否する。anchor自体の巻戻し領域が独立していなければunsupportedである。write-ahead prepare→anchor CAS→local adoptionの各中断を復旧し、後続transaction確定後の同stage再試行は元receiptを返すだけで旧imageを再適用しない。CAS競合時は現在headとorigin receiptを照合し、別intentを同じoperationとして扱わない。
 
 #### 9.162.5 再送台帳・失敗債務・容量
 
-wire replay keyはcredential／keyEpoch／serverBoot／session／sequence／nonceであり、同じ署名wireをsource lookup前に拒否する。**metadata-read用**semantic Kはrealm／job／credential／keyEpoch／workflow／API／operationId、Dはpurpose／exact source refs／currentPin／authRevision／元epoch vector／元deadline／budget sliceを含む。nonce・session・sequence・maxWaitMs・transport署名はDへ混ぜない。同K別Dはconflict、同K同Dは自動的なfresh reply再発行としない。管理APIには§9.162.3の別domainのcontrol K／Dを用い、QueryOperation自身もcontrol domainへ属する。
+wire replay keyはcredential／keyEpoch／serverBoot／session／sequence／nonceであり、同じ署名wireをsource lookup前に拒否する。**metadata-read用**semantic Kはdomain `cwc.e2-p0.read-operation-key.v1`、profileDigest／realm／job／credential／keyEpoch／workflow／API／operationId、Dはdomain `cwc.e2-p0.read-intent.v1`、K digest／purpose／exact source refs／currentPin／authRevision／元epoch vector／元deadline／budget sliceを含む。nonce・session・sequence・maxWaitMs・transport署名はDへ混ぜない。同K別Dはconflict、同K同Dは自動的なfresh reply再発行としない。管理APIには§9.162.3の別domainのcontrol K／Dを用い、QueryOperation自身もcontrol domainへ属する。
 
 台帳stageはintent-reserved／source-captured／response-ready／response-may-have-escaped／failed-or-unknown／historicalを区別する。応答紛失は現在のaudit grantでQueryOperationを行い、元operationのpending／historical状態だけを返す。再読取が必要なら、同workflowの元期限・残予算のまま**新operationIdで最大1回**消費する。新nonceや新client handleでは8 RPC枠や元期限をresetしない。ReadLiveの古いnow／保存bodyを新署名でfreshに見せない。QueryOperationの監査権限は失効したreader grantと独立であり、旧jobを再開させない。
 
@@ -12981,7 +12983,7 @@ init admissionの発行は承認済み親ledgerの所有portで行い、BeginWor
 
 **t0は初期化予約の前**に固定する。init-controlとmetadataのdeadlineはともにt0＋5,000 ms、元job／lease期限、grant／approval／reservation期限の最小値に固定し、BeginWorkflow応答やorigin query完了時から新しい5秒を与えない。clientの予約待機・Begin／query待機も同じ元deadlineで停止し、maxWaitMsやkill猶予で延長しない。期限後の照会は別の事前予約済みaudit control callだけに限定し、historicalを得ても旧workflowを開始しない。別process間の時計は§9.159の独立承認済みclock-domain対応・誤差上限で換算し、monotonic値を直接比較しない。換算証拠欠落／負の残時間／期限同値は拒否し、current pinやgrant更新でも開始時期限を再計算して延長しない。
 
-最初のcontrol IO前に、init admission refを使って全親へcontrol／metadataのwire・保持・work、replay／stage／file／cleanup容量を確保し、確保後にも認可・期限を再検査する。workflowの発行前はcontrol origin Kで予約・消費・不明効果を保持し、発行後はその同じinit admissionとworkflow refをjoinする。新session・新nonce・close・再起動・応答紛失・未発行で枠／消費をresetしない。現時点のcontrol work unit／upper・保持量upperはnullであり、独立certificateと実親予約が得られなければIO前にunsupportedとする。2 RPC／wire算術をwork・物理保持量の証明へ換算しない。初期化以外の管理callも別の有界maintenance予約を必要とし、この2枠を無期限の管理poolにしない。
+最初のcontrol IO前に、承認済み親ledgerの所有portがinit admission refを使って全親へcontrol／metadataのwire・保持・work、replay／stage／file／cleanup容量を確保し、確保後にも認可・期限を再検査する。workflowの発行前はcontrol origin Kで予約・消費・不明効果を保持し、発行後はその同じinit admissionとworkflow refをjoinする。新session・新nonce・close・再起動・応答紛失・未発行で枠／消費をresetしない。現時点のcontrol work unit／upper・保持量upperはnullであり、独立certificateと実親予約が得られなければIO前にunsupportedとする。2 RPC／wire算術をwork・物理保持量の証明へ換算しない。初期化以外の管理callも別の有界maintenance予約を必要とし、この2枠を無期限の管理poolにしない。
 
 ownerごとの同時lookup4、replay256行、realm job64／grant64、未解決workflow4・active1を候補とする。owner disk64 MiBをpayload32＋journal16＋checkpoint8＋scratch4＋emergency4 MiBへ分割し、stage256を通常192＋cleanup64とする。**cleanup64は十分性の証明ではない**。全owner／anchorの最悪stage・file・temp・writer lock・復旧走査・drainまで導いた容量certificateと実予約がなければ、normal admission前に拒否する。自動GC／tombstone削除・世代移行はこの段階で採用しない。満杯時も無期限履歴追加や上限引上げで回避せず、停止と有界な復旧／外部承認済み移行を要求する。
 
@@ -13079,3 +13081,5 @@ EB01〜EB48はすべてplanned・未実行のruntime条件である。設計整�
 設計レビュー修正：管理用control K／D・tag付きjob／realm subjectとquery自身／originの識別を分離し、後続transaction後も元CASを再実行せずreceiptを解決する。BeginWorkflow 1＋初回origin query 1をinit-controlへ置き、metadata 8と合わせた最大10 RPC・wire親8 MiB・t0起点期限・消費保持を具体化した。EB14／15／22／28とEBD25〜30を更新／追加し、追加6件は修正前に失敗、修正後に成功した。現行checkerは設計30件を再実行し、review前24件の履歴と区別する。runtimeのEB条件は引き続き全48件planned・実行0であり、実backend／独立charge／本番採用の成立とは数えない。
 
 レビュー修正後の検証（2026-11-15）：追加6回帰を含む設計30件＋関連既存957件、計987テスト（35ファイル）、型・空白検査と記録再照合を確認した。更新記録は370 source／artifact・元の366 source／baseline不変・現行の本節へ束縛する。runtime API／保存service／nativeの新規採用を実装したものではなく、unsupported・permit0を維持する。
+
+第2レビュー修正（2026-11-15）：BeginWorkflowは事前確保済みinit admissionを結び付け計上するだけとし、容量予約の主体を親ledger portへ一本化した。response-may-have-escapedをresponse-readyと別のdurable段としてgate順序へ入れ、metadata-read K／Dにdomain・profileDigest・K digestを加えた。ControlDebtRecordの機械可読field、origin tombstone前の「未実行」応答禁止を定義した。EBD13を強化し、EBD31〜35を追加した（追加5件は修正前に失敗、修正後に成功）。現行checkerは設計35件を再実行する。EB条件は引き続き全48件planned・実行0である。

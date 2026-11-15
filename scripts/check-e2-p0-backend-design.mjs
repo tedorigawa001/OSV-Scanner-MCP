@@ -35,7 +35,9 @@ for(const p of [...Object.keys(old.sourceBindings),testPath,'src/test/fixtures/g
 const runtime={node:process.version,platform:process.platform,arch:process.arch,nodeBinaryDigest:await image(process.execPath),flags:process.execArgv,nodeOptions:process.env.NODE_OPTIONS??'',nodePath:process.env.NODE_PATH??''};
 const reviewRegressions={groups:Array.from({length:6},(_,i)=>'EBD'+String(i+25).padStart(2,'0')),before:{passed:0,failed:6},after:{passed:6,failed:0},
  kind:'design-consistency-not-runtime',fixes:['separate-control-K-D-and-query-origin','prepaid-init-control-slice-within-original-wire-parent'],nativeConditionsExecuted:0};
-const fixed={schema:'cwc.e2-p0.backend-design-record.v1',date:'2026-11-15',status:plan.status,baseline,document,sourceBindings,runtime,plan,conditions,scope:plan.scope,actualState:plan.actualState,reviewRegressions};
+const secondReviewRegressions={groups:Array.from({length:5},(_,i)=>'EBD'+String(i+31).padStart(2,'0')),strengthened:['EBD13'],before:{passed:0,failed:5},after:{passed:5,failed:0},kind:'design-consistency-not-runtime',
+ fixes:['begin-consumes-pre-reserved-init-admission','separate-durable-escape-step-before-enqueue','read-K-D-digest-domains','control-debt-fields-and-absent-origin-tombstone'],nativeConditionsExecuted:0};
+const fixed={schema:'cwc.e2-p0.backend-design-record.v1',date:'2026-11-15',status:plan.status,baseline,document,sourceBindings,runtime,plan,conditions,scope:plan.scope,actualState:plan.actualState,reviewRegressions,secondReviewRegressions};
 let record={...fixed,verification:null};
 if(checking){record=JSON.parse(await readFile(out));if(canonical(Object.keys(record).sort())!==canonical([...Object.keys(fixed),'verification'].sort()))throw Error('backend_design_record_keys');for(const k of Object.keys(fixed))if(canonical(record[k])!==canonical(fixed[k]))throw Error('backend_design_saved_'+k);}
 const dir=await mkdtemp(resolve(tmpdir(),'e2-p0-backend-design-'));
@@ -44,8 +46,8 @@ try{
  try{execFileSync(process.execPath,['node_modules/vitest/vitest.mjs','run',testPath,'--maxWorkers=1','--reporter=json','--outputFile='+report],{stdio:'pipe',timeout:120000,maxBuffer:8388608,env:{...process.env,E2_P0_BACKEND_DESIGN_RECORD:candidate}});}
  catch(e){let failed=[];try{failed=JSON.parse(await readFile(report)).testResults.flatMap(t=>t.assertionResults.filter(a=>a.status==='failed').map(a=>({name:a.fullName,messages:a.failureMessages})));}catch{}throw Error('backend_design_tests '+JSON.stringify(failed)+' '+String(e.stderr??''),{cause:e});}
  const t=JSON.parse(await readFile(report)),names=t.testResults.flatMap(t=>t.assertionResults.map(a=>a.fullName)).sort();
- const groups=names.map(n=>n.match(/^EBD\d{2}/)?.[0]),expected=Array.from({length:30},(_,i)=>'EBD'+String(i+1).padStart(2,'0'));
- if(!t.success||t.numPassedTests!==30||t.numFailedTests!==0||canonical(groups)!==canonical(expected)||new Set(names).size!==names.length)throw Error('backend_design_test_closure');
+ const groups=names.map(n=>n.match(/^EBD\d{2}/)?.[0]),expected=Array.from({length:35},(_,i)=>'EBD'+String(i+1).padStart(2,'0'));
+ if(!t.success||t.numPassedTests!==35||t.numFailedTests!==0||canonical(groups)!==canonical(expected)||new Set(names).size!==names.length)throw Error('backend_design_test_closure');
  const verification={kind:'design-consistency-not-runtime',passed:t.numPassedTests,failed:t.numFailedTests,success:t.success,names,groups,plannedRuntimeConditions:48,executedRuntimeConditions:0};
  if(checking&&canonical(record.verification)!==canonical(verification))throw Error('backend_design_saved_verification');record.verification=verification;
  for(const [p,h] of Object.entries(sourceBindings))if(sha(await readFile(p))!==h)throw Error('backend_design_source_changed_'+p);
