@@ -13083,3 +13083,72 @@ EB01〜EB48はすべてplanned・未実行のruntime条件である。設計整�
 レビュー修正後の検証（2026-11-15）：追加6回帰を含む設計30件＋関連既存957件、計987テスト（35ファイル）、型・空白検査と記録再照合を確認した。更新記録は370 source／artifact・元の366 source／baseline不変・現行の本節へ束縛する。runtime API／保存service／nativeの新規採用を実装したものではなく、unsupported・permit0を維持する。
 
 第2レビュー修正（2026-11-15）：BeginWorkflowは事前確保済みinit admissionを結び付け計上するだけとし、容量予約の主体を親ledger portへ一本化した。response-may-have-escapedをresponse-readyと別のdurable段としてgate順序へ入れ、metadata-read K／Dにdomain・profileDigest・K digestを加えた。ControlDebtRecordの機械可読field、origin tombstone前の「未実行」応答禁止を定義した。EBD13を強化し、EBD31〜35を追加した（追加5件は修正前に失敗、修正後に成功）。現行checkerは設計35件を再実行する。EB条件は引き続き全48件planned・実行0である。
+
+### 9.163 E2-P0 PB0：strict contract・認可・状態・参照と実codec
+
+#### 9.163.1 採用範囲・入力境界
+
+§9.162と第2レビュー修正の基準commit `fd82b26` に沿うPB0の静的fixture contractである。v1 backend／runnerを置き換えず、PB1の永続保存・PB2の実authorizer／親予約・PB3のlive失効／復旧・PB4のv2 IPC・PB5の独立配備は未実装のままとする。旧設計記録の370 source／artifactと§9.162は変更しない。設計節の「PB0未実装」は当時の状態であり、本節が静的contractの実装結果を追加する。
+
+| file | PB0の責務 |
+| --- | --- |
+| `src/utils/gradleOwnedP0StateContract.ts` | wire-only decoder、read／control request・API別payload・policy／origin schema、K／D、認可fixture、new-CASとhistorical照会の分離 |
+| `src/utils/gradleOwnedP0StateMachine.ts` | job／service／read-stage／originの純粋な状態遷移検査、revision・元期限・消費保持・必須ref |
+| `src/utils/gradleOwnedP0StateGraph.ts` | 23種類のrecord、typed refから導く閉包・循環・実bytes hash、init descriptor→D sealとBeginの対応付け |
+| `src/utils/gradleOwnedP0StateCodec.ts` | 実Ed25519署名・canonical JSON・4 B frame headerのcodec、メモリ内transport予算fixture |
+
+公開の検査入口はJSON wireを受け、caller objectのgetter／toJSONを呼ばない。request16,384 B、metadata reply1,048,576 B、control／query reply65,536 B、depth24・nodes65,536を上限とする。重複JSON key、未知field／enum、不正整数・負値／-0、重複ref、過剰depth／bytesを拒否する。schema単体は形状の定義であり、K／D・API意味論までの検査には `pb0ParseRequest` 等の公開検査関数を用いる。未署名入力のキー挿入順変更は同一canonical値へ正規化し、生成／受信する署名frameはcanonical bytesからの逸脱を拒否する。
+
+profile digestは固定domain・PB0 contract版・固定limitから計算し、request／policyにliteralとして束縛する。callerが独自limitやprofile hashを協調更新しても受理しない。このdigestは独立した本番profile承認を取得した証拠ではない。
+
+#### 9.163.2 K／D・API認可・origin
+
+readは `cwc.e2-p0.read-operation-key.v1` と `cwc.e2-p0.read-intent.v1`、controlは `cwc.e2-p0.control-operation-key.v1` と `cwc.e2-p0.control-intent.v1` を用いる。`pb0SealRequest` はstrict draftからK／Dを算出するだけで権限を発行せず、`pb0ParseRequest` は保存されたK／Dと再計算値を照合する。nonce／session／sequenceを変えてもsemantic identityは維持し、API payload／対象owner・subject／期待状態／元期限／予算を変えるとKまたはDが変わる。readとcontrolを相互の台帳keyへ流用しない。
+
+13管理APIはそれぞれstrict payloadを持つ。RegisterJobは不変descriptorからjobDigestを導出し、BeginWorkflowは既存workflowIdを要求しない。realm controlはrealm subject／revisionを使い、架空job fieldを拒否する。QueryOperation自身はcontrol K／Dを持ち、payload内のorigin（domain／owner／subject／K／D）を別途束縛する。metadata-read originはjob subjectに限る。ReportBootPreparedはcredential registryが許可したownedServiceとpayload ownerを照合し、IssueReaderGrantは委譲ceiling内のcredential・API／purpose・source refs・revision／epoch・期限・workflow上限だけを認める。
+
+`pb0Authorize` は**callerが与える認証済みpolicy fixture**との一致を検査する。SPKIのcanonical Ed25519 encoding／digest、credential・role／API／purpose、realm／job／source refs、current pin／revision／epoch／server boot、失効・停止・元期限を検査する。readはmetadata-ready／preflight-ready、ReadPreflightはpreflight-ready、復旧APIはcontrol-readyからの限定利用を認める。独立root／capacity／current anchorのref不足はunsupportedとして拒否する。これらのrefの実取得・署名registry採用・live性・親予約の真偽はまだ証明しておらず、成功結果もjobPermitIssued=false・runtimeAdmitted=falseである。
+
+current認可とnew mutationのCAS期待値を分離する。`pb0ValidateNewCAS` は新規mutation専用でcurrent head／revisionを比較する。既存originを扱う `pb0CheckReplay`／`pb0CheckOrigin` は、後続transactionでcurrent revisionが進んでも元receiptをhistorical／pendingとして解決し、旧expected revisionの再CAS・grant／workflow再発行を行わない。QueryOperationのaudit状態は現在値を検査し、originの当時の値を書き換えない。これらはpureなbinding／record検査であり、実lookupは行わない。認可→origin解決→未登録の新規operationだけnew CAS、という実行順の接続はPB2／PB3で行う。
+
+レビュー修正により、new CASではRevokeJob／RevokeReaderGrantのpayload.expectedAuthRevisionをcurrent job authRevisionへ、PublishCurrentPinのpayload.expectedSelectionをcurrent selectionRevisionへ照合する。owner head／job revisionが一致していても、K／Dを再計算した古い・未来のpayload期待値は拒否する。比較を共通認可やorigin resolverへ入れないため、古い期待値を持つ元operationのhistorical照会は現在のaudit認可の下で引き続き可能であり、再CAS・再適用は行わない。
+
+absent回答はoriginal request未登録のclaimだけでは成立しない。strictなabsent-tombstoned recordとtombstone／anchor／local adoption refsを要求し、unknownはpendingのままとする。同じorigin keyの遅れたrequestはDが変わってもtombstoneで拒否する。PB0が検査するのは保存証拠fieldの存在・対応付けまでで、実同期・authority照会・直列化はPB1以降の課題である。
+
+#### 9.163.3 状態機械・参照閉包
+
+jobのregistered→awaiting-approval→metadata-ready→preflight-ready、revoking→fenced→quarantined／settled、serviceのrecovering／control-ready／operational／blocked、read-stageとoriginの終端をstrictに検査する。identity／realmの差替え、revision巻戻し、元deadline延長、spentの減額、terminalからの復活を拒否する。grant-revoke／pin-updateは専用eventとrevision条件を持つ。
+
+metadata-readyへの遷移ではmethod／environmentの別ref、preflight-readyでは予約／preflight、fencedでは全ownerのfence、operationalでは旧epoch失効・manager fence・新boot承認・anchor選択・全local adoption・root pinを要求する。response-readyから直接historicalへ進まず、別refのresponse-may-have-escapedとanchor／adoptionを経る。cleanupは独立control期限内でのみ進め、元job期限や消費を戻さない。これらのrefはfixtureであり、実process終了・FD回収・durable ACKを確認したとはしない。
+
+bundleは最大1 MiB・256 record・**rootを含む全256 refs**。各recordはstrictなkind別schemaで、refはid／SHA-256／canonical byteLengthを持つ。body内のtyped refを列挙し、独立した自己申告のedge一覧を採用しない。到達不能／欠落／重複record、循環、ref先kind不一致、別realm、bytes／digest改変を拒否する。pinは未来preflightを含めず、response-readyは外側署名を含めない。job・approval kind／subject・予約・pin・grant・workflow・response間の対応を照合する。
+
+artifact digestやmetadata bodyは選択済み内容への束縛であり、外部artifactの実取得・実署名承認・ReadLiveの自然なfresh観測を証明しない。API固有の実body／既存P0Verifierへの接続と読取前後のlive gateはPB2〜PB4で行う。journalのjob／realm scope、owner／storage epochとhead、初期revision／predecessorも検査するが、実storeや独立anchorを観測したとはしない。
+
+init descriptorはbegin K・t0／期限・親reservation refsを持ち、未来D／workflow refを禁止する。別recordのD sealがdescriptorへ結び付き、`pb0BindInit` が実Begin requestのK／D・descriptor bytes／jobDigest／元期限まで照合する。D sealを書き換えて依存hashを更新しても、実requestと不一致なら拒否する。ControlDebtRecordのbudgetはinit／maintenanceの判別unionとし、realm controlはmaintenance refを使うためjob／workflowを捏造しない。これは設計の抽象fieldをPB0で具体化したもので、real parent予約は作成しない。
+
+レビュー修正後はbundle全体で、同じdescriptor／seal、同job内のinitId、または同Begin Kを複数のimmutable workflowへ束縛しない。jobDigest＋workflowIdの論理identityの別recordへのalias、別workflowによる同ticket recordの所有、参照されるgrant.workflowLimitを超えるworkflow数も拒否する。すべての依存ref／root hashを更新し、node順を反転しても同じ拒否となる。独立したinit・ticket・workflowならgrant上限内で共存でき、body／ready等から同一workflow recordへの通常の複数参照は維持する。この検査は単一bundleに見える所有関係に限り、別bundle・保存履歴・実parentでの累積quotaはPB1〜PB3の課題である。
+
+#### 9.163.4 実codec・transport予算fixture
+
+request／replyを実Ed25519で署名し、署名envelopeをcanonical JSONのUTF-8 bytesへ変換して4 B headerを付ける。署名前に固定88文字のbase64署名を含むenvelope全体を見積り、実署名後のbytesと一致させる。署名・SPKI pin・profile・owner／boot・request digest・K／D・nonce／sequence・result種別を検査する。metadata bodyのcanonical bytes／digestとsource refs、response-ready／escapeの分離も検査する。queryが新grantを発行した結果や、tombstoneのないabsentを拒否する。
+
+受信frameはintrinsic typed-array操作で私有copyし、instanceのcopy／buffer getterを呼ばない。SharedArrayBuffer、header／長さの不一致、不正UTF-8、非canonical生成wire、別nonceへのreply流用、別署名pinを拒否する。最大metadata replyは署名envelope全体1,048,576 B＋header4 Bを実際に生成・再検証し、1 byte超過を拒否する。物理memory上界や敵対host隔離の証明ではない。
+
+`PB0BudgetFixture` はinit-control 2／metadata 8のメモリ内会計である。BeginWorkflow 1＋元Begin専用origin query 1、通常read5＋retry1＋metadata audit2を別counterとし、wire親8,388,608 Bをinit163,856 B／metadata8,224,752 Bへ分ける。最大予約量は合計6,717,520 B。各試行は署名／応答検証前にrequest cap＋reply cap＋両header分を保持し、実frame bytesは別のobserved counterへ照合する。完了しても保持枠を返さない限定fixtureで、保持上限を実消費の既知下限と混同しない。
+
+元t0・最短期限を初期化前から固定し、時刻巻戻し／期限同値／closeを拒否する。lossはunknownAttemptsを増やして保持を残す。検証失敗は観測済みwireを保持してfixtureを閉じ、後着ticket／別fixture ticket／別requestへの流用を拒否する。audit originのowner・subject・K／Dも既存試行と照合する。初期化・retry・queryの枠交換や、新nonceによる同operation再使用を認めない。
+
+このfixtureには実parent ledger・global init registry・再起動復旧・認証sessionがなく、別instance生成を通じた実quota resetの防止はPB2／PB3で実証する。prepaid refsは合成claimで、workUpper／memoryUpperはnullしか受理せず、wire算術を既知のwork／保持量へ換算しない。realReservationVerified=false・runtimeAdmitted=falseを維持し、IO capabilityを返さない。
+
+#### 9.163.5 回帰・再現手順・次段
+
+初回はPBC01〜17・PBG01〜10・PBW01〜14・PBR01〜06の59テスト。レビュー修正後の現行checkerはPBC01〜19（13 APIと3 CAS APIのparameterized例を含む）、PBG01〜15、PBW01〜14、PBR01〜06の73テストを対象とする。strict input／K／D・origin、API／委譲／owner認可、状態・期限・消費、参照閉包／所有関係、実署名codec・サイズ・各予算枠、記録整合性を検査する。PBW14はembedded bodyのdepth上限を追加し、修正前失敗→同じdecoder上限で拒否を確認した。固定clock・同一process・合成key／policyのfixtureであり、EB01〜48の全runtime条件完了や新規native backend検証とは数えない。
+
+再生成は `node scripts/check-e2-p0-pb0.mjs`、照合は `node scripts/check-e2-p0-pb0.mjs --check`。保存先は `docs/validation/gradle-e2-p0-pb0-2026-11-15.json`。基準commitの設計記録とsource全370件、追加source・全test名／件数、本節、実Node／TypeScript compiler image、一時buildの5 artifact、依存packageのversion／entry bytesと、実codecの10試行分の観測を束縛する。依存entry pinはlibrary全参照閉包の証明ではなく、その採用は未成立と明示する。旧記録を再生成して不一致を隠さない。
+
+次はPB1でsingle-ownerの認証journal／checkpoint／独立anchor port・origin tombstone・別durable escape段を実diskへ接続し、file／directory同期、応答紛失・後続transaction、保存不明・再同期・再起動の故障試験を行う。PB0のref claimをdurable receiptへ自動昇格せず、PB2〜PB5と実tool取得・独立承認／容量強制は引き続き残る。
+
+PB0検証（2026-11-15）：contract29・graph10・codec14・記録6の新規59件、関連既存992件との合計1,051テスト（39ファイル）、型検査と一時TypeScript buildを確認した。記録は380 source／artifact・旧370 source不変、Node／compiler image・5 build artifact・依存entry pinへ束縛する。10 RPCの実wireは38,320 B、保持する最悪予約は6,717,520 Bで、8 MiB親を超えない。最大reply1,048,576 B＋header4 Bと1 B超過拒否を確認した。固定clock／同一process／合成authority・親予約refのfixtureであり、EB全48条件のruntime完了数0・実配備8群null・unsupported／permit0を維持する。
+
+PB0レビュー修正検証（2026-11-15）：PBC18／19とPBG11〜15の追加14件は、修正前10失敗＋4正常対照から、修正後14成功となった。3 APIのpayload CAS期待値を現在値と照合し、historical照会を維持する。全ref／root digest更新後のinit／Begin／workflow alias、ticket二重所有、grant上限超過を拒否し、独立したallocationと同一workflowへの通常参照を受理する。現行73件（contract35・graph18・codec14・記録6）＋関連既存992件の計1,065テスト（39ファイル）、型・一時build・空白検査を確認した。記録のreviewRegressionsは全group／case件数と修正前後結果を保持し、checkerで各case件数も照合する。旧370 source／設計記録を変えず、更新source計380件と本節・artifactを再束縛した。codecの実wire／予約量・最大reply、work／memory upper null、単一process・固定clock・static fixture限定、実EB条件完了0／permit0は維持する。
