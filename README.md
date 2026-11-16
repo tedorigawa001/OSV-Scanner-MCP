@@ -970,13 +970,16 @@ The following measures keep the vulnerability scanner itself from becoming an at
 ## Development
 
 ```bash
-npm test                  # run the tests (vitest)
+npm test                  # run the product tests (vitest)
+npm run test:research     # run the research and validation-record tests
 npx vitest run --coverage # measure coverage
 npm run typecheck         # type check
 npm run build             # build into dist/
 ```
 
-The real-time child-process diagnostics (`gradleOwnedSourceProcess`, `gradleOwnedAuthorityProcess` and `gradleOwnedConsumerProcess`) depend on host load, so `npm test` skips them. Run them on an otherwise idle machine with `OSV_REALTIME_PROCESS=1 npm test -- --project real-time-process`. CI runs them in a separate job.
+The real-time child-process diagnostics (`gradleOwnedSourceProcess`, `gradleOwnedAuthorityProcess` and `gradleOwnedConsumerProcess`) depend on host load, so they are skipped unless enabled. Run them on an otherwise idle machine with `OSV_REALTIME_PROCESS=1 npm run test:research -- --project real-time-process`. CI runs them in a separate job.
+
+`npm test` (also run by `prepublishOnly`) covers the product: every test except those that exercise modules the server does not reach from `src/index.ts`, or that reproduce the research validation records in `docs/validation`. `node scripts/run-tests.mjs --list` prints both scopes. Research records bind the exact `package.json` and `package-lock.json` bytes they were measured with, so they verify against the commit they were measured at; after a version bump or dependency update, `npm run test:research` and the research `scripts/check-*.mjs --check` fail on those bindings until the records are regenerated. New research checkers should pin the dependency entries they use rather than the whole `package.json` or `package-lock.json`.
 
 Design notes and open items are in [docs/DESIGN_TODO.md](docs/DESIGN_TODO.md) (in Japanese). Release notes are in [docs/releases](docs/releases).
 
