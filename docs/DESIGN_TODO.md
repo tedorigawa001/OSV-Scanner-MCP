@@ -142,8 +142,8 @@ CVEごとに以下の優先順で修正版を探索する。
   - OSV-Scanner 2.4.0の終了コードを実機確認: 0=脆弱性なし / 1=脆弱性あり(どちらも正常) / 128=対象パッケージなし(依存ゼロのpom.xmlも128になる)
 
 ### 3. キャッシュ戦略
-- [ ] MVPでは見送り、OSV-Scannerのデフォルト動作(オンラインAPI照会)に任せる
-- [ ] 将来的にオフライン/事前キャッシュ対応を検討するか
+- [x] オンラインを既定のまま維持し、明示的なオフライン／事前DBキャッシュを追加（2026-11-16、ソース実装）。`OSV_MCP_OFFLINE=1`で全scan系・suggest_fixのスキャンをローカルDBへ切り替え、`node dist/index.js cache --ecosystems ...`で公式ecosystem ZIPを事前取得する。選択manifestのatomic更新、SHA-256・取得時刻／期限・容量・私有コピーの照合と、DB不成立時の失敗を実装。API・deps.dev・バイナリ自動取得へfallbackしない。推奨先の追加照会は未実施を明示し、詳細説明は未対応として拒否する。実OS network-denyでGo DBによるスキャン・修正提案・SBOMと欠落／期限切れ／破損の拒否を確認。詳細は[検証記録](OFFLINE_VALIDATION.md)。
+- [ ] オフラインでの推奨先追加照会・`explain_vulnerability`のローカルDB対応は後続の機能拡張。今回の初回範囲には含めない。
 
 ### 4. 配布方法
 - [x] npmパッケージ化(`npx osv-scanner-mcp`)→ 配布準備完了(2026-07-04)。パッケージ名の空きを確認済み。`files: ["dist"]`でテスト除外(tsconfig.build.json)、`prepack`で自動ビルド、`prepublishOnly`でtypecheck+test実行。tarballを隔離環境にインストールしてbin起動・3ツール・実スキャンまで検証済み。**v0.1.0として公開済み(2026-07-04)**: https://www.npmjs.com/package/osv-scanner-mcp

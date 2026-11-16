@@ -11,8 +11,9 @@
 
 import { ScanToolError } from "../errors.js";
 import { readResponseBytes } from "../utils/readResponseBytes.js";
+import {requireOnline,type OfflineOptions} from './offline.js';
 
-export interface FetchOsvRecordOptions {
+export interface FetchOsvRecordOptions extends OfflineOptions {
   /** デフォルト15秒 */
   timeoutMs?: number;
   /** レスポンスの上限バイト数。デフォルト4MB */
@@ -54,6 +55,7 @@ export async function fetchOsvRecord(
   id: string,
   options: FetchOsvRecordOptions = {},
 ): Promise<unknown> {
+  requireOnline(options);
   const validatedId = validateVulnerabilityId(id);
   const fetchFn = options.fetchFn ?? fetch;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -158,6 +160,7 @@ export async function queryOsvPackageVersion(
   version: string,
   options: FetchOsvRecordOptions = {},
 ): Promise<unknown[]> {
+  requireOnline(options);
   const fetchFn = options.fetchFn ?? fetch;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const maxBytes = options.maxResponseBytes ?? DEFAULT_MAX_RESPONSE_BYTES;

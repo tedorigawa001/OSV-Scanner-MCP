@@ -2,6 +2,7 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import { buildArtifactReport } from "../osv/artifactReport.js";
 import { runOsvArtifactScan, type RunOsvScanOptions } from "../osv/runner.js";
+import {offlineResultFields} from '../osv/offlineCache.js';
 import { detectJavaArtifacts, type DetectJavaArtifactsOptions } from "../utils/artifactDetector.js";
 import { ScanSnapshot } from "../utils/scanSnapshot.js";
 import { asArray, asRecord } from "../utils/unknownJson.js";
@@ -39,7 +40,7 @@ export async function handleScanJavaArtifact(
         if (copy.ok) originals.set(copy.path, artifact);
       }
       const raw = originals.size > 0 ? await snapshot.guard(() => runOsvArtifactScan([...originals.keys()], options)) : { results: [] };
-      return jsonResult(buildArtifactReport(restoreSourcePaths(raw, originals), artifactPaths));
+      return jsonResult({...offlineResultFields(raw),...buildArtifactReport(restoreSourcePaths(raw, originals), artifactPaths)});
     } finally {
       await snapshot.cleanup();
     }

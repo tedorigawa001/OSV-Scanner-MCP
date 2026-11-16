@@ -35,7 +35,7 @@ import { dependencyResolution, withScopeNotes, type ScanJavaProjectArgs, type Sc
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
 export const TRANSITIVE_OMITTED_WARNING =
-  "Because OSV_MCP_NO_REMOTE_RESOLUTION is set, transitive dependencies of manifests (pom.xml / requirements.txt) were not resolved. " +
+  "Because remote resolution is disabled (OSV_MCP_NO_REMOTE_RESOLUTION or offline mode), transitive dependencies of manifests (pom.xml / requirements.txt) were not resolved. " +
   "Dependencies recorded in lockfiles (package-lock.json / poetry.lock / go.mod / gradle.lockfile and so on) are covered, " +
   "but vulnerabilities in the transitive dependencies of the dependencies listed directly in pom.xml or requirements.txt are not included. " +
   "Zero findings does not confirm that the transitive dependencies are safe";
@@ -473,6 +473,7 @@ export async function handleScanProject(
     return jsonResult({
       project_dir: project.projectDir,
       dependency_resolution: dependencyResolution(noRemoteResolution, TRANSITIVE_OMITTED_WARNING),
+      ...(report.offline_database?{offline_database:report.offline_database}:{}),
       coverage: buildCoverage(project),
       ecosystem_breakdown: ecosystemBreakdown(project, report.packages),
       vulnerable_package_count: report.vulnerable_package_count,

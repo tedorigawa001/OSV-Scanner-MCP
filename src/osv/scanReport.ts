@@ -17,6 +17,7 @@ import { asArray, asRecord, asString, asStrings } from "../utils/unknownJson.js"
 import { extractAffectedVersions, type AffectedVersionEvidence } from "./affectedVersions.js";
 import { samePackageName, sortVersions, versionRangeTypes } from "./versionScheme.js";
 import type { DependencyRelation } from "../utils/dependencyRelations.js";
+import {offlineResultFields} from './offlineCache.js';
 
 export type SeverityLevel = "critical" | "high" | "medium" | "low" | "unknown";
 
@@ -86,6 +87,8 @@ export interface ScanReportPackage {
 }
 
 export interface ScanReport {
+  /** Present only in explicit offline mode; online output remains unchanged. */
+  offline_database?: import('./offlineCache.js').OfflineDatabaseMetadata;
   /** スキャン対象として認識されたファイル(pom.xml等)のパス */
   source_files: string[];
   /** 情報提供でない脆弱性を1件以上持つパッケージの数 */
@@ -345,7 +348,7 @@ export function parseOsvScanOutput(raw: unknown): ScanReport {
     }
   }
 
-  return buildReport(sourceFiles, packageMap);
+  return {...buildReport(sourceFiles, packageMap),...offlineResultFields(raw)};
 }
 
 /** ソート用: unknown(null)はどの数値スコアよりも後ろに置く */

@@ -49,7 +49,7 @@ Packages with `dist.type: "path"` are local code: they are excluded before build
   - Set `OSV_MCP_AUTO_DOWNLOAD=0` to disable the automatic download
   - Set `OSV_MCP_PREFER_DOWNLOAD=1` to always use the verified downloaded binary instead of one on `PATH` (recommended for production)
   - The pinned version is osv-scanner 2.7.0. Its binary is cached in `~/.cache/osv-scanner-mcp/v2.7.0/`; directories of earlier versions (such as `v2.4.0/`) are no longer used and can be deleted
-- Scans, `suggest_fix`, and `explain_vulnerability` access the network. Vulnerabilities are looked up in the OSV database (`api.osv.dev`), and **scanning `pom.xml` or `requirements.txt` also connects to deps.dev (`api.deps.dev`) to resolve transitive dependencies**. See [Network destinations and privacy](#network-destinations-and-privacy) for details and how to turn this off
+- By default, scans, `suggest_fix`, and `explain_vulnerability` access the network. Vulnerabilities are looked up in the OSV database (`api.osv.dev`), and **scanning `pom.xml` or `requirements.txt` also connects to deps.dev (`api.deps.dev`) to resolve transitive dependencies**. [Offline mode](#offline-mode-and-database-preparation-source-checkout) uses pre-downloaded local databases instead
 
 ## Setup
 
@@ -149,6 +149,9 @@ npm run build
 | `OSV_MCP_PREFER_DOWNLOAD` | If `1` or `true`, always use the checksum-verified downloaded binary instead of osv-scanner on `PATH` (protects against a fake binary planted on `PATH`; an explicit `OSV_SCANNER_PATH` still takes precedence) |
 | `OSV_MCP_NO_CANDIDATE_CHECK` | If `1` or `true`, `suggest_fix` does not query OSV about recommended versions (`candidate_check` is `disabled`, and recommended versions are not checked for known vulnerabilities that do not affect the current version) |
 | `OSV_MCP_NO_REMOTE_RESOLUTION` | If `1` or `true`, transitive dependencies of `pom.xml` and `requirements.txt` are not resolved through deps.dev. **This stops only the requests to deps.dev; package names and versions are still sent to `api.osv.dev` for the vulnerability lookup.** Vulnerabilities in transitive dependencies are then not detected, and responses say so in `dependency_resolution.warning`. See [Network destinations and privacy](#network-destinations-and-privacy) |
+| `OSV_MCP_OFFLINE` | `1`, `true` or `yes` enables full offline scans. No API queries, remote dependency resolution, binary downloads or automatic DB updates. Candidate rechecks are disabled and vulnerability explanations are unavailable |
+| `OSV_MCP_OFFLINE_DB_DIR` | Absolute directory prepared by the `cache` command; defaults to `$XDG_CACHE_HOME/osv-scanner-mcp/offline` or `~/.cache/osv-scanner-mcp/offline` |
+| `OSV_MCP_OFFLINE_MAX_AGE_HOURS` | Maximum age since each required DB was downloaded; default `168` hours, integer range `1`–`720`. An expired or future-dated database refuses the scan |
 | `OSV_MCP_GRADLE_DECLARATION_TRUST` | Set to `registered-helper-v1` to accept author-attested Gradle C1a declaration maps. Unset by default. Read once at server startup. Any other value does not stop the server: it prints a warning to stderr, leaves declaration sources disabled, and adds `declaration_trust_config_invalid` to the Gradle metadata reasons. See [Gradle declaration sources](#gradle-declaration-sources-c1a) |
 | `OSV_MCP_GRADLE_CATALOG_TRUST` | Set to `local-catalog-inputs-v1`, together with `OSV_MCP_GRADLE_DECLARATION_TRUST`, to accept declaration sources from contract-v2 version catalog aliases/bundles. Unset by default. Read once at server startup. Any other value prints a warning to stderr, leaves catalog declaration sources disabled, and adds `catalog_trust_config_invalid` to the Gradle metadata reasons. See [Gradle version catalogs](#gradle-version-catalogs-and-providerconvertible) |
 | `OSV_MCP_GRADLE_PLUGIN_TRUST` | Opt-in convention-plugin trust: `local-plugin-build-v1` or `local-plugin-loader-attested-v2`. Unset disables plugin declaration sources. Read once at startup; unknown values warn and disable. See [plugin setup](docs/GRADLE_CONVENTION_PLUGIN_USAGE.md) |
@@ -167,7 +170,7 @@ npm run build
 > - `OSV_MCP_REQUIRE_ALLOWED_ROOT=1` — refuses to start without a boundary (fail-closed)
 > - `OSV_SCANNER_PATH=/absolute/path/owned/by/an/administrator` or `OSV_MCP_PREFER_DOWNLOAD=1` — fixes which binary is run, independent of `PATH`
 >
-> Check [Network destinations and privacy](#network-destinations-and-privacy) for where dependency information is sent. In every configuration, package names and versions are sent to `api.osv.dev` for the vulnerability lookup.
+> Check [Network destinations and privacy](#network-destinations-and-privacy) for where dependency information is sent in online mode. Offline mode sends no package information.
 
 ### Running with restricted permissions
 
@@ -207,6 +210,45 @@ As an additional layer of defense, you can limit what the server can read and wr
 - On macOS and Windows, `--allow-addons` is also required for the trusted Koffi native binding used to verify the path of an open file handle. Native code is outside Node's permission sandbox. On Linux, use `--allow-fs-read=/proc/self/fd` instead; `/proc` must be mounted. If the OS cannot verify the opened object, boundary-protected reads fail closed. Keep OS-level isolation when scanning in a stronger sandbox.
 - If a required permission is missing, the server prints a warning to stderr at startup, and scans return `permission_denied` (naming the missing permission and the path)
 
+### Offline mode and database preparation (source checkout)
+
+Build this checkout, then explicitly prepare complete public ecosystem databases on a connected machine:
+
+```bash
+npm ci
+npm run build
+node dist/index.js cache --ecosystems npm,PyPI --directory /absolute/offline-cache
+```
+
+The preparation command contacts only `https://osv-vulnerabilities.storage.googleapis.com/<ecosystem>/all.zip`. It reads no project files and does not send package names or versions. Supported databases: `Maven`, `npm`, `PyPI`, `Go`, `crates.io`, `Packagist`, `NuGet`. Select every ecosystem your scan needs. Refresh with the same command; partial updates preserve other selected databases. Preparation is refused while `OSV_MCP_OFFLINE` is enabled.
+
+Transfer the **entire cache directory**, including `manifest.json` and `objects/`, to the disconnected machine. Also provision the server and its dependencies and an OS/architecture-compatible OSV-Scanner binary; the DB preparation command does not download these. Offline scanning is verified with pinned OSV-Scanner **2.7.0**. Existing native OSV cache directories are not imported automatically.
+
+For example, start an already installed server with these environment settings in your MCP client:
+
+```json
+{
+  "command": "node",
+  "args": ["/opt/osv-scanner-mcp/dist/index.js"],
+  "env": {
+    "OSV_MCP_OFFLINE": "1",
+    "OSV_MCP_OFFLINE_DB_DIR": "/opt/offline-cache",
+    "OSV_SCANNER_PATH": "/opt/bin/osv-scanner",
+    "OSV_MCP_ALLOWED_ROOT": "/projects"
+  }
+}
+```
+
+Using `npx` on a disconnected host can still require an npm package download; provision the application first. If `OSV_SCANNER_PATH` is unset, offline mode can reuse a checksum-verified cached binary but never downloads one, regardless of the automatic-download setting.
+
+`scan_project`, `scan_java_project`, `scan_java_artifact`, `scan_sbom` and the scanning part of `suggest_fix` use the local DB. Responses include `offline_database` with download timestamps, SHA-256 digests and a snapshot warning. Missing, unreadable, expired or corrupted cache data fails the scan instead of returning a clean result. Each scan uses verified private copies, so a concurrent refresh cannot change its DB bytes. Online output is unchanged.
+
+Offline mode always disables deps.dev resolution; lockfiles remain preferable to `pom.xml` or `requirements.txt` alone. The initial offline implementation accepts registry versions; project lockfiles containing detected Git/VCS references are refused because the native offline matcher cannot verify commits. `suggest_fix` computes recommendations from the scanned affected ranges, but **does not recheck candidates against either the API or the local DB**: `candidate_check` is `disabled` with an explicit note. `explain_vulnerability` returns an offline-unavailable error without a network fallback. A local snapshot cannot establish the absence of newer advisories.
+
+The operator-produced manifest is trusted configuration; SHA-256 detects transfer/copy corruption, not an independent signature on the OSV database. DB ZIPs are limited to 512 MiB each, the object cache to 2 GiB and 128 objects, and project lockfile preflight to 16 MiB/file and 64 MiB/scan. A private per-scan DB snapshot may additionally use up to 2 GiB of temporary space, and the native matcher needs memory to load it. Old objects are retained rather than deleted under active readers. If the cache fills, stop its users and recreate the cache with the required ecosystems. A crashed updater may leave `update.lock` or `.download-*`; remove those only after confirming that no updater is running. Read-only cache use is supported; refresh requires write access.
+
+See [offline validation and reproduction](docs/OFFLINE_VALIDATION.md).
+
 ### Network destinations and privacy
 
 Destinations confirmed with osv-scanner v2.4.0 (2026-10-07) and v2.7.0, the pinned version (2026-10-15):
@@ -220,8 +262,10 @@ Destinations confirmed with osv-scanner v2.4.0 (2026-10-07) and v2.7.0, the pinn
 | `suggest_fix` checking recommended versions | `api.osv.dev` | The names of packages with a recommendation (already sent during the scan) and the candidate versions (published fixed versions). Disable with `OSV_MCP_NO_CANDIDATE_CHECK=1` |
 | `explain_vulnerability` | `api.osv.dev` | The vulnerability ID |
 | Automatic binary download (first run only) | GitHub (official Releases) | Nothing (downloads the pinned binary) |
+| Explicit `cache --ecosystems ...` preparation | `osv-vulnerabilities.storage.googleapis.com` | Selected ecosystem names only; downloads complete public ZIPs |
+| Offline scans and suggestions | None | No network requests; uses previously downloaded DBs |
 
-Both api.osv.dev and deps.dev are operated by Google. **In every configuration, the names and versions of scanned packages are sent to `api.osv.dev` for the vulnerability lookup** (offline lookup is not supported).
+Both api.osv.dev and deps.dev are operated by Google. In default online mode, names and versions are sent to `api.osv.dev`. With `OSV_MCP_OFFLINE=1`, scanning uses local snapshots and no package data is sent.
 
 - **To stop sending data to deps.dev**: Set `OSV_MCP_NO_REMOTE_RESOLUTION=1`. Transitive dependencies of `pom.xml` and `requirements.txt` are then not resolved, and only `api.osv.dev` is contacted. This stops only the requests to deps.dev; requests to OSV continue. Only the dependencies written in those files are scanned, so **vulnerabilities in transitive dependencies are missed**. Responses of `scan_project` / `scan_java_project` / `suggest_fix` show this as `transitive_resolution: "disabled"` in `dependency_resolution` with a warning, so it can be told apart from zero findings. To scan transitive dependencies without deps.dev, use lockfiles (`gradle.lockfile`, `poetry.lock`, and so on)
 - **Arbitrary repositories are never contacted**: osv-scanner's `--data-source native` mode connects to any URL listed in `<repositories>` of the scanned `pom.xml` (a malicious `pom.xml` could make it contact an attacker's server). This server never uses that mode and sets `deps.dev` explicitly
@@ -942,6 +986,7 @@ Design notes and open items are in [docs/DESIGN_TODO.md](docs/DESIGN_TODO.md) (i
 - [x] `explain_vulnerability`: vulnerability details (through the OSV API)
 - [x] npm package (`npx osv-scanner-mcp`)
 - [x] Automatic OSV-Scanner download (with checksum verification)
+- [x] Offline scans and suggestions with explicit ecosystem DB preparation (source checkout; candidate rechecks and explanations remain unavailable offline)
 - [x] Gradle support (lockfile approach)
 - [x] `scan_java_artifact`: JAR/WAR scanning (for projects without a lockfile, or with only shaded/fat JARs)
 - [x] `scan_project`: scans Java / JavaScript / Python / Go lockfiles together

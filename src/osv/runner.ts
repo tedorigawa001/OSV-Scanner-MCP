@@ -19,12 +19,15 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
-import { isManifestFormat, type ManifestTarget } from "../utils/manifestFormats.js";
+import { isManifestFormat, type ManifestTarget,type ManifestFormat } from "../utils/manifestFormats.js";
 import { trackChildProcess } from "../utils/processCleanup.js";
 import { resolveOsvScannerBinary } from "./binaryManager.js";
 import { parseOsvScanOutput, type ScanReport } from "./scanReport.js";
+import {offlineEnabled,type OfflineOptions} from './offline.js';
+import {captureOfflineDatabases,offlineMetadata} from './offlineCache.js';
+import {readRegularFile} from '../utils/safeRead.js';
 
-export interface RunOsvScanOptions {
+export interface RunOsvScanOptions extends OfflineOptions {
   /** 使用するバイナリ。省略時はOSV_SCANNER_PATH→PATHの順で解決 */
   binaryPath?: string;
   /** デフォルト120秒 */
@@ -70,6 +73,7 @@ function noRemoteResolutionFromEnv(): boolean {
 
 /** 外部解決を無効にするか。スキャン引数と応答の表示が食い違わないよう、呼び出し側で一度だけ決める */
 export function isRemoteResolutionDisabled(options: RunOsvScanOptions = {}): boolean {
+  if (offlineEnabled(options)) return true;
   return options.noRemoteResolution ?? noRemoteResolutionFromEnv();
 }
 
@@ -82,6 +86,12 @@ export function isRemoteResolutionDisabled(options: RunOsvScanOptions = {}): boo
  */
 const FIXED_SCAN_ARGS = ["scan", "source", "--format", "json", "--data-source", "deps.dev"] as const;
 const NO_RESOLVE_ARG = "--no-resolve";
+const FORMAT_ECOSYSTEM:Record<ManifestFormat,string>={
+ 'pom.xml':'Maven','gradle.lockfile':'Maven','buildscript-gradle.lockfile':'Maven',
+ 'package-lock.json':'npm','yarn.lock':'npm','pnpm-lock.yaml':'npm','bun.lock':'npm',
+ 'poetry.lock':'PyPI','uv.lock':'PyPI','Pipfile.lock':'PyPI','pdm.lock':'PyPI','requirements.txt':'PyPI',
+ 'go.mod':'Go','Cargo.lock':'crates.io','packages.lock.json':'NuGet','composer.lock':'Packagist',
+};
 
 /** 検出済みマニフェストを`--lockfile <形式>:<絶対パス>`の組にする。許可外の形式・相対パスは渡さない */
 export function buildProjectTargetArgs(targets: readonly ManifestTarget[]): string[] {
@@ -108,9 +118,13 @@ export type ScanMode = "project" | "artifact" | "sbom";
 const SCAN_ARGS = { project: FIXED_SCAN_ARGS, artifact: FIXED_ARTIFACT_ARGS, sbom: FIXED_SBOM_ARGS };
 
 /** 外部解決を行うのはマニフェストを読むprojectモードだけ(artifact/sbomはOSV照会のみ) */
-export function buildOsvScanArgs(mode: ScanMode, noRemoteResolution: boolean): string[] {
+export function buildOsvScanArgs(mode: ScanMode, noRemoteResolution: boolean, offline=false): string[] {
   const args: string[] = [...SCAN_ARGS[mode]];
   if (mode === "project" && noRemoteResolution) args.push(NO_RESOLVE_ARG);
+  if (offline) {
+    args.push('--offline');
+    if (!args.includes(NO_RESOLVE_ARG)) args.push(NO_RESOLVE_ARG);
+  }
   return args;
 }
 
@@ -131,12 +145,14 @@ function execOsvScanner(
   timeoutMs: number,
   maxOutputBytes: number,
   scanArgs: readonly string[],
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<RawScanResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(binaryPath, [
       ...scanArgs, ...targetPaths,
     ], {
       shell: false,
+      env,
       stdio: ["ignore", "pipe", "pipe"],
     });
     trackChildProcess(child);
@@ -215,7 +231,19 @@ export async function runOsvScan(
   if (targets.length === 0) {
     throw new ScanToolError("no_manifest_found", "No manifest to scan");
   }
-  return parseOsvScanOutput(await runScan(buildProjectTargetArgs(targets), options, "project"));
+  if(offlineEnabled(options)){
+    let remaining=64*1024*1024;
+    for(const target of targets){
+      const r=await readRegularFile(target.path,{maxBytes:Math.min(16*1024*1024,remaining)});
+      if(!r.ok)throw new ScanToolError('scan_failed','Offline lockfile preflight failed: unreadable or oversized input');
+      remaining-=r.bytes.length;
+      // The native offline matcher does not query commits. Refuse VCS inputs rather than silently omit them.
+      if(/git\+|git:\/\/|ssh:\/\/|git@|github:|gitlab:|bitbucket:|\.git#|\bgit["']?\s*[:=]|https?:\/\/(?:github\.com|gitlab\.com|bitbucket\.org)\/[^\s"']+#/i.test(r.bytes.toString('utf8'))){
+        throw new ScanToolError('scan_failed','Offline mode cannot verify Git/commit dependencies in this lockfile. Use a registry-only lockfile or scan online');
+      }
+    }
+  }
+  return parseOsvScanOutput(await runScan(buildProjectTargetArgs(targets), options, "project",[...new Set(targets.map(t=>FORMAT_ECOSYSTEM[t.format]))]));
 }
 
 /** Accept only the exact absolute files enumerated by detectJavaArtifacts. */
@@ -239,6 +267,7 @@ async function runScan(
   targetArgs: readonly string[],
   options: RunOsvScanOptions,
   mode: ScanMode,
+  ecosystems?:readonly string[],
 ): Promise<unknown> {
   const limit = options.maxConcurrentScans ?? maxConcurrentScansFromEnv();
   if (activeScans >= limit) {
@@ -249,7 +278,7 @@ async function runScan(
   }
   activeScans++;
   try {
-    return await runOsvScanUnguarded(targetArgs, options, mode);
+    return await runOsvScanUnguarded(targetArgs, options, mode,ecosystems);
   } finally {
     activeScans--;
   }
@@ -259,14 +288,19 @@ async function runOsvScanUnguarded(
   targetArgs: readonly string[],
   options: RunOsvScanOptions,
   mode: ScanMode,
+  ecosystems?:readonly string[],
 ): Promise<unknown> {
-  const binaryPath = options.binaryPath ?? (await resolveOsvScannerBinary());
+  const offline=offlineEnabled(options);
+  const binaryPath = options.binaryPath ?? (await resolveOsvScannerBinary(offline?{...process.env,OSV_MCP_OFFLINE:'1'}:process.env));
+  const cache=offline?await captureOfflineDatabases({...options,offline:true},ecosystems??(mode==='artifact'?['Maven']:undefined)):null;
+  try {
   const result = await execOsvScanner(
     binaryPath,
     targetArgs,
     options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
-    buildOsvScanArgs(mode, isRemoteResolutionDisabled(options)),
+    buildOsvScanArgs(mode, isRemoteResolutionDisabled(options),offline),
+    cache?{...process.env,OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY:cache.dir,OSV_SCALIBR_LOCAL_DB_CACHE_DIRECTORY:cache.dir}:process.env,
   );
 
   if (result.exitCode === EXIT_NO_PACKAGES && mode === "project") {
@@ -278,7 +312,7 @@ async function runOsvScanUnguarded(
   }
 
   if (mode !== "project" && result.exitCode === EXIT_NO_PACKAGES && result.stdout.trim() === "") {
-    return { results: [] };
+    const empty={results:[]};if(cache)offlineMetadata.set(empty,cache.metadata);return empty;
   }
   if (result.exitCode !== EXIT_NO_VULNS && result.exitCode !== EXIT_VULNS_FOUND &&
       !(mode !== "project" && result.exitCode === EXIT_NO_PACKAGES)) {
@@ -301,5 +335,10 @@ async function runOsvScanUnguarded(
       result.stdout.slice(0, 1000),
     );
   }
+  if(cache){
+    if(typeof parsed!=='object'||parsed===null||Array.isArray(parsed))throw new ScanToolError('invalid_output','Invalid offline scanner output');
+    offlineMetadata.set(parsed,cache.metadata);
+  }
   return parsed;
+  }finally{await cache?.cleanup();}
 }

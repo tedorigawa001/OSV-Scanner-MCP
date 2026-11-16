@@ -8,6 +8,7 @@ import { access, constants, stat } from "node:fs/promises";
 import { isAccessDenied, permissionDeniedError } from "../utils/projectWalk.js";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
+import {offlineEnabled} from './offline.js';
 
 export const OSV_SCANNER_PATH_ENV = "OSV_SCANNER_PATH";
 
@@ -106,7 +107,11 @@ export async function resolveOsvScannerBinary(
   }
 
   // 明示指定が無効な場合は、意図しないバイナリの使用を避けるためダウンロードしない
-  if (!explicitlySpecified && isAutoDownloadEnabled(env)) {
+  if (!explicitlySpecified && (offlineEnabled({},env)||isAutoDownloadEnabled(env))) {
+    if (offlineEnabled({}, env)) {
+      const downloader=await import('./binaryDownloader.js');
+      return downloader.ensureOsvScannerDownloaded({allowDownload:false,cacheDir:downloader.defaultCacheDir(env)});
+    }
     const download =
       options.downloadFn ??
       (async () => (await import("./binaryDownloader.js")).ensureOsvScannerDownloaded());

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import {startupOwnedSettings} from './utils/gradleOwnedPolicy.js';
+import {offlineConfig} from './osv/offline.js';
 import {startupPluginSettings} from "./utils/gradlePlugins.js";
 import { DECLARATION_TRUST_ENV, startupDeclarationTrust, CATALOG_TRUST_ENV, startupCatalogTrust } from "./utils/gradleDeclarations.js";
 /**
@@ -14,6 +15,9 @@ import { DECLARATION_TRUST_ENV, startupDeclarationTrust, CATALOG_TRUST_ENV, star
  * - OSV_MCP_PREFER_DOWNLOAD: 1/true指定時、PATH上のバイナリを使わず検証済み自動ダウンロードを優先
  * - OSV_MCP_NO_REMOTE_RESOLUTION: 1/true指定時、pom.xmlの推移的依存をdeps.devで解決しない
  * - OSV_MCP_NO_CANDIDATE_CHECK: 1/true指定時、suggest_fixの推奨先のOSV照会を行わない
+ * - OSV_MCP_OFFLINE: 1/true/yes指定時、事前取得したDBだけを使い外部通信を行わない
+ * - OSV_MCP_OFFLINE_DB_DIR: 事前取得したDBキャッシュの絶対パス
+ * - OSV_MCP_OFFLINE_MAX_AGE_HOURS: DB取得後の有効時間(既定168、1〜720)
  * - OSV_MCP_HISTORY: 1/true指定時、スキャンの実行履歴(要約と差分用の識別子)をローカルに記録する(既定は無効)
  * - OSV_MCP_HISTORY_DIR: 実行履歴の保存先(絶対パス。既定は$XDG_STATE_HOME/osv-scanner-mcp/history)
  * - OSV_MCP_HISTORY_MAX_ENTRIES: 保持する実行履歴の件数(既定500)
@@ -46,6 +50,13 @@ import {
 } from "./utils/startupConfig.js";
 
 export { ALLOWED_ROOT_ENV };
+
+if(process.argv[2]==='cache'){
+  const {runCacheCli}=await import('./cache.js');await runCacheCli(process.argv.slice(3));process.exit(process.exitCode??0);
+}
+
+try{if(offlineConfig().enabled)console.error('osv-scanner-mcp: offline mode; database refresh, remote resolution, candidate rechecks and vulnerability explanations are disabled');}
+catch(e){console.error(e instanceof Error?e.message:'Invalid offline configuration');process.exit(1);}
 
 // Declaration provenance is an explicit consumer policy, never a graph-file instruction.
 // Read once here. An unknown value keeps every scanning tool available and only disables Gradle declaration sources.
@@ -83,6 +94,7 @@ if (startupWarning !== null) {
     cacheDir: scannerPath ? undefined : defaultCacheDir(),
     scannerPath: scannerPath || undefined,
     historyDir: historyConfigFromEnv().enabled ? historyConfigFromEnv().dir : undefined,
+    offlineDbDir: offlineConfig().enabled ? offlineConfig().dir : undefined,
   })) {
     console.error(`osv-scanner-mcp: [warning] ${warning}`);
   }
@@ -110,6 +122,7 @@ server.registerTool(
       "Python (poetry.lock / uv.lock / Pipfile.lock / pdm.lock / requirements.txt), Go (go.mod), Rust (Cargo.lock), PHP (composer.lock, including packages-dev), " +
       ".NET (packages.lock.json / obj/project.assets.json / packages.config / *.deps.json, and the direct PackageReference items of .csproj / .fsproj / .vbproj files without them). " +
       "Package managers and builds are never run. " +
+      "OSV_MCP_OFFLINE=1 scans against pre-downloaded local databases without network requests; offline_database reports their age and digest. " +
       "Always check coverage at the top of the response: it lists manifests without a lockfile, requirements lines without a pinned version, and excluded files. " +
       "Git dependencies in npm lockfiles are looked up by repository URL, so private git host names and paths are sent to api.osv.dev. " +
       "For Cargo.lock, only crates from crates.io are scanned: the project's own crates are counted in local_crates, and git or private-registry crates are listed in unscannable_crates. " +
@@ -169,6 +182,7 @@ server.registerTool(
       "Dependencies scanned at a requirements.txt lower bound (>=) or a NuGet PackageReference minimum/range are marked version_is_lower_bound, and the recommendation then means raising the lower bound rather than confirming the installed version. " +
       "update_hint explains how to upgrade, depending on whether the package is a direct or transitive dependency (dependency_relation; for npm, Python lockfiles, Gradle, Cargo.lock, Composer and NuGet also introduced_by and declared_in where evidence permits). NuGet hints name a confirmed declaring project or introducing direct packages; central management and SDK/runtime constraints still require verification. Composer hints name the declaring manifest for direct dependencies and the introducing roots for transitive dependencies; regenerate the lockfile in a trusted environment and verify constraints. Cargo updates are conditional on parent version requirements; cross-major updates may require Cargo.toml changes. " +
       "The recommended version is checked against api.osv.dev, and versions with known vulnerabilities that do not affect the current version are avoided (result in candidate_check). " +
+      "In offline mode, additional candidate checks are disabled and explicitly noted; recommendations use only the vulnerabilities in the local database scan. " +
       "clean excludes known unfixed advisories, known informational advisories that are not fix targets, and new Rust unmaintained/notice records; these may still apply. New unsound records are fix targets. " +
       "With has_known_vulnerabilities, failed, or skipped, the recommended version has not been confirmed safe; conflict means the data disagreed and the recommendation is withheld. " +
       "Candidates are checked against the affected ranges of every vulnerability to fix, and the recommendation is withheld when the data are insufficient. Pre-releases are recommended only when no stable version fixes everything, and are marked recommended_is_prerelease. " +
@@ -194,7 +208,7 @@ server.registerTool(
     description:
       "Fetches the details of a vulnerability by GHSA or CVE ID from the OSV database (api.osv.dev). " +
       "Includes the description (details), CVSS vectors, affected packages and version ranges, and reference links (advisories and fix commits). " +
-      "IDs from the results of the scan tools and suggest_fix can be passed as they are. No scan is run.",
+      "IDs from the results of the scan tools and suggest_fix can be passed as they are. No scan is run. This tool is unavailable in offline mode and never falls back to a network request.",
     inputSchema: {
       vulnerability_id: z
         .string()

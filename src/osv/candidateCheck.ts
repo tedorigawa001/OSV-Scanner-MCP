@@ -195,8 +195,11 @@ function applyResult(result: CheckResult): PackageUpgradeSuggestion {
 export async function checkRecommendedCandidates(
   packages: readonly ScanReportPackage[],
   suggestions: readonly PackageUpgradeSuggestion[],
-  options: CandidateCheckOptions | "disabled" = {},
+  options: CandidateCheckOptions | "disabled" | "offline" = {},
 ): Promise<PackageUpgradeSuggestion[]> {
+  if (options === 'offline') {
+    return suggestions.map(s=>s.recommended_upgrade===null?s:{...s,candidate_check:'disabled' as const,upgrade_note:s.upgrade_note+'. Offline mode: the recommended version was not rechecked against OSV or the local database; it may have other known vulnerabilities'});
+  }
   if (options === "disabled") {
     return suggestions.map((s) => (s.recommended_upgrade === null ? s : { ...s, candidate_check: "disabled" as const }));
   }

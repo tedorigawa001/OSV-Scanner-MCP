@@ -6,6 +6,7 @@
  */
 
 import { isRemoteResolutionDisabled } from "../osv/runner.js";
+import {offlineEnabled} from '../osv/offline.js';
 import { candidateCheckDisabledFromEnv, checkRecommendedCandidates, type CandidateCheckOptions } from "../osv/candidateCheck.js";
 import { hasVulnerability } from "../osv/scanReport.js";
 import { suggestUpgrades } from "../osv/suggestFix.js";
@@ -33,7 +34,7 @@ export async function handleSuggestFix(
     const noRemoteResolution = isRemoteResolutionDisabled(options);
     const report = await scanFromSnapshot(project, { ...options, noRemoteResolution });
     const packages = markLowerBounds(project, report.packages);
-    const candidateCheck = options.candidateCheck ?? (candidateCheckDisabledFromEnv() ? "disabled" : {});
+    const candidateCheck = offlineEnabled(options)?'offline':options.candidateCheck ?? (candidateCheckDisabledFromEnv() ? "disabled" : {});
     const suggestions = await checkRecommendedCandidates(packages, suggestUpgrades(packages), candidateCheck);
     const unfixedVulnerabilities = suggestions.reduce(
       (sum, s) => sum + s.per_cve_detail.filter((d) => d.tier === "unfixed").length,
@@ -43,6 +44,7 @@ export async function handleSuggestFix(
       project_dir: project.projectDir,
       manifests: project.manifests.map((m) => sanitizeExternalText(m.path)),
       dependency_resolution: dependencyResolution(noRemoteResolution, TRANSITIVE_OMITTED_WARNING),
+      ...(report.offline_database?{offline_database:report.offline_database}:{}),
       coverage: buildCoverage(project),
       // 情報提供のアドバイザリ(RustSecのunmaintained等)だけのパッケージは数えない
       vulnerable_package_count: packages.filter(hasVulnerability).length,

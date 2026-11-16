@@ -15,7 +15,7 @@ import { ScanSnapshot, snapshotManifests } from "../utils/scanSnapshot.js";
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
 const TRANSITIVE_OMITTED_WARNING =
-  "Because OSV_MCP_NO_REMOTE_RESOLUTION is set, transitive dependencies of manifests (pom.xml) were not resolved. " +
+  "Because remote resolution is disabled (OSV_MCP_NO_REMOTE_RESOLUTION or offline mode), transitive dependencies of manifests (pom.xml) were not resolved. " +
   "Dependencies recorded in lockfiles (gradle.lockfile) are covered, but vulnerabilities in the transitive dependencies of the dependencies listed directly in pom.xml are not included. " +
   "Zero findings does not confirm that the transitive dependencies are safe";
 

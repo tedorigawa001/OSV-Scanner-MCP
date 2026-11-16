@@ -25,6 +25,8 @@ export interface PermissionCheckInput {
   scannerPath?: string;
   /** スキャンの実行履歴の保存先(OSV_MCP_HISTORYが有効な場合だけ確認する) */
   historyDir?: string;
+  /** Offline database objects are read and copied into a private temporary snapshot. */
+  offlineDbDir?: string;
 }
 
 /** 権限モデルが有効なときに、欠けている許可を警告文の一覧で返す。無効なら空 */
@@ -62,6 +64,7 @@ export function permissionModelWarnings(
   if (input.scannerPath !== undefined && !permission.has("fs.read", input.scannerPath)) {
     warnings.push(`Reading OSV_SCANNER_PATH is not allowed: ${input.scannerPath} (--allow-fs-read)`);
   }
+  if(input.offlineDbDir!==undefined&&!permission.has('fs.read',inside(input.offlineDbDir))){warnings.push(`Reading offline databases is not allowed: ${input.offlineDbDir} (--allow-fs-read)`);}
   if (input.cacheDir !== undefined && !permission.has("fs.write", inside(input.cacheDir))) {
     warnings.push(
       `Writing to the osv-scanner cache is not allowed: ${input.cacheDir} ` +

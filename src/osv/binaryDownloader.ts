@@ -12,11 +12,12 @@
  */
 
 import { createHash, randomBytes } from "node:crypto";
-import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import { readResponseBytes } from "../utils/readResponseBytes.js";
+import {readRegularFile} from '../utils/safeRead.js';
 
 /**
  * ピン留めするOSV-Scannerのバージョン。更新時は下のチェックサムも必ず更新すること。
@@ -49,6 +50,8 @@ const DOWNLOAD_TIMEOUT_MS = 300_000;
 const MAX_BINARY_BYTES = 200 * 1024 * 1024;
 
 export interface DownloadOsvScannerOptions {
+  /** Offline use may reuse a verified cached binary but never fetch it. */
+  allowDownload?: boolean;
   /** キャッシュ先。デフォルト: $XDG_CACHE_HOME/osv-scanner-mcp または ~/.cache/osv-scanner-mcp */
   cacheDir?: string;
   /** テスト用の注入ポイント */
@@ -71,8 +74,8 @@ export function assetNameForPlatform(
   return `osv-scanner_${osName}_${cpuName}${osName === "windows" ? ".exe" : ""}`;
 }
 
-export function defaultCacheDir(): string {
-  const xdg = process.env.XDG_CACHE_HOME;
+export function defaultCacheDir(env:NodeJS.ProcessEnv=process.env): string {
+  const xdg = env.XDG_CACHE_HOME;
   const base = xdg !== undefined && xdg.trim() !== "" ? xdg : path.join(os.homedir(), ".cache");
   return path.join(base, "osv-scanner-mcp");
 }
@@ -83,7 +86,8 @@ function sha256Hex(data: Buffer): string {
 
 async function verifyFile(filePath: string, expectedSha256: string): Promise<boolean> {
   try {
-    return sha256Hex(await readFile(filePath)) === expectedSha256;
+    const read=await readRegularFile(filePath,{maxBytes:MAX_BINARY_BYTES});
+    return read.ok&&sha256Hex(read.bytes)===expectedSha256;
   } catch {
     return false;
   }
@@ -154,6 +158,11 @@ export async function ensureOsvScannerDownloaded(
   const cacheDir = options.cacheDir ?? defaultCacheDir();
   const versionDir = path.join(cacheDir, `v${PINNED_OSV_SCANNER_VERSION}`);
   const targetPath = path.join(versionDir, assetName);
+
+  if (options.allowDownload === false) {
+    if (await verifyFile(targetPath, expected)) return targetPath;
+    throw new ScanToolError('binary_not_found', 'Offline mode: no verified cached OSV-Scanner binary is available. Prepare it on a connected machine or set OSV_SCANNER_PATH; no download was attempted');
+  }
 
   // キャッシュディレクトリは所有者のみアクセス可(0700)にする。
   // mkdirのmodeは新規作成時しか効かないため、旧版が広い権限で作った

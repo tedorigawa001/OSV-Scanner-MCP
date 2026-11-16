@@ -2,6 +2,7 @@ import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { runOsvSbomScan, type RunOsvScanOptions } from "../osv/runner.js";
+import {offlineResultFields} from '../osv/offlineCache.js';
 import { buildSbomReport } from "../osv/sbomReport.js";
 import { SBOM_DIR_PREFIX, trackTempDir } from "../utils/processCleanup.js";
 import { loadSbom, type SbomInputOptions } from "../utils/sbomInput.js";
@@ -21,7 +22,7 @@ export async function handleScanSbom(args: ScanSbomArgs, options: ScanSbomOption
       const snapshotPath = path.join(dir, input.format === "CycloneDX" ? "input.cdx.json" : "input.spdx.json");
       await writeFile(snapshotPath, input.bytes, { mode: 0o600, flag: "wx" });
       const raw = await runOsvSbomScan(snapshotPath, options);
-      return jsonResult(buildSbomReport(raw, input, snapshotPath));
+      return jsonResult({...offlineResultFields(raw),...buildSbomReport(raw, input, snapshotPath)});
     } finally {
       await rm(dir, { recursive: true, force: true });
       untrack();
