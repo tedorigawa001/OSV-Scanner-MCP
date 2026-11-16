@@ -10,7 +10,7 @@
   "document": {
     "path": "docs/GRADLE_KOTLIN_PLUGIN_DECLARATIONS.md",
     "heading": "### 9.164 E2-P0 PB1：認証journal・anchor port・durable escape",
-    "sha256": "0790180434b1abc35a8d91882eb592d1c2e5cc16c5a99f7cede3cdc628b3dc4b"
+    "sha256": "160504d6e321a217c74514adbc5af72c99b797b36fda074548f973e015c996ad"
   },
   "sourceBindings": {
     "src/test/utils/gradleOwnedCwcHb2EvidenceDesign.test.ts": "7a507950884821ac3d4853fade92ffd4c65fd2bab28a807187c03b853af158be",
@@ -393,12 +393,12 @@
     "src/utils/gradleOwnedP0StateCodec.ts": "134caaa03c14f473379c633f084d408f5819709fbd911497a595a9b1945cfce9",
     "src/test/utils/gradleOwnedP0StateRecord.test.ts": "43045a5f406bf91ac79f9becd45c11f00982f07877e0189a71ed09e53c1dd535",
     "scripts/check-e2-p0-pb0.mjs": "47c85420977187d783671e7de46a24168b5fa6e06cf10b4b8425c4779d1a2476",
-    "src/test/utils/gradleOwnedP1Durable.test.ts": "7e68969da67324b92ad16faac414226ec4d8e23cc33c52bcd340887deeb68654",
+    "src/test/utils/gradleOwnedP1Durable.test.ts": "4c8eac7a748c3d3c990c5092c938771ba6a67b29347067deb0282a1219943362",
     "src/utils/gradleOwnedP1Contract.ts": "0a334559e9e8fbdd475de0de3a33a53ec7ebea9783e706a223d5c66dab75274c",
-    "src/utils/gradleOwnedP1Store.ts": "38a76aaecddeb215b6d540ed1308a808db7449eb7d1601036fe56f1fc35d43e0",
+    "src/utils/gradleOwnedP1Store.ts": "ff55063095b6dba6145bb19e121d893092010a30814fd9e08cdf8b59c7097fa8",
     "src/test/fixtures/gradleOwnedP1Fixture.ts": "735a6c60dd4d2cd7d24a7fd97f2e1b0004a57b0a6eed751e9a222998cb6651c3",
-    "src/test/utils/gradleOwnedP1Record.test.ts": "6e958241f11536f1a146822536a34ea726f2e6b9e7ec9c8dff964aec11ea5860",
-    "scripts/check-e2-p0-pb1.mjs": "6e1ff1ce8c22e5ef9800a9fc929544bb6d3157204727f844f324406cce68b34c"
+    "src/test/utils/gradleOwnedP1Record.test.ts": "0dec16bbf55638973de5e5358f034a253942206bd36d9716b7ca724ec9667838",
+    "scripts/check-e2-p0-pb1.mjs": "fdba6787ed9c77204027619e2e880d7980cdaa5bbab6e174cb7e7e57ff8c0807"
   },
   "runtime": {
     "node": "v26.12.1",
@@ -456,7 +456,7 @@
   ],
   "artifacts": {
     "gradleOwnedP1Contract.js": "58018fcb04508bd797e4d2a70fad3a99c6d1a6f6a4a7f25113aad38a8d6a49d2",
-    "gradleOwnedP1Store.js": "0bf8fc462ef1731e08661c12173521f7d13de9336338ab1aadb168fa3c6911c4",
+    "gradleOwnedP1Store.js": "b72babdb4213b61fb17a73595e288a02cb9ccdb3914d3840b8cf566836355dbe",
     "gradleOwnedStoreDisk.js": "afeeddb214ed4bae8e690bf00ae47e1054c0486d09a602d1fe0bf121adf3f68b",
     "gradleOwnedStoreFs.js": "5c9ea8e3e3e00ad3d557ef48777af2ae52cdf872fa7b1ed823153238de778d91",
     "gradleOwnedStoreJournal.js": "d678a3d2c7d65bbab79c94ea52149ebcdee560e012072f4ad77085f20e0711ec",
@@ -836,9 +836,40 @@
     "idleMalformedInputRemainsNonfatal": true,
     "scope": "same-UID-real-disk-and-trusted-callback-fixture"
   },
+  "secondReviewRegressions": {
+    "groups": [
+      "PBD33",
+      "PBD34"
+    ],
+    "adjusted": [
+      "PBD30"
+    ],
+    "caseCounts": {
+      "PBD33": 3,
+      "PBD34": 4
+    },
+    "before": {
+      "passed": 0,
+      "failed": 7
+    },
+    "after": {
+      "passed": 7,
+      "failed": 0
+    },
+    "fixes": [
+      "cleanup-stage-uses-recovery-grant-not-original-deadline",
+      "pre-write-refusal-does-not-block"
+    ],
+    "preWriteRefusal": {
+      "blocked": false,
+      "anchorWrites": 0
+    },
+    "postWriteFailureBlocks": true,
+    "concurrentCallsTreatedAsReentry": true
+  },
   "verification": {
     "kind": "real-disk-and-native-process-faults",
-    "passed": 59,
+    "passed": 66,
     "failed": 0,
     "skipped": 0,
     "names": [
@@ -900,7 +931,14 @@
       "PBD31 caught malformed JSON reentry from authorize to commit suppresses outer ACK",
       "PBD31 caught malformed JSON reentry from fault to audit suppresses outer ACK",
       "PBD31 caught malformed JSON reentry from fault to commit suppresses outer ACK",
-      "PBD32 ordinary malformed JSON refusal does not poison an idle store"
+      "PBD32 ordinary malformed JSON refusal does not poison an idle store",
+      "PBD33 failed-or-unknown after expiry uses the recovery grant, not the original deadline",
+      "PBD33 failed-or-unknown after recovery-denied uses the recovery grant, not the original deadline",
+      "PBD33 failed-or-unknown after revocation uses the recovery grant, not the original deadline",
+      "PBD34 pre-write cas refusal writes nothing and leaves the store usable",
+      "PBD34 pre-write expired refusal writes nothing and leaves the store usable",
+      "PBD34 pre-write operation-conflict refusal writes nothing and leaves the store usable",
+      "PBD34 pre-write stage-order refusal writes nothing and leaves the store usable"
     ],
     "groups": [
       "PBD01",
@@ -934,7 +972,9 @@
       "PBD29",
       "PBD30",
       "PBD31",
-      "PBD32"
+      "PBD32",
+      "PBD33",
+      "PBD34"
     ],
     "nativeSIGKILLCaseNames": [
       "PBD20 actual SIGKILL at after-adoption recovers authenticated head and exact original receipt",

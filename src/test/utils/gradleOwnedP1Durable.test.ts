@@ -3,7 +3,7 @@ import {PB1_COMMAND_SCHEMA,pb1Command,pb1OriginKey} from '../../utils/gradleOwne
 import {request,readDraft,controlDraft,H} from '../fixtures/gradleOwnedP0StateFixture.js';
 import {journalGenesis,AuthorityJournal} from '../../utils/gradleOwnedStoreJournal.js';
 import {RootedJournalIO} from '../../utils/gradleOwnedStoreFs.js';
-import {PB1Store,type PB1StoreOptions,type PB1Receipt,type PB1Area} from '../../utils/gradleOwnedP1Store.js';
+import {PB1Store,PB1Rejection,type PB1StoreOptions,type PB1Receipt,type PB1Area} from '../../utils/gradleOwnedP1Store.js';
 import {PB1DiskAnchorFixture} from '../fixtures/gradleOwnedP1Fixture.js';
 import {generateKeyPairSync} from 'node:crypto';
 import {mkdtemp,realpath,mkdir,rm,readdir,readFile,writeFile,cp,symlink} from 'node:fs/promises';
@@ -189,7 +189,8 @@ it.each(['realm','owner'] as const)('PBD30 audit %s mismatch rejects before hist
  const history=vi.spyOn(AuthorityJournal.prototype,'readHistory'),read=vi.spyOn(RootedJournalIO.prototype,'read'),counts=()=>[f.anchor.headCalls,f.anchor.queryCalls,f.anchor.casCalls],before=counts();
  await expect(f.store.audit(foreign)).rejects.toThrow('pb1-owner');
  expect(history).not.toHaveBeenCalled();expect(read).not.toHaveBeenCalled();expect(counts()).toEqual(before);
- expect(f.store.diagnostics.blocked).toBe(true);
+ // A pre-read refusal has no unknown durable effect, so it does not block the instance (PBD34).
+ expect(f.store.diagnostics.blocked).toBe(false);
  // Positive control on the same seeded store proves the observers see the real read path.
  await f.open();history.mockClear();read.mockClear();const heads=f.anchor.headCalls;
  expect(await f.store.audit(own)).toMatchObject({outcome:'historical',receipt:saved});expect(history.mock.calls.length).toBeGreaterThan(0);expect(read.mock.calls.length).toBeGreaterThan(0);expect(f.anchor.headCalls).toBe(heads+1);
@@ -206,6 +207,28 @@ it.each([
  // Already committed effects remain charged; poisoning never rolls the persisted transaction back.
  expect(await f.anchor.entries()).toHaveLength(1);await expect(f.store.commit(a)).rejects.toThrow('blocked');
  await f.open();expect((await f.store.commit(a)).appliedHead.revision).toBe(1);
+});
+it.each(['expiry','revocation','recovery-denied'] as const)('PBD33 failed-or-unknown after %s uses the recovery grant, not the original deadline',async what=>{
+ const f=await setup();let normalRevoked=false,recoveryDenied=false;
+ const authorize:PB1StoreOptions['authorize']=(_w,phase)=>{if(phase==='recovery'?recoveryDenied:normalRevoked)throw Error('revoked');};
+ await f.open({authorize});const one=await f.store.commit(command(f.store)),cleanup=command(f.store,'failed-or-unknown',request(),one);
+ if(what==='expiry')f.setNow(5000);else normalRevoked=true;if(what==='recovery-denied')recoveryDenied=true;
+ // A normal later stage stays refused after expiry/revocation, without blocking the instance.
+ await expect(f.store.commit(command(f.store,'source-captured',request(),one))).rejects.toThrow(what==='expiry'?'expired':'revoked');
+ expect(f.store.diagnostics.blocked).toBe(false);const cas=f.anchor.casCalls;
+ if(what==='recovery-denied'){await expect(f.store.commit(cleanup)).rejects.toBeInstanceOf(PB1Rejection);expect(f.anchor.casCalls).toBe(cas);expect(f.store.diagnostics.blocked).toBe(false);return;}
+ const saved=await f.store.commit(cleanup);expect(saved.stage).toBe('failed-or-unknown');expect(f.anchor.casCalls).toBe(cas+1);
+ await f.open({authorize});expect(await f.store.commit(cleanup)).toEqual(saved);expect(f.anchor.casCalls).toBe(cas+1);
+});
+it.each(['cas','stage-order','operation-conflict','expired'] as const)('PBD34 pre-write %s refusal writes nothing and leaves the store usable',async what=>{
+ const f=await setup(),a=command(f.store),s=readDraft();s.operationId='stale';const stale=command(f.store,'intent-reserved',request(s));
+ const one=await f.store.commit(a),cas=f.anchor.casCalls,rows=(await f.anchor.entries()).length;let bad:string;
+ if(what==='cas')bad=stale;else if(what==='stage-order')bad=command(f.store,'response-ready',request(),one);
+ else if(what==='operation-conflict'){const c=JSON.parse(a);c.dataWire='{"x":1}';bad=C(c);}
+ else{const r=readDraft();r.operationId='late';r.originalDeadline=1;bad=command(f.store,'intent-reserved',request(r));}
+ const refused=f.store.commit(bad);await expect(refused).rejects.toBeInstanceOf(PB1Rejection);await expect(refused).rejects.toThrow(what==='expired'?'expired':what);
+ expect(f.store.diagnostics.blocked).toBe(false);expect(f.anchor.casCalls).toBe(cas);expect(await f.anchor.entries()).toHaveLength(rows);
+ const r=readDraft();r.operationId='next';expect((await f.store.commit(command(f.store,'intent-reserved',request(r)))).appliedHead.revision).toBe(2);expect(await f.anchor.entries()).toHaveLength(rows+1);
 });
 it('PBD32 ordinary malformed JSON refusal does not poison an idle store',async()=>{
  const f=await setup();await expect(f.store.commit('{')).rejects.toThrow();await expect(f.store.audit('{')).rejects.toThrow();expect(f.store.diagnostics.blocked).toBe(false);

@@ -27,6 +27,9 @@ const wire=(v:unknown)=>Buffer.from(canonical(v,L.command));
 const records=(manifest:unknown,index:unknown,event:unknown,result:unknown):JournalRecord[]=>[manifest,index,event,result].map((v,i)=>({id:String(i),role:roles[i]!,bytes:wire(v)}));
 const parsed=(r:JournalRecord)=>parseOwnedJson(r.bytes.toString(),L.command);
 const areas:PB1Area[]=['journal','checkpoint','adoption','adoptionCheckpoint'];
+/** Refused before this call made any durable write. The instance stays usable: no stage, anchor or ACK effect exists. */
+export class PB1Rejection extends Error {}
+async function rejectBeforeWrite<T>(f:()=>T|Promise<T>):Promise<T>{try{return await f();}catch(e){throw e instanceof PB1Rejection?e:new PB1Rejection(e instanceof Error?e.message:String(e),{cause:e});}}
 export class PB1Store {
  readonly #main:OwnedJournalDisk;readonly #adoptions:OwnedJournalDisk;readonly #stream:PB1Stream;readonly #pin:PB1AnchorPin;readonly #anchor:PB1AnchorPort;
  readonly #authorize:PB1StoreOptions['authorize'];readonly #now:()=>number;readonly #fault?:PB1StoreOptions['fault'];
@@ -58,12 +61,16 @@ export class PB1Store {
  }
  async #run<T>(f:()=>Promise<T>):Promise<T>{
   this.#entry();this.#busy=true;this.#poison=false;
-  try{const out=await f();need(!this.#poison&&!this.#closed,'pb1-reentrant-or-closed');return out;}catch(e){this.#blocked=true;throw e;}finally{this.#busy=false;}
+  try{const out=await f();need(!this.#poison&&!this.#closed,'pb1-reentrant-or-closed');return out;}
+  // Only a pre-write refusal of a non-poisoned call stays non-fatal. Storage/anchor/final-gate failures leave durable state unknown.
+  catch(e){if(this.#poison||!(e instanceof PB1Rejection))this.#blocked=true;throw e;}finally{this.#busy=false;}
  }
  async #live(c:PB1Command,phase:'before-io'|'before-ack'){
-  await this.#authorize(c.command.kind==='stage'?c.command.requestWire:c.command.queryWire,phase);
+  // failed-or-unknown is the cleanup record needed after expiry/revocation. It uses the recovery grant, not the original deadline.
+  const cleanup=c.command.kind==='stage'&&c.stage==='failed-or-unknown';
+  await this.#authorize(c.command.kind==='stage'?c.command.requestWire:c.command.queryWire,cleanup?'recovery':phase);
   const now=this.#now(),deadline=c.request.domain==='cwc.e2-p0.backend-request.v2'?c.request.originalDeadline:c.request.originalControlDeadline;
-  need(Number.isSafeInteger(now)&&now>=this.#last&&now<deadline,'pb1-revoked-or-expired');this.#last=now;need(!this.#poison&&!this.#closed,'pb1-reentrant-or-closed');
+  need(Number.isSafeInteger(now)&&now>=this.#last&&(cleanup||now<deadline),'pb1-revoked-or-expired');this.#last=now;need(!this.#poison&&!this.#closed,'pb1-reentrant-or-closed');
  }
  #streamCheck(c:PB1Command){need(c.request.realmId===this.#stream.realmId&&c.origin.owner===this.#stream.owner&&c.request.targetOwner===this.#stream.owner,'pb1-owner');need(c.command.expectedHead.authorityId===this.#stream.authorityId&&c.command.expectedHead.storeEpoch===this.#stream.storeEpoch,'pb1-head-identity');}
  #proposal(c:PB1Command,head:JournalHead):PB1Proposal{return {schema:'cwc.e2-p0.pb1-anchor-cas.v1',profileDigest:PB1_PROFILE,stream:this.#stream,transactionKey:c.transactionKey,intentDigest:c.intentDigest,previousHead:c.command.expectedHead,head};}
@@ -152,11 +159,10 @@ export class PB1Store {
  async commit(wireInput:string):Promise<PB1Receipt>{
   this.#entry();
   const c=pb1Command(wireInput);return this.#run(async()=>{
-   await this.#live(c,'before-io');const entries=await this.#history();need(entries.every(e=>e.receipt),'pb1-recovery-required');need(pb1Same(await this.#anchorHead(),this.#main.journal.head),'pb1-rollback-or-anchor-conflict');
+   await rejectBeforeWrite(()=>this.#live(c,'before-io'));const entries=await this.#history();need(entries.every(e=>e.receipt),'pb1-recovery-required');need(pb1Same(await this.#anchorHead(),this.#main.journal.head),'pb1-rollback-or-anchor-conflict');
    const old=entries.find(e=>e.c.transactionKey===c.transactionKey);
-   if(old){need(old.c.wire===c.wire&&old.receipt,'pb1-operation-conflict');await this.#fault?.('before-ack');await this.#live(c,'before-ack');return old.receipt;}
-   this.#transition(c,entries);this.#capacity(c,entries);need(pb1Same(c.command.expectedHead,this.#main.journal.head),'pb1-cas-conflict');
-   await this.#live(c,'before-io');
+   if(old){await rejectBeforeWrite(()=>need(old.c.wire===c.wire&&old.receipt,'pb1-operation-conflict'));await this.#fault?.('before-ack');await this.#live(c,'before-ack');return old.receipt!;}
+   await rejectBeforeWrite(async()=>{this.#transition(c,entries);this.#capacity(c,entries);need(pb1Same(c.command.expectedHead,this.#main.journal.head),'pb1-cas-conflict');await this.#live(c,'before-io');});
    const saved=await this.#main.journal.commit({operationId:c.transactionKey,requestDigest:c.intentDigest,expectedHead:c.command.expectedHead,records:records(this.#manifest(),this.#index(c),parseOwnedJson(c.wire,L.command),this.#result(c))});
    const head={...c.command.expectedHead,revision:saved.revision,headDigest:saved.headDigest},e:Entry={c,head,proposal:this.#proposal(c,head)};
    await this.#fault?.('after-local-checkpoint');await this.#adopt(e);need(pb1Same(await this.#anchorHead(),head),'pb1-anchor-conflict');await this.#fault?.('before-ack');await this.#live(c,'before-ack');return e.receipt!;
@@ -168,8 +174,8 @@ export class PB1Store {
   // Reuse strict tombstone validation to bind current QueryOperation authorization to its old origin.
   const raw=parseOwnedJson(queryWire,16384) as {payload?:{origin?:unknown}};
   const c=pb1Command(canonical({schema:'cwc.e2-p0.pb1-command.v1',kind:'tombstone',queryWire,origin:raw?.payload?.origin,expectedHead:this.#main.journal.head,previousStageRef:null},L.command));
-  return this.#run(async()=>{this.#streamCheck(c);await this.#live(c,'before-io');const entries=await this.#history();need(entries.every(e=>e.receipt),'pb1-recovery-required');need(pb1Same(await this.#anchorHead(),this.#main.journal.head),'pb1-rollback-or-anchor-conflict');const same=entries.filter(e=>e.c.originKey===pb1OriginKey(c.origin)),last=same.at(-1);
-   if(last&&last.c.command.kind!=='tombstone')need(last.c.origin.intentDigest===c.origin.intentDigest,'pb1-operation-conflict');
+  return this.#run(async()=>{await rejectBeforeWrite(async()=>{this.#streamCheck(c);await this.#live(c,'before-io');});const entries=await this.#history();need(entries.every(e=>e.receipt),'pb1-recovery-required');need(pb1Same(await this.#anchorHead(),this.#main.journal.head),'pb1-rollback-or-anchor-conflict');const same=entries.filter(e=>e.c.originKey===pb1OriginKey(c.origin)),last=same.at(-1);
+   if(last&&last.c.command.kind!=='tombstone')await rejectBeforeWrite(()=>need(last.c.origin.intentDigest===c.origin.intentDigest,'pb1-operation-conflict'));
    await this.#live(c,'before-ack');return {outcome:!last?'pending':last.c.command.kind==='tombstone'?'absent':'historical',receipt:last?.receipt??null,reapply:false,jobPermitIssued:false,runtimeAdmitted:false};});
  }
  get head():JournalHead{need(!this.#closed&&!this.#busy,'pb1-unavailable');return this.#main.journal.head;}

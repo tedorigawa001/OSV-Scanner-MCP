@@ -13171,9 +13171,9 @@ PB0第2レビュー修正（2026-11-16）：QueryOperationのjob subjectは現�
 
 anchor portは別にpinしたEd25519公開鍵・anchorId／keyIdとstream（realm／owner／authority／storage epoch／journal keyId）へ束縛する。head／origin照会は毎回32 Bのchallengeを生成し、署名内の一致を要求する。過去の正しい署名を新照会へ再送しても受理しない。CAS receiptは元transactionKey／完全command digest／previous head／new headを全照合する。anchor headはownerの保存high-watermarkだけであり、semantic current pin／selectionを選択しない。
 
-同stageのexact照合は現在CASより先に行う。同じorigin／stageの元command全bytes・元expected head・previous receipt・元request wireを保持し、後続取引後も保存済み元receiptだけを返す。元のdeadlineは延長せず、期限／失効後の通常ACKは拒否する。現在の監査認可を持つQueryOperationはhistoricalだけを取得し、元mutationを再実行しない。PB1のtrusted認可portはPB2の実grant／current pin検証の代用にはならない。
+同stageのexact照合は現在CASより先に行う。同じorigin／stageの元command全bytes・元expected head・previous receipt・元request wireを保持し、後続取引後も保存済み元receiptだけを返す。元のdeadlineは延長せず、期限／失効後の通常ACKは拒否する。ただし`failed-or-unknown`は期限切れ・失効の後にこそ必要なcleanup記録なので、元deadlineではなくtrusted portのrecovery grantで判定する（時刻の単調性は維持する）。現在の監査認可を持つQueryOperationはhistoricalだけを取得し、元mutationを再実行しない。PB1のtrusted認可portはPB2の実grant／current pin検証の代用にはならない。
 
-同期・anchor・adoption・最終gateの例外はinstanceをblockedにし、後続通常受付を停止する。closeして再openしても保存不明を消さず、全fileの認証と再同期、anchorのfresh headと元transaction照会、local adoption確定を要求する。再同期に再び失敗すればACKは0である。anchor CASの応答紛失は同じCASを盲目的に再適用せず、再openで元origin receiptを照会する。local adoptionだけの欠落は元anchor receiptから再構成する。本体・checkpoint・adoptionを同時に巻き戻しても、残る外部headとの不一致で拒否する。
+同期・anchor・adoption・最終gateの例外はinstanceをblockedにし、後続通常受付を停止する。本体journalへの書込前の拒否（stream不一致、stage順序、操作競合、CAS競合、書込前の現認可／期限）は保存結果が不明にならないため`PB1Rejection`として拒否し、blockedにしない。ただし再入でpoisonされた呼出しは書込前でもblockedにする。単一ownerの協調実装なので、同じinstanceへの並行呼出しは再入と区別せず同様に扱う。closeして再openしても保存不明を消さず、全fileの認証と再同期、anchorのfresh headと元transaction照会、local adoption確定を要求する。再同期に再び失敗すればACKは0である。anchor CASの応答紛失は同じCASを盲目的に再適用せず、再openで元origin receiptを照会する。local adoptionだけの欠落は元anchor receiptから再構成する。本体・checkpoint・adoptionを同時に巻き戻しても、残る外部headとの不一致で拒否する。
 
 #### 9.164.3 tombstone・escape・消費保持
 
@@ -13191,10 +13191,12 @@ read stageはintent-reserved→source-captured→response-ready→response-may-h
 
 レビュー修正（2026-11-16）：auditにもstreamのrealm／owner照合を追加し、現認可port・履歴読取へ進む前に不一致を拒否する。PBD30の2例は、正規にsealし直した別realm／別ownerのQueryOperationで、`AuthorityJournal.readHistory`・`RootedJournalIO.read`・anchorのhead／origin／CAS呼出しがすべて0になることを検査する。rootのidentity確認に伴うstatはfile内容の読取件数に含めない。同じseeded storeを再openした正常監査が実際に読取を行い、元historical receiptを返す対照も確認する。
 
-commit／auditはパースより前の共通entry guardでbusyを検出し、再入時には外側をpoisonする。PBD31の4例は認可port／before-ack故障callbackからcommit／auditへ不正JSONで再入し、内側の例外を捕捉しても外側ACK0・blockedとなることを確認する。既に保存した取引は消去せず、通常受付停止と明示再open後の元receipt復旧を維持する。PBD32は、待機中のstoreへ通常の不正JSONを渡した場合は拒否してもpoisonせず、後続の正当な取引が成功する正常対照である。追加7例は修正前1成功／6失敗から修正後7成功となった。現行はPBD01〜32の59件＋記録6件で、記録のreviewRegressionsとPBDR05は各group／case件数・修正前後結果・読取0／ACK0・消費保持を照合する。
+commit／auditはパースより前の共通entry guardでbusyを検出し、再入時には外側をpoisonする。PBD31の4例は認可port／before-ack故障callbackからcommit／auditへ不正JSONで再入し、内側の例外を捕捉しても外側ACK0・blockedとなることを確認する。既に保存した取引は消去せず、通常受付停止と明示再open後の元receipt復旧を維持する。PBD32は、待機中のstoreへ通常の不正JSONを渡した場合は拒否してもpoisonせず、後続の正当な取引が成功する正常対照である。追加7例は修正前1成功／6失敗から修正後7成功となった。この時点ではPBD01〜32の59件＋記録6件で、記録のreviewRegressionsとPBDR05は各group／case件数・修正前後結果・読取0／ACK0・消費保持を照合する。
+
+第2レビュー修正（2026-11-16）：`failed-or-unknown`の段は元deadline・通常認可ではなくrecovery grantで判定する。PBD33の3例は、intent-reserved保存後の期限切れ／通常認可の失効で通常の後続stageが拒否されてもblockedにならず、cleanup段は保存・anchor CAS1回・再open後のexact receipt返却まで成立すること、recovery grantも拒否されればCAS0のまま非fatalに拒否されることを確認する。また本体journal書込前の拒否を`PB1Rejection`として非fatalにした。PBD34の4例（CAS競合・stage飛越し・同stageの操作競合・書込前の期限切れ）は、拒否後もblockedにならずanchor書込0で、続く正当な取引がrevision2として保存されることを確認する。PBD30は監査の不一致拒否後にblockedにならないことを確認するよう調整した。追加7例は修正前0成功／7失敗から修正後7成功となった（調整したPBD30の2例も修正前は失敗）。書込後の同期・anchor・adoption・最終gateの失敗と再入は、従来どおりPBD07〜11／18／31でblockedになる。現行はPBD01〜34の66件＋記録6件で、記録のsecondReviewRegressionsとPBDR05がgroup／case件数と修正前後結果を照合する。
 
 PBD20の4件は実TypeScript compiler出力を別Node processで実行し、本体checkpoint後／anchor後／adoption後／ACK直前で実SIGKILLする。ACK未公開、writer lock解放、全認証・anchor照会後の元取引復旧を確認する。協調的な別process終了の試験であり、停電・媒体障害の保証、別UIDの隔離、独立rollback domainの実証ではない。anchor fixtureも別root／鍵へ永続化するが同UIDのテストartifactであり、本番authorityへ組み込まない。
 
-再生成は `node scripts/check-e2-p0-pb1.mjs`、再照合は `node scripts/check-e2-p0-pb1.mjs --check`。保存先は `docs/validation/gradle-e2-p0-pb1-2026-11-16.json`。基準PB0記録とsource全380件、新source／全test名、本節、Node／compiler／実koffi native image、6 build artifact、依存entryを束縛し、59件と4 SIGKILL件を毎回再実行する。依存全閉包・native imageの独立承認は別の証拠であり、このpinだけでは採用しない。
+再生成は `node scripts/check-e2-p0-pb1.mjs`、再照合は `node scripts/check-e2-p0-pb1.mjs --check`。保存先は `docs/validation/gradle-e2-p0-pb1-2026-11-16.json`。基準PB0記録とsource全380件、新source／全test名、本節、Node／compiler／実koffi native image、6 build artifact、依存entryを束縛し、66件と4 SIGKILL件を毎回再実行する。依存全閉包・native imageの独立承認は別の証拠であり、このpinだけでは採用しない。
 
 判定はPB1-local-disk-only-unsupported。固定clock・合成認可／鍵・same UIDの範囲であり、EB01〜48の全runtime条件の完了数0、実配備8群null、work／memory upper null、permit0を維持する。次はPB2の実job authorizer・immutable descriptor・atomic workflow ticket・全親予約、続いてPB3の失効／再送／債務・新boot採用、PB4のv2認証IPC、PB5の独立owner／anchor配備を実装・検証する。
