@@ -7,8 +7,8 @@
  * `npm test` (and therefore `prepublishOnly`) runs only the product scope.
  *
  * A test file belongs to the research scope when it, or a test fixture it imports, either
- * imports a module that src/index.ts does not reach, or reads validation evidence
- * (docs/validation records or the check-/analyze-/audit- scripts). Everything else is product.
+ * imports a module that src/index.ts does not reach, reads validation evidence (docs/validation
+ * records), or runs a research harness under scripts/. Everything else is product.
  */
 import {readFileSync,readdirSync,existsSync,statSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
@@ -20,7 +20,7 @@ if(scope!=='product'&&scope!=='research'&&scope!=='--list'){
   process.exit(2);
 }
 const importPattern=/(?:from\s*|import\s*\(\s*|import\s+)['"]([^'"\n]+)['"]/g;
-const evidencePattern=/docs\/validation|validation\/|check-[a-z0-9-]+\.mjs|analyze-[a-z0-9-]+\.mjs|audit-[a-z0-9-]+\.mjs/;
+const evidencePattern=/docs\/validation|validation\/|check-[a-z0-9-]+\.mjs|analyze-[a-z0-9-]+\.mjs|audit-[a-z0-9-]+\.mjs|scripts\/[A-Za-z0-9_.-]+\.mjs/;
 const read=f=>readFileSync(f,'utf8');
 function localImports(file){
   const out=[];
