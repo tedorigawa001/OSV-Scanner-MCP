@@ -12,7 +12,10 @@ let evaluations=0,helperEvaluations=0;
 export function hb1EvaluationCount(){return {core:evaluations,helper:helperEvaluations};}
 // Native module requests include static side-effect imports and re-exports. Parsing never evaluates code.
 // Exact external fixture pins additionally reject ANY unapproved text, including unreachable dynamic loaders.
-function imports(source,id){const module=new SourceTextModule(source,{identifier:'hb1:preflight-'+id,context:createContext(Object.create(null),{codeGeneration:{strings:false,wasm:false}})});return module.moduleRequests.map(r=>{need(Object.keys(r.attributes).length===0&&r.phase==='evaluation','import_attributes');return r.specifier;});}
+// Node 22.20+ reports ModuleRequest as {specifier,attributes} without phase and cannot parse source-phase imports,
+// so an absent phase is an evaluation import. A present phase must be 'evaluation'; attributes must be an empty object.
+const evaluationRequest=r=>r!==null&&typeof r==='object'&&r.attributes!==null&&typeof r.attributes==='object'&&Object.keys(r.attributes).length===0&&(!('phase' in r)||r.phase==='evaluation');
+function imports(source,id){const module=new SourceTextModule(source,{identifier:'hb1:preflight-'+id,context:createContext(Object.create(null),{codeGeneration:{strings:false,wasm:false}})});return module.moduleRequests.map(r=>{need(evaluationRequest(r),'import_attributes');return r.specifier;});}
 export function verifyHb1Candidate(sources=original,proposal=approval){need(sources&&Object.keys(sources).sort().join(',')==='cell,core,port','sources');
  const edges={core:imports(sources.core,'core'),port:imports(sources.port,'port'),cell:imports(sources.cell,'cell')};need(JSON.stringify(edges)===JSON.stringify({core:['hb1:reader-port'],port:['hb1:injected-reader'],cell:[]}),'closure');
  need(approval.schema==='cwc.hb1.fixture-approval.v1'&&proposal.schema===approval.schema,'approval');
