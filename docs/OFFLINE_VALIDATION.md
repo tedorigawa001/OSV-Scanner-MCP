@@ -57,6 +57,12 @@ npx vitest run src/test/osv src/test/tools src/test/server \
 
 `scan_java_project` and Java archive scans use the shared offline runner and have argument/cache regressions; a complete Maven database was not downloaded for this native Go validation. Cached timestamps establish time since download, not a guarantee that upstream records are exhaustive. The manifest is operator-trusted configuration and its digest is an integrity check, not an independent signature.
 
+## Object collection (2026-11-16)
+
+Refreshes previously never removed DB objects, so the default 168-hour refresh cycle would eventually exhaust the 128-object/2 GiB cache limit and make every later refresh fail. A refresh now removes, under the update lock and before downloading, the objects that the selected manifest no longer references and interrupted `.download-*` files. The selected generation remains readable for running scans. Three regressions cover six consecutive refreshes (always the selected plus previous generation), collection of a failed partial run's object and an interrupted download, and preservation and rejection of unknown entries. The first two failed before the change and the third is a control. The product regression set above now has **591 passed across 33 files**, including **44 offline cases**.
+
+The native record was measured at `4b99361` and binds those source hashes; it was not regenerated for this change because doing so requires downloading the complete Go database again and rerunning the harness under network denial. Rerun the reproduction above to bind the current sources.
+
 ## Follow-up features
 
 - Candidate-version rechecks and vulnerability explanations using local data.

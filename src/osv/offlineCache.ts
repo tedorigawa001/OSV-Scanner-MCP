@@ -25,6 +25,17 @@ async function safeDirectory(dir:string){
  await mkdir(dir,{recursive:true,mode:0o700});const s=await lstat(dir);if(!s.isDirectory()||s.isSymbolicLink())throw failure('directory must be a real directory');const canonical=await realpath(dir);await chmod(canonical,0o700);return canonical;
 }
 async function inventory(root:string){let bytes=0,count=0;const dir=await opendir(root);try{for await(const e of dir){if(++count>OFFLINE_LIMITS.objects)throw failure('object count limit reached; remove unused objects while the service is stopped');const s=await lstat(path.join(root,e.name));if(!s.isFile()||s.isSymbolicLink()||!(/^[a-f0-9]{64}\.zip$/.test(e.name)))throw failure('unexpected cache object');bytes+=s.size;if(bytes>OFFLINE_LIMITS.totalBytes)throw failure('cache size limit reached');}}finally{await dir.close().catch(()=>{});}return {bytes,count};}
+/**
+ * Under the update lock, remove DB objects the selected manifest no longer references (older generations and
+ * leftovers of failed runs) and interrupted downloads. The selected generation stays readable for running scans;
+ * only unknown or non-regular entries are left for inventory() to reject.
+ */
+async function collect(root:string,keep:ReadonlySet<string>){
+ const doomed:string[]=[],dir=await opendir(root);
+ try{for await(const e of dir){const s=await lstat(path.join(root,e.name));if(!s.isFile()||s.isSymbolicLink())continue;if(/^[a-f0-9]{64}\.zip$/.test(e.name)?!keep.has(e.name):/^\.download-[a-f0-9]{24}$/.test(e.name))doomed.push(e.name);}}
+ finally{await dir.close().catch(()=>{});}
+ for(const name of doomed)await rm(path.join(root,name),{force:true});
+}
 export interface PrepareOfflineOptions {dir:string;ecosystems:readonly string[];fetchFn?:typeof fetch;now?:number;timeoutMs?:number}
 export async function prepareOfflineDatabases(options:PrepareOfflineOptions){
  requireOnline();if(!path.isAbsolute(options.dir))throw failure('directory must be absolute');
@@ -34,6 +45,7 @@ export async function prepareOfflineDatabases(options:PrepareOfflineOptions){
  const temp=path.join(objects,'.download-'+randomBytes(12).toString('hex')),manifestTemp=path.join(root,'.manifest-'+randomBytes(12).toString('hex'));
  try{
   const present=await lstat(path.join(root,'manifest.json')).catch(e=>{if(e.code==='ENOENT')return null;throw e;});const prior=present?await load(root):{schema:1 as const,databases:[]};
+  await collect(objects,new Set(prior.databases.map(d=>d.sha256+'.zip')));
   const retained=await inventory(objects);let allocated=retained.bytes,count=retained.count;const entries=new Map(prior.databases.map(e=>[e.ecosystem,e]));
   for(const ecosystem of ecosystems){
    if(count>=OFFLINE_LIMITS.objects)throw failure('object count limit reached');

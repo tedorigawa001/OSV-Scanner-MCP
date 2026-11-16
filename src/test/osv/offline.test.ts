@@ -52,6 +52,31 @@ it.each([206,200])('rejects partial database responses (%s) without replacing th
  const dir=await cache(),before=await readFile(path.join(dir,'manifest.json')),f=vi.fn(async()=>new Response(zip,{status,headers:{'content-range':'bytes 0-31/1000'}}));
  await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:f as typeof fetch})).rejects.toThrow('complete download');expect(await readFile(path.join(dir,'manifest.json'))).toEqual(before);expect(f.mock.calls).toHaveLength(1);
 });
+const objectNames=async(dir:string)=>(await readdir(path.join(dir,'objects'))).sort();
+const generation=(i:number)=>Buffer.concat([zip,Buffer.from(' generation '+i)]);
+it('repeated refreshes keep only the selected and previous DB generations',async()=>{
+ const dir=await root();
+ for(let i=1;i<=6;i++){
+  await prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:(async()=>new Response(generation(i))) as typeof fetch});
+  const expected=[generation(i),...(i>1?[generation(i-1)]:[])].map(b=>hash(b)+'.zip').sort();expect(await objectNames(dir)).toEqual(expected);
+ }
+ const s=await captureOfflineDatabases({offline:true,offlineDbDir:dir},['npm']);expect(await readFile(path.join(s.dir,'osv-scalibr/npm/all.zip'))).toEqual(generation(6));await s.cleanup();
+});
+it('the next refresh collects objects from a failed partial run and interrupted downloads',async()=>{
+ const dir=await cache(),selected=hash(zip)+'.zip',stale=path.join(dir,'objects','.download-'+'a'.repeat(24));await writeFile(stale,'partial');
+ let calls=0;const partial=vi.fn(async()=>++calls===1?new Response(generation(1)):new Response('not zip'));
+ await expect(prepareOfflineDatabases({dir,ecosystems:['npm','PyPI'],fetchFn:partial as typeof fetch})).rejects.toThrow('ZIP');
+ // That run collected the interrupted download at its start, then left an unreferenced npm object; the manifest still selects the original one.
+ expect(await objectNames(dir)).toEqual([hash(generation(1))+'.zip',selected].sort());
+ await prepareOfflineDatabases({dir,ecosystems:['PyPI'],fetchFn:(async()=>new Response(generation(2))) as typeof fetch});
+ expect(await objectNames(dir)).toEqual([selected,hash(generation(2))+'.zip'].sort());
+ const s=await captureOfflineDatabases({offline:true,offlineDbDir:dir},['npm','PyPI']);await s.cleanup();
+});
+it('collection never removes unknown entries; they are still rejected',async()=>{
+ const dir=await cache(),note=path.join(dir,'objects','notes.txt');await writeFile(note,'operator file');
+ await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:(async()=>new Response(generation(1))) as typeof fetch})).rejects.toThrow('unexpected cache object');
+ expect(await readFile(note,'utf8')).toBe('operator file');expect(await objectNames(dir)).toContain(hash(zip)+'.zip');
+});
 it('serializes updates and never removes the active updater lock for another caller',async()=>{
  const dir=await root();let release!:()=>void,entered!:()=>void;const hold=new Promise<void>(r=>release=r),ready=new Promise<void>(r=>entered=r);
  const f=vi.fn(async()=>{entered();await hold;return new Response(zip);}),pending=prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:f as typeof fetch});await ready;
