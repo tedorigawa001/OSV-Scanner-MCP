@@ -35,6 +35,9 @@ jobs:
     # 実時間で子プロセスを動かす研究用の診断テスト。ホストの負荷と固定の5秒リースに
     # 左右されるため、研究のテスト範囲(npm run test:research)のうちこのprojectだけを、ここで単独に実行する
     name: Real-time process diagnostics (Node 26)
+    # 研究の検証記録はpackage.json/package-lock.jsonの計測時のbytesに束縛されるため、版上げ・依存更新の後は
+    # このprojectの記録照合が不一致になる(既知)。結果は表示するがCI全体の失敗にはしない(2026-11-16、利用者判断)
+    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
