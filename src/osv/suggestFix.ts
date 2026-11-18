@@ -67,6 +67,8 @@ export interface PackageUpgradeSuggestion {
   version_is_lower_bound?: true;
   /** 推奨先のOSV照会の結果(candidateCheck.ts。推奨がある場合だけ) */
   candidate_check?: "clean" | "has_known_vulnerabilities" | "conflict" | "failed" | "skipped" | "disabled";
+  /** Offline candidate checks use the same database digest/timestamp reported in offline_database. */
+  candidate_check_source?: 'local_database';
   /** 推奨先に該当する既知の脆弱性のID(candidate_checkがhas_known_vulnerabilitiesの場合) */
   recommended_known_vulnerabilities?: string[];
   per_cve_detail: CveFixDetail[];

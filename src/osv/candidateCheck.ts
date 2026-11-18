@@ -18,6 +18,9 @@ import { extractAffectedVersions } from "./affectedVersions.js";
 import { queryOsvPackageVersion, type FetchOsvRecordOptions } from "./osvApi.js";
 import { extractFixedVersions, recordInformationalKind, type ScanReportPackage } from "./scanReport.js";
 import { suggestUpgradeForPackage, type ExtraFixTarget, type PackageUpgradeSuggestion } from "./suggestFix.js";
+import {queryOfflineCandidate} from './offlineCandidate.js';
+import type {RunOsvScanOptions} from './runner.js';
+import type {OfflineDatabaseMetadata} from './offlineCache.js';
 
 export const NO_CANDIDATE_CHECK_ENV = "OSV_MCP_NO_CANDIDATE_CHECK";
 
@@ -72,6 +75,8 @@ async function checkPackage(
   initial: PackageUpgradeSuggestion,
   budget: QueryBudget,
   options: CandidateCheckOptions,
+  queryCandidate: (ecosystem: string, name: string, version: string) => Promise<unknown[]>,
+  local = false,
 ): Promise<CheckResult> {
   const known = new Set(pkg.vulnerabilities.flatMap((v) => [v.id, ...v.aliases]));
   const unfixed = new Set(initial.per_cve_detail.filter((v) => v.tier === "unfixed" || v.tier === "informational").map((v) => v.id));
@@ -91,8 +96,10 @@ async function checkPackage(
     let records: Record<string, unknown>[];
     try {
       // queryOsvPackageVersionが各レコードをオブジェクトと検証済み(不正な応答は失敗になる)
-      records = (await queryOsvPackageVersion(pkg.ecosystem, pkg.name, candidate, options)) as Record<string, unknown>[];
+      records = (await queryCandidate(pkg.ecosystem, pkg.name, candidate)) as Record<string, unknown>[];
     } catch (error) {
+      // Offline cache/identification failures invalidate the tool result; never hide them behind a recommendation.
+      if (local) throw error;
       if (error instanceof ScanToolError) return { suggestion, status: "failed", rejected };
       throw error;
     }
@@ -108,10 +115,13 @@ async function checkPackage(
 
     // 新しい脆弱性は修正対象に加え、修正版を候補に加える。既知の修正対象の脆弱性に該当と返った場合は、
     // 手元の範囲情報とOSVの判定が食い違っているため、その候補を除外する(安全側)
+    // 既知判定は照会開始時点で固定する。同じ応答内のGO/GHSA別名は新規対象の証拠としてすべて残し、
+    // 1件目が追加した別名を2件目の「既知対象との矛盾」にしない。次の照会には既知集合を引き継ぐ。
+    const knownBeforeQuery = new Set(known);
     let conflict = false;
     for (const record of records) {
       const ids = recordIds(record);
-      if (ids.some((id) => known.has(id))) {
+      if (ids.some((id) => knownBeforeQuery.has(id))) {
         excluded.add(candidate);
         conflict = true;
         continue;
@@ -128,7 +138,7 @@ async function checkPackage(
       rejected.pop();
       const knownVulnerabilities = records.map((record) => asString(record.id)).filter((id): id is string => id !== null);
       // 判定の食い違い: その候補はスキャンした脆弱性の範囲外とは言えないため、推奨しない(保留する)
-      if (conflict) return { suggestion: withheld(suggestion, candidate), status: "conflict", knownVulnerabilities, rejected };
+      if (conflict) return { suggestion: withheld(suggestion, candidate, local), status: "conflict", knownVulnerabilities, rejected };
       // 新しい脆弱性に修正版がない等で選び直せない: 最後に照会した推奨を、該当する脆弱性とともに返す
       return { suggestion, status: "has_known_vulnerabilities", knownVulnerabilities, rejected };
     }
@@ -139,49 +149,54 @@ async function checkPackage(
 }
 
 /** 推奨を保留した提案(推奨先・Tier・推奨先での判定を外し、verificationをno_verified_candidateにする) */
-function withheld(suggestion: PackageUpgradeSuggestion, candidate: string): PackageUpgradeSuggestion {
+function withheld(suggestion: PackageUpgradeSuggestion, candidate: string, local = false): PackageUpgradeSuggestion {
   const { recommended_is_prerelease: _prerelease, ...rest } = suggestion;
   return {
     ...rest,
     recommended_upgrade: null,
     upgrade_tier: null,
     upgrade_note:
-      `Candidate ${candidate} was evaluated as outside the ranges of the scanned vulnerabilities, but OSV reports that it is affected by them (the range data disagree). ` +
+      `Candidate ${candidate} was evaluated as outside the ranges of the scanned vulnerabilities, but ${local ? 'the local database snapshot' : 'OSV'} reports that it is affected by them (the range data disagree). ` +
       "No candidate could be confirmed safe, so the recommendation is withheld",
     per_cve_detail: suggestion.per_cve_detail.map((detail) => ({ ...detail, recommended_status: "not_evaluated" as const })),
     verification: "no_verified_candidate",
   };
 }
 
-function applyResult(result: CheckResult): PackageUpgradeSuggestion {
+function applyResult(result: CheckResult, local = false): PackageUpgradeSuggestion {
   const { suggestion, status, knownVulnerabilities, rejected } = result;
+  const source = local ? 'the local database snapshot' : 'OSV';
   const notes: string[] = [];
   if (rejected.length > 0) {
     const found = rejected.map((r) => `${r.version} is affected by ${r.count} known ${r.count === 1 ? "vulnerability" : "vulnerabilities"}`).join(", ");
     notes.push(
       suggestion.recommended_upgrade !== null
-        ? `The recommended version was checked against OSV: ${found}, so ${suggestion.recommended_upgrade} is recommended instead (including vulnerabilities that do not affect the current version)`
-        : `The recommended version was checked against OSV: ${found}, so it was dropped from the candidates`,
+        ? `The recommended version was checked against ${source}: ${found}, so ${suggestion.recommended_upgrade} is recommended instead (including vulnerabilities that do not affect the current version)`
+        : `The recommended version was checked against ${source}: ${found}, so it was dropped from the candidates`,
     );
   }
   if (status === "conflict") {
     // 理由はwithheldの注記に含めた。推奨しかけた版で該当と返った脆弱性はrecommended_known_vulnerabilitiesではなく注記に示す
-    notes.push(`Vulnerabilities reported by OSV: ${knownVulnerabilities!.join(", ")}`);
+    notes.push(`Vulnerabilities reported by ${source}: ${knownVulnerabilities!.join(", ")}`);
   } else if (status === "has_known_vulnerabilities") {
     notes.push(
-      `According to OSV, the recommended version ${suggestion.recommended_upgrade} is affected by ${knownVulnerabilities!.length} known ${knownVulnerabilities!.length === 1 ? "vulnerability" : "vulnerabilities"} (recommended_known_vulnerabilities). ` +
+      `According to ${source}, the recommended version ${suggestion.recommended_upgrade} is affected by ${knownVulnerabilities!.length} known ${knownVulnerabilities!.length === 1 ? "vulnerability" : "vulnerabilities"} (recommended_known_vulnerabilities). ` +
         "No fixed version that avoids them was found",
     );
   } else if (status === "failed") {
     notes.push("The OSV check of the recommended version failed, so it is not confirmed that the recommended version is free of known vulnerabilities that do not affect the current version");
   } else if (status === "skipped") {
-    notes.push("The query limit was reached, so the recommended version was not checked against OSV (its known vulnerabilities are unconfirmed)");
+    notes.push(`The query limit was reached, so the recommended version was not checked against ${source} (its known vulnerabilities are unconfirmed)`);
   }
+  if (local) notes.push(status === 'clean'
+    ? 'Offline mode: no additional fix-target vulnerabilities were found in the local database snapshot. Newer advisories are not covered; this does not establish safety'
+    : 'Offline mode: candidate checks use only the local database snapshot and do not cover newer advisories');
   const { per_cve_detail, verification, ...rest } = suggestion;
   return {
     ...rest,
     upgrade_note: [suggestion.upgrade_note, ...notes].map((note) => note.replace(/\.$/, "")).join(". "),
     candidate_check: status,
+    ...(local ? {candidate_check_source: 'local_database' as const} : {}),
     ...(status === "has_known_vulnerabilities" ? { recommended_known_vulnerabilities: knownVulnerabilities!.map(sanitizeExternalText) } : {}),
     per_cve_detail,
     verification,
@@ -195,21 +210,36 @@ function applyResult(result: CheckResult): PackageUpgradeSuggestion {
 export async function checkRecommendedCandidates(
   packages: readonly ScanReportPackage[],
   suggestions: readonly PackageUpgradeSuggestion[],
-  options: CandidateCheckOptions | "disabled" | "offline" = {},
+  options: CandidateCheckOptions | "disabled" = {},
 ): Promise<PackageUpgradeSuggestion[]> {
-  if (options === 'offline') {
-    return suggestions.map(s=>s.recommended_upgrade===null?s:{...s,candidate_check:'disabled' as const,upgrade_note:s.upgrade_note+'. Offline mode: the recommended version was not rechecked against OSV or the local database; it may have other known vulnerabilities'});
-  }
   if (options === "disabled") {
     return suggestions.map((s) => (s.recommended_upgrade === null ? s : { ...s, candidate_check: "disabled" as const }));
   }
+  return checkCandidates(packages, suggestions, options, (ecosystem, name, version) => queryOsvPackageVersion(ecosystem, name, version, options));
+}
+
+/** Native checks are sequential to coexist with the scanner's process/memory limit. No API option can override this route. */
+export async function checkOfflineRecommendedCandidates(
+  packages: readonly ScanReportPackage[], suggestions: readonly PackageUpgradeSuggestion[],
+  runner: RunOsvScanOptions, expected: OfflineDatabaseMetadata, options: CandidateCheckOptions | 'disabled' = {},
+): Promise<PackageUpgradeSuggestion[]> {
+  if (options === 'disabled') return suggestions.map(s => s.recommended_upgrade === null ? s : {...s, candidate_check: 'disabled' as const,
+    upgrade_note: s.upgrade_note + '. Offline mode: local candidate checks are disabled; the recommended version may have other known vulnerabilities'});
+  return checkCandidates(packages, suggestions, {...options, concurrency: 1},
+    (ecosystem, name, version) => queryOfflineCandidate(ecosystem, name, version, runner, expected), true);
+}
+
+async function checkCandidates(
+  packages: readonly ScanReportPackage[], suggestions: readonly PackageUpgradeSuggestion[], options: CandidateCheckOptions,
+  query: (ecosystem: string, name: string, version: string) => Promise<unknown[]>, local = false,
+): Promise<PackageUpgradeSuggestion[]> {
   const budget = new QueryBudget(options.maxQueriesTotal ?? 60);
   const results: PackageUpgradeSuggestion[] = [...suggestions];
   const pending = suggestions.flatMap((s, i) => (s.recommended_upgrade === null ? [] : [i]));
   // 同時実行数を制限して順に処理する(順番は結果に影響しない。予算はパッケージの順に消費されやすい)
   const workers = Array.from({ length: Math.max(1, options.concurrency ?? 4) }, async () => {
     for (let index = pending.shift(); index !== undefined; index = pending.shift()) {
-      results[index] = applyResult(await checkPackage(packages[index]!, suggestions[index]!, budget, options));
+      results[index] = applyResult(await checkPackage(packages[index]!, suggestions[index]!, budget, options, query, local), local);
     }
   });
   await Promise.all(workers);

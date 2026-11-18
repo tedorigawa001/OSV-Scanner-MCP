@@ -8,6 +8,7 @@ import {tmpdir} from 'node:os';
 import {resolve,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {execFileSync} from 'node:child_process';
+import {offlineAliasFixtures} from './offline-alias-fixtures.mjs';
 const values=new Map();for(let i=2;i<process.argv.length;i+=2){const k=process.argv[i],v=process.argv[i+1];if(!['--cache','--binary','--output','--test-report'].includes(k)||!v||values.has(k))throw Error('Usage: node scripts/validate-offline.mjs --cache /prepared/cache --binary /osv-scanner [--output /record.json] [--test-report /vitest-report.json]');values.set(k,v);}
 if(!values.has('--cache')||!values.has('--binary'))throw Error('--cache and --binary are required');
 const cache=await realpath(values.get('--cache')),binary=await realpath(values.get('--binary'));
@@ -19,6 +20,7 @@ let fetchCalls=0;globalThis.fetch=async()=>{fetchCalls++;throw Error('Unexpected
 const load=async name=>import(pathToFileURL(resolve('dist/tools/'+name+'.js')).href);
 const {handleScanProject}=await load('scanProject'),{handleSuggestFix}=await load('suggestFix'),{handleScanSbom}=await load('scanSbom'),{handleExplainVulnerability}=await load('explainVulnerability');
 const {prepareOfflineDatabases,captureOfflineDatabases}=await import(pathToFileURL(resolve('dist/osv/offlineCache.js')).href);
+const {queryOfflineCandidate}=await import(pathToFileURL(resolve('dist/osv/offlineCandidate.js')).href);
 const root=await realpath(await mkdtemp(join(tmpdir(),'offline-native-'))),results=[];
 const payload=(r,label)=>{const p=JSON.parse(r.content[0].text);if(r.isError)throw Error(label+': '+JSON.stringify(p));return p;};
 const sha=b=>createHash('sha256').update(b).digest('hex');
@@ -60,10 +62,16 @@ try{
  const scan=payload(await handleScanProject({project_path:root}),'scan_project');
  if(scan.vulnerability_count<1||scan.offline_database?.mode!=='offline'||scan.dependency_resolution.transitive_resolution!=='disabled')throw Error('offline positive scan control failed');
  results.push({tool:'scan_project',vulnerabilities:scan.vulnerability_count,packages:scan.packages.map(p=>({name:p.name,version:p.version,ids:p.vulnerabilities.map(v=>v.id)})),offline_database:scan.offline_database});
- const fix=payload(await handleSuggestFix({project_path:root}),'suggest_fix'),suggestion=fix.suggestions.find(s=>s.package==='golang.org/x/text');
- if(!suggestion?.recommended_upgrade||suggestion.candidate_check!=='disabled'||!suggestion.upgrade_note.includes('Offline mode'))throw Error('offline suggestion control failed');
+ const fix=payload(await handleSuggestFix({project_path:root},{candidateCheck:{}}),'suggest_fix'),suggestion=fix.suggestions.find(s=>s.package==='golang.org/x/text');
+ if(!suggestion?.recommended_upgrade||suggestion.candidate_check!=='clean'||suggestion.candidate_check_source!=='local_database'||!suggestion.upgrade_note.includes('local database snapshot'))throw Error('offline suggestion control failed');
  if(fix.offline_database?.mode!=='offline')throw Error('suggest_fix missing offline DB metadata');
- results.push({tool:'suggest_fix',recommended:suggestion.recommended_upgrade,candidate_check:suggestion.candidate_check,upgrade_note:suggestion.upgrade_note,verification:suggestion.verification,offline_database:fix.offline_database});
+ results.push({tool:'suggest_fix',recommended:suggestion.recommended_upgrade,candidate_check:suggestion.candidate_check,candidate_check_source:suggestion.candidate_check_source,upgrade_note:suggestion.upgrade_note,verification:suggestion.verification,offline_database:fix.offline_database});
+ const candidateOptions={offline:true,offlineDbDir:workingCache,binaryPath:binary};
+ const affected=await queryOfflineCandidate('Go','golang.org/x/text','0.3.0',candidateOptions,scan.offline_database);
+ const fixed=await queryOfflineCandidate('Go','golang.org/x/text',suggestion.recommended_upgrade,candidateOptions,scan.offline_database);
+ if(affected.length===0||fixed.length!==0)throw Error('Native affected/clean candidate controls failed');
+ results.push({tool:'offline_candidate_query',case:'affected-control',version:'0.3.0',status:'affected',record_ids:affected.map(r=>r.id)});
+ results.push({tool:'offline_candidate_query',case:'recommended-control',version:suggestion.recommended_upgrade,status:'clean',record_ids:fixed.map(r=>r.id)});
  const sbom=join(root,'input.cdx.json');await writeFile(sbom,JSON.stringify({bomFormat:'CycloneDX',specVersion:'1.5',version:1,components:[{type:'library',name:'golang.org/x/text',version:'0.3.0',purl:'pkg:golang/golang.org/x/text@0.3.0'}]}));
  const bom=payload(await handleScanSbom({sbom_path:sbom}),'scan_sbom');if(bom.identified_vulnerability_count<1||bom.offline_database?.mode!=='offline')throw Error('offline SBOM control failed');results.push({tool:'scan_sbom',vulnerabilities:bom.identified_vulnerability_count,offline_database:bom.offline_database});
  for(const report of [scan,fix,bom]){
@@ -94,11 +102,35 @@ try{
    if(!r.isError||error?.kind!=='scan_failed'||!error.message.includes('Offline database cache')||!error.message.includes(reasons[kind]))throw Error('invalid cache accepted or failed for an unrelated reason: '+tool+'/'+kind);
    results.push({tool,case:kind,status:'rejected',error_kind:error.kind,error:error.message});
   }
+  let candidateError;
+  try{await queryOfflineCandidate('Go','golang.org/x/text',suggestion.recommended_upgrade,{...candidateOptions,offlineDbDir:dir},scan.offline_database);}catch(error){candidateError=error;}
+  if(candidateError?.kind!=='scan_failed'||!candidateError.message.includes('Offline database cache')||!candidateError.message.includes(reasons[kind]))throw Error('Invalid candidate DB accepted or rejected for an unrelated reason: '+kind);
+  results.push({tool:'offline_candidate_query',case:kind,status:'rejected',error_kind:candidateError.kind,error:candidateError.message});
+ }
+ // These small generated databases are synthetic controls, separate from the complete official Go ZIP.
+ for(const fixture of offlineAliasFixtures()){
+  const parent=join(root,'alias-'+fixture.name),project=join(parent,'project'),dir=join(parent,'cache');
+  await mkdir(project,{recursive:true,mode:0o700});
+  await writeFile(join(project,'go.mod'),'module review.example/consumer\n\ngo 1.22\n\nrequire example.com/lib v1.0.0\n');
+  let requests=0;
+  try{
+   process.env.OSV_MCP_OFFLINE='0';
+   await prepareOfflineDatabases({dir,ecosystems:['Go'],fetchFn:async()=>{requests++;return new Response(fixture.bytes);}});
+  }finally{process.env.OSV_MCP_OFFLINE='1';}
+  const checked=payload(await handleSuggestFix({project_path:project},{offlineDbDir:dir,binaryPath:binary,candidateCheck:{}}),fixture.name);
+  const suggestion=checked.suggestions.find(s=>s.package==='example.com/lib');
+  if(requests!==1||!suggestion||suggestion.recommended_upgrade!==fixture.expected.recommended_upgrade||suggestion.candidate_check!==fixture.expected.candidate_check||suggestion.candidate_check_source!=='local_database')throw Error('Alias candidate control failed: '+fixture.name);
+  const records=await queryOfflineCandidate('Go','example.com/lib','1.5.0',{offlineDbDir:dir,binaryPath:binary},checked.offline_database);
+  const actualIds=records.map(r=>r.id).sort(),expectedIds=fixture.records.slice(1).map(r=>r.id).sort();
+  if(JSON.stringify(actualIds)!==JSON.stringify(expectedIds)||checked.offline_database.databases[0].sha256!==sha(fixture.bytes))throw Error('Alias fixture DB/record binding failed: '+fixture.name);
+  results.push({tool:'suggest_fix',case:'alias-'+fixture.name,status:'verified',fixture_kind:'synthetic-Go-OSV-database-real-scanner',zip_sha256:sha(fixture.bytes),replay_requests:requests,expected:fixture.expected,
+   actual:{recommended_upgrade:suggestion.recommended_upgrade,candidate_check:suggestion.candidate_check,candidate_check_source:suggestion.candidate_check_source,recommended_known_vulnerabilities:suggestion.recommended_known_vulnerabilities},
+   first_candidate_record_ids:actualIds,offline_database:checked.offline_database});
  }
  if(fetchCalls!==0)throw Error('Node fetch was attempted');
- const files=['src/index.ts','src/cache.ts','src/osv/offline.ts','src/osv/offlineCache.ts','src/osv/runner.ts','src/osv/binaryManager.ts','src/osv/binaryDownloader.ts','src/osv/osvApi.ts','src/osv/candidateCheck.ts','src/osv/scanReport.ts','src/tools/scanProject.ts','src/tools/scanJavaProject.ts','src/tools/scanJavaArtifact.ts','src/tools/scanSbom.ts','src/tools/suggestFix.ts','src/tools/explainVulnerability.ts','src/utils/permissionCheck.ts','src/utils/safeRead.ts','src/test/osv/offline.test.ts','scripts/validate-offline.mjs','package-lock.json'];
+ const files=['src/index.ts','src/cache.ts','src/osv/offline.ts','src/osv/offlineCache.ts','src/osv/offlineCandidate.ts','src/osv/runner.ts','src/osv/binaryManager.ts','src/osv/binaryDownloader.ts','src/osv/osvApi.ts','src/osv/candidateCheck.ts','src/osv/suggestFix.ts','src/osv/versionScheme.ts','src/osv/affectedVersions.ts','src/osv/scanReport.ts','src/tools/scanProject.ts','src/tools/scanJavaProject.ts','src/tools/scanJavaArtifact.ts','src/tools/scanSbom.ts','src/tools/suggestFix.ts','src/tools/explainVulnerability.ts','src/utils/permissionCheck.ts','src/utils/safeRead.ts','src/test/osv/offline.test.ts','src/test/osv/offlineCandidateCheck.test.ts','src/test/osv/candidateCheck.test.ts','scripts/validate-offline.mjs','scripts/offline-alias-fixtures.mjs','package-lock.json'];
  const sources={};for(const p of files)sources[p]=sha(await readFile(p));
- let product_regressions=null;if(values.has('--test-report')){const bytes=await readFile(values.get('--test-report')),report=JSON.parse(bytes),cases=report.testResults.flatMap(t=>t.assertionResults);if(!report.success||report.numFailedTests!==0||cases.filter(t=>t.status==='passed').length!==report.numPassedTests)throw Error('Regression report is not passing');product_regressions={passed:report.numPassedTests,failed:report.numFailedTests,skipped:report.numPendingTests,files:report.testResults.length,report_sha256:sha(bytes),offline_cases:report.testResults.find(t=>t.name.endsWith('offline.test.ts'))?.assertionResults.map(t=>({name:t.fullName,status:t.status}))};}
+ let product_regressions=null;if(values.has('--test-report')){const bytes=await readFile(values.get('--test-report')),report=JSON.parse(bytes),cases=report.testResults.flatMap(t=>t.assertionResults);if(!report.success||report.numFailedTests!==0||cases.filter(t=>t.status==='passed').length!==report.numPassedTests)throw Error('Regression report is not passing');product_regressions={passed:report.numPassedTests,failed:report.numFailedTests,skipped:report.numPendingTests,files:report.testResults.length,report_sha256:sha(bytes),offline_cases:report.testResults.find(t=>t.name.endsWith('offline.test.ts'))?.assertionResults.map(t=>({name:t.fullName,status:t.status})),offline_candidate_cases:report.testResults.find(t=>t.name.endsWith('offlineCandidateCheck.test.ts'))?.assertionResults.map(t=>({name:t.fullName,status:t.status})),online_candidate_cases:report.testResults.find(t=>t.name.endsWith('/candidateCheck.test.ts'))?.assertionResults.map(t=>({name:t.fullName,status:t.status}))};}
  const record={schema:1,date:new Date().toISOString(),scope:'complete-Go-database-real-scanner-same-user-network-denied',runtime:{node:process.version,platform:process.platform,arch:process.arch,node_sha256:await image(process.execPath)},scanner:{version:execFileSync(binary,['--version'],{encoding:'utf8'}).trim(),sha256:await image(binary)},database_manifest:inputManifest,network_control:denied,node_fetch_calls:fetchCalls,results,sources,product_regressions};
  if(values.has('--output'))await writeFile(values.get('--output'),JSON.stringify(record,null,2)+'\n');console.log(JSON.stringify({network_control:denied,node_fetch_calls:fetchCalls,results:results.map(r=>({tool:r.tool,case:r.case,status:r.status,vulnerabilities:r.vulnerabilities,recommended:r.recommended}))},null,2));
 }finally{await rm(root,{recursive:true,force:true});}

@@ -98,6 +98,22 @@ describe("checkRecommendedCandidates", () => {
     expect(suggestions[0]!.upgrade_note).toContain("No fixed version that avoids them was found");
   });
 
+  it.each([false, true])('同一照会のGO/GHSA別名を新しい未修正対象として保持する(逆順: %s)', async reverse => {
+    const go = record('GO-2000-0002', 'x', [range('1.4.0')], ['GHSA-aaaa-bbbb-cccc']);
+    const ghsa = record('GHSA-aaaa-bbbb-cccc', 'x', [range('1.4.0')], ['GO-2000-0002']);
+    const {suggestions, queried} = await check([pkg], {'x@1.5.0': reverse ? [ghsa, go] : [go, ghsa]});
+    expect(suggestions[0]).toMatchObject({recommended_upgrade: '1.5.0', candidate_check: 'has_known_vulnerabilities'});
+    expect(queried.map(q => q.version)).toEqual(['1.5.0']);
+  });
+
+  it.each([false, true])('同一照会の別名レコードの修正範囲を両方使う(逆順: %s)', async reverse => {
+    const go = record('GO-2000-0002', 'x', [range('1.4.0', '1.6.0')], ['GHSA-aaaa-bbbb-cccc']);
+    const ghsa = record('GHSA-aaaa-bbbb-cccc', 'x', [range('1.4.0', '1.7.0')], ['GO-2000-0002']);
+    const {suggestions, queried} = await check([pkg], {'x@1.5.0': reverse ? [ghsa, go] : [go, ghsa]});
+    expect(suggestions[0]).toMatchObject({recommended_upgrade: '1.7.0', candidate_check: 'clean'});
+    expect(queried.map(q => q.version)).toEqual(['1.5.0', '1.7.0']);
+  });
+
   it.each([false, true])("修正版のない既知の脆弱性は候補を除外しない(別名: %s)", async (alias) => {
     const mixed = scanned("x", "1.0.0", [
       { id: "GHSA-a", ranges: [range("0", "1.5.0")] },

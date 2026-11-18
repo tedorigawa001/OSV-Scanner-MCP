@@ -258,8 +258,8 @@ export async function runOsvArtifactScan(
 }
 
 /** Scan only the private, validated snapshot prepared by handleScanSbom. */
-export async function runOsvSbomScan(snapshotPath: string, options: RunOsvScanOptions = {}): Promise<unknown> {
-  return runScan([snapshotPath], options, "sbom");
+export async function runOsvSbomScan(snapshotPath: string, options: RunOsvScanOptions = {}, requiredEcosystems?: readonly string[]): Promise<unknown> {
+  return runScan([snapshotPath], options, "sbom", requiredEcosystems);
 }
 
 /** targetArgs: projectモードは`--lockfile`の組、artifact/sbomモードは検証済みの絶対パス */

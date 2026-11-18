@@ -7,7 +7,8 @@
 
 import { isRemoteResolutionDisabled } from "../osv/runner.js";
 import {offlineEnabled} from '../osv/offline.js';
-import { candidateCheckDisabledFromEnv, checkRecommendedCandidates, type CandidateCheckOptions } from "../osv/candidateCheck.js";
+import {ScanToolError} from '../errors.js';
+import { candidateCheckDisabledFromEnv, checkRecommendedCandidates, checkOfflineRecommendedCandidates, type CandidateCheckOptions } from "../osv/candidateCheck.js";
 import { hasVulnerability } from "../osv/scanReport.js";
 import { suggestUpgrades } from "../osv/suggestFix.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
@@ -34,8 +35,15 @@ export async function handleSuggestFix(
     const noRemoteResolution = isRemoteResolutionDisabled(options);
     const report = await scanFromSnapshot(project, { ...options, noRemoteResolution });
     const packages = markLowerBounds(project, report.packages);
-    const candidateCheck = offlineEnabled(options)?'offline':options.candidateCheck ?? (candidateCheckDisabledFromEnv() ? "disabled" : {});
-    const suggestions = await checkRecommendedCandidates(packages, suggestUpgrades(packages), candidateCheck);
+    const candidateCheck = options.candidateCheck ?? (candidateCheckDisabledFromEnv() ? "disabled" : {});
+    const initial = suggestUpgrades(packages);
+    const offline = offlineEnabled(options);
+    if (offline && !report.offline_database && initial.some(s => s.recommended_upgrade !== null)) {
+      throw new ScanToolError('scan_failed', 'Offline database cache: project scan did not establish a database snapshot for candidate checks');
+    }
+    const suggestions = offline
+      ? report.offline_database ? await checkOfflineRecommendedCandidates(packages, initial, options, report.offline_database, candidateCheck) : initial
+      : await checkRecommendedCandidates(packages, initial, candidateCheck);
     const unfixedVulnerabilities = suggestions.reduce(
       (sum, s) => sum + s.per_cve_detail.filter((d) => d.tier === "unfixed").length,
       0,

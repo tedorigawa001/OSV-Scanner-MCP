@@ -55,7 +55,7 @@ if(process.argv[2]==='cache'){
   const {runCacheCli}=await import('./cache.js');await runCacheCli(process.argv.slice(3));process.exit(process.exitCode??0);
 }
 
-try{if(offlineConfig().enabled)console.error('osv-scanner-mcp: offline mode; database refresh, remote resolution, candidate rechecks and vulnerability explanations are disabled');}
+try{if(offlineConfig().enabled)console.error('osv-scanner-mcp: offline mode; scans and candidate rechecks use local databases; database refresh, remote resolution and vulnerability explanations are disabled');}
 catch(e){console.error(e instanceof Error?e.message:'Invalid offline configuration');process.exit(1);}
 
 // Declaration provenance is an explicit consumer policy, never a graph-file instruction.
@@ -181,8 +181,8 @@ server.registerTool(
       "and the response gives the recommended version, the upgrade distance (upgrade_tier), and the fixed version per CVE. For npm, Go, PyPI, and Rust, a minor update within 0.x is also cross_major (may include breaking changes). " +
       "Dependencies scanned at a requirements.txt lower bound (>=) or a NuGet PackageReference minimum/range are marked version_is_lower_bound, and the recommendation then means raising the lower bound rather than confirming the installed version. " +
       "update_hint explains how to upgrade, depending on whether the package is a direct or transitive dependency (dependency_relation; for npm, Python lockfiles, Gradle, Cargo.lock, Composer and NuGet also introduced_by and declared_in where evidence permits). NuGet hints name a confirmed declaring project or introducing direct packages; central management and SDK/runtime constraints still require verification. Composer hints name the declaring manifest for direct dependencies and the introducing roots for transitive dependencies; regenerate the lockfile in a trusted environment and verify constraints. Cargo updates are conditional on parent version requirements; cross-major updates may require Cargo.toml changes. " +
-      "The recommended version is checked against api.osv.dev, and versions with known vulnerabilities that do not affect the current version are avoided (result in candidate_check). " +
-      "In offline mode, additional candidate checks are disabled and explicitly noted; recommendations use only the vulnerabilities in the local database scan. " +
+      "The recommended version is checked against api.osv.dev online, or the same local database snapshot in offline mode, and versions with known vulnerabilities that do not affect the current version are avoided (result in candidate_check). " +
+      "Offline candidate checks set candidate_check_source to local_database, never use the API and do not cover newer advisories. Invalid or changed databases fail the request. " +
       "clean excludes known unfixed advisories, known informational advisories that are not fix targets, and new Rust unmaintained/notice records; these may still apply. New unsound records are fix targets. " +
       "With has_known_vulnerabilities, failed, or skipped, the recommended version has not been confirmed safe; conflict means the data disagreed and the recommendation is withheld. " +
       "Candidates are checked against the affected ranges of every vulnerability to fix, and the recommendation is withheld when the data are insufficient. Pre-releases are recommended only when no stable version fixes everything, and are marked recommended_is_prerelease. " +

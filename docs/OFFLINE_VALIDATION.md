@@ -1,6 +1,6 @@
 # Offline scanning validation
 
-The initial implementation supports local-database scanning and upgrade suggestions. Additional candidate rechecks and vulnerability explanations remain unavailable offline, as selected for this iteration. No experimental Gradle authority or memory-proof machinery is needed for this feature.
+Offline mode supports local-database scanning, upgrade suggestions and candidate-version rechecks. Vulnerability explanations remain unavailable offline. No experimental Gradle authority or memory-proof machinery is needed for this feature. The earlier records below document the initial implementation, when candidate rechecks were disabled.
 
 ## Reproduction
 
@@ -27,7 +27,50 @@ sandbox-exec -p '(version 1)(allow default)(deny network*)' \
 
 The harness first attempts a loopback connection and requires EPERM/EACCES; connection refusal or timeout is not accepted as evidence of a network restriction. It then makes Node fetch throw and counts attempts, uses the real scanner, and checks the positive and refusal cases below. It does not download databases. Before scanning, it exercises collection on a disposable cache by replaying the prepared official Go ZIP from a local stream through an injected updater transport. This is an explicit updater test, not automatic preparation during an offline scan; the original download timestamp is preserved. The input cache is not modified. A platform-specific equivalent network restriction is needed to run this harness elsewhere; Windows/Linux native execution is not established by this macOS record.
 
-## Current-code native observation (2026-11-18)
+## Local candidate rechecks (2026-11-18)
+
+`suggest_fix` now uses the same candidate-reselection algorithm for online queries and offline native scans. For each offline candidate, it creates a private, versioned single-component CycloneDX SBOM and scans it with `--offline --no-resolve --all-packages --no-ignore` and only that ecosystem's DB. The native result must identify exactly the requested package/version, refer to the private SBOM, and provide the vulnerability details for every reported group. An empty/unidentified result or incomplete details fail the request rather than producing `clean`.
+
+The candidate DB is copied and verified independently for every query. Its digest and download timestamp must match the project scan; the original acquisition time must remain within the configured age limit before and after the native query. Invalid, expired or changed DBs fail the whole tool request, including changes between the project scan and candidate check. There is no online fallback. Each candidate query runs sequentially, uses the normal scanner timeout and temporary-space limits, and consumes the existing query budgets (default 4/package and 60/call). The local native scan/copy overhead is additional to the project scan. A budget limit yields `skipped`; an explicit opt-out yields `disabled`.
+
+`candidate_check_source: "local_database"` identifies local results. `clean` retains the established meaning of no additional fix-target advisories, with a local snapshot warning; known unfixed/informational advisories can remain. Newly detected advisories can trigger reselection or `has_known_vulnerabilities`; conflicting evidence can withhold the candidate as `conflict`. None of these states establishes the absence of newer advisories.
+
+The [candidate-check native record](validation/offline-candidates-2026-11-18.json) records the same prepared official Go ZIP as the preceding rerun (12,939,080 bytes, SHA-256 `362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784`) under OS network denial. It preserves both earlier records as historical evidence. Run the reproduction above with `--output docs/validation/offline-candidates-2026-11-18.json` to produce the expanded record.
+
+| Case | Observed result |
+|---|---|
+| OS network control / Node fetch calls | EPERM / 0 |
+| `scan_project` / `scan_sbom`, `golang.org/x/text` 0.3.0 | 5 vulnerability groups each |
+| `suggest_fix`, same project | 0.41.0 recommended; `candidate_check: clean`, `candidate_check_source: local_database` |
+| Direct native candidate controls | 0.3.0 affected; 0.41.0 has no matching records |
+| Missing manifest/object, expired/future DB, truncation, same-size digest modification, invalid origin | 7 cases rejected by each of 3 tools and the candidate query: 28 refusals |
+| Object collection | Orphan/interrupted download removed; selected DB and active private copy preserved |
+| `explain_vulnerability` | Still unavailable offline; no fallback |
+
+The affected-version control returns both GO and GHSA records for some of the same advisories; its record ID list is not a count of unique vulnerabilities. Native matching is demonstrated for Go on macOS with the same user, not every ecosystem/platform. Regression fixtures cover PURL/identity handling for Maven, npm (including scopes), PyPI, Go, crates.io, Packagist and NuGet; those fixtures are not complete real databases.
+
+`src/test/osv/offlineCandidateCheck.test.ts` initially added 37 regressions: local clean/reselection/unfixed/conflict results; strict native identification and complete details; DB changes after the project scan and expiry during a query; explicit/environment opt-out, query limits, forced offline routing, unrelated expired DB isolation, bounded identities, all seven PURL mappings and cleanup. The first local-clean test failed before implementation (`disabled` instead of `clean`). The alias review correction below adds another 6 local cases, bringing that file to 43. The existing 44 offline cases retain their cache/collection controls; the former automatic-disable assertion now verifies the explicit opt-out.
+
+The combined runner/API/tool/server regression set passed **638 tests across 34 files**, including 43 local-candidate cases, 31 online-candidate cases and 44 existing offline cases. Type checking, build and harness syntax checks passed. The native record binds their JSON report digest and case lists alongside the source hashes.
+
+### Alias review correction (2026-11-18)
+
+The first implementation updated its known-ID set while walking each query response. If a new advisory appeared as both a GO and GHSA record, the second record incorrectly looked like a conflict with an already known target. It could also lose the second record's fixed-version/range evidence, making reselection depend on record order. The corrected common algorithm snapshots the known-ID set before processing each query's records. All new records contribute their complete fix/range evidence; their IDs become known for subsequent queries. Initial targets and targets learned in earlier queries still produce `conflict` when a supposedly fixed candidate is reported affected.
+
+Six local regressions cover both orders of the unfixed alias pair, both orders with different fixed boundaries (1.6.0 and 1.7.0), an initially known alias and an advisory learned in an earlier query. Before the fix, 3 failed and 3 passed as controls; after the fix, all 6 passed. Four online regressions verify the same unfixed/range-preservation behavior in both orders through the shared algorithm. Alias records are not discarded: both IDs and all affected ranges are retained.
+
+The native harness now also generates four small synthetic Go OSV ZIPs with [offline-alias-fixtures.mjs](../scripts/offline-alias-fixtures.mjs) and runs the real OSV-Scanner on `example.com/lib` 1.0.0 under the same OS network denial. These fixtures are independent of the complete official Go DB above and are explicitly marked `synthetic-Go-OSV-database-real-scanner` in the record. Each control records its generated ZIP SHA-256, actual first-candidate record IDs, expected/actual recommendation and status, and selected DB metadata. Fixture preparation uses injected local bytes, not a remote download.
+
+| Synthetic native control | Observed result |
+|---|---|
+| Single new advisory without a fix | 1.5.0 retained, `has_known_vulnerabilities` |
+| Same new advisory as GO/GHSA aliases | 1.5.0 retained, `has_known_vulnerabilities`; both record IDs preserved |
+| GO/GHSA records with fixed boundaries 1.6.0 / 1.7.0 | 1.7.0 selected, `clean` |
+| Alias already known from the initial scan, with conflicting range evidence | Recommendation withheld, `conflict` |
+
+The complete official Go DB still detects the original vulnerable project and rechecks 0.41.0 as `clean`; all 28 invalid-DB refusals and collection controls still pass. The final expanded run records EPERM and 0 Node fetch calls. It establishes same-user native Go behavior on macOS with both official and synthetic databases; it does not establish native matching for every ecosystem or platform.
+
+## Pre-candidate-check native observation (2026-11-18)
 
 Rebuilt the current source based on `dc3d9bb`, including the object collector added in `67c405c`, and ran the expanded harness under macOS OS-level network denial. The official Go database was prepared separately with the real `cache` CLI before denying network access. It was **12,939,080 bytes**, SHA-256 `362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784`, downloaded at `2026-11-18T04:00:02.348Z`.
 
@@ -86,6 +129,6 @@ The original native record predates collection and binds its own source hashes. 
 
 ## Follow-up features
 
-- Candidate-version rechecks and vulnerability explanations using local data.
+- Vulnerability explanations using local data (candidate-version rechecks are now implemented).
 - Commit-level matching, if supported by an independently selected native implementation.
 - Additional native ecosystem/platform fixtures and cache storage administration.
