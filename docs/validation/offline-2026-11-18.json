@@ -1,0 +1,474 @@
+{
+  "schema": 1,
+  "date": "2026-11-18T04:14:02.229Z",
+  "scope": "complete-Go-database-real-scanner-same-user-network-denied",
+  "runtime": {
+    "node": "v26.12.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "node_sha256": "06eb3f5762c2b6890e99d03f931bf01d9b20fd341dec1a8c1ef5c1809e66102b"
+  },
+  "scanner": {
+    "version": "osv-scanner version: 2.7.0\nosv-scalibr version: 0.5.3\ncommit: bfe2f84abd2f09fe0b83ba7f6dad40d296762f40\nbuilt at: 2026-10-12T00:39:39Z",
+    "sha256": "d4926ef8da134332543be276dff157e4c170f99ad91fc48e89448a8816bdf70b"
+  },
+  "database_manifest": {
+    "schema": 1,
+    "databases": [
+      {
+        "ecosystem": "Go",
+        "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784",
+        "bytes": 12939080,
+        "downloaded_at": "2026-11-18T04:00:02.348Z",
+        "url": "https://osv-vulnerabilities.storage.googleapis.com/Go/all.zip"
+      }
+    ]
+  },
+  "network_control": "EPERM",
+  "node_fetch_calls": 0,
+  "results": [
+    {
+      "case": "object-collection",
+      "status": "verified",
+      "transport": "local-replay-of-prepared-official-Go-ZIP-no-network",
+      "replay_requests": 1,
+      "before": [
+        ".download-aaaaaaaaaaaaaaaaaaaaaaaa",
+        "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784.zip",
+        "50d52672ad4c943d2773b63be8b3f8ab3ab1456e155f9ad3dbd3b683c0663a89.zip"
+      ],
+      "after": [
+        "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784.zip"
+      ],
+      "collected_before_replay": true,
+      "selected_sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784",
+      "active_private_snapshot_preserved": true
+    },
+    {
+      "tool": "scan_project",
+      "vulnerabilities": 5,
+      "packages": [
+        {
+          "name": "golang.org/x/text",
+          "version": "0.3.0",
+          "ids": [
+            "GO-2020-0015",
+            "GO-2021-0113",
+            "GO-2022-1059",
+            "GO-2026-5970",
+            "GO-2026-6629"
+          ]
+        }
+      ],
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T04:00:02.348Z",
+            "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "recommended": "0.41.0",
+      "candidate_check": "disabled",
+      "upgrade_note": "Recommends upgrading to 0.41.0 (in 0.x, even a minor update may include breaking changes). Based on the affected ranges retrieved, it is outside the ranges of all 5 CVEs to fix. It is not guaranteed to be the smallest such published version or free of undetected vulnerabilities. Offline mode: the recommended version was not rechecked against OSV or the local database; it may have other known vulnerabilities",
+      "verification": "verified",
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T04:00:02.348Z",
+            "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "scan_sbom",
+      "vulnerabilities": 5,
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T04:00:02.348Z",
+            "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "status": "offline-unavailable"
+    },
+    {
+      "tool": "scan_project",
+      "case": "missing",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "missing",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "missing",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "missing-object",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "missing-object",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "missing-object",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "expired",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "expired",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "expired",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "future",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "future",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "future",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "truncated",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "truncated",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "truncated",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "digest",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "digest",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "digest",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    }
+  ],
+  "sources": {
+    "src/index.ts": "b365b96217a07b136a67f53bde121cd84385bcedaf5f6464ebeca1fb207532ca",
+    "src/cache.ts": "2b4196a0e28e8f50439917bf712a54053556e559cb839969c725ed83456c61f0",
+    "src/osv/offline.ts": "eae92c7ed06546c492e70b2b11c536d4d9b7c88b64f7c8c75cf11058fbfad1aa",
+    "src/osv/offlineCache.ts": "b2f7be839a1495988f6b0e0de10df688badceecf1bb87c2ef496a99c7b79c11d",
+    "src/osv/runner.ts": "4edcf49a4ffd06e247b66880d849698d7a0d9398e93fccb370d685559f36a7f4",
+    "src/osv/binaryManager.ts": "f16130a62b708a453dddd9cab10258b88a2973e301bf8e860a5fd86b17fb63c3",
+    "src/osv/binaryDownloader.ts": "66f863886bbda6ff73363e4aaeb78bd0928c92f50cfcf2867a10622f616e280b",
+    "src/osv/osvApi.ts": "eced215f9e3a8e7c09591e85f14cbc2136ff60fa0ddacf6e40db6cd3390f8566",
+    "src/osv/candidateCheck.ts": "8b6d16657ffaaf9eeb09ce26c0ba516ff891680cdf7b4abb0e06cb4deccf3022",
+    "src/osv/scanReport.ts": "52229231db81025a96764312992e8c5ec9ed9da356effeecbfe74d85f323b296",
+    "src/tools/scanProject.ts": "b3635b834ce5da23999007d010d9150a5b9168795c798446594f556759d7cf13",
+    "src/tools/scanJavaProject.ts": "51f610fde13cca91605ca2da7b4ceacd69beb2ca28156dbdde8daa6279aeffbb",
+    "src/tools/scanJavaArtifact.ts": "cdf542fbcdb6caed054438c7625122210ccca8afa042ecee46e18a42e7a878ce",
+    "src/tools/scanSbom.ts": "bfdce35843f90da0616e6bffd2ad9b403c21ce99e0310da6b35798743348a2d9",
+    "src/tools/suggestFix.ts": "96d73b0f3a3fe5441824ec9c07f6e8153a59b4ed28491f90d2a9119d04c1ea89",
+    "src/tools/explainVulnerability.ts": "673211c64e916438c5d5f5fcba527363622c929f696704407dd358b708b1efea",
+    "src/utils/permissionCheck.ts": "099f2ce69e1ee1074acd4eb22a389deb8d8c7d4455740a44220abaaa200ec068",
+    "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054",
+    "src/test/osv/offline.test.ts": "3213f7cfccf543a5fe6488ca9d7a70f1e05c5a8f545b7b30663526eb2b3e973d",
+    "scripts/validate-offline.mjs": "4f254a0e28e0aafbd91b54521363f05d6b2a5975ba694f90bf731b8325ce3c38",
+    "package-lock.json": "9ac9a0033f840728c60ed217645e3c6c49d0cd0e2d075d84ae90de49d7007c6c"
+  },
+  "product_regressions": {
+    "passed": 591,
+    "failed": 0,
+    "skipped": 0,
+    "files": 33,
+    "report_sha256": "0ebbb8c8527499191c4856e9a18d547f0ff8018d09571f376f66b0a9c1e35d98",
+    "offline_cases": [
+      {
+        "name": "offline settings reject invalid values and cannot enable remote resolution",
+        "status": "passed"
+      },
+      {
+        "name": "offline=0 remains online by default",
+        "status": "passed"
+      },
+      {
+        "name": "offline=false remains online by default",
+        "status": "passed"
+      },
+      {
+        "name": "offline=no remains online by default",
+        "status": "passed"
+      },
+      {
+        "name": "offline= remains online by default",
+        "status": "passed"
+      },
+      {
+        "name": "offline=1 overrides an internal false setting",
+        "status": "passed"
+      },
+      {
+        "name": "offline=true overrides an internal false setting",
+        "status": "passed"
+      },
+      {
+        "name": "offline=yes overrides an internal false setting",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid offline max age 0",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid offline max age 721",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid offline max age abc",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid offline max age 1.5",
+        "status": "passed"
+      },
+      {
+        "name": "every project invocation uses full offline and never enables database download",
+        "status": "passed"
+      },
+      {
+        "name": "every artifact invocation uses full offline and never enables database download",
+        "status": "passed"
+      },
+      {
+        "name": "every sbom invocation uses full offline and never enables database download",
+        "status": "passed"
+      },
+      {
+        "name": "publishes immutable DB objects and captures verified private bytes with cleanup",
+        "status": "passed"
+      },
+      {
+        "name": "rejects missing cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects digest cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects truncated cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects expired cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects future cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects origin cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects duplicate cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects unknown cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects symlink cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "missing ecosystems never become a successful empty scan",
+        "status": "passed"
+      },
+      {
+        "name": "failed refresh preserves the previously selected manifest and DB bytes",
+        "status": "passed"
+      },
+      {
+        "name": "rejects partial database responses (206) without replacing the manifest",
+        "status": "passed"
+      },
+      {
+        "name": "rejects partial database responses (200) without replacing the manifest",
+        "status": "passed"
+      },
+      {
+        "name": "repeated refreshes keep only the selected and previous DB generations",
+        "status": "passed"
+      },
+      {
+        "name": "the next refresh collects objects from a failed partial run and interrupted downloads",
+        "status": "passed"
+      },
+      {
+        "name": "collection never removes unknown entries; they are still rejected",
+        "status": "passed"
+      },
+      {
+        "name": "serializes updates and never removes the active updater lock for another caller",
+        "status": "passed"
+      },
+      {
+        "name": "offline blocks preparation, explanations and package queries before fetch, including explicit fetch injection",
+        "status": "passed"
+      },
+      {
+        "name": "offline binary resolution never dispatches an automatic download",
+        "status": "passed"
+      },
+      {
+        "name": "cache-only binary lookup validates existing bytes and refuses missing or corrupted bytes without fetch",
+        "status": "passed"
+      },
+      {
+        "name": "runs project only after cache verification and cleans up the scanner cache snapshot",
+        "status": "passed"
+      },
+      {
+        "name": "runs artifact only after cache verification and cleans up the scanner cache snapshot",
+        "status": "passed"
+      },
+      {
+        "name": "runs sbom only after cache verification and cleans up the scanner cache snapshot",
+        "status": "passed"
+      },
+      {
+        "name": "offline Git dependencies are refused before the scanner can silently skip commit matching",
+        "status": "passed"
+      },
+      {
+        "name": "invalid cache prevents scanner process creation",
+        "status": "passed"
+      },
+      {
+        "name": "project scans copy only the required ecosystem, ignoring unrelated expired databases",
+        "status": "passed"
+      },
+      {
+        "name": "online scanner output cannot spoof the internally generated offline metadata",
+        "status": "passed"
+      },
+      {
+        "name": "suggest_fix uses offline findings and explicitly disables candidate rechecks despite injected online options",
+        "status": "passed"
+      }
+    ]
+  }
+}
