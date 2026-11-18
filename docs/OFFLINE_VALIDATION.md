@@ -2,6 +2,8 @@
 
 Offline mode supports local-database scanning, upgrade suggestions, candidate-version rechecks and ID/alias vulnerability explanations. No experimental Gradle authority or memory-proof machinery is needed for these features. Earlier records below describe the stages before candidate rechecks and local explanations were available.
 
+For installation from a packed artifact with pre-provisioned dependencies/scanner, minimum Node 22.13.0 and representative Node 24/26 validation, see [offline package installation](OFFLINE_PACKAGE_VALIDATION.md). That separate run blocks the original checkout/cache/runtime inputs as well as the network.
+
 ## Reproduction
 
 Build the checkout and prepare a complete database on a connected machine:

@@ -154,6 +154,7 @@ CVEごとに以下の優先順で修正版を探索する。
 - [x] 不要DB回収を含む現行sourceの実DB再検証（2026-11-18）：公式Go ZIPを事前取得し、macOSの通信禁止下でscan_project／suggest_fix／scan_sbomを再実行。不要object・中断downloadの回収は取得済み実ZIPのlocal replayで確認し、選択DB・既存私有copyのdigestを保持。7種の不正DB×3 toolの21拒否、fetch 0・EPERM、関連591テストを[新検証記録](validation/offline-2026-11-18.json)へ保存した。旧記録は保持し、他ecosystem／platform・候補再照会への実証拡張とはしない。
 
 ### 4. 配布方法
+- [x] 配布物のオフライン導入・Node互換検証（2026-11-18）：現checkoutのnpm pack・実行時lock／npm cache・npm・Node・scanner・Maven DBを転送用一式に保存し、別pathへcopy後、通信と元repo／npm cache／scanner／Node／kit／DB等7 domainへのreadをOSで拒否。22.13.0／24.22.1／26.12.1で空の導入先へ`npm ci --offline --omit=dev --ignore-scripts --engine-strict`し、144配布fileの同一性・native FD path・5 tool種6 call×3 runtimeを確認。各8件・2.25.4 local clean・GHSA／CVE同一詳細、空cache／依存欠落の拒否と20.19.6のEBADENGINEを記録。新規判定30件・関連790テストと[検証記録](OFFLINE_PACKAGE_VALIDATION.md)を追加。最低engine設定は変更せず、registry公開版との同一性・全Node patch／Linux／Windows・別UIDを実証したとはしない。
 - [x] npmパッケージ化(`npx osv-scanner-mcp`)→ 配布準備完了(2026-07-04)。パッケージ名の空きを確認済み。`files: ["dist"]`でテスト除外(tsconfig.build.json)、`prepack`で自動ビルド、`prepublishOnly`でtypecheck+test実行。tarballを隔離環境にインストールしてbin起動・3ツール・実スキャンまで検証済み。**v0.1.0として公開済み(2026-07-04)**: https://www.npmjs.com/package/osv-scanner-mcp
 - [x] Claude Desktop設定ファイルへの登録手順をREADMEに明記 → README.md作成時に記載(2026-07-04)。Claude Code(`claude mcp add`)の手順も併記
 
