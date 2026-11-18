@@ -149,7 +149,7 @@ npm run build
 | `OSV_MCP_PREFER_DOWNLOAD` | If `1` or `true`, always use the checksum-verified downloaded binary instead of osv-scanner on `PATH` (protects against a fake binary planted on `PATH`; an explicit `OSV_SCANNER_PATH` still takes precedence) |
 | `OSV_MCP_NO_CANDIDATE_CHECK` | If `1` or `true`, `suggest_fix` does not query OSV about recommended versions (`candidate_check` is `disabled`, and recommended versions are not checked for known vulnerabilities that do not affect the current version) |
 | `OSV_MCP_NO_REMOTE_RESOLUTION` | If `1` or `true`, transitive dependencies of `pom.xml` and `requirements.txt` are not resolved through deps.dev. **This stops only the requests to deps.dev; package names and versions are still sent to `api.osv.dev` for the vulnerability lookup.** Vulnerabilities in transitive dependencies are then not detected, and responses say so in `dependency_resolution.warning`. See [Network destinations and privacy](#network-destinations-and-privacy) |
-| `OSV_MCP_OFFLINE` | `1`, `true` or `yes` enables full offline scans and candidate rechecks using local databases. No API queries, remote dependency resolution, binary downloads or automatic DB updates. Vulnerability explanations are unavailable |
+| `OSV_MCP_OFFLINE` | `1`, `true` or `yes` enables offline scans, candidate rechecks and vulnerability explanations using local databases. No API queries, remote dependency resolution, binary downloads or automatic DB updates |
 | `OSV_MCP_OFFLINE_DB_DIR` | Absolute directory prepared by the `cache` command; defaults to `$XDG_CACHE_HOME/osv-scanner-mcp/offline` or `~/.cache/osv-scanner-mcp/offline` |
 | `OSV_MCP_OFFLINE_MAX_AGE_HOURS` | Maximum age since each required DB was downloaded; default `168` hours, integer range `1`–`720`. An expired or future-dated database refuses the scan |
 | `OSV_MCP_GRADLE_DECLARATION_TRUST` | Set to `registered-helper-v1` to accept author-attested Gradle C1a declaration maps. Unset by default. Read once at server startup. Any other value does not stop the server: it prints a warning to stderr, leaves declaration sources disabled, and adds `declaration_trust_config_invalid` to the Gradle metadata reasons. See [Gradle declaration sources](#gradle-declaration-sources-c1a) |
@@ -245,7 +245,11 @@ Using `npx` on a disconnected host can still require an npm package download; pr
 
 Offline mode always disables deps.dev resolution; lockfiles remain preferable to `pom.xml` or `requirements.txt` alone. The offline implementation accepts registry versions; project lockfiles containing detected Git/VCS references are refused because the native offline matcher cannot verify commits. `suggest_fix` rechecks each recommended version using a private single-component SBOM and the native local matcher. `candidate_check_source: "local_database"` distinguishes these checks from online queries. A newly found vulnerability can cause reselection, an unresolved vulnerability is reported as `has_known_vulnerabilities`, and conflicting data can withhold the recommendation. `clean` means no additional fix-target advisories were found in that local snapshot; it does not establish safety or cover newer advisories. The existing `OSV_MCP_NO_CANDIDATE_CHECK` setting still disables rechecks, and query limits can yield `skipped`.
 
-Each candidate scan verifies the required ecosystem DB and must match the project scan's database digest and download timestamp. Missing, invalid, expired or changed DBs, unidentified candidates and incomplete native output fail the request rather than returning `clean`. A concurrent refresh that changes the selected generation requires retrying the whole request. Native candidate scans run sequentially, with the existing limits of 4 candidate queries/package and 60 queries/call; each query copies and loads its ecosystem DB under the normal scanner timeout and temporary-space limits. They can take longer than API checks. `explain_vulnerability` still returns an offline-unavailable error without a network fallback.
+Each candidate scan verifies the required ecosystem DB and must match the project scan's database digest and download timestamp. Missing, invalid, expired or changed DBs, unidentified candidates and incomplete native output fail the request rather than returning `clean`. A concurrent refresh that changes the selected generation requires retrying the whole request. Native candidate scans run sequentially, with the existing limits of 4 candidate queries/package and 60 queries/call; each query copies and loads its ecosystem DB under the normal scanner timeout and temporary-space limits. They can take longer than API checks.
+
+`explain_vulnerability` searches canonical IDs and direct aliases in **every prepared database**, using verified private ZIP copies without extracting entries or running OSV-Scanner. It adds `requested_id`, `matched_by`, `matching_record_ids` and `offline_database`. An exact ID match takes priority; otherwise the first ID in lexical order is returned, with other matching records in `related_records`. Identical copies of a matching ID are deduplicated; conflicting full records fail the lookup even if another copy omits the requested alias (object key insertion order is ignored). A missing ID returns `vulnerability_not_found` with snapshot metadata and a warning that it is only absent from the prepared snapshots. There is no API fallback. Since an ID/alias can span ecosystems, an invalid or expired prepared DB refuses the whole lookup even if a match exists elsewhere.
+
+Local explanations scan all ZIP entries, using pinned `yauzl` 3.4.0 with lazy ZIP/ZIP64 reading plus size and CRC checks. The reader verifies the central directory's declared count, full byte span and adjacency to the end record before accepting search completion. Limits per lookup: 4 MiB per record, 2 GiB expanded data, 500,000 entries, 20 distinct matching IDs, 16 MiB matching-record bytes, 64 nesting levels for full-record digest comparison, and 120 seconds. A call-local digest table covers every record ID, including copies encountered before an alias match, within the entry limit; full nonmatching record bodies are not retained. Malformed or duplicate entries, inconsistent records, timeout or exhausted limits are errors rather than partial results or a local miss. Freshness and the time budget are checked again after cleanup. The existing explanation field truncation limits still apply. Local searches share `OSV_MCP_MAX_CONCURRENT_SCANS` capacity with native scans and reserve it before DB copying. No persistent ID index is built, so large/multiple databases can make each lookup slower than an online request.
 
 The operator-produced manifest is trusted configuration; SHA-256 detects transfer/copy corruption, not an independent signature on the OSV database. DB ZIPs are limited to 512 MiB each, the object cache to 2 GiB and 128 objects, and project lockfile preflight to 16 MiB/file and 64 MiB/scan. A private per-scan DB snapshot may additionally use up to 2 GiB of temporary space, and the native matcher needs memory to load it. Each refresh first removes objects that the currently selected manifest no longer references (older generations and leftovers of failed refreshes) and interrupted `.download-*` files, so at most the selected and the newly downloaded generations remain. A scan that started before two consecutive refreshes may then fail because its database was removed; it never succeeds with missing data, and rerunning it uses the new database. Other unknown files in `objects/` are never removed and make the refresh fail. A crashed updater may leave `update.lock`; remove it only after confirming that no updater is running. Read-only cache use is supported; refresh requires write access.
 
@@ -265,7 +269,7 @@ Destinations confirmed with osv-scanner v2.4.0 (2026-10-07) and v2.7.0, the pinn
 | `explain_vulnerability` | `api.osv.dev` | The vulnerability ID |
 | Automatic binary download (first run only) | GitHub (official Releases) | Nothing (downloads the pinned binary) |
 | Explicit `cache --ecosystems ...` preparation | `osv-vulnerabilities.storage.googleapis.com` | Selected ecosystem names only; downloads complete public ZIPs |
-| Offline scans and suggestions | None | No network requests; uses previously downloaded DBs |
+| Offline scans, suggestions and explanations | None | No network requests; uses previously downloaded DBs |
 
 Both api.osv.dev and deps.dev are operated by Google. In default online mode, names and versions are sent to `api.osv.dev`. With `OSV_MCP_OFFLINE=1`, scanning uses local snapshots and no package data is sent.
 
@@ -897,7 +901,7 @@ Lists past runs of the scan tools (`scan_project`, `suggest_fix`, `scan_java_pro
 
 ### `explain_vulnerability`
 
-Returns the details of a vulnerability, given its GHSA or CVE ID, **fetched directly from the OSV database API (api.osv.dev)** (no scan is run). IDs from the scan results can be passed as they are. This is especially useful for vulnerabilities published after the client LLM's knowledge cutoff.
+Returns vulnerability details by ID (including GHSA, CVE and GO IDs). Online mode fetches from **api.osv.dev**; offline mode searches IDs and direct aliases in the prepared local databases. No scan is run, and local lookup does not require the scanner binary. IDs from scan results can be passed as they are.
 
 **Input**
 
@@ -907,7 +911,9 @@ Returns the details of a vulnerability, given its GHSA or CVE ID, **fetched dire
 
 **Output (success)**: `id` / `aliases` / `summary` / `details` (markdown description, up to 4,000 characters) / `severity` (CVSS vectors) / `published` / `modified` / `affected` (affected packages and version ranges) / `references` (URLs of advisories, fix commits, and so on; http/https only, up to 20)
 
-> **Note**: OSV's canonical IDs are GHSA and similar IDs, so a CVE ID may not be found (the error message then suggests querying with the GHSA ID).
+Offline results also include `requested_id`, `matched_by` (`id` or `alias`), `matching_record_ids`, `offline_database` and, for multiple matches, `related_records`. ID matching uses the stored spelling after trimming input whitespace. A local miss describes only the prepared snapshots, not the entire online OSV database or the safety of a package.
+
+> **Note**: Online `/v1/vulns` queries may not resolve a CVE alias; the error message then suggests the canonical ID. Offline lookup searches the stored alias lists directly.
 
 **Output (error)** — common to all tools
 
@@ -941,13 +947,13 @@ Returns JSON with a machine-readable `kind`, together with `isError: true`:
 | `gradle_lockfile_missing` | A Gradle project without `gradle.lockfile` (`scan_java_project`; the message explains how to generate it) |
 | `path_outside_allowed_root` | The path is outside `OSV_MCP_ALLOWED_ROOT` (including when every manifest is excluded because its parent POM references a file outside the allowed root) |
 | `no_packages_found` | No packages to scan (for example a `pom.xml` without dependencies) |
-| `scan_failed` | OSV-Scanner exited abnormally (an excerpt of stderr is in `detail`) |
+| `scan_failed` | OSV-Scanner exited abnormally, or offline DB data is invalid, unreadable, expired or inconsistent |
 | `scan_timeout` | Timeout (120 seconds by default) |
-| `too_many_concurrent_scans` | The concurrent scan limit (2 by default) was reached. Try again after the running scans finish |
-| `output_too_large` | The output exceeds the size limit (32 MB by default) |
+| `too_many_concurrent_scans` | The shared native scan/local record lookup limit (2 by default) was reached. Try again after running work finishes |
+| `output_too_large` | Scanner output exceeds its size limit (32 MB by default), or a local record lookup exceeded its byte/entry/match limits |
 | `invalid_output` | The output could not be parsed as JSON |
 | `invalid_vulnerability_id` | The vulnerability ID is malformed |
-| `vulnerability_not_found` | No vulnerability with the ID exists in the OSV database |
+| `vulnerability_not_found` | The selected source did not return the ID. Offline, no ID/alias match was found in the prepared snapshots; this does not establish global absence or safety |
 | `api_request_failed` | The request to the OSV API failed (network, timeout, or a non-2xx response) |
 | `history_disabled` | The scan history is disabled (`scan_history`; set `OSV_MCP_HISTORY=1`) |
 | `history_unavailable` | The history directory cannot be used (for example a symbolic link or owned by another user) |
@@ -988,10 +994,10 @@ Design notes and open items are in [docs/DESIGN_TODO.md](docs/DESIGN_TODO.md) (i
 ## Roadmap
 
 - [x] `suggest_fix`: recommends the fix closest to the current release line (three-tier fallback)
-- [x] `explain_vulnerability`: vulnerability details (through the OSV API)
+- [x] `explain_vulnerability`: vulnerability details (OSV API online; ID/alias lookup in local databases offline)
 - [x] npm package (`npx osv-scanner-mcp`)
 - [x] Automatic OSV-Scanner download (with checksum verification)
-- [x] Offline scans, suggestions and local candidate rechecks with explicit ecosystem DB preparation (source checkout; explanations remain unavailable offline)
+- [x] Offline scans, suggestions, candidate rechecks and explanations with explicit ecosystem DB preparation (source checkout)
 - [x] Gradle support (lockfile approach)
 - [x] `scan_java_artifact`: JAR/WAR scanning (for projects without a lockfile, or with only shaded/fat JARs)
 - [x] `scan_project`: scans Java / JavaScript / Python / Go lockfiles together

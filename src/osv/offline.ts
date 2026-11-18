@@ -15,5 +15,5 @@ export function offlineConfig(options:OfflineOptions={},env:NodeJS.ProcessEnv=pr
  return {enabled,dir,maxAgeMs:hours*3600000};
 }
 export function requireOnline(options:OfflineOptions={}){
- if(offlineEnabled(options))throw new ScanToolError('api_request_failed','Offline mode: OSV API queries and vulnerability explanations are unavailable. No network request was made');
+ if(offlineEnabled(options))throw new ScanToolError('api_request_failed','Offline mode: OSV API queries are unavailable. No network request was made');
 }

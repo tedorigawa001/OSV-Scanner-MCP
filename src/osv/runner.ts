@@ -269,6 +269,11 @@ async function runScan(
   mode: ScanMode,
   ecosystems?:readonly string[],
 ): Promise<unknown> {
+  return withScanCapacity(options, () => runOsvScanUnguarded(targetArgs, options, mode, ecosystems));
+}
+
+/** Shared expensive-work capacity. Offline record searches reserve before copying/reading databases too. */
+export async function withScanCapacity<T>(options: Pick<RunOsvScanOptions, 'maxConcurrentScans'>, work: () => Promise<T>): Promise<T> {
   const limit = options.maxConcurrentScans ?? maxConcurrentScansFromEnv();
   if (activeScans >= limit) {
     throw new ScanToolError(
@@ -278,7 +283,7 @@ async function runScan(
   }
   activeScans++;
   try {
-    return await runOsvScanUnguarded(targetArgs, options, mode,ecosystems);
+    return await work();
   } finally {
     activeScans--;
   }

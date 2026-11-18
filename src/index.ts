@@ -55,7 +55,7 @@ if(process.argv[2]==='cache'){
   const {runCacheCli}=await import('./cache.js');await runCacheCli(process.argv.slice(3));process.exit(process.exitCode??0);
 }
 
-try{if(offlineConfig().enabled)console.error('osv-scanner-mcp: offline mode; scans and candidate rechecks use local databases; database refresh, remote resolution and vulnerability explanations are disabled');}
+try{if(offlineConfig().enabled)console.error('osv-scanner-mcp: offline mode; scans, candidate rechecks and vulnerability explanations use local databases; database refresh and remote resolution are disabled');}
 catch(e){console.error(e instanceof Error?e.message:'Invalid offline configuration');process.exit(1);}
 
 // Declaration provenance is an explicit consumer policy, never a graph-file instruction.
@@ -206,9 +206,11 @@ server.registerTool(
   {
     title: "Explain a vulnerability",
     description:
-      "Fetches the details of a vulnerability by GHSA or CVE ID from the OSV database (api.osv.dev). " +
+      "Fetches vulnerability details by ID (including GHSA, CVE and GO IDs) from api.osv.dev online, or prepared local databases offline. " +
       "Includes the description (details), CVSS vectors, affected packages and version ranges, and reference links (advisories and fix commits). " +
-      "IDs from the results of the scan tools and suggest_fix can be passed as they are. No scan is run. This tool is unavailable in offline mode and never falls back to a network request.",
+      "IDs from the results of the scan tools and suggest_fix can be passed as they are. No scan is run. " +
+      "In offline mode, searches canonical IDs and direct aliases in every prepared local database, returns offline_database metadata and related_records for multiple matches, and never falls back to a network request. " +
+      "A local miss means only that the ID was not found in the prepared snapshots. Invalid, expired, conflicting or over-limit data fails the lookup.",
     inputSchema: {
       vulnerability_id: z
         .string()

@@ -48,3 +48,13 @@ export function offlineAliasFixtures() {
   ];
   return cases.map(fixture => ({...fixture, bytes: zip(fixture.records)}));
 }
+
+/** Same canonical ID, but only one copy retains the lookup alias. Reader controls, not public DBs. */
+export function offlineExplanationConflictFixtures() {
+  const matching = {...advisory('GO-2000-0001', '0', '1.5.0', ['CVE-2000-0001']), summary: 'Matching copy'};
+  const other = {...matching, aliases: [], summary: 'Conflicting copy'};
+  return [false, true].map(reverse => ({name: 'nonmatching-copy-' + (reverse ? 'first' : 'last'),
+    requested_id: 'CVE-2000-0001', canonical_id: matching.id,
+    databases: [{ecosystem: 'Go', bytes: zip([reverse ? other : matching])},
+      {ecosystem: 'PyPI', bytes: zip([reverse ? matching : other])}]}));
+}

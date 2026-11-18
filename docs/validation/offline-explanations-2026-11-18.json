@@ -1,0 +1,1601 @@
+{
+  "schema": 1,
+  "date": "2026-11-18T06:06:51.860Z",
+  "scope": "complete-Go-database-local-explanations-and-real-scanner-same-user-network-denied",
+  "runtime": {
+    "node": "v26.12.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "node_sha256": "06eb3f5762c2b6890e99d03f931bf01d9b20fd341dec1a8c1ef5c1809e66102b",
+    "zip_reader": {
+      "name": "yauzl",
+      "version": "3.4.0",
+      "index_sha256": "8cccdd25e8bb5516572c09072324876860c8de5898c0b8b7070f0e660b35a0ec"
+    }
+  },
+  "scanner": {
+    "version": "osv-scanner version: 2.7.0\nosv-scalibr version: 0.5.3\ncommit: bfe2f84abd2f09fe0b83ba7f6dad40d296762f40\nbuilt at: 2026-10-12T00:39:39Z",
+    "sha256": "d4926ef8da134332543be276dff157e4c170f99ad91fc48e89448a8816bdf70b"
+  },
+  "database_manifest": {
+    "schema": 1,
+    "databases": [
+      {
+        "ecosystem": "Go",
+        "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784",
+        "bytes": 12939080,
+        "downloaded_at": "2026-11-18T04:00:02.348Z",
+        "url": "https://osv-vulnerabilities.storage.googleapis.com/Go/all.zip"
+      }
+    ]
+  },
+  "network_control": "EPERM",
+  "node_fetch_calls": 0,
+  "results": [
+    {
+      "case": "object-collection",
+      "status": "verified",
+      "transport": "local-replay-of-prepared-official-Go-ZIP-no-network",
+      "replay_requests": 1,
+      "before": [
+        ".download-aaaaaaaaaaaaaaaaaaaaaaaa",
+        "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784.zip",
+        "50d52672ad4c943d2773b63be8b3f8ab3ab1456e155f9ad3dbd3b683c0663a89.zip"
+      ],
+      "after": [
+        "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784.zip"
+      ],
+      "collected_before_replay": true,
+      "selected_sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784",
+      "active_private_snapshot_preserved": true
+    },
+    {
+      "tool": "scan_project",
+      "vulnerabilities": 5,
+      "packages": [
+        {
+          "name": "golang.org/x/text",
+          "version": "0.3.0",
+          "ids": [
+            "GO-2020-0015",
+            "GO-2021-0113",
+            "GO-2022-1059",
+            "GO-2026-5970",
+            "GO-2026-6629"
+          ]
+        }
+      ],
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T04:00:02.348Z",
+            "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "recommended": "0.41.0",
+      "candidate_check": "clean",
+      "candidate_check_source": "local_database",
+      "upgrade_note": "Recommends upgrading to 0.41.0 (in 0.x, even a minor update may include breaking changes). Based on the affected ranges retrieved, it is outside the ranges of all 5 CVEs to fix. It is not guaranteed to be the smallest such published version or free of undetected vulnerabilities. Offline mode: no additional fix-target vulnerabilities were found in the local database snapshot. Newer advisories are not covered; this does not establish safety",
+      "verification": "verified",
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T04:00:02.348Z",
+            "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "affected-control",
+      "version": "0.3.0",
+      "status": "affected",
+      "record_ids": [
+        "GO-2020-0015",
+        "GO-2021-0113",
+        "GO-2022-1059",
+        "GO-2026-5970",
+        "GO-2026-6629",
+        "GHSA-5rcv-m4m3-hfh7",
+        "GHSA-69ch-w2m2-3vjp",
+        "GHSA-ppp9-7jff-5vj2"
+      ]
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "recommended-control",
+      "version": "0.41.0",
+      "status": "clean",
+      "record_ids": []
+    },
+    {
+      "tool": "scan_sbom",
+      "vulnerabilities": 5,
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T04:00:02.348Z",
+            "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "lookup-GO-2020-0015",
+      "status": "found",
+      "id": "GO-2020-0015",
+      "requested_id": "GO-2020-0015",
+      "matched_by": "id",
+      "matching_record_ids": [
+        "GO-2020-0015",
+        "GHSA-5rcv-m4m3-hfh7"
+      ],
+      "summary": "Infinite loop when decoding some inputs in golang.org/x/text",
+      "details_characters": 305,
+      "details_sha256": "2860de6e8f001dcb811bc177a082298f39c857459e28e45b7ddda0eae1b94e5c",
+      "affected": [
+        {
+          "package": "golang.org/x/text",
+          "ecosystem": "Go",
+          "ranges": [
+            {
+              "introduced": "0",
+              "fixed": "0.3.3",
+              "last_affected": null
+            }
+          ]
+        }
+      ],
+      "related_record_ids": [
+        "GHSA-5rcv-m4m3-hfh7"
+      ],
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T04:00:02.348Z",
+            "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "lookup-CVE-2020-14040",
+      "status": "found",
+      "id": "GHSA-5rcv-m4m3-hfh7",
+      "requested_id": "CVE-2020-14040",
+      "matched_by": "alias",
+      "matching_record_ids": [
+        "GHSA-5rcv-m4m3-hfh7",
+        "GO-2020-0015"
+      ],
+      "summary": "golang.org/x/text Infinite loop",
+      "details_characters": 533,
+      "details_sha256": "1c899735ff2e6e67999cdd96c1ede92efdd1461f15245815c827925bfc1f7219",
+      "affected": [
+        {
+          "package": "golang.org/x/text",
+          "ecosystem": "Go",
+          "ranges": [
+            {
+              "introduced": "0",
+              "fixed": "0.3.3",
+              "last_affected": null
+            }
+          ]
+        }
+      ],
+      "related_record_ids": [
+        "GO-2020-0015"
+      ],
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T04:00:02.348Z",
+            "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "lookup-GHSA-5rcv-m4m3-hfh7",
+      "status": "found",
+      "id": "GHSA-5rcv-m4m3-hfh7",
+      "requested_id": "GHSA-5rcv-m4m3-hfh7",
+      "matched_by": "id",
+      "matching_record_ids": [
+        "GHSA-5rcv-m4m3-hfh7",
+        "GO-2020-0015"
+      ],
+      "summary": "golang.org/x/text Infinite loop",
+      "details_characters": 533,
+      "details_sha256": "1c899735ff2e6e67999cdd96c1ede92efdd1461f15245815c827925bfc1f7219",
+      "affected": [
+        {
+          "package": "golang.org/x/text",
+          "ecosystem": "Go",
+          "ranges": [
+            {
+              "introduced": "0",
+              "fixed": "0.3.3",
+              "last_affected": null
+            }
+          ]
+        }
+      ],
+      "related_record_ids": [
+        "GO-2020-0015"
+      ],
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T04:00:02.348Z",
+            "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "unlisted-id",
+      "status": "not-found-in-local-snapshot",
+      "error": {
+        "kind": "vulnerability_not_found",
+        "message": "No record with this ID or alias was found in the prepared local database snapshots. This does not establish absence from OSV or safety"
+      },
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T04:00:02.348Z",
+            "sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "entry-budget",
+      "status": "rejected",
+      "error_kind": "output_too_large",
+      "error": "Offline record lookup exceeded its entry, record, expanded-byte or match limit; the search was not completed"
+    },
+    {
+      "tool": "scan_project",
+      "case": "missing",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "missing",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "missing",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "missing",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "missing",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "missing-object",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "missing-object",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "missing-object",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "missing-object",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "missing-object",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "expired",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "expired",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "expired",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "expired",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "expired",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "future",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "future",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "future",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "future",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "future",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "truncated",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "truncated",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "truncated",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "truncated",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "truncated",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "digest",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "digest",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "digest",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "digest",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "digest",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: Go database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_project",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "scan_sbom",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "digest-valid-malformed-zip",
+      "status": "rejected",
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: invalid ZIP end record"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "zip-count",
+      "status": "rejected",
+      "fixture_kind": "modified-prepared-official-Go-ZIP-local-reader",
+      "source_zip_sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784",
+      "zip_sha256": "5d1a5cb8d5031d11681eee548947c2068aebac474057d2c6e230dbff43767f1e",
+      "actual_entries": 9959,
+      "declared_entries": 9958,
+      "actual_directory_bytes": 663266,
+      "declared_directory_bytes": 663266,
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: ZIP directory entry count or size mismatch"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "zip-count-and-size",
+      "status": "rejected",
+      "fixture_kind": "modified-prepared-official-Go-ZIP-local-reader",
+      "source_zip_sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784",
+      "zip_sha256": "baaa43581605db02a73ec171d41ba32d2d40e2c6e4f948d023d4c4b1c0a90f5a",
+      "actual_entries": 9959,
+      "declared_entries": 9958,
+      "actual_directory_bytes": 663266,
+      "declared_directory_bytes": 663202,
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: inconsistent ZIP directory bounds"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "zip64-valid",
+      "status": "found",
+      "fixture_kind": "modified-prepared-official-Go-ZIP-local-reader",
+      "source_zip_sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784",
+      "zip_sha256": "3e5deda8e162abb47ed5c328ae2e0358910cc9c8131d41bb91b50835d11dcda6",
+      "actual_entries": 9959,
+      "declared_entries": 9959,
+      "actual_directory_bytes": 663266,
+      "declared_directory_bytes": 663266,
+      "id": "GO-2020-0015",
+      "matching_record_ids": [
+        "GO-2020-0015",
+        "GHSA-5rcv-m4m3-hfh7"
+      ]
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "zip64-count",
+      "status": "rejected",
+      "fixture_kind": "modified-prepared-official-Go-ZIP-local-reader",
+      "source_zip_sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784",
+      "zip_sha256": "419416c36c357bddd6e28c37f76f504db8ac632e6436abb4b203df9dc53597fc",
+      "actual_entries": 9959,
+      "declared_entries": 9958,
+      "actual_directory_bytes": 663266,
+      "declared_directory_bytes": 663266,
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: ZIP directory entry count or size mismatch"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "zip64-count-and-size",
+      "status": "rejected",
+      "fixture_kind": "modified-prepared-official-Go-ZIP-local-reader",
+      "source_zip_sha256": "362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784",
+      "zip_sha256": "8c1e7ea36859873ec2387cbeefb07f81e6b4f2914b18d17e618479df6a6eb277",
+      "actual_entries": 9959,
+      "declared_entries": 9958,
+      "actual_directory_bytes": 663266,
+      "declared_directory_bytes": 663202,
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: inconsistent ZIP directory bounds"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "nonmatching-copy-last",
+      "status": "rejected",
+      "fixture_kind": "synthetic-cross-ecosystem-same-ID-local-reader",
+      "requested_id": "CVE-2000-0001",
+      "canonical_id": "GO-2000-0001",
+      "databases": [
+        {
+          "ecosystem": "Go",
+          "url": "https://osv-vulnerabilities.storage.googleapis.com/Go/all.zip",
+          "sha256": "d0f524ebd5aae64602332f736eaab1662c594e5569bded0ec453453eea31f272",
+          "bytes": 412,
+          "downloaded_at": "2026-11-18T04:00:02.348Z"
+        },
+        {
+          "ecosystem": "PyPI",
+          "url": "https://osv-vulnerabilities.storage.googleapis.com/PyPI/all.zip",
+          "sha256": "6db5f932093ebc504045c7b772ffbbf885c05dc0bf6f5def60f5630274eef98b",
+          "bytes": 400,
+          "downloaded_at": "2026-11-18T04:00:02.348Z"
+        }
+      ],
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: conflicting copies of the same record ID"
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "nonmatching-copy-first",
+      "status": "rejected",
+      "fixture_kind": "synthetic-cross-ecosystem-same-ID-local-reader",
+      "requested_id": "CVE-2000-0001",
+      "canonical_id": "GO-2000-0001",
+      "databases": [
+        {
+          "ecosystem": "Go",
+          "url": "https://osv-vulnerabilities.storage.googleapis.com/Go/all.zip",
+          "sha256": "6db5f932093ebc504045c7b772ffbbf885c05dc0bf6f5def60f5630274eef98b",
+          "bytes": 400,
+          "downloaded_at": "2026-11-18T04:00:02.348Z"
+        },
+        {
+          "ecosystem": "PyPI",
+          "url": "https://osv-vulnerabilities.storage.googleapis.com/PyPI/all.zip",
+          "sha256": "d0f524ebd5aae64602332f736eaab1662c594e5569bded0ec453453eea31f272",
+          "bytes": 412,
+          "downloaded_at": "2026-11-18T04:00:02.348Z"
+        }
+      ],
+      "error_kind": "scan_failed",
+      "error": "Offline database cache: conflicting copies of the same record ID"
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "alias-single-unfixed",
+      "status": "verified",
+      "fixture_kind": "synthetic-Go-OSV-database-real-scanner",
+      "zip_sha256": "538e9f574ff6f4e6ddacb7a0188774c8af494c8058b345d0b58d617024eb7dea",
+      "replay_requests": 1,
+      "expected": {
+        "recommended_upgrade": "1.5.0",
+        "candidate_check": "has_known_vulnerabilities"
+      },
+      "actual": {
+        "recommended_upgrade": "1.5.0",
+        "candidate_check": "has_known_vulnerabilities",
+        "candidate_check_source": "local_database",
+        "recommended_known_vulnerabilities": [
+          "GO-2000-0002"
+        ]
+      },
+      "first_candidate_record_ids": [
+        "GO-2000-0002"
+      ],
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T06:06:50.567Z",
+            "sha256": "538e9f574ff6f4e6ddacb7a0188774c8af494c8058b345d0b58d617024eb7dea"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "alias-aliased-unfixed",
+      "status": "verified",
+      "fixture_kind": "synthetic-Go-OSV-database-real-scanner",
+      "zip_sha256": "7b410d2793557fbe80089d1c15fbe76da8fbcfe7e46c10bd5f47726cf1a8fc2c",
+      "replay_requests": 1,
+      "expected": {
+        "recommended_upgrade": "1.5.0",
+        "candidate_check": "has_known_vulnerabilities"
+      },
+      "actual": {
+        "recommended_upgrade": "1.5.0",
+        "candidate_check": "has_known_vulnerabilities",
+        "candidate_check_source": "local_database",
+        "recommended_known_vulnerabilities": [
+          "GO-2000-0002",
+          "GHSA-aaaa-bbbb-cccc"
+        ]
+      },
+      "first_candidate_record_ids": [
+        "GHSA-aaaa-bbbb-cccc",
+        "GO-2000-0002"
+      ],
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T06:06:51.007Z",
+            "sha256": "7b410d2793557fbe80089d1c15fbe76da8fbcfe7e46c10bd5f47726cf1a8fc2c"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "alias-aliased-fixed",
+      "status": "verified",
+      "fixture_kind": "synthetic-Go-OSV-database-real-scanner",
+      "zip_sha256": "8438274c019955139fca5e01c4616329802a7e96a68d1c857221aa8e18f620c4",
+      "replay_requests": 1,
+      "expected": {
+        "recommended_upgrade": "1.7.0",
+        "candidate_check": "clean"
+      },
+      "actual": {
+        "recommended_upgrade": "1.7.0",
+        "candidate_check": "clean",
+        "candidate_check_source": "local_database"
+      },
+      "first_candidate_record_ids": [
+        "GHSA-aaaa-bbbb-cccc",
+        "GO-2000-0002"
+      ],
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T06:06:51.274Z",
+            "sha256": "8438274c019955139fca5e01c4616329802a7e96a68d1c857221aa8e18f620c4"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "alias-initially-known-conflict",
+      "status": "verified",
+      "fixture_kind": "synthetic-Go-OSV-database-real-scanner",
+      "zip_sha256": "b83213bac75c1a2e7953f430e5a65acf1dd2999657fb5b6715d7292228a2ff6e",
+      "replay_requests": 1,
+      "expected": {
+        "recommended_upgrade": null,
+        "candidate_check": "conflict"
+      },
+      "actual": {
+        "recommended_upgrade": null,
+        "candidate_check": "conflict",
+        "candidate_check_source": "local_database"
+      },
+      "first_candidate_record_ids": [
+        "GHSA-aaaa-bbbb-cccc"
+      ],
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Go",
+            "downloaded_at": "2026-11-18T06:06:51.620Z",
+            "sha256": "b83213bac75c1a2e7953f430e5a65acf1dd2999657fb5b6715d7292228a2ff6e"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    }
+  ],
+  "sources": {
+    "src/index.ts": "c4b89500043f543ca37c9259888cebb9206b4e911c7bb3dc1efef4f25b494bc7",
+    "src/cache.ts": "2b4196a0e28e8f50439917bf712a54053556e559cb839969c725ed83456c61f0",
+    "src/osv/offline.ts": "110aff23438d944b8f27acfe2b3a0fcc3112e34fd181a3313f791962cbfd21ac",
+    "src/osv/offlineCache.ts": "b2f7be839a1495988f6b0e0de10df688badceecf1bb87c2ef496a99c7b79c11d",
+    "src/osv/offlineCandidate.ts": "2f4e1472140d3ad30a0ec2b639faa2ec02550889171a2389c0feac9987af294a",
+    "src/osv/offlineRecord.ts": "e23577b274ed27ed60c810c38a1c22b31a3e81f53e33a4ebee684c328016b17e",
+    "src/osv/vulnerabilityExplanation.ts": "b971f2d0838cf21966ed61b220a3b62ec771ea9e480101ccf549167dae334b2e",
+    "src/osv/runner.ts": "86758e457596130606e9397becc9cd17c1364d65ebfb5ab321780e047cec835c",
+    "src/osv/binaryManager.ts": "f16130a62b708a453dddd9cab10258b88a2973e301bf8e860a5fd86b17fb63c3",
+    "src/osv/binaryDownloader.ts": "66f863886bbda6ff73363e4aaeb78bd0928c92f50cfcf2867a10622f616e280b",
+    "src/osv/osvApi.ts": "eced215f9e3a8e7c09591e85f14cbc2136ff60fa0ddacf6e40db6cd3390f8566",
+    "src/osv/candidateCheck.ts": "07967c772b5a081be6f1c89feccac77914a264a9eb370bcfa943c377789fd35b",
+    "src/osv/suggestFix.ts": "8a5961e414c4ebe10fe77425812debb2be4fde24b114675b53ca90855c4ae6f7",
+    "src/osv/versionScheme.ts": "cdcc37369ed8eeb9f3516c6d853f87ee31c334de4f6eb7392a823b53a1829b10",
+    "src/osv/affectedVersions.ts": "2b172ee8ec0da76c61d1871f9102700605a608cea3d38f27fa5a63076ef36421",
+    "src/osv/scanReport.ts": "52229231db81025a96764312992e8c5ec9ed9da356effeecbfe74d85f323b296",
+    "src/tools/scanProject.ts": "b3635b834ce5da23999007d010d9150a5b9168795c798446594f556759d7cf13",
+    "src/tools/scanJavaProject.ts": "51f610fde13cca91605ca2da7b4ceacd69beb2ca28156dbdde8daa6279aeffbb",
+    "src/tools/scanJavaArtifact.ts": "cdf542fbcdb6caed054438c7625122210ccca8afa042ecee46e18a42e7a878ce",
+    "src/tools/scanSbom.ts": "bfdce35843f90da0616e6bffd2ad9b403c21ce99e0310da6b35798743348a2d9",
+    "src/tools/suggestFix.ts": "fa3536f4624da440e077471f5a75d005b8cefc70e83394ff1222109cc20c385b",
+    "src/tools/explainVulnerability.ts": "caf0c688c3cb24836c3e3c95cda8707bb783440feccec714753acf8a7c3ae73e",
+    "src/utils/permissionCheck.ts": "099f2ce69e1ee1074acd4eb22a389deb8d8c7d4455740a44220abaaa200ec068",
+    "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054",
+    "src/test/osv/offline.test.ts": "cc94d7db18ffdcc1efbf5f795df3ca872685fd5fcdb813750d1507bd03f1bb8d",
+    "src/test/osv/offlineCandidateCheck.test.ts": "5dd78e246f7841e3ee4f99ecfd9dda86489c5a100cfacaf44bf1179ff804b1cd",
+    "src/test/osv/offlineExplanation.test.ts": "739b6da42393abb8d6e46fc05680bccd67bb260d69b77f1bf4209e499f7cbc25",
+    "src/test/fixtures/offlineRecords.ts": "d6d88b416cca283b7201926c426b7c477839d526fe294c61bf3e5262b536e20a",
+    "src/test/osv/candidateCheck.test.ts": "731668a7a18e2d304d2e2fa9a0b9c31931787ba3924800099aa8971d184cb8ea",
+    "scripts/validate-offline.mjs": "94a1aac59d8051770b7e2817ef2077fee65b9b3dd4f0ae147cbc6461a6bbe772",
+    "scripts/offline-alias-fixtures.mjs": "bf2d2cc25cf13efc1b6dcb4d9f14bde2867ee30560e3716aa9454b16828c5821",
+    "package.json": "22bdd4726690e1b0bea9d8e42b2ff27f13a8fd5096c0e351cf8223469b48a1a9",
+    "package-lock.json": "856b21b437fdc86c4a2d0662302f103a0907d9f0ad50450cbcd35d56437d2894"
+  },
+  "product_regressions": {
+    "passed": 702,
+    "failed": 0,
+    "skipped": 0,
+    "files": 35,
+    "report_sha256": "da85fef03ca03be656a8de0a6ce8984d4236dca747f40eadf364174f5ef0fb46",
+    "offline_cases": [
+      {
+        "name": "offline settings reject invalid values and cannot enable remote resolution",
+        "status": "passed"
+      },
+      {
+        "name": "offline=0 remains online by default",
+        "status": "passed"
+      },
+      {
+        "name": "offline=false remains online by default",
+        "status": "passed"
+      },
+      {
+        "name": "offline=no remains online by default",
+        "status": "passed"
+      },
+      {
+        "name": "offline= remains online by default",
+        "status": "passed"
+      },
+      {
+        "name": "offline=1 overrides an internal false setting",
+        "status": "passed"
+      },
+      {
+        "name": "offline=true overrides an internal false setting",
+        "status": "passed"
+      },
+      {
+        "name": "offline=yes overrides an internal false setting",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid offline max age 0",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid offline max age 721",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid offline max age abc",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid offline max age 1.5",
+        "status": "passed"
+      },
+      {
+        "name": "every project invocation uses full offline and never enables database download",
+        "status": "passed"
+      },
+      {
+        "name": "every artifact invocation uses full offline and never enables database download",
+        "status": "passed"
+      },
+      {
+        "name": "every sbom invocation uses full offline and never enables database download",
+        "status": "passed"
+      },
+      {
+        "name": "publishes immutable DB objects and captures verified private bytes with cleanup",
+        "status": "passed"
+      },
+      {
+        "name": "rejects missing cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects digest cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects truncated cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects expired cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects future cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects origin cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects duplicate cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects unknown cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects symlink cached evidence",
+        "status": "passed"
+      },
+      {
+        "name": "missing ecosystems never become a successful empty scan",
+        "status": "passed"
+      },
+      {
+        "name": "failed refresh preserves the previously selected manifest and DB bytes",
+        "status": "passed"
+      },
+      {
+        "name": "rejects partial database responses (206) without replacing the manifest",
+        "status": "passed"
+      },
+      {
+        "name": "rejects partial database responses (200) without replacing the manifest",
+        "status": "passed"
+      },
+      {
+        "name": "repeated refreshes keep only the selected and previous DB generations",
+        "status": "passed"
+      },
+      {
+        "name": "the next refresh collects objects from a failed partial run and interrupted downloads",
+        "status": "passed"
+      },
+      {
+        "name": "collection never removes unknown entries; they are still rejected",
+        "status": "passed"
+      },
+      {
+        "name": "serializes updates and never removes the active updater lock for another caller",
+        "status": "passed"
+      },
+      {
+        "name": "offline blocks preparation and API queries; missing local explanation data never invokes fetch",
+        "status": "passed"
+      },
+      {
+        "name": "offline binary resolution never dispatches an automatic download",
+        "status": "passed"
+      },
+      {
+        "name": "cache-only binary lookup validates existing bytes and refuses missing or corrupted bytes without fetch",
+        "status": "passed"
+      },
+      {
+        "name": "runs project only after cache verification and cleans up the scanner cache snapshot",
+        "status": "passed"
+      },
+      {
+        "name": "runs artifact only after cache verification and cleans up the scanner cache snapshot",
+        "status": "passed"
+      },
+      {
+        "name": "runs sbom only after cache verification and cleans up the scanner cache snapshot",
+        "status": "passed"
+      },
+      {
+        "name": "offline Git dependencies are refused before the scanner can silently skip commit matching",
+        "status": "passed"
+      },
+      {
+        "name": "invalid cache prevents scanner process creation",
+        "status": "passed"
+      },
+      {
+        "name": "project scans copy only the required ecosystem, ignoring unrelated expired databases",
+        "status": "passed"
+      },
+      {
+        "name": "online scanner output cannot spoof the internally generated offline metadata",
+        "status": "passed"
+      },
+      {
+        "name": "suggest_fix keeps an explicit opt-out for offline candidate rechecks",
+        "status": "passed"
+      }
+    ],
+    "offline_candidate_cases": [
+      {
+        "name": "rechecks an offline recommendation using an identified candidate in the local DB, never the API",
+        "status": "passed"
+      },
+      {
+        "name": "reselects when a local candidate has a vulnerability absent from the current version",
+        "status": "passed"
+      },
+      {
+        "name": "reports new unfixed candidate vulnerabilities and withholds conflicting candidates",
+        "status": "passed"
+      },
+      {
+        "name": "same-query GO/GHSA aliases keep an unfixed recommendation (reverse=false)",
+        "status": "passed"
+      },
+      {
+        "name": "same-query GO/GHSA aliases keep an unfixed recommendation (reverse=true)",
+        "status": "passed"
+      },
+      {
+        "name": "same-query aliases preserve every record range during reselection (reverse=false)",
+        "status": "passed"
+      },
+      {
+        "name": "same-query aliases preserve every record range during reselection (reverse=true)",
+        "status": "passed"
+      },
+      {
+        "name": "aliases of an initially known fix target still conflict",
+        "status": "passed"
+      },
+      {
+        "name": "an advisory learned in an earlier query still conflicts at a later candidate",
+        "status": "passed"
+      },
+      {
+        "name": "rejects empty candidate output rather than publishing clean",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong-name candidate output rather than publishing clean",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong-version candidate output rather than publishing clean",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong-ecosystem candidate output rather than publishing clean",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong-source candidate output rather than publishing clean",
+        "status": "passed"
+      },
+      {
+        "name": "rejects missing-details candidate output rather than publishing clean",
+        "status": "passed"
+      },
+      {
+        "name": "rejects malformed-details candidate output rather than publishing clean",
+        "status": "passed"
+      },
+      {
+        "name": "rejects missing-results candidate output rather than publishing clean",
+        "status": "passed"
+      },
+      {
+        "name": "rejects exit-failure candidate output rather than publishing clean",
+        "status": "passed"
+      },
+      {
+        "name": "rejects a digest DB change after the project scan",
+        "status": "passed"
+      },
+      {
+        "name": "rejects a expired DB change after the project scan",
+        "status": "passed"
+      },
+      {
+        "name": "rejects a generation DB change after the project scan",
+        "status": "passed"
+      },
+      {
+        "name": "honors option disabling without candidate or network queries",
+        "status": "passed"
+      },
+      {
+        "name": "honors environment disabling without candidate or network queries",
+        "status": "passed"
+      },
+      {
+        "name": "keeps query budget 0 and never calls an unchecked candidate clean",
+        "status": "passed"
+      },
+      {
+        "name": "keeps query budget 1 and never calls an unchecked candidate clean",
+        "status": "passed"
+      },
+      {
+        "name": "honors the total query limit without invoking a candidate scanner",
+        "status": "passed"
+      },
+      {
+        "name": "environment offline mode cannot be overridden by false or injected network options",
+        "status": "passed"
+      },
+      {
+        "name": "does not load an unrelated expired ecosystem for a candidate",
+        "status": "passed"
+      },
+      {
+        "name": "rejects expiration during a native query before publishing clean",
+        "status": "passed"
+      },
+      {
+        "name": "refuses unsupported or unbounded candidate identity unknown",
+        "status": "passed"
+      },
+      {
+        "name": "refuses unsupported or unbounded candidate identity Maven",
+        "status": "passed"
+      },
+      {
+        "name": "refuses unsupported or unbounded candidate identity Go",
+        "status": "passed"
+      },
+      {
+        "name": "refuses unsupported or unbounded candidate identity npm",
+        "status": "passed"
+      },
+      {
+        "name": "refuses unsupported or unbounded candidate identity npm",
+        "status": "passed"
+      },
+      {
+        "name": "refuses unsupported or unbounded candidate identity npm",
+        "status": "passed"
+      },
+      {
+        "name": "refuses unsupported or unbounded candidate identity npm",
+        "status": "passed"
+      },
+      {
+        "name": "identifies Maven candidates with an ecosystem-specific PURL",
+        "status": "passed"
+      },
+      {
+        "name": "identifies npm candidates with an ecosystem-specific PURL",
+        "status": "passed"
+      },
+      {
+        "name": "identifies PyPI candidates with an ecosystem-specific PURL",
+        "status": "passed"
+      },
+      {
+        "name": "identifies Go candidates with an ecosystem-specific PURL",
+        "status": "passed"
+      },
+      {
+        "name": "identifies crates.io candidates with an ecosystem-specific PURL",
+        "status": "passed"
+      },
+      {
+        "name": "identifies Packagist candidates with an ecosystem-specific PURL",
+        "status": "passed"
+      },
+      {
+        "name": "identifies NuGet candidates with an ecosystem-specific PURL",
+        "status": "passed"
+      }
+    ],
+    "online_candidate_cases": [
+      {
+        "name": "checkRecommendedCandidates ignores known informational advisories at the recommended version",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates does not treat newly found unmaintained as a fix target",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates does not treat newly found notice as a fix target",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates retains newly found unsound as a fix target",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates retains newly found unknown as a fix target",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 推奨先に既知の脆弱性がなければclean(照会は名前・エコシステム・版だけ)",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 推奨先に新しい脆弱性があれば、その修正版を候補に加えて選び直す(cryptography 3.2→49.0.0→50.0.0と同じ形)",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 新しい脆弱性に修正版がなければ、推奨を残して該当する脆弱性を示す",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 同一照会のGO/GHSA別名を新しい未修正対象として保持する(逆順: false)",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 同一照会のGO/GHSA別名を新しい未修正対象として保持する(逆順: true)",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 同一照会の別名レコードの修正範囲を両方使う(逆順: false)",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 同一照会の別名レコードの修正範囲を両方使う(逆順: true)",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 修正版のない既知の脆弱性は候補を除外しない(別名: false)",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 修正版のない既知の脆弱性は候補を除外しない(別名: true)",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 修正版なしの既知の脆弱性と新しい脆弱性が混在しても、新しい脆弱性を避けて選び直す",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 修正対象と修正版なしのIDが同じレコードに現れた場合は、修正対象の不一致を優先する",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates PyPIのecdsaの形: 修正可能な問題の候補を残し、修正版なしの問題はaffectedのまま示す",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates スキャンで既に知っている脆弱性に該当と返った場合(範囲情報の食い違い)は、その候補を除外する",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 食い違いのある候補は除外し、他に候補があればそれを推奨する",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 回帰: 不正なAPI応答(null)はcleanにせずfailedにする",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 回帰: 不正なAPI応答(文字列)はcleanにせずfailedにする",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 回帰: 不正なAPI応答(配列)はcleanにせずfailedにする",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 回帰: 不正なAPI応答(vulnsがオブジェクト)はcleanにせずfailedにする",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 回帰: 不正なAPI応答(vulnsの要素がnull)はcleanにせずfailedにする",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 回帰: 不正なAPI応答(vulnsの要素が文字列)はcleanにせずfailedにする",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 回帰: 不正なAPI応答(ページトークンが数値)はcleanにせずfailedにする",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 照会の失敗(接続の失敗)でも推奨は出し、failedと注記を付ける(ツール全体をエラーにしない)",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 照会の失敗(HTTPエラー)でも推奨は出し、failedと注記を付ける(ツール全体をエラーにしない)",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 照会回数の上限: 合計を超えたパッケージと、1パッケージの上限で照会していない選び直しはskipped",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 推奨のないパッケージは照会せずそのまま返す。無効化時はdisabled",
+        "status": "passed"
+      },
+      {
+        "name": "checkRecommendedCandidates 続きのページをたどり、上限(5ページ)を超えたら失敗とする",
+        "status": "passed"
+      }
+    ],
+    "offline_explanation_cases": [
+      {
+        "name": "gets local details by canonical ID and alias without network requests",
+        "status": "passed"
+      },
+      {
+        "name": "prioritizes exact IDs and returns every direct alias match deterministically (reverse=false)",
+        "status": "passed"
+      },
+      {
+        "name": "prioritizes exact IDs and returns every direct alias match deterministically (reverse=true)",
+        "status": "passed"
+      },
+      {
+        "name": "reports a local miss with snapshot metadata and no online fallback",
+        "status": "passed"
+      },
+      {
+        "name": "honors environment offline mode even with false and injected online options",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid ID ../record before opening a DB",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid ID id?query=1 before opening a DB",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid ID xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx before opening a DB",
+        "status": "passed"
+      },
+      {
+        "name": "refuses missing databases instead of reporting a miss",
+        "status": "passed"
+      },
+      {
+        "name": "refuses corrupt databases instead of reporting a miss",
+        "status": "passed"
+      },
+      {
+        "name": "refuses expired databases instead of reporting a miss",
+        "status": "passed"
+      },
+      {
+        "name": "refuses future databases instead of reporting a miss",
+        "status": "passed"
+      },
+      {
+        "name": "handles identical copies across prepared ecosystems without hiding evidence",
+        "status": "passed"
+      },
+      {
+        "name": "handles reordered copies across prepared ecosystems without hiding evidence",
+        "status": "passed"
+      },
+      {
+        "name": "handles conflicting copies across prepared ecosystems without hiding evidence",
+        "status": "passed"
+      },
+      {
+        "name": "handles hidden-difference copies across prepared ecosystems without hiding evidence",
+        "status": "passed"
+      },
+      {
+        "name": "handles expired copies across prepared ecosystems without hiding evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects conflicting copies that do not match the requested alias (reverse=false, aliases=[])",
+        "status": "passed"
+      },
+      {
+        "name": "rejects conflicting copies that do not match the requested alias (reverse=true, aliases=[])",
+        "status": "passed"
+      },
+      {
+        "name": "rejects conflicting copies that do not match the requested alias (reverse=false, aliases=[\"CVE-2000-0002\"])",
+        "status": "passed"
+      },
+      {
+        "name": "rejects conflicting copies that do not match the requested alias (reverse=true, aliases=[\"CVE-2000-0002\"])",
+        "status": "passed"
+      },
+      {
+        "name": "does not confuse unrelated conflicting IDs with the requested record",
+        "status": "passed"
+      },
+      {
+        "name": "uses the full alias list for matching before formatting truncates it",
+        "status": "passed"
+      },
+      {
+        "name": "reads method 0 archives including ZIP64",
+        "status": "passed"
+      },
+      {
+        "name": "reads method 8 archives including ZIP64",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (false/count/GO-2000-0001)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (false/count/GO-2000-0002)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (false/count/GO-2999-0000)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (false/count-and-size/GO-2000-0001)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (false/count-and-size/GO-2000-0002)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (false/count-and-size/GO-2999-0000)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (true/count/GO-2000-0001)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (true/count/GO-2000-0002)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (true/count/GO-2999-0000)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (true/count-and-size/GO-2000-0001)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (true/count-and-size/GO-2000-0002)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects underreported ZIP directory metadata instead of an explanation or miss (true/count-and-size/GO-2999-0000)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects json ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects null ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects identity ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects aliases ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects alias-type ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects utf8 ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects crc ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects size ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects encrypted ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects method ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects path ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects duplicate ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects unexpected-file ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects truncated ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "rejects empty ZIP/OSV data even after a matching record",
+        "status": "passed"
+      },
+      {
+        "name": "does not publish partial results when recordBytes is exhausted",
+        "status": "passed"
+      },
+      {
+        "name": "does not publish partial results when expandedBytes is exhausted",
+        "status": "passed"
+      },
+      {
+        "name": "does not publish partial results when entries is exhausted",
+        "status": "passed"
+      },
+      {
+        "name": "does not publish partial results when matches is exhausted",
+        "status": "passed"
+      },
+      {
+        "name": "does not publish partial results when matchingBytes is exhausted",
+        "status": "passed"
+      },
+      {
+        "name": "refuses a timed-out lookup without reporting a miss",
+        "status": "passed"
+      },
+      {
+        "name": "cancels a pending entry operation and closes the archive on timeout",
+        "status": "passed"
+      },
+      {
+        "name": "cancels a pending stream operation and closes the archive on timeout",
+        "status": "passed"
+      },
+      {
+        "name": "rechecks database freshness after private-copy cleanup before returning details",
+        "status": "passed"
+      },
+      {
+        "name": "rejects depth values in matching records instead of conflating their canonical content",
+        "status": "passed"
+      },
+      {
+        "name": "rejects nonfinite values in matching records instead of conflating their canonical content",
+        "status": "passed"
+      },
+      {
+        "name": "reserves shared scan capacity before DB reads and releases it after rejection",
+        "status": "passed"
+      }
+    ]
+  }
+}

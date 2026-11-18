@@ -83,11 +83,11 @@ it('serializes updates and never removes the active updater lock for another cal
  try{await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:f as typeof fetch})).rejects.toThrow('update is active');expect(await readFile(path.join(dir,'update.lock'))).toBeDefined();expect(f).toHaveBeenCalledOnce();}finally{release();await pending;}
  const s=await captureOfflineDatabases({offline:true,offlineDbDir:dir},['npm']);await s.cleanup();
 });
-it('offline blocks preparation, explanations and package queries before fetch, including explicit fetch injection',async()=>{
+it('offline blocks preparation and API queries; missing local explanation data never invokes fetch',async()=>{
  vi.stubEnv('OSV_MCP_OFFLINE','1');const f=vi.fn(()=>{throw Error('must not fetch');});
  await expect(prepareOfflineDatabases({dir:await root(),ecosystems:['npm'],fetchFn:f})).rejects.toThrow('Offline mode');
  await expect(fetchOsvRecord('GHSA-35jh-r3h4-6jhm',{fetchFn:f})).rejects.toThrow('Offline mode');await expect(queryOsvPackageVersion('npm','lodash','4.17.21',{fetchFn:f})).rejects.toThrow('Offline mode');
- const result=await handleExplainVulnerability({vulnerability_id:'GHSA-35jh-r3h4-6jhm'},{fetchFn:f});expect(result.isError).toBe(true);expect(result.content[0]!.text).toContain('Offline mode');expect(f).not.toHaveBeenCalled();
+ const result=await handleExplainVulnerability({vulnerability_id:'GHSA-35jh-r3h4-6jhm'},{fetchFn:f,offlineDbDir:path.join(await root(),'missing')});expect(result.isError).toBe(true);expect(result.content[0]!.text).toContain('Offline database cache');expect(f).not.toHaveBeenCalled();
 });
 it('offline binary resolution never dispatches an automatic download',async()=>{
  const f=vi.fn(async()=>{throw Error('download');});await expect(resolveOsvScannerBinary({PATH:'',OSV_MCP_OFFLINE:'1',XDG_CACHE_HOME:await root()},{downloadFn:f})).rejects.toThrow();expect(f).not.toHaveBeenCalled();

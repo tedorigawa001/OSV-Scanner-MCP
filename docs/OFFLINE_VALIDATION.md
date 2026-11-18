@@ -1,6 +1,6 @@
 # Offline scanning validation
 
-Offline mode supports local-database scanning, upgrade suggestions and candidate-version rechecks. Vulnerability explanations remain unavailable offline. No experimental Gradle authority or memory-proof machinery is needed for this feature. The earlier records below document the initial implementation, when candidate rechecks were disabled.
+Offline mode supports local-database scanning, upgrade suggestions, candidate-version rechecks and ID/alias vulnerability explanations. No experimental Gradle authority or memory-proof machinery is needed for these features. Earlier records below describe the stages before candidate rechecks and local explanations were available.
 
 ## Reproduction
 
@@ -27,7 +27,47 @@ sandbox-exec -p '(version 1)(allow default)(deny network*)' \
 
 The harness first attempts a loopback connection and requires EPERM/EACCES; connection refusal or timeout is not accepted as evidence of a network restriction. It then makes Node fetch throw and counts attempts, uses the real scanner, and checks the positive and refusal cases below. It does not download databases. Before scanning, it exercises collection on a disposable cache by replaying the prepared official Go ZIP from a local stream through an injected updater transport. This is an explicit updater test, not automatic preparation during an offline scan; the original download timestamp is preserved. The input cache is not modified. A platform-specific equivalent network restriction is needed to run this harness elsewhere; Windows/Linux native execution is not established by this macOS record.
 
+## Local vulnerability explanations (2026-11-18)
+
+`explain_vulnerability` now searches canonical record IDs and direct aliases in every prepared ecosystem ZIP. It validates the requested ID before DB access, reserves the shared native-scan/local-lookup capacity before copying DBs, and reads only verified private snapshots. No entries are extracted, no scanner binary is required for explanation, and neither the API nor reference URLs are fetched. ZIP/ZIP64 reading uses pinned `yauzl` 3.4.0 with lazy entries and size validation; the application additionally checks CRC, flat JSON entry identities, duplicate names, local/central name/method/flag consistency, JSON/UTF-8 and ID/alias types.
+
+An exact ID is the primary explanation; otherwise matches are sorted by ID using code-point order. Offline-only fields are `requested_id`, `matched_by`, `matching_record_ids`, `related_records` for additional matching IDs, and `offline_database`. Identical copies of a matching ID across DBs are deduplicated by a digest of the full record with sorted object keys, before formatting truncation; different content is refused even if only one copy contains the requested alias. A call-local digest/conflict table covers every canonical ID, so an earlier nonmatching copy cannot be lost; conflicts of unrelated IDs do not themselves reject the lookup. The original details/aliases/affected/reference display limits remain in effect. ID spelling is preserved after trimming input whitespace; aliases are matched directly, not by an inferred transitive graph.
+
+A completed search with no match returns `vulnerability_not_found`, snapshot metadata and a warning that absence applies only to the prepared snapshots. Every prepared DB must pass freshness/integrity checks; an expired or invalid unrelated DB cannot be hidden by an earlier match. Lookup reads all entries, so malformed trailing entries refuse the request even after an ID was found. Quota exhaustion (`output_too_large`) and timeout (`scan_timeout`) never produce partial explanations or a local miss. Freshness and the time budget are checked again after cleanup before returning a result.
+
+Hard search limits are 4 MiB/record, 2 GiB expanded bytes, 500,000 entries, 20 distinct matching IDs, 16 MiB matching bytes and 120 seconds. Full-record digest comparison limits nesting to 64 levels and rejects non-finite numbers for every record; only digests/conflict flags are retained for nonmatches, bounded by the entry limit. ZIP DB capture retains the existing 512 MiB/ZIP and 2 GiB total private-copy limits. Offline lookups share `OSV_MCP_MAX_CONCURRENT_SCANS` (default 2) with native scans; a full slot rejects before DB copying. No persistent ID index is introduced. Searching large or multiple ecosystem DBs can take longer than an API request and can exceed these bounds.
+
+The [new explanation record](validation/offline-explanations-2026-11-18.json) uses the same complete official Go ZIP as the candidate-validation stage: 12,939,080 bytes, SHA-256 `362a3ad67c80a9bd9333fc60d6e300c178e00741a605cd79788974fa29230784`. That ZIP contains 9,959 JSON entries with 28,528,757 expanded bytes. The record binds current source/tests, package and lockfile bytes, the Node/scanner images and the installed ZIP reader's version/entrypoint digest. Earlier native records remain unchanged. Run the reproduction with `--output docs/validation/offline-explanations-2026-11-18.json` for this stage.
+
+| Case under OS network denial | Observed result |
+|---|---|
+| `GO-2020-0015` | Exact ID explanation; related GHSA record retained |
+| `CVE-2020-14040` | Direct alias match; both GO and GHSA records retained |
+| `GHSA-5rcv-m4m3-hfh7` | Exact ID explanation; related GO record retained |
+| `GO-2999-0000` | `vulnerability_not_found` scoped to the local snapshots, with metadata |
+| Missing manifest/object, expired/future DB, truncation, digest modification, invalid origin | 7 cases × 4 tools and candidate query = 35 cache refusals |
+| Digest-valid bytes with no valid ZIP directory | Explanation refuses as `scan_failed` |
+| Official Go ZIP with a reduced count, in classic ZIP and converted ZIP64, with/without a reduced directory size | All 4 refuse as `scan_failed`, with recalculated cache digests |
+| Full-count ZIP64 conversion of the same official Go DB | Exact GO ID and related GHSA record retained |
+| Synthetic same-ID copies across Go/PyPI, only one carrying the requested alias | Both copy orders refuse as `scan_failed` |
+| Entry limit lowered to 1 on the complete Go DB | Explanation refuses as `output_too_large` |
+| OS control / Node fetch calls | EPERM / 0 |
+
+The successful explanation observations include ID/alias matches, summary, details length/digest, affected ranges, related IDs and DB metadata. Existing official-DB scans, candidate checks, collection and all four synthetic alias controls still pass. This establishes same-user Go DB lookup on macOS; other platforms/ecosystems and a signed/comprehensive upstream DB are not established by this record.
+
+The explanation suite has **64 tests**: ID/alias/multiple-match ordering, local absence, forced offline routing without a binary, invalid IDs, integrity/age refusal, identical/conflicting copies (including differences hidden by formatting and reordered object keys), stored/deflated ZIP64, malformed ZIP/JSON/identity/alias/CRC/size/encryption/path data after an early hit, all quota classes, finite/depth bounds, deadline cancellation/stream/FD cleanup, freshness after cleanup and shared capacity/release. The first lookup test failed before implementation with `api_request_failed`; it passes through the real reader after implementation. The combined relevant runner/API/tool/server regressions pass **702 tests in 35 files**, with type checking, build and harness syntax checks. The machine record embeds the regression report digest and explanation case list.
+
+### Explanation review corrections (2026-11-18)
+
+The earlier conflict check only hashed copies that matched the query. Removing or replacing the queried alias in one copy therefore hid conflicting content, although a canonical-ID query refused it. Four new tests cover alias removal/replacement in both DB orders; one control preserves successful lookups/local misses when only an unrelated ID conflicts. Every record now contributes its full canonical digest before query filtering, and a conflict of any matched canonical ID refuses the result independently of copy order.
+
+Yauzl emits `end` after the declared entry count, without requiring the central directory to be exhausted. A reduced count previously produced a partial explanation or a false local miss. The reader now reads bounded ZIP/ZIP64 end metadata (at most a 65,577-byte tail plus a 56-byte ZIP64 header), checks disk/count/size/offset consistency, and requires the directory to end immediately before the end record. It sums the complete central entry header/name/extra/comment lengths returned by the real reader and requires both the final count and byte size to match. Twelve new tests cover both formats, a reduced count alone or count plus size, and early-match/late-match/missing IDs, all with updated manifest digests. Before these fixes, 16 of the 17 new cases failed; the unrelated-conflict control passed. All 64 explanation tests pass after the fixes.
+
+The network-denied harness also replays the official Go DB with reduced ZIP/ZIP64 counts and sizes (4 refusals), proves a full-count ZIP64 conversion remains readable (1 success), and checks both orders of synthetic conflicting Go/PyPI copies (2 refusals). The converted/mutated archives and cross-ecosystem fixtures are explicitly distinguished from the unchanged official DB in the record; these explanation controls use the Node reader, not OSV-Scanner. The original Go ID/CVE/GHSA lookups, snapshot-scoped miss, 35 cache refusals, malformed ZIP, entry-budget refusal and real-scanner scan/candidate/alias controls still pass. The expanded run has 43 refusal observations, EPERM and 0 Node fetch calls. This remains a same-user macOS/Go DB validation, not proof of other native ecosystem/platform support.
+
 ## Local candidate rechecks (2026-11-18)
+
+This section records the candidate-recheck stage before local explanations were implemented; its older machine record and source hashes are retained as historical evidence. Current explanation behavior is described above.
 
 `suggest_fix` now uses the same candidate-reselection algorithm for online queries and offline native scans. For each offline candidate, it creates a private, versioned single-component CycloneDX SBOM and scans it with `--offline --no-resolve --all-packages --no-ignore` and only that ecosystem's DB. The native result must identify exactly the requested package/version, refer to the private SBOM, and provide the vulnerability details for every reported group. An empty/unidentified result or incomplete details fail the request rather than producing `clean`.
 
@@ -129,6 +169,6 @@ The original native record predates collection and binds its own source hashes. 
 
 ## Follow-up features
 
-- Vulnerability explanations using local data (candidate-version rechecks are now implemented).
+- Optional lookup indexing/performance improvements while preserving private snapshots, freshness, full-match handling and explicit incomplete-search errors.
 - Commit-level matching, if supported by an independently selected native implementation.
 - Additional native ecosystem/platform fixtures and cache storage administration.

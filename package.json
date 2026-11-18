@@ -56,6 +56,7 @@
   "devDependencies": {
     "@types/node": "^26.6.5",
     "@types/semver": "^7.8.0",
+    "@types/yauzl": "3.4.0",
     "@vitest/coverage-v8": "^5.0.5",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
@@ -67,6 +68,7 @@
     "semver": "^7.8.5",
     "smol-toml": "^1.9.1",
     "yaml": "^2.9.1",
+    "yauzl": "3.4.0",
     "zod": "^4.4.3"
   }
 }
