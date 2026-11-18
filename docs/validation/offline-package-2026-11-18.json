@@ -643,31 +643,31 @@
   "prepared_file_count": 2687,
   "denied_original_reads": [
     {
-      "path": "/Users/bushidoyasu/Downloads/GitHub/OSV-Scanner-MCP/package.json",
+      "domain": "checkout",
       "error": "EPERM"
     },
     {
-      "path": "/Users/bushidoyasu/.npm/_cacache",
+      "domain": "npm-cache",
       "error": "EPERM"
     },
     {
-      "path": "/Users/bushidoyasu/.cache/osv-scanner-mcp/v2.7.0/osv-scanner_darwin_arm64",
+      "domain": "scanner-cache",
       "error": "EPERM"
     },
     {
-      "path": "/Users/bushidoyasu/.anyenv/envs/nodenv/versions/26.12.1/bin/node",
+      "domain": "node-install",
       "error": "EPERM"
     },
     {
-      "path": "/private/tmp/osv-offline-package-kit-final-20261118/application.tgz",
+      "domain": "kit",
       "error": "EPERM"
     },
     {
-      "path": "/private/tmp/osv-offline-maven-validation-20261118/manifest.json",
+      "domain": "maven-db",
       "error": "EPERM"
     },
     {
-      "path": "/private/tmp/node-v22.13.0-darwin-arm64/bin/node",
+      "domain": "node22-download",
       "error": "EPERM"
     }
   ],

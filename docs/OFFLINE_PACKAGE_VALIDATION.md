@@ -42,7 +42,7 @@ There are 18 successful tool calls in total. POM transitive resolution remains e
 
 The OS profile denies network access to the runner, npm and all descendants. Each Node image separately attempts loopback TCP and must receive EPERM/EACCES; all four observed EPERM. Connection refusal/timeouts are not accepted as proof. No Node fetch counter/preload is used in these package runs: the evidence is the inherited OS denial plus successful quiet package execution.
 
-The final run additionally denies reading seven original locations: checkout, host npm cache, original scanner cache, original Node installation root, original prepared kit, original Maven cache and original downloaded Node 22 tree. The transferred standalone runner opens a known path in each domain and requires EPERM/EACCES; all seven were EPERM. Thus npm/server execution cannot silently borrow those original inputs. This is same-user OS policy verification, not separate-UID or hostile-controller isolation.
+The final run additionally denies reading seven original locations: checkout, host npm cache, original scanner cache, original Node installation root, original prepared kit, original Maven cache and original downloaded Node 22 tree. The transferred standalone runner opens a known path in each domain and requires EPERM/EACCES; all seven were EPERM. The record lists them by domain (`checkout`, `npm-cache`, `scanner-cache`, `node-install`, `kit`, `maven-db`, `node22-download`). The measured run recorded the absolute host paths; they were replaced by these labels after the run, with no other change to the record, and the runner now records labels only. The record's runner hash is therefore the measured runner, before this change. Thus npm/server execution cannot silently borrow those original inputs. This is same-user OS policy verification, not separate-UID or hostile-controller isolation.
 
 Negative runtime controls also establish:
 
@@ -82,7 +82,7 @@ sandbox-exec -p '(version 1)(allow default)(deny network*)' \
   --kit /absolute/transferred-kit --output /absolute/package-record.json
 ```
 
-For the stronger original-input-denial reproduction, extend the profile with `(deny file-read* (subpath "/absolute/source"))` for each original root, and pass `--denied-path /absolute/source/package.json` (repeatable) for a known original path in each root. Include the original kit, Node, scanner, npm cache and DB roots as well as the checkout. Keep the output/report paths outside the denied roots. The machine record lists the seven concrete paths checked in this run. Run on macOS with an effective profile; an equivalent OS policy is needed elsewhere, and these results do not establish Linux/Windows installation or execution.
+For the stronger original-input-denial reproduction, extend the profile with `(deny file-read* (subpath "/absolute/source"))` for each original root, and pass `--denied-path checkout=/absolute/source/package.json` (repeatable, `<domain>=<absolute path>`) for a known original path in each root. Include the original kit, Node, scanner, npm cache and DB roots as well as the checkout. Keep the output/report paths outside the denied roots. The record stores only each domain label and its error, not the host path. Run on macOS with an effective profile; an equivalent OS policy is needed elsewhere, and these results do not establish Linux/Windows installation or execution.
 
 For actual deployment, use the kit's consumer manifest/lock and `application.tgz` in their relative layout, and invoke the supplied Node/npm with:
 

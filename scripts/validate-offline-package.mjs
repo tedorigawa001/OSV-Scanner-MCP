@@ -174,11 +174,12 @@ async function run(values) {
   const stable = input => Object.fromEntries(Object.entries(input).filter(([k]) => !k.startsWith('npm-cache/_logs/') && k !== 'npm-cache/_update-notifier-last-checked'));
   assert.deepEqual(stable(current), stable(proof.inputs), 'Prepared kit changed');
   const deniedReads = [];
-  for (const file of values.get('--denied-path')) {
+  // The record names each denied domain, never the host path: records are public and must not carry machine paths.
+  for (const {domain, file} of values.get('--denied-path')) {
     let handle, code;
     try {handle = await open(file, 'r');} catch (e) {code = e.code;} finally {await handle?.close();}
-    assert.ok(['EPERM', 'EACCES'].includes(code), 'Original input must be unreadable: ' + file);
-    deniedReads.push({path: file, error: code});
+    assert.ok(['EPERM', 'EACCES'].includes(code), 'Original input must be unreadable: ' + domain);
+    deniedReads.push({domain, error: code});
   }
   checkMatrix(proof.runtimes.filter(r => r.supported).map(r => r.version));
   const root = await realpath(await mkdtemp(join(tmpdir(), 'offline-package-run-'))), results = [];
@@ -262,8 +263,15 @@ export async function main(args) {
   assert.ok(['prepare', 'run'].includes(mode), 'Use prepare or run');
   const allowed = mode === 'prepare' ? ['--directory', '--database-cache', '--scanner', '--node', '--rejected-node', '--npm-cli'] : ['--kit', '--output', '--test-report', '--denied-path'];
   for (let i = 0; i < rest.length; i += 2) {
-    const [k, v] = [rest[i], rest[i + 1]]; assert.ok(allowed.includes(k) && v && isAbsolute(v), 'Arguments require known flags and absolute paths');
-    if (k === '--node' || k === '--denied-path') values.get(k).push(v); else {assert.ok(!values.has(k), 'Duplicate argument'); values.set(k, v);}
+    const [k, v] = [rest[i], rest[i + 1]];
+    if (k === '--denied-path' && allowed.includes(k)) {
+      // <domain>=<absolute path>; only the domain label is recorded.
+      const at = v?.indexOf('=') ?? -1, domain = at > 0 ? v.slice(0, at) : '', file = v?.slice(at + 1) ?? '';
+      assert.ok(/^[a-z0-9][a-z0-9-]{0,31}$/.test(domain) && isAbsolute(file), '--denied-path requires <domain>=<absolute path>');
+      assert.ok(!values.get(k).some(d => d.domain === domain), 'Duplicate denied domain'); values.get(k).push({domain, file}); continue;
+    }
+    assert.ok(allowed.includes(k) && v && isAbsolute(v), 'Arguments require known flags and absolute paths');
+    if (k === '--node') values.get(k).push(v); else {assert.ok(!values.has(k), 'Duplicate argument'); values.set(k, v);}
   }
   for (const k of mode === 'prepare' ? allowed.filter(k => k !== '--node') : ['--kit']) assert.ok(values.has(k), 'Missing ' + k);
   if (mode === 'prepare') await prepare(values); else await run(values);

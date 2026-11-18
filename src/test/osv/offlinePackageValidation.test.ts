@@ -71,3 +71,9 @@ it.each(['network', 'generation', 'resolution', 'warning', 'package', 'version',
 it.each([[], ['unknown'], ['run'], ['run', '--kit', 'relative'], ['run', '--kit', '/a', '--kit', '/b'], ['run', '--other', '/a']].map(args => ({args})))(
   'rejects incomplete/nonportable invocation before filesystem access ($args)', async ({args}) => {await expect(main(args)).rejects.toThrow();},
 );
+// Records are public: denied reads are recorded by domain label, so a bare host path is not accepted.
+it.each([['/abs/package.json'], ['Checkout=/abs/package.json'], ['checkout=relative'], ['=/abs'], ['checkout=/a', 'checkout=/b']].map(paths => ({paths})))(
+  'requires unique <domain>=<absolute path> denied reads ($paths)', async ({paths}) => {
+    await expect(main(['run', '--kit', '/kit', ...paths.flatMap(p => ['--denied-path', p])])).rejects.toThrow(/--denied-path|Duplicate denied domain/);
+  },
+);
