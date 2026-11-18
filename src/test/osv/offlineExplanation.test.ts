@@ -151,6 +151,27 @@ it('uses the full alias list for matching before formatting truncates it', async
   expect(output.aliases).toHaveLength(20); expect(output.details).toHaveLength(4001);
 });
 
+// Shapes observed in the official npm DB (2026-11-18): a trailing comma and SNYK IDs longer than 64 characters.
+const nonOsvAliases = ['SNYK-JS-YARN-537806,', 'SNYK-JS-' + 'A'.repeat(70) + '-10006712'];
+it.each([false, true])('ignores non-OSV aliases of other records instead of failing every lookup (matching record first: %s)', async first => {
+  const odd = record('GHSA-aaaa-bbbb-cccc', nonOsvAliases), records = first ? [record(), odd] : [odd, record()];
+  const f = await fixture(records);
+  for (const id of ['GO-2000-0001', 'CVE-2000-0001', 'GHSA-aaaa-bbbb-cccc']) {
+    const {result, output} = await explain(f, id);
+    expect(result.isError, JSON.stringify(output)).not.toBe(true);
+    expect(output.matching_record_ids).toEqual([id === 'GHSA-aaaa-bbbb-cccc' ? id : 'GO-2000-0001']);
+  }
+  expect((await explain(f, 'GO-2999-0000')).output.error.kind).toBe('vulnerability_not_found');
+});
+
+it('never matches a malformed alias, even by its valid prefix', async () => {
+  const f = await fixture([record('GHSA-aaaa-bbbb-cccc', nonOsvAliases)]);
+  for (const id of ['SNYK-JS-YARN-537806', nonOsvAliases[1]!]) {
+    const {result, output} = await explain(f, id);
+    expect(result.isError).toBe(true); expect(['vulnerability_not_found', 'invalid_vulnerability_id']).toContain(output.error.kind);
+  }
+});
+
 it.each([0, 8])('reads method %s archives including ZIP64', async method => {
   const f = await fixture();
   await replaceArchive(f.dir, recordZip([{name: 'GO-2000-0001.json', body: JSON.stringify(record()), method}], true));

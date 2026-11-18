@@ -172,8 +172,11 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
           if (bytes !== entry.uncompressedSize || checksum !== entry.crc32) throw invalid('database entry size or CRC mismatch');
           const data = Buffer.concat(chunks, bytes);
           const record = asRecord(JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(data)));
+          // Canonical IDs name the entry and must be strict. Aliases are upstream cross-references: the official npm DB
+          // has some that are not OSV IDs (trailing commas, SNYK IDs over 64 characters). They only need to be strings;
+          // the requested ID is already validated, so a malformed alias can never match it and is ignored for matching.
           if (!record || typeof record.id !== 'string' || !ID.test(record.id) || entry.fileName !== record.id + '.json' ||
-              (record.aliases !== undefined && (!Array.isArray(record.aliases) || !record.aliases.every(a => typeof a === 'string' && ID.test(a))))) throw invalid('invalid OSV record identity or aliases');
+              (record.aliases !== undefined && (!Array.isArray(record.aliases) || !record.aliases.every(a => typeof a === 'string')))) throw invalid('invalid OSV record identity or aliases');
           const digest = canonicalDigest(record, guard), previous = identities.get(record.id);
           const conflicting = previous?.conflicting === true || (previous !== undefined && previous.digest !== digest);
           identities.set(record.id, {digest, conflicting});
