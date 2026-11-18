@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "date": "2026-11-18T07:42:02.753Z",
+  "date": "2026-11-18T08:35:01.194Z",
   "scope": "macOS-arm64-transfer-kit-offline-npm-install-and-real-MCP-package-runtime",
-  "kit_manifest_sha256": "2bad9b4939519ea1f6186673a7e091927805fe2c63af040bee75331d0d990aa7",
+  "kit_manifest_sha256": "acb155705db7924057bd37d795264b60be7020631563b44e64ef5e39254f4d3c",
   "package": {
     "name": "osv-scanner-mcp",
     "version": "0.23.0",
@@ -639,7 +639,7 @@
       }
     ]
   },
-  "prepared_input_digest": "b0ed8ccf4df49e4c6037fc2c14cea3b8ff9cc3f62a3a44449e283fbb45d80431",
+  "prepared_input_digest": "73d6f557ee6020c2734405d48d9dd66c68c643646fed2e5eea019158b304b5fc",
   "prepared_file_count": 2687,
   "denied_original_reads": [
     {
@@ -1139,17 +1139,17 @@
     }
   ],
   "sources": {
-    "scripts/validate-offline-package.mjs": "35445da00adcbe249d360fc9c57cb8f0d456b1473fcc744fd00a260e2b9d40ea",
-    "src/test/osv/offlinePackageValidation.test.ts": "392234c17e2e9b2773070eea101b5fd294814b1b987d3df02cee239e854ea471",
+    "scripts/validate-offline-package.mjs": "6aa84682bdc70a60a27c274f48cc508905731707ca2b46e5d68c686b1a33b2f9",
+    "src/test/osv/offlinePackageValidation.test.ts": "7cec4d76aa653a0e2d0466b5b50aded2927edd8f5d876ee1e1e5fe80abc76f7b",
     "package.json": "22bdd4726690e1b0bea9d8e42b2ff27f13a8fd5096c0e351cf8223469b48a1a9",
     "package-lock.json": "856b21b437fdc86c4a2d0662302f103a0907d9f0ad50450cbcd35d56437d2894",
     ".github/workflows/ci.yml": "78c8352c2dd6cecfaea5dea462c65919150db2c2b2b7967a253cca6b097253cd"
   },
   "regressions": {
-    "passed": 790,
+    "passed": 795,
     "failed": 0,
     "skipped": 0,
     "files": 37,
-    "report_sha256": "45c6f84a4f0193be766d12f90bc935b2be2331a35c94d909f80ccab9763e453d"
+    "report_sha256": "e248ccde739999c848439c2989a4c838de383c3eee2ff64f191f9b860ac11fc4"
   }
 }
