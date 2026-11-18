@@ -27,6 +27,61 @@ sandbox-exec -p '(version 1)(allow default)(deny network*)' \
 
 The harness first attempts a loopback connection and requires EPERM/EACCES; connection refusal or timeout is not accepted as evidence of a network restriction. It then makes Node fetch throw and counts attempts, uses the real scanner, and checks the positive and refusal cases below. It does not download databases. Before scanning, it exercises collection on a disposable cache by replaying the prepared official Go ZIP from a local stream through an injected updater transport. This is an explicit updater test, not automatic preparation during an offline scan; the original download timestamp is preserved. The input cache is not modified. A platform-specific equivalent network restriction is needed to run this harness elsewhere; Windows/Linux native execution is not established by this macOS record.
 
+## Maven database validation (2026-11-18)
+
+The separate [Maven harness](../scripts/validate-offline-maven.mjs) uses a complete official Maven DB and the real OSV-Scanner 2.7.0. It does not reuse synthetic Go records, download dependencies, run Maven/Gradle, or modify the prepared input cache. Prepare a Maven-only cache on a connected machine, then run the built server under OS network denial:
+
+```bash
+npm run build
+node dist/index.js cache --ecosystems Maven --directory /absolute/maven-cache
+npx vitest run src/test/osv src/test/tools src/test/server \
+  src/test/utils/permissionCheck.test.ts --maxWorkers=1 \
+  --reporter=json --outputFile=/absolute/maven-regressions.json
+sandbox-exec -p '(version 1)(allow default)(deny network*)' \
+  node scripts/validate-offline-maven.mjs \
+  --cache /absolute/maven-cache --binary /absolute/osv-scanner \
+  --test-report /absolute/maven-regressions.json \
+  --output /absolute/offline-maven-validation.json
+```
+
+The preparation CLI downloaded `https://osv-vulnerabilities.storage.googleapis.com/Maven/all.zip` before network denial. This generation is **10,541,344 bytes**, SHA-256 `d4af0a671eccebbccc5d7f90e52000e50c9f396fa908278797d6cb69e7c0c3de`, acquired at `2026-11-18T06:39:10.449Z`. The [Maven record](validation/offline-maven-2026-11-18.json) binds this manifest, runtime/scanner/ZIP-reader images, 104 source/config/fixture files and 138 built JavaScript artifacts. Earlier Go records are unchanged.
+
+The [owned POM fixture](../src/test/fixtures/offline-maven/pom.xml) declares `org.apache.logging.log4j:log4j-core:2.14.1` as its sole direct dependency. The harness copies it to a private temporary project and checks both scan tools identify exactly this package/version, retain Log4Shell (`GHSA-jfh8-c2jp-5v3q` / `CVE-2021-44228`), have equal package/advisory evidence and use identical selected DB metadata. Counts are observations of this generation, not a hardcoded expectation for future downloads.
+
+| Case under OS network denial | Observed result |
+|---|---|
+| `scan_project` | 1 vulnerable package, 8 vulnerability groups |
+| `scan_java_project` | Same package/version and same 8 groups from `pom.xml` |
+| `suggest_fix` | 2.25.4 recommended, `verification: verified`, `candidate_check: clean`, `candidate_check_source: local_database`; all 8 initial targets are `not_affected` |
+| Direct native candidate control, 2.14.1 | Same 8 advisory record IDs as the project scan |
+| Direct native candidate control, recommended 2.25.4 | 0 records |
+| `explain_vulnerability`, `GHSA-jfh8-c2jp-5v3q` | Exact ID match with details, affected ranges and references |
+| `explain_vulnerability`, `CVE-2021-44228` | Alias match to the same GHSA; identical content and matching-ID list |
+| Unlisted `CVE-2999-999999` | Snapshot-scoped `vulnerability_not_found`, with DB metadata |
+| 8 invalid-DB cases × 4 tools plus candidate query | All 40 refuse as cache-specific `scan_failed` |
+| OS network control / Node fetch calls | EPERM / 0 |
+
+The explanation checks compare ID/aliases, summary and details to the actual canonical JSON read from the verified ZIP, including the normal display truncation limits, rather than accepting any nonempty explanation. The record stores details length/digest, affected ranges, references and matching metadata. The native candidate checks bind the exact Maven coordinate/version through the product's private CycloneDX SBOM path and the same DB generation; they are additional real scanner invocations, not API responses or formatter-only tests.
+
+Both scans and suggestions return `transitive_resolution: disabled` with the POM warning. Only the declared direct dependency is covered: no remote transitive POM resolution is performed. `scan_project.coverage.complete: true` here refers to captured/scannable manifest inputs and does not override that explicit transitive-resolution limitation. Candidate `clean` and a 0-record control apply only to this snapshot, not newer advisories or application safety.
+
+The capacity inventory is read from the verified private copy. Both explanation calls then exercise full ZIP entry/body parsing with the product's size/CRC/directory/content checks. No limit was increased or DB subset substituted.
+
+| Capacity | Observed | Current limit |
+|---|---:|---:|
+| Complete ZIP bytes | 10,541,344 | 536,870,912 (512 MiB) |
+| Prepared cache object bytes | 10,541,344 | 2,147,483,648 (2 GiB) |
+| Cache objects | 1 | 128 |
+| ZIP JSON entries | 7,258 | 500,000 |
+| Total expanded bytes | 26,385,148 | 2,147,483,648 (2 GiB) |
+| Largest record bytes | 48,673 | 4,194,304 (4 MiB) |
+
+Refusal controls cover missing manifest, missing object, expired/future timestamps, truncation, same-size digest modification, invalid origin and an oversized manifest claim (`512 MiB + 1`). The last is metadata rejection before object access, not a measured oversized download. Each of `scan_project`, `scan_java_project`, `suggest_fix`, `explain_vulnerability` and the direct candidate query must report the expected cache reason; unrelated scanner failures cannot count as successful refusals.
+
+The harness has 55 regression tests for wrong DB generation/network metadata, incorrect package/count/known advisory, omitted or duplicate fix targets, disabled/online candidate claims, affected recommended versions, wrong explanation content/matches, capacity violations/nonfinite values and unrelated errors mislabeled as cache refusals. The combined relevant regression run passes **757 tests in 36 files**, with type checking, build and harness syntax checks. The native record includes the passing report digest and all 55 harness case names. These regression fixtures check the harness's assertions; the separate native observations use the complete real DB and scanner.
+
+This establishes same-user macOS arm64 behavior for the complete Maven DB, direct POM input, local candidate SBOM queries and ID/direct-alias explanations. It does not establish Linux/Windows execution, Maven/Gradle dependency resolution, Java archive scanning, multiple concurrent DB generations, all Maven versions/packages, cache authenticity beyond the operator-trusted manifest, or a physical-memory upper bound. Handler-call durations are diagnostic observations, not a performance comparison or throughput claim.
+
 ## Local vulnerability explanations (2026-11-18)
 
 `explain_vulnerability` now searches canonical record IDs and direct aliases in every prepared ecosystem ZIP. It validates the requested ID before DB access, reserves the shared native-scan/local-lookup capacity before copying DBs, and reads only verified private snapshots. No entries are extracted, no scanner binary is required for explanation, and neither the API nor reference URLs are fetched. ZIP/ZIP64 reading uses pinned `yauzl` 3.4.0 with lazy entries and size validation; the application additionally checks CRC, flat JSON entry identities, duplicate names, local/central name/method/flag consistency, JSON/UTF-8 and ID/alias types.
@@ -171,4 +226,4 @@ The original native record predates collection and binds its own source hashes. 
 
 - Optional lookup indexing/performance improvements while preserving private snapshots, freshness, full-match handling and explicit incomplete-search errors.
 - Commit-level matching, if supported by an independently selected native implementation.
-- Additional native ecosystem/platform fixtures and cache storage administration.
+- Additional native ecosystem/platform fixtures beyond the recorded Go/Maven cases, and cache storage administration.

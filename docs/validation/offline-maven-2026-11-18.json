@@ -1,0 +1,1771 @@
+{
+  "schema": 1,
+  "date": "2026-11-18T06:48:07.651Z",
+  "scope": "complete-Maven-DB-real-scanner-same-user-macOS-network-denied",
+  "runtime": {
+    "node": "v26.12.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "node_sha256": "06eb3f5762c2b6890e99d03f931bf01d9b20fd341dec1a8c1ef5c1809e66102b",
+    "zip_reader": {
+      "version": "3.4.0",
+      "index_sha256": "8cccdd25e8bb5516572c09072324876860c8de5898c0b8b7070f0e660b35a0ec"
+    }
+  },
+  "scanner": {
+    "version": "osv-scanner version: 2.7.0\nosv-scalibr version: 0.5.3\ncommit: bfe2f84abd2f09fe0b83ba7f6dad40d296762f40\nbuilt at: 2026-10-12T00:39:39Z",
+    "sha256": "d4926ef8da134332543be276dff157e4c170f99ad91fc48e89448a8816bdf70b"
+  },
+  "database_manifest": {
+    "schema": 1,
+    "databases": [
+      {
+        "ecosystem": "Maven",
+        "sha256": "d4af0a671eccebbccc5d7f90e52000e50c9f396fa908278797d6cb69e7c0c3de",
+        "bytes": 10541344,
+        "downloaded_at": "2026-11-18T06:39:10.449Z",
+        "url": "https://osv-vulnerabilities.storage.googleapis.com/Maven/all.zip"
+      }
+    ]
+  },
+  "capacity": {
+    "observed": {
+      "zip_bytes": 10541344,
+      "cache_bytes": 10541344,
+      "cache_objects": 1,
+      "entries": 7258,
+      "expanded_bytes": 26385148,
+      "maximum_record_bytes": 48673
+    },
+    "storage_limits": {
+      "databaseBytes": 536870912,
+      "totalBytes": 2147483648,
+      "objects": 128,
+      "manifestBytes": 65536
+    },
+    "lookup_limits": {
+      "recordBytes": 4194304,
+      "expandedBytes": 2147483648,
+      "entries": 500000,
+      "matches": 20,
+      "matchingBytes": 16777216
+    }
+  },
+  "fixture": {
+    "path": "src/test/fixtures/offline-maven/pom.xml",
+    "sha256": "2bd8e14bb53fd7bf37c92b222b04354c6a30dd5071862160fffb1446917a33cd",
+    "name": "org.apache.logging.log4j:log4j-core",
+    "version": "2.14.1",
+    "id": "GHSA-jfh8-c2jp-5v3q",
+    "alias": "CVE-2021-44228"
+  },
+  "raw_advisory": {
+    "id": "GHSA-jfh8-c2jp-5v3q",
+    "aliases": [
+      "CVE-2021-44228"
+    ],
+    "details_sha256": "62a5a77dcbd4a2595b4c6106cc729a7dc83c2cfc5cf861a3e6529e85127305ef"
+  },
+  "network_control": "EPERM",
+  "node_fetch_calls": 0,
+  "observations": [
+    {
+      "tool": "scan_project",
+      "elapsed_ms": 517.277375,
+      "vulnerability_count": 8,
+      "packages": [
+        {
+          "name": "org.apache.logging.log4j:log4j-core",
+          "version": "2.14.1",
+          "ecosystem": "Maven",
+          "dependency_relation": "direct",
+          "vulnerabilities": [
+            {
+              "id": "GHSA-jfh8-c2jp-5v3q",
+              "cve": "CVE-2021-44228",
+              "aliases": [
+                "CVE-2021-44228"
+              ],
+              "severity_score": 10,
+              "severity": "critical",
+              "summary": "Remote code injection in Log4j",
+              "fixed_versions": [
+                "2.3.1",
+                "2.12.2",
+                "2.15.0"
+              ]
+            },
+            {
+              "id": "GHSA-7rjr-3q55-vv33",
+              "cve": "CVE-2021-45046",
+              "aliases": [
+                "CVE-2021-45046"
+              ],
+              "severity_score": 9,
+              "severity": "critical",
+              "summary": "Incomplete fix for Apache Log4j vulnerability",
+              "fixed_versions": [
+                "2.3.1",
+                "2.12.2",
+                "2.16.0"
+              ]
+            },
+            {
+              "id": "GHSA-p6xc-xr62-6r2g",
+              "cve": "CVE-2021-45105",
+              "aliases": [
+                "CVE-2021-45105"
+              ],
+              "severity_score": 8.6,
+              "severity": "high",
+              "summary": "Apache Log4j2 vulnerable to Improper Input Validation and Uncontrolled Recursion",
+              "fixed_versions": [
+                "2.3.1",
+                "2.12.3",
+                "2.17.0"
+              ]
+            },
+            {
+              "id": "GHSA-3pxv-7cmr-fjr4",
+              "cve": "CVE-2026-34480",
+              "aliases": [
+                "CVE-2026-34480"
+              ],
+              "severity_score": 6.9,
+              "severity": "medium",
+              "summary": "Apache Log4j Core: Silent log event loss in XmlLayout due to unescaped XML 1.0 forbidden characters",
+              "fixed_versions": [
+                "2.25.4"
+              ]
+            },
+            {
+              "id": "GHSA-h383-gmxw-35v2",
+              "cve": "CVE-2026-34479",
+              "aliases": [
+                "CVE-2026-34479"
+              ],
+              "severity_score": 6.9,
+              "severity": "medium",
+              "summary": "Apache Log4j 1 to Log4j 2 bridge: silent log event loss in Log4j1XmlLayout due to unescaped XML 1.0 forbidden characters",
+              "fixed_versions": [
+                "2.25.4"
+              ]
+            },
+            {
+              "id": "GHSA-8489-44mv-ggj8",
+              "cve": "CVE-2021-44832",
+              "aliases": [
+                "CVE-2021-44832"
+              ],
+              "severity_score": 6.6,
+              "severity": "medium",
+              "summary": "Improper Input Validation and Injection in Apache Log4j2",
+              "fixed_versions": [
+                "2.3.2",
+                "2.12.4",
+                "2.17.1"
+              ]
+            },
+            {
+              "id": "GHSA-6hg6-v5c8-fphq",
+              "cve": "CVE-2026-34477",
+              "aliases": [
+                "CVE-2026-34477"
+              ],
+              "severity_score": 6.3,
+              "severity": "medium",
+              "summary": "Apache Log4j Core: `verifyHostName` attribute silently ignored in TLS configuration",
+              "fixed_versions": [
+                "2.25.4"
+              ]
+            },
+            {
+              "id": "GHSA-vc5p-v9hr-52mj",
+              "cve": "CVE-2025-68161",
+              "aliases": [
+                "CVE-2025-68161"
+              ],
+              "severity_score": 6.3,
+              "severity": "medium",
+              "summary": "Apache Log4j does not verify the TLS hostname in its Socket Appender",
+              "fixed_versions": [
+                "2.25.3"
+              ]
+            }
+          ]
+        }
+      ],
+      "dependency_resolution": {
+        "transitive_resolution": "disabled",
+        "warning": "Because remote resolution is disabled (OSV_MCP_NO_REMOTE_RESOLUTION or offline mode), transitive dependencies of manifests (pom.xml / requirements.txt) were not resolved. Dependencies recorded in lockfiles (package-lock.json / poetry.lock / go.mod / gradle.lockfile and so on) are covered, but vulnerabilities in the transitive dependencies of the dependencies listed directly in pom.xml or requirements.txt are not included. Zero findings does not confirm that the transitive dependencies are safe"
+      },
+      "coverage": {
+        "complete": true,
+        "manifests": [
+          {
+            "path": "pom.xml",
+            "ecosystem": "Maven",
+            "format": "pom.xml"
+          }
+        ],
+        "lockfile_missing": [],
+        "unpinned_requirements": [],
+        "unscannable_requirements": [],
+        "skipped_files": []
+      },
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Maven",
+            "downloaded_at": "2026-11-18T06:39:10.449Z",
+            "sha256": "d4af0a671eccebbccc5d7f90e52000e50c9f396fa908278797d6cb69e7c0c3de"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "scan_java_project",
+      "elapsed_ms": 403.990042,
+      "vulnerability_count": 8,
+      "packages": [
+        {
+          "name": "org.apache.logging.log4j:log4j-core",
+          "version": "2.14.1",
+          "ecosystem": "Maven",
+          "dependency_relation": "direct",
+          "vulnerabilities": [
+            {
+              "id": "GHSA-jfh8-c2jp-5v3q",
+              "cve": "CVE-2021-44228",
+              "aliases": [
+                "CVE-2021-44228"
+              ],
+              "severity_score": 10,
+              "severity": "critical",
+              "summary": "Remote code injection in Log4j",
+              "fixed_versions": [
+                "2.3.1",
+                "2.12.2",
+                "2.15.0"
+              ]
+            },
+            {
+              "id": "GHSA-7rjr-3q55-vv33",
+              "cve": "CVE-2021-45046",
+              "aliases": [
+                "CVE-2021-45046"
+              ],
+              "severity_score": 9,
+              "severity": "critical",
+              "summary": "Incomplete fix for Apache Log4j vulnerability",
+              "fixed_versions": [
+                "2.3.1",
+                "2.12.2",
+                "2.16.0"
+              ]
+            },
+            {
+              "id": "GHSA-p6xc-xr62-6r2g",
+              "cve": "CVE-2021-45105",
+              "aliases": [
+                "CVE-2021-45105"
+              ],
+              "severity_score": 8.6,
+              "severity": "high",
+              "summary": "Apache Log4j2 vulnerable to Improper Input Validation and Uncontrolled Recursion",
+              "fixed_versions": [
+                "2.3.1",
+                "2.12.3",
+                "2.17.0"
+              ]
+            },
+            {
+              "id": "GHSA-3pxv-7cmr-fjr4",
+              "cve": "CVE-2026-34480",
+              "aliases": [
+                "CVE-2026-34480"
+              ],
+              "severity_score": 6.9,
+              "severity": "medium",
+              "summary": "Apache Log4j Core: Silent log event loss in XmlLayout due to unescaped XML 1.0 forbidden characters",
+              "fixed_versions": [
+                "2.25.4"
+              ]
+            },
+            {
+              "id": "GHSA-h383-gmxw-35v2",
+              "cve": "CVE-2026-34479",
+              "aliases": [
+                "CVE-2026-34479"
+              ],
+              "severity_score": 6.9,
+              "severity": "medium",
+              "summary": "Apache Log4j 1 to Log4j 2 bridge: silent log event loss in Log4j1XmlLayout due to unescaped XML 1.0 forbidden characters",
+              "fixed_versions": [
+                "2.25.4"
+              ]
+            },
+            {
+              "id": "GHSA-8489-44mv-ggj8",
+              "cve": "CVE-2021-44832",
+              "aliases": [
+                "CVE-2021-44832"
+              ],
+              "severity_score": 6.6,
+              "severity": "medium",
+              "summary": "Improper Input Validation and Injection in Apache Log4j2",
+              "fixed_versions": [
+                "2.3.2",
+                "2.12.4",
+                "2.17.1"
+              ]
+            },
+            {
+              "id": "GHSA-6hg6-v5c8-fphq",
+              "cve": "CVE-2026-34477",
+              "aliases": [
+                "CVE-2026-34477"
+              ],
+              "severity_score": 6.3,
+              "severity": "medium",
+              "summary": "Apache Log4j Core: `verifyHostName` attribute silently ignored in TLS configuration",
+              "fixed_versions": [
+                "2.25.4"
+              ]
+            },
+            {
+              "id": "GHSA-vc5p-v9hr-52mj",
+              "cve": "CVE-2025-68161",
+              "aliases": [
+                "CVE-2025-68161"
+              ],
+              "severity_score": 6.3,
+              "severity": "medium",
+              "summary": "Apache Log4j does not verify the TLS hostname in its Socket Appender",
+              "fixed_versions": [
+                "2.25.3"
+              ]
+            }
+          ]
+        }
+      ],
+      "dependency_resolution": {
+        "transitive_resolution": "disabled",
+        "warning": "Because remote resolution is disabled (OSV_MCP_NO_REMOTE_RESOLUTION or offline mode), transitive dependencies of manifests (pom.xml) were not resolved. Dependencies recorded in lockfiles (gradle.lockfile) are covered, but vulnerabilities in the transitive dependencies of the dependencies listed directly in pom.xml are not included. Zero findings does not confirm that the transitive dependencies are safe"
+      },
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Maven",
+            "downloaded_at": "2026-11-18T06:39:10.449Z",
+            "sha256": "d4af0a671eccebbccc5d7f90e52000e50c9f396fa908278797d6cb69e7c0c3de"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "elapsed_ms": 770.456584,
+      "suggestions": [
+        {
+          "package": "org.apache.logging.log4j:log4j-core",
+          "current_version": "2.14.1",
+          "ecosystem": "Maven",
+          "dependency_relation": "direct",
+          "recommended_upgrade": "2.25.4",
+          "upgrade_tier": "major_internal",
+          "upgrade_note": "Recommends 2.25.4 within the same major version (2.x). Based on the affected ranges retrieved, it is outside the ranges of all 8 CVEs to fix. It is not guaranteed to be the smallest such published version or free of undetected vulnerabilities. Offline mode: no additional fix-target vulnerabilities were found in the local database snapshot. Newer advisories are not covered; this does not establish safety",
+          "update_hint": "Direct dependency. Update the version in the <dependency> of pom.xml. If the version is managed by <dependencyManagement> in a parent POM, a property, or a BOM, update it there",
+          "candidate_check": "clean",
+          "candidate_check_source": "local_database",
+          "per_cve_detail": [
+            {
+              "id": "GHSA-jfh8-c2jp-5v3q",
+              "cve": "CVE-2021-44228",
+              "severity": "critical",
+              "fixed_in": "2.15.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-7rjr-3q55-vv33",
+              "cve": "CVE-2021-45046",
+              "severity": "critical",
+              "fixed_in": "2.16.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-p6xc-xr62-6r2g",
+              "cve": "CVE-2021-45105",
+              "severity": "high",
+              "fixed_in": "2.17.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-3pxv-7cmr-fjr4",
+              "cve": "CVE-2026-34480",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-h383-gmxw-35v2",
+              "cve": "CVE-2026-34479",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-8489-44mv-ggj8",
+              "cve": "CVE-2021-44832",
+              "severity": "medium",
+              "fixed_in": "2.17.1",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-6hg6-v5c8-fphq",
+              "cve": "CVE-2026-34477",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-vc5p-v9hr-52mj",
+              "cve": "CVE-2025-68161",
+              "severity": "medium",
+              "fixed_in": "2.25.3",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            }
+          ],
+          "verification": "verified"
+        }
+      ],
+      "dependency_resolution": {
+        "transitive_resolution": "disabled",
+        "warning": "Because remote resolution is disabled (OSV_MCP_NO_REMOTE_RESOLUTION or offline mode), transitive dependencies of manifests (pom.xml / requirements.txt) were not resolved. Dependencies recorded in lockfiles (package-lock.json / poetry.lock / go.mod / gradle.lockfile and so on) are covered, but vulnerabilities in the transitive dependencies of the dependencies listed directly in pom.xml or requirements.txt are not included. Zero findings does not confirm that the transitive dependencies are safe"
+      },
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Maven",
+            "downloaded_at": "2026-11-18T06:39:10.449Z",
+            "sha256": "d4af0a671eccebbccc5d7f90e52000e50c9f396fa908278797d6cb69e7c0c3de"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "offline_candidate_query",
+      "version": "2.14.1",
+      "record_ids": [
+        "GHSA-3pxv-7cmr-fjr4",
+        "GHSA-6hg6-v5c8-fphq",
+        "GHSA-7rjr-3q55-vv33",
+        "GHSA-8489-44mv-ggj8",
+        "GHSA-h383-gmxw-35v2",
+        "GHSA-jfh8-c2jp-5v3q",
+        "GHSA-p6xc-xr62-6r2g",
+        "GHSA-vc5p-v9hr-52mj"
+      ],
+      "elapsed_ms": 385.17533300000014
+    },
+    {
+      "tool": "offline_candidate_query",
+      "version": "2.25.4",
+      "record_ids": [],
+      "elapsed_ms": 382.62691700000005
+    },
+    {
+      "tool": "explain_vulnerability",
+      "requested_id": "GHSA-jfh8-c2jp-5v3q",
+      "id": "GHSA-jfh8-c2jp-5v3q",
+      "matched_by": "id",
+      "matching_record_ids": [
+        "GHSA-jfh8-c2jp-5v3q"
+      ],
+      "summary": "Remote code injection in Log4j",
+      "details_characters": 3014,
+      "details_sha256": "62a5a77dcbd4a2595b4c6106cc729a7dc83c2cfc5cf861a3e6529e85127305ef",
+      "affected": [
+        {
+          "package": "org.apache.logging.log4j:log4j-core",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "2.13.0",
+              "fixed": "2.15.0",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "org.apache.logging.log4j:log4j-core",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "2.0-beta9",
+              "fixed": "2.3.1",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "org.apache.logging.log4j:log4j-core",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "2.4",
+              "fixed": "2.12.2",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "com.guicedee.services:log4j-core",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "0",
+              "fixed": null,
+              "last_affected": "1.2.1.2-jre17"
+            }
+          ]
+        },
+        {
+          "package": "org.xbib.elasticsearch:log4j",
+          "ecosystem": "Maven",
+          "ranges": []
+        },
+        {
+          "package": "uk.co.nichesolutions.logging.log4j:log4j-core",
+          "ecosystem": "Maven",
+          "ranges": []
+        },
+        {
+          "package": "org.ops4j.pax.logging:pax-logging-log4j2",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "1.8.0",
+              "fixed": "1.9.2",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "org.ops4j.pax.logging:pax-logging-log4j2",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "1.10.0",
+              "fixed": "1.10.8",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "org.ops4j.pax.logging:pax-logging-log4j2",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "1.11.0",
+              "fixed": "1.11.10",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "org.ops4j.pax.logging:pax-logging-log4j2",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "2.0.0",
+              "fixed": "2.0.11",
+              "last_affected": null
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/apache/logging-log4j2/pull/608"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/github/advisory-database/pull/5501"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-397453.pdf"
+        },
+        {
+          "type": "WEB",
+          "url": "https://packetstormsecurity.com/files/165673/UniFi-Network-Application-Unauthenticated-Log4Shell-Remote-Code-Execution.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://packetstormsecurity.com/files/167794/Open-Xchange-App-Suite-7.10.x-Cross-Site-Scripting-Command-Injection.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://packetstormsecurity.com/files/167917/MobileIron-Log4Shell-Remote-Command-Execution.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://packetstormsecurity.com/files/171626/AD-Manager-Plus-7122-Remote-Code-Execution.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2021-0032"
+        },
+        {
+          "type": "WEB",
+          "url": "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-apache-log4j-qRuKNEbd"
+        },
+        {
+          "type": "WEB",
+          "url": "https://seclists.org/fulldisclosure/2022/Dec/2"
+        },
+        {
+          "type": "WEB",
+          "url": "https://seclists.org/fulldisclosure/2022/Jul/11"
+        },
+        {
+          "type": "WEB",
+          "url": "https://seclists.org/fulldisclosure/2022/Mar/23"
+        },
+        {
+          "type": "WEB",
+          "url": "https://security.netapp.com/advisory/ntap-20211210-0007"
+        },
+        {
+          "type": "WEB",
+          "url": "https://support.apple.com/kb/HT213189"
+        },
+        {
+          "type": "WEB",
+          "url": "https://tools.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-apache-log4j-qRuKNEbd"
+        },
+        {
+          "type": "WEB",
+          "url": "https://twitter.com/kurtseifried/status/1469345530182455296"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.bentley.com/en/common-vulnerability-exposure/be-2022-0001"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2021-44228"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.debian.org/security/2021/dsa-5020"
+        }
+      ],
+      "elapsed_ms": 1065.547333,
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Maven",
+            "downloaded_at": "2026-11-18T06:39:10.449Z",
+            "sha256": "d4af0a671eccebbccc5d7f90e52000e50c9f396fa908278797d6cb69e7c0c3de"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "requested_id": "CVE-2021-44228",
+      "id": "GHSA-jfh8-c2jp-5v3q",
+      "matched_by": "alias",
+      "matching_record_ids": [
+        "GHSA-jfh8-c2jp-5v3q"
+      ],
+      "summary": "Remote code injection in Log4j",
+      "details_characters": 3014,
+      "details_sha256": "62a5a77dcbd4a2595b4c6106cc729a7dc83c2cfc5cf861a3e6529e85127305ef",
+      "affected": [
+        {
+          "package": "org.apache.logging.log4j:log4j-core",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "2.13.0",
+              "fixed": "2.15.0",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "org.apache.logging.log4j:log4j-core",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "2.0-beta9",
+              "fixed": "2.3.1",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "org.apache.logging.log4j:log4j-core",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "2.4",
+              "fixed": "2.12.2",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "com.guicedee.services:log4j-core",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "0",
+              "fixed": null,
+              "last_affected": "1.2.1.2-jre17"
+            }
+          ]
+        },
+        {
+          "package": "org.xbib.elasticsearch:log4j",
+          "ecosystem": "Maven",
+          "ranges": []
+        },
+        {
+          "package": "uk.co.nichesolutions.logging.log4j:log4j-core",
+          "ecosystem": "Maven",
+          "ranges": []
+        },
+        {
+          "package": "org.ops4j.pax.logging:pax-logging-log4j2",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "1.8.0",
+              "fixed": "1.9.2",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "org.ops4j.pax.logging:pax-logging-log4j2",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "1.10.0",
+              "fixed": "1.10.8",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "org.ops4j.pax.logging:pax-logging-log4j2",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "1.11.0",
+              "fixed": "1.11.10",
+              "last_affected": null
+            }
+          ]
+        },
+        {
+          "package": "org.ops4j.pax.logging:pax-logging-log4j2",
+          "ecosystem": "Maven",
+          "ranges": [
+            {
+              "introduced": "2.0.0",
+              "fixed": "2.0.11",
+              "last_affected": null
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/apache/logging-log4j2/pull/608"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/github/advisory-database/pull/5501"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/pdf/ssa-397453.pdf"
+        },
+        {
+          "type": "WEB",
+          "url": "https://packetstormsecurity.com/files/165673/UniFi-Network-Application-Unauthenticated-Log4Shell-Remote-Code-Execution.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://packetstormsecurity.com/files/167794/Open-Xchange-App-Suite-7.10.x-Cross-Site-Scripting-Command-Injection.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://packetstormsecurity.com/files/167917/MobileIron-Log4Shell-Remote-Command-Execution.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://packetstormsecurity.com/files/171626/AD-Manager-Plus-7122-Remote-Code-Execution.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2021-0032"
+        },
+        {
+          "type": "WEB",
+          "url": "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-apache-log4j-qRuKNEbd"
+        },
+        {
+          "type": "WEB",
+          "url": "https://seclists.org/fulldisclosure/2022/Dec/2"
+        },
+        {
+          "type": "WEB",
+          "url": "https://seclists.org/fulldisclosure/2022/Jul/11"
+        },
+        {
+          "type": "WEB",
+          "url": "https://seclists.org/fulldisclosure/2022/Mar/23"
+        },
+        {
+          "type": "WEB",
+          "url": "https://security.netapp.com/advisory/ntap-20211210-0007"
+        },
+        {
+          "type": "WEB",
+          "url": "https://support.apple.com/kb/HT213189"
+        },
+        {
+          "type": "WEB",
+          "url": "https://tools.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-apache-log4j-qRuKNEbd"
+        },
+        {
+          "type": "WEB",
+          "url": "https://twitter.com/kurtseifried/status/1469345530182455296"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.bentley.com/en/common-vulnerability-exposure/be-2022-0001"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2021-44228"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.debian.org/security/2021/dsa-5020"
+        }
+      ],
+      "elapsed_ms": 1055.8954170000002,
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Maven",
+            "downloaded_at": "2026-11-18T06:39:10.449Z",
+            "sha256": "d4af0a671eccebbccc5d7f90e52000e50c9f396fa908278797d6cb69e7c0c3de"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "unlisted-id",
+      "status": "not-found-in-local-snapshot",
+      "error": {
+        "kind": "vulnerability_not_found",
+        "message": "No record with this ID or alias was found in the prepared local database snapshots. This does not establish absence from OSV or safety"
+      },
+      "offline_database": {
+        "mode": "offline",
+        "network_requests": false,
+        "max_age_hours": 168,
+        "databases": [
+          {
+            "ecosystem": "Maven",
+            "downloaded_at": "2026-11-18T06:39:10.449Z",
+            "sha256": "d4af0a671eccebbccc5d7f90e52000e50c9f396fa908278797d6cb69e7c0c3de"
+          }
+        ],
+        "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+      }
+    },
+    {
+      "tool": "scan_project",
+      "case": "missing",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_java_project",
+      "case": "missing",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "missing",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "missing",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "missing",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest missing or unreadable. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_project",
+      "case": "missing-object",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_java_project",
+      "case": "missing-object",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "missing-object",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "missing-object",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "missing-object",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_project",
+      "case": "expired",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_java_project",
+      "case": "expired",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "expired",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "expired",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "expired",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_project",
+      "case": "future",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_java_project",
+      "case": "future",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "future",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "future",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "future",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is expired or has a future timestamp. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_project",
+      "case": "truncated",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_java_project",
+      "case": "truncated",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "truncated",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "truncated",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "truncated",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database is missing, replaced or truncated. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_project",
+      "case": "digest",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_java_project",
+      "case": "digest",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "digest",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "digest",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "digest",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: Maven database digest mismatch. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_project",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_java_project",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "invalid-origin",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_project",
+      "case": "oversized-manifest",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "scan_java_project",
+      "case": "oversized-manifest",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "suggest_fix",
+      "case": "oversized-manifest",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "explain_vulnerability",
+      "case": "oversized-manifest",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    },
+    {
+      "tool": "offline_candidate_query",
+      "case": "oversized-manifest",
+      "status": "rejected",
+      "error": {
+        "kind": "scan_failed",
+        "message": "Offline database cache: manifest invalid. Run osv-scanner-mcp cache on a connected machine and copy the complete cache directory"
+      }
+    }
+  ],
+  "sources": {
+    "src/index.ts": "c4b89500043f543ca37c9259888cebb9206b4e911c7bb3dc1efef4f25b494bc7",
+    "src/utils/gradleOwnedPolicy.ts": "2ace3536b349b4b2368c5a01bb1979864bd7377aa218134f4f197b6259892bf2",
+    "src/utils/gradleOwnedExecution.ts": "360a8d5e61a7b115619077cb444f8a863f6d6d0459be9d17b87ae4c43f279fd4",
+    "src/utils/gradleOwnedJson.ts": "a6868bb356c0c4096fe792e90e0e14cc03dc09cf588a72019e241dd377ea324e",
+    "src/utils/gradleOwnedSchema.ts": "44fa3f141b1931e3043bd4e876f93b46132f54e1c36aaf7f6d3c43f1c6ea734c",
+    "src/osv/offline.ts": "110aff23438d944b8f27acfe2b3a0fcc3112e34fd181a3313f791962cbfd21ac",
+    "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
+    "src/osv/binaryDownloader.ts": "66f863886bbda6ff73363e4aaeb78bd0928c92f50cfcf2867a10622f616e280b",
+    "src/utils/readResponseBytes.ts": "e627677595ca169310f84f365ac7cf58b5e9cf346cf7f5c5c3584948fee5f0f3",
+    "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054",
+    "src/utils/projectWalk.ts": "5ff06d6df2c601017928d26709d6f4bf3ea9d9ff6813e627cfec82d010d9e316",
+    "src/utils/openedFilePath.ts": "963ac04f6eb3744af00771feaaf054c08ca8b2dcc7d2846507525394d3fdff8f",
+    "src/utils/gradlePlugins.ts": "582f72462c13927e7284e1c7ca70681f4e455e469596020cd4e8bc5e9ec637af",
+    "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
+    "src/utils/gradleJson.ts": "f7f3ef047d30a675cb55044072e8fb516dceeb822192777ea7b7444699c9dc9f",
+    "src/utils/gradlePluginSnapshots.ts": "2c0ce15f1c90e6c11916d2a8107c2d1c761719543932a0aeef722cfeb4acf2c1",
+    "src/utils/gradlePluginJar.ts": "b180ee353104a11e1ddd1a091930bda1aaf8138fcf5a1df7d66370ef8c848ab9",
+    "src/utils/gradleDeclarations.ts": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be",
+    "src/utils/gradleCatalogs.ts": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b",
+    "src/utils/gradleGraph.ts": "73a36886ed6c8be17b63e5581392cca6c5ba5efb0463e475f7ee3913ac888e81",
+    "src/utils/gradleOrigins.ts": "8acbfd5389fc2b5e865c95185f46ea330ada933741aeffae50a0f743700a3884",
+    "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
+    "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
+    "src/tools/explainVulnerability.ts": "caf0c688c3cb24836c3e3c95cda8707bb783440feccec714753acf8a7c3ae73e",
+    "src/osv/osvApi.ts": "eced215f9e3a8e7c09591e85f14cbc2136ff60fa0ddacf6e40db6cd3390f8566",
+    "src/osv/vulnerabilityExplanation.ts": "b971f2d0838cf21966ed61b220a3b62ec771ea9e480101ccf549167dae334b2e",
+    "src/utils/unknownJson.ts": "7b68c719c8350d9f7b86ff661ca10a55b772c88a1be445b86ffb485c35b24e78",
+    "src/osv/offlineRecord.ts": "e23577b274ed27ed60c810c38a1c22b31a3e81f53e33a4ebee684c328016b17e",
+    "src/osv/offlineCache.ts": "b2f7be839a1495988f6b0e0de10df688badceecf1bb87c2ef496a99c7b79c11d",
+    "src/utils/processCleanup.ts": "7675860782f548a769f94f0961e3653120ac03c126419799d36ea1d0571abb59",
+    "src/osv/runner.ts": "86758e457596130606e9397becc9cd17c1364d65ebfb5ab321780e047cec835c",
+    "src/utils/manifestFormats.ts": "b10e94c34e6b6f92fcb0c4a1eb934e1cedb823a8f886a21cc7bcfb6e2df413be",
+    "src/osv/binaryManager.ts": "f16130a62b708a453dddd9cab10258b88a2973e301bf8e860a5fd86b17fb63c3",
+    "src/osv/scanReport.ts": "52229231db81025a96764312992e8c5ec9ed9da356effeecbfe74d85f323b296",
+    "src/osv/affectedVersions.ts": "2b172ee8ec0da76c61d1871f9102700605a608cea3d38f27fa5a63076ef36421",
+    "src/osv/versionScheme.ts": "cdcc37369ed8eeb9f3516c6d853f87ee31c334de4f6eb7392a823b53a1829b10",
+    "src/utils/mavenVersion.ts": "966afae3b834989b91a6616d3b10de47888dd925b02b4488dd2591eeac7c4bdc",
+    "src/utils/pep440Version.ts": "0b647ad60edb6fe9e83a2236513a24c6fed0915a5aaf53e8c67f9cb34c7485cb",
+    "src/utils/semverVersion.ts": "6fec8416b4804b95115747506c2e09ceafe9d81fb47bebbdacce36627a75699d",
+    "src/utils/composerVersion.ts": "1d95ea7b5e23ba22ed6a227fcd2c738eb4e5a8dc6d90f8a62a22869c3c0ec749",
+    "src/utils/nugetVersion.ts": "0ad181d5b18a2ae06ba5f20c36b115f13003a2be471f1d575bed5e7d5627ff05",
+    "src/tools/toolResult.ts": "1aea0a5980279b3b533a2eefe16edd2d69faa485156141d538843ceb8b57f711",
+    "src/tools/scanJavaProject.ts": "51f610fde13cca91605ca2da7b4ceacd69beb2ca28156dbdde8daa6279aeffbb",
+    "src/utils/gradleGraphCache.ts": "1d4522af2e6ae3d47749c53faf456cc371230f737ac2cbbab764850cc087cc00",
+    "src/utils/gradleOwnedCurrentBridge.ts": "2b4ec0db98aeae83eaad81eae8c4c8b558e108a2a33e12d195672f042fc98f69",
+    "src/utils/gradleOwnedCurrentClient.ts": "40b7977162caf938a104873f1642ac969faf7d8f156bcf20afc1fb0e8053e779",
+    "src/utils/gradleOwnedCurrentSchema.ts": "c9f22d39eb40306f0b7c3a0a584f627fd95eb6c6d8ba7f73603ee2c1b94236eb",
+    "src/utils/gradleOwnedJournalV2.ts": "5f78e8a9cb127fe8d0f25942668e360727e13057559ee046db0ed14f06b49253",
+    "src/utils/gradleOwnedAuthoritySnapshot.ts": "694e88c771dff66e88b151e098172ffc0a04610bfcb62c56b79ef5f4b52c754e",
+    "src/utils/gradleOwnedAuthoritySchema.ts": "893449dd0f388cdc0434de47624f269aa12c678df67e63d1bb195fb18dbe52e2",
+    "src/utils/gradleOwnedManifest.ts": "3886c2ba26e50cb888fd8b5e7513c1ac1e0e152e0b29111de4224ebd07846e9b",
+    "src/utils/gradleExportJson.ts": "0fea68255a7dbabe559f1ee35bfcc156a565519c63ca16bb92614e1c866422fe",
+    "src/tools/scanProject.ts": "b3635b834ce5da23999007d010d9150a5b9168795c798446594f556759d7cf13",
+    "src/utils/pnpmRelations.ts": "00c1b556801e73b675c9e20bfc5bdba3d1d206d044b162365d1cb9f374c70de9",
+    "src/utils/nugetFiles.ts": "2064d207d2e3e837cba8b44b3511e5507d157cb5e7f955cc4cd77f3ced6dff01",
+    "src/utils/npmLockCopy.ts": "6bfa464ea5709628e59ff304beab4a112d960779afecc017161663861dcdcc0c",
+    "src/utils/pomParent.ts": "70363009d8914b505c21707d448e30c96a1b66b65deb60e1b63cf54f00e0c6e0",
+    "src/utils/nugetDependencyGraph.ts": "ce62890f3987d11387c418fd208aec2a0a0615a5996ee7c2fc37ccf51f34e4ad",
+    "src/utils/manifestDetector.ts": "5cea97fff2d12e9c6321998b05d4f1df193cd5d8843aa706f06fffa944cf4478",
+    "src/utils/pnpmLockCache.ts": "54b93ce72527b87a6e5f6fed268e6d84e3b7617e1afaa9060fa4e00f9dcb7e53",
+    "src/utils/yarnLockCache.ts": "be6819696d823af499a473ee4b7fde87e68d6912cae56d6685728e57a78b82d4",
+    "src/utils/yarnLock.ts": "e80d5010fe37f946f457ee2b13353396891b4c0f5df8221dcd3793768c188a9c",
+    "src/utils/bunLockCache.ts": "dbad63106b4ec9da8f7703db2c6a93ffc0de0d03ab62a883fb8aafea466edb44",
+    "src/utils/bunLock.ts": "3f7a445fd4cea36037659b9b33b03005915873fc1ab0e36e92eea9233031ae18",
+    "src/utils/pipenvLockCache.ts": "475230aaf5ee29bd4e9918a4fe1169c6a34b4b7738fff7666050f94cc4ac70cf",
+    "src/utils/boundedToml.ts": "88ef24966582bc5af425b748cf1cae1365d04b88923f754106db57de655fb723",
+    "src/utils/pipenvLock.ts": "aea61fba691ef8e3172dea59bb97766461811ada06cb291f9c7ba275813241e6",
+    "src/utils/pdmLockCache.ts": "9a2f18079ffdd0e8a6221087914923546bc912c7208cbbe63a28b50995b30e8f",
+    "src/utils/pdmLock.ts": "c94e57aaf48ff2aba72a26583e477081cf174cca4b5bc8c7cc356df7a142db72",
+    "src/utils/poetryLockCache.ts": "a342f2f4d477aebc80300b5bacdf5889b1cddc475e8415604cf064ad83ad2eeb",
+    "src/utils/poetryLock.ts": "2eb586540daf6a9d25cc5a4074ea45e3beb1da4e56f52b16bc6ebc4e38220ef0",
+    "src/utils/uvLockCache.ts": "d17c52f45d8678ae77c8c9f9c7322febc81891d9fbda6c58cb9ed97450b9a418",
+    "src/utils/uvLock.ts": "9b2ceee0d09ed231675e7c2f37c96d8615f7867691ee8bc9fbedfa2b7c9f6cce",
+    "src/utils/requirementsFile.ts": "790dd3808bbc00ef4ac7b8faf95113340f06c59abcac0179dde9c4535993bd85",
+    "src/utils/nugetProject.ts": "327c401a6d07c55385a92253efbb9a561f3821b61ebb78f42c7dbf19534387b0",
+    "src/utils/composerLock.ts": "d345d61f73b57ebbd2a8f7c28a887696dcd9b96e3ad929cfbbb55fd599728c4e",
+    "src/utils/composerRelations.ts": "9679f7798714a68eff1acb0a4a9078e06776a942037af0fa509f4d104896e61c",
+    "src/utils/scanSnapshot.ts": "b1fd1d86c54a88ff76f5fcbf6ca38de5cdeb270d173543450c1206e678a0f14e",
+    "src/utils/projectDetector.ts": "cbfd500117a3be4ba06a68c96c9ac4b3819df66325bf40b1e7fed1ddeff51964",
+    "src/tools/scanJavaArtifact.ts": "cdf542fbcdb6caed054438c7625122210ccca8afa042ecee46e18a42e7a878ce",
+    "src/osv/artifactReport.ts": "57d6e03ad54039fd1bc8f2f11dfcee02bf1b90fa6ef6c353a887030670bdd052",
+    "src/utils/artifactDetector.ts": "15224ce83bdd6d0459913169f393b9942d7bca1963684fe6dc812ab9cd29d9b1",
+    "src/tools/scanSbom.ts": "bfdce35843f90da0616e6bffd2ad9b403c21ce99e0310da6b35798743348a2d9",
+    "src/osv/sbomReport.ts": "a5ae61b1ddd46fec6ca4052ec4f32d9c99086f7715833d0b7bb98f95dcea341f",
+    "src/utils/sbomInput.ts": "2406c26f10a1bc5162e867e47166f175eb92caee6b22a8159a1041c19ed21809",
+    "src/tools/suggestFix.ts": "fa3536f4624da440e077471f5a75d005b8cefc70e83394ff1222109cc20c385b",
+    "src/osv/candidateCheck.ts": "07967c772b5a081be6f1c89feccac77914a264a9eb370bcfa943c377789fd35b",
+    "src/osv/suggestFix.ts": "8a5961e414c4ebe10fe77425812debb2be4fde24b114675b53ca90855c4ae6f7",
+    "src/osv/offlineCandidate.ts": "2f4e1472140d3ad30a0ec2b639faa2ec02550889171a2389c0feac9987af294a",
+    "src/tools/scanHistory.ts": "d89bb0310f34099df38f37dc9a398e4c846fd960c35fbf9899c81ec2e79175fc",
+    "src/history/historyDiff.ts": "df8b86c6e92d6f67eb6210d5b649324d7377afacbeb91bfb8fa4e253923876e2",
+    "src/history/historyRecord.ts": "f6cc61b1c9223710a0cb69faee336266f28f7291c0dbbe93962e401a08c92f1b",
+    "src/history/historyStore.ts": "bc344f6bf770c1c6eebfb274c9c48171bde86178012cf006e0c33b273a37f30a",
+    "src/history/historyRecorder.ts": "c64598e79343a69f9116b7f133e8fac70ef49ca7d6d1284c1a80b82ec8de3a51",
+    "src/utils/permissionCheck.ts": "099f2ce69e1ee1074acd4eb22a389deb8d8c7d4455740a44220abaaa200ec068",
+    "src/utils/startupConfig.ts": "b78d1f026238caa1021d5fb5b74e30ccc2cb6617bd14bfc23de033067c851e6b",
+    "src/cache.ts": "2b4196a0e28e8f50439917bf712a54053556e559cb839969c725ed83456c61f0",
+    "scripts/validate-offline-maven.mjs": "8818e60006aec463d0aa1e469d039f636966043b09651b7a520efadea643cd21",
+    "src/test/osv/offlineMavenValidation.test.ts": "09c5125cd75562b48bd85a2e7227a1dfc10a1e46fc9cce442fe74d959b99b7d5",
+    "src/test/fixtures/offline-maven/pom.xml": "2bd8e14bb53fd7bf37c92b222b04354c6a30dd5071862160fffb1446917a33cd",
+    "package.json": "22bdd4726690e1b0bea9d8e42b2ff27f13a8fd5096c0e351cf8223469b48a1a9",
+    "package-lock.json": "856b21b437fdc86c4a2d0662302f103a0907d9f0ad50450cbcd35d56437d2894",
+    "tsconfig.json": "7375ac5d334f50eed3d766799fd016e068f1998639c7b02ba201db280a1583c3",
+    "tsconfig.build.json": "49e7f5e2be44cc034bf5ef401064bf3b1588070e80aacfe1e1c8dde541c3117f"
+  },
+  "artifacts": {
+    "dist/cache.js": "55101761aa8d11d3ce62ba353296a6a7c389b9ec7c004adbb030000017679859",
+    "dist/cli/e2P0Preflight.js": "631364d13238b4088ddecbff604803d6a3e96c351081815c12c367ec3f7a1b69",
+    "dist/errors.js": "764f2ada1074353f6ea2cfa44a8f715f037971a94a0533ddf684950c2378894c",
+    "dist/history/historyDiff.js": "4a0c9177995895af4e9ed8733cf00a5acd32ae1c868ffecf4cd761f475a34c68",
+    "dist/history/historyRecord.js": "5ed6566c2a67c648339202c615036dfb5895c5b0ace4c0eff2e13cac18c90d6b",
+    "dist/history/historyRecorder.js": "9b9e89acbd656b9ca7c87a9edbba7bc2a9de9145111e0874d6c87b570c1a666d",
+    "dist/history/historyStore.js": "74fe7c948615ceb1cb8c5d8b97c3a4641071bd63c206fc5bf71ee6a515073856",
+    "dist/index.js": "4929c762477cefd91fcef541021ab6802676277aa017334733c3ee440fa9af83",
+    "dist/osv/affectedVersions.js": "1eee784ed51d608b3acd7c94915d876e4a56927a6949ce89b54dc1b5b59c76b8",
+    "dist/osv/artifactReport.js": "63190950c23a77e1053e2b316a094719073c15f9e3df8fda4474f13b1e81d49b",
+    "dist/osv/binaryDownloader.js": "c103bd2ac595ee233c22545f541a914916175eb56b47feb2910597dea119978c",
+    "dist/osv/binaryManager.js": "00a07a2e87c8a1dba45849b0e752fa7aaa0d30fa35e8d63d4562ed0e4ae4f3b5",
+    "dist/osv/candidateCheck.js": "e296e56bb42443924f1023a40b247c42543140338874bdaae3e16662eafce52c",
+    "dist/osv/offline.js": "4c1a91d95720b71c4146bbf11999a0a0f8fc0cc731bd072f555bb43470cfcd2c",
+    "dist/osv/offlineCache.js": "410931c21acd33fa9cc5058c9c91f66891b104e9f5438abffd734d73a35c2dac",
+    "dist/osv/offlineCandidate.js": "bfaf1ad49277c16dff19125cd39cc583edad7840edd8a30b1c6148bc5ab1b742",
+    "dist/osv/offlineRecord.js": "5fecb3fdf4246fb8f343d551fce221f8fda6e23d3beff7bc926a8719bec4fb63",
+    "dist/osv/osvApi.js": "ad70363b6e50527503845fdde491b8f3fe70ce1bce923d6b83960f3c7413dbeb",
+    "dist/osv/runner.js": "e196fd83fac4521fb00a208e49cc10999b437da449558ebeaabf12995fb5ff2a",
+    "dist/osv/sbomReport.js": "ee57a66cb8337fa9d40d1b0ecfaf3a8532793c9f67f323d3863c3aeae385b654",
+    "dist/osv/scanReport.js": "87c640c169f4730b72b7da129bd076eca723415aea006cc911f5d3b16fc98a15",
+    "dist/osv/suggestFix.js": "6800c44464beb2556d6fb6ceaca5f3ca86dc8016f41f94a231a762ad03594123",
+    "dist/osv/versionScheme.js": "aaff251a3329fd3a7a5d99f7c21deada4f8824dbc8d18b1d9ea99f4f24744f28",
+    "dist/osv/vulnerabilityExplanation.js": "29f32888698967cc5b30c99c77912f099037539a4d7a610ca96bbe408c77c9fe",
+    "dist/tools/explainVulnerability.js": "07395dbc484647aca2edcd28d8abd68b8b23469df0497b6a09c78f88c265106c",
+    "dist/tools/scanHistory.js": "68a6d4a4c28e4c2b342746bbdbaebf1e97183e0259934ceb584c7280ca9ccc9e",
+    "dist/tools/scanJavaArtifact.js": "58f8f430fbed5a7c18421222e5dd5abf89e7d743e6baab796386cfe5de42d981",
+    "dist/tools/scanJavaProject.js": "953c55ba1ef0e93716a99f27d204cb949535cc1a290ef1017c6fcff082c4acd3",
+    "dist/tools/scanProject.js": "aff1ea15acfe6a7e9e5405127642814a040baf70a8782a9385b1d23b85fc3e93",
+    "dist/tools/scanSbom.js": "0cfc4ed854125668ac330dc77f798b0ef2d60fb2c07a4ebc155d974320e2891d",
+    "dist/tools/suggestFix.js": "c8450bfa057aa2b2b2d5e557db8eeeb7acf5bcd6cdfe6b86dbe5395660f9a22e",
+    "dist/tools/toolResult.js": "1d316dccf109262360aa8bc77afc6b2a42cfd848a2cbd1280c6d5ab3a3f04da7",
+    "dist/utils/artifactDetector.js": "a301d387307d96dfae799fcb7806c8ce68be566c4ae2cd23e7e52dcbfb02ea4a",
+    "dist/utils/boundedToml.js": "9d74532c91d82f163ed632d39f8121015fbbee307cca0193ce80ea0fd5ea9fa7",
+    "dist/utils/bunLock.js": "ba0b7b7997c48ff5ddca9fd37ad9c0187c00a8ddc04ce2e70aedc401b69e670a",
+    "dist/utils/bunLockCache.js": "c53c65c31a128ee19ae355b516fbadf5da45435e010de83b5665257f4ea26488",
+    "dist/utils/cargoLock.js": "58614fb7b9da0479951b70848a6f9f41e7f04d8499b74103b6d27ebae223e63b",
+    "dist/utils/composerLock.js": "f5e4c62373c6e47b442f1e277289ae7d9d8a50c7f6adc78eb28f71c20a65d2a5",
+    "dist/utils/composerRelations.js": "525f6e471796075749084422f67a3130c78bca79f454e4e0a252b36852fbe4ac",
+    "dist/utils/composerVersion.js": "f578ffb43882e0ce171dc9c6ebe3f678b0fcbbf366a65c5d9cda8ee06c9e364f",
+    "dist/utils/dependencyRelations.js": "a893ca5cb10646005c9ad53556877df455037ecb43a0fd15bc3362cf016c8f9c",
+    "dist/utils/externalText.js": "a7ffad5460129bd5ee8dcf9506286c41113d46dee51284d177ae40bd356367f5",
+    "dist/utils/gradleCatalogs.js": "c2bccdd9951b4e523020363d0892879f8bbd3e45d3da7015a9ff847de2fcb377",
+    "dist/utils/gradleDeclarations.js": "3cc1783630d384998ea146ed9a3bcca28ea79d239f89115cb4a3d0e8d719cb02",
+    "dist/utils/gradleExportJson.js": "6fedbca4d5c93405ab440262f7e0be689a1678a4d9c6ff05b81e89fd68b2c7a7",
+    "dist/utils/gradleGraph.js": "75fcc02daf11bbfb9e5b7148d62fedc273e0414e717d7c9e3d1cd5c47b4d5bc3",
+    "dist/utils/gradleGraphCache.js": "8c0c9e07224fec0e48ff203530e8b0f529824b394d71f4ff873a02281e434de5",
+    "dist/utils/gradleJson.js": "5937fd6df9c8ee52dbb600f5962771adff4630748489f8fd20e242e6c25ecaa5",
+    "dist/utils/gradleOrigins.js": "db5e705e48224ad0d60585c8f1f355b12aec42e81046eb615fb7f22c1b13cf54",
+    "dist/utils/gradleOwnedAnchorOwner.js": "2dd16b5d0de3d9d577af436fad074d3b80b6e679eb5e4c5535bf05b1f5e52958",
+    "dist/utils/gradleOwnedAuthorityClock.js": "a76e20c1df55d698428e99ef6e122471d6c80917b9109311f8e88227363dba40",
+    "dist/utils/gradleOwnedAuthorityOwner.js": "f09735b9219ef033178dea96ce1d29392da95eddf786b87f884488a997f92682",
+    "dist/utils/gradleOwnedAuthorityOwnerClient.js": "d803b414370f6f5153a2c4c2ec5aafbe7e52869414719643d625ba20de74c22e",
+    "dist/utils/gradleOwnedAuthorityOwnerSchema.js": "add028db9754ba4aee3fbd6744b4fe8cdece9bf11a10b81be77e97a575ff18dd",
+    "dist/utils/gradleOwnedAuthoritySchema.js": "b1001723e6d976bafa2c1f54c10e4babc14d7fc9fbf5e968d21a4ef2406a9bb3",
+    "dist/utils/gradleOwnedAuthoritySnapshot.js": "03ff1752cba0ff8d44d5c8389a87c4b8fce6652c7c3b46f6719e3ded48f9503e",
+    "dist/utils/gradleOwnedBusinessOutcome.js": "01312e0c3ff4e523b1a91f73754baa2d9cb9994edbf1b113c6d64f910ff64652",
+    "dist/utils/gradleOwnedConsumerBridge.js": "c467030baf853cc17bfc56defd44aac4f0866123b59ba3c9d7423ff11655288f",
+    "dist/utils/gradleOwnedConsumerClient.js": "4c55b1e84fb77004df1935014c63729e02a3be80a8e5fedfef896bdc7c0b0d2d",
+    "dist/utils/gradleOwnedCurrentAuxiliary.js": "2ddf94c0ced905a510b00b2ac329cc96de7898c9e25cc0db037611032e9f9511",
+    "dist/utils/gradleOwnedCurrentBridge.js": "00eb2c23f4d6f510c64a47ed1ba39ab0c30532bc4dff7408f8619fdd03b17395",
+    "dist/utils/gradleOwnedCurrentClient.js": "3a4ae57537d822e4adc2206d301da4cc3f208213c88fcdb42f7dd6f4e5b14a66",
+    "dist/utils/gradleOwnedCurrentSchema.js": "260ae972c1bd11cb812db1a4c1102d8e8675c817fdfb088acd85205b1fa5d16a",
+    "dist/utils/gradleOwnedDeliverySchema.js": "24552d3524241b8c6e5d29bf422e619ebf5e9ec9a62f9ea6a644c48f41048eb1",
+    "dist/utils/gradleOwnedExecution.js": "1a157fc060872358819d9a1e2be90299f6e4216100b6fbe791dd6785fab939f0",
+    "dist/utils/gradleOwnedJournalV2.js": "3e530bcc6a93760aaef01f6fd3eaed4babfdcc2bdca0e4eceb28e10536039eb0",
+    "dist/utils/gradleOwnedJson.js": "98fd09a9e7cb12f86d169610a80597de34bdf10227ac3f482d0a924357f54173",
+    "dist/utils/gradleOwnedManifest.js": "19027305dcf006f31632c7fcc768905d9008cc5d52783645948a207adb05d21c",
+    "dist/utils/gradleOwnedP0Backend.js": "8428a19317e92d33e1ff84dd8031fce5aeabbd840534a6a2e2665ef5a7f22492",
+    "dist/utils/gradleOwnedP0Contract.js": "e2e835c9d7440fc71a17a77aed9a77689b1b36430c3e66b1d358d7561f5f55cd",
+    "dist/utils/gradleOwnedP0Runner.js": "2acb81486323d6515617735ce14066325c2e93bec0fb3278d48e6c1ddf0b95a1",
+    "dist/utils/gradleOwnedP0Socket.js": "06cf0369a69aee361d022a92bc8c9222242daafdf2c8831b52e2d29050f87a74",
+    "dist/utils/gradleOwnedP0StateCodec.js": "0232fb26caa15cc23a441a7d9af5ea90d6836065ceec6d2fb84469a4f35419e6",
+    "dist/utils/gradleOwnedP0StateContract.js": "383e7ea95f986d6d749e745ba4a6dc0f416161892cfed1f4be67cc430ea320a5",
+    "dist/utils/gradleOwnedP0StateGraph.js": "53da743184d5a702acb4e8dd565eb56a0f4e80a71ce2c190a2287d63ae653e6e",
+    "dist/utils/gradleOwnedP0StateMachine.js": "2fb5938ebba50772dfd0564e48134cec0b53374bd79ada39b058aee6b88a2ca6",
+    "dist/utils/gradleOwnedP1Contract.js": "58018fcb04508bd797e4d2a70fad3a99c6d1a6f6a4a7f25113aad38a8d6a49d2",
+    "dist/utils/gradleOwnedP1Store.js": "b72babdb4213b61fb17a73595e288a02cb9ccdb3914d3840b8cf566836355dbe",
+    "dist/utils/gradleOwnedPolicy.js": "1959d7c886ffef4b22e5672c65317852eb8399625910878c1ec9fd5fa2a1cfb9",
+    "dist/utils/gradleOwnedReadPlan.js": "2a29073a4efd140648584f2d0bf64074639c6c16ca430f73a9cac2595ddba24d",
+    "dist/utils/gradleOwnedRecovery.js": "d4c88801711836f9c5a9c373d3578cca557f23345fd61cc1151e1d998ce0c46f",
+    "dist/utils/gradleOwnedRecoverySchema.js": "f6eb2b28fc9a49ab76425b6ae4951eb3bd4b6b546f9075356b973dd95f0a3501",
+    "dist/utils/gradleOwnedRegistryOwner.js": "4925f1a6cf5b47aaec41cafd32c8c0c1f681d2531e53d0cc719763f0218b0f1f",
+    "dist/utils/gradleOwnedRegistrySchema.js": "345487f70234fb0e0f08bfaa60e246a894567349abfe65832f9bb8b5cde95a01",
+    "dist/utils/gradleOwnedRoleSigner.js": "b458a5c70923a56d2216c29d7291ce3f31cc6acaae7ec02b61e598fcb88c533c",
+    "dist/utils/gradleOwnedSchema.js": "212b7143af0d5efef5b369935803058baf5e291f6156ec220c567cc2743b91b7",
+    "dist/utils/gradleOwnedServiceBudget.js": "9ba2fc865aece094107bba544d79fa302b17f889f1010d833f0f1fe30cd86792",
+    "dist/utils/gradleOwnedServiceDrain.js": "70e743d63dcf07db6c5b60ff0809d6ac54fe0e0058055cc2d986e47fb86c06db",
+    "dist/utils/gradleOwnedServiceOwners.js": "85e16f788b3c8cfc35039dd4ff4b8955ccdf3489dd9db0268e251961b88fed51",
+    "dist/utils/gradleOwnedServiceSession.js": "2514ccc1490c8648d1fc2b18b826c9365e0ffe5304819ea7d0cd28f9676d65bf",
+    "dist/utils/gradleOwnedServiceStages.js": "e966d656743a4441a56b39ca402121e6c15b5cf910da30e404d258cb0485abd0",
+    "dist/utils/gradleOwnedSessionRuntime.js": "0be0dd35c590e03f489501456be65529aa44689b3803227dc468de23321c3e98",
+    "dist/utils/gradleOwnedSourceClient.js": "7a52522baaff058643a10a43457a4d27566499ca7db1789d54ec89b77e7b8adf",
+    "dist/utils/gradleOwnedSourceOwner.js": "151f2c9552be313d8365b9e63316ff2973940e9b336169586dd8583d06f097df",
+    "dist/utils/gradleOwnedSourceSchema.js": "910b5a517398d7f0114f5a557f90b8894cd666e015fab99828c71660c6f39c94",
+    "dist/utils/gradleOwnedStageStore.js": "4be8571bb0979f0340a9994703d6b10c24ea3f8b6a5d0999bb1477de8981e5c9",
+    "dist/utils/gradleOwnedStoreCheckpoint.js": "66af67d1321980bec0ca18d6872a0cdced88af681564acea30b9c6eb3e3c887f",
+    "dist/utils/gradleOwnedStoreDisk.js": "afeeddb214ed4bae8e690bf00ae47e1054c0486d09a602d1fe0bf121adf3f68b",
+    "dist/utils/gradleOwnedStoreFs.js": "5c9ea8e3e3e00ad3d557ef48777af2ae52cdf872fa7b1ed823153238de778d91",
+    "dist/utils/gradleOwnedStoreJournal.js": "d678a3d2c7d65bbab79c94ea52149ebcdee560e012072f4ad77085f20e0711ec",
+    "dist/utils/gradlePluginJar.js": "b8a5ba57fc8ff304d615223b022550049fd4744560f328666d8a2a6a9d3060d0",
+    "dist/utils/gradlePluginSnapshots.js": "733ab10d103bbd1a968e2e6c8e4e4862e218de6d66bbd43d3c0f7ad384ca9a50",
+    "dist/utils/gradlePlugins.js": "94973d7f3dc2185de1564cdd95ab7e18898cf136060f1638c0ad36b7f09279d7",
+    "dist/utils/manifestDetector.js": "6561e7a1eac69b008a8d15a382e29ee2519ea56727ae6fd8a7b7ed121233ba3c",
+    "dist/utils/manifestFormats.js": "dd9e7fc8c98d92c7815e5f994d6e73eca127fe9f695abbed4663cd51979e7b86",
+    "dist/utils/mavenVersion.js": "bad9a7eaa81d53f03dac858681656da37a144376e3e6be6a808bb1263edb6bd2",
+    "dist/utils/npmLockCopy.js": "05114074150692780d50c686399c2dc151b8412d1447fc0f73a8513e5978081c",
+    "dist/utils/nugetDependencyGraph.js": "a1f019ffba781375af2597745ed06a344e08b2102c0aae8b2b7fda9103525c91",
+    "dist/utils/nugetFiles.js": "8a580fbc0023969cfd2fdbf32309df30f8f5e251355f580cdd90eed2b88c1bbd",
+    "dist/utils/nugetProject.js": "25cf7feda117ab166ce48c6e8236bc6ca0532fba70181cd6a9cecea96ce8e41b",
+    "dist/utils/nugetVersion.js": "c9d10d792484e79d89c96d294f4a59e8319490d0d418e99090f732ca8e9c2a02",
+    "dist/utils/openedFilePath.js": "39ddff9bd4bd12122338624781811c061144e99fd66edd6fd4c9f0d223856796",
+    "dist/utils/pdmLock.js": "9fb573d2629eda0ce1692597d8ea35aa9ab4dc5f826284ed8cc8f788842200d3",
+    "dist/utils/pdmLockCache.js": "62e9e5bef6cb1c5ff167e72751f5bb8fdecc971cbb872f0a838d4eb0d93b45f2",
+    "dist/utils/pep440Version.js": "9bdabed55753575e9c1279d5010a6a5a7663d5d71dea32936faffeb356e794d2",
+    "dist/utils/permissionCheck.js": "3b6dde01a5e7614546b814abaa1ce23b69cf4afe18d6f74abbc39de0ce50db37",
+    "dist/utils/pipenvLock.js": "f5260f69f53a6e9f61c87ffe340f0d6a92cbf282ddfd00a9273845282fd48863",
+    "dist/utils/pipenvLockCache.js": "ea3df23492d541774406d9bbc08f2b8788879282e4b436894a120fba27e30a63",
+    "dist/utils/pnpmLockCache.js": "34b05e482cf4e029f7dec6faa15231fd2ab499b063d085df32768473701c769a",
+    "dist/utils/pnpmRelations.js": "ff58aab50afaff1b7080ba6b71be51036eb916b4badc6207151cdc22912edc7c",
+    "dist/utils/poetryLock.js": "db640a6588731ed26164c474165beebe72a038a96a5ca17f34e5494aaa8e4a7f",
+    "dist/utils/poetryLockCache.js": "183b25f254814a4ba8878288caed9a37f2db834730e9f89dfa02f262f6f896c6",
+    "dist/utils/pomParent.js": "8b3d0193d86681b02aedfd13d8f3d0361de9b81c95748de57bacf5fee0ca71ba",
+    "dist/utils/processCleanup.js": "69da1146584c89c203080c99451a679da1e752744f3aed749e9d6877988059b2",
+    "dist/utils/projectDetector.js": "57e1d8f9562b51483d091cfd31064295d72d7ef1da95da228c467f8fa4774bcf",
+    "dist/utils/projectWalk.js": "1f0b7ca98a8b7b32682f42602dd46caa4a87551bca0f38b3fc2b56e78c09a109",
+    "dist/utils/readResponseBytes.js": "212bf2e4f6635ea8803331f9033a3ebd488c353334877b7aacb548fe22ce9359",
+    "dist/utils/requirementsFile.js": "598cc5ad496fbd59b351b24d76e10a45e28fa0b222162fb2f1c7a9954b2ead2b",
+    "dist/utils/safeRead.js": "97dbc8599d2e8aef5dadf8c2b24eb8a0bf650f91afb11382ac190dc6358e4952",
+    "dist/utils/sbomInput.js": "bc6b23948663b1515902b59fd7d262a5e4b195a1cd95e6fb75e5986e7f2a780b",
+    "dist/utils/scanSnapshot.js": "7dc47563e1dc0e58f3be4c500a4627887c528bffbd5ec60bd2d987933ac9aa1f",
+    "dist/utils/semverVersion.js": "ce8baa456a1c0972452c25840960e548bc6b9c660ca7eb940fe2c6bc2ae88abe",
+    "dist/utils/startupConfig.js": "462bb6a342a0a1139ea562c17fbac2e1f5aedb3b3601f6680b5fa382766b7f2e",
+    "dist/utils/unknownJson.js": "8d8a9dc836c3fb757d0d166625649515ba158da62d1a317482d2fb15785f1a82",
+    "dist/utils/uvLock.js": "552e13cf4c94b5daa38e98f536ba50953b64077310ee07defaa3082059f57122",
+    "dist/utils/uvLockCache.js": "57a154a609bb9ed0916821ef4c7a8d67d0d4beb85da8ba7a695f719f7174e4e2",
+    "dist/utils/yarnLock.js": "4ceb322072712bb8d75cf7ef78469ada9a5d9bdbd860e5c2760519adc9766d54",
+    "dist/utils/yarnLockCache.js": "7ca4c25fa22b6dc915dac4fc18ade9be6baf240635e01e7b1782b2d9dfc5ee8b"
+  },
+  "regressions": {
+    "passed": 757,
+    "failed": 0,
+    "skipped": 0,
+    "files": 36,
+    "report_sha256": "caa57fc66bf884ccfe9f740957b392d896f354e2ef1856dad1bfc997fbf8c65b",
+    "harness_cases": [
+      {
+        "name": "accepts consistent scan, fix, native affected/clean and direct-alias explanation evidence",
+        "status": "passed"
+      },
+      {
+        "name": "rejects digest changes in DB metadata",
+        "status": "passed"
+      },
+      {
+        "name": "rejects ecosystem changes in DB metadata",
+        "status": "passed"
+      },
+      {
+        "name": "rejects network changes in DB metadata",
+        "status": "passed"
+      },
+      {
+        "name": "rejects timestamp changes in DB metadata",
+        "status": "passed"
+      },
+      {
+        "name": "rejects incomplete/misidentified scan evidence (name)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects incomplete/misidentified scan evidence (version)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects incomplete/misidentified scan evidence (count)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects incomplete/misidentified scan evidence (duplicate)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects incomplete/misidentified scan evidence (known-id)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects incomplete/misidentified scan evidence (resolution)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects incomplete/misidentified scan evidence (warning)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects unsupported fix claims (disabled)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects unsupported fix claims (online)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects unsupported fix claims (unverified)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects unsupported fix claims (same-version)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects unsupported fix claims (missing-target)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects unsupported fix claims (duplicate-target)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects unsupported fix claims (affected)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects unsupported fix claims (no-warning)",
+        "status": "passed"
+      },
+      {
+        "name": "requires exact initial records and an empty recommended-version native result (missing)",
+        "status": "passed"
+      },
+      {
+        "name": "requires exact initial records and an empty recommended-version native result (duplicate)",
+        "status": "passed"
+      },
+      {
+        "name": "requires exact initial records and an empty recommended-version native result (wrong-package)",
+        "status": "passed"
+      },
+      {
+        "name": "requires exact initial records and an empty recommended-version native result (still-affected)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong explanation content or match evidence (id)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong explanation content or match evidence (alias)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong explanation content or match evidence (details)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong explanation content or match evidence (matched-by)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong explanation content or match evidence (missing-match)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong explanation content or match evidence (duplicate-match)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong explanation content or match evidence (related-record)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong explanation content or match evidence (package)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects wrong explanation content or match evidence (references)",
+        "status": "passed"
+      },
+      {
+        "name": "accepts capacity observations exactly at the real limits",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (zip_bytes/negative)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (zip_bytes/over-limit)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (zip_bytes/nonfinite)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (cache_bytes/negative)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (cache_bytes/over-limit)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (cache_bytes/nonfinite)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (cache_objects/negative)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (cache_objects/over-limit)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (cache_objects/nonfinite)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (entries/negative)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (entries/over-limit)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (entries/nonfinite)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (expanded_bytes/negative)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (expanded_bytes/over-limit)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (expanded_bytes/nonfinite)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (maximum_record_bytes/negative)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (maximum_record_bytes/over-limit)",
+        "status": "passed"
+      },
+      {
+        "name": "rejects invalid capacity observations (maximum_record_bytes/nonfinite)",
+        "status": "passed"
+      },
+      {
+        "name": "does not count unrelated errors as cache refusal (success)",
+        "status": "passed"
+      },
+      {
+        "name": "does not count unrelated errors as cache refusal (wrong-kind)",
+        "status": "passed"
+      },
+      {
+        "name": "does not count unrelated errors as cache refusal (wrong-reason)",
+        "status": "passed"
+      }
+    ]
+  }
+}
