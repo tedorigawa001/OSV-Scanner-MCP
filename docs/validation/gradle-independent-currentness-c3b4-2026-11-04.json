@@ -30,8 +30,8 @@
     }
   ],
   "sourceSha256": {
-    "package-lock.json": "856b21b437fdc86c4a2d0662302f103a0907d9f0ad50450cbcd35d56437d2894",
-    "package.json": "22bdd4726690e1b0bea9d8e42b2ff27f13a8fd5096c0e351cf8223469b48a1a9",
+    "package-lock.json": "b7b1617d87e83c5975c46491778e544f2d7633ad64725fc7594227e5bbf07953",
+    "package.json": "9e5f3edc165be9bc5ccd70db2ef9c83d9cae2cd6d39b7e99e4f218763421c9b0",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_authority_child.mjs": "f389c8d8c7b441c71610ff52622885ff2ac9f0bc2542bce86d878482cc3621bd",
     "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
@@ -523,34 +523,67 @@
     ],
     "sourceFingerprintCount": 78
   },
-  "dependencyRemeasurement": {
-    "date": "2026-11-18",
-    "scope": "same recorded local-process scenarios rerun by this test after dependency/version changes to package.json and package-lock.json only; observations must still match and every other source fingerprint is unchanged",
-    "fromCommit": "15448858769b87bb61833bf8d78b74258142eb19",
-    "toCommit": "789d7c2fb3674a6aa230e054e97d2febe3605980",
-    "changedSources": [
-      "package-lock.json",
-      "package.json"
-    ],
-    "previousSourceSha256": {
-      "package-lock.json": "77c7e48101598ea9e662974676b7d04acb8d65d09832f9c0f7dff5c2856c78d7",
-      "package.json": "716d0b74f1b14b211f6add3b22272e16fe64e701e6e6b28fd2a656b75692e69a"
-    },
-    "sourceFingerprintCount": 78,
-    "result": {
-      "command": "OSV_REALTIME_PROCESS=1 npm run test:research -- --project real-time-process",
-      "runtime": {
-        "node": "v26.12.1",
-        "platform": "darwin",
-        "arch": "arm64"
+  "dependencyRemeasurements": [
+    {
+      "date": "2026-11-18",
+      "scope": "same recorded local-process scenarios rerun by this test after dependency/version changes to package.json and package-lock.json only; observations must still match and every other source fingerprint is unchanged",
+      "fromCommit": "15448858769b87bb61833bf8d78b74258142eb19",
+      "toCommit": "789d7c2fb3674a6aa230e054e97d2febe3605980",
+      "changedSources": [
+        "package-lock.json",
+        "package.json"
+      ],
+      "previousSourceSha256": {
+        "package-lock.json": "77c7e48101598ea9e662974676b7d04acb8d65d09832f9c0f7dff5c2856c78d7",
+        "package.json": "716d0b74f1b14b211f6add3b22272e16fe64e701e6e6b28fd2a656b75692e69a"
       },
-      "runs": 3,
-      "testFiles": 3,
-      "testsPassedPerRun": 8,
-      "failed": 0,
-      "observationsMatched": true,
-      "sourceFingerprintsMatched": true,
-      "note": "Before this update the same command already matched the recorded observations and failed only at the package-lock.json fingerprint. Recorded process observations are unchanged; all adoption flags remain false."
+      "sourceFingerprintCount": 78,
+      "result": {
+        "command": "OSV_REALTIME_PROCESS=1 npm run test:research -- --project real-time-process",
+        "runtime": {
+          "node": "v26.12.1",
+          "platform": "darwin",
+          "arch": "arm64"
+        },
+        "runs": 3,
+        "testFiles": 3,
+        "testsPassedPerRun": 8,
+        "failed": 0,
+        "observationsMatched": true,
+        "sourceFingerprintsMatched": true,
+        "note": "Before this update the same command already matched the recorded observations and failed only at the package-lock.json fingerprint. Recorded process observations are unchanged; all adoption flags remain false."
+      }
+    },
+    {
+      "date": "2026-11-18",
+      "scope": "same recorded local-process scenarios rerun by this test after dependency/version changes to package.json and package-lock.json only; observations must still match and every other source fingerprint is unchanged",
+      "fromCommit": "2f1caa7922a29e3ad4075e264cc70a9ae7243ca1",
+      "toCommit": "7a1f8724cd49f139063389a51333878b28f67f69",
+      "changedSources": [
+        "package-lock.json",
+        "package.json"
+      ],
+      "previousSourceSha256": {
+        "package-lock.json": "856b21b437fdc86c4a2d0662302f103a0907d9f0ad50450cbcd35d56437d2894",
+        "package.json": "22bdd4726690e1b0bea9d8e42b2ff27f13a8fd5096c0e351cf8223469b48a1a9"
+      },
+      "sourceFingerprintCount": 78,
+      "reason": "v0.24.0 version bump",
+      "result": {
+        "command": "OSV_REALTIME_PROCESS=1 npm run test:research -- --project real-time-process",
+        "runtime": {
+          "node": "v26.12.1",
+          "platform": "darwin",
+          "arch": "arm64"
+        },
+        "runs": 3,
+        "testFiles": 3,
+        "testsPassedPerRun": 8,
+        "failed": 0,
+        "observationsMatched": true,
+        "sourceFingerprintsMatched": true,
+        "note": "Before this update the same command already matched the recorded observations and failed only at the package-lock.json fingerprint. Recorded process observations are unchanged; all adoption flags remain false."
+      }
     }
-  }
+  ]
 }

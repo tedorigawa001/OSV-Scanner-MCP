@@ -192,7 +192,7 @@ MCPサーバーは「外部プロセス実行」「ファイルシステムア�
 
 ### 運用面
 - [x] 依存パッケージの自動更新(Dependabot等)をリポジトリに設定 → `.github/dependabot.yml`(npm週次、devDependenciesはグループ化)(2026-07-04)。OSV-Scannerのピン留めバージョンは対象外のため手動更新(binaryDownloader.tsのコメントに手順記載)
-- [x] リアルタイム診断記録の依存更新後の再測定（2026-11-18）：CIの`Real-time process diagnostics`がC3b-3／C3b-4記録の`package.json`／`package-lock.json`の指紋不一致だけで失敗していた（記録された過程観測は一致）。指紋を現行へ更新し、旧値は各記録の`dependencyRemeasurement.previousSourceSha256`へ保持（既存の`before*`互換記録は変更しない）。更新後に`OSV_REALTIME_PROCESS=1`で同project（3 file／8 test）をmacOS arm64・Node 26.12.1で3回実行し全件通過。過程観測・他の全source指紋・採用flagは不変。同じ旧lockfile指紋を持つ他の研究記録は対象外。
+- [x] リアルタイム診断記録の依存更新後の再測定（2026-11-18）：CIの`Real-time process diagnostics`がC3b-3／C3b-4記録の`package.json`／`package-lock.json`の指紋不一致だけで失敗していた（記録された過程観測は一致）。指紋を現行へ更新し、旧値は各記録の`dependencyRemeasurements[].previousSourceSha256`へ保持（既存の`before*`互換記録は変更しない）。更新後に`OSV_REALTIME_PROCESS=1`で同project（3 file／8 test）をmacOS arm64・Node 26.12.1で3回実行し全件通過。過程観測・他の全source指紋・採用flagは不変。同じ旧lockfile指紋を持つ他の研究記録は対象外。v0.24.0の版上げ後も同じ手順で再測定し（同環境で3回・8 test全件通過）、記録は`dependencyRemeasurements`の配列に2件目として追記した。
 - [ ] 自己スキャンの期限付き除外を解消（2026-11-18登録、期限2026-12-18）：CIのOSV-Scannerが開発用依存picomatch 4.0.7（vitest経由）のGHSA-fc5q-39xc-vjpf（CVE-2026-112366、ReDoS、High）で失敗。修正版が未公開（最新4.0.7）で、配布物（dist）に含まれず、globパターンはリポジトリ内のテスト設定のみが与えるため、ルートの`osv-scanner.toml`で理由と期限付きで除外した。期限切れ後は自動で再検出される（期限切れ設定で検出失敗に戻ることを確認）。修正版が出たら更新して除外を削除する。CIの判定基準（fail-on-vuln）自体は変更しない。
 - [x] 脆弱性報告用の`SECURITY.md`を早期に用意 → 作成済み(2026-07-04)。GitHubプライベート脆弱性報告(Security Advisories)を窓口とする。(設定有効化済み)
 
