@@ -4,6 +4,8 @@ Offline mode supports local-database scanning, upgrade suggestions, candidate-ve
 
 For installation from a packed artifact with pre-provisioned dependencies/scanner, minimum Node 22.13.0 and representative Node 24/26 validation, see [offline package installation](OFFLINE_PACKAGE_VALIDATION.md). That separate run blocks the original checkout/cache/runtime inputs as well as the network.
 
+The complete npm DB now has a separate [network-denied native validation](OFFLINE_NPM_VALIDATION.md), including actual candidate reselection, ID/alias details, capacity checks and source-bound evidence. It supplements the earlier direct npm measurement below.
+
 ## Reproduction
 
 Build the checkout and prepare a complete database on a connected machine:
@@ -122,6 +124,8 @@ Four records carried aliases that are not OSV IDs: `SNYK-JS-YARN-537806,` and `S
 
 With the correction, against the same npm DB on macOS arm64 (Node 26.12.1): `GHSA-35jh-r3h4-6jhm` matched by ID, `CVE-2021-23337` matched the same GHSA by alias, and `CVE-2999-999999` returned `vulnerability_not_found`. Each lookup took about **24 seconds**, with a peak resident set of about 325 MB for the measuring process. Every lookup reads every prepared DB, so this cost applies to any requested ID once npm is prepared. This was a direct measurement without OS network denial and is not a source-bound validation record; the earlier explanation and Maven records still bind the previous lookup source.
 
+The later [formal npm run](OFFLINE_NPM_VALIDATION.md) re-downloads the same complete DB bytes, then verifies the corrected reader and native scanner under OS network denial. Its own record binds current sources/artifacts and does not turn this earlier diagnostic RSS/time measurement into a memory bound or benchmark.
+
 ### Explanation review corrections (2026-11-18)
 
 The earlier conflict check only hashed copies that matched the query. Removing or replacing the queried alias in one copy therefore hid conflicting content, although a canonical-ID query refused it. Four new tests cover alias removal/replacement in both DB orders; one control preserves successful lookups/local misses when only an unrelated ID conflicts. Every record now contributes its full canonical digest before query filtering, and a conflict of any matched canonical ID refuses the result independently of copy order.
@@ -236,4 +240,4 @@ The original native record predates collection and binds its own source hashes. 
 
 - Optional lookup indexing/performance improvements while preserving private snapshots, freshness, full-match handling and explicit incomplete-search errors.
 - Commit-level matching, if supported by an independently selected native implementation.
-- Additional native ecosystem/platform fixtures beyond the recorded Go/Maven cases, and cache storage administration.
+- Additional native ecosystem/platform fixtures beyond the recorded Go/Maven/npm cases, and cache storage administration.
