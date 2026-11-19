@@ -1,11 +1,2 @@
 # OSV-Scanner configuration for this repository's own dependency scan (CI: --lockfile=package-lock.json).
-# Every exception must name the reason and an expiry date, so the finding returns automatically if it is not resolved.
-
-[[IgnoredVulns]]
-# picomatch ReDoS via single-branch repeated extglobs (CVE-2026-112366). Affects 4.0.7 and earlier; no fixed release
-# exists yet (latest 4.0.7, fix proposed in micromatch/picomatch#194). picomatch 4.0.7 is a development-only dependency
-# reached through vitest/vite/tinyglobby and is not part of the published package (files: dist). Patterns come only from
-# this repository's test configuration, not from external input. Remove this entry once a fixed version can be installed.
-id = "GHSA-fc5q-39xc-vjpf"
-ignoreUntil = 2026-12-18
-reason = "Dev-only picomatch 4.0.7 via vitest; no fixed release yet; glob patterns are repository-controlled"
+# Any future exception must include a reason and an expiry date.
