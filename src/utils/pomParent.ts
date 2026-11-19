@@ -15,6 +15,20 @@
 
 const DEFAULT_RELATIVE_PATH = "../pom.xml";
 
+/**
+ * 前後の空白(スペース・タブ・改行)を除く。正規表現`/^[ \t\n]+|[ \t\n]+$/g`は、末尾側が空白の連続の
+ * 各位置から終端まで照合し直すため、空白の長い連続で処理時間が二乗で増え、イベントループを止めていた
+ * (100 KBで約4秒、上限の10 MiBでは数時間。脆弱性チェックで判明、2026-11-20)
+ */
+function trimXmlSpace(text: string): string {
+  const isSpace = (code: number): boolean => code === 0x20 || code === 0x09 || code === 0x0a;
+  let start = 0;
+  let end = text.length;
+  while (start < end && isSpace(text.charCodeAt(start))) start++;
+  while (end > start && isSpace(text.charCodeAt(end - 1))) end--;
+  return text.slice(start, end);
+}
+
 const NAMED_ENTITIES: Record<string, string> = { lt: "<", gt: ">", amp: "&", apos: "'", quot: '"' };
 
 /** 文字参照の符号位置。Unicodeの範囲外・サロゲートはnull(XMLでも文字ではない) */
@@ -126,7 +140,7 @@ export function parentRelativePath(source: string): string | null | undefined {
   const decoded = decodeEntities(relativeText!);
   // プロパティ参照(${...})は評価できない
   if (decoded === undefined || decoded.includes("${")) return undefined;
-  const trimmed = decoded.replace(/^[ \t\n]+|[ \t\n]+$/g, "");
+  const trimmed = trimXmlSpace(decoded);
   // 制御文字・通常の空白以外の空白・書式文字は、文字の正規化や前後の空白の除去の細部
   // (JSとGoで扱いが異なる)で参照先がずれうるため、解釈できないものとして除外する
   if (/[\p{Cc}\p{Cf}\u0085]|(?! )\p{Z}/u.test(trimmed)) return undefined;

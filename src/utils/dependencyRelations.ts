@@ -311,10 +311,14 @@ export function goModRelations(text: string): RelationLookup {
     let directive: "require" | "replace" | null = block;
     let rest = body;
     if (block === null) {
-      const head = /^(require|replace)\b\s*(.*)$/.exec(body);
+      // `(?=(\s*))\N`は、空白の連続を後戻りしない形で読む(JSにアトミックグループはないため)。
+      // `\s*(.*)$`のままだと、値に単独の`\r`やU+2028/U+2029があると照合の失敗のたびに空白を1文字ずつ戻して
+      // 照合し直し、処理時間が二乗で増えてイベントループを止めていた(脆弱性チェックで判明、2026-11-20)。
+      // 一致する入力と取り出す値は変わらない(空白の後の値に照合を妨げる文字があれば、短い空白でも同じく失敗する)
+      const head = /^(require|replace)\b(?=(\s*))\2(.*)$/.exec(body);
       if (head === null) continue;
       directive = head[1] as "require" | "replace";
-      rest = head[2]!.trim();
+      rest = head[3]!.trim();
       if (rest === "(") { block = directive; continue; }
     }
     const fields = rest.split(/\s+/);

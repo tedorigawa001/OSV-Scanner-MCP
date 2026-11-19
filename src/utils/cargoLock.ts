@@ -72,7 +72,11 @@ export function cargoSourceKind(source: string | null): CargoSourceKind {
   return "registry";
 }
 
-const BARE_KEY = /^([A-Za-z0-9_-]+)\s*=\s*(.*)$/;
+// `(?=(\s*))\N`は、空白の連続を後戻りしない形で読む(JSにアトミックグループはないため)。
+// `\s*(.*)$`のままだと、値に単独の`\r`やU+2028/U+2029があると照合の失敗のたびに空白を1文字ずつ戻して
+// 照合し直し、処理時間が二乗で増えてイベントループを止めていた(脆弱性チェックで判明、2026-11-20)。
+// 一致する入力と取り出す値は変わらない(空白の後の値に照合を妨げる文字があれば、短い空白でも同じく失敗する)
+const BARE_KEY = /^([A-Za-z0-9_-]+)\s*=(?=(\s*))\2(.*)$/;
 
 /**
  * TOMLの基本文字列(`"..."`)を先頭から1つ読む。読めなければnull。
@@ -247,14 +251,14 @@ export function parseCargoLock(text: string, budget = createCargoLockParseBudget
     if (state === "metadata") {
       // v1: "checksum 名前 版 (source)" = "ハッシュ"
       const key = readBasicString(line, 0, budget);
-      const valueMatch = key === null ? null : /^\s*=\s*(.*)$/.exec(line.slice(key.end));
-      if (valueMatch === null || lineString(valueMatch[1]!, false, budget) === null) return fail(lineNo, "an unexpected metadata entry");
+      const valueMatch = key === null ? null : /^\s*=(?=(\s*))\1(.*)$/.exec(line.slice(key.end)); // BARE_KEYの注記を参照
+      if (valueMatch === null || lineString(valueMatch[2]!, false, budget) === null) return fail(lineNo, "an unexpected metadata entry");
       continue;
     }
 
     const match = BARE_KEY.exec(line);
     if (match === null) return fail(lineNo, "an unexpected line");
-    const [, key, valueText] = match as unknown as [string, string, string];
+    const [, key, , valueText] = match as unknown as [string, string, string, string];
 
     if (state === "top") {
       if (key !== "version" || sawTable || !/^\d{1,3}\s*(?:#.*)?$/.test(valueText)) return fail(lineNo, "an unexpected top-level key");
@@ -462,9 +466,9 @@ export function cargoTomlPackageName(text: string): string | null {
       continue;
     }
     if (table !== "package") continue;
-    const match = /^name\s*=\s*(.*)$/.exec(line);
+    const match = /^name\s*=(?=(\s*))\1(.*)$/.exec(line); // BARE_KEYの注記を参照
     if (match) {
-      const value = lineString(match[1]!, false);
+      const value = lineString(match[2]!, false);
       return value !== null && CRATE_NAME.test(value) ? value : null;
     }
   }

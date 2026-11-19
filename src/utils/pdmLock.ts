@@ -47,6 +47,10 @@ const extrasKey = (name: string, extras: readonly string[]) => JSON.stringify([n
 /** A bounded name/extras/marker reader, not a PEP 508 environment or constraint solver. */
 function requirement(raw: unknown, directory: string): Ref {
   if (typeof raw !== "string" || raw.length > 16384) throw Error("invalid PDM requirement");
+  // 改行・単独の`\r`・U+2028/U+2029を含む要求は解釈しない。下の`.`を使う正規表現がそれらで照合に失敗すると
+  // 後戻りを繰り返し、`-e`の形では処理時間が長さの三乗で増えてイベントループを止めていた
+  // (4,000文字で約12秒。脆弱性チェックで判明、2026-11-20)。PDMはこれらの文字を要求に書かない
+  if (/[\n\r\u2028\u2029]/.test(raw)) throw Error("invalid PDM requirement");
   let value = raw;
   if (/^\s*-e\s/.test(value)) {
     // PDM writes editable dev requirements as a URL with an explicit egg identity.

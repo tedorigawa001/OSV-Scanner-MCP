@@ -68,14 +68,20 @@ export function normalizePypiName(name: string): string {
   return name.toLowerCase().replace(/[-_.]+/g, "-");
 }
 
+// 行は`\n`(と直前の`\r`)だけで分けるため、行の途中に単独の`\r`やU+2028/U+2029が残りうる。
+// `.`がそれらに一致しないと、`.*$`の照合が失敗して後戻りを繰り返し、長い行で処理時間が二乗で増えて
+// イベントループを止めていた(100 KBの1行で数秒、上限の1 MiBでは数分。脆弱性チェックで判明、2026-11-20)。
+// `.*`を含む正規表現にはsフラグを付けて、Goの`.`と同じく改行以外のすべての文字に一致させる。
+// それらの文字は版や名前の検証(SPEC・SAFE_VERSION等)を通らないため、コピーには書かれない
+
 // osv-scannerは`-`の後の空白も許して取り込みとみなすため、こちらも空白を許して認識する
-const INCLUDE_REQUIREMENT = /^(?:-\s*r|--\s*requirement)(?:\s*=\s*|\s*)(\S.*)$/;
-const INCLUDE_CONSTRAINT = /^(?:-\s*c|--\s*constraint)(?:\s*=\s*|\s*)(\S.*)$/;
+const INCLUDE_REQUIREMENT = /^(?:-\s*r|--\s*requirement)(?:\s*=\s*|\s*)(\S.*)$/s;
+const INCLUDE_CONSTRAINT = /^(?:-\s*c|--\s*constraint)(?:\s*=\s*|\s*)(\S.*)$/s;
 const EDITABLE = /^(?:-\s*e|--\s*editable)(?:\s|=|$)/;
 /** 依存の解決先や取得方法に関するオプション。スキャン対象には影響しない(deps.devモードでは接続しない) */
 const HARMLESS_OPTION = /^(?:-i|--index-url|--extra-index-url|-f|--find-links|--trusted-host|--pre|--no-binary|--only-binary|--prefer-binary|--require-hashes|--no-index|--use-feature)(?:\s|=|$)/;
 const URL_SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
-const NAME_AND_SPEC = /^([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)\s*(?:\[[^\]]*\])?\s*(.*)$/;
+const NAME_AND_SPEC = /^([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)\s*(?:\[[^\]]*\])?\s*(.*)$/s;
 const SPEC = /^(===|==|~=|!=|>=|<=|>|<)\s*([^\s,]+)$/;
 /** コピーに書く版。想定外の文字を含む版は書かない(解釈のずれを持ち込まない) */
 const SAFE_VERSION = /^[A-Za-z0-9][A-Za-z0-9._+!-]*$/;
@@ -101,7 +107,7 @@ function logicalLines(text: string): { line: number; content: string }[] {
 
   function flush(): void {
     // 行頭または空白の後の#以降はコメント(URL内の#egg=等は残る)
-    const content = buffer.replace(/(^|\s)#.*$/, "").trim();
+    const content = buffer.replace(/(^|\s)#.*$/s, "").trim();
     if (content !== "") result.push({ line: start, content });
     buffer = "";
   }
@@ -121,7 +127,7 @@ function classifyRequirement(file: string, line: number, content: string, out: C
   };
   // 環境マーカーと行末のオプション(--hash等)を除く
   const withoutMarker = content.split(";")[0]!;
-  const requirement = withoutMarker.replace(/\s--?[A-Za-z].*$/, "").trim();
+  const requirement = withoutMarker.replace(/\s--?[A-Za-z].*$/s, "").trim();
   if (/\s@\s/.test(requirement) || URL_SCHEME.test(requirement) || /^[./~]/.test(requirement) || requirement.includes("/")) {
     reference("Dependencies given as URLs or paths are not scanned");
     return;

@@ -51,16 +51,19 @@ function classic(source: string, tick: () => void): Map<string, Record<string, u
       continue;
     }
     if (!current) return null;
-    const match = /^( {2}| {4})("(?:[^"\\]|\\.)*"|[^\s:]+)(?::|\s+(.*))$/.exec(line);
+    // `(?=(\s+))\3`は、空白の連続を後戻りしない形で読む(JSにアトミックグループはないため)。`\s+(.*)$`のままだと、
+    // 値に単独の`\r`やU+2028/U+2029があると空白を1文字ずつ戻して照合し直し、処理時間が二乗で増えていた
+    // (脆弱性チェックで判明、2026-11-20)。一致する入力と取り出す値は変わらない
+    const match = /^( {2}| {4})("(?:[^"\\]|\\.)*"|[^\s:]+)(?::|(?=(\s+))\3(.*))$/.exec(line);
     if (!match) return null;
     const name = scalar(match[2]!);
     const container = match[1]!.length === 2 ? current : nested;
     if (!container || Object.hasOwn(container, name)) return null;
-    if (match[3] === undefined) {
+    if (match[4] === undefined) {
       if (match[1]!.length !== 2) return null;
       nested = Object.create(null) as Record<string, unknown>; current[name] = nested;
     } else {
-      container[name] = scalar(match[3]);
+      container[name] = scalar(match[4]);
       if (match[1]!.length === 2) nested = null;
     }
   }
