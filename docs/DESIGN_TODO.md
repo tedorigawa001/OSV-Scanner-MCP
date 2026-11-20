@@ -1490,7 +1490,7 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - **PATHの相対パスの要素**: `osv-scanner`をPATHから探す際、相対パスの要素(`.`等)はサーバーの作業ディレクトリ次第で別の場所を指すため探さない
 - **CIのActions**: 書き換えられるタグではなくコミットのSHAで固定した(`actions/checkout`・`actions/setup-node` v4.4.0、`google/osv-scanner-action` v2.3.8)。更新を受け取るため、Dependabotに`github-actions`を追加
 - テスト: `src/test/utils/projectWalk.test.ts`(読めないディレクトリはroot・Windowsでは省略)、`src/test/osv/adversarialAdvisory.test.ts`、PATHの相対パスの要素(`runner.test.ts`)
-- `projectWalk.ts`・`externalText.ts`は、CIのリアルタイム診断の記録(c3b3/c3b4)が内容のハッシュを固定しているため、このコミットの後に再測定が必要
+- Gradleの実時間診断を修正後の `8f29513` で再測定(2026-11-20)。C3b-3/C3b-4の両記録で `externalText.ts`・`projectWalk.ts` のSHA-256を更新し、旧値と検証結果を `sourceRemeasurements` に追記した。更新前は同じ2つの指紋だけが不一致で、記録した観測結果は一致していた。macOS arm64・Node v26.12.1で3回実行し、3ファイル・8件すべて通過
 
 ## Gradle依存関係対応の実装方式設計(2026-10-31)
 

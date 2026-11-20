@@ -54,7 +54,7 @@
     "src/test/utils/gradleOwnedSourceProcess.test.ts": "327f7962bf9e5994e570c488db47e15f0fe5577c3ad045f9433c887a97b3fb12",
     "src/utils/cargoLock.ts": "9f59bcf078752f5ad59bc4cdc48d61488f8e3c7b474ab70534452ded77fc5d5c",
     "src/utils/dependencyRelations.ts": "64e36daf1cb857b90d0bc44e3126edc35f715ff05525debf3a87703e0701eb6c",
-    "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
+    "src/utils/externalText.ts": "ca699e70bb8441d98a606615eb29c2e45d9c3ef8bf0bc94b220dcca8fc0d169a",
     "src/utils/gradleCatalogs.ts": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b",
     "src/utils/gradleDeclarations.ts": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be",
     "src/utils/gradleExportJson.ts": "0fea68255a7dbabe559f1ee35bfcc156a565519c63ca16bb92614e1c866422fe",
@@ -99,7 +99,7 @@
     "src/utils/gradlePluginSnapshots.ts": "2c0ce15f1c90e6c11916d2a8107c2d1c761719543932a0aeef722cfeb4acf2c1",
     "src/utils/gradlePlugins.ts": "582f72462c13927e7284e1c7ca70681f4e455e469596020cd4e8bc5e9ec637af",
     "src/utils/openedFilePath.ts": "963ac04f6eb3744af00771feaaf054c08ca8b2dcc7d2846507525394d3fdff8f",
-    "src/utils/projectWalk.ts": "5ff06d6df2c601017928d26709d6f4bf3ea9d9ff6813e627cfec82d010d9e316",
+    "src/utils/projectWalk.ts": "822292659d2085fef794f97b75db90e3e187166f776eb2d6e8709ac11feea314",
     "src/utils/safeRead.ts": "fbe2864cf3862cf4b53c3eccd285a4f0a18291733dc68c72ee8e798b54817054",
     "tsconfig.build.json": "49e7f5e2be44cc034bf5ef401064bf3b1588070e80aacfe1e1c8dde541c3117f",
     "tsconfig.json": "7375ac5d334f50eed3d766799fd016e068f1998639c7b02ba201db280a1583c3"
@@ -603,6 +603,35 @@
           "arch": "arm64"
         },
         "runs": 1,
+        "testFiles": 3,
+        "testsPassedPerRun": 8,
+        "failed": 0,
+        "observationsMatched": true,
+        "sourceFingerprintsMatched": true
+      }
+    },
+    {
+      "date": "2026-11-20",
+      "scope": "Rerun the recorded local-process scenarios and verify the current source closure after the low-severity security fixes.",
+      "fromCommit": "a1ed97846b4549633f3adf9739053da7187b03c6",
+      "toCommit": "8f29513a6f505bc74ad49118a4e19b711d1c4481",
+      "changedSources": [
+        "src/utils/externalText.ts",
+        "src/utils/projectWalk.ts"
+      ],
+      "previousSourceSha256": {
+        "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
+        "src/utils/projectWalk.ts": "5ff06d6df2c601017928d26709d6f4bf3ea9d9ff6813e627cfec82d010d9e316"
+      },
+      "sourceFingerprintCount": 73,
+      "result": {
+        "command": "OSV_REALTIME_PROCESS=1 npm run test:research -- --project real-time-process",
+        "runtime": {
+          "node": "v26.12.1",
+          "platform": "darwin",
+          "arch": "arm64"
+        },
+        "runs": 3,
         "testFiles": 3,
         "testsPassedPerRun": 8,
         "failed": 0,
