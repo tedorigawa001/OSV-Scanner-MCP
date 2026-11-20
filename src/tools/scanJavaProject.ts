@@ -86,7 +86,8 @@ export async function scanJavaManifests(
     const skippedPaths = new Set(skipped.map((s) => s.path));
     const scanned = project.targets.filter((t) => !skippedPaths.has(t.path));
     const relative = (file: string) => path.relative(project.projectDir, file);
-    const skippedRelative = skipped.map((s) => ({ path: relative(s.path), reason: s.reason }));
+    // 読めなかったディレクトリも、配下のマニフェストを探せていない範囲の欠けとして並べる
+    const skippedRelative = [...project.unreadableDirs, ...skipped.map((s) => ({ path: relative(s.path), reason: s.reason }))];
     if (targets.length === 0) {
       const details = skippedRelative.map((s) => `${s.path}: ${s.reason}`).join(" / ");
       throw new ScanToolError(

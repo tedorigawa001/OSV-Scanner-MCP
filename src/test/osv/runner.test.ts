@@ -285,6 +285,16 @@ describe("binaryManager", () => {
     expect(await findOsvScannerBinary(env)).toBe(path.join(binDir, "osv-scanner"));
   });
 
+  it("PATHの相対パスの要素は作業ディレクトリ次第で場所が変わるため探さない", async () => {
+    await makeFakeBinary("osv-scanner", `exit 0`);
+    const relative = path.relative(process.cwd(), binDir);
+    expect(path.isAbsolute(relative)).toBe(false);
+    expect(await findOsvScannerBinary({ PATH: relative } as NodeJS.ProcessEnv)).toBeNull();
+    // 絶対パスの要素は従来どおり探す(相対パスの要素の後ろにあっても)
+    expect(await findOsvScannerBinary({ PATH: [relative, binDir].join(path.delimiter) } as NodeJS.ProcessEnv))
+      .toBe(path.join(binDir, "osv-scanner"));
+  });
+
   it("OSV_SCANNER_PATHの明示指定を優先し、無効ならPATHにフォールバックしない", async () => {
     const explicit = await makeFakeBinary("custom-scanner", `exit 0`);
     const env = {

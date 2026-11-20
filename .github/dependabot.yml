@@ -13,3 +13,9 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: "development"
+  # CIのActionsはコミットのSHAで固定しているため、SHAとコメントの版の更新をPRで受け取る
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

@@ -40,7 +40,9 @@ export async function findOsvScannerBinary(
     return (await isExecutableFile(explicit, true)) ? explicit : null;
   }
   for (const dir of (env.PATH ?? "").split(path.delimiter)) {
-    if (dir === "") continue;
+    // 相対パスの要素(`.`・`bin`等)は、サーバーの作業ディレクトリ次第で別の場所を指すため探さない
+    // (作業ディレクトリに置かれたosv-scannerを実行しないように。脆弱性チェックで判明、2026-11-20)
+    if (dir === "" || !path.isAbsolute(dir)) continue;
     const candidate = path.join(dir, BINARY_NAME);
     if (await isExecutableFile(candidate)) return candidate;
   }

@@ -1481,6 +1481,17 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
 - 他の約25の正規表現(版・名前・pnpmのキー・yarnの記述子・NuGetの範囲等)は、同じ形の入力で2 ms以下だった
 - Gradleの実時間診断を修正後の `a6f5d2a` で再測定（2026-11-20）。C3b-3／C3b-4の両記録で `cargoLock.ts`・`dependencyRelations.ts` のSHA-256を更新し、旧値と検証結果を `sourceRemeasurements` に追記した。macOS arm64・Node v26.12.1で実行時の観測結果が既存記録と一致し、実時間診断は3ファイル・8件すべて通過した。[C3b-3の記録](validation/gradle-independent-currentness-c3b3-2026-11-04.json)、[C3b-4の記録](validation/gradle-independent-currentness-c3b4-2026-11-04.json)
 
+## 軽微な指摘の修正(2026-11-20、脆弱性チェック)
+
+- **読めないディレクトリ**: 走査(`projectWalk.ts`)はOSの権限不足等で読めないディレクトリを黙って飛ばし、配下のマニフェストが欠けても`coverage.complete: true`になっていた(展開したアーカイブの権限0のディレクトリに脆弱なlockfileを置くと、0件・範囲完全と応答する)。走査は続け、`scan_project`は`skipped_files`、`scan_java_project`は`skipped_manifests`に、ディレクトリと理由を並べる。マニフェストが1件も無い場合は`no_manifest_found`の理由に含める。Nodeの権限モデルの拒否は従来どおりエラー
+- **巨大なディレクトリ**: 一覧全体(`readdir`)をメモリに読み込んでからエントリ数の上限を確かめていた。`opendir`で1件ずつ読み、読みながら上限を確かめる。検出結果の順序が変わらないよう、名前のバイト順に並べる(`readdir`と同じ)
+- **勧告の文字列の長さ**: `explain_vulnerability`はsummary・details以外の文字列(別名・パッケージ名・版・日時・CVSS・参照の種類)に256文字の上限、参照URLは2,048文字を超えるものを除く(切り詰めたURLは別の場所を指しうる)。レコードの`id`はOSVのIDの形式に合わなければ照会したIDを返す(オンラインでは検証していなかった)。`suggest_fix`の`recommended_known_vulnerabilities`と注記のIDは20件・128文字まで(超えた件数は`(N more)`)、256文字を超える修正版は候補にしない
+- **不可視の文字**: 異体字セレクタ(U+FE00〜FE0F、U+E0100〜E01EF。見える文字の後ろに並べて任意のバイト列を不可視に埋め込める)、表示されない埋め字(U+034F・U+115F・U+1160・U+3164・U+FFA0)、行間注釈(U+FFF9〜FFFB)も除く。絵文字の表示形式の指定(U+FE0F)も消える
+- **PATHの相対パスの要素**: `osv-scanner`をPATHから探す際、相対パスの要素(`.`等)はサーバーの作業ディレクトリ次第で別の場所を指すため探さない
+- **CIのActions**: 書き換えられるタグではなくコミットのSHAで固定した(`actions/checkout`・`actions/setup-node` v4.4.0、`google/osv-scanner-action` v2.3.8)。更新を受け取るため、Dependabotに`github-actions`を追加
+- テスト: `src/test/utils/projectWalk.test.ts`(読めないディレクトリはroot・Windowsでは省略)、`src/test/osv/adversarialAdvisory.test.ts`、PATHの相対パスの要素(`runner.test.ts`)
+- `projectWalk.ts`・`externalText.ts`は、CIのリアルタイム診断の記録(c3b3/c3b4)が内容のハッシュを固定しているため、このコミットの後に再測定が必要
+
 ## Gradle依存関係対応の実装方式設計(2026-10-31)
 
 - [詳細設計](GRADLE_DEPENDENCY_RELATIONS.md): 信頼済み環境でResolutionResultをcontext/variant別JSONへ事前exportし、MCPは捕捉lockとhash・収録内容を照合して静的取込する。MCPからGradle/Wrapperを実行しない。

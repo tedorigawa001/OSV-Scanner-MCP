@@ -25,6 +25,7 @@ import {
   resolveExistingPath,
   walkProjectFiles,
   type SearchLimitOptions,
+  type UnreadableDirectory,
 } from "./projectWalk.js";
 
 export interface DetectedJavaProject {
@@ -36,6 +37,8 @@ export interface DetectedJavaProject {
   targets: ManifestTarget[];
   /** 解決済みの許可ルート(未設定ならundefined)。親POMの検証に使う */
   allowedRootReal: string | undefined;
+  /** 読めなかったディレクトリ(projectDirからの相対パス)。配下のマニフェストを探せていない */
+  unreadableDirs: UnreadableDirectory[];
 }
 
 export interface DetectJavaProjectOptions extends SearchLimitOptions {
@@ -71,12 +74,13 @@ function buildResult(
   projectDir: string,
   manifests: string[],
   allowedRootReal: string | undefined,
+  unreadableDirs: UnreadableDirectory[] = [],
 ): DetectedJavaProject {
   const targets = manifests.map((manifest) => ({
     path: path.join(projectDir, manifest),
     format: path.basename(manifest) as ManifestFormat,
   }));
-  return { projectDir, manifests, targets, allowedRootReal };
+  return { projectDir, manifests, targets, allowedRootReal, unreadableDirs };
 }
 
 /**
@@ -123,6 +127,7 @@ export async function detectJavaProject(
 
   const manifests: string[] = [];
   let gradleBuildFileFound = false;
+  const unreadableDirs: UnreadableDirectory[] = [];
   await walkProjectFiles(projectDir, options, SKIPPED_DIRS, (relativePath, name) => {
     if (MANIFEST_FILENAMES.has(name)) {
       manifests.push(relativePath);
@@ -130,7 +135,10 @@ export async function detectJavaProject(
     }
     if (GRADLE_BUILD_FILENAMES.has(name)) gradleBuildFileFound = true;
     return false;
-  });
+  }, undefined, (directory) => unreadableDirs.push(directory));
+  const unreadableDetails = unreadableDirs.length > 0
+    ? ` (${unreadableDirs.map((d) => `${d.path}: ${d.reason}`).join(" / ")})`
+    : "";
 
   if (manifests.length === 0) {
     if (gradleBuildFileFound) {
@@ -138,9 +146,9 @@ export async function detectJavaProject(
     }
     throw new ScanToolError(
       "no_manifest_found",
-      `No supported manifest (pom.xml / gradle.lockfile) was found: ${projectDir}`,
+      `No supported manifest (pom.xml / gradle.lockfile) was found: ${projectDir}${unreadableDetails}`,
     );
   }
 
-  return buildResult(projectDir, manifests, allowedRootReal);
+  return buildResult(projectDir, manifests, allowedRootReal, unreadableDirs);
 }

@@ -163,6 +163,20 @@ function withheld(suggestion: PackageUpgradeSuggestion, candidate: string, local
   };
 }
 
+/** 注記に並べる脆弱性IDの件数と、IDの長さの上限。OSV由来の値のため、応答の大きさを入力に比例させない */
+const MAX_LISTED_VULNERABILITIES = 20;
+const MAX_ID_LENGTH = 128;
+
+/** 脆弱性IDの一覧を上限付きにする(超えた分は件数で示す。脆弱性チェックで判明、2026-11-20) */
+function listedIds(ids: readonly string[]): string[] {
+  const listed = ids.slice(0, MAX_LISTED_VULNERABILITIES).map((id) => {
+    const clean = sanitizeExternalText(id);
+    return clean.length > MAX_ID_LENGTH ? `${clean.slice(0, MAX_ID_LENGTH)}…` : clean;
+  });
+  if (ids.length > MAX_LISTED_VULNERABILITIES) listed.push(`(${ids.length - MAX_LISTED_VULNERABILITIES} more)`);
+  return listed;
+}
+
 function applyResult(result: CheckResult, local = false): PackageUpgradeSuggestion {
   const { suggestion, status, knownVulnerabilities, rejected } = result;
   const source = local ? 'the local database snapshot' : 'OSV';
@@ -177,7 +191,7 @@ function applyResult(result: CheckResult, local = false): PackageUpgradeSuggesti
   }
   if (status === "conflict") {
     // 理由はwithheldの注記に含めた。推奨しかけた版で該当と返った脆弱性はrecommended_known_vulnerabilitiesではなく注記に示す
-    notes.push(`Vulnerabilities reported by ${source}: ${knownVulnerabilities!.join(", ")}`);
+    notes.push(`Vulnerabilities reported by ${source}: ${listedIds(knownVulnerabilities!).join(", ")}`);
   } else if (status === "has_known_vulnerabilities") {
     notes.push(
       `According to ${source}, the recommended version ${suggestion.recommended_upgrade} is affected by ${knownVulnerabilities!.length} known ${knownVulnerabilities!.length === 1 ? "vulnerability" : "vulnerabilities"} (recommended_known_vulnerabilities). ` +
@@ -197,7 +211,7 @@ function applyResult(result: CheckResult, local = false): PackageUpgradeSuggesti
     upgrade_note: [suggestion.upgrade_note, ...notes].map((note) => note.replace(/\.$/, "")).join(". "),
     candidate_check: status,
     ...(local ? {candidate_check_source: 'local_database' as const} : {}),
-    ...(status === "has_known_vulnerabilities" ? { recommended_known_vulnerabilities: knownVulnerabilities!.map(sanitizeExternalText) } : {}),
+    ...(status === "has_known_vulnerabilities" ? { recommended_known_vulnerabilities: listedIds(knownVulnerabilities!) } : {}),
     per_cve_detail,
     verification,
   };

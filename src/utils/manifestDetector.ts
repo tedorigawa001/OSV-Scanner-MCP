@@ -27,6 +27,7 @@ import {
   resolveExistingPath,
   walkProjectFiles,
   type SearchLimitOptions,
+  type UnreadableDirectory,
 } from "./projectWalk.js";
 import { capitalizeReason, readRegularFile } from "./safeRead.js";
 import { createNpmLockWorkBudget, MAX_NPM_LOCK_BYTES, MAX_NPM_LOCK_TOTAL_BYTES, parseNpmLock } from "./npmLockCopy.js";
@@ -541,6 +542,7 @@ async function finalize(
   markers: { path: string; group: LockGroup }[],
   allowedRootReal: string | undefined,
   nugetFiles: NugetFiles = emptyNugetFiles(),
+  unreadableDirs: readonly UnreadableDirectory[] = [],
 ): Promise<DetectedProject> {
   const cargoCache = new CargoLockCache();
   const pnpmCache = new PnpmLockCache();
@@ -575,7 +577,8 @@ async function finalize(
     requirementIssues: [],
     requirementReferences: [],
     lowerBounds: [],
-    skippedFiles: [],
+    // 読めなかったディレクトリは範囲の欠け(配下のマニフェストを探せていない)
+    skippedFiles: [...unreadableDirs],
     nugetCopies: [],
     localProjectCount: 0,
     unscannableNugetPackages: [],
@@ -763,6 +766,7 @@ export async function detectProject(inputPath: string, options: DetectProjectOpt
   const manifests: DetectedManifest[] = [];
   const markers: { path: string; group: LockGroup }[] = [];
   const nugetFiles = emptyNugetFiles();
+  const unreadableDirs: UnreadableDirectory[] = [];
   await walkProjectFiles(projectDir, options, SKIPPED_DIRS, (relativePath, fileName) => {
     const found = classifyFile(fileName);
     if (found) {
@@ -774,6 +778,6 @@ export async function detectProject(inputPath: string, options: DetectProjectOpt
     const group = LOCK_MARKERS.get(fileName);
     if (group) markers.push({ path: relativePath, group });
     return false;
-  }, dotnetOutputDirs);
-  return finalize(projectDir, manifests, markers, allowedRootReal, nugetFiles);
+  }, dotnetOutputDirs, (directory) => unreadableDirs.push(directory));
+  return finalize(projectDir, manifests, markers, allowedRootReal, nugetFiles, unreadableDirs);
 }

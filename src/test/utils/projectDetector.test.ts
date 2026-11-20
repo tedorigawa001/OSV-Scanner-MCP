@@ -218,7 +218,7 @@ describe("detectJavaProject", () => {
     );
   });
 
-  it("権限不足で読めないディレクトリはスキップして探索を続ける", async () => {
+  it("権限不足で読めないディレクトリは探索を続け、範囲の欠けとして残す", async () => {
     const dir = await makeTempDir();
     await writeFile(path.join(dir, "pom.xml"), POM);
     const locked = path.join(dir, "locked");
@@ -227,6 +227,7 @@ describe("detectJavaProject", () => {
     try {
       const project = await detectJavaProject(dir);
       expect(project.manifests).toEqual(["pom.xml"]);
+      if (process.getuid?.() !== 0) expect(project.unreadableDirs.map((d) => d.path)).toEqual(["locked"]);
     } finally {
       await chmod(locked, 0o755); // クリーンアップできるよう権限を戻す
     }

@@ -5,7 +5,8 @@
  * (Javaのソースツリーは深い)、上限に達した場合は結果を黙って欠落させずにエラーにする。
  */
 
-import { readdir, realpath } from "node:fs/promises";
+import { opendir, realpath } from "node:fs/promises";
+import type { Dirent } from "node:fs";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 
@@ -78,11 +79,27 @@ function searchLimitError(reason: string): ScanToolError {
   );
 }
 
+/** 読めなかったディレクトリ(rootDirからの相対パス。rootDir自身は".") */
+export interface UnreadableDirectory {
+  path: string;
+  reason: string;
+}
+
+/** 読めないディレクトリの理由。応答に載るため、OSのエラーの文言やパスは含めない */
+export const UNREADABLE_DIRECTORY_REASON =
+  "The directory cannot be read (for example, missing permissions), so manifests in it were not searched";
+
 /**
  * 上限付きで幅優先に走査し、ファイルごとにonFileを呼ぶ。シンボリックリンクは辿らない。
  * onFileがtrueを返したファイルをマニフェストとして数え、上限到達はエラーにする。
  * skipChildrenはディレクトリごとに、その中の項目の名前から追加で飛ばすサブディレクトリを返す
  * (.NETのプロジェクトのディレクトリのbin・obj。名前だけで飛ばすと他のエコシステムのbinまで飛ばすため)
+ *
+ * OSの権限不足等で読めないディレクトリは、走査を続けたうえでonUnreadableDirに渡す。呼び出し側は
+ * スキャン範囲の欠けとして報告する(以前は黙って飛ばし、配下のマニフェストが欠けても
+ * `coverage.complete: true`になっていた。脆弱性チェックで判明、2026-11-20)。
+ * 項目は1件ずつ読み、エントリ数の上限を読みながら確かめる(以前は一覧全体をメモリに読み込んでから
+ * 数えていたため、数百万件の項目を持つ1つのディレクトリで大量のメモリと時間を使っていた)
  */
 export async function walkProjectFiles(
   rootDir: string,
@@ -90,6 +107,7 @@ export async function walkProjectFiles(
   skippedDirs: ReadonlySet<string>,
   onFile: (relativePath: string, name: string) => boolean,
   skipChildren?: (entryNames: readonly string[]) => ReadonlySet<string>,
+  onUnreadableDir?: (directory: UnreadableDirectory) => void,
 ): Promise<void> {
   const limits: SearchLimits = {
     maxDepth: options.maxDepth ?? DEFAULT_MAX_DEPTH,
@@ -104,17 +122,27 @@ export async function walkProjectFiles(
     if (depth > limits.maxDepth) throw searchLimitError(`depth ${limits.maxDepth}`);
     const nextLevel: string[] = [];
     for (const dir of currentLevel) {
-      let entries;
+      const entries: Dirent[] = [];
       try {
-        entries = await readdir(dir, { withFileTypes: true });
+        const handle = await opendir(dir);
+        // for awaitは途中で抜けても例外でもディレクトリを閉じる
+        for await (const entry of handle) {
+          if (++visited > limits.maxEntries) throw searchLimitError(`${limits.maxEntries} entries`);
+          entries.push(entry);
+        }
       } catch (error) {
+        if (error instanceof ScanToolError) throw error;
         // Nodeの権限モデルの拒否は、スキャン範囲を黙って欠落させずにエラーにする
         if (isAccessDenied(error)) throw permissionDeniedError(error);
-        continue; // 読めないディレクトリはスキップ(OSの権限不足等)
+        // 読めないディレクトリ(OSの権限不足等)は走査を続け、範囲の欠けとして呼び出し側に伝える。
+        // 途中まで読めた項目も使わない(どこまで読めたかに結果を左右させない)
+        onUnreadableDir?.({ path: path.relative(rootDir, dir) || ".", reason: UNREADABLE_DIRECTORY_REASON });
+        continue;
       }
-      const extraSkipped = skipChildren?.(entries.map((e) => e.name));
-      for (const entry of entries) {
-        if (++visited > limits.maxEntries) throw searchLimitError(`${limits.maxEntries} entries`);
+      // readdir(libuvのscandir)と同じく名前のバイト順に並べ、検出結果の順序を以前と変えない
+      const sorted = entries.map((entry) => ({ entry, key: Buffer.from(entry.name) })).sort((a, b) => Buffer.compare(a.key, b.key));
+      const extraSkipped = skipChildren?.(sorted.map(({ entry }) => entry.name));
+      for (const { entry } of sorted) {
         if (entry.isFile()) {
           if (onFile(path.relative(rootDir, path.join(dir, entry.name)), entry.name)) {
             if (++manifests > limits.maxManifests) throw searchLimitError(`${limits.maxManifests} manifests`);

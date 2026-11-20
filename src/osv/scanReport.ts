@@ -164,6 +164,8 @@ function groupInformationalKind(
 
 /** 外部由来のsummaryをLLMに渡す際の長さ上限(プロンプト肥大・DoS対策) */
 const MAX_SUMMARY_LENGTH = 500;
+/** 修正版として扱う版の長さの上限(OSV由来の値。脆弱性チェックで判明、2026-11-20) */
+const MAX_FIXED_VERSION_LENGTH = 256;
 
 const CVSS_CRITICAL = 9.0;
 const CVSS_HIGH = 7.0;
@@ -232,7 +234,8 @@ export function extractFixedVersions(
         if (type === null || !rangeTypes.has(type)) continue;
         for (const eventRaw of asArray(asRecord(rangeRaw)?.events)) {
           const fixed = asString(asRecord(eventRaw)?.fixed);
-          if (fixed !== null && fixed !== "") versions.add(fixed);
+          // 異常に長い版は修正版の候補にしない(推奨先として応答や案内の文に入るため。実際の版は十分短い)
+          if (fixed !== null && fixed !== "" && fixed.length <= MAX_FIXED_VERSION_LENGTH) versions.add(fixed);
         }
       }
     }
