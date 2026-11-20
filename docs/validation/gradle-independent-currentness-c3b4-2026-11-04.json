@@ -30,8 +30,8 @@
     }
   ],
   "sourceSha256": {
-    "package-lock.json": "8f89011645f6622a5f92c6d647395b2541ab6592401e5ebf2720d4086fdacb14",
-    "package.json": "ec5ff571ec7e6430113bca6827461a65b9daf7ebd999f9514f55b7fe3ba20d68",
+    "package-lock.json": "7e854f6e536b480ccbea86cf33ee99fa5c7415c52e7bfeaf4563272d7327d83e",
+    "package.json": "c16b07dff57b8f55ebd00b103a733b4e1ba8f60eb7cc1f6c0ce849709ac6d093",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_authority_child.mjs": "f389c8d8c7b441c71610ff52622885ff2ac9f0bc2542bce86d878482cc3621bd",
     "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
@@ -600,6 +600,37 @@
       },
       "sourceFingerprintCount": 78,
       "reason": "v0.24.1 version bump",
+      "result": {
+        "command": "OSV_REALTIME_PROCESS=1 npm run test:research -- --project real-time-process",
+        "runtime": {
+          "node": "v26.12.1",
+          "platform": "darwin",
+          "arch": "arm64"
+        },
+        "runs": 3,
+        "testFiles": 3,
+        "testsPassedPerRun": 8,
+        "failed": 0,
+        "observationsMatched": true,
+        "sourceFingerprintsMatched": true,
+        "note": "Before this update the same command already matched the recorded observations and failed only at the package-lock.json fingerprint (package.json also changed). Recorded process observations are unchanged; all adoption flags remain false."
+      }
+    },
+    {
+      "date": "2026-11-20",
+      "scope": "same recorded local-process scenarios rerun by this test after dependency/version changes to package.json and package-lock.json only; observations must still match and every other source fingerprint is unchanged",
+      "fromCommit": "fe30e4aced9ac63bd47dbbb42bffc247319149a3",
+      "toCommit": "d98f4f5470832b904eb8f7b7812e4a57342e9988",
+      "changedSources": [
+        "package-lock.json",
+        "package.json"
+      ],
+      "previousSourceSha256": {
+        "package-lock.json": "8f89011645f6622a5f92c6d647395b2541ab6592401e5ebf2720d4086fdacb14",
+        "package.json": "ec5ff571ec7e6430113bca6827461a65b9daf7ebd999f9514f55b7fe3ba20d68"
+      },
+      "sourceFingerprintCount": 78,
+      "reason": "v0.24.2 version bump",
       "result": {
         "command": "OSV_REALTIME_PROCESS=1 npm run test:research -- --project real-time-process",
         "runtime": {
