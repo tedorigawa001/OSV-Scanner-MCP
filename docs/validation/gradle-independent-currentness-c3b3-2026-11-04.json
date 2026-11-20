@@ -30,8 +30,8 @@
     }
   ],
   "sourceSha256": {
-    "package-lock.json": "b7b1617d87e83c5975c46491778e544f2d7633ad64725fc7594227e5bbf07953",
-    "package.json": "9e5f3edc165be9bc5ccd70db2ef9c83d9cae2cd6d39b7e99e4f218763421c9b0",
+    "package-lock.json": "8f89011645f6622a5f92c6d647395b2541ab6592401e5ebf2720d4086fdacb14",
+    "package.json": "ec5ff571ec7e6430113bca6827461a65b9daf7ebd999f9514f55b7fe3ba20d68",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_source_child.mjs": "d45b6cdc9045ab7e7f4efd975f4292bc1c23f8631f9b7eef588df8704f472757",
     "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
@@ -546,6 +546,37 @@
         "observationsMatched": true,
         "sourceFingerprintsMatched": true,
         "note": "Before this update the same command already matched the recorded observations and failed only at the package-lock.json fingerprint. Recorded process observations are unchanged; all adoption flags remain false."
+      }
+    },
+    {
+      "date": "2026-11-20",
+      "scope": "same recorded local-process scenarios rerun by this test after dependency/version changes to package.json and package-lock.json only; observations must still match and every other source fingerprint is unchanged",
+      "fromCommit": "3651c008a671f168c390286987bcb2ca40852ddf",
+      "toCommit": "3df22de604b08368b05934a7182203ecbcb260c4",
+      "changedSources": [
+        "package-lock.json",
+        "package.json"
+      ],
+      "previousSourceSha256": {
+        "package-lock.json": "b7b1617d87e83c5975c46491778e544f2d7633ad64725fc7594227e5bbf07953",
+        "package.json": "9e5f3edc165be9bc5ccd70db2ef9c83d9cae2cd6d39b7e99e4f218763421c9b0"
+      },
+      "sourceFingerprintCount": 73,
+      "reason": "v0.24.1 version bump",
+      "result": {
+        "command": "OSV_REALTIME_PROCESS=1 npm run test:research -- --project real-time-process",
+        "runtime": {
+          "node": "v26.12.1",
+          "platform": "darwin",
+          "arch": "arm64"
+        },
+        "runs": 3,
+        "testFiles": 3,
+        "testsPassedPerRun": 8,
+        "failed": 0,
+        "observationsMatched": true,
+        "sourceFingerprintsMatched": true,
+        "note": "Before this update the same command already matched the recorded observations and failed only at the package-lock.json fingerprint (package.json also changed). Recorded process observations are unchanged; all adoption flags remain false."
       }
     }
   ],
