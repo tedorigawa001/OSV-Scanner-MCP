@@ -1479,7 +1479,7 @@ Newtonsoft.Json 12.0.1(GHSA-5crp-9r3c-p9vr、13.0.1で修正)で確認。
   - `pdm.lock`は、改行・単独の`\r`・U+2028/U+2029を含む要求を解釈しない(PDMはこれらを書かない)
 - 回帰テスト`src/test/utils/regexBacktracking.test.ts`(13件)。修正前のコードでは、縮小した入力でも7件が失敗した(各4秒前後)。`pdm.lock`は3,000文字で4.4秒
 - 他の約25の正規表現(版・名前・pnpmのキー・yarnの記述子・NuGetの範囲等)は、同じ形の入力で2 ms以下だった
-- `cargoLock.ts`・`dependencyRelations.ts`は、CIのリアルタイム診断の記録(c3b3/c3b4)が内容のハッシュを固定しているため、このコミットの後に再測定が必要
+- Gradleの実時間診断を修正後の `a6f5d2a` で再測定（2026-11-20）。C3b-3／C3b-4の両記録で `cargoLock.ts`・`dependencyRelations.ts` のSHA-256を更新し、旧値と検証結果を `sourceRemeasurements` に追記した。macOS arm64・Node v26.12.1で実行時の観測結果が既存記録と一致し、実時間診断は3ファイル・8件すべて通過した。[C3b-3の記録](validation/gradle-independent-currentness-c3b3-2026-11-04.json)、[C3b-4の記録](validation/gradle-independent-currentness-c3b4-2026-11-04.json)
 
 ## Gradle依存関係対応の実装方式設計(2026-10-31)
 

@@ -52,8 +52,8 @@
     "src/test/fixtures/gradleOwnedSourceProcess.ts": "cbac57514fdba84b4ac71b3cd6720a2d219340c6aad06598f93d299ab19234a5",
     "src/test/utils/gradleOwnedSourceOwner.test.ts": "26a90ff23b66752d5df1ae0ed2b89575871e167daf7ebfe231305290663dcb34",
     "src/test/utils/gradleOwnedSourceProcess.test.ts": "327f7962bf9e5994e570c488db47e15f0fe5577c3ad045f9433c887a97b3fb12",
-    "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
-    "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888",
+    "src/utils/cargoLock.ts": "9f59bcf078752f5ad59bc4cdc48d61488f8e3c7b474ab70534452ded77fc5d5c",
+    "src/utils/dependencyRelations.ts": "64e36daf1cb857b90d0bc44e3126edc35f715ff05525debf3a87703e0701eb6c",
     "src/utils/externalText.ts": "f8222acfb9a5e7ac0fb2b0abad53eb42fe56e5aff42a895bd15f0cfa7f9d8b0b",
     "src/utils/gradleCatalogs.ts": "e1cf0531540851526a4a028c7a12409df334691ee64fb1375afcc9030094ed6b",
     "src/utils/gradleDeclarations.ts": "7af262a653a8dd959ba326fb0c5144306a7e437c5d1cee03c3e899af420810be",
@@ -546,6 +546,37 @@
         "observationsMatched": true,
         "sourceFingerprintsMatched": true,
         "note": "Before this update the same command already matched the recorded observations and failed only at the package-lock.json fingerprint. Recorded process observations are unchanged; all adoption flags remain false."
+      }
+    }
+  ],
+  "sourceRemeasurements": [
+    {
+      "date": "2026-11-20",
+      "scope": "Rerun the recorded local-process scenarios and verify the current source closure after the parser backtracking fix.",
+      "fromCommit": "3e6507743d28bf41dab167eda158b883978efdea",
+      "toCommit": "a6f5d2ab233690f5f159718ca502b1d5b52a6a7c",
+      "changedSources": [
+        "src/utils/cargoLock.ts",
+        "src/utils/dependencyRelations.ts"
+      ],
+      "previousSourceSha256": {
+        "src/utils/cargoLock.ts": "eb87065987a1f795da6f398d9e9c6f8d22113542ce53503e78547dac15973005",
+        "src/utils/dependencyRelations.ts": "de1bf57fb6be17b8f52c974b1a958b69465147aa6130bae0c65879585ce9f888"
+      },
+      "sourceFingerprintCount": 73,
+      "result": {
+        "command": "OSV_REALTIME_PROCESS=1 npm run test:research -- --project real-time-process",
+        "runtime": {
+          "node": "v26.12.1",
+          "platform": "darwin",
+          "arch": "arm64"
+        },
+        "runs": 1,
+        "testFiles": 3,
+        "testsPassedPerRun": 8,
+        "failed": 0,
+        "observationsMatched": true,
+        "sourceFingerprintsMatched": true
       }
     }
   ]
