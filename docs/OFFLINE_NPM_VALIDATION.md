@@ -77,3 +77,46 @@ The record binds the reachable product source closure, fixture and assertion cod
 The 41 new harness regressions reject incorrect package/version/relation/declaration metadata, wrong DB generation or counts, missing/duplicate fix targets, online/disabled/unverified claims, absent candidate-rejection evidence, still-affected final versions, incorrect SBOM identities and mismatched explanation content. The combined relevant run passes **836 tests in 38 files**, with type checking, build and harness syntax checks. These fixtures test the assertions; the separate native record uses the real full DB and scanner.
 
 This establishes same-user macOS arm64 / Node 26.12.1 behavior for an npm lockfile, local candidate queries, CycloneDX input and ID/direct-alias lookup. It does not establish Linux/Windows, all npm package/version combinations, artifact/build completeness, multiple DB generations or concurrency, registry publication/availability of a suggested version, an index/performance improvement, or a memory upper bound. `clean` and 0 records apply only to the selected local snapshot and do not establish application safety or absence of newer advisories. Earlier Go/Maven/package records are preserved at their recorded sources.
+
+## Indexed explanation comparison
+
+`explain_vulnerability` keeps one completed index per process. Its key includes the configured cache directory and the ordered list of ecosystem names, download timestamps and ZIP SHA-256 digests. The first lookup checks every archive and builds the index from validated record identities, direct aliases and ZIP entry locations. Publication follows the final deadline and freshness check after private-copy cleanup. The index retains at most one million record-to-ID or record-to-alias mappings and stores ZIP locations and conflict markers. Larger mappings use the full reader; matching IDs with conflicting copies and calls with reduced test limits also use the full reader.
+
+Each indexed request still validates the manifest, timestamps and entire SHA-256 of each private copy. It reads and checks the length, CRC, UTF-8 and identity of matching records, and retains the same ordering, deduplication and result limits. The index is rebuilt after a restart or cache generation change. The benchmark calls the real explanation handler, which does not require an OSV-Scanner binary.
+
+The original lookup deadline covers waiting for ZIP closure and private-copy cleanup. On expiry the reader requests closure and cleanup, returns `scan_timeout`, and releases the scan and index-build slots. A timed-out draft is discarded. A late ZIP notification cannot publish a result or affect a later lookup.
+
+Prepare an official npm-only DB while connected with the command above. Build both versions with the same Node and installed dependencies. The baseline for this comparison is `3ec9042`.
+
+```bash
+repo=$(pwd -P)
+scratch=$(mktemp -d)
+mkdir "$scratch/baseline"
+git archive 3ec9042 src package.json tsconfig.json tsconfig.build.json | tar -xf - -C "$scratch/baseline"
+ln -s "$repo/node_modules" "$scratch/baseline/node_modules"
+./node_modules/.bin/tsc -p "$scratch/baseline/tsconfig.build.json"
+npm run build
+sandbox-exec -p '(version 1)(allow default)(deny network*)' \
+  node scripts/compare-offline-explain-index.mjs \
+  --before "$scratch/baseline/dist" --after "$repo/dist" \
+  --cache /absolute/npm-database --output "$scratch/comparison.json"
+```
+
+The harness requires a denied loopback TCP connection and zero fetch attempts. It measures the first ID lookup in each build, then three pairs for each of ID, direct alias and unlisted ID. It alternates the order of the builds and rotates the case order. Each sample includes the handler's manifest read, private ZIP copy and SHA-256, lookup, cleanup and response creation. The harness compares complete responses for every pair and checks expiry and same-size corruption for both a present ID and an unlisted ID in each build. Faults are applied only to a disposable private copy of the supplied cache. Duplicate-ID conflict cases use separate multi-ecosystem fixtures in the regression tests.
+
+The output uses an atomic replacement and a fresh `run_id`. The harness writes `running` before preflight and records the pending trial before each call. If the watchdog fires, the handler fails verification, or the run receives `SIGINT` or `SIGTERM`, the report is saved as `failed` with the last step, failure reason, and completed pairs. After the initial checkpoint, a hard kill leaves the new run marked `running` with its last checkpoint. Completed comparisons have `status: "passed"`.
+
+### Recorded result (2026-11-21)
+
+The run used macOS arm64, Node 26.12.1 and one complete 222,033,893-byte official npm ZIP acquired at `2026-11-21T06:39:24.687Z`. The recorded SHA-256 was `85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b`.
+
+| Lookup | Before | After |
+| --- | ---: | ---: |
+| First ID call, including index construction in the new build | 21.289 s | 20.658 s |
+| Subsequent ID, median of 3 | 27.632 s | 0.701 s |
+| Subsequent alias, median of 3 | 24.837 s | 0.378 s |
+| Subsequent unlisted ID, median of 3 | 32.078 s | 0.540 s |
+
+All ten paired responses were equal and all eight expiry and corruption checks returned `scan_failed`. The loopback probe returned `EPERM` and the fetch count was zero. The successful rerun uses the original baseline and the revised reader, with both build orders represented for each repeated case. It records the npm-only, same-process workload on this host. The [comparison record](validation/offline-npm-index-2026-11-21.json) contains the sample timings, response digests, refusal outcomes and source and build hashes.
+
+An earlier exploratory comparison was stopped with a ZIP still open. Its precise stopping point was not captured. The regression tests withhold the ZIP close notification on a cold and an indexed call and either deliver it late or omit it. They verify `scan_timeout` at the original deadline, reuse of the scan slot, and that the next cold call can rebuild the discarded index. A separate test delays private-copy removal. The CLI regressions start with an older successful report, finish one pair, and then exercise the watchdog, SIGINT, SIGTERM, and a `scan_timeout` result from the handler. They check the new run ID, the interrupted trial, and preservation of the completed pair.

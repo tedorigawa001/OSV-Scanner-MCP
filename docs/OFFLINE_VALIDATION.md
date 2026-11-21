@@ -4,7 +4,7 @@ Offline mode supports local-database scanning, upgrade suggestions, candidate-ve
 
 For installation from a packed artifact with pre-provisioned dependencies/scanner, minimum Node 22.13.0 and representative Node 24/26 validation, see [offline package installation](OFFLINE_PACKAGE_VALIDATION.md). That separate run blocks the original checkout/cache/runtime inputs as well as the network.
 
-The complete npm DB now has a separate [network-denied native validation](OFFLINE_NPM_VALIDATION.md), including actual candidate reselection, ID/alias details, capacity checks and source-bound evidence. It supplements the earlier direct npm measurement below.
+The complete npm DB has a separate [network-denied native validation](OFFLINE_NPM_VALIDATION.md), including actual candidate reselection, ID/alias details, capacity checks and source-bound evidence. The same document records a [before/after comparison of indexed explanations](OFFLINE_NPM_VALIDATION.md#indexed-explanation-comparison).
 
 ## Reproduction
 
@@ -238,6 +238,5 @@ The original native record predates collection and binds its own source hashes. 
 
 ## Follow-up features
 
-- Optional lookup indexing/performance improvements while preserving private snapshots, freshness, full-match handling and explicit incomplete-search errors.
 - Commit-level matching, if supported by an independently selected native implementation.
 - Additional native ecosystem/platform fixtures beyond the recorded Go/Maven/npm cases, and cache storage administration.

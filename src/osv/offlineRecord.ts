@@ -1,4 +1,4 @@
-/** Bounded ID/alias lookup over verified private OSV ZIP copies. No extraction, index cache or network fallback. */
+/** Bounded ID/alias lookup over verified private OSV ZIP copies. */
 import path from 'node:path';
 import {performance} from 'node:perf_hooks';
 import {crc32} from 'node:zlib';
@@ -8,7 +8,7 @@ import type {Readable} from 'node:stream';
 import {openPromise, type ZipFile, type Entry} from 'yauzl';
 import {ScanToolError} from '../errors.js';
 import {asRecord} from '../utils/unknownJson.js';
-import {captureOfflineDatabases} from './offlineCache.js';
+import {captureOfflineDatabases, type OfflineDatabaseMetadata} from './offlineCache.js';
 import {offlineConfig} from './offline.js';
 import {validateVulnerabilityId, type FetchOsvRecordOptions} from './osvApi.js';
 import {buildVulnerabilityExplanation, type VulnerabilityExplanation} from './vulnerabilityExplanation.js';
@@ -24,6 +24,50 @@ const ID = /^[A-Za-z0-9][A-Za-z0-9-]{2,63}$/;
 const invalid = (reason: string) => new ScanToolError('scan_failed', `Offline database cache: ${reason}`);
 const tooLarge = () => new ScanToolError('output_too_large', 'Offline record lookup exceeded its entry, record, expanded-byte or match limit; the search was not completed');
 const timedOut = () => new ScanToolError('scan_timeout', 'Offline record lookup did not complete within its time limit; the search was not completed');
+const ignoreLateZipError = () => {};
+
+interface RecordLocation {
+  database: number;
+  id: string;
+  start: number;
+  compressedBytes: number;
+  bytes: number;
+  crc: number;
+  deflated: boolean;
+}
+interface RecordIndex {
+  generation: string;
+  locations: Map<string, RecordLocation | RecordLocation[]>;
+  conflicts: Set<string>;
+  postings: number;
+}
+type OsvRecord = Record<string, unknown> & {id: string; aliases?: string[]};
+
+// Bound retained locations and alias fanout. Oversized generations can still use the full validated scan.
+const MAX_INDEX_POSTINGS = 1_000_000;
+let cachedIndex: RecordIndex | undefined;
+let buildingIndex = false;
+
+function addLocation(index: RecordIndex, key: string, location: RecordLocation) {
+  const previous = index.locations.get(key);
+  // Copies are appended in scan order. Deduplicate repeated aliases and an alias equal to the ID.
+  if (previous === location || (Array.isArray(previous) && previous.at(-1) === location)) return true;
+  if (index.postings >= MAX_INDEX_POSTINGS) return false;
+  index.postings++;
+  if (Array.isArray(previous)) previous.push(location);
+  else if (previous) index.locations.set(key, [previous, location]);
+  // Own newly retained keys so a short parsed alias cannot retain the full decoded record string.
+  else index.locations.set(Buffer.from(key, 'ascii').toString('ascii'), location);
+  return true;
+}
+
+function checkFresh(metadata: OfflineDatabaseMetadata, maxAgeMs: number) {
+  const now = Date.now();
+  if (metadata.databases.some(d => now < Date.parse(d.downloaded_at) || now - Date.parse(d.downloaded_at) >= maxAgeMs)) {
+    throw invalid('a database expired or has a future timestamp during record lookup');
+  }
+}
+
 function bounded(value: number, ceiling: number): number {
   if (!Number.isSafeInteger(value) || value < 1 || value > ceiling) throw invalid('invalid lookup limits');
   return value;
@@ -101,33 +145,110 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
   const timeout = bounded(options.timeoutMs ?? 120000, 120000), deadline = performance.now() + timeout;
   const config = offlineConfig({...options, offline: true});
   let expired = false, zip: ZipFile | undefined, active: Readable | undefined, failure: unknown;
-  let rejectEntry: ((error: unknown) => void) | undefined;
-  const timer = setTimeout(() => {expired = true; const error = timedOut(); rejectEntry?.(error); active?.destroy(error);}, timeout);
+  let rejectWait: ((error: unknown) => void) | undefined;
+  const pastDeadline = () => expired || performance.now() >= deadline;
+  const timer = setTimeout(() => {expired = true; const error = timedOut(); rejectWait?.(error); active?.destroy(error);}, timeout);
   const guard = () => {
-    if (expired || performance.now() >= deadline) throw timedOut();
+    if (pastDeadline()) throw timedOut();
     if (failure) throw invalid('unreadable database archive');
   };
+  const closeArchive = (archive: ZipFile) => new Promise<void>((resolve, reject) => {
+    const clear = () => {archive.off('close', closed); rejectWait = undefined;};
+    const closed = () => {clear(); resolve();};
+    const failed = (error: unknown) => {clear(); reject(error);};
+    rejectWait = failed;
+    archive.once('close', closed);
+    try {
+      archive.close();
+      if (pastDeadline()) failed(timedOut());
+    } catch (error) {failed(error);}
+  });
   let snapshot: Awaited<ReturnType<typeof captureOfflineDatabases>> | undefined;
   let result: {requested_id: string; matched_by: 'id' | 'alias'; records: VulnerabilityExplanation[];
-    offline_database: Awaited<ReturnType<typeof captureOfflineDatabases>>['metadata']} | undefined;
+    offline_database: OfflineDatabaseMetadata} | undefined;
+  let draft: RecordIndex | undefined, ownsBuilder = false;
   let entries = 0, expanded = 0, matchingBytes = 0;
-  const matches = new Map<string, {explanation: VulnerabilityExplanation; digest: string}>();
+  const matches = new Map<string, VulnerabilityExplanation>();
   // Keep bounded digests, not record bodies, even before an alias match is discovered in a later DB.
   const identities = new Map<string, {digest: string; conflicting: boolean}>();
+  const addMatch = (record: OsvRecord, bytes: number) => {
+    matchingBytes += bytes;
+    if (matchingBytes > limits.matchingBytes) throw tooLarge();
+    matches.set(record.id, buildVulnerabilityExplanation(record, id));
+    if (matches.size > limits.matches) throw tooLarge();
+  };
+  const readRecord = async (stream: Promise<Readable>, expectedId: string, expectedBytes: number, expectedCRC: number) => {
+    active = await stream;
+    active.on('error', () => {}); // A timeout may destroy the stream before async iteration attaches its listener.
+    let bytes = 0, checksum = 0;
+    const chunks: Buffer[] = [];
+    try {
+      guard();
+      for await (const value of active) {
+        guard(); const chunk = Buffer.from(value); bytes += chunk.length;
+        if (bytes > expectedBytes) throw tooLarge();
+        checksum = crc32(chunk, checksum); chunks.push(chunk);
+      }
+    } finally {active.destroy(); active = undefined;}
+    guard();
+    if (bytes !== expectedBytes || checksum !== expectedCRC) throw invalid('database entry size or CRC mismatch');
+    const record = asRecord(JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(Buffer.concat(chunks, bytes))));
+    // Canonical IDs name entries. Non-OSV aliases from upstream are allowed strings, but cannot match a request.
+    if (!record || record.id !== expectedId || (record.aliases !== undefined &&
+        (!Array.isArray(record.aliases) || !record.aliases.every(a => typeof a === 'string')))) {
+      throw invalid('invalid OSV record identity or aliases');
+    }
+    return record as OsvRecord;
+  };
   try {
     snapshot = await captureOfflineDatabases({...options, offline: true});
     const fresh = () => {
-      guard(); const now = Date.now();
-      if (snapshot!.metadata.databases.some(d => now < Date.parse(d.downloaded_at) || now - Date.parse(d.downloaded_at) >= config.maxAgeMs)) throw invalid('a database expired or has a future timestamp during record lookup');
+      guard(); checkFresh(snapshot!.metadata, config.maxAgeMs);
     };
-    for (const db of snapshot.metadata.databases) {
+    fresh();
+    // Select the index only after re-capturing and hashing every selected object. Ordering is part of the generation.
+    const generation = JSON.stringify([config.dir, snapshot.metadata.databases]);
+    const defaultLimits = Object.entries(OFFLINE_LOOKUP_LIMITS).every(([key, ceiling]) => limits[key as keyof typeof limits] === ceiling);
+    let indexed: readonly RecordLocation[] | undefined;
+    const current = cachedIndex;
+    if (defaultLimits && current?.generation === generation) {
+      const locations = current.locations.get(id);
+      const candidates = Array.isArray(locations) ? locations : locations ? [locations] : [];
+      // On a conflict, use the full reader to preserve the order of limit and conflict failures.
+      if (!candidates.some(location => current.conflicts.has(location.id))) indexed = candidates;
+    } else if (defaultLimits && !buildingIndex) {
+      buildingIndex = ownsBuilder = true;
+      draft = {generation, locations: new Map(), conflicts: new Set(), postings: 0};
+    }
+
+    let nextLocation = 0;
+    for (const [database, db] of snapshot.metadata.databases.entries()) {
       fresh();
-      const file = path.join(snapshot.dir, 'osv-scalibr', db.ecosystem, 'all.zip'), layout = await directoryLayout(file, guard);
+      if (indexed && indexed[nextLocation]?.database !== database) continue;
+      const file = path.join(snapshot.dir, 'osv-scalibr', db.ecosystem, 'all.zip');
+      const layout = indexed ? undefined : await directoryLayout(file, guard);
       zip = await openPromise(file,
         {autoClose: false, lazyEntries: true, validateEntrySizes: true, strictFileNames: true});
-      zip.on('error', error => {failure = error; rejectEntry?.(error); active?.destroy(error);});
+      const onArchiveError = (error: Error) => {failure = error; rejectWait?.(error); active?.destroy(error);};
+      zip.on('error', onArchiveError);
       try {
         guard();
+        if (indexed) {
+          const archive = zip;
+          for (let location = indexed[nextLocation]; location?.database === database; location = indexed[++nextLocation]) {
+            guard();
+            const {start, compressedBytes, bytes, crc, deflated} = location;
+            const stream = new Promise<Readable>((resolve, reject) => {
+              // yauzl 3.4.0's promise wrapper calls openReadStream with the wrong signature.
+              archive.openReadStreamLowLevel(start, compressedBytes, 0, compressedBytes, deflated, bytes,
+                (error, stream) => error ? reject(error) : resolve(stream));
+            });
+            const record = await readRecord(stream, location.id, bytes, crc);
+            addMatch(record, bytes);
+          }
+          continue;
+        }
+        if (!layout) throw invalid('missing ZIP directory metadata');
         if (zip.entryCount !== layout.count || zip.fileSize !== layout.fileSize) throw invalid('inconsistent ZIP reader metadata');
         if (!zip.entryCount) throw invalid('empty database archive');
         if (zip.entryCount > limits.entries - entries) throw tooLarge();
@@ -137,12 +258,12 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
           guard();
           const current = zip;
           const entry = await new Promise<Entry | null>((resolve, reject) => {
-            const clear = () => {current.off('entry', found); current.off('end', ended); rejectEntry = undefined;};
+            const clear = () => {current.off('entry', found); current.off('end', ended); rejectWait = undefined;};
             const found = (entry: Entry) => {clear(); resolve(entry);};
             const ended = () => {clear(); resolve(null);};
-            rejectEntry = error => {clear(); reject(error);};
+            rejectWait = error => {clear(); reject(error);};
             current.once('entry', found); current.once('end', ended);
-            try {current.readEntry();} catch (error) {rejectEntry?.(error);}
+            try {current.readEntry();} catch (error) {rejectWait?.(error);}
           });
           if (!entry) break;
           guard();
@@ -157,48 +278,42 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
           const local = await zip.readLocalFileHeaderPromise(entry);
           if (!local.fileName.equals(entry.fileNameRaw) || local.compressionMethod !== entry.compressionMethod || local.generalPurposeBitFlag !== entry.generalPurposeBitFlag) throw invalid('inconsistent ZIP entry headers');
           guard();
-          active = await zip.openReadStreamPromise(entry);
-          active.on('error', () => {}); // A timeout may destroy the stream before async iteration attaches its listener.
-          let bytes = 0, checksum = 0; const chunks: Buffer[] = [];
-          try {
-            guard();
-            for await (const value of active) {
-              guard(); const chunk = Buffer.from(value); bytes += chunk.length; expanded += chunk.length;
-              if (bytes > limits.recordBytes || bytes > entry.uncompressedSize || expanded > limits.expandedBytes) throw tooLarge();
-              checksum = crc32(chunk, checksum); chunks.push(chunk);
-            }
-          } finally {active.destroy(); active = undefined;}
-          guard();
-          if (bytes !== entry.uncompressedSize || checksum !== entry.crc32) throw invalid('database entry size or CRC mismatch');
-          const data = Buffer.concat(chunks, bytes);
-          const record = asRecord(JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(data)));
-          // Canonical IDs name the entry and must be strict. Aliases are upstream cross-references: the official npm DB
-          // has some that are not OSV IDs (trailing commas, SNYK IDs over 64 characters). They only need to be strings;
-          // the requested ID is already validated, so a malformed alias can never match it and is ignored for matching.
-          if (!record || typeof record.id !== 'string' || !ID.test(record.id) || entry.fileName !== record.id + '.json' ||
-              (record.aliases !== undefined && (!Array.isArray(record.aliases) || !record.aliases.every(a => typeof a === 'string')))) throw invalid('invalid OSV record identity or aliases');
-          const digest = canonicalDigest(record, guard), previous = identities.get(record.id);
+          const bytes = entry.uncompressedSize, recordId = entry.fileName.slice(0, -5);
+          const record = await readRecord(zip.openReadStreamPromise(entry), recordId, bytes, entry.crc32);
+          expanded += bytes;
+          const digest = canonicalDigest(record, guard), previous = identities.get(recordId);
           const conflicting = previous?.conflicting === true || (previous !== undefined && previous.digest !== digest);
-          identities.set(record.id, {digest, conflicting});
-          const matching = record.id === id || (record.aliases as string[] | undefined)?.includes(id);
-          if (conflicting && (matching || matches.has(record.id))) throw invalid('conflicting copies of the same record ID');
-          if (matching) {
-            matchingBytes += bytes;
-            if (matchingBytes > limits.matchingBytes) throw tooLarge();
-            const explanation = buildVulnerabilityExplanation(record, id);
-            matches.set(explanation.id, {explanation, digest});
-            if (matches.size > limits.matches) throw tooLarge();
+          identities.set(recordId, {digest, conflicting});
+          const matching = recordId === id || record.aliases?.includes(id);
+          if (conflicting && (matching || matches.has(recordId))) throw invalid('conflicting copies of the same record ID');
+          if (matching) addMatch(record, bytes);
+          if (draft) {
+            if (conflicting) draft.conflicts.add(recordId);
+            const location = {database, id: recordId, start: local.fileDataStart, compressedBytes: entry.compressedSize,
+              bytes, crc: entry.crc32, deflated: entry.compressionMethod === 8};
+            if (!addLocation(draft, recordId, location)) draft = undefined;
+            for (const alias of record.aliases ?? []) {
+              guard();
+              if (draft && ID.test(alias) && !addLocation(draft, alias, location)) draft = undefined;
+              if (!draft) break;
+            }
           }
         }
         if (directoryEntries !== layout.count || directoryBytes !== layout.bytes) throw invalid('ZIP directory entry count or size mismatch');
       } finally {
-        active?.destroy(); active = undefined; rejectEntry = undefined;
-        if (zip.isOpen) await new Promise<void>((resolve, reject) => {zip!.once('close', resolve); zip!.once('error', reject); zip!.close();});
+        active?.destroy(); active = undefined;
+        const archive = zip;
         zip = undefined;
+        try {if (archive.isOpen) await closeArchive(archive);}
+        finally {
+          archive.off('error', onArchiveError);
+          // A late close error cannot affect another archive or request.
+          archive.on('error', ignoreLateZipError);
+        }
       }
       fresh();
     }
-    const records = [...matches.values()].map(m => m.explanation).sort((a, b) => Number(b.id === id) - Number(a.id === id) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const records = [...matches.values()].sort((a, b) => Number(b.id === id) - Number(a.id === id) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     fresh();
     result = {requested_id: id, matched_by: records[0]?.id === id ? 'id' : 'alias',
       records, offline_database: snapshot.metadata};
@@ -206,11 +321,23 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
     if (error instanceof ScanToolError) throw error;
     throw invalid('invalid, unreadable or unsupported ZIP/OSV data');
   } finally {
-    active?.destroy(); zip?.close();
-    try {await snapshot?.cleanup();} finally {clearTimeout(timer);}
+    try {
+      active?.destroy(); zip?.close();
+      const cleanup = snapshot?.cleanup();
+      if (cleanup) await new Promise<void>((resolve, reject) => {
+        // Request cleanup even on timeout, but do not hold either slot while waiting beyond the deadline.
+        cleanup.then(resolve, reject);
+        rejectWait = reject;
+        if (pastDeadline()) reject(timedOut());
+      });
+    } finally {
+      rejectWait = undefined;
+      clearTimeout(timer);
+      if (ownsBuilder) buildingIndex = false;
+    }
   }
   guard();
-  const now = Date.now();
-  if (!result || result.offline_database.databases.some(d => now < Date.parse(d.downloaded_at) || now - Date.parse(d.downloaded_at) >= config.maxAgeMs)) throw invalid('a database expired or has a future timestamp during record lookup');
+  checkFresh(result.offline_database, config.maxAgeMs);
+  if (draft) cachedIndex = draft;
   return result;
 }

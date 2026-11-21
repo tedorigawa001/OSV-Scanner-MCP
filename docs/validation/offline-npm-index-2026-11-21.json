@@ -1,0 +1,236 @@
+{
+  "schema": 2,
+  "run_id": "01f676a4-f1fb-43e7-87fe-2d0ba6048cdb",
+  "started_at": "2026-11-21T07:08:28.761Z",
+  "status": "passed",
+  "runtime": {
+    "node": "v26.12.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "release": "27.2.0"
+  },
+  "network": {
+    "loopback": "EPERM",
+    "fetch_attempts": 0
+  },
+  "samples": [
+    {
+      "phase": "first",
+      "round": 0,
+      "scenario": "id",
+      "order": [
+        "before",
+        "after"
+      ],
+      "elapsed_ms": {
+        "before": 21288.786416,
+        "after": 20657.790208000002
+      },
+      "response_sha256": "617d2810a4cecd86126ca8c7c1bf706a0c8cc0206c2db2a8387f730bb7484047"
+    },
+    {
+      "phase": "repeat",
+      "round": 1,
+      "scenario": "id",
+      "order": [
+        "after",
+        "before"
+      ],
+      "elapsed_ms": {
+        "after": 326.5842080000002,
+        "before": 22621.003124999996
+      },
+      "response_sha256": "617d2810a4cecd86126ca8c7c1bf706a0c8cc0206c2db2a8387f730bb7484047"
+    },
+    {
+      "phase": "repeat",
+      "round": 1,
+      "scenario": "alias",
+      "order": [
+        "before",
+        "after"
+      ],
+      "elapsed_ms": {
+        "before": 22490.478249999993,
+        "after": 335.52324999999837
+      },
+      "response_sha256": "98d3d3516e3a6492209a59dd7aad4c5cd4aafa5dc448e5b1bf7b28bd123a4b4b"
+    },
+    {
+      "phase": "repeat",
+      "round": 1,
+      "scenario": "miss",
+      "order": [
+        "after",
+        "before"
+      ],
+      "elapsed_ms": {
+        "after": 354.3544580000016,
+        "before": 25637.36245900001
+      },
+      "response_sha256": "eeb4a5ab6502ab096a027d05235da0cd7648f593e4bc3e7d955fbe82bbc121b4"
+    },
+    {
+      "phase": "repeat",
+      "round": 2,
+      "scenario": "alias",
+      "order": [
+        "after",
+        "before"
+      ],
+      "elapsed_ms": {
+        "after": 377.9172910000052,
+        "before": 24837.449500000002
+      },
+      "response_sha256": "98d3d3516e3a6492209a59dd7aad4c5cd4aafa5dc448e5b1bf7b28bd123a4b4b"
+    },
+    {
+      "phase": "repeat",
+      "round": 2,
+      "scenario": "miss",
+      "order": [
+        "before",
+        "after"
+      ],
+      "elapsed_ms": {
+        "before": 32077.61583299999,
+        "after": 540.2507920000062
+      },
+      "response_sha256": "eeb4a5ab6502ab096a027d05235da0cd7648f593e4bc3e7d955fbe82bbc121b4"
+    },
+    {
+      "phase": "repeat",
+      "round": 2,
+      "scenario": "id",
+      "order": [
+        "before",
+        "after"
+      ],
+      "elapsed_ms": {
+        "before": 27631.83683300001,
+        "after": 2450.160958000022
+      },
+      "response_sha256": "617d2810a4cecd86126ca8c7c1bf706a0c8cc0206c2db2a8387f730bb7484047"
+    },
+    {
+      "phase": "repeat",
+      "round": 3,
+      "scenario": "miss",
+      "order": [
+        "after",
+        "before"
+      ],
+      "elapsed_ms": {
+        "after": 1129.5373749999853,
+        "before": 77429.429125
+      },
+      "response_sha256": "eeb4a5ab6502ab096a027d05235da0cd7648f593e4bc3e7d955fbe82bbc121b4"
+    },
+    {
+      "phase": "repeat",
+      "round": 3,
+      "scenario": "id",
+      "order": [
+        "after",
+        "before"
+      ],
+      "elapsed_ms": {
+        "after": 701.1340839999611,
+        "before": 48725.94716600003
+      },
+      "response_sha256": "617d2810a4cecd86126ca8c7c1bf706a0c8cc0206c2db2a8387f730bb7484047"
+    },
+    {
+      "phase": "repeat",
+      "round": 3,
+      "scenario": "alias",
+      "order": [
+        "before",
+        "after"
+      ],
+      "elapsed_ms": {
+        "before": 27332.732583000034,
+        "after": 403.78670900000725
+      },
+      "response_sha256": "98d3d3516e3a6492209a59dd7aad4c5cd4aafa5dc448e5b1bf7b28bd123a4b4b"
+    }
+  ],
+  "rejections": [
+    {
+      "fault": "expired",
+      "scenario": "id",
+      "arm": "before",
+      "kind": "scan_failed"
+    },
+    {
+      "fault": "expired",
+      "scenario": "id",
+      "arm": "after",
+      "kind": "scan_failed"
+    },
+    {
+      "fault": "expired",
+      "scenario": "miss",
+      "arm": "before",
+      "kind": "scan_failed"
+    },
+    {
+      "fault": "expired",
+      "scenario": "miss",
+      "arm": "after",
+      "kind": "scan_failed"
+    },
+    {
+      "fault": "same-size-corruption",
+      "scenario": "id",
+      "arm": "before",
+      "kind": "scan_failed"
+    },
+    {
+      "fault": "same-size-corruption",
+      "scenario": "id",
+      "arm": "after",
+      "kind": "scan_failed"
+    },
+    {
+      "fault": "same-size-corruption",
+      "scenario": "miss",
+      "arm": "before",
+      "kind": "scan_failed"
+    },
+    {
+      "fault": "same-size-corruption",
+      "scenario": "miss",
+      "arm": "after",
+      "kind": "scan_failed"
+    }
+  ],
+  "artifact_sha256": {
+    "before": {
+      "tools/explainVulnerability.js": "07395dbc484647aca2edcd28d8abd68b8b23469df0497b6a09c78f88c265106c",
+      "osv/offlineRecord.js": "166ca87864fe7dc6c2741721607f9d3a07d122ef29e193191a64274954efcd4a",
+      "osv/offlineCache.js": "410931c21acd33fa9cc5058c9c91f66891b104e9f5438abffd734d73a35c2dac"
+    },
+    "after": {
+      "tools/explainVulnerability.js": "07395dbc484647aca2edcd28d8abd68b8b23469df0497b6a09c78f88c265106c",
+      "osv/offlineRecord.js": "b8b4b0e87e28a4890f8486dbeffbe662d94acc3561a829993530e5c829cd6ea4",
+      "osv/offlineCache.js": "410931c21acd33fa9cc5058c9c91f66891b104e9f5438abffd734d73a35c2dac"
+    }
+  },
+  "source_sha256": {
+    "package-lock.json": "1df6a320ea8d22caadf9620b6edc8521a532a67c74856fa10e91e34090b11cd2",
+    "scripts/compare-offline-explain-index.mjs": "a4afbf70ffa41d51b3b354664f6fc140f6c8c70accb4df8cb8f229aaee3b368b",
+    "scripts/validate-offline-npm.mjs": "677430bb0f79b373d99f1d7e3452dba291617f77c108ba8768e21a71b8dca27d",
+    "src/osv/offlineRecord.ts": "d1736958ced57d3789f7da00278d8021d5292171ccb0286c9033f58333137e4f",
+    "src/osv/offlineCache.ts": "b2f7be839a1495988f6b0e0de10df688badceecf1bb87c2ef496a99c7b79c11d",
+    "src/tools/explainVulnerability.ts": "caf0c688c3cb24836c3e3c95cda8707bb783440feccec714753acf8a7c3ae73e"
+  },
+  "database": {
+    "ecosystem": "npm",
+    "sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+    "bytes": 222033893,
+    "downloaded_at": "2026-11-21T06:39:24.687Z",
+    "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip"
+  },
+  "finished_at": "2026-11-21T07:14:28.400Z"
+}

@@ -79,6 +79,61 @@ it('reports a local miss with snapshot metadata and no online fallback', async (
   expect(output.error.message).toContain('prepared local database');
 });
 
+it('uses the verified generation index for an alias and a local miss after a cold lookup', async () => {
+  const f = await fixture([record(), record('GO-2000-0002', [])]);
+  expect((await explain(f)).output.id).toBe('GO-2000-0001');
+  const readEntry = vi.spyOn(actualZip.ZipFile.prototype, 'readEntry');
+  expect((await explain(f, 'CVE-2000-0001')).output.matched_by).toBe('alias');
+  expect((await explain(f, 'GO-2999-0000')).output.error.kind).toBe('vulnerability_not_found');
+  expect(readEntry).not.toHaveBeenCalled();
+});
+
+it('keeps an in-flight snapshot consistent and rebuilds the index for the refreshed digest', async () => {
+  const f = await fixture();
+  const revised = {...record('GO-2000-0001', ['CVE-2000-0002']), summary: 'Refreshed record'};
+  vi.mocked(yauzl.openPromise).mockImplementationOnce(async (file, options) => {
+    const archive = await actualZip.openPromise(file, options);
+    await prepareOfflineDatabases({dir: f.dir, ecosystems: ['Go'], fetchFn: async () =>
+      new Response(recordZip([{name: revised.id + '.json', body: JSON.stringify(revised)}]))});
+    return archive;
+  });
+  const before = (await explain(f, 'CVE-2000-0001')).output;
+  expect(before).toMatchObject({id: revised.id, summary: 'Local summary'});
+  const after = (await explain(f, 'CVE-2000-0002')).output;
+  expect(after).toMatchObject({id: revised.id, summary: revised.summary});
+  expect(after.offline_database.databases[0].sha256).not.toBe(before.offline_database.databases[0].sha256);
+  expect((await explain(f, 'CVE-2000-0001')).output.error.kind).toBe('vulnerability_not_found');
+});
+
+it('rebuilds for a new manifest generation even when the DB bytes are identical', async () => {
+  const f = await fixture(), before = (await explain(f)).output.offline_database.databases[0];
+  const manifestPath = path.join(f.dir, 'manifest.json');
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  manifest.databases[0].downloaded_at = new Date(Date.parse(before.downloaded_at) - 60_000).toISOString();
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  const readEntry = vi.spyOn(actualZip.ZipFile.prototype, 'readEntry');
+  expect((await explain(f)).output.offline_database.databases).toEqual([{...before, downloaded_at: manifest.databases[0].downloaded_at}]);
+  expect(readEntry).toHaveBeenCalled();
+});
+
+it.each(['expired', 'same-size damage', 'missing object'])('refuses %s after indexing, even on a local miss', async mode => {
+  const f = await fixture([record(), record('GO-2000-0002', [])]);
+  expect((await explain(f)).result.isError).not.toBe(true);
+  const manifestPath = path.join(f.dir, 'manifest.json'), manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  const db = manifest.databases[0], object = path.join(f.dir, 'objects', db.sha256 + '.zip');
+  if (mode === 'expired') {
+    db.downloaded_at = new Date(Date.now() - 169 * 3600000).toISOString();
+    await writeFile(manifestPath, JSON.stringify(manifest));
+  } else if (mode === 'same-size damage') {
+    const bytes = await readFile(object);
+    bytes[bytes.length - 1] = bytes.at(-1)! ^ 1;
+    await writeFile(object, bytes);
+  } else await rm(object);
+  for (const id of ['GO-2000-0001', 'GO-2999-0000']) {
+    expect((await explain(f, id)).output.error.kind).toBe('scan_failed');
+  }
+});
+
 it('honors environment offline mode even with false and injected online options', async () => {
   const f = await fixture(); vi.stubEnv('OSV_MCP_OFFLINE', '1'); vi.stubEnv('OSV_SCANNER_PATH', '/not/a/scanner');
   const {result, output} = await explain(f, 'GO-2000-0001', {offline: false, baseUrl: 'https://invalid.example'});
@@ -114,6 +169,9 @@ it.each(['identical', 'reordered', 'conflicting', 'hidden-difference', 'expired'
   if(mode === 'identical' || mode === 'reordered'){
     expect(result.isError).not.toBe(true); expect(output.matching_record_ids).toEqual(['GO-2000-0001']);
     expect(output.offline_database.databases).toHaveLength(2);
+    const warm = await explain(f, 'CVE-2000-0001');
+    expect(warm.result.isError).not.toBe(true);
+    expect(warm.output).toEqual({...output, requested_id: 'CVE-2000-0001', matched_by: 'alias'});
   }else{
     expect(result.isError).toBe(true); expect(output.error.kind).toBe('scan_failed');
   }
@@ -127,6 +185,8 @@ it.each([
   const f = await fixture([reverse ? nonmatching : matching]);
   await prepareOfflineDatabases({dir: f.dir, ecosystems: ['PyPI'],
     fetchFn: async () => new Response(recordZip([{name: matching.id + '.json', body: JSON.stringify(reverse ? matching : nonmatching)}]))});
+  // Prime the index with a miss so the conflict cannot be caught merely by checking matching aliases while building it.
+  expect((await explain(f, 'GO-2999-0000')).output.error.kind).toBe('vulnerability_not_found');
   for (const id of [matching.id, matching.aliases[0]!]) {
     const {result, output} = await explain(f, id);
     expect(result.isError, JSON.stringify(output)).toBe(true);
@@ -177,6 +237,8 @@ it.each([0, 8])('reads method %s archives including ZIP64', async method => {
   await replaceArchive(f.dir, recordZip([{name: 'GO-2000-0001.json', body: JSON.stringify(record()), method}], true));
   const {result, output} = await explain(f);
   expect(result.isError, JSON.stringify(output)).not.toBe(true); expect(output.id).toBe('GO-2000-0001');
+  const warm = await explain(f, 'CVE-2000-0001');
+  expect(warm.result.isError, JSON.stringify(warm.output)).not.toBe(true); expect(warm.output.matched_by).toBe('alias');
 });
 
 it.each([false, true].flatMap(zip64 => ['count', 'count-and-size'].flatMap(mode =>
@@ -231,9 +293,22 @@ it.each(['json', 'null', 'identity', 'aliases', 'alias-type', 'utf8', 'crc', 'si
 
 it.each(['recordBytes', 'expandedBytes', 'entries', 'matches', 'matchingBytes'] as const)('does not publish partial results when %s is exhausted', async limit => {
   const f = await fixture([record(), record('GO-2000-0002')]);
+  expect((await explain(f)).result.isError).not.toBe(true);
   const {result, output} = await explain(f, 'CVE-2000-0001', {offlineLookupLimits: {[limit]: 1}});
   expect(result.isError).toBe(true); expect(output.error.kind).toBe('output_too_large');
   expect(output.error.message).toContain('not completed');
+});
+
+it('enforces the normal match limit on indexed lookups and deduplicates repeated aliases', async () => {
+  const entries = Array.from({length: 21}, (_, i) => record(`GO-2000-${i + 1}`, ['CVE-2000-0001', 'CVE-2000-0001']));
+  const f = await fixture(entries);
+  expect((await explain(f, entries[0]!.id)).result.isError).not.toBe(true);
+  const readEntry = vi.spyOn(actualZip.ZipFile.prototype, 'readEntry');
+  const readRecord = vi.spyOn(actualZip.ZipFile.prototype, 'openReadStreamLowLevel');
+  expect((await explain(f, 'CVE-2000-0001')).output.error.kind).toBe('output_too_large');
+  expect(readRecord).toHaveBeenCalledTimes(entries.length);
+  expect((await explain(f, entries[0]!.id)).output.matching_record_ids).toEqual([entries[0]!.id]);
+  expect(readEntry).not.toHaveBeenCalled();
 });
 
 it('refuses a timed-out lookup without reporting a miss', async () => {
@@ -245,21 +320,98 @@ it('refuses a timed-out lookup without reporting a miss', async () => {
 
 it.each(['entry', 'stream'])('cancels a pending %s operation and closes the archive on timeout', async phase => {
   const f = await fixture(), originalOpen = actualZip.openPromise;
-  let closed = false, pending: Readable | undefined;
+  let notifyClosed!: () => void, pending: Readable | undefined;
+  const closed = new Promise<void>(resolve => {notifyClosed = resolve;});
   vi.mocked(yauzl.openPromise).mockImplementation(async (file, options) => {
-    const archive = await originalOpen(file, options); archive.once('close', () => {closed = true;});
+    const archive = await originalOpen(file, options); archive.once('close', notifyClosed);
     if(phase === 'entry')archive.readEntry = () => {};
     else archive.openReadStreamPromise = async () => {pending = new Readable({read() {}}); return pending;};
     return archive;
   });
   const {result, output} = await explain(f, 'GO-2000-0001', {timeoutMs: 100});
   expect(result.isError).toBe(true); expect(output.error.kind).toBe('scan_timeout');
-  expect(closed).toBe(true);
+  await closed;
   if(pending)expect(pending.destroyed).toBe(true);
 });
 
-it('rechecks database freshness after private-copy cleanup before returning details', async () => {
+it.each([false, true].flatMap(warm => [false, true].map(delayed => ({warm, delayed}))))(
+  'returns at the original deadline with a delayed or missing close (warm=$warm, delayed=$delayed)', async ({warm, delayed}) => {
+    const f = await fixture();
+    vi.stubEnv('OSV_MCP_MAX_CONCURRENT_SCANS', '1');
+    if (warm) expect((await explain(f)).result.isError).not.toBe(true);
+
+    let notifyCloseReady!: () => void;
+    const closeReady = new Promise<void>(resolve => {notifyCloseReady = resolve;});
+    let deliverClose: (() => void) | undefined, returned = false;
+    vi.mocked(yauzl.openPromise).mockImplementationOnce(async (file, options) => {
+      const archive = await actualZip.openPromise(file, options), emit = archive.emit;
+      archive.emit = function (event, ...args) {
+        if (event !== 'close') return emit.call(this, event, ...args);
+        deliverClose = () => {emit.call(this, event, ...args);};
+        notifyCloseReady();
+        return true;
+      };
+      return archive;
+    });
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'performance']});
+    const pending = explain(f, 'GO-2000-0001', {timeoutMs: 100}).then(result => {returned = true; return result;});
+    try {
+      await closeReady;
+      await vi.advanceTimersByTimeAsync(99);
+      expect(returned).toBe(false);
+      expect((await explain(f)).output.error.kind).toBe('too_many_concurrent_scans');
+      await vi.advanceTimersByTimeAsync(1);
+      const timed = await Promise.race([pending, new Promise<null>(resolve => setImmediate(() => resolve(null)))]);
+      expect(timed?.output.error.kind).toBe('scan_timeout');
+
+      const readEntry = vi.spyOn(actualZip.ZipFile.prototype, 'readEntry');
+      expect((await explain(f)).output.id).toBe('GO-2000-0001');
+      if (warm) expect(readEntry).not.toHaveBeenCalled();
+      else expect(readEntry).toHaveBeenCalled(); // The timed-out draft was discarded and its builder slot is free.
+      readEntry.mockClear();
+      if (delayed) deliverClose?.();
+      expect((await explain(f, 'CVE-2000-0001')).output.matched_by).toBe('alias');
+      expect(readEntry).not.toHaveBeenCalled();
+    } finally {
+      if (!returned) deliverClose?.(); // Let the original implementation unwind when this regression fails.
+      await pending;
+      vi.useRealTimers();
+    }
+  },
+);
+
+it('returns at the original deadline while private-copy removal is still pending', async () => {
+  const f = await fixture();
+  vi.stubEnv('OSV_MCP_MAX_CONCURRENT_SCANS', '1');
+  let notifyRemoval!: () => void, allowRemoval!: () => void, cleanup: Promise<void> | undefined;
+  const removing = new Promise<void>(resolve => {notifyRemoval = resolve;});
+  const release = new Promise<void>(resolve => {allowRemoval = resolve;});
+  vi.mocked(fs.rm).mockImplementationOnce((file, options) => {
+    notifyRemoval();
+    cleanup = release.then(() => actualFs.rm(file, options));
+    return cleanup;
+  });
+  vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'performance']});
+  const pending = explain(f, 'GO-2000-0001', {timeoutMs: 100});
+  try {
+    await removing;
+    await vi.advanceTimersByTimeAsync(100);
+    const timed = await Promise.race([pending, new Promise<null>(resolve => setImmediate(() => resolve(null)))]);
+    expect(timed?.output.error.kind).toBe('scan_timeout');
+    const readEntry = vi.spyOn(actualZip.ZipFile.prototype, 'readEntry');
+    expect((await explain(f)).output.id).toBe('GO-2000-0001');
+    expect(readEntry).toHaveBeenCalled();
+  } finally {
+    allowRemoval();
+    await pending;
+    await cleanup;
+    vi.useRealTimers();
+  }
+});
+
+it.each([false, true])('rechecks DB freshness after cleanup with a cold or warm index (warm=%s)', async warm => {
   const f = await fixture(), originalRemove = actualFs.rm, start = Date.now(); let expired = false;
+  if (warm) expect((await explain(f)).result.isError).not.toBe(true);
   vi.spyOn(Date, 'now').mockImplementation(() => expired ? start + 169 * 3600000 : start);
   vi.mocked(fs.rm).mockImplementation(async (file, options) => {
     await originalRemove(file, options);
@@ -267,6 +419,13 @@ it('rechecks database freshness after private-copy cleanup before returning deta
   });
   const {result, output} = await explain(f);
   expect(expired).toBe(true); expect(result.isError).toBe(true); expect(output.error.kind).toBe('scan_failed');
+  if (!warm) {
+    expired = false;
+    vi.mocked(fs.rm).mockImplementation(originalRemove);
+    const readEntry = vi.spyOn(actualZip.ZipFile.prototype, 'readEntry');
+    expect((await explain(f)).result.isError).not.toBe(true);
+    expect(readEntry).toHaveBeenCalled();
+  }
 });
 
 it.each(['depth', 'nonfinite'])('rejects %s values in matching records instead of conflating their canonical content', async mode => {
