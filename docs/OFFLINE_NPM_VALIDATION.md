@@ -76,7 +76,7 @@ The record binds the reachable product source closure, fixture and assertion cod
 
 The 41 new harness regressions reject incorrect package/version/relation/declaration metadata, wrong DB generation or counts, missing/duplicate fix targets, online/disabled/unverified claims, absent candidate-rejection evidence, still-affected final versions, incorrect SBOM identities and mismatched explanation content. The combined relevant run passes **836 tests in 38 files**, with type checking, build and harness syntax checks. These fixtures test the assertions; the separate native record uses the real full DB and scanner.
 
-This establishes same-user macOS arm64 / Node 26.12.1 behavior for an npm lockfile, local candidate queries, CycloneDX input and ID/direct-alias lookup. It does not establish Linux/Windows, all npm package/version combinations, artifact/build completeness, multiple DB generations or concurrency, registry publication/availability of a suggested version, an index/performance improvement, or a memory upper bound. `clean` and 0 records apply only to the selected local snapshot and do not establish application safety or absence of newer advisories. Earlier Go/Maven/package records are preserved at their recorded sources.
+This validation establishes same-user macOS arm64 / Node 26.12.1 behavior for an npm lockfile, local candidate queries, CycloneDX input and ID/direct-alias lookup. By itself it does not establish Linux/Windows, all npm package/version combinations, artifact/build completeness, multiple DB generations or concurrency, registry publication/availability of a suggested version, an index/performance improvement (see [Indexed explanation comparison](#indexed-explanation-comparison)), or a memory upper bound. `clean` and 0 records apply only to the selected local snapshot and do not establish application safety or absence of newer advisories. Earlier Go/Maven/package records are preserved at their recorded sources.
 
 ## Indexed explanation comparison
 
@@ -120,3 +120,16 @@ The run used macOS arm64, Node 26.12.1 and one complete 222,033,893-byte officia
 All ten paired responses were equal and all eight expiry and corruption checks returned `scan_failed`. The loopback probe returned `EPERM` and the fetch count was zero. The successful rerun uses the original baseline and the revised reader, with both build orders represented for each repeated case. It records the npm-only, same-process workload on this host. The [comparison record](validation/offline-npm-index-2026-11-21.json) contains the sample timings, response digests, refusal outcomes and source and build hashes.
 
 An earlier exploratory comparison was stopped with a ZIP still open. Its precise stopping point was not captured. The regression tests withhold the ZIP close notification on a cold and an indexed call and either deliver it late or omit it. They verify `scan_timeout` at the original deadline, reuse of the scan slot, and that the next cold call can rebuild the discarded index. A separate test delays private-copy removal. The CLI regressions start with an older successful report, finish one pair, and then exercise the watchdog, SIGINT, SIGTERM, and a `scan_timeout` result from the handler. They check the new run ID, the interrupted trial, and preservation of the completed pair.
+
+### Index memory (synthetic estimate, 2026-11-21)
+
+The completed index stays in the server process until a new generation replaces it or the server exits. The official npm DB was not available for this measurement, so the heap was measured with `scripts/measure-offline-index-memory.mjs`, which copies the index structure and `addLocation` from `943d3fc` and fills it with synthetic IDs and aliases. Values are V8 heap growth after garbage collection on macOS arm64 with Node 26.12.1. They exclude the ZIP copies and the per-request buffers. Each row is one run of `node --expose-gc scripts/measure-offline-index-memory.mjs <records> <aliases per record> <key length>`.
+
+| Shape | Retained keys | Heap |
+| --- | ---: | ---: |
+| 232,645 records (the npm DB size), no aliases, 19-character keys | 232,645 | 46 MiB |
+| 232,645 records, 1 alias each | 465,290 | 62 MiB |
+| 232,645 records, 2 aliases each | 697,935 | 85 MiB |
+| 500,000 records (the entry limit) and 500,000 aliases, 64-character keys | 1,000,000 | 188 MiB |
+
+The last row is the largest shape the default limits allow: at most 500,000 entries and at most 1,000,000 retained index entries, with IDs and aliases of at most 64 characters. A larger generation discards its draft and keeps using full lookups. While a new generation is being indexed, the previous index is still held, so up to two indexes can exist briefly. These are estimates of the data structure, not measurements of the real npm DB, whose alias count was not recorded.
