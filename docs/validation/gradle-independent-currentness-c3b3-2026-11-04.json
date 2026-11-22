@@ -30,7 +30,7 @@
     }
   ],
   "sourceSha256": {
-    "package-lock.json": "48fe07b72f8828e8e6aae645952cf6c9a62bcde773029c6e2c081c92d9304289",
+    "package-lock.json": "24d8ef47362b42df45e70c9f8995e1cca816618d55aaa57994698babffbea5cb",
     "package.json": "05ab3568d99d42ce38886435af1982d12d128884f953f7bb7cb05455eec70561",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_source_child.mjs": "d45b6cdc9045ab7e7f4efd975f4292bc1c23f8631f9b7eef588df8704f472757",
@@ -701,6 +701,35 @@
         "observationsMatched": true,
         "sourceFingerprintsMatched": true,
         "note": "Before this update the same command already matched the recorded observations and failed only at the package-lock.json fingerprint (package.json also changed). Recorded process observations are unchanged; all adoption flags remain false."
+      }
+    },
+    {
+      "date": "2026-11-22",
+      "scope": "same recorded local-process scenarios rerun by this test after dependency/version changes to package.json and package-lock.json only; observations must still match and every other source fingerprint is unchanged",
+      "fromCommit": "83d7ddf9d937eaa9e0be34423f2aaf287a632b3d",
+      "toCommit": "8205f6b7f0c2305db809d9db1cfe9962cc1fbd2d",
+      "changedSources": [
+        "package-lock.json"
+      ],
+      "previousSourceSha256": {
+        "package-lock.json": "48fe07b72f8828e8e6aae645952cf6c9a62bcde773029c6e2c081c92d9304289"
+      },
+      "sourceFingerprintCount": 73,
+      "reason": "vitest/@vitest/coverage-v8 5.1.0 -> 5.1.1 dev-dependency update (Dependabot PR #28)",
+      "result": {
+        "command": "OSV_REALTIME_PROCESS=1 npm run test:research -- --project real-time-process",
+        "runtime": {
+          "node": "v26.12.1",
+          "platform": "darwin",
+          "arch": "arm64"
+        },
+        "runs": 3,
+        "testFiles": 3,
+        "testsPassedPerRun": 8,
+        "failed": 0,
+        "observationsMatched": true,
+        "sourceFingerprintsMatched": true,
+        "note": "Before this update the same command already matched the recorded observations and failed only at the package-lock.json fingerprint. Recorded process observations are unchanged; all adoption flags remain false."
       }
     }
   ],
