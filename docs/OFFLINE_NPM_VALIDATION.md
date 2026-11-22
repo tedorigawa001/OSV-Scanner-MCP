@@ -132,4 +132,40 @@ The completed index stays in the server process until a new generation replaces 
 | 232,645 records, 2 aliases each | 697,935 | 85 MiB |
 | 500,000 records (the entry limit) and 500,000 aliases, 64-character keys | 1,000,000 | 188 MiB |
 
-The last row is the largest shape the default limits allow: at most 500,000 entries and at most 1,000,000 retained index entries, with IDs and aliases of at most 64 characters. A larger generation discards its draft and keeps using full lookups. While a new generation is being indexed, the previous index is still held, so up to two indexes can exist briefly. These are estimates of the data structure, not measurements of the real npm DB, whose alias count was not recorded.
+The last row exercises the default limits with 500,000 entries and 1,000,000 retained index entries, using 64-character keys. A generation that would exceed the index limit discards its draft and keeps using full lookups. While a new generation is being indexed, the previous index is still held, so up to two indexes can exist briefly. See the next section for real DB measurements.
+
+### Index memory with two official npm DB generations (2026-11-22)
+
+Prepare two npm-only caches on a connected machine using the `cache` command above. Use complete official npm ZIPs from different upstream generations with different SHA-256 digests. The harness validates both ZIPs and stages them in a disposable cache. It begins with the older manifest, then atomically selects the newer manifest in the same cache directory. Both ZIPs and their original preparation timestamps are used as supplied. The harness checks the original archives and manifests again at the end.
+
+```bash
+npm run build
+scratch=$(mktemp -d)
+for run in 1 2 3; do
+  sandbox-exec -p '(version 1)(allow default)(deny network*)' \
+    node --expose-gc scripts/measure-offline-index-native.mjs \
+    --old-cache /absolute/older-npm-cache --new-cache /absolute/newer-npm-cache \
+    --output "$scratch/run-$run.json" || exit 1
+done
+```
+
+The measurement requires Node 26 for the observation hooks, explicit GC and a denied TCP loopback connection. Each process runs the compiled `explain_vulnerability` handler for an exact ID, an indexed alias, the same exact ID on the new generation, and an indexed alias on the new generation. The harness observes draft creation, publication and reuse through a loader hook on the compiled reader. The hook samples scalars and retains no index objects. The supplied build files stay unchanged. The record binds the sources, built artifacts and instrumented reader by hash.
+
+A separate worker samples process RSS every 10 ms while each call is active. The harness also samples at call and index checkpoints and records the cumulative process high-water mark reported by the OS. The overlap window runs from draft creation with an old index present to new-index publication. A checkpoint immediately before publication verifies that both complete indexes are distinct and records each index's size. The per-window RSS maxima are observations at the sampling resolution. After each call, the harness drops the response and runs explicit GC twice before sampling retained RSS and V8 heap usage. Deltas use the baseline after input staging and sampler startup. The RSS includes the sampler worker, native and runtime allocations, and buffers. The post-GC heap delta measures the main isolate's overall heap growth.
+
+#### Results
+
+Three fresh processes ran the same workload on macOS arm64, Node v26.12.1 and checkout `83d7ddf`. Every loopback probe returned `EPERM` and every fetch counter was zero. The older ZIP was prepared on November 21 and contains 232,850 entries. The newer ZIP was prepared on November 22 and contains 232,857 entries. Full DB digests and timestamps are in the [measurement record](validation/offline-npm-index-memory-2026-11-22.json).
+
+| Phase | Sampled peak RSS, MiB | RSS after GC, MiB | Heap growth after GC, MiB |
+| --- | ---: | ---: | ---: |
+| First index build | 283.0–333.3 | 253.5–321.4 | 44.1–44.4 |
+| Indexed alias lookup | 307.9–325.8 | 307.9–325.8 | 44.2–44.4 |
+| DB generation replacement | 331.2–377.7 | 270.1–351.9 | 44.1 |
+| Indexed alias lookup after replacement | 289.8–355.5 | 270.7–353.2 | 44.1 |
+
+Ranges cover all three processes. Initial RSS after GC was 119.3–123.2 MiB. The peak of each replacement call occurred within the overlap window in all three runs. With both indexes complete just before publication, RSS was 302.8–377.7 MiB and the main isolate heap was 136.8–155.5 MiB above baseline before GC. That checkpoint also includes memory from the full-reader pass. The cumulative OS high-water mark for the measured calls was 331.2–377.7 MiB.
+
+The older index has 274,172 mappings over 273,976 keys. The newer one has 274,177 mappings over 273,985 keys. The older generation contributes about 0.18 additional alias mappings per ZIP record, much closer to the low end of the synthetic zero-to-two-alias model. Post-GC heap growth of about 44 MiB is close to the 46 MiB estimate for zero aliases. It returns to about the same level after replacement even when RSS remains high. The 188 MiB synthetic row describes a larger index shape and gives no process RSS ceiling.
+
+A 256 MiB RSS budget would be exceeded on the first build and at replacement on this workload. For deployments with that budget, prioritize measuring and reducing peak allocations during the full-reader pass and overlap. Focusing on the final index alone addresses only part of the observed growth. All three measured runs fit a 512 MiB budget, so these results do not justify immediate index compaction for this npm-only, sequential workload. The measurements cover one active call at a time with one ecosystem on macOS. Multi-ecosystem caches, concurrent calls and other platforms need separate capacity measurements.
