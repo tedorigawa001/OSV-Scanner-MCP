@@ -61,6 +61,38 @@ it('gets local details by canonical ID and alias without network requests', asyn
   expect(f.fetchFn).not.toHaveBeenCalled();
 });
 
+it('builds an index for a single ZIP without storing per-ID digests', async () => {
+  const f = await fixture([record(), record('GO-2000-0002', [])]);
+  const set = vi.spyOn(Map.prototype, 'set');
+  let storedDigest: boolean;
+  try {
+    expect((await explain(f)).output.id).toBe('GO-2000-0001');
+    storedDigest = set.mock.calls.some(([key, value]) => key === 'GO-2000-0002' &&
+      value !== null && typeof value === 'object' && Object.hasOwn(value, 'digest'));
+  } finally {set.mockRestore();}
+  expect(storedDigest).toBe(false);
+  expect((await explain(f, 'CVE-2000-0001')).output.matched_by).toBe('alias');
+});
+
+it('rejects a repeated filename within one ZIP even if its copies are identical and unrelated to the request', async () => {
+  const f = await fixture();
+  const entries = [record(), record('GO-2000-0002', []), record('GO-2000-0002', [])];
+  await replaceArchive(f.dir, recordZip(entries.map(r => ({name: r.id + '.json', body: JSON.stringify(r)}))));
+  const {result, output} = await explain(f);
+  expect(result.isError).toBe(true);
+  expect(output.error).toMatchObject({kind: 'scan_failed', message: expect.stringContaining('duplicate database entry')});
+});
+
+it('checks cross-ZIP conflicts after a single-ZIP index has been built', async () => {
+  const f = await fixture();
+  expect((await explain(f)).output.id).toBe('GO-2000-0001');
+  await prepareOfflineDatabases({dir: f.dir, ecosystems: ['PyPI'], fetchFn: async () =>
+    new Response(recordZip([{name: 'GO-2000-0001.json', body: JSON.stringify(record('GO-2000-0001', []))}]))});
+  const rejected = await explain(f, 'CVE-2000-0001');
+  expect(rejected.result.isError).toBe(true);
+  expect(rejected.output.error).toMatchObject({kind: 'scan_failed', message: expect.stringContaining('conflicting copies')});
+});
+
 it.each([false, true])('prioritizes exact IDs and returns every direct alias match deterministically (reverse=%s)', async reverse => {
   const go = record(), ghsa = {...record('GHSA-aaaa-bbbb-cccc', ['CVE-2000-0001', go.id]), details: 'GHSA details'};
   const f = await fixture(reverse ? [ghsa, go] : [go, ghsa]);
@@ -428,16 +460,22 @@ it.each([false, true])('rechecks DB freshness after cleanup with a cold or warm 
   }
 });
 
-it.each(['depth', 'nonfinite'])('rejects %s values in matching records instead of conflating their canonical content', async mode => {
-  const f = await fixture();
-  let nested: unknown = null;
-  for(let i = 0; i < 70; i++)nested = {nested};
-  const body = mode === 'depth' ? JSON.stringify({...record(), database_specific: nested})
-    : JSON.stringify({...record(), database_specific: {value: null}}).replace('"value":null', '"value":1e999');
-  await replaceArchive(f.dir, recordZip([{name: 'GO-2000-0001.json', body}]));
-  const {result, output} = await explain(f);
-  expect(result.isError).toBe(true); expect(output.error.kind).toBe('scan_failed');
-});
+it.each([true, false].flatMap(matching => ['depth', 'nonfinite'].map(mode => ({matching, mode}))))(
+  'validates $mode in all records of a single ZIP (matching=$matching)', async ({matching, mode}) => {
+    const f = await fixture();
+    let nested: unknown = null;
+    for (let i = 0; i < 70; i++) nested = {nested};
+    const invalid = matching ? record() : record('GO-2000-0002', []);
+    const body = mode === 'depth' ? JSON.stringify({...invalid, database_specific: nested})
+      : JSON.stringify({...invalid, database_specific: {value: null}}).replace('"value":null', '"value":1e999');
+    const entries = [{name: invalid.id + '.json', body}];
+    if (!matching) entries.unshift({name: 'GO-2000-0001.json', body: JSON.stringify(record())});
+    await replaceArchive(f.dir, recordZip(entries));
+    const {result, output} = await explain(f);
+    expect(result.isError).toBe(true);
+    expect(output.error).toMatchObject({kind: 'scan_failed', message: expect.stringContaining(mode === 'depth' ? 'nesting limit' : 'non-finite')});
+  },
+);
 
 it('reserves shared scan capacity before DB reads and releases it after rejection', async () => {
   const f = await fixture(); vi.stubEnv('OSV_MCP_MAX_CONCURRENT_SCANS', '1');

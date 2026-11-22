@@ -136,7 +136,7 @@ The last row exercises the default limits with 500,000 entries and 1,000,000 ret
 
 ### Index memory with two official npm DB generations (2026-11-22)
 
-Prepare two npm-only caches on a connected machine using the `cache` command above. Use complete official npm ZIPs from different upstream generations with different SHA-256 digests. The harness validates both ZIPs and stages them in a disposable cache. It begins with the older manifest, then atomically selects the newer manifest in the same cache directory. Both ZIPs and their original preparation timestamps are used as supplied. The harness checks the original archives and manifests again at the end.
+Use the harness at `4d3012f` to reproduce this recorded run. Prepare two npm-only caches on a connected machine using the `cache` command above. Use complete official npm ZIPs from different upstream generations with different SHA-256 digests. The harness validates both ZIPs and stages them in a disposable cache. It begins with the older manifest, then atomically selects the newer manifest in the same cache directory. Both ZIPs and their original preparation timestamps are used as supplied. The harness checks the original archives and manifests again at the end.
 
 ```bash
 npm run build
@@ -172,7 +172,7 @@ A 256 MiB RSS budget would be exceeded on the first build and at replacement on 
 
 ### Reader, index build and generation overlap RSS (2026-11-22)
 
-This experiment reuses the two official npm ZIPs above and the production reader at `4d3012f`. The original measurement and its harness hash are recorded at that commit. The now-extended [harness](../scripts/measure-offline-index-native.mjs) runs three profiles in separate Node processes. All profiles go through `explain_vulnerability`, validate the private ZIP and use the same record, entry, byte and deadline limits.
+This experiment reuses the two official npm ZIPs above and the production reader at `4d3012f`. The original measurement and its harness hash are recorded at that commit. The [harness](../scripts/measure-offline-index-native.mjs) at `906a4df` runs three profiles in separate Node processes. Reproduce the historical comparison from that checkout. All profiles go through `explain_vulnerability`, validate the private ZIP and use the same record, entry, byte and deadline limits.
 
 | Profile | First ID lookup | Generation replacement |
 | --- | --- | --- |
@@ -222,3 +222,55 @@ The normal initial and replacement peaks exceed 256 MiB in all repetitions. Even
 3. **Evaluate early release as a supplementary change.** It reduced replacement peaks in this sequential test, and every whole replacement still exceeded 256 MiB. Before adoption, check old-snapshot readers, generation reversal during refresh, and recovery from a failed build. Those cases can retain an old reference or change whether an index needs rebuilding.
 
 Use the same 256 MiB target across initial construction, intervening lookups and replacement when evaluating candidates. This study observed process RSS under the normal runtime budget. A deployment limit, parallel lookups and multi-ecosystem caches require separate verification.
+
+### Single-ZIP digest-table comparison (2026-11-22)
+
+The reader now allocates the ID-to-digest table only when the captured snapshot selects multiple ZIPs. For a single ZIP, entry names must still be unique, each JSON record's ID must still match the entry name, and the canonical walk still checks depth, finite numbers and the deadline for every record. The comparison retains canonical SHA-256 computation in both builds to isolate table retention. Copying, decompression, index construction and the lifetime of the old index during replacement follow the normal reader path in both builds.
+
+The same two complete official npm ZIPs above are used. Each measured process builds the first index, performs an indexed alias lookup, switches to the newer manifest, builds the replacement index and repeats the indexed alias lookup. The loader resolves directory and reader aliases to their real paths. It checks that the older build retains one digest row per ZIP entry at the final directory check and that the new build has no digest table at both full reads. Each run binds the complete compiled JavaScript inventory and the relevant sources at its start and verifies them again before saving.
+
+```bash
+repo=$(pwd -P)
+scratch=$(mktemp -d)
+mkdir "$scratch/before"
+git archive 906a4df src package.json package-lock.json tsconfig.json tsconfig.build.json \
+  | tar -xf - -C "$scratch/before"
+ln -s "$repo/node_modules" "$scratch/before/node_modules"
+./node_modules/.bin/tsc -p "$scratch/before/tsconfig.build.json"
+npm run build
+for round in 1 2 3; do
+  case "$round" in
+    2) arms='after before' ;;
+    *) arms='before after' ;;
+  esac
+  for arm in $arms; do
+    if [ "$arm" = before ]; then tree="$scratch/before"; digest_table=present
+    else tree="$repo"; digest_table=absent; fi
+    sandbox-exec -p '(version 1)(allow default)(deny network*)' \
+      node --expose-gc scripts/measure-offline-index-native.mjs \
+      --old-cache /absolute/older-npm-cache --new-cache /absolute/newer-npm-cache \
+      --tree "$tree" --identity-map "$digest_table" --output "$scratch/run-$round-$arm.json" || exit 1
+  done
+done
+node scripts/compare-offline-index-memory.mjs \
+  --before-tree "$scratch/before" --after-tree "$repo" \
+  --runs-dir "$scratch" --output "$scratch/verified-comparison.json"
+```
+
+The comparison command checks the complete build inventories against all six process records and requires `osv/offlineRecord.js` to be the sole compiled difference. It checks that the DB generations, response digests, reader counts and expanded byte totals agree. It then computes the paired RSS differences and saves their ranges and medians with the raw records.
+
+#### Single-ZIP comparison results
+
+All three pairs completed on macOS arm64 with Node v26.12.1 after the review fixes. Both build trees were passed to the harness through directory aliases. All six TCP loopback probes returned `EPERM` and the fetch count was zero. The comparison command verified identical responses for all four lookups and matching ZIP entry counts, filename counts and expanded byte counts across the pairs. The older build recorded 232,850 and 232,857 digest rows at the end of the respective full reads. The revised build had no digest table in either case. Of the 138 compiled JavaScript files, only `osv/offlineRecord.js` differed. The comparison command generated the [record](validation/offline-npm-single-zip-digest-map-2026-11-22.json) from the six process reports.
+
+| Full request or window | Before peak RSS, MiB | After peak RSS, MiB | Paired reduction, MiB (median) |
+| --- | ---: | ---: | ---: |
+| First index build, full request | 288.1–350.3 | 288.1–308.0 | −19.9–62.2 (21.9) |
+| Indexed alias lookup | 306.6–340.1 | 287.5–305.5 | 1.1–41.3 (22.8) |
+| Generation replacement, full request | 357.6–391.9 | 315.4–359.8 | −2.2–61.4 (43.5) |
+| Replacement overlap window | 357.6–391.9 | 315.4–359.8 | −2.2–61.4 (43.5) |
+| Indexed alias lookup after replacement | 340.0–371.4 | 325.2–339.2 | 3.3–32.2 (31.8) |
+
+Main-isolate heap at the end of the first full-reader loop was 110.4–119.9 MiB before and 77.7–84.6 MiB after. Once the first request completed and the harness ran GC twice, heap growth above baseline was about 44 MiB in both builds. The RSS differences include allocation and GC timing in each fresh process. In the second pair, peak RSS rose by 19.9 MiB on the first build and by 2.2 MiB on replacement. The peak on every revised first build and replacement exceeded 256 MiB in this sequential workload.
+
+The regression checks cover omission of per-ID digest storage, ZIP-local duplicates, invalid values in matching and unrelated records, and cross-ZIP conflicts after changing a previously indexed single-ZIP cache to a multi-ZIP cache. The memory harness regression compiles and measures the real reader through a directory alias. The comparison tests cover paired median calculation and rejection of different DBs, compiled artifacts, build digests, responses and reader counters. The 139 related tests, type checking and build passed.

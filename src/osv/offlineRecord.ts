@@ -169,8 +169,6 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
   let draft: RecordIndex | undefined, ownsBuilder = false;
   let entries = 0, expanded = 0, matchingBytes = 0;
   const matches = new Map<string, VulnerabilityExplanation>();
-  // Keep bounded digests, not record bodies, even before an alias match is discovered in a later DB.
-  const identities = new Map<string, {digest: string; conflicting: boolean}>();
   const addMatch = (record: OsvRecord, bytes: number) => {
     matchingBytes += bytes;
     if (matchingBytes > limits.matchingBytes) throw tooLarge();
@@ -202,6 +200,9 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
   };
   try {
     snapshot = await captureOfflineDatabases({...options, offline: true});
+    // Entry names are unique within each ZIP and must agree with record IDs. Only cross-ZIP
+    // conflicts need retained digests, including records that do not match the requested alias.
+    const identities = snapshot.metadata.databases.length > 1 ? new Map<string, {digest: string; conflicting: boolean}>() : undefined;
     const fresh = () => {
       guard(); checkFresh(snapshot!.metadata, config.maxAgeMs);
     };
@@ -281,9 +282,14 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
           const bytes = entry.uncompressedSize, recordId = entry.fileName.slice(0, -5);
           const record = await readRecord(zip.openReadStreamPromise(entry), recordId, bytes, entry.crc32);
           expanded += bytes;
-          const digest = canonicalDigest(record, guard), previous = identities.get(recordId);
-          const conflicting = previous?.conflicting === true || (previous !== undefined && previous.digest !== digest);
-          identities.set(recordId, {digest, conflicting});
+          // Keep the canonical walk and its depth/number checks for every record.
+          const digest = canonicalDigest(record, guard);
+          let conflicting = false;
+          if (identities) {
+            const previous = identities.get(recordId);
+            conflicting = previous?.conflicting === true || (previous !== undefined && previous.digest !== digest);
+            identities.set(recordId, {digest, conflicting});
+          }
           const matching = recordId === id || record.aliases?.includes(id);
           if (conflicting && (matching || matches.has(recordId))) throw invalid('conflicting copies of the same record ID');
           if (matching) addMatch(record, bytes);

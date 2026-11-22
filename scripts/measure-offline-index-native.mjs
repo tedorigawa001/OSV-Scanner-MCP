@@ -1,19 +1,20 @@
 /** Measure the real offline explanation reader with two official npm snapshots under OS network denial. */
 import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';
+import {createHash, randomUUID} from 'node:crypto';
 import {once} from 'node:events';
 import {createReadStream} from 'node:fs';
-import {copyFile, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile} from 'node:fs/promises';
+import {copyFile, mkdir, mkdtemp, readFile, realpath, rename, rm, stat, writeFile} from 'node:fs/promises';
 import {registerHooks} from 'node:module';
 import {connect} from 'node:net';
 import {release, tmpdir} from 'node:os';
-import {join, resolve} from 'node:path';
+import {join} from 'node:path';
 import {performance} from 'node:perf_hooks';
 import {setImmediate as nextTurn} from 'node:timers/promises';
 import {pathToFileURL} from 'node:url';
 import {parseArgs} from 'node:util';
 import {isMainThread, parentPort, Worker, workerData} from 'node:worker_threads';
 import {openPromise} from 'yauzl';
+import {buildDigest, buildInventory, memoryBindings} from './compare-offline-index-memory.mjs';
 
 const INTERVAL_MS = 10;
 const KIB = 1024;
@@ -97,8 +98,9 @@ function replaceOnce(source, pattern, replacement) {
   return source.replace(pattern, replacement);
 }
 
-async function loadReader(profile, probe) {
-  const file = 'dist/osv/offlineRecord.js', original = await readFile(file, 'utf8');
+async function loadReader(tree, profile, probe) {
+  const file = await realpath(join(tree, 'dist/osv/offlineRecord.js'));
+  const original = await readFile(file, 'utf8');
   const symbol = 'osv-offline-index-memory-probe';
   const call = (event, detail = 'undefined') => `globalThis[Symbol.for('${symbol}')]('${event}', cachedIndex, draft, ${detail});`;
   // The baseline adds observation only. The other arms alter index retention in this isolated loader.
@@ -112,7 +114,7 @@ async function loadReader(profile, probe) {
     `$1\n${call('read_started')}`);
   instrumented = replaceOnce(instrumented,
     /(if \(directoryEntries !== layout.count \|\| directoryBytes !== layout.bytes\)\s+throw invalid\('ZIP directory entry count or size mismatch'\);)/g,
-    `$1\n${call('read_finished', '{entries, expanded_bytes: expanded, names: names.size, identities: identities.size}')}`);
+    `$1\n${call('read_finished', '{entries, expanded_bytes: expanded, names: names.size, identity_map: identities !== undefined, identities: identities?.size ?? 0}')}`);
   if (profile === 'reader-only') {
     instrumented = replaceOnce(instrumented, /else if \(defaultLimits && !buildingIndex\)/g, 'else if (false)');
   } else if (profile === 'drop-old') {
@@ -121,7 +123,7 @@ async function loadReader(profile, probe) {
         ${call('old_before_drop')} cachedIndex = undefined; ${call('old_dropped')}
       }\nconst current = cachedIndex;`);
   }
-  const url = pathToFileURL(resolve(file)).href;
+  const url = pathToFileURL(file).href;
   globalThis[Symbol.for(symbol)] = probe;
   let loaded = 0;
   const hooks = registerHooks({load(target, context, nextLoad) {
@@ -132,19 +134,27 @@ async function loadReader(profile, probe) {
     return {...result, source: instrumented};
   }});
   try {
-    const {handleExplainVulnerability} = await import(pathToFileURL(resolve('dist/tools/explainVulnerability.js')).href);
+    const {handleExplainVulnerability} = await import(pathToFileURL(join(tree, 'dist/tools/explainVulnerability.js')).href);
     assert.equal(loaded, 1, 'The measured handler must load the instrumented offline reader exactly once');
     return {handleExplainVulnerability, instrumented_reader_sha256: sha256(instrumented)};
   } finally {hooks.deregister();}
 }
 
+async function buildEvidence(tree) {
+  const inventory = await buildInventory(tree);
+  return {compiled_sha256: buildDigest(inventory), bindings: await memoryBindings(tree, inventory)};
+}
+
 async function run() {
   const {values} = parseArgs({options: {'old-cache': {type: 'string'}, 'new-cache': {type: 'string'}, output: {type: 'string'},
-    profile: {type: 'string', default: 'baseline'}}});
+    profile: {type: 'string', default: 'baseline'}, tree: {type: 'string', default: '.'},
+    'identity-map': {type: 'string', default: 'absent'}}});
   assert.ok(values['old-cache'] && values['new-cache'] && values.output,
     'Supply --old-cache /old-npm-cache --new-cache /new-npm-cache --output /run.json');
   const {profile} = values;
   assert.ok(['baseline', 'reader-only', 'drop-old'].includes(profile), 'Use --profile baseline, reader-only or drop-old');
+  assert.ok(['present', 'absent'].includes(values['identity-map']), 'Use --identity-map present or absent');
+  const tree = await realpath(values.tree), expectIdentityMap = values['identity-map'] === 'present';
   assert.equal(typeof globalThis.gc, 'function', 'Use node --expose-gc');
   const denied = await new Promise(resolve => {
     const socket = connect({host: '127.0.0.1', port: 9});
@@ -170,9 +180,10 @@ async function run() {
     assert.ok(Date.parse(old.evidence.downloaded_at) < Date.parse(replacement.evidence.downloaded_at));
     const manifest = join(root, 'manifest.json');
     await writeFile(manifest, old.manifest);
+    const evidence = await buildEvidence(tree);
 
     const summary = index => index ? {keys: index.locations.size, postings: index.postings, conflicts: index.conflicts.size} : null;
-    const {handleExplainVulnerability, instrumented_reader_sha256} = await loadReader(profile, (event, current, draft, reader) => {
+    const {handleExplainVulnerability, instrumented_reader_sha256} = await loadReader(tree, profile, (event, current, draft, reader) => {
       const phase = Atomics.load(state, ACTIVE_PHASE);
       assert.ok(phase > 0);
       if (event === 'draft_started' && current) Atomics.store(state, OVERLAP_ACTIVE, 1);
@@ -235,9 +246,14 @@ async function run() {
     const expected = profile === 'reader-only' ? [[1, readEvents]] : [[1, buildEvents], [2, ['reused']],
       [3, profile === 'drop-old' ? ['old_before_drop', 'old_dropped', ...buildEvents] : buildEvents], [4, ['reused']]];
     assert.deepEqual(events.map(e => [e.phase, e.event]), expected.flatMap(([phase, names]) => names.map(name => [phase, name])));
-    const coldRead = at(1, 'read_finished');
-    assert.equal(coldRead.reader.names, old.evidence.entries);
-    assert.equal(coldRead.reader.identities, old.evidence.entries);
+    function verifyRead(phase, db) {
+      const {reader} = at(phase, 'read_finished');
+      assert.equal(reader.entries, db.entries);
+      assert.equal(reader.names, db.entries);
+      assert.equal(reader.identity_map, expectIdentityMap);
+      assert.equal(reader.identities, expectIdentityMap ? db.entries : 0);
+    }
+    verifyRead(1, old.evidence);
     if (profile === 'reader-only') {
       assert.ok(events.every(e => e.current === null && e.draft === null));
     } else {
@@ -246,8 +262,7 @@ async function run() {
       assert.ok(first.draft.postings >= old.evidence.entries && next.draft.postings >= replacement.evidence.entries);
       assert.deepEqual(at(2, 'reused').current, first.draft);
       assert.deepEqual(at(4, 'reused').current, next.draft);
-      assert.equal(at(3, 'read_finished').reader.names, replacement.evidence.entries);
-      assert.equal(at(3, 'read_finished').reader.identities, replacement.evidence.entries);
+      verifyRead(3, replacement.evidence);
       if (profile === 'baseline') {
         assert.ok(next.distinct);
         assert.deepEqual(next.current, first.draft);
@@ -269,14 +284,12 @@ async function run() {
     }
     assert.equal(fetchAttempts, 0);
 
-    const files = ['package-lock.json', 'scripts/measure-offline-index-native.mjs', 'scripts/measure-offline-index-memory.mjs',
-      'src/osv/offlineRecord.ts', 'src/osv/offlineCache.ts', 'src/tools/explainVulnerability.ts',
-      'dist/osv/offlineRecord.js', 'dist/osv/offlineCache.js', 'dist/tools/explainVulnerability.js'];
-    const bindings = Object.fromEntries(await Promise.all(files.map(async file => [file, await digestFile(file)])));
-    await writeFile(values.output, JSON.stringify({schema: 2, profile,
+    assert.deepEqual(await buildEvidence(tree), evidence, 'Build or source changed during measurement');
+    await writeFile(values.output, JSON.stringify({schema: 4, run_id: randomUUID(), profile, identity_map: values['identity-map'],
       runtime: {node: process.version, platform: process.platform, arch: process.arch, release: release()},
       network: {loopback: denied, fetch_attempts: fetchAttempts}, databases: [old.evidence, replacement.evidence],
-      sample_interval_ms: INTERVAL_MS, baseline, measurements, full_reader, overlap, events, instrumented_reader_sha256, bindings}, null, 2) + '\n');
+      sample_interval_ms: INTERVAL_MS, baseline, measurements, full_reader, overlap, events, instrumented_reader_sha256,
+      ...evidence}, null, 2) + '\n');
     console.log(`Verified ${profile} profile`);
   } finally {
     await sampler?.terminate();
