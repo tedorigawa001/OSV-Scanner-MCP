@@ -169,3 +169,56 @@ Ranges cover all three processes. Initial RSS after GC was 119.3–123.2 MiB. Th
 The older index has 274,172 mappings over 273,976 keys. The newer one has 274,177 mappings over 273,985 keys. The older generation contributes about 0.18 additional alias mappings per ZIP record, much closer to the low end of the synthetic zero-to-two-alias model. Post-GC heap growth of about 44 MiB is close to the 46 MiB estimate for zero aliases. It returns to about the same level after replacement even when RSS remains high. The 188 MiB synthetic row describes a larger index shape and gives no process RSS ceiling.
 
 A 256 MiB RSS budget would be exceeded on the first build and at replacement on this workload. For deployments with that budget, prioritize measuring and reducing peak allocations during the full-reader pass and overlap. Focusing on the final index alone addresses only part of the observed growth. All three measured runs fit a 512 MiB budget, so these results do not justify immediate index compaction for this npm-only, sequential workload. The measurements cover one active call at a time with one ecosystem on macOS. Multi-ecosystem caches, concurrent calls and other platforms need separate capacity measurements.
+
+### Reader, index build and generation overlap RSS (2026-11-22)
+
+This experiment reuses the two official npm ZIPs above and the production reader at `4d3012f`. The original measurement and its harness hash are recorded at that commit. The now-extended [harness](../scripts/measure-offline-index-native.mjs) runs three profiles in separate Node processes. All profiles go through `explain_vulnerability`, validate the private ZIP and use the same record, entry, byte and deadline limits.
+
+| Profile | First ID lookup | Generation replacement |
+| --- | --- | --- |
+| `reader-only` | Full validation and response generation with draft index creation suppressed | Outside this profile |
+| `baseline` | Full validation and normal index build | Normal full validation with the old index reachable during the new build |
+| `drop-old` | Normal build and indexed alias lookup, as on `baseline` | Discards the cached reference after verifying the new snapshot and detecting the generation change, before creating the draft |
+
+The last two profiles include an indexed alias lookup after each build. `drop-old` is a diagnostic candidate and runs without forced GC within the measured request. It leaves the product source and built files intact. The baseline loader adds observation only. Both diagnostic profiles alter only index creation or retention in the loader. Only single-ecosystem caches and sequential calls are exercised.
+
+The sampler tracks the entire request, the full-reader loop, and the overlap window separately. The loop starts after ZIP directory metadata validation and ends with the final count and size check. At that point the probe records names, identity digests and expanded bytes, with draft and old index counts. Each window includes checkpoint samples as well as 10 ms worker sampling. The full-reader and overlap windows can cover the same intervals. The differences below describe observed effects of the profiles, including GC timing, temporary objects, native buffers and allocator behavior.
+
+```bash
+npm run build
+scratch=$(mktemp -d)
+for round in 1 2 3; do
+  case "$round" in
+    1) profiles='baseline reader-only drop-old' ;;
+    2) profiles='drop-old baseline reader-only' ;;
+    3) profiles='reader-only drop-old baseline' ;;
+  esac
+  for profile in $profiles; do
+    sandbox-exec -p '(version 1)(allow default)(deny network*)' \
+      node --expose-gc scripts/measure-offline-index-native.mjs \
+      --old-cache /absolute/older-npm-cache --new-cache /absolute/newer-npm-cache \
+      --profile "$profile" --output "$scratch/run-$round-$profile.json" || exit 1
+  done
+done
+```
+
+#### Results and 256 MiB candidates
+
+All nine processes completed on macOS arm64 and Node v26.12.1. The OS loopback probe returned `EPERM`, and fetch count was zero in every process. For each compared lookup, the returned response digest agreed across rounds and profiles. The first generation passed 232,850 records and 393,986,236 expanded bytes through the full reader. The second passed 232,857 records and 394,027,548 bytes. Each full pass held one name and one identity entry per record at the final directory check. The [measurement record](validation/offline-npm-index-rss-breakdown-2026-11-22.json) contains the raw observations, sampled and OS high-water values, receipt digests and source/build hashes.
+
+| Operation | Peak RSS for full request, MiB | Peak RSS within reader loop, MiB |
+| --- | ---: | ---: |
+| Initial lookup, full reader with no index build | 236.4–264.3 | 236.4–264.2 |
+| Initial lookup, normal index build | 269.6–327.5 | 269.4–327.3 |
+| Generation replacement, normal overlap | 311.1–354.8 | 311.1–354.8 |
+| Generation replacement, drop old cached reference | 308.4–325.7 | 285.2–320.3 |
+
+With normal overlap, both complete indexes were present before publication in all three runs, and the overlap window included each replacement's peak RSS. The paired extra RSS on the initial request with index construction was 33.2–68.6 MiB (median 63.1 MiB). After GC, the initial V8 heap increase was 44.1–44.4 MiB with the index and approximately zero without it. Early removal of the old cached reference reduced replacement loop peaks by 24.0–43.9 MiB (median 26.0 MiB) and full-request peaks by 2.7–29.0 MiB (median 24.0 MiB). The early-release calls still started at 308.4–325.7 MiB after the prior indexed lookup. This retained RSS helps explain the smaller improvement across the whole request.
+
+The normal initial and replacement peaks exceed 256 MiB in all repetitions. Even the full-reader-only control exceeds it in one of three. The measurements prioritize these candidates:
+
+1. **Reduce temporary full-reader state.** Investigate removing the per-ID digest map when exactly one archive is selected. The entry name and record ID already must agree, and the names set rejects duplicate entries within the archive. Preserve complete record validation, including depth and finite-number checks. Keep cross-archive conflict detection when multiple archives are selected. Also compare the existing chunk-copy plus concatenation path with a size-bounded assembly buffer while preserving the size, CRC, UTF-8 and deadline checks.
+2. **Reduce allocations during index construction.** Measure a compact location table and alias-to-location references. Keep canonical ID priority, all direct alias matches, conflict fallback and the existing limits. Evaluate RSS during construction and after queries as well as retained V8 heap.
+3. **Evaluate early release as a supplementary change.** It reduced replacement peaks in this sequential test, and every whole replacement still exceeded 256 MiB. Before adoption, check old-snapshot readers, generation reversal during refresh, and recovery from a failed build. Those cases can retain an old reference or change whether an index needs rebuilding.
+
+Use the same 256 MiB target across initial construction, intervening lookups and replacement when evaluating candidates. This study observed process RSS under the normal runtime budget. A deployment limit, parallel lookups and multi-ecosystem caches require separate verification.

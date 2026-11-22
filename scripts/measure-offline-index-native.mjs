@@ -17,17 +17,22 @@ import {openPromise} from 'yauzl';
 
 const INTERVAL_MS = 10;
 const KIB = 1024;
-const ACTIVE_PHASE = 0, OVERLAP_ACTIVE = 1;
-const phases = {cold: 1, warm: 2, replace: 3, warm_replacement: 4, overlap: 5};
-const countersAt = bucket => 2 + (bucket - 1) * 2;
+const ACTIVE_PHASE = 0, OVERLAP_ACTIVE = 1, FULL_READ_ACTIVE = 2;
+const phases = {cold: 1, warm: 2, replace: 3, warm_replacement: 4, overlap: 5, cold_read: 6, replace_read: 7};
+const countersAt = bucket => 3 + (bucket - 1) * 2;
 
 function sample(state, knownRss) {
   const phase = Atomics.load(state, ACTIVE_PHASE);
   if (!phase) return;
   const overlap = Atomics.load(state, OVERLAP_ACTIVE);
+  const fullRead = Atomics.load(state, FULL_READ_ACTIVE);
   const kib = Math.ceil((knownRss ?? process.memoryUsage.rss()) / KIB);
-  if (phase !== Atomics.load(state, ACTIVE_PHASE) || overlap !== Atomics.load(state, OVERLAP_ACTIVE)) return;
-  for (const bucket of overlap ? [phase, phases.overlap] : [phase]) {
+  if (phase !== Atomics.load(state, ACTIVE_PHASE) || overlap !== Atomics.load(state, OVERLAP_ACTIVE) ||
+      fullRead !== Atomics.load(state, FULL_READ_ACTIVE)) return;
+  const buckets = [phase];
+  if (overlap) buckets.push(phases.overlap);
+  if (fullRead) buckets.push(fullRead);
+  for (const bucket of buckets) {
     const offset = countersAt(bucket);
     let previous = Atomics.load(state, offset);
     while (previous < kib) {
@@ -92,17 +97,30 @@ function replaceOnce(source, pattern, replacement) {
   return source.replace(pattern, replacement);
 }
 
-async function loadReader(probe) {
+async function loadReader(profile, probe) {
   const file = 'dist/osv/offlineRecord.js', original = await readFile(file, 'utf8');
   const symbol = 'osv-offline-index-memory-probe';
-  const call = event => `globalThis[Symbol.for('${symbol}')]('${event}', cachedIndex, draft);`;
-  // Observability only. No product code is checked in with a probe, and it never retains either index object.
+  const call = (event, detail = 'undefined') => `globalThis[Symbol.for('${symbol}')]('${event}', cachedIndex, draft, ${detail});`;
+  // The baseline adds observation only. The other arms alter index retention in this isolated loader.
   let instrumented = replaceOnce(original, /(draft = \{ generation, locations: new Map\(\), conflicts: new Set\(\), postings: 0 \};)/g,
     `$1\n${call('draft_started')}`);
   instrumented = replaceOnce(instrumented, /(if \(draft\)\s+cachedIndex = draft;)/g,
     `if (draft) { ${call('before_publish')} cachedIndex = draft; ${call('published')} }`);
   instrumented = replaceOnce(instrumented, /if \(!candidates\.some\(location => current\.conflicts\.has\(location\.id\)\)\)\s+indexed = candidates;/g,
     `if (!candidates.some(location => current.conflicts.has(location.id))) { indexed = candidates; ${call('reused')} }`);
+  instrumented = replaceOnce(instrumented, /(const names = new Set\(\);)/g,
+    `$1\n${call('read_started')}`);
+  instrumented = replaceOnce(instrumented,
+    /(if \(directoryEntries !== layout.count \|\| directoryBytes !== layout.bytes\)\s+throw invalid\('ZIP directory entry count or size mismatch'\);)/g,
+    `$1\n${call('read_finished', '{entries, expanded_bytes: expanded, names: names.size, identities: identities.size}')}`);
+  if (profile === 'reader-only') {
+    instrumented = replaceOnce(instrumented, /else if \(defaultLimits && !buildingIndex\)/g, 'else if (false)');
+  } else if (profile === 'drop-old') {
+    instrumented = replaceOnce(instrumented, /const current = cachedIndex;(?=\s*if \(defaultLimits)/g,
+      `if (cachedIndex && cachedIndex.generation !== generation) {
+        ${call('old_before_drop')} cachedIndex = undefined; ${call('old_dropped')}
+      }\nconst current = cachedIndex;`);
+  }
   const url = pathToFileURL(resolve(file)).href;
   globalThis[Symbol.for(symbol)] = probe;
   let loaded = 0;
@@ -121,9 +139,12 @@ async function loadReader(probe) {
 }
 
 async function run() {
-  const {values} = parseArgs({options: {'old-cache': {type: 'string'}, 'new-cache': {type: 'string'}, output: {type: 'string'}}});
+  const {values} = parseArgs({options: {'old-cache': {type: 'string'}, 'new-cache': {type: 'string'}, output: {type: 'string'},
+    profile: {type: 'string', default: 'baseline'}}});
   assert.ok(values['old-cache'] && values['new-cache'] && values.output,
     'Supply --old-cache /old-npm-cache --new-cache /new-npm-cache --output /run.json');
+  const {profile} = values;
+  assert.ok(['baseline', 'reader-only', 'drop-old'].includes(profile), 'Use --profile baseline, reader-only or drop-old');
   assert.equal(typeof globalThis.gc, 'function', 'Use node --expose-gc');
   const denied = await new Promise(resolve => {
     const socket = connect({host: '127.0.0.1', port: 9});
@@ -138,7 +159,7 @@ async function run() {
   globalThis.fetch = async () => {fetchAttempts++; throw Error('Unexpected fetch');};
 
   const root = await mkdtemp(join(tmpdir(), 'offline-index-memory-'));
-  const state = new Int32Array(new SharedArrayBuffer((2 + 2 * Object.keys(phases).length) * Int32Array.BYTES_PER_ELEMENT));
+  const state = new Int32Array(new SharedArrayBuffer((3 + 2 * Object.keys(phases).length) * Int32Array.BYTES_PER_ELEMENT));
   const events = [];
   let sampler;
   try {
@@ -151,15 +172,20 @@ async function run() {
     await writeFile(manifest, old.manifest);
 
     const summary = index => index ? {keys: index.locations.size, postings: index.postings, conflicts: index.conflicts.size} : null;
-    const {handleExplainVulnerability, instrumented_reader_sha256} = await loadReader((event, current, draft) => {
+    const {handleExplainVulnerability, instrumented_reader_sha256} = await loadReader(profile, (event, current, draft, reader) => {
       const phase = Atomics.load(state, ACTIVE_PHASE);
       assert.ok(phase > 0);
       if (event === 'draft_started' && current) Atomics.store(state, OVERLAP_ACTIVE, 1);
       if (event === 'published') Atomics.store(state, OVERLAP_ACTIVE, 0);
+      if (event === 'read_started') {
+        assert.ok(phase === phases.cold || phase === phases.replace);
+        Atomics.store(state, FULL_READ_ACTIVE, phase === phases.cold ? phases.cold_read : phases.replace_read);
+      }
       const measurement = memory();
       sample(state, measurement.rss_bytes);
+      if (event === 'read_finished') Atomics.store(state, FULL_READ_ACTIVE, 0);
       events.push({phase, event, current: summary(current), draft: summary(draft),
-        distinct: !!current && !!draft && current !== draft, memory: measurement});
+        distinct: !!current && !!draft && current !== draft, ...(reader && {reader}), memory: measurement});
     });
     sampler = new Worker(new URL(import.meta.url), {workerData: state.buffer});
     await once(sampler, 'message');
@@ -186,12 +212,13 @@ async function run() {
       assert.ok(payload.details.length > 0);
       assert.equal(payload.offline_database.network_requests, false);
       assert.deepEqual(payload.offline_database.databases, [{ecosystem: db.ecosystem, sha256: db.sha256, downloaded_at: db.downloaded_at}]);
-      return {name, requested_id: requested, database_sha256: db.sha256, elapsed_ms, before, settled, ...statistics(state, phase)};
+      return {name, requested_id: requested, database_sha256: db.sha256, elapsed_ms, before, settled,
+        response_sha256: sha256(JSON.stringify(payload)), ...statistics(state, phase)};
     }
 
-    const measurements = [];
-    for (const [name, requested, db, matchedBy] of [
-      ['cold', id, old.evidence, 'id'], ['warm', alias, old.evidence, 'alias'],
+    const measurements = [], cold = ['cold', id, old.evidence, 'id'];
+    for (const [name, requested, db, matchedBy] of profile === 'reader-only' ? [cold] : [
+      cold, ['warm', alias, old.evidence, 'alias'],
       ['replace', id, replacement.evidence, 'id'], ['warm_replacement', alias, replacement.evidence, 'alias'],
     ]) {
       console.error(`Measuring ${name}`);
@@ -202,17 +229,40 @@ async function run() {
       const measurement = await query(name, requested, db, matchedBy);
       measurements.push({...measurement, post_gc: await retainedMemory()});
     }
-    assert.deepEqual(events.map(e => [e.phase, e.event]), [[1, 'draft_started'], [1, 'before_publish'], [1, 'published'],
-      [2, 'reused'], [3, 'draft_started'], [3, 'before_publish'], [3, 'published'], [4, 'reused']]);
-    const first = events[1], both = events[5];
-    assert.equal(first.current, null);
-    assert.ok(first.draft.postings >= old.evidence.entries);
-    assert.ok(both.distinct && both.draft.postings >= replacement.evidence.entries);
-    assert.deepEqual(both.current, first.draft);
-    assert.deepEqual(events[3].current, first.draft);
-    assert.deepEqual(events[7].current, both.draft);
+    const at = (phase, event) => events.find(e => e.phase === phase && e.event === event);
+    const readEvents = ['read_started', 'read_finished'];
+    const buildEvents = ['draft_started', ...readEvents, 'before_publish', 'published'];
+    const expected = profile === 'reader-only' ? [[1, readEvents]] : [[1, buildEvents], [2, ['reused']],
+      [3, profile === 'drop-old' ? ['old_before_drop', 'old_dropped', ...buildEvents] : buildEvents], [4, ['reused']]];
+    assert.deepEqual(events.map(e => [e.phase, e.event]), expected.flatMap(([phase, names]) => names.map(name => [phase, name])));
+    const coldRead = at(1, 'read_finished');
+    assert.equal(coldRead.reader.names, old.evidence.entries);
+    assert.equal(coldRead.reader.identities, old.evidence.entries);
+    if (profile === 'reader-only') {
+      assert.ok(events.every(e => e.current === null && e.draft === null));
+    } else {
+      const first = at(1, 'before_publish'), next = at(3, 'before_publish');
+      assert.equal(first.current, null);
+      assert.ok(first.draft.postings >= old.evidence.entries && next.draft.postings >= replacement.evidence.entries);
+      assert.deepEqual(at(2, 'reused').current, first.draft);
+      assert.deepEqual(at(4, 'reused').current, next.draft);
+      assert.equal(at(3, 'read_finished').reader.names, replacement.evidence.entries);
+      assert.equal(at(3, 'read_finished').reader.identities, replacement.evidence.entries);
+      if (profile === 'baseline') {
+        assert.ok(next.distinct);
+        assert.deepEqual(next.current, first.draft);
+      } else {
+        assert.deepEqual(at(3, 'old_before_drop').current, first.draft);
+        assert.equal(at(3, 'old_dropped').current, null);
+        assert.equal(next.current, null);
+      }
+    }
     const overlap = statistics(state, phases.overlap);
-    assert.ok(overlap.samples > 2 && overlap.sampled_peak_rss_bytes >= both.memory.rss_bytes);
+    if (profile === 'baseline') assert.ok(overlap.samples > 2 && overlap.sampled_peak_rss_bytes >= at(3, 'before_publish').memory.rss_bytes);
+    else assert.equal(overlap.samples, 0);
+    const full_reader = {cold: statistics(state, phases.cold_read),
+      ...(profile !== 'reader-only' && {replace: statistics(state, phases.replace_read)})};
+    assert.ok(full_reader.cold.samples > 2 && (full_reader.replace?.samples ?? 3) > 2);
     for (const db of [old, replacement]) {
       assert.deepEqual(await readFile(db.manifestFile), db.manifest);
       assert.equal(await digestFile(db.input), db.evidence.sha256);
@@ -223,11 +273,11 @@ async function run() {
       'src/osv/offlineRecord.ts', 'src/osv/offlineCache.ts', 'src/tools/explainVulnerability.ts',
       'dist/osv/offlineRecord.js', 'dist/osv/offlineCache.js', 'dist/tools/explainVulnerability.js'];
     const bindings = Object.fromEntries(await Promise.all(files.map(async file => [file, await digestFile(file)])));
-    await writeFile(values.output, JSON.stringify({schema: 1,
+    await writeFile(values.output, JSON.stringify({schema: 2, profile,
       runtime: {node: process.version, platform: process.platform, arch: process.arch, release: release()},
       network: {loopback: denied, fetch_attempts: fetchAttempts}, databases: [old.evidence, replacement.evidence],
-      sample_interval_ms: INTERVAL_MS, baseline, measurements, overlap, events, instrumented_reader_sha256, bindings}, null, 2) + '\n');
-    console.log('Verified first build, indexed alias lookups and an overlapping generation replacement');
+      sample_interval_ms: INTERVAL_MS, baseline, measurements, full_reader, overlap, events, instrumented_reader_sha256, bindings}, null, 2) + '\n');
+    console.log(`Verified ${profile} profile`);
   } finally {
     await sampler?.terminate();
     globalThis.fetch = originalFetch;
