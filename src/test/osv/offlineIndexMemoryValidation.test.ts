@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {dirname, join, resolve} from 'node:path';
 import {expect, it} from 'vitest';
 // @ts-ignore Repository validation artifact, separate from the shipped server.
-import {buildDigest, buildInventory, compareRuns, memoryBindings} from '../../../scripts/compare-offline-index-memory.mjs';
+import {buildDigest, buildInventory, compareRuns, memoryBindings, recordBufferEdits} from '../../../scripts/compare-offline-index-memory.mjs';
 import {recordZip} from '../fixtures/offlineRecords.js';
 
 const mib = 1024 * 1024;
@@ -70,7 +70,10 @@ syncBuiltinESMExports();
   },
 );
 
-async function comparisonFixture(root: string) {
+const readerPaths = ['src/osv/offlineRecord.ts', 'dist/osv/offlineRecord.js'] as const;
+
+async function comparisonFixture(root: string, {keepOldDigestTable = true, recordBuffer = false,
+  extraReaderPath}: {keepOldDigestTable?: boolean; recordBuffer?: boolean; extraReaderPath?: typeof readerPaths[number]} = {}) {
   const trees = {before: join(root, 'before'), after: join(root, 'after')};
   const runsDir = join(root, 'runs');
   const databases = [0, 1].map(i => ({ecosystem: 'npm', url, bytes: 300 + i, entries: 10 + i,
@@ -79,10 +82,15 @@ async function comparisonFixture(root: string) {
     const tree = trees[arm];
     for (const name of ['package.json', 'package-lock.json', 'src/osv/offlineCache.ts', 'src/tools/explainVulnerability.ts',
       'dist/osv/offlineCache.js', 'dist/tools/explainVulnerability.js', 'dist/other.js']) await put(join(tree, name), name);
-    for (const name of ['src/osv/offlineRecord.ts', 'dist/osv/offlineRecord.js']) await put(join(tree, name), arm + name);
+    for (const name of readerPaths) {
+      const edits: readonly (readonly [string, string])[] = recordBufferEdits[name];
+      const reader = recordBuffer ? edits.map(([before, after]) => arm === 'before' ? before : after).join('\n') : arm + name;
+      const independent = arm === 'after' && extraReaderPath === name ? '\nconst indexLimit = 500;' : '';
+      await put(join(tree, name), reader + independent);
+    }
     const inventory = await buildInventory(tree), bindings = await memoryBindings(tree, inventory);
-    const present = arm === 'before';
-    for (const [i, coldMiB] of (present ? [400, 320, 330] : [300, 310, 250]).entries()) {
+    const present = keepOldDigestTable && arm === 'before';
+    for (const [i, coldMiB] of (arm === 'before' ? [400, 320, 330] : [300, 310, 250]).entries()) {
       const measurements = ['cold', 'warm', 'replace', 'warm_replacement'].map((name, stage) => ({name,
         database_sha256: databases[stage < 2 ? 0 : 1]!.sha256, requested_id: stage % 2 === 0 ? id : alias,
         response_sha256: sha256(name), samples: 100, sampled_peak_rss_bytes: (coldMiB + stage * 10) * mib,
@@ -129,5 +137,29 @@ it.each([
       await writeFile(file, JSON.stringify(run));
     }
     await expect(compareRuns(options)).rejects.toThrow(reason);
+  } finally {await rm(root, {recursive: true, force: true});}
+});
+
+it.each([false, true])('requires both record-buffer arms to omit the digest table (keep old=%s)', async keepOldDigestTable => {
+  const root = await mkdtemp(join(tmpdir(), 'record-buffer-compare-test-'));
+  try {
+    const options = await comparisonFixture(root, {keepOldDigestTable, recordBuffer: true});
+    const report = compareRuns({...options, comparison: 'record-buffer'});
+    if (keepOldDigestTable) await expect(report).rejects.toThrow('unexpected digest-table policy');
+    else {
+      const result = await report;
+      expect(result.comparison).toBe('record-buffer');
+      expect(result.summary_bytes.cold_request_peak_rss.paired_before_minus_after).toEqual({min: 10*mib, max: 100*mib, median: 80*mib});
+    }
+  } finally {await rm(root, {recursive: true, force: true});}
+});
+
+it.each(readerPaths)('rejects an additional reader change with updated measurement hashes (%s)', async extraReaderPath => {
+  const root = await mkdtemp(join(tmpdir(), 'record-buffer-diff-test-'));
+  try {
+    const options = await comparisonFixture(root, {keepOldDigestTable: false, recordBuffer: true, extraReaderPath});
+    // The fixture binds the modified files to all runs before comparing their actual contents.
+    await expect(compareRuns({...options, comparison: 'record-buffer'})).rejects
+      .toThrow(`Unexpected change outside the approved record-buffer edits (${extraReaderPath})`);
   } finally {await rm(root, {recursive: true, force: true});}
 });

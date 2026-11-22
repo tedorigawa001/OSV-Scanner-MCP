@@ -179,18 +179,22 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
     active = await stream;
     active.on('error', () => {}); // A timeout may destroy the stream before async iteration attaches its listener.
     let bytes = 0, checksum = 0;
-    const chunks: Buffer[] = [];
+    let buffer: Buffer;
     try {
       guard();
-      for await (const value of active) {
-        guard(); const chunk = Buffer.from(value); bytes += chunk.length;
-        if (bytes > expectedBytes) throw tooLarge();
-        checksum = crc32(chunk, checksum); chunks.push(chunk);
+      // Both lookup paths supply a bounded ZIP entry size. Decode only after every byte has been filled.
+      buffer = Buffer.allocUnsafe(expectedBytes);
+      for await (const chunk of active as AsyncIterable<Uint8Array>) {
+        guard();
+        if (chunk.byteLength > expectedBytes - bytes) throw tooLarge();
+        buffer.set(chunk, bytes);
+        bytes += chunk.byteLength;
+        checksum = crc32(chunk, checksum);
       }
     } finally {active.destroy(); active = undefined;}
     guard();
     if (bytes !== expectedBytes || checksum !== expectedCRC) throw invalid('database entry size or CRC mismatch');
-    const record = asRecord(JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(Buffer.concat(chunks, bytes))));
+    const record = asRecord(JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(buffer)));
     // Canonical IDs name entries. Non-OSV aliases from upstream are allowed strings, but cannot match a request.
     if (!record || record.id !== expectedId || (record.aliases !== undefined &&
         (!Array.isArray(record.aliases) || !record.aliases.every(a => typeof a === 'string')))) {

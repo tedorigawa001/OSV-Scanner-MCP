@@ -274,3 +274,24 @@ All three pairs completed on macOS arm64 with Node v26.12.1 after the review fix
 Main-isolate heap at the end of the first full-reader loop was 110.4–119.9 MiB before and 77.7–84.6 MiB after. Once the first request completed and the harness ran GC twice, heap growth above baseline was about 44 MiB in both builds. The RSS differences include allocation and GC timing in each fresh process. In the second pair, peak RSS rose by 19.9 MiB on the first build and by 2.2 MiB on replacement. The peak on every revised first build and replacement exceeded 256 MiB in this sequential workload.
 
 The regression checks cover omission of per-ID digest storage, ZIP-local duplicates, invalid values in matching and unrelated records, and cross-ZIP conflicts after changing a previously indexed single-ZIP cache to a multi-ZIP cache. The memory harness regression compiles and measures the real reader through a directory alias. The comparison tests cover paired median calculation and rejection of different DBs, compiled artifacts, build digests, responses and reader counters. The 139 related tests, type checking and build passed.
+
+### Bounded record-buffer comparison (2026-11-22)
+
+The reader now assembles each decompressed entry directly into one buffer of the declared size. It checks remaining space before writing each chunk, computes CRC incrementally and decodes UTF-8 only after receiving exactly the declared size and matching the CRC. The stream and lookup still use the original deadline. Both builds omit the ID digest table for a single ZIP. The canonical walk, index structure and lifetime of the old index remain the same.
+
+The benchmark reuses the two official npm ZIPs from the single-ZIP comparison above. In each process it measures initial index construction, an indexed alias lookup, replacement on generation change and an indexed alias lookup after replacement. Run the same commands as above with `git archive 7694a4a`, pass `--identity-map absent` to the measurement on both arms, and add `--comparison record-buffer` to the comparison command. That comparison checks matching DBs, responses and full-read counters and requires the same digest-table policy on both arms. It applies the approved assembly and decode edits to the baseline reader and requires a byte-for-byte match with the candidate in both the TypeScript source and compiled JavaScript. The rest of the compiled inventory must match across both builds.
+
+After tightening the comparison, all three pairs were rerun in fresh macOS arm64 processes on Node v26.12.1. All six OS loopback probes returned `EPERM` and fetch attempts were zero. The DB hashes, four response hashes, ZIP entry and filename counts, and expanded bytes matched across all arms and the previous single-ZIP comparison. The only difference across 138 compiled JavaScript files was the approved reader edit. The [measurement record](validation/offline-npm-record-buffer-2026-11-22.json) contains all six process reports and the paired statistics.
+
+| Full request | Before peak RSS, MiB | After peak RSS, MiB | Paired before minus after, MiB (median) |
+| --- | ---: | ---: | ---: |
+| Initial index construction | 283.1–289.2 | 287.5–300.0 | −17.0 to −0.5 (−2.8) |
+| Indexed alias lookup | 286.6–302.5 | 289.2–305.4 | −18.8 to 13.3 (4.2) |
+| Generation replacement | 344.6–367.5 | 342.7–366.2 | −19.1 to 7.2 (1.9) |
+| Indexed alias lookup after replacement | 326.7–339.5 | 329.3–348.6 | −22.0 to 3.5 (−3.3) |
+
+The initial reader-loop peak increased in all three pairs, by 0.4–16.8 MiB. The paired reader-loop difference on replacement ranged from a 19.1 MiB increase to a 7.2 MiB reduction. After the initial lookup and the harness's two GC calls, heap growth above baseline remained approximately 44 MiB on both arms. This isolated change removes the additional assembly copies in the reader and showed no consistent peak RSS reduction in this workload. All 12 measured requests after the change still exceeded 256 MiB. The workload covers sequential requests for one ecosystem.
+
+Regression tests cover exact-size UTF-8 split across chunks, short and overflowing streams and bad CRC on both full and indexed reads. The malformed UTF-8 fixture has a matching CRC and would parse as JSON with lossy decoding. In both read paths, the deadline tests observe one successful chunk write, no write for the chunk delivered at expiry and no request for the following chunk. The comparison tests reject a different digest-table policy and reject additional changes in the reader source or compiled file even when the corresponding measurement hashes are updated.
+
+In an isolated copy, omitting the per-chunk deadline check failed the additional-pull assertion in both read paths. Moving the check after the write failed the no-write assertion in both. The 153 related tests, type checking and build passed with the original check in place.

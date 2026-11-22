@@ -273,6 +273,76 @@ it.each([0, 8])('reads method %s archives including ZIP64', async method => {
   expect(warm.result.isError, JSON.stringify(warm.output)).not.toBe(true); expect(warm.output.matched_by).toBe('alias');
 });
 
+it.each([false, true].flatMap(warm => ['exact', 'short', 'overflow', 'crc'].map(mode => ({warm, mode}))))(
+  'checks each chunk and final size/CRC for a split UTF-8 record ($warm/$mode)', async ({warm, mode}) => {
+    const details = 'before あ after', advisory = {...record(), details};
+    const raw = Buffer.from(JSON.stringify(advisory));
+    const split = raw.indexOf('あ') + 1;
+    const f = await fixture([advisory]);
+    if (warm) expect((await explain(f)).output.details).toBe(details);
+    const end = Buffer.from(raw.subarray(split, mode === 'short' ? raw.length - 1 : raw.length));
+    if (mode === 'crc') end[end.indexOf('after')] = 'A'.charCodeAt(0);
+    const stream = Readable.from((function* () {
+      yield raw.subarray(0, split);
+      yield end;
+      if (mode === 'overflow') yield Buffer.from('!');
+    })());
+    vi.mocked(yauzl.openPromise).mockImplementationOnce(async (file, options) => {
+      const archive = await actualZip.openPromise(file, options);
+      if (warm) archive.openReadStreamLowLevel = (...args) => args[6](null, stream);
+      else archive.openReadStreamPromise = async () => stream;
+      return archive;
+    });
+    const {result, output} = await explain(f, warm ? 'CVE-2000-0001' : advisory.id);
+    expect(stream.destroyed).toBe(true);
+    if (mode === 'exact') {
+      expect(result.isError, JSON.stringify(output)).not.toBe(true);
+      expect(output.details).toBe(details);
+    } else {
+      expect(result.isError).toBe(true);
+      expect(output.error.kind).toBe(mode === 'overflow' ? 'output_too_large' : 'scan_failed');
+      if (mode === 'short' || mode === 'crc') expect(output.error.message).toContain('size or CRC mismatch');
+      expect(output).not.toHaveProperty('id');
+      expect((await explain(f)).output.details).toBe(details);
+    }
+  },
+);
+
+it.each([false, true])('stops copying and pulling chunks at the original deadline (warm=%s)', async warm => {
+  const f = await fixture();
+  if (warm) expect((await explain(f)).output.id).toBe('GO-2000-0001');
+
+  const raw = Buffer.from(JSON.stringify(record()));
+  const first = raw.subarray(0, 1), expired = raw.subarray(1, 2), remaining = raw.subarray(2);
+  const clock = vi.spyOn(performance, 'now');
+  const set = vi.spyOn(Uint8Array.prototype, 'set');
+  const pulled: Buffer[] = [];
+  const stream = new Readable({read() {}});
+  // Pull one chunk per iterator request, so stream prefetch cannot count as reader progress.
+  vi.spyOn(stream, Symbol.asyncIterator).mockImplementation(async function* () {
+    pulled.push(first); yield first;
+    clock.mockReturnValue(performance.now() + 120_001);
+    pulled.push(expired); yield expired;
+    pulled.push(remaining); yield remaining;
+    return undefined;
+  });
+  vi.mocked(yauzl.openPromise).mockImplementationOnce(async (file, options) => {
+    const archive = await actualZip.openPromise(file, options);
+    if (warm) archive.openReadStreamLowLevel = (...args) => args[6](null, stream);
+    else archive.openReadStreamPromise = async () => stream;
+    return archive;
+  });
+  const {result, output} = await explain(f, warm ? 'CVE-2000-0001' : 'GO-2000-0001');
+  const writes = set.mock.calls.map(([chunk]) => chunk).filter(chunk => chunk === first || chunk === expired || chunk === remaining);
+  set.mockRestore(); clock.mockRestore();
+  expect(result.isError).toBe(true);
+  expect(output.error.kind).toBe('scan_timeout');
+  expect(pulled).toEqual([first, expired]);
+  expect(writes).toEqual([first]);
+  expect(stream.destroyed).toBe(true);
+  expect((await explain(f)).output.id).toBe('GO-2000-0001');
+});
+
 it.each([false, true].flatMap(zip64 => ['count', 'count-and-size'].flatMap(mode =>
   ['GO-2000-0001', 'GO-2000-0002', 'GO-2999-0000'].map(id => ({zip64, mode, id})))))(
   'rejects underreported ZIP directory metadata instead of an explanation or miss ($zip64/$mode/$id)', async ({zip64, mode, id}) => {
@@ -306,7 +376,10 @@ it.each(['json', 'null', 'identity', 'aliases', 'alias-type', 'utf8', 'crc', 'si
     if(mode === 'identity')bad.body = JSON.stringify(record('GO-2000-0003'));
     if(mode === 'aliases')bad.body = JSON.stringify({...record('GO-2000-0002'), aliases: 'CVE-2000-0001'});
     if(mode === 'alias-type')bad.body = JSON.stringify({...record('GO-2000-0002'), aliases: [42]});
-    if(mode === 'utf8')bad.body = Buffer.from([0xff]);
+    if (mode === 'utf8') {
+      // The record would parse successfully if the decoder silently replaced malformed UTF-8.
+      const body = Buffer.from(bad.body); body[body.indexOf('Local details')] = 0xff; bad.body = body;
+    }
     if(mode === 'crc')bad.crc = 0;
     if(mode === 'size')bad.size = 1;
     if(mode === 'encrypted')bad.flags = 1;

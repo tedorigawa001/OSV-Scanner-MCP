@@ -1,4 +1,4 @@
-/** Verify and summarize the paired single-ZIP digest-table RSS measurements. */
+/** Verify and summarize paired offline index RSS measurements. */
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readdir, readFile, realpath, writeFile} from 'node:fs/promises';
@@ -12,6 +12,75 @@ const order = [arms, ['after', 'before'], arms];
 const phases = ['cold', 'warm', 'replace', 'warm_replacement'];
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const hashPattern = /^[a-f0-9]{64}$/;
+
+// Approved edits for this experiment, in the source and in the locked compiler's output.
+// Compare whole files after applying only these edits so another change in either reader is rejected.
+const decodeEdit = Object.freeze(['.decode(Buffer.concat(chunks, bytes))));', '.decode(buffer)));']);
+export const recordBufferEdits = Object.freeze({
+  'src/osv/offlineRecord.ts': Object.freeze([Object.freeze([
+    `    const chunks: Buffer[] = [];
+    try {
+      guard();
+      for await (const value of active) {
+        guard(); const chunk = Buffer.from(value); bytes += chunk.length;
+        if (bytes > expectedBytes) throw tooLarge();
+        checksum = crc32(chunk, checksum); chunks.push(chunk);`,
+    `    let buffer: Buffer;
+    try {
+      guard();
+      // Both lookup paths supply a bounded ZIP entry size. Decode only after every byte has been filled.
+      buffer = Buffer.allocUnsafe(expectedBytes);
+      for await (const chunk of active as AsyncIterable<Uint8Array>) {
+        guard();
+        if (chunk.byteLength > expectedBytes - bytes) throw tooLarge();
+        buffer.set(chunk, bytes);
+        bytes += chunk.byteLength;
+        checksum = crc32(chunk, checksum);`,
+  ]), decodeEdit]),
+  ['dist/' + readerFile]: Object.freeze([Object.freeze([
+    `        const chunks = [];
+        try {
+            guard();
+            for await (const value of active) {
+                guard();
+                const chunk = Buffer.from(value);
+                bytes += chunk.length;
+                if (bytes > expectedBytes)
+                    throw tooLarge();
+                checksum = crc32(chunk, checksum);
+                chunks.push(chunk);`,
+    `        let buffer;
+        try {
+            guard();
+            // Both lookup paths supply a bounded ZIP entry size. Decode only after every byte has been filled.
+            buffer = Buffer.allocUnsafe(expectedBytes);
+            for await (const chunk of active) {
+                guard();
+                if (chunk.byteLength > expectedBytes - bytes)
+                    throw tooLarge();
+                buffer.set(chunk, bytes);
+                bytes += chunk.byteLength;
+                checksum = crc32(chunk, checksum);`,
+  ]), decodeEdit]),
+});
+
+async function verifyRecordBufferEdits(trees, bindings) {
+  await Promise.all(Object.entries(recordBufferEdits).map(async ([path, edits]) => {
+    const [before, after] = await Promise.all(arms.map(async arm => {
+      const bytes = await readFile(join(trees[arm], path));
+      assert.equal(sha256(bytes), bindings[arm][path], `${arm}: reader changed during comparison (${path})`);
+      return bytes;
+    }));
+    let expected = before.toString('utf8');
+    assert.ok(before.equals(Buffer.from(expected)), `Invalid UTF-8 in baseline reader (${path})`);
+    for (const [from, to] of edits) {
+      const start = expected.indexOf(from);
+      assert.ok(start >= 0 && start === expected.lastIndexOf(from), `Expected one approved record-buffer edit (${path})`);
+      expected = expected.replace(from, () => to);
+    }
+    assert.ok(after.equals(Buffer.from(expected)), `Unexpected change outside the approved record-buffer edits (${path})`);
+  }));
+}
 
 export async function buildInventory(tree) {
   const paths = [];
@@ -62,10 +131,10 @@ function event(run, phase, name) {
   return found[0];
 }
 
-function verifyRun(run, arm, bindings, compiledHash) {
+function verifyRun(run, arm, bindings, compiledHash, expectIdentityMap) {
   assert.equal(run.schema, 4);
   assert.equal(run.profile, 'baseline');
-  assert.equal(run.identity_map, arm === 'before' ? 'present' : 'absent');
+  assert.equal(run.identity_map, expectIdentityMap ? 'present' : 'absent', `${arm}: unexpected digest-table policy`);
   assert.equal(run.compiled_sha256, compiledHash, `${arm}: build inventory digest mismatch`);
   assert.deepEqual(run.bindings, bindings, `${arm}: build/source bindings mismatch`);
   assert.match(run.instrumented_reader_sha256, hashPattern);
@@ -101,8 +170,8 @@ function verifyRun(run, arm, bindings, compiledHash) {
     assert.equal(entries, run.databases[i].entries);
     assert.equal(names, entries);
     assert.ok(Number.isSafeInteger(expanded_bytes) && expanded_bytes > 0);
-    assert.equal(identity_map, arm === 'before');
-    assert.equal(identities, arm === 'before' ? entries : 0);
+    assert.equal(identity_map, expectIdentityMap);
+    assert.equal(identities, expectIdentityMap ? entries : 0);
     counters[name] = {entries, names, expanded_bytes};
     const peak = window(run.full_reader[name], name + ' full reader');
     assert.ok(peak <= measured[name].sampled_peak_rss_bytes && peak >= finish.memory.rss_bytes);
@@ -127,7 +196,8 @@ function range(values) {
   return {min: sorted[0], max: sorted.at(-1), median};
 }
 
-export async function compareRuns({beforeTree, afterTree, runsDir}) {
+export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 'digest-table'}) {
+  assert.ok(['digest-table', 'record-buffer'].includes(comparison), 'Use --comparison digest-table or record-buffer');
   const trees = {before: beforeTree, after: afterTree};
   const [before, after] = await Promise.all(arms.map(arm => buildInventory(trees[arm])));
   assert.deepEqual(Object.keys(before), Object.keys(after), 'Different compiled file sets');
@@ -139,6 +209,7 @@ export async function compareRuns({beforeTree, afterTree, runsDir}) {
   assert.deepEqual(Object.keys(beforeBindings).filter(path => beforeBindings[path] !== afterBindings[path]),
     ['src/osv/offlineRecord.ts', 'dist/osv/offlineRecord.js'], 'Unexpected bound-file differences');
   const bindings = {before: beforeBindings, after: afterBindings};
+  if (comparison === 'record-buffer') await verifyRecordBufferEdits(trees, bindings);
   const compiled = {before: buildDigest(before), after: buildDigest(after)};
   const runIds = new Set(), instrumented = new Map();
   const pairs = [], values = [];
@@ -150,7 +221,7 @@ export async function compareRuns({beforeTree, afterTree, runsDir}) {
       raw[arm] = run;
       assert.ok(!runIds.has(run.run_id), 'Duplicate process measurement');
       runIds.add(run.run_id);
-      const checked = verifyRun(run, arm, bindings[arm], compiled[arm]);
+      const checked = verifyRun(run, arm, bindings[arm], compiled[arm], comparison === 'digest-table' && arm === 'before');
       if (!instrumented.has(arm)) instrumented.set(arm, run.instrumented_reader_sha256);
       assert.equal(run.instrumented_reader_sha256, instrumented.get(arm), `${arm}: instrumented reader changed`);
       const invariant = {databases: checked.databases, responses: checked.responses, counters: checked.counters,
@@ -171,16 +242,17 @@ export async function compareRuns({beforeTree, afterTree, runsDir}) {
     const after = values.map(pair => pair.after[name]);
     return [name, {before: range(before), after: range(after), paired_before_minus_after: range(before.map((n, i) => n - after[i]))}];
   }));
-  return {schema: 2, build_comparison: {js_file_count: Object.keys(before).length, changed},
+  return {schema: 2, ...(comparison === 'record-buffer' && {comparison}), build_comparison: {js_file_count: Object.keys(before).length, changed},
     pairs, common_response_sha256: reference.responses, summary_bytes};
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(await realpath(process.argv[1])).href) {
   const {values} = parseArgs({options: {'before-tree': {type: 'string'}, 'after-tree': {type: 'string'},
-    'runs-dir': {type: 'string'}, output: {type: 'string'}}});
+    'runs-dir': {type: 'string'}, output: {type: 'string'}, comparison: {type: 'string'}}});
   assert.ok(values['before-tree'] && values['after-tree'] && values['runs-dir'] && values.output,
     'Supply --before-tree DIR --after-tree DIR --runs-dir DIR --output FILE');
-  const result = await compareRuns({beforeTree: values['before-tree'], afterTree: values['after-tree'], runsDir: values['runs-dir']});
+  const result = await compareRuns({beforeTree: values['before-tree'], afterTree: values['after-tree'], runsDir: values['runs-dir'],
+    comparison: values.comparison});
   await writeFile(values.output, JSON.stringify(result, null, 2) + '\n');
   console.log(`Verified ${result.pairs.length} pairs and ${result.build_comparison.js_file_count} compiled files`);
 }
