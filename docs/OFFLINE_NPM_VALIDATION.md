@@ -295,3 +295,22 @@ The initial reader-loop peak increased in all three pairs, by 0.4–16.8 MiB. Th
 Regression tests cover exact-size UTF-8 split across chunks, short and overflowing streams and bad CRC on both full and indexed reads. The malformed UTF-8 fixture has a matching CRC and would parse as JSON with lossy decoding. In both read paths, the deadline tests observe one successful chunk write, no write for the chunk delivered at expiry and no request for the following chunk. The comparison tests reject a different digest-table policy and reject additional changes in the reader source or compiled file even when the corresponding measurement hashes are updated.
 
 In an isolated copy, omitting the per-chunk deadline check failed the additional-pull assertion in both read paths. Moving the check after the write failed the no-write assertion in both. The 153 related tests, type checking and build passed with the original check in place.
+
+### Single-ZIP record validation without canonical digests (2026-11-24)
+
+With one ZIP selected, the full reader validates every parsed value, including those in unrelated records, without sorting keys, serializing values for the digest, or creating a record SHA-256. It keeps the nesting and finite-number checks and polls the original request deadline at each value. Multiple ZIPs still use the canonical digest to detect conflicting copies. The archive SHA-256 check applies to both paths, and the record assembly, index structure and replacement lifetime are the same on both builds in this comparison.
+
+Use the same two official npm DB generations and the six-process comparison procedure above, with `git archive b0c9914` as the baseline and `--identity-map absent` in both arms. Pass `--comparison record-validation` to the comparison command. It pins the reviewed TypeScript and compiled reader on each arm and checks the rest of the compiled inventory, the DB generations, the four responses and the full-reader counters. It records the elapsed time of each complete request, including snapshot capture and cleanup, alongside peak RSS.
+
+All three pairs completed on macOS arm64 with Node v26.12.1. The six OS loopback probes returned `EPERM`, with zero fetch attempts. Of 138 compiled JavaScript files, only the approved reader differed. Both ZIP hashes, the four response hashes, ZIP entry and filename counts, and expanded bytes also agreed with the November 22 comparison. The [raw measurements and paired statistics](validation/offline-npm-record-validation-2026-11-24.json) include all six processes.
+
+| Full request | Before peak RSS, MiB | After peak RSS, MiB | Median paired RSS change, MiB (after minus before) | Before elapsed, s | After elapsed, s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Initial index construction | 258.1–289.0 | 240.4–308.3 | +24.0 | 23.619–42.539 | 21.133–27.009 |
+| Indexed alias lookup | 257.7–290.5 | 277.2–314.1 | +15.7 | 0.426–0.717 | 0.307–0.466 |
+| Generation replacement | 266.8–321.0 | 306.0–353.6 | +63.0 | 25.305–50.346 | 21.973–26.604 |
+| Indexed alias lookup after replacement | 276.9–304.5 | 299.3–340.5 | +54.0 | 0.321–0.827 | 0.284–0.357 |
+
+Initial construction and generation replacement were faster in all three pairs. The paired reductions ranged from 2.486 to 15.530 s for construction and from 3.332 to 26.974 s for replacement. Indexed request times varied in both directions across pairs. Peak RSS also varied, and 11 of the 12 revised requests exceeded 256 MiB. This comparison demonstrates a time reduction for the full reads in this workload and does not establish a peak RSS reduction. After the initial lookup and two harness GC calls, retained heap growth remained about 44 MiB in both builds.
+
+The 157 related tests, type checking and build passed. The record-hash test checks requested and unrelated records and confirms that ZIP hashing still happens. Existing regressions cover depth and non-finite numbers on both requested and unrelated records and reordered or conflicting copies across ZIPs. A deadline test interrupts validation of an unrelated record between two values and verifies that the index is rebuilt on retry. In isolated copies, the hash regression failed against the baseline and the deadline regression failed with the per-value deadline check removed. The comparison also rejects unapproved reader bytes with self-consistent measurement hashes.

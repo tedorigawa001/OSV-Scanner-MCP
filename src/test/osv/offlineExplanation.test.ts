@@ -2,7 +2,7 @@ import {afterEach, expect, it, vi} from 'vitest';
 import {mkdtemp, realpath, readFile, writeFile, rm} from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import {createHash} from 'node:crypto';
+import {createHash, Hash} from 'node:crypto';
 import {performance} from 'node:perf_hooks';
 import {Readable} from 'node:stream';
 import * as yauzl from 'yauzl';
@@ -72,6 +72,21 @@ it('builds an index for a single ZIP without storing per-ID digests', async () =
   } finally {set.mockRestore();}
   expect(storedDigest).toBe(false);
   expect((await explain(f, 'CVE-2000-0001')).output.matched_by).toBe('alias');
+});
+
+it.each([false, true])('only hashes record bodies when comparing multiple ZIPs (multiple=%s)', async multiple => {
+  const matching = {...record(), database_specific: {marker: 'digest-matching-record'}};
+  const unrelated = {...record('GO-2000-0002', []), database_specific: {marker: 'digest-unrelated-record'}};
+  const f = await fixture([matching, unrelated]);
+  if (multiple) await prepareOfflineDatabases({dir: f.dir, ecosystems: ['PyPI'], fetchFn: async () =>
+    new Response(recordZip([{name: unrelated.id + '.json', body: JSON.stringify(unrelated)}]))});
+  const update = vi.spyOn(Hash.prototype, 'update');
+  expect((await explain(f)).output.id).toBe(matching.id);
+  const inputs = update.mock.calls.map(([input]) => input);
+  update.mockRestore();
+  expect(inputs.some(input => Buffer.isBuffer(input))).toBe(true); // ZIP SHA-256 verification still runs.
+  const markers = inputs.filter(input => input === '"digest-matching-record"' || input === '"digest-unrelated-record"');
+  expect(markers).toEqual(multiple ? ['"digest-matching-record"', '"digest-unrelated-record"', '"digest-unrelated-record"'] : []);
 });
 
 it('rejects a repeated filename within one ZIP even if its copies are identical and unrelated to the request', async () => {
@@ -549,6 +564,27 @@ it.each([true, false].flatMap(matching => ['depth', 'nonfinite'].map(mode => ({m
     expect(output.error).toMatchObject({kind: 'scan_failed', message: expect.stringContaining(mode === 'depth' ? 'nesting limit' : 'non-finite')});
   },
 );
+
+it('checks the original deadline while validating an unrelated record in a single ZIP', async () => {
+  const first = 1122334.125, following = 2233445.625;
+  const f = await fixture([record(), {...record('GO-2000-0002', []), database_specific: {values: [first, following]}}]);
+  const clock = vi.spyOn(performance, 'now');
+  const isFinite = Number.isFinite;
+  const inspect = vi.spyOn(Number, 'isFinite').mockImplementation(value => {
+    if (value === first) clock.mockReturnValue(performance.now() + 120_001);
+    return isFinite(value);
+  });
+  const {result, output} = await explain(f);
+  expect(inspect).toHaveBeenCalledWith(first);
+  expect(inspect).not.toHaveBeenCalledWith(following);
+  inspect.mockRestore(); clock.mockRestore();
+  expect(result.isError).toBe(true);
+  expect(output.error.kind).toBe('scan_timeout');
+  expect(output).not.toHaveProperty('id');
+  const readEntry = vi.spyOn(actualZip.ZipFile.prototype, 'readEntry');
+  expect((await explain(f)).output.id).toBe('GO-2000-0001');
+  expect(readEntry).toHaveBeenCalled();
+});
 
 it('reserves shared scan capacity before DB reads and releases it after rejection', async () => {
   const f = await fixture(); vi.stubEnv('OSV_MCP_MAX_CONCURRENT_SCANS', '1');

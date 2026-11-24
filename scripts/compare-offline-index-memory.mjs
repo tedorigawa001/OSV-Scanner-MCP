@@ -13,6 +13,18 @@ const phases = ['cold', 'warm', 'replace', 'warm_replacement'];
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const hashPattern = /^[a-f0-9]{64}$/;
 
+// Independently pin the reviewed validation-only change in the source and compiled reader.
+const validationReaderPins = {
+  'src/osv/offlineRecord.ts': [
+    '71089bff22e04c83f269548b054466e70d8f87e3bce4f4f940e4020ab77408b7',
+    'fc0d6d66c7bd4773efe2eaca90d4570a9c6f79916103c3a565a623f5c2178ced',
+  ],
+  ['dist/' + readerFile]: [
+    'f40421c679f2881eb93ffec3df37a55f013c78de914454e17ddad9fb6171aad2',
+    'd16ec49214ed267724bba2f56c73b3737a0e5722fa363561d00642b72d8aa347',
+  ],
+};
+
 // Approved edits for this experiment, in the source and in the locked compiler's output.
 // Compare whole files after applying only these edits so another change in either reader is rejected.
 const decodeEdit = Object.freeze(['.decode(Buffer.concat(chunks, bytes))));', '.decode(buffer)));']);
@@ -196,8 +208,12 @@ function range(values) {
   return {min: sorted[0], max: sorted.at(-1), median};
 }
 
+function pairedSummary(before, after) {
+  return {before: range(before), after: range(after), paired_before_minus_after: range(before.map((n, i) => n - after[i]))};
+}
+
 export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 'digest-table'}) {
-  assert.ok(['digest-table', 'record-buffer'].includes(comparison), 'Use --comparison digest-table or record-buffer');
+  assert.ok(['digest-table', 'record-buffer', 'record-validation'].includes(comparison), 'Unknown comparison mode');
   const trees = {before: beforeTree, after: afterTree};
   const [before, after] = await Promise.all(arms.map(arm => buildInventory(trees[arm])));
   assert.deepEqual(Object.keys(before), Object.keys(after), 'Different compiled file sets');
@@ -210,6 +226,11 @@ export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 
     ['src/osv/offlineRecord.ts', 'dist/osv/offlineRecord.js'], 'Unexpected bound-file differences');
   const bindings = {before: beforeBindings, after: afterBindings};
   if (comparison === 'record-buffer') await verifyRecordBufferEdits(trees, bindings);
+  if (comparison === 'record-validation') {
+    for (const [path, pins] of Object.entries(validationReaderPins)) {
+      assert.deepEqual(arms.map(arm => bindings[arm][path]), pins, `Unexpected record-validation reader bytes (${path})`);
+    }
+  }
   const compiled = {before: buildDigest(before), after: buildDigest(after)};
   const runIds = new Set(), instrumented = new Map();
   const pairs = [], values = [];
@@ -237,13 +258,15 @@ export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 
     pairs.push({round, order: runOrder, arms: raw});
     values.push(pair);
   }
-  const summary_bytes = Object.fromEntries(Object.keys(values[0].before).map(name => {
-    const before = values.map(pair => pair.before[name]);
-    const after = values.map(pair => pair.after[name]);
-    return [name, {before: range(before), after: range(after), paired_before_minus_after: range(before.map((n, i) => n - after[i]))}];
-  }));
-  return {schema: 2, ...(comparison === 'record-buffer' && {comparison}), build_comparison: {js_file_count: Object.keys(before).length, changed},
-    pairs, common_response_sha256: reference.responses, summary_bytes};
+  const summary_bytes = Object.fromEntries(Object.keys(values[0].before).map(name =>
+    [name, pairedSummary(...arms.map(arm => values.map(pair => pair[arm][name])))]));
+  const timing = comparison === 'record-validation' ? {summary_elapsed_ms: Object.fromEntries(phases.map((phase, i) => {
+    const elapsed = arms.map(arm => pairs.map(pair => pair.arms[arm].measurements[i].elapsed_ms));
+    assert.ok(elapsed.flat().every(ms => Number.isFinite(ms) && ms > 0), `Invalid elapsed time (${phase})`);
+    return [phase, pairedSummary(...elapsed)];
+  }))} : {};
+  return {schema: 2, ...(comparison !== 'digest-table' && {comparison}), build_comparison: {js_file_count: Object.keys(before).length, changed},
+    pairs, common_response_sha256: reference.responses, summary_bytes, ...timing};
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(await realpath(process.argv[1])).href) {

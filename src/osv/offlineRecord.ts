@@ -72,11 +72,26 @@ function bounded(value: number, ceiling: number): number {
   if (!Number.isSafeInteger(value) || value < 1 || value > ceiling) throw invalid('invalid lookup limits');
   return value;
 }
+function validateRecordValue(value: unknown, depth: number, guard: () => void) {
+  guard();
+  if (depth > 64) throw invalid('OSV record nesting limit exceeded');
+  if (typeof value === 'number' && !Number.isFinite(value)) throw invalid('non-finite OSV record number');
+}
+
+function validateRecord(value: unknown, guard: () => void, depth = 0) {
+  validateRecordValue(value, depth, guard);
+  if (Array.isArray(value)) {
+    for (const item of value) validateRecord(item, guard, depth + 1);
+  } else if (value !== null && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    for (const key of Object.keys(record)) validateRecord(record[key], guard, depth + 1);
+  }
+}
+
 function canonicalDigest(value: unknown, guard: () => void): string {
   const hash = createHash('sha256');
   const visit = (value: unknown, depth: number) => {
-    guard(); if (depth > 64) throw invalid('OSV record nesting limit exceeded');
-    if (typeof value === 'number' && !Number.isFinite(value)) throw invalid('non-finite OSV record number');
+    validateRecordValue(value, depth, guard);
     if (Array.isArray(value)) {
       hash.update('['); for (const item of value) {visit(item, depth + 1); hash.update(',');} hash.update(']');
     } else if (value !== null && typeof value === 'object') {
@@ -286,14 +301,13 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
           const bytes = entry.uncompressedSize, recordId = entry.fileName.slice(0, -5);
           const record = await readRecord(zip.openReadStreamPromise(entry), recordId, bytes, entry.crc32);
           expanded += bytes;
-          // Keep the canonical walk and its depth/number checks for every record.
-          const digest = canonicalDigest(record, guard);
           let conflicting = false;
           if (identities) {
+            const digest = canonicalDigest(record, guard);
             const previous = identities.get(recordId);
             conflicting = previous?.conflicting === true || (previous !== undefined && previous.digest !== digest);
             identities.set(recordId, {digest, conflicting});
-          }
+          } else validateRecord(record, guard);
           const matching = recordId === id || record.aliases?.includes(id);
           if (conflicting && (matching || matches.has(recordId))) throw invalid('conflicting copies of the same record ID');
           if (matching) addMatch(record, bytes);

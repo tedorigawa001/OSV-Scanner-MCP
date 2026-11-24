@@ -163,3 +163,12 @@ it.each(readerPaths)('rejects an additional reader change with updated measureme
       .toThrow(`Unexpected change outside the approved record-buffer edits (${extraReaderPath})`);
   } finally {await rm(root, {recursive: true, force: true});}
 });
+
+it('rejects unapproved validation reader builds even with matching measurement hashes', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'record-validation-diff-test-'));
+  try {
+    const options = await comparisonFixture(root, {keepOldDigestTable: false, recordBuffer: true});
+    await expect(compareRuns({...options, comparison: 'record-validation'})).rejects
+      .toThrow('Unexpected record-validation reader bytes');
+  } finally {await rm(root, {recursive: true, force: true});}
+});
