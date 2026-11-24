@@ -176,6 +176,80 @@ it('keeps an in-flight snapshot consistent and rebuilds the index for the refres
   expect((await explain(f, 'CVE-2000-0001')).output.error.kind).toBe('vulnerability_not_found');
 });
 
+it('lets an indexed reader finish on its captured generation across replacement and rebuilds when the generation returns', async () => {
+  vi.stubEnv('OSV_MCP_MAX_CONCURRENT_SCANS', '2');
+  const alias = 'CVE-2000-0001';
+  const f = await fixture([record(), record('GO-2000-0002')]);
+  const manifestPath = path.join(f.dir, 'manifest.json'), originalManifest = await readFile(manifestPath);
+  const original = (await explain(f, alias)).output;
+  expect(original.matching_record_ids).toEqual(['GO-2000-0001', 'GO-2000-0002']);
+  const readEntry = vi.spyOn(actualZip.ZipFile.prototype, 'readEntry');
+
+  let notifyEntered!: () => void, releaseReader!: () => void;
+  const entered = new Promise<void>(resolve => {notifyEntered = resolve;});
+  const release = new Promise<void>(resolve => {releaseReader = resolve;});
+  vi.mocked(yauzl.openPromise).mockImplementationOnce(async (file, options) => {
+    const archive = await actualZip.openPromise(file, options);
+    const indexedOpen = archive.openReadStreamLowLevel;
+    archive.openReadStreamLowLevel = (...args) => {
+      archive.openReadStreamLowLevel = indexedOpen;
+      notifyEntered();
+      void release.then(() => indexedOpen.apply(archive, args));
+    };
+    return archive;
+  });
+  const inFlight = explain(f, alias);
+  try {
+    await Promise.race([entered, inFlight.then(() => {throw Error('Expected a pending indexed read');})]);
+    const updated = {...record(), summary: 'New generation'};
+    await replaceArchive(f.dir, recordZip([{name: updated.id + '.json', body: JSON.stringify(updated)}]));
+    expect((await explain(f, alias)).output).toMatchObject({summary: updated.summary, matching_record_ids: [updated.id]});
+    readEntry.mockClear();
+    expect((await explain(f, alias)).output.summary).toBe(updated.summary);
+    expect(readEntry).not.toHaveBeenCalled();
+  } finally {
+    releaseReader();
+    await inFlight;
+  }
+  expect((await inFlight).output).toEqual(original);
+
+  await writeFile(manifestPath, originalManifest);
+  readEntry.mockClear();
+  expect((await explain(f, alias)).output).toEqual(original);
+  expect(readEntry).toHaveBeenCalled();
+  readEntry.mockClear();
+  expect((await explain(f, alias)).output).toEqual(original);
+  expect(readEntry).not.toHaveBeenCalled();
+});
+
+it.each(['snapshot', 'replacement'] as const)('keeps lookup correct after a failed %s for a new generation', async phase => {
+  const f = await fixture();
+  const manifestPath = path.join(f.dir, 'manifest.json'), originalManifest = await readFile(manifestPath);
+  const original = (await explain(f)).output;
+  expect(original.id).toBe('GO-2000-0001');
+  const invalid = record('GO-2000-0002');
+  await replaceArchive(f.dir, recordZip([{name: 'GO-2000-0001.json', body: JSON.stringify(invalid)}]));
+  if (phase === 'snapshot') {
+    const digest = JSON.parse(await readFile(manifestPath, 'utf8')).databases[0].sha256;
+    const object = path.join(f.dir, 'objects', digest + '.zip'), bytes = await readFile(object);
+    bytes[bytes.length - 1] = bytes.at(-1)! ^ 1;
+    await writeFile(object, bytes);
+  }
+  const failure = await explain(f);
+  expect(failure.result.isError).toBe(true);
+  expect(failure.output.error).toMatchObject({kind: 'scan_failed',
+    message: expect.stringContaining(phase === 'snapshot' ? 'digest mismatch' : 'invalid OSV record identity')});
+
+  await writeFile(manifestPath, originalManifest);
+  const readEntry = vi.spyOn(actualZip.ZipFile.prototype, 'readEntry');
+  expect((await explain(f)).output).toEqual(original);
+  if (phase === 'snapshot') expect(readEntry).not.toHaveBeenCalled();
+  else expect(readEntry).toHaveBeenCalled();
+  readEntry.mockClear();
+  expect((await explain(f)).output).toEqual(original);
+  expect(readEntry).not.toHaveBeenCalled();
+});
+
 it('rebuilds for a new manifest generation even when the DB bytes are identical', async () => {
   const f = await fixture(), before = (await explain(f)).output.offline_database.databases[0];
   const manifestPath = path.join(f.dir, 'manifest.json');

@@ -32,6 +32,13 @@ const compactReaderPins = {
     'c82b81f4a78829ce1edb61552fa056202a292c2172c56ccebb09ce54b7125908'],
 };
 
+const releaseReaderPins = {
+  'src/osv/offlineRecord.ts': [compactReaderPins['src/osv/offlineRecord.ts'][1],
+    '1f1cc45b06484c36c6e281d73bc913b4e7511481c4cada86d80f41b38a1e2604'],
+  ['dist/' + readerFile]: [compactReaderPins['dist/' + readerFile][1],
+    '34a73b48b88e1e50f822be6711553080ad044a49f4cfb27d88623a59643bfe7a'],
+};
+
 // Approved edits for this experiment, in the source and in the locked compiler's output.
 // Compare whole files after applying only these edits so another change in either reader is rejected.
 const decodeEdit = Object.freeze(['.decode(Buffer.concat(chunks, bytes))));', '.decode(buffer)));']);
@@ -150,7 +157,7 @@ function event(run, phase, name) {
   return found[0];
 }
 
-function verifyRun(run, arm, bindings, compiledHash, expectIdentityMap) {
+function verifyRun(run, arm, bindings, compiledHash, expectIdentityMap, expectRelease) {
   assert.equal(run.schema, 4);
   assert.equal(run.profile, 'baseline');
   assert.equal(run.identity_map, expectIdentityMap ? 'present' : 'absent', `${arm}: unexpected digest-table policy`);
@@ -198,10 +205,26 @@ function verifyRun(run, arm, bindings, compiledHash, expectIdentityMap) {
     peaks[`${name}_reader_end_heap`] = finish.memory.heap_used_bytes;
   }
   const replace = event(run, 3, 'before_publish');
-  assert.equal(replace.distinct, true);
-  const overlap = window(run.overlap, 'replacement overlap');
-  assert.ok(overlap >= replace.memory.rss_bytes && overlap <= measured.replace.sampled_peak_rss_bytes);
-  peaks.overlap_peak_rss = overlap;
+  if (expectRelease) {
+    const prior = event(run, 3, 'old_before_drop'), drop = event(run, 3, 'old_dropped');
+    const start = event(run, 3, 'draft_started');
+    assert.deepEqual(prior.current, event(run, 1, 'before_publish').draft);
+    assert.ok(prior.current);
+    assert.equal(prior.draft, null);
+    assert.equal(drop.draft, null);
+    assert.equal(drop.current, null);
+    assert.equal(start.current, null);
+    assert.equal(replace.current, null);
+    assert.equal(replace.distinct, false);
+    assert.deepEqual(run.events.filter(e => e.phase === 3).map(e => e.event),
+      ['old_before_drop', 'old_dropped', 'draft_started', 'read_started', 'read_finished', 'before_publish', 'published']);
+    assert.deepEqual(run.overlap, {sampled_peak_rss_bytes: 0, samples: 0});
+  } else {
+    assert.equal(replace.distinct, true);
+    const overlap = window(run.overlap, 'replacement overlap');
+    assert.ok(overlap >= replace.memory.rss_bytes && overlap <= measured.replace.sampled_peak_rss_bytes);
+    peaks.overlap_peak_rss = overlap;
+  }
   peaks.cold_post_gc_heap_delta = measured.cold.post_gc.heap_used_bytes - run.baseline.heap_used_bytes;
   peaks.replace_start_rss = measured.replace.before.rss_bytes;
   assert.ok(Object.values(peaks).every(Number.isSafeInteger));
@@ -219,7 +242,7 @@ function pairedSummary(before, after) {
   return {before: range(before), after: range(after), paired_before_minus_after: range(before.map((n, i) => n - after[i]))};
 }
 
-function verifyIndexLayout(run, arm, peaks) {
+function verifyIndexLayout(run, packed, peaks) {
   const indexes = [];
   for (const [i, db] of run.databases.entries()) {
     const phase = 1 + i * 2;
@@ -229,7 +252,7 @@ function verifyIndexLayout(run, arm, peaks) {
     assert.ok(Number.isSafeInteger(logical.keys) && logical.keys >= db.entries);
     assert.ok(Number.isSafeInteger(logical.postings) && logical.postings >= logical.keys && logical.postings <= 1_000_000);
     assert.equal(logical.conflicts, 0);
-    if (arm === 'after') {
+    if (packed) {
       assert.equal(rows, db.entries);
       assert.equal(location_table_bytes, Math.ceil(rows / 1024) * 1024 * 20);
     } else {
@@ -252,7 +275,8 @@ function verifyIndexLayout(run, arm, peaks) {
 }
 
 export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 'digest-table'}) {
-  assert.ok(['digest-table', 'record-buffer', 'record-validation', 'compact-index'].includes(comparison), 'Unknown comparison mode');
+  assert.ok(['digest-table', 'record-buffer', 'record-validation', 'compact-index', 'early-release'].includes(comparison), 'Unknown comparison mode');
+  const release = comparison === 'early-release', compareIndex = release || comparison === 'compact-index';
   const trees = {before: beforeTree, after: afterTree};
   const [before, after] = await Promise.all(arms.map(arm => buildInventory(trees[arm])));
   assert.deepEqual(Object.keys(before), Object.keys(after), 'Different compiled file sets');
@@ -265,7 +289,7 @@ export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 
     ['src/osv/offlineRecord.ts', 'dist/osv/offlineRecord.js'], 'Unexpected bound-file differences');
   const bindings = {before: beforeBindings, after: afterBindings};
   if (comparison === 'record-buffer') await verifyRecordBufferEdits(trees, bindings);
-  const readerPins = comparison === 'compact-index' ? compactReaderPins : comparison === 'record-validation' ? validationReaderPins : undefined;
+  const readerPins = {'early-release': releaseReaderPins, 'compact-index': compactReaderPins, 'record-validation': validationReaderPins}[comparison];
   if (readerPins) {
     for (const [path, pins] of Object.entries(readerPins)) {
       assert.deepEqual(arms.map(arm => bindings[arm][path]), pins, `Unexpected ${comparison} reader bytes (${path})`);
@@ -282,12 +306,13 @@ export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 
       raw[arm] = run;
       assert.ok(!runIds.has(run.run_id), 'Duplicate process measurement');
       runIds.add(run.run_id);
-      const checked = verifyRun(run, arm, bindings[arm], compiled[arm], comparison === 'digest-table' && arm === 'before');
+      const checked = verifyRun(run, arm, bindings[arm], compiled[arm], comparison === 'digest-table' && arm === 'before',
+        release && arm === 'after');
       if (!instrumented.has(arm)) instrumented.set(arm, run.instrumented_reader_sha256);
       assert.equal(run.instrumented_reader_sha256, instrumented.get(arm), `${arm}: instrumented reader changed`);
       const invariant = {databases: checked.databases, responses: checked.responses, counters: checked.counters,
         runtime: run.runtime, sample_interval_ms: run.sample_interval_ms,
-        ...(comparison === 'compact-index' && {indexes: verifyIndexLayout(run, arm, checked.peaks)})};
+        ...(compareIndex && {indexes: verifyIndexLayout(run, release || arm === 'after', checked.peaks)})};
       reference ??= invariant;
       assert.deepEqual(invariant.databases, reference.databases, 'Different DB generations');
       assert.deepEqual(invariant.responses, reference.responses, 'Different lookup responses');
@@ -300,7 +325,9 @@ export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 
     pairs.push({round, order: runOrder, arms: raw});
     values.push(pair);
   }
-  const summary_bytes = Object.fromEntries(Object.keys(values[0].before).map(name =>
+  // The early-release arm has no overlap window. Keep the raw observations without a paired RSS statistic.
+  const metrics = Object.keys(values[0].before).filter(name => !release || name !== 'overlap_peak_rss');
+  const summary_bytes = Object.fromEntries(metrics.map(name =>
     [name, pairedSummary(...arms.map(arm => values.map(pair => pair[arm][name])))]));
   const timing = readerPins ? {summary_elapsed_ms: Object.fromEntries(phases.map((phase, i) => {
     const elapsed = arms.map(arm => pairs.map(pair => pair.arms[arm].measurements[i].elapsed_ms));

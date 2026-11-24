@@ -263,14 +263,16 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
     const generation = JSON.stringify([config.dir, snapshot.metadata.databases]);
     const defaultLimits = Object.entries(OFFLINE_LOOKUP_LIMITS).every(([key, ceiling]) => limits[key as keyof typeof limits] === ceiling);
     let indexed: readonly number[] | undefined;
-    const current = cachedIndex;
-    if (defaultLimits && current?.generation === generation) {
+    const current = defaultLimits && cachedIndex?.generation === generation ? cachedIndex : undefined;
+    if (current) {
       const locations = current.locations.get(id);
       const candidates = Array.isArray(locations) ? locations : locations === undefined ? [] : [locations];
       // On a conflict, use the full reader to preserve the order of limit and conflict failures.
       if (!candidates.some(row => current.conflicts.has(current.records.ids[row]!))) indexed = candidates;
     } else if (defaultLimits && !buildingIndex) {
       buildingIndex = ownsBuilder = true;
+      // Existing indexed readers keep their own reference. The replacement builder does not retain the old index.
+      if (cachedIndex) cachedIndex = undefined;
       draft = {generation, records: new RecordLocationTable(), locations: new Map(), conflicts: new Set(), postings: 0};
     }
 

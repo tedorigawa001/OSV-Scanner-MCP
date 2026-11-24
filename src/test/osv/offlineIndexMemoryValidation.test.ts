@@ -58,17 +58,27 @@ createRequire(import.meta.url)('node:net').connect = () => {
 };
 syncBuiltinESMExports();
 `);
-      const run = spawnSync(process.execPath, ['--expose-gc', '--import', preload, 'scripts/measure-offline-index-native.mjs',
-        '--old-cache', caches[0]!, '--new-cache', caches[1]!, '--tree', aliasedTree, '--identity-map', 'absent', '--output', output],
-        {encoding: 'utf8', timeout: 15_000});
-      expect(run.status, run.error?.message ?? run.stderr + run.stdout).toBe(0);
-      const measured = JSON.parse(await readFile(output, 'utf8'));
-      expect(measured.measurements.map((m: {name: string}) => m.name)).toEqual(['cold', 'warm', 'replace', 'warm_replacement']);
-      expect(measured.events.filter((e: {event: string}) => e.event === 'read_finished')).toHaveLength(2);
-      const published = measured.events.filter((e: {event: string}) => e.event === 'before_publish');
-      expect(published).toHaveLength(2);
-      for (const {draft} of published) expect(draft).toMatchObject({rows: 513, location_table_bytes: 1024 * 20});
-      expect(measured.compiled_sha256).toBe(buildDigest(await buildInventory(tree)));
+      const digest = buildDigest(await buildInventory(tree));
+      for (const profile of ['baseline', 'drop-old']) {
+        const run = spawnSync(process.execPath, ['--expose-gc', '--import', preload, 'scripts/measure-offline-index-native.mjs',
+          '--old-cache', caches[0]!, '--new-cache', caches[1]!, '--tree', aliasedTree, '--identity-map', 'absent',
+          '--profile', profile, '--output', output], {encoding: 'utf8', timeout: 15_000});
+        expect(run.status, run.error?.message ?? run.stderr + run.stdout).toBe(0);
+        const measured = JSON.parse(await readFile(output, 'utf8'));
+        expect(measured.profile).toBe(profile);
+        expect(measured.measurements.map((m: {name: string}) => m.name)).toEqual(['cold', 'warm', 'replace', 'warm_replacement']);
+        expect(measured.events.filter((e: {event: string}) => e.event === 'read_finished')).toHaveLength(2);
+        const published = measured.events.filter((e: {event: string}) => e.event === 'before_publish');
+        expect(published).toHaveLength(2);
+        for (const {draft} of published) expect(draft).toMatchObject({rows: 513, location_table_bytes: 1024 * 20});
+        expect(measured.events.filter((e: {phase: number}) => e.phase === 3).slice(0, 3)).toMatchObject([
+          {event: 'old_before_drop', current: published[0].draft, draft: null},
+          {event: 'old_dropped', current: null, draft: null},
+          {event: 'draft_started', current: null},
+        ]);
+        expect(measured.overlap).toEqual({sampled_peak_rss_bytes: 0, samples: 0});
+        expect(measured.compiled_sha256).toBe(digest);
+      }
     } finally {await rm(root, {recursive: true, force: true});}
   },
 );

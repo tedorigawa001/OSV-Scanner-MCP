@@ -1,0 +1,3547 @@
+{
+  "schema": 2,
+  "comparison": "early-release",
+  "build_comparison": {
+    "js_file_count": 138,
+    "changed": [
+      "osv/offlineRecord.js"
+    ]
+  },
+  "pairs": [
+    {
+      "round": 1,
+      "order": [
+        "before",
+        "after"
+      ],
+      "arms": {
+        "before": {
+          "schema": 4,
+          "run_id": "b86ce93a-3f3f-4a38-a8e1-0c22311e9085",
+          "profile": "baseline",
+          "identity_map": "absent",
+          "runtime": {
+            "node": "v26.12.1",
+            "platform": "darwin",
+            "arch": "arm64",
+            "release": "27.2.0"
+          },
+          "network": {
+            "loopback": "EPERM",
+            "fetch_attempts": 0
+          },
+          "databases": [
+            {
+              "ecosystem": "npm",
+              "sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "bytes": 222033893,
+              "downloaded_at": "2026-11-21T06:39:24.687Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232850
+            },
+            {
+              "ecosystem": "npm",
+              "sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "bytes": 222050720,
+              "downloaded_at": "2026-11-22T09:44:05.874Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232857
+            }
+          ],
+          "sample_interval_ms": 10,
+          "baseline": {
+            "rss_bytes": 158433280,
+            "heap_used_bytes": 10128536,
+            "heap_total_bytes": 17874944,
+            "external_bytes": 3066049,
+            "array_buffers_bytes": 146135,
+            "process_high_water_rss_bytes": 158433280
+          },
+          "measurements": [
+            {
+              "name": "cold",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 21147.859958,
+              "before": {
+                "rss_bytes": 158449664,
+                "heap_used_bytes": 10178416,
+                "heap_total_bytes": 17874944,
+                "external_bytes": 3066089,
+                "array_buffers_bytes": 146135,
+                "process_high_water_rss_bytes": 158449664
+              },
+              "settled": {
+                "rss_bytes": 301056000,
+                "heap_used_bytes": 60546936,
+                "heap_total_bytes": 117489664,
+                "external_bytes": 14029348,
+                "array_buffers_bytes": 11115484,
+                "process_high_water_rss_bytes": 301056000
+              },
+              "response_sha256": "108a63b951f03fd1721c021bbe5d5c9afa43d7e610af1fe2317475fb8817270e",
+              "sampled_peak_rss_bytes": 301056000,
+              "samples": 2023,
+              "post_gc": {
+                "rss_bytes": 295895040,
+                "heap_used_bytes": 36086928,
+                "heap_total_bytes": 110657536,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 301154304
+              }
+            },
+            {
+              "name": "warm",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 355.1039579999997,
+              "before": {
+                "rss_bytes": 295927808,
+                "heap_used_bytes": 36127080,
+                "heap_total_bytes": 110657536,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 301154304
+              },
+              "settled": {
+                "rss_bytes": 299401216,
+                "heap_used_bytes": 36341752,
+                "heap_total_bytes": 93356032,
+                "external_bytes": 7891936,
+                "array_buffers_bytes": 4946717,
+                "process_high_water_rss_bytes": 301154304
+              },
+              "response_sha256": "f635bf55e87e37edba8e6b5f267ce25addb36b7d3c9367f4230841d520acb5c2",
+              "sampled_peak_rss_bytes": 299401216,
+              "samples": 36,
+              "post_gc": {
+                "rss_bytes": 299401216,
+                "heap_used_bytes": 36121760,
+                "heap_total_bytes": 93356032,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 301154304
+              }
+            },
+            {
+              "name": "replace",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 22834.080958000002,
+              "before": {
+                "rss_bytes": 299401216,
+                "heap_used_bytes": 36165864,
+                "heap_total_bytes": 93356032,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 301154304
+              },
+              "settled": {
+                "rss_bytes": 297828352,
+                "heap_used_bytes": 75777352,
+                "heap_total_bytes": 128221184,
+                "external_bytes": 17614503,
+                "array_buffers_bytes": 14669284,
+                "process_high_water_rss_bytes": 304168960
+              },
+              "response_sha256": "0fafb246cef9d1854552fcc6e2af065786df02f5a36d660143232c33743914fa",
+              "sampled_peak_rss_bytes": 304168960,
+              "samples": 2148,
+              "post_gc": {
+                "rss_bytes": 279576576,
+                "heap_used_bytes": 36054408,
+                "heap_total_bytes": 95715328,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 304168960
+              }
+            },
+            {
+              "name": "warm_replacement",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 310.80729200000496,
+              "before": {
+                "rss_bytes": 279576576,
+                "heap_used_bytes": 36089712,
+                "heap_total_bytes": 95715328,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 304168960
+              },
+              "settled": {
+                "rss_bytes": 290734080,
+                "heap_used_bytes": 36284096,
+                "heap_total_bytes": 94142464,
+                "external_bytes": 7957536,
+                "array_buffers_bytes": 5012317,
+                "process_high_water_rss_bytes": 304168960
+              },
+              "response_sha256": "54b595fe76602b4890fac991935c7ae298a5c690f641b87aee5f6ee123822c9c",
+              "sampled_peak_rss_bytes": 290734080,
+              "samples": 31,
+              "post_gc": {
+                "rss_bytes": 290734080,
+                "heap_used_bytes": 36079240,
+                "heap_total_bytes": 94142464,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 304168960
+              }
+            }
+          ],
+          "full_reader": {
+            "cold": {
+              "sampled_peak_rss_bytes": 300974080,
+              "samples": 1988
+            },
+            "replace": {
+              "sampled_peak_rss_bytes": 304168960,
+              "samples": 2115
+            }
+          },
+          "overlap": {
+            "sampled_peak_rss_bytes": 304168960,
+            "samples": 2117
+          },
+          "events": [
+            {
+              "phase": 1,
+              "event": "draft_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 163315712,
+                "heap_used_bytes": 9270984,
+                "heap_total_bytes": 17874944,
+                "external_bytes": 35887384,
+                "array_buffers_bytes": 340668,
+                "process_high_water_rss_bytes": 163528704
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 163397632,
+                "heap_used_bytes": 9377240,
+                "heap_total_bytes": 17874944,
+                "external_bytes": 3381810,
+                "array_buffers_bytes": 472022,
+                "process_high_water_rss_bytes": 163528704
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_finished",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "reader": {
+                "entries": 232850,
+                "expanded_bytes": 393986236,
+                "names": 232850,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 300974080,
+                "heap_used_bytes": 60436176,
+                "heap_total_bytes": 117489664,
+                "external_bytes": 14025251,
+                "array_buffers_bytes": 11115463,
+                "process_high_water_rss_bytes": 300974080
+              }
+            },
+            {
+              "phase": 1,
+              "event": "before_publish",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 301039616,
+                "heap_used_bytes": 60534808,
+                "heap_total_bytes": 117489664,
+                "external_bytes": 14029348,
+                "array_buffers_bytes": 11115484,
+                "process_high_water_rss_bytes": 301039616
+              }
+            },
+            {
+              "phase": 1,
+              "event": "published",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 301039616,
+                "heap_used_bytes": 60536640,
+                "heap_total_bytes": 117489664,
+                "external_bytes": 14029348,
+                "array_buffers_bytes": 11115484,
+                "process_high_water_rss_bytes": 301039616
+              }
+            },
+            {
+              "phase": 2,
+              "event": "reused",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 299368448,
+                "heap_used_bytes": 37015376,
+                "heap_total_bytes": 93356032,
+                "external_bytes": 34366335,
+                "array_buffers_bytes": 31421116,
+                "process_high_water_rss_bytes": 301154304
+              }
+            },
+            {
+              "phase": 3,
+              "event": "draft_started",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": true,
+              "memory": {
+                "rss_bytes": 299417600,
+                "heap_used_bytes": 36608128,
+                "heap_total_bytes": 93356032,
+                "external_bytes": 24225082,
+                "array_buffers_bytes": 21279863,
+                "process_high_water_rss_bytes": 301154304
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_started",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": true,
+              "memory": {
+                "rss_bytes": 299417600,
+                "heap_used_bytes": 36701536,
+                "heap_total_bytes": 93356032,
+                "external_bytes": 24356436,
+                "array_buffers_bytes": 21411217,
+                "process_high_water_rss_bytes": 301154304
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_finished",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": true,
+              "reader": {
+                "entries": 232857,
+                "expanded_bytes": 394027548,
+                "names": 232857,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 297811968,
+                "heap_used_bytes": 75680200,
+                "heap_total_bytes": 128221184,
+                "external_bytes": 17614482,
+                "array_buffers_bytes": 14669263,
+                "process_high_water_rss_bytes": 304168960
+              }
+            },
+            {
+              "phase": 3,
+              "event": "before_publish",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": true,
+              "memory": {
+                "rss_bytes": 297828352,
+                "heap_used_bytes": 75766424,
+                "heap_total_bytes": 128221184,
+                "external_bytes": 17614503,
+                "array_buffers_bytes": 14669284,
+                "process_high_water_rss_bytes": 304168960
+              }
+            },
+            {
+              "phase": 3,
+              "event": "published",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 297828352,
+                "heap_used_bytes": 75768592,
+                "heap_total_bytes": 128221184,
+                "external_bytes": 17614503,
+                "array_buffers_bytes": 14669284,
+                "process_high_water_rss_bytes": 304168960
+              }
+            },
+            {
+              "phase": 4,
+              "event": "reused",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 290684928,
+                "heap_used_bytes": 37003304,
+                "heap_total_bytes": 94142464,
+                "external_bytes": 35431802,
+                "array_buffers_bytes": 32486583,
+                "process_high_water_rss_bytes": 304168960
+              }
+            }
+          ],
+          "instrumented_reader_sha256": "f6b22e78726afb23e94002e9d90f3f67027a32c3d17a84cf40101092ff245912",
+          "compiled_sha256": "c361faf8e62d2c78fb52baee8684df69f25e2ae09406dbf0fb05b5bb2f50614d",
+          "bindings": {
+            "package.json": "05ab3568d99d42ce38886435af1982d12d128884f953f7bb7cb05455eec70561",
+            "package-lock.json": "24d8ef47362b42df45e70c9f8995e1cca816618d55aaa57994698babffbea5cb",
+            "src/osv/offlineRecord.ts": "90b5ce9998c83642e10b1be3144ca36caba385709778a1caa2ac3f1021fe20c2",
+            "src/osv/offlineCache.ts": "b2f7be839a1495988f6b0e0de10df688badceecf1bb87c2ef496a99c7b79c11d",
+            "src/tools/explainVulnerability.ts": "caf0c688c3cb24836c3e3c95cda8707bb783440feccec714753acf8a7c3ae73e",
+            "scripts/measure-offline-index-native.mjs": "5c834a360cab79fd19a4a51fa3376cae42a218fabcabf296408cc72773e3c942",
+            "scripts/compare-offline-index-memory.mjs": "ace3a466de1324eb556945d4ff87f5ecd821663b8ae5cdf09fe497f7a9f30e81",
+            "dist/osv/offlineRecord.js": "c82b81f4a78829ce1edb61552fa056202a292c2172c56ccebb09ce54b7125908",
+            "dist/osv/offlineCache.js": "410931c21acd33fa9cc5058c9c91f66891b104e9f5438abffd734d73a35c2dac",
+            "dist/tools/explainVulnerability.js": "07395dbc484647aca2edcd28d8abd68b8b23469df0497b6a09c78f88c265106c"
+          }
+        },
+        "after": {
+          "schema": 4,
+          "run_id": "ceb74186-0f72-4247-8f1c-69dc24315890",
+          "profile": "baseline",
+          "identity_map": "absent",
+          "runtime": {
+            "node": "v26.12.1",
+            "platform": "darwin",
+            "arch": "arm64",
+            "release": "27.2.0"
+          },
+          "network": {
+            "loopback": "EPERM",
+            "fetch_attempts": 0
+          },
+          "databases": [
+            {
+              "ecosystem": "npm",
+              "sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "bytes": 222033893,
+              "downloaded_at": "2026-11-21T06:39:24.687Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232850
+            },
+            {
+              "ecosystem": "npm",
+              "sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "bytes": 222050720,
+              "downloaded_at": "2026-11-22T09:44:05.874Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232857
+            }
+          ],
+          "sample_interval_ms": 10,
+          "baseline": {
+            "rss_bytes": 134905856,
+            "heap_used_bytes": 10123096,
+            "heap_total_bytes": 17088512,
+            "external_bytes": 3066049,
+            "array_buffers_bytes": 146135,
+            "process_high_water_rss_bytes": 135151616
+          },
+          "measurements": [
+            {
+              "name": "cold",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 23019.570459,
+              "before": {
+                "rss_bytes": 134955008,
+                "heap_used_bytes": 10172976,
+                "heap_total_bytes": 17088512,
+                "external_bytes": 3066089,
+                "array_buffers_bytes": 146135,
+                "process_high_water_rss_bytes": 135151616
+              },
+              "settled": {
+                "rss_bytes": 242106368,
+                "heap_used_bytes": 77748808,
+                "heap_total_bytes": 116178944,
+                "external_bytes": 25710308,
+                "array_buffers_bytes": 22796444,
+                "process_high_water_rss_bytes": 248823808
+              },
+              "response_sha256": "108a63b951f03fd1721c021bbe5d5c9afa43d7e610af1fe2317475fb8817270e",
+              "sampled_peak_rss_bytes": 248823808,
+              "samples": 2159,
+              "post_gc": {
+                "rss_bytes": 236961792,
+                "heap_used_bytes": 36126072,
+                "heap_total_bytes": 111181824,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 248823808
+              }
+            },
+            {
+              "name": "warm",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 327.75433399999747,
+              "before": {
+                "rss_bytes": 237010944,
+                "heap_used_bytes": 36166224,
+                "heap_total_bytes": 111181824,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 248823808
+              },
+              "settled": {
+                "rss_bytes": 280182784,
+                "heap_used_bytes": 36460704,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 8741829,
+                "array_buffers_bytes": 5796610,
+                "process_high_water_rss_bytes": 280182784
+              },
+              "response_sha256": "f635bf55e87e37edba8e6b5f267ce25addb36b7d3c9367f4230841d520acb5c2",
+              "sampled_peak_rss_bytes": 280182784,
+              "samples": 33,
+              "post_gc": {
+                "rss_bytes": 280182784,
+                "heap_used_bytes": 36155648,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 280182784
+              }
+            },
+            {
+              "name": "replace",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 26776.464083,
+              "before": {
+                "rss_bytes": 280182784,
+                "heap_used_bytes": 36199696,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 280182784
+              },
+              "settled": {
+                "rss_bytes": 229670912,
+                "heap_used_bytes": 52857544,
+                "heap_total_bytes": 119062528,
+                "external_bytes": 8745127,
+                "array_buffers_bytes": 5799908,
+                "process_high_water_rss_bytes": 280756224
+              },
+              "response_sha256": "0fafb246cef9d1854552fcc6e2af065786df02f5a36d660143232c33743914fa",
+              "sampled_peak_rss_bytes": 280182784,
+              "samples": 2468,
+              "post_gc": {
+                "rss_bytes": 224428032,
+                "heap_used_bytes": 36128728,
+                "heap_total_bytes": 112230400,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 280756224
+              }
+            },
+            {
+              "name": "warm_replacement",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 293.59912500000064,
+              "before": {
+                "rss_bytes": 224428032,
+                "heap_used_bytes": 36164032,
+                "heap_total_bytes": 112230400,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 280756224
+              },
+              "settled": {
+                "rss_bytes": 263684096,
+                "heap_used_bytes": 36376240,
+                "heap_total_bytes": 97026048,
+                "external_bytes": 7957536,
+                "array_buffers_bytes": 5012317,
+                "process_high_water_rss_bytes": 280756224
+              },
+              "response_sha256": "54b595fe76602b4890fac991935c7ae298a5c690f641b87aee5f6ee123822c9c",
+              "sampled_peak_rss_bytes": 263684096,
+              "samples": 30,
+              "post_gc": {
+                "rss_bytes": 263684096,
+                "heap_used_bytes": 36148824,
+                "heap_total_bytes": 94404608,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 280756224
+              }
+            }
+          ],
+          "full_reader": {
+            "cold": {
+              "sampled_peak_rss_bytes": 248823808,
+              "samples": 2128
+            },
+            "replace": {
+              "sampled_peak_rss_bytes": 279494656,
+              "samples": 2431
+            }
+          },
+          "overlap": {
+            "sampled_peak_rss_bytes": 0,
+            "samples": 0
+          },
+          "events": [
+            {
+              "phase": 1,
+              "event": "draft_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 174505984,
+                "heap_used_bytes": 11717000,
+                "heap_total_bytes": 19709952,
+                "external_bytes": 61784270,
+                "array_buffers_bytes": 58864316,
+                "process_high_water_rss_bytes": 174505984
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 174587904,
+                "heap_used_bytes": 9385400,
+                "heap_total_bytes": 19709952,
+                "external_bytes": 3381810,
+                "array_buffers_bytes": 472022,
+                "process_high_water_rss_bytes": 174587904
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_finished",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "reader": {
+                "entries": 232850,
+                "expanded_bytes": 393986236,
+                "names": 232850,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 241893376,
+                "heap_used_bytes": 77639680,
+                "heap_total_bytes": 116178944,
+                "external_bytes": 25706211,
+                "array_buffers_bytes": 22796423,
+                "process_high_water_rss_bytes": 248823808
+              }
+            },
+            {
+              "phase": 1,
+              "event": "before_publish",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 242089984,
+                "heap_used_bytes": 77738040,
+                "heap_total_bytes": 116178944,
+                "external_bytes": 25710308,
+                "array_buffers_bytes": 22796444,
+                "process_high_water_rss_bytes": 248823808
+              }
+            },
+            {
+              "phase": 1,
+              "event": "published",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 242089984,
+                "heap_used_bytes": 77739872,
+                "heap_total_bytes": 116178944,
+                "external_bytes": 25710308,
+                "array_buffers_bytes": 22796444,
+                "process_high_water_rss_bytes": 248823808
+              }
+            },
+            {
+              "phase": 2,
+              "event": "reused",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 280150016,
+                "heap_used_bytes": 36731336,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 23946111,
+                "array_buffers_bytes": 21000892,
+                "process_high_water_rss_bytes": 280150016
+              }
+            },
+            {
+              "phase": 3,
+              "event": "old_before_drop",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 279429120,
+                "heap_used_bytes": 36669784,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 23962938,
+                "array_buffers_bytes": 21017719,
+                "process_high_water_rss_bytes": 280182784
+              }
+            },
+            {
+              "phase": 3,
+              "event": "old_dropped",
+              "current": null,
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 279429120,
+                "heap_used_bytes": 36701488,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 23962938,
+                "array_buffers_bytes": 21017719,
+                "process_high_water_rss_bytes": 280182784
+              }
+            },
+            {
+              "phase": 3,
+              "event": "draft_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 279429120,
+                "heap_used_bytes": 36703864,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 23962938,
+                "array_buffers_bytes": 21017719,
+                "process_high_water_rss_bytes": 280182784
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 279429120,
+                "heap_used_bytes": 36766728,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 24094292,
+                "array_buffers_bytes": 21149073,
+                "process_high_water_rss_bytes": 280182784
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_finished",
+              "current": null,
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "reader": {
+                "entries": 232857,
+                "expanded_bytes": 394027548,
+                "names": 232857,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 229572608,
+                "heap_used_bytes": 52763896,
+                "heap_total_bytes": 119062528,
+                "external_bytes": 8745106,
+                "array_buffers_bytes": 5799887,
+                "process_high_water_rss_bytes": 280756224
+              }
+            },
+            {
+              "phase": 3,
+              "event": "before_publish",
+              "current": null,
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 229670912,
+                "heap_used_bytes": 52847016,
+                "heap_total_bytes": 119062528,
+                "external_bytes": 8745127,
+                "array_buffers_bytes": 5799908,
+                "process_high_water_rss_bytes": 280756224
+              }
+            },
+            {
+              "phase": 3,
+              "event": "published",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 229670912,
+                "heap_used_bytes": 52848784,
+                "heap_total_bytes": 119062528,
+                "external_bytes": 8745127,
+                "array_buffers_bytes": 5799908,
+                "process_high_water_rss_bytes": 280756224
+              }
+            },
+            {
+              "phase": 4,
+              "event": "reused",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 263618560,
+                "heap_used_bytes": 37089680,
+                "heap_total_bytes": 96763904,
+                "external_bytes": 35431802,
+                "array_buffers_bytes": 32486583,
+                "process_high_water_rss_bytes": 280756224
+              }
+            }
+          ],
+          "instrumented_reader_sha256": "7c08ca093ab173e459260f2c8709a9e1c578e2f1bcd48bc9551a57fdfad735f1",
+          "compiled_sha256": "a3f5e37907bdb998cbb2678f9eedb735cbaf84acdefe9d76aa6f5ff69b6ae8a5",
+          "bindings": {
+            "package.json": "05ab3568d99d42ce38886435af1982d12d128884f953f7bb7cb05455eec70561",
+            "package-lock.json": "24d8ef47362b42df45e70c9f8995e1cca816618d55aaa57994698babffbea5cb",
+            "src/osv/offlineRecord.ts": "1f1cc45b06484c36c6e281d73bc913b4e7511481c4cada86d80f41b38a1e2604",
+            "src/osv/offlineCache.ts": "b2f7be839a1495988f6b0e0de10df688badceecf1bb87c2ef496a99c7b79c11d",
+            "src/tools/explainVulnerability.ts": "caf0c688c3cb24836c3e3c95cda8707bb783440feccec714753acf8a7c3ae73e",
+            "scripts/measure-offline-index-native.mjs": "5c834a360cab79fd19a4a51fa3376cae42a218fabcabf296408cc72773e3c942",
+            "scripts/compare-offline-index-memory.mjs": "ace3a466de1324eb556945d4ff87f5ecd821663b8ae5cdf09fe497f7a9f30e81",
+            "dist/osv/offlineRecord.js": "34a73b48b88e1e50f822be6711553080ad044a49f4cfb27d88623a59643bfe7a",
+            "dist/osv/offlineCache.js": "410931c21acd33fa9cc5058c9c91f66891b104e9f5438abffd734d73a35c2dac",
+            "dist/tools/explainVulnerability.js": "07395dbc484647aca2edcd28d8abd68b8b23469df0497b6a09c78f88c265106c"
+          }
+        }
+      }
+    },
+    {
+      "round": 2,
+      "order": [
+        "after",
+        "before"
+      ],
+      "arms": {
+        "after": {
+          "schema": 4,
+          "run_id": "3557e23d-8e5a-47c8-89ac-7a4258119e0e",
+          "profile": "baseline",
+          "identity_map": "absent",
+          "runtime": {
+            "node": "v26.12.1",
+            "platform": "darwin",
+            "arch": "arm64",
+            "release": "27.2.0"
+          },
+          "network": {
+            "loopback": "EPERM",
+            "fetch_attempts": 0
+          },
+          "databases": [
+            {
+              "ecosystem": "npm",
+              "sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "bytes": 222033893,
+              "downloaded_at": "2026-11-21T06:39:24.687Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232850
+            },
+            {
+              "ecosystem": "npm",
+              "sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "bytes": 222050720,
+              "downloaded_at": "2026-11-22T09:44:05.874Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232857
+            }
+          ],
+          "sample_interval_ms": 10,
+          "baseline": {
+            "rss_bytes": 136937472,
+            "heap_used_bytes": 10123064,
+            "heap_total_bytes": 17350656,
+            "external_bytes": 3066049,
+            "array_buffers_bytes": 146135,
+            "process_high_water_rss_bytes": 137150464
+          },
+          "measurements": [
+            {
+              "name": "cold",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 33454.864667,
+              "before": {
+                "rss_bytes": 136953856,
+                "heap_used_bytes": 10172944,
+                "heap_total_bytes": 17350656,
+                "external_bytes": 3066089,
+                "array_buffers_bytes": 146135,
+                "process_high_water_rss_bytes": 137150464
+              },
+              "settled": {
+                "rss_bytes": 237404160,
+                "heap_used_bytes": 53645440,
+                "heap_total_bytes": 118013952,
+                "external_bytes": 9173148,
+                "array_buffers_bytes": 6259284,
+                "process_high_water_rss_bytes": 245284864
+              },
+              "response_sha256": "108a63b951f03fd1721c021bbe5d5c9afa43d7e610af1fe2317475fb8817270e",
+              "sampled_peak_rss_bytes": 245284864,
+              "samples": 3074,
+              "post_gc": {
+                "rss_bytes": 232243200,
+                "heap_used_bytes": 36113632,
+                "heap_total_bytes": 112754688,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 245284864
+              }
+            },
+            {
+              "name": "warm",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 528.4645409999939,
+              "before": {
+                "rss_bytes": 232275968,
+                "heap_used_bytes": 36153784,
+                "heap_total_bytes": 112754688,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 245284864
+              },
+              "settled": {
+                "rss_bytes": 276643840,
+                "heap_used_bytes": 36393992,
+                "heap_total_bytes": 95715328,
+                "external_bytes": 7891936,
+                "array_buffers_bytes": 4946717,
+                "process_high_water_rss_bytes": 276643840
+              },
+              "response_sha256": "f635bf55e87e37edba8e6b5f267ce25addb36b7d3c9367f4230841d520acb5c2",
+              "sampled_peak_rss_bytes": 276643840,
+              "samples": 52,
+              "post_gc": {
+                "rss_bytes": 276643840,
+                "heap_used_bytes": 36146832,
+                "heap_total_bytes": 95715328,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 276643840
+              }
+            },
+            {
+              "name": "replace",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 46180.754083,
+              "before": {
+                "rss_bytes": 276643840,
+                "heap_used_bytes": 36190880,
+                "heap_total_bytes": 95715328,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 276643840
+              },
+              "settled": {
+                "rss_bytes": 270630912,
+                "heap_used_bytes": 57741784,
+                "heap_total_bytes": 113295360,
+                "external_bytes": 12026327,
+                "array_buffers_bytes": 9081108,
+                "process_high_water_rss_bytes": 276643840
+              },
+              "response_sha256": "0fafb246cef9d1854552fcc6e2af065786df02f5a36d660143232c33743914fa",
+              "sampled_peak_rss_bytes": 276643840,
+              "samples": 4276,
+              "post_gc": {
+                "rss_bytes": 265371648,
+                "heap_used_bytes": 36133592,
+                "heap_total_bytes": 107249664,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 276643840
+              }
+            },
+            {
+              "name": "warm_replacement",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 3893.4369589999988,
+              "before": {
+                "rss_bytes": 265371648,
+                "heap_used_bytes": 36168896,
+                "heap_total_bytes": 107249664,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 276643840
+              },
+              "settled": {
+                "rss_bytes": 185450496,
+                "heap_used_bytes": 36375280,
+                "heap_total_bytes": 55869440,
+                "external_bytes": 8037824,
+                "array_buffers_bytes": 5092605,
+                "process_high_water_rss_bytes": 276643840
+              },
+              "response_sha256": "54b595fe76602b4890fac991935c7ae298a5c690f641b87aee5f6ee123822c9c",
+              "sampled_peak_rss_bytes": 265797632,
+              "samples": 218,
+              "post_gc": {
+                "rss_bytes": 185483264,
+                "heap_used_bytes": 36153856,
+                "heap_total_bytes": 55869440,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 276643840
+              }
+            }
+          ],
+          "full_reader": {
+            "cold": {
+              "sampled_peak_rss_bytes": 245284864,
+              "samples": 3047
+            },
+            "replace": {
+              "sampled_peak_rss_bytes": 274415616,
+              "samples": 4212
+            }
+          },
+          "overlap": {
+            "sampled_peak_rss_bytes": 0,
+            "samples": 0
+          },
+          "events": [
+            {
+              "phase": 1,
+              "event": "draft_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 170508288,
+                "heap_used_bytes": 11732248,
+                "heap_total_bytes": 19447808,
+                "external_bytes": 62570702,
+                "array_buffers_bytes": 59650748,
+                "process_high_water_rss_bytes": 170508288
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 170377216,
+                "heap_used_bytes": 9379592,
+                "heap_total_bytes": 19185664,
+                "external_bytes": 3381810,
+                "array_buffers_bytes": 472022,
+                "process_high_water_rss_bytes": 170541056
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_finished",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "reader": {
+                "entries": 232850,
+                "expanded_bytes": 393986236,
+                "names": 232850,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 237142016,
+                "heap_used_bytes": 53534448,
+                "heap_total_bytes": 118013952,
+                "external_bytes": 9169051,
+                "array_buffers_bytes": 6259263,
+                "process_high_water_rss_bytes": 245284864
+              }
+            },
+            {
+              "phase": 1,
+              "event": "before_publish",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 237387776,
+                "heap_used_bytes": 53634672,
+                "heap_total_bytes": 118013952,
+                "external_bytes": 9173148,
+                "array_buffers_bytes": 6259284,
+                "process_high_water_rss_bytes": 245284864
+              }
+            },
+            {
+              "phase": 1,
+              "event": "published",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 237387776,
+                "heap_used_bytes": 53636504,
+                "heap_total_bytes": 118013952,
+                "external_bytes": 9173148,
+                "array_buffers_bytes": 6259284,
+                "process_high_water_rss_bytes": 245284864
+              }
+            },
+            {
+              "phase": 2,
+              "event": "reused",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 276594688,
+                "heap_used_bytes": 36693896,
+                "heap_total_bytes": 95715328,
+                "external_bytes": 23946111,
+                "array_buffers_bytes": 21000892,
+                "process_high_water_rss_bytes": 276594688
+              }
+            },
+            {
+              "phase": 3,
+              "event": "old_before_drop",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 274284544,
+                "heap_used_bytes": 36652608,
+                "heap_total_bytes": 95715328,
+                "external_bytes": 23897402,
+                "array_buffers_bytes": 20952183,
+                "process_high_water_rss_bytes": 276643840
+              }
+            },
+            {
+              "phase": 3,
+              "event": "old_dropped",
+              "current": null,
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 274284544,
+                "heap_used_bytes": 36684312,
+                "heap_total_bytes": 95715328,
+                "external_bytes": 23897402,
+                "array_buffers_bytes": 20952183,
+                "process_high_water_rss_bytes": 276643840
+              }
+            },
+            {
+              "phase": 3,
+              "event": "draft_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 274284544,
+                "heap_used_bytes": 36686688,
+                "heap_total_bytes": 95715328,
+                "external_bytes": 23897402,
+                "array_buffers_bytes": 20952183,
+                "process_high_water_rss_bytes": 276643840
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 274284544,
+                "heap_used_bytes": 36749608,
+                "heap_total_bytes": 95715328,
+                "external_bytes": 24028756,
+                "array_buffers_bytes": 21083537,
+                "process_high_water_rss_bytes": 276643840
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_finished",
+              "current": null,
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "reader": {
+                "entries": 232857,
+                "expanded_bytes": 394027548,
+                "names": 232857,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 270532608,
+                "heap_used_bytes": 57645632,
+                "heap_total_bytes": 113295360,
+                "external_bytes": 12026306,
+                "array_buffers_bytes": 9081087,
+                "process_high_water_rss_bytes": 276643840
+              }
+            },
+            {
+              "phase": 3,
+              "event": "before_publish",
+              "current": null,
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 270630912,
+                "heap_used_bytes": 57731256,
+                "heap_total_bytes": 113295360,
+                "external_bytes": 12026327,
+                "array_buffers_bytes": 9081108,
+                "process_high_water_rss_bytes": 276643840
+              }
+            },
+            {
+              "phase": 3,
+              "event": "published",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 270630912,
+                "heap_used_bytes": 57733024,
+                "heap_total_bytes": 113295360,
+                "external_bytes": 12026327,
+                "array_buffers_bytes": 9081108,
+                "process_high_water_rss_bytes": 276643840
+              }
+            },
+            {
+              "phase": 4,
+              "event": "reused",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 185401344,
+                "heap_used_bytes": 37084496,
+                "heap_total_bytes": 55869440,
+                "external_bytes": 35693946,
+                "array_buffers_bytes": 32748727,
+                "process_high_water_rss_bytes": 276643840
+              }
+            }
+          ],
+          "instrumented_reader_sha256": "7c08ca093ab173e459260f2c8709a9e1c578e2f1bcd48bc9551a57fdfad735f1",
+          "compiled_sha256": "a3f5e37907bdb998cbb2678f9eedb735cbaf84acdefe9d76aa6f5ff69b6ae8a5",
+          "bindings": {
+            "package.json": "05ab3568d99d42ce38886435af1982d12d128884f953f7bb7cb05455eec70561",
+            "package-lock.json": "24d8ef47362b42df45e70c9f8995e1cca816618d55aaa57994698babffbea5cb",
+            "src/osv/offlineRecord.ts": "1f1cc45b06484c36c6e281d73bc913b4e7511481c4cada86d80f41b38a1e2604",
+            "src/osv/offlineCache.ts": "b2f7be839a1495988f6b0e0de10df688badceecf1bb87c2ef496a99c7b79c11d",
+            "src/tools/explainVulnerability.ts": "caf0c688c3cb24836c3e3c95cda8707bb783440feccec714753acf8a7c3ae73e",
+            "scripts/measure-offline-index-native.mjs": "5c834a360cab79fd19a4a51fa3376cae42a218fabcabf296408cc72773e3c942",
+            "scripts/compare-offline-index-memory.mjs": "ace3a466de1324eb556945d4ff87f5ecd821663b8ae5cdf09fe497f7a9f30e81",
+            "dist/osv/offlineRecord.js": "34a73b48b88e1e50f822be6711553080ad044a49f4cfb27d88623a59643bfe7a",
+            "dist/osv/offlineCache.js": "410931c21acd33fa9cc5058c9c91f66891b104e9f5438abffd734d73a35c2dac",
+            "dist/tools/explainVulnerability.js": "07395dbc484647aca2edcd28d8abd68b8b23469df0497b6a09c78f88c265106c"
+          }
+        },
+        "before": {
+          "schema": 4,
+          "run_id": "25db1e65-2aa4-490b-bd96-7cdc886e157d",
+          "profile": "baseline",
+          "identity_map": "absent",
+          "runtime": {
+            "node": "v26.12.1",
+            "platform": "darwin",
+            "arch": "arm64",
+            "release": "27.2.0"
+          },
+          "network": {
+            "loopback": "EPERM",
+            "fetch_attempts": 0
+          },
+          "databases": [
+            {
+              "ecosystem": "npm",
+              "sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "bytes": 222033893,
+              "downloaded_at": "2026-11-21T06:39:24.687Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232850
+            },
+            {
+              "ecosystem": "npm",
+              "sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "bytes": 222050720,
+              "downloaded_at": "2026-11-22T09:44:05.874Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232857
+            }
+          ],
+          "sample_interval_ms": 10,
+          "baseline": {
+            "rss_bytes": 137183232,
+            "heap_used_bytes": 10126232,
+            "heap_total_bytes": 17612800,
+            "external_bytes": 3066049,
+            "array_buffers_bytes": 146135,
+            "process_high_water_rss_bytes": 137199616
+          },
+          "measurements": [
+            {
+              "name": "cold",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 58737.541249999995,
+              "before": {
+                "rss_bytes": 137216000,
+                "heap_used_bytes": 10176112,
+                "heap_total_bytes": 17612800,
+                "external_bytes": 3066089,
+                "array_buffers_bytes": 146135,
+                "process_high_water_rss_bytes": 137216000
+              },
+              "settled": {
+                "rss_bytes": 208240640,
+                "heap_used_bytes": 62220248,
+                "heap_total_bytes": 119324672,
+                "external_bytes": 15210596,
+                "array_buffers_bytes": 12296732,
+                "process_high_water_rss_bytes": 253575168
+              },
+              "response_sha256": "108a63b951f03fd1721c021bbe5d5c9afa43d7e610af1fe2317475fb8817270e",
+              "sampled_peak_rss_bytes": 253575168,
+              "samples": 5277,
+              "post_gc": {
+                "rss_bytes": 203784192,
+                "heap_used_bytes": 35970120,
+                "heap_total_bytes": 114327552,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 253575168
+              }
+            },
+            {
+              "name": "warm",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 4110.845874999999,
+              "before": {
+                "rss_bytes": 204079104,
+                "heap_used_bytes": 36010272,
+                "heap_total_bytes": 114327552,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 253575168
+              },
+              "settled": {
+                "rss_bytes": 207929344,
+                "heap_used_bytes": 36233080,
+                "heap_total_bytes": 104366080,
+                "external_bytes": 7891936,
+                "array_buffers_bytes": 4946717,
+                "process_high_water_rss_bytes": 253575168
+              },
+              "response_sha256": "f635bf55e87e37edba8e6b5f267ce25addb36b7d3c9367f4230841d520acb5c2",
+              "sampled_peak_rss_bytes": 207929344,
+              "samples": 222,
+              "post_gc": {
+                "rss_bytes": 207945728,
+                "heap_used_bytes": 36003856,
+                "heap_total_bytes": 104628224,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 253575168
+              }
+            },
+            {
+              "name": "replace",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 54243.123083,
+              "before": {
+                "rss_bytes": 207994880,
+                "heap_used_bytes": 36047928,
+                "heap_total_bytes": 104628224,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 253575168
+              },
+              "settled": {
+                "rss_bytes": 270073856,
+                "heap_used_bytes": 76998224,
+                "heap_total_bytes": 140541952,
+                "external_bytes": 34085927,
+                "array_buffers_bytes": 31140708,
+                "process_high_water_rss_bytes": 270073856
+              },
+              "response_sha256": "0fafb246cef9d1854552fcc6e2af065786df02f5a36d660143232c33743914fa",
+              "sampled_peak_rss_bytes": 270073856,
+              "samples": 4488,
+              "post_gc": {
+                "rss_bytes": 252493824,
+                "heap_used_bytes": 36032144,
+                "heap_total_bytes": 99647488,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 270712832
+              }
+            },
+            {
+              "name": "warm_replacement",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 534.4853330000042,
+              "before": {
+                "rss_bytes": 252772352,
+                "heap_used_bytes": 36067448,
+                "heap_total_bytes": 99647488,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 270712832
+              },
+              "settled": {
+                "rss_bytes": 267452416,
+                "heap_used_bytes": 36278512,
+                "heap_total_bytes": 94142464,
+                "external_bytes": 7957536,
+                "array_buffers_bytes": 5012317,
+                "process_high_water_rss_bytes": 270712832
+              },
+              "response_sha256": "54b595fe76602b4890fac991935c7ae298a5c690f641b87aee5f6ee123822c9c",
+              "sampled_peak_rss_bytes": 267452416,
+              "samples": 53,
+              "post_gc": {
+                "rss_bytes": 267485184,
+                "heap_used_bytes": 36054224,
+                "heap_total_bytes": 94142464,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 270712832
+              }
+            }
+          ],
+          "full_reader": {
+            "cold": {
+              "sampled_peak_rss_bytes": 253575168,
+              "samples": 5208
+            },
+            "replace": {
+              "sampled_peak_rss_bytes": 269238272,
+              "samples": 4374
+            }
+          },
+          "overlap": {
+            "sampled_peak_rss_bytes": 269991936,
+            "samples": 4388
+          },
+          "events": [
+            {
+              "phase": 1,
+              "event": "draft_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 168607744,
+                "heap_used_bytes": 10643824,
+                "heap_total_bytes": 18137088,
+                "external_bytes": 40605976,
+                "array_buffers_bytes": 37696188,
+                "process_high_water_rss_bytes": 168607744
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 168673280,
+                "heap_used_bytes": 9357312,
+                "heap_total_bytes": 18137088,
+                "external_bytes": 3381810,
+                "array_buffers_bytes": 472022,
+                "process_high_water_rss_bytes": 168673280
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_finished",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "reader": {
+                "entries": 232850,
+                "expanded_bytes": 393986236,
+                "names": 232850,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 206864384,
+                "heap_used_bytes": 62109088,
+                "heap_total_bytes": 119324672,
+                "external_bytes": 15206499,
+                "array_buffers_bytes": 12296711,
+                "process_high_water_rss_bytes": 253575168
+              }
+            },
+            {
+              "phase": 1,
+              "event": "before_publish",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 208158720,
+                "heap_used_bytes": 62208120,
+                "heap_total_bytes": 119324672,
+                "external_bytes": 15210596,
+                "array_buffers_bytes": 12296732,
+                "process_high_water_rss_bytes": 253575168
+              }
+            },
+            {
+              "phase": 1,
+              "event": "published",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 208158720,
+                "heap_used_bytes": 62209952,
+                "heap_total_bytes": 119324672,
+                "external_bytes": 15210596,
+                "array_buffers_bytes": 12296732,
+                "process_high_water_rss_bytes": 253575168
+              }
+            },
+            {
+              "phase": 2,
+              "event": "reused",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 207208448,
+                "heap_used_bytes": 36651992,
+                "heap_total_bytes": 104366080,
+                "external_bytes": 24601471,
+                "array_buffers_bytes": 21656252,
+                "process_high_water_rss_bytes": 253575168
+              }
+            },
+            {
+              "phase": 3,
+              "event": "draft_started",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": true,
+              "memory": {
+                "rss_bytes": 229752832,
+                "heap_used_bytes": 36448920,
+                "heap_total_bytes": 97812480,
+                "external_bytes": 20489530,
+                "array_buffers_bytes": 17544311,
+                "process_high_water_rss_bytes": 253575168
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_started",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": true,
+              "memory": {
+                "rss_bytes": 230309888,
+                "heap_used_bytes": 36108632,
+                "heap_total_bytes": 97812480,
+                "external_bytes": 7957684,
+                "array_buffers_bytes": 5012465,
+                "process_high_water_rss_bytes": 253575168
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_finished",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": true,
+              "reader": {
+                "entries": 232857,
+                "expanded_bytes": 394027548,
+                "names": 232857,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 269238272,
+                "heap_used_bytes": 76903576,
+                "heap_total_bytes": 140541952,
+                "external_bytes": 34085906,
+                "array_buffers_bytes": 31140687,
+                "process_high_water_rss_bytes": 269238272
+              }
+            },
+            {
+              "phase": 3,
+              "event": "before_publish",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": true,
+              "memory": {
+                "rss_bytes": 269991936,
+                "heap_used_bytes": 76987368,
+                "heap_total_bytes": 140541952,
+                "external_bytes": 34085927,
+                "array_buffers_bytes": 31140708,
+                "process_high_water_rss_bytes": 269991936
+              }
+            },
+            {
+              "phase": 3,
+              "event": "published",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 269991936,
+                "heap_used_bytes": 76989536,
+                "heap_total_bytes": 140541952,
+                "external_bytes": 34085927,
+                "array_buffers_bytes": 31140708,
+                "process_high_water_rss_bytes": 269991936
+              }
+            },
+            {
+              "phase": 4,
+              "event": "reused",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 267124736,
+                "heap_used_bytes": 37104640,
+                "heap_total_bytes": 94142464,
+                "external_bytes": 36873594,
+                "array_buffers_bytes": 33928375,
+                "process_high_water_rss_bytes": 270712832
+              }
+            }
+          ],
+          "instrumented_reader_sha256": "f6b22e78726afb23e94002e9d90f3f67027a32c3d17a84cf40101092ff245912",
+          "compiled_sha256": "c361faf8e62d2c78fb52baee8684df69f25e2ae09406dbf0fb05b5bb2f50614d",
+          "bindings": {
+            "package.json": "05ab3568d99d42ce38886435af1982d12d128884f953f7bb7cb05455eec70561",
+            "package-lock.json": "24d8ef47362b42df45e70c9f8995e1cca816618d55aaa57994698babffbea5cb",
+            "src/osv/offlineRecord.ts": "90b5ce9998c83642e10b1be3144ca36caba385709778a1caa2ac3f1021fe20c2",
+            "src/osv/offlineCache.ts": "b2f7be839a1495988f6b0e0de10df688badceecf1bb87c2ef496a99c7b79c11d",
+            "src/tools/explainVulnerability.ts": "caf0c688c3cb24836c3e3c95cda8707bb783440feccec714753acf8a7c3ae73e",
+            "scripts/measure-offline-index-native.mjs": "5c834a360cab79fd19a4a51fa3376cae42a218fabcabf296408cc72773e3c942",
+            "scripts/compare-offline-index-memory.mjs": "ace3a466de1324eb556945d4ff87f5ecd821663b8ae5cdf09fe497f7a9f30e81",
+            "dist/osv/offlineRecord.js": "c82b81f4a78829ce1edb61552fa056202a292c2172c56ccebb09ce54b7125908",
+            "dist/osv/offlineCache.js": "410931c21acd33fa9cc5058c9c91f66891b104e9f5438abffd734d73a35c2dac",
+            "dist/tools/explainVulnerability.js": "07395dbc484647aca2edcd28d8abd68b8b23469df0497b6a09c78f88c265106c"
+          }
+        }
+      }
+    },
+    {
+      "round": 3,
+      "order": [
+        "before",
+        "after"
+      ],
+      "arms": {
+        "before": {
+          "schema": 4,
+          "run_id": "71bf7e5d-e224-495e-b706-b390b3308a72",
+          "profile": "baseline",
+          "identity_map": "absent",
+          "runtime": {
+            "node": "v26.12.1",
+            "platform": "darwin",
+            "arch": "arm64",
+            "release": "27.2.0"
+          },
+          "network": {
+            "loopback": "EPERM",
+            "fetch_attempts": 0
+          },
+          "databases": [
+            {
+              "ecosystem": "npm",
+              "sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "bytes": 222033893,
+              "downloaded_at": "2026-11-21T06:39:24.687Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232850
+            },
+            {
+              "ecosystem": "npm",
+              "sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "bytes": 222050720,
+              "downloaded_at": "2026-11-22T09:44:05.874Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232857
+            }
+          ],
+          "sample_interval_ms": 10,
+          "baseline": {
+            "rss_bytes": 137003008,
+            "heap_used_bytes": 10127096,
+            "heap_total_bytes": 17350656,
+            "external_bytes": 3066049,
+            "array_buffers_bytes": 146135,
+            "process_high_water_rss_bytes": 137003008
+          },
+          "measurements": [
+            {
+              "name": "cold",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 34715.684167,
+              "before": {
+                "rss_bytes": 137019392,
+                "heap_used_bytes": 10176472,
+                "heap_total_bytes": 17350656,
+                "external_bytes": 3066089,
+                "array_buffers_bytes": 146135,
+                "process_high_water_rss_bytes": 137019392
+              },
+              "settled": {
+                "rss_bytes": 277299200,
+                "heap_used_bytes": 56306256,
+                "heap_total_bytes": 114868224,
+                "external_bytes": 11076284,
+                "array_buffers_bytes": 8162420,
+                "process_high_water_rss_bytes": 281378816
+              },
+              "response_sha256": "108a63b951f03fd1721c021bbe5d5c9afa43d7e610af1fe2317475fb8817270e",
+              "sampled_peak_rss_bytes": 281313280,
+              "samples": 3261,
+              "post_gc": {
+                "rss_bytes": 272138240,
+                "heap_used_bytes": 36043800,
+                "heap_total_bytes": 109084672,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 281378816
+              }
+            },
+            {
+              "name": "warm",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 334.1791669999948,
+              "before": {
+                "rss_bytes": 272171008,
+                "heap_used_bytes": 36083952,
+                "heap_total_bytes": 109084672,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 281378816
+              },
+              "settled": {
+                "rss_bytes": 284409856,
+                "heap_used_bytes": 36334488,
+                "heap_total_bytes": 96501760,
+                "external_bytes": 9003973,
+                "array_buffers_bytes": 6058754,
+                "process_high_water_rss_bytes": 284409856
+              },
+              "response_sha256": "f635bf55e87e37edba8e6b5f267ce25addb36b7d3c9367f4230841d520acb5c2",
+              "sampled_peak_rss_bytes": 284409856,
+              "samples": 34,
+              "post_gc": {
+                "rss_bytes": 284409856,
+                "heap_used_bytes": 36067720,
+                "heap_total_bytes": 96763904,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 284409856
+              }
+            },
+            {
+              "name": "replace",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 96168.86470800001,
+              "before": {
+                "rss_bytes": 284409856,
+                "heap_used_bytes": 36111768,
+                "heap_total_bytes": 96763904,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 284409856
+              },
+              "settled": {
+                "rss_bytes": 296026112,
+                "heap_used_bytes": 77397928,
+                "heap_total_bytes": 134250496,
+                "external_bytes": 34545263,
+                "array_buffers_bytes": 31600044,
+                "process_high_water_rss_bytes": 296026112
+              },
+              "response_sha256": "0fafb246cef9d1854552fcc6e2af065786df02f5a36d660143232c33743914fa",
+              "sampled_peak_rss_bytes": 296026112,
+              "samples": 5624,
+              "post_gc": {
+                "rss_bytes": 277872640,
+                "heap_used_bytes": 36057232,
+                "heap_total_bytes": 98861056,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 297140224
+              }
+            },
+            {
+              "name": "warm_replacement",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 502.3821659999958,
+              "before": {
+                "rss_bytes": 277970944,
+                "heap_used_bytes": 36092536,
+                "heap_total_bytes": 98861056,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 297140224
+              },
+              "settled": {
+                "rss_bytes": 282198016,
+                "heap_used_bytes": 36309624,
+                "heap_total_bytes": 97288192,
+                "external_bytes": 7957536,
+                "array_buffers_bytes": 5012317,
+                "process_high_water_rss_bytes": 297140224
+              },
+              "response_sha256": "54b595fe76602b4890fac991935c7ae298a5c690f641b87aee5f6ee123822c9c",
+              "sampled_peak_rss_bytes": 282198016,
+              "samples": 49,
+              "post_gc": {
+                "rss_bytes": 282198016,
+                "heap_used_bytes": 36081896,
+                "heap_total_bytes": 97288192,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 297140224
+              }
+            }
+          ],
+          "full_reader": {
+            "cold": {
+              "sampled_peak_rss_bytes": 281313280,
+              "samples": 3218
+            },
+            "replace": {
+              "sampled_peak_rss_bytes": 295682048,
+              "samples": 5569
+            }
+          },
+          "overlap": {
+            "sampled_peak_rss_bytes": 296009728,
+            "samples": 5580
+          },
+          "events": [
+            {
+              "phase": 1,
+              "event": "draft_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 168820736,
+                "heap_used_bytes": 11822320,
+                "heap_total_bytes": 18399232,
+                "external_bytes": 62505166,
+                "array_buffers_bytes": 59585212,
+                "process_high_water_rss_bytes": 168820736
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 168886272,
+                "heap_used_bytes": 9376968,
+                "heap_total_bytes": 18399232,
+                "external_bytes": 3252813,
+                "array_buffers_bytes": 343025,
+                "process_high_water_rss_bytes": 168886272
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_finished",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "reader": {
+                "entries": 232850,
+                "expanded_bytes": 393986236,
+                "names": 232850,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 277102592,
+                "heap_used_bytes": 56198864,
+                "heap_total_bytes": 114868224,
+                "external_bytes": 11072187,
+                "array_buffers_bytes": 8162399,
+                "process_high_water_rss_bytes": 281378816
+              }
+            },
+            {
+              "phase": 1,
+              "event": "before_publish",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 277282816,
+                "heap_used_bytes": 56295560,
+                "heap_total_bytes": 114868224,
+                "external_bytes": 11076284,
+                "array_buffers_bytes": 8162420,
+                "process_high_water_rss_bytes": 281378816
+              }
+            },
+            {
+              "phase": 1,
+              "event": "published",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 277282816,
+                "heap_used_bytes": 56297392,
+                "heap_total_bytes": 114868224,
+                "external_bytes": 11076284,
+                "array_buffers_bytes": 8162420,
+                "process_high_water_rss_bytes": 281378816
+              }
+            },
+            {
+              "phase": 2,
+              "event": "reused",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 284360704,
+                "heap_used_bytes": 36626840,
+                "heap_total_bytes": 96501760,
+                "external_bytes": 23946111,
+                "array_buffers_bytes": 21000892,
+                "process_high_water_rss_bytes": 284393472
+              }
+            },
+            {
+              "phase": 3,
+              "event": "draft_started",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": true,
+              "memory": {
+                "rss_bytes": 271941632,
+                "heap_used_bytes": 36565856,
+                "heap_total_bytes": 96763904,
+                "external_bytes": 23897402,
+                "array_buffers_bytes": 20952183,
+                "process_high_water_rss_bytes": 284409856
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_started",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": true,
+              "memory": {
+                "rss_bytes": 272089088,
+                "heap_used_bytes": 36659192,
+                "heap_total_bytes": 96763904,
+                "external_bytes": 24028756,
+                "array_buffers_bytes": 21083537,
+                "process_high_water_rss_bytes": 284409856
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_finished",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": true,
+              "reader": {
+                "entries": 232857,
+                "expanded_bytes": 394027548,
+                "names": 232857,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 295682048,
+                "heap_used_bytes": 77301568,
+                "heap_total_bytes": 134250496,
+                "external_bytes": 34545242,
+                "array_buffers_bytes": 31600023,
+                "process_high_water_rss_bytes": 295682048
+              }
+            },
+            {
+              "phase": 3,
+              "event": "before_publish",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": true,
+              "memory": {
+                "rss_bytes": 296009728,
+                "heap_used_bytes": 77387072,
+                "heap_total_bytes": 134250496,
+                "external_bytes": 34545263,
+                "array_buffers_bytes": 31600044,
+                "process_high_water_rss_bytes": 296009728
+              }
+            },
+            {
+              "phase": 3,
+              "event": "published",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 296009728,
+                "heap_used_bytes": 77389240,
+                "heap_total_bytes": 134250496,
+                "external_bytes": 34545263,
+                "array_buffers_bytes": 31600044,
+                "process_high_water_rss_bytes": 296009728
+              }
+            },
+            {
+              "phase": 4,
+              "event": "reused",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 282099712,
+                "heap_used_bytes": 36662032,
+                "heap_total_bytes": 97288192,
+                "external_bytes": 24028538,
+                "array_buffers_bytes": 21083319,
+                "process_high_water_rss_bytes": 297140224
+              }
+            }
+          ],
+          "instrumented_reader_sha256": "f6b22e78726afb23e94002e9d90f3f67027a32c3d17a84cf40101092ff245912",
+          "compiled_sha256": "c361faf8e62d2c78fb52baee8684df69f25e2ae09406dbf0fb05b5bb2f50614d",
+          "bindings": {
+            "package.json": "05ab3568d99d42ce38886435af1982d12d128884f953f7bb7cb05455eec70561",
+            "package-lock.json": "24d8ef47362b42df45e70c9f8995e1cca816618d55aaa57994698babffbea5cb",
+            "src/osv/offlineRecord.ts": "90b5ce9998c83642e10b1be3144ca36caba385709778a1caa2ac3f1021fe20c2",
+            "src/osv/offlineCache.ts": "b2f7be839a1495988f6b0e0de10df688badceecf1bb87c2ef496a99c7b79c11d",
+            "src/tools/explainVulnerability.ts": "caf0c688c3cb24836c3e3c95cda8707bb783440feccec714753acf8a7c3ae73e",
+            "scripts/measure-offline-index-native.mjs": "5c834a360cab79fd19a4a51fa3376cae42a218fabcabf296408cc72773e3c942",
+            "scripts/compare-offline-index-memory.mjs": "ace3a466de1324eb556945d4ff87f5ecd821663b8ae5cdf09fe497f7a9f30e81",
+            "dist/osv/offlineRecord.js": "c82b81f4a78829ce1edb61552fa056202a292c2172c56ccebb09ce54b7125908",
+            "dist/osv/offlineCache.js": "410931c21acd33fa9cc5058c9c91f66891b104e9f5438abffd734d73a35c2dac",
+            "dist/tools/explainVulnerability.js": "07395dbc484647aca2edcd28d8abd68b8b23469df0497b6a09c78f88c265106c"
+          }
+        },
+        "after": {
+          "schema": 4,
+          "run_id": "2c4de5da-52e5-4512-b8e0-b66b2cfa10f6",
+          "profile": "baseline",
+          "identity_map": "absent",
+          "runtime": {
+            "node": "v26.12.1",
+            "platform": "darwin",
+            "arch": "arm64",
+            "release": "27.2.0"
+          },
+          "network": {
+            "loopback": "EPERM",
+            "fetch_attempts": 0
+          },
+          "databases": [
+            {
+              "ecosystem": "npm",
+              "sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "bytes": 222033893,
+              "downloaded_at": "2026-11-21T06:39:24.687Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232850
+            },
+            {
+              "ecosystem": "npm",
+              "sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "bytes": 222050720,
+              "downloaded_at": "2026-11-22T09:44:05.874Z",
+              "url": "https://osv-vulnerabilities.storage.googleapis.com/npm/all.zip",
+              "entries": 232857
+            }
+          ],
+          "sample_interval_ms": 10,
+          "baseline": {
+            "rss_bytes": 130367488,
+            "heap_used_bytes": 10123032,
+            "heap_total_bytes": 17088512,
+            "external_bytes": 3066049,
+            "array_buffers_bytes": 146135,
+            "process_high_water_rss_bytes": 130367488
+          },
+          "measurements": [
+            {
+              "name": "cold",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 29355.754667,
+              "before": {
+                "rss_bytes": 130367488,
+                "heap_used_bytes": 10172912,
+                "heap_total_bytes": 17088512,
+                "external_bytes": 3066089,
+                "array_buffers_bytes": 146135,
+                "process_high_water_rss_bytes": 130367488
+              },
+              "settled": {
+                "rss_bytes": 258490368,
+                "heap_used_bytes": 58614496,
+                "heap_total_bytes": 114343936,
+                "external_bytes": 12651244,
+                "array_buffers_bytes": 9737380,
+                "process_high_water_rss_bytes": 258490368
+              },
+              "response_sha256": "108a63b951f03fd1721c021bbe5d5c9afa43d7e610af1fe2317475fb8817270e",
+              "sampled_peak_rss_bytes": 258490368,
+              "samples": 2762,
+              "post_gc": {
+                "rss_bytes": 253345792,
+                "heap_used_bytes": 36126560,
+                "heap_total_bytes": 109084672,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 258605056
+              }
+            },
+            {
+              "name": "warm",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "85f24f6f0d7437e38a8361025a8c2a189f1d01b499bd11868bc82a0175cbae7b",
+              "elapsed_ms": 478.567833000001,
+              "before": {
+                "rss_bytes": 253378560,
+                "heap_used_bytes": 36166712,
+                "heap_total_bytes": 109084672,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 258605056
+              },
+              "settled": {
+                "rss_bytes": 280707072,
+                "heap_used_bytes": 36435240,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 7891936,
+                "array_buffers_bytes": 4946717,
+                "process_high_water_rss_bytes": 280707072
+              },
+              "response_sha256": "f635bf55e87e37edba8e6b5f267ce25addb36b7d3c9367f4230841d520acb5c2",
+              "sampled_peak_rss_bytes": 280707072,
+              "samples": 47,
+              "post_gc": {
+                "rss_bytes": 280707072,
+                "heap_used_bytes": 36153944,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 280707072
+              }
+            },
+            {
+              "name": "replace",
+              "requested_id": "GHSA-35jh-r3h4-6jhm",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 27789.547625,
+              "before": {
+                "rss_bytes": 280707072,
+                "heap_used_bytes": 36197992,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 7760794,
+                "array_buffers_bytes": 4815575,
+                "process_high_water_rss_bytes": 280707072
+              },
+              "settled": {
+                "rss_bytes": 300990464,
+                "heap_used_bytes": 57373520,
+                "heap_total_bytes": 117227520,
+                "external_bytes": 11829471,
+                "array_buffers_bytes": 8884252,
+                "process_high_water_rss_bytes": 300990464
+              },
+              "response_sha256": "0fafb246cef9d1854552fcc6e2af065786df02f5a36d660143232c33743914fa",
+              "sampled_peak_rss_bytes": 300990464,
+              "samples": 2641,
+              "post_gc": {
+                "rss_bytes": 295763968,
+                "heap_used_bytes": 36129072,
+                "heap_total_bytes": 97550336,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 300990464
+              }
+            },
+            {
+              "name": "warm_replacement",
+              "requested_id": "CVE-2021-23337",
+              "database_sha256": "64021a51406b00b341f9b5b4e8428cec210404db3a857d4f9ff8cb2767091e24",
+              "elapsed_ms": 378.2975839999999,
+              "before": {
+                "rss_bytes": 295763968,
+                "heap_used_bytes": 36164376,
+                "heap_total_bytes": 97550336,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 300990464
+              },
+              "settled": {
+                "rss_bytes": 298516480,
+                "heap_used_bytes": 36383264,
+                "heap_total_bytes": 95453184,
+                "external_bytes": 7957536,
+                "array_buffers_bytes": 5012317,
+                "process_high_water_rss_bytes": 300990464
+              },
+              "response_sha256": "54b595fe76602b4890fac991935c7ae298a5c690f641b87aee5f6ee123822c9c",
+              "sampled_peak_rss_bytes": 298516480,
+              "samples": 38,
+              "post_gc": {
+                "rss_bytes": 298516480,
+                "heap_used_bytes": 36154488,
+                "heap_total_bytes": 95453184,
+                "external_bytes": 7826394,
+                "array_buffers_bytes": 4881175,
+                "process_high_water_rss_bytes": 300990464
+              }
+            }
+          ],
+          "full_reader": {
+            "cold": {
+              "sampled_peak_rss_bytes": 258293760,
+              "samples": 2735
+            },
+            "replace": {
+              "sampled_peak_rss_bytes": 300990464,
+              "samples": 2595
+            }
+          },
+          "overlap": {
+            "sampled_peak_rss_bytes": 0,
+            "samples": 0
+          },
+          "events": [
+            {
+              "phase": 1,
+              "event": "draft_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 168771584,
+                "heap_used_bytes": 11716928,
+                "heap_total_bytes": 19447808,
+                "external_bytes": 62177486,
+                "array_buffers_bytes": 59257532,
+                "process_high_water_rss_bytes": 168771584
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 168869888,
+                "heap_used_bytes": 9379936,
+                "heap_total_bytes": 19447808,
+                "external_bytes": 3381810,
+                "array_buffers_bytes": 472022,
+                "process_high_water_rss_bytes": 168869888
+              }
+            },
+            {
+              "phase": 1,
+              "event": "read_finished",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "reader": {
+                "entries": 232850,
+                "expanded_bytes": 393986236,
+                "names": 232850,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 258293760,
+                "heap_used_bytes": 58505864,
+                "heap_total_bytes": 114343936,
+                "external_bytes": 12647147,
+                "array_buffers_bytes": 9737359,
+                "process_high_water_rss_bytes": 258293760
+              }
+            },
+            {
+              "phase": 1,
+              "event": "before_publish",
+              "current": null,
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 258473984,
+                "heap_used_bytes": 58603728,
+                "heap_total_bytes": 114343936,
+                "external_bytes": 12651244,
+                "array_buffers_bytes": 9737380,
+                "process_high_water_rss_bytes": 258473984
+              }
+            },
+            {
+              "phase": 1,
+              "event": "published",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 258473984,
+                "heap_used_bytes": 58605560,
+                "heap_total_bytes": 114343936,
+                "external_bytes": 12651244,
+                "array_buffers_bytes": 9737380,
+                "process_high_water_rss_bytes": 258473984
+              }
+            },
+            {
+              "phase": 2,
+              "event": "reused",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 280690688,
+                "heap_used_bytes": 36707584,
+                "heap_total_bytes": 94404608,
+                "external_bytes": 24077183,
+                "array_buffers_bytes": 21131964,
+                "process_high_water_rss_bytes": 280690688
+              }
+            },
+            {
+              "phase": 3,
+              "event": "old_before_drop",
+              "current": {
+                "keys": 273976,
+                "postings": 274172,
+                "conflicts": 0,
+                "rows": 232850,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 281395200,
+                "heap_used_bytes": 36659048,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 24028474,
+                "array_buffers_bytes": 21083255,
+                "process_high_water_rss_bytes": 281395200
+              }
+            },
+            {
+              "phase": 3,
+              "event": "old_dropped",
+              "current": null,
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 281395200,
+                "heap_used_bytes": 36690752,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 24028474,
+                "array_buffers_bytes": 21083255,
+                "process_high_water_rss_bytes": 281395200
+              }
+            },
+            {
+              "phase": 3,
+              "event": "draft_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 281395200,
+                "heap_used_bytes": 36693128,
+                "heap_total_bytes": 94666752,
+                "external_bytes": 24028474,
+                "array_buffers_bytes": 21083255,
+                "process_high_water_rss_bytes": 281395200
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_started",
+              "current": null,
+              "draft": {
+                "keys": 0,
+                "postings": 0,
+                "conflicts": 0,
+                "rows": 0,
+                "location_table_bytes": 0
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 266338304,
+                "heap_used_bytes": 10134624,
+                "heap_total_bytes": 76070912,
+                "external_bytes": 3222708,
+                "array_buffers_bytes": 277489,
+                "process_high_water_rss_bytes": 282558464
+              }
+            },
+            {
+              "phase": 3,
+              "event": "read_finished",
+              "current": null,
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "reader": {
+                "entries": 232857,
+                "expanded_bytes": 394027548,
+                "names": 232857,
+                "identity_map": false,
+                "identities": 0
+              },
+              "memory": {
+                "rss_bytes": 300990464,
+                "heap_used_bytes": 57277616,
+                "heap_total_bytes": 117227520,
+                "external_bytes": 11829450,
+                "array_buffers_bytes": 8884231,
+                "process_high_water_rss_bytes": 300990464
+              }
+            },
+            {
+              "phase": 3,
+              "event": "before_publish",
+              "current": null,
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 300990464,
+                "heap_used_bytes": 57363064,
+                "heap_total_bytes": 117227520,
+                "external_bytes": 11829471,
+                "array_buffers_bytes": 8884252,
+                "process_high_water_rss_bytes": 300990464
+              }
+            },
+            {
+              "phase": 3,
+              "event": "published",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 300990464,
+                "heap_used_bytes": 57364832,
+                "heap_total_bytes": 117227520,
+                "external_bytes": 11829471,
+                "array_buffers_bytes": 8884252,
+                "process_high_water_rss_bytes": 300990464
+              }
+            },
+            {
+              "phase": 4,
+              "event": "reused",
+              "current": {
+                "keys": 273985,
+                "postings": 274177,
+                "conflicts": 0,
+                "rows": 232857,
+                "location_table_bytes": 4669440
+              },
+              "draft": null,
+              "distinct": false,
+              "memory": {
+                "rss_bytes": 298500096,
+                "heap_used_bytes": 36867680,
+                "heap_total_bytes": 95453184,
+                "external_bytes": 27698554,
+                "array_buffers_bytes": 24753335,
+                "process_high_water_rss_bytes": 300990464
+              }
+            }
+          ],
+          "instrumented_reader_sha256": "7c08ca093ab173e459260f2c8709a9e1c578e2f1bcd48bc9551a57fdfad735f1",
+          "compiled_sha256": "a3f5e37907bdb998cbb2678f9eedb735cbaf84acdefe9d76aa6f5ff69b6ae8a5",
+          "bindings": {
+            "package.json": "05ab3568d99d42ce38886435af1982d12d128884f953f7bb7cb05455eec70561",
+            "package-lock.json": "24d8ef47362b42df45e70c9f8995e1cca816618d55aaa57994698babffbea5cb",
+            "src/osv/offlineRecord.ts": "1f1cc45b06484c36c6e281d73bc913b4e7511481c4cada86d80f41b38a1e2604",
+            "src/osv/offlineCache.ts": "b2f7be839a1495988f6b0e0de10df688badceecf1bb87c2ef496a99c7b79c11d",
+            "src/tools/explainVulnerability.ts": "caf0c688c3cb24836c3e3c95cda8707bb783440feccec714753acf8a7c3ae73e",
+            "scripts/measure-offline-index-native.mjs": "5c834a360cab79fd19a4a51fa3376cae42a218fabcabf296408cc72773e3c942",
+            "scripts/compare-offline-index-memory.mjs": "ace3a466de1324eb556945d4ff87f5ecd821663b8ae5cdf09fe497f7a9f30e81",
+            "dist/osv/offlineRecord.js": "34a73b48b88e1e50f822be6711553080ad044a49f4cfb27d88623a59643bfe7a",
+            "dist/osv/offlineCache.js": "410931c21acd33fa9cc5058c9c91f66891b104e9f5438abffd734d73a35c2dac",
+            "dist/tools/explainVulnerability.js": "07395dbc484647aca2edcd28d8abd68b8b23469df0497b6a09c78f88c265106c"
+          }
+        }
+      }
+    }
+  ],
+  "common_response_sha256": {
+    "cold": "108a63b951f03fd1721c021bbe5d5c9afa43d7e610af1fe2317475fb8817270e",
+    "warm": "f635bf55e87e37edba8e6b5f267ce25addb36b7d3c9367f4230841d520acb5c2",
+    "replace": "0fafb246cef9d1854552fcc6e2af065786df02f5a36d660143232c33743914fa",
+    "warm_replacement": "54b595fe76602b4890fac991935c7ae298a5c690f641b87aee5f6ee123822c9c"
+  },
+  "summary_bytes": {
+    "cold_request_peak_rss": {
+      "before": {
+        "min": 253575168,
+        "max": 301056000,
+        "median": 281313280
+      },
+      "after": {
+        "min": 245284864,
+        "max": 258490368,
+        "median": 248823808
+      },
+      "paired_before_minus_after": {
+        "min": 8290304,
+        "max": 52232192,
+        "median": 22822912
+      }
+    },
+    "warm_request_peak_rss": {
+      "before": {
+        "min": 207929344,
+        "max": 299401216,
+        "median": 284409856
+      },
+      "after": {
+        "min": 276643840,
+        "max": 280707072,
+        "median": 280182784
+      },
+      "paired_before_minus_after": {
+        "min": -68714496,
+        "max": 19218432,
+        "median": 3702784
+      }
+    },
+    "replace_request_peak_rss": {
+      "before": {
+        "min": 270073856,
+        "max": 304168960,
+        "median": 296026112
+      },
+      "after": {
+        "min": 276643840,
+        "max": 300990464,
+        "median": 280182784
+      },
+      "paired_before_minus_after": {
+        "min": -6569984,
+        "max": 23986176,
+        "median": -4964352
+      }
+    },
+    "warm_replacement_request_peak_rss": {
+      "before": {
+        "min": 267452416,
+        "max": 290734080,
+        "median": 282198016
+      },
+      "after": {
+        "min": 263684096,
+        "max": 298516480,
+        "median": 265797632
+      },
+      "paired_before_minus_after": {
+        "min": -16318464,
+        "max": 27049984,
+        "median": 1654784
+      }
+    },
+    "cold_full_reader_peak_rss": {
+      "before": {
+        "min": 253575168,
+        "max": 300974080,
+        "median": 281313280
+      },
+      "after": {
+        "min": 245284864,
+        "max": 258293760,
+        "median": 248823808
+      },
+      "paired_before_minus_after": {
+        "min": 8290304,
+        "max": 52150272,
+        "median": 23019520
+      }
+    },
+    "cold_reader_end_heap": {
+      "before": {
+        "min": 56198864,
+        "max": 62109088,
+        "median": 60436176
+      },
+      "after": {
+        "min": 53534448,
+        "max": 77639680,
+        "median": 58505864
+      },
+      "paired_before_minus_after": {
+        "min": -17203504,
+        "max": 8574640,
+        "median": -2307000
+      }
+    },
+    "replace_full_reader_peak_rss": {
+      "before": {
+        "min": 269238272,
+        "max": 304168960,
+        "median": 295682048
+      },
+      "after": {
+        "min": 274415616,
+        "max": 300990464,
+        "median": 279494656
+      },
+      "paired_before_minus_after": {
+        "min": -5308416,
+        "max": 24674304,
+        "median": -5177344
+      }
+    },
+    "replace_reader_end_heap": {
+      "before": {
+        "min": 75680200,
+        "max": 77301568,
+        "median": 76903576
+      },
+      "after": {
+        "min": 52763896,
+        "max": 57645632,
+        "median": 57277616
+      },
+      "paired_before_minus_after": {
+        "min": 19257944,
+        "max": 22916304,
+        "median": 20023952
+      }
+    },
+    "cold_post_gc_heap_delta": {
+      "before": {
+        "min": 25843888,
+        "max": 25958392,
+        "median": 25916704
+      },
+      "after": {
+        "min": 25990568,
+        "max": 26003528,
+        "median": 26002976
+      },
+      "paired_before_minus_after": {
+        "min": -146680,
+        "max": -44584,
+        "median": -86824
+      }
+    },
+    "replace_start_rss": {
+      "before": {
+        "min": 207994880,
+        "max": 299401216,
+        "median": 284409856
+      },
+      "after": {
+        "min": 276643840,
+        "max": 280707072,
+        "median": 280182784
+      },
+      "paired_before_minus_after": {
+        "min": -68648960,
+        "max": 19218432,
+        "median": 3702784
+      }
+    },
+    "cold_location_table_bytes": {
+      "before": {
+        "min": 4669440,
+        "max": 4669440,
+        "median": 4669440
+      },
+      "after": {
+        "min": 4669440,
+        "max": 4669440,
+        "median": 4669440
+      },
+      "paired_before_minus_after": {
+        "min": 0,
+        "max": 0,
+        "median": 0
+      }
+    },
+    "replace_location_table_bytes": {
+      "before": {
+        "min": 4669440,
+        "max": 4669440,
+        "median": 4669440
+      },
+      "after": {
+        "min": 4669440,
+        "max": 4669440,
+        "median": 4669440
+      },
+      "paired_before_minus_after": {
+        "min": 0,
+        "max": 0,
+        "median": 0
+      }
+    },
+    "cold_post_gc_rss": {
+      "before": {
+        "min": 203784192,
+        "max": 295895040,
+        "median": 272138240
+      },
+      "after": {
+        "min": 232243200,
+        "max": 253345792,
+        "median": 236961792
+      },
+      "paired_before_minus_after": {
+        "min": -28459008,
+        "max": 58933248,
+        "median": 18792448
+      }
+    },
+    "cold_post_gc_managed_delta": {
+      "before": {
+        "min": 30513328,
+        "max": 30627832,
+        "median": 30586144
+      },
+      "after": {
+        "min": 30660008,
+        "max": 30672968,
+        "median": 30672416
+      },
+      "paired_before_minus_after": {
+        "min": -146680,
+        "max": -44584,
+        "median": -86824
+      }
+    },
+    "warm_post_gc_rss": {
+      "before": {
+        "min": 207945728,
+        "max": 299401216,
+        "median": 284409856
+      },
+      "after": {
+        "min": 276643840,
+        "max": 280707072,
+        "median": 280182784
+      },
+      "paired_before_minus_after": {
+        "min": -68698112,
+        "max": 19218432,
+        "median": 3702784
+      }
+    },
+    "warm_post_gc_managed_delta": {
+      "before": {
+        "min": 30547064,
+        "max": 30662664,
+        "median": 30610064
+      },
+      "after": {
+        "min": 30693208,
+        "max": 30701992,
+        "median": 30700352
+      },
+      "paired_before_minus_after": {
+        "min": -146144,
+        "max": -39328,
+        "median": -90288
+      }
+    },
+    "replace_post_gc_rss": {
+      "before": {
+        "min": 252493824,
+        "max": 279576576,
+        "median": 277872640
+      },
+      "after": {
+        "min": 224428032,
+        "max": 295763968,
+        "median": 265371648
+      },
+      "paired_before_minus_after": {
+        "min": -17891328,
+        "max": 55148544,
+        "median": -12877824
+      }
+    },
+    "replace_post_gc_managed_delta": {
+      "before": {
+        "min": 30640952,
+        "max": 30665176,
+        "median": 30660912
+      },
+      "after": {
+        "min": 30740672,
+        "max": 30745568,
+        "median": 30741080
+      },
+      "paired_before_minus_after": {
+        "min": -104616,
+        "max": -75904,
+        "median": -79760
+      }
+    },
+    "warm_replacement_post_gc_rss": {
+      "before": {
+        "min": 267485184,
+        "max": 290734080,
+        "median": 282198016
+      },
+      "after": {
+        "min": 185483264,
+        "max": 298516480,
+        "median": 263684096
+      },
+      "paired_before_minus_after": {
+        "min": -16318464,
+        "max": 82001920,
+        "median": 27049984
+      }
+    },
+    "warm_replacement_post_gc_managed_delta": {
+      "before": {
+        "min": 30663032,
+        "max": 30689840,
+        "median": 30685744
+      },
+      "after": {
+        "min": 30760768,
+        "max": 30766496,
+        "median": 30765832
+      },
+      "paired_before_minus_after": {
+        "min": -102800,
+        "max": -75024,
+        "median": -76656
+      }
+    }
+  },
+  "summary_elapsed_ms": {
+    "cold": {
+      "before": {
+        "min": 21147.859958,
+        "max": 58737.541249999995,
+        "median": 34715.684167
+      },
+      "after": {
+        "min": 23019.570459,
+        "max": 33454.864667,
+        "median": 29355.754667
+      },
+      "paired_before_minus_after": {
+        "min": -1871.7105009999977,
+        "max": 25282.676582999993,
+        "median": 5359.929499999998
+      }
+    },
+    "warm": {
+      "before": {
+        "min": 334.1791669999948,
+        "max": 4110.845874999999,
+        "median": 355.1039579999997
+      },
+      "after": {
+        "min": 327.75433399999747,
+        "max": 528.4645409999939,
+        "median": 478.567833000001
+      },
+      "paired_before_minus_after": {
+        "min": -144.3886660000062,
+        "max": 3582.381334000005,
+        "median": 27.349624000002223
+      }
+    },
+    "replace": {
+      "before": {
+        "min": 22834.080958000002,
+        "max": 96168.86470800001,
+        "median": 54243.123083
+      },
+      "after": {
+        "min": 26776.464083,
+        "max": 46180.754083,
+        "median": 27789.547625
+      },
+      "paired_before_minus_after": {
+        "min": -3942.3831249999967,
+        "max": 68379.317083,
+        "median": 8062.368999999999
+      }
+    },
+    "warm_replacement": {
+      "before": {
+        "min": 310.80729200000496,
+        "max": 534.4853330000042,
+        "median": 502.3821659999958
+      },
+      "after": {
+        "min": 293.59912500000064,
+        "max": 3893.4369589999988,
+        "median": 378.2975839999999
+      },
+      "paired_before_minus_after": {
+        "min": -3358.9516259999946,
+        "max": 124.08458199999586,
+        "median": 17.208167000004323
+      }
+    }
+  }
+}

@@ -115,9 +115,15 @@ async function loadReader(tree, profile, probe) {
   instrumented = replaceOnce(instrumented,
     /(if \(directoryEntries !== layout.count \|\| directoryBytes !== layout.bytes\)\s+throw invalid\('ZIP directory entry count or size mismatch'\);)/g,
     `$1\n${call('read_finished', '{entries, expanded_bytes: expanded, names: names.size, identity_map: identities !== undefined, identities: identities?.size ?? 0}')}`);
+  const release = /if \(cachedIndex\)\s+cachedIndex = undefined;/g;
+  const productionRelease = [...original.matchAll(release)].length !== 0;
+  if (productionRelease) {
+    instrumented = replaceOnce(instrumented, release,
+      `if (cachedIndex) { ${call('old_before_drop')} cachedIndex = undefined; ${call('old_dropped')} }`);
+  }
   if (profile === 'reader-only') {
     instrumented = replaceOnce(instrumented, /else if \(defaultLimits && !buildingIndex\)/g, 'else if (false)');
-  } else if (profile === 'drop-old') {
+  } else if (profile === 'drop-old' && !productionRelease) {
     instrumented = replaceOnce(instrumented, /const current = cachedIndex;(?=\s*if \(defaultLimits)/g,
       `if (cachedIndex && cachedIndex.generation !== generation) {
         ${call('old_before_drop')} cachedIndex = undefined; ${call('old_dropped')}
@@ -136,7 +142,7 @@ async function loadReader(tree, profile, probe) {
   try {
     const {handleExplainVulnerability} = await import(pathToFileURL(join(tree, 'dist/tools/explainVulnerability.js')).href);
     assert.equal(loaded, 1, 'The measured handler must load the instrumented offline reader exactly once');
-    return {handleExplainVulnerability, instrumented_reader_sha256: sha256(instrumented)};
+    return {handleExplainVulnerability, productionRelease, instrumented_reader_sha256: sha256(instrumented)};
   } finally {hooks.deregister();}
 }
 
@@ -185,7 +191,7 @@ async function run() {
     const summary = index => index ? {keys: index.locations.size, postings: index.postings, conflicts: index.conflicts.size,
       ...(index.records && {rows: index.records.ids.length,
         location_table_bytes: index.records.pages.reduce((total, page) => total + page.byteLength, 0)})} : null;
-    const {handleExplainVulnerability, instrumented_reader_sha256} = await loadReader(tree, profile, (event, current, draft, reader) => {
+    const {handleExplainVulnerability, productionRelease, instrumented_reader_sha256} = await loadReader(tree, profile, (event, current, draft, reader) => {
       const phase = Atomics.load(state, ACTIVE_PHASE);
       assert.ok(phase > 0);
       if (event === 'draft_started' && current) Atomics.store(state, OVERLAP_ACTIVE, 1);
@@ -245,8 +251,9 @@ async function run() {
     const at = (phase, event) => events.find(e => e.phase === phase && e.event === event);
     const readEvents = ['read_started', 'read_finished'];
     const buildEvents = ['draft_started', ...readEvents, 'before_publish', 'published'];
+    const releasesOld = profile === 'drop-old' || productionRelease;
     const expected = profile === 'reader-only' ? [[1, readEvents]] : [[1, buildEvents], [2, ['reused']],
-      [3, profile === 'drop-old' ? ['old_before_drop', 'old_dropped', ...buildEvents] : buildEvents], [4, ['reused']]];
+      [3, releasesOld ? ['old_before_drop', 'old_dropped', ...buildEvents] : buildEvents], [4, ['reused']]];
     assert.deepEqual(events.map(e => [e.phase, e.event]), expected.flatMap(([phase, names]) => names.map(name => [phase, name])));
     function verifyRead(phase, db) {
       const {reader} = at(phase, 'read_finished');
@@ -265,7 +272,7 @@ async function run() {
       assert.deepEqual(at(2, 'reused').current, first.draft);
       assert.deepEqual(at(4, 'reused').current, next.draft);
       verifyRead(3, replacement.evidence);
-      if (profile === 'baseline') {
+      if (!releasesOld) {
         assert.ok(next.distinct);
         assert.deepEqual(next.current, first.draft);
       } else {
@@ -275,7 +282,7 @@ async function run() {
       }
     }
     const overlap = statistics(state, phases.overlap);
-    if (profile === 'baseline') assert.ok(overlap.samples > 2 && overlap.sampled_peak_rss_bytes >= at(3, 'before_publish').memory.rss_bytes);
+    if (profile === 'baseline' && !releasesOld) assert.ok(overlap.samples > 2 && overlap.sampled_peak_rss_bytes >= at(3, 'before_publish').memory.rss_bytes);
     else assert.equal(overlap.samples, 0);
     const full_reader = {cold: statistics(state, phases.cold_read),
       ...(profile !== 'reader-only' && {replace: statistics(state, phases.replace_read)})};
