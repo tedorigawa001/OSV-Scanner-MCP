@@ -20,7 +20,6 @@ const INTERVAL_MS = 10;
 const KIB = 1024;
 const ACTIVE_PHASE = 0, OVERLAP_ACTIVE = 1, FULL_READ_ACTIVE = 2, ACTIVE_STAGE = 3;
 const phases = {cold: 1, warm: 2, replace: 3, warm_replacement: 4, overlap: 5, cold_read: 6, replace_read: 7};
-const stageNames = ['copy', 'sha256', 'indexed_read', 'cleanup'];
 const firstStage = Object.keys(phases).length + 1;
 const countersAt = bucket => 4 + (bucket - 1) * 2;
 const stageSymbol = Symbol.for('osv-offline-warm-stage');
@@ -116,14 +115,15 @@ function instrumentCache(source) {
     `$1${stageCall('cleanup', 'start')} $2 ${stageCall('cleanup', 'end')}$3`);
 }
 
-async function loadReader(tree, profile, probe, stageProbe) {
+async function loadReader(tree, profile, probe, stageProbe, replacementStages) {
   const file = await realpath(join(tree, 'dist/osv/offlineRecord.js'));
   const original = await readFile(file, 'utf8');
   const symbol = 'osv-offline-index-memory-probe';
   const call = (event, detail = 'undefined') => `globalThis[Symbol.for('${symbol}')]('${event}', cachedIndex, draft, ${detail});`;
   // The baseline adds observation only. The other arms alter index retention in this isolated loader.
+  const draftStart = replacementStages ? stageCall('full_read_build', 'start') : '';
   let instrumented = replaceOnce(original, /(draft = \{ generation, (?:records: new RecordLocationTable\(\), )?locations: new Map\(\), conflicts: new Set\(\), postings: 0 \};)/g,
-    `$1\n${call('draft_started')}`);
+    `${draftStart}$1\n${call('draft_started')}`);
   instrumented = replaceOnce(instrumented, /(if \(draft\)\s+cachedIndex = draft;)/g,
     `if (draft) { ${call('before_publish')} cachedIndex = draft; ${call('published')} }`);
   instrumented = replaceOnce(instrumented, /if \((!candidates\.some\((?:location => current\.conflicts\.has\(location\.id\)|row => current\.conflicts\.has\(current\.records\.ids\[row\]\))\))\)\s+indexed = candidates;/g,
@@ -154,9 +154,10 @@ async function loadReader(tree, profile, probe, stageProbe) {
     const cacheSource = await readFile(cacheFile, 'utf8');
     modules.set(pathToFileURL(cacheFile).href, {original: cacheSource, instrumented: instrumentCache(cacheSource)});
     instrumented = replaceOnce(instrumented, /(let location = current\?\.records\.get\(indexed\?\.\[0\]\);)/g,
-      `$1\n${stageCall('indexed_read', 'start')}`);
+      `$1\nif (indexed) ${stageCall('indexed_read', 'start')}`);
+    const fullEnd = replacementStages ? `else if (ownsBuilder) ${stageCall('full_read_build', 'end', 'entries')}` : '';
     instrumented = replaceOnce(instrumented, /(const records = \[\.\.\.matches\.values\(\)\]\.sort\([^\n]+;)/g,
-      `${stageCall('indexed_read', 'end', 'nextLocation')}\n$1`);
+      `if (indexed) ${stageCall('indexed_read', 'end', 'nextLocation')} ${fullEnd}\n$1`);
     modules.set(url, {original, instrumented});
     globalThis[stageSymbol] = stageProbe;
   }
@@ -184,18 +185,21 @@ async function buildEvidence(tree) {
   return {compiled_sha256: buildDigest(inventory), bindings: await memoryBindings(tree, inventory)};
 }
 
-function warmStageObserver(state) {
+function stageObserver(state, tracked) {
   const observations = new Map();
+  let requestStarted;
   return {
+    begin(started) {requestStarted = started;},
     probe(name, boundary, count) {
       const phase = Atomics.load(state, ACTIVE_PHASE);
-      if (phase !== phases.warm && phase !== phases.warm_replacement) return;
+      const request = tracked.get(phase);
+      if (!request) return;
       const list = observations.get(phase) ?? [];
       observations.set(phase, list);
       if (boundary === 'start') {
-        assert.equal(name, stageNames[list.length]);
+        assert.equal(name, request.names[list.length]);
         assert.equal(Atomics.load(state, ACTIVE_STAGE), 0);
-        const bucket = firstStage + (phase === phases.warm ? 0 : stageNames.length) + list.length;
+        const bucket = request.firstBucket + list.length;
         list.push({name, bucket, before: memory(), started: performance.now()});
         Atomics.store(state, ACTIVE_STAGE, bucket);
         sample(state, list.at(-1).before.rss_bytes);
@@ -203,7 +207,12 @@ function warmStageObserver(state) {
         const stage = list.at(-1);
         assert.equal(stage?.name, name);
         assert.equal(Atomics.load(state, ACTIVE_STAGE), stage.bucket);
-        stage.elapsed_ms = performance.now() - stage.started;
+        const ended = performance.now();
+        stage.elapsed_ms = ended - stage.started;
+        if (phase === phases.replace) {
+          stage.start_offset_ms = stage.started - requestStarted;
+          stage.end_offset_ms = ended - requestStarted;
+        }
         stage.settled = memory();
         if (count !== undefined) stage.count = count;
         sample(state, stage.settled.rss_bytes);
@@ -212,7 +221,7 @@ function warmStageObserver(state) {
     },
     report(phase) {
       const stages = observations.get(phase) ?? [];
-      assert.equal(stages.length, stageNames.length);
+      assert.equal(stages.length, tracked.get(phase).names.length);
       assert.equal(Atomics.load(state, ACTIVE_STAGE), 0);
       return stages.map(({started, bucket, ...stage}) => ({...stage, ...statistics(state, bucket)}));
     },
@@ -222,13 +231,14 @@ function warmStageObserver(state) {
 async function run() {
   const {values} = parseArgs({options: {'old-cache': {type: 'string'}, 'new-cache': {type: 'string'}, output: {type: 'string'},
     profile: {type: 'string', default: 'baseline'}, tree: {type: 'string', default: '.'},
-    'identity-map': {type: 'string', default: 'absent'}, 'warm-stages': {type: 'boolean', default: false}}});
+    'identity-map': {type: 'string', default: 'absent'}, 'warm-stages': {type: 'boolean', default: false},
+    'replacement-stages': {type: 'boolean', default: false}}});
   assert.ok(values['old-cache'] && values['new-cache'] && values.output,
     'Supply --old-cache /old-npm-cache --new-cache /new-npm-cache --output /run.json');
   const {profile} = values;
   assert.ok(['baseline', 'reader-only', 'drop-old'].includes(profile), 'Use --profile baseline, reader-only or drop-old');
   assert.ok(['present', 'absent'].includes(values['identity-map']), 'Use --identity-map present or absent');
-  assert.ok(!values['warm-stages'] || profile === 'baseline', 'Warm stages require the baseline profile');
+  assert.ok(!(values['warm-stages'] || values['replacement-stages']) || profile === 'baseline', 'Stage probes require the baseline profile');
   const tree = await realpath(values.tree), expectIdentityMap = values['identity-map'] === 'present';
   assert.equal(typeof globalThis.gc, 'function', 'Use node --expose-gc');
   const denied = await new Promise(resolve => {
@@ -244,11 +254,23 @@ async function run() {
   globalThis.fetch = async () => {fetchAttempts++; throw Error('Unexpected fetch');};
 
   const root = await mkdtemp(join(tmpdir(), 'offline-index-memory-'));
-  const buckets = Object.keys(phases).length + (values['warm-stages'] ? 2 * stageNames.length : 0);
+  const tracked = new Map();
+  let nextBucket = firstStage;
+  for (const [enabled, phase, read] of [
+    [values['warm-stages'], phases.warm, 'indexed_read'],
+    [values['replacement-stages'], phases.replace, 'full_read_build'],
+    [values['warm-stages'], phases.warm_replacement, 'indexed_read'],
+  ]) {
+    if (!enabled) continue;
+    const names = ['copy', 'sha256', read, 'cleanup'];
+    tracked.set(phase, {names, firstBucket: nextBucket});
+    nextBucket += names.length;
+  }
+  const buckets = nextBucket - 1;
   const state = new Int32Array(new SharedArrayBuffer((4 + 2 * buckets) * Int32Array.BYTES_PER_ELEMENT));
-  const observer = values['warm-stages'] ? warmStageObserver(state) : undefined;
+  const observer = tracked.size ? stageObserver(state, tracked) : undefined;
   const events = [];
-  let sampler;
+  let sampler, requestStarted;
   try {
     const objects = join(root, 'objects');
     await mkdir(objects);
@@ -265,6 +287,7 @@ async function run() {
     const {handleExplainVulnerability, productionRelease, instrumented_reader_sha256, instrumented_cache_sha256} = await loadReader(tree, profile, (event, current, draft, reader) => {
       const phase = Atomics.load(state, ACTIVE_PHASE);
       assert.ok(phase > 0);
+      const offset = values['replacement-stages'] && phase === phases.replace ? performance.now() - requestStarted : undefined;
       if (event === 'draft_started' && current) Atomics.store(state, OVERLAP_ACTIVE, 1);
       if (event === 'published') Atomics.store(state, OVERLAP_ACTIVE, 0);
       if (event === 'read_started') {
@@ -275,8 +298,9 @@ async function run() {
       sample(state, measurement.rss_bytes);
       if (event === 'read_finished') Atomics.store(state, FULL_READ_ACTIVE, 0);
       events.push({phase, event, current: summary(current), draft: summary(draft),
-        distinct: !!current && !!draft && current !== draft, ...(reader && {reader}), memory: measurement});
-    }, observer?.probe);
+        distinct: !!current && !!draft && current !== draft, ...(reader && {reader}),
+        ...(offset !== undefined && {offset_ms: offset}), memory: measurement});
+    }, observer?.probe, values['replacement-stages']);
     sampler = new Worker(new URL(import.meta.url), {workerData: state.buffer});
     await once(sampler, 'message');
     const baseline = await retainedMemory();
@@ -285,6 +309,8 @@ async function run() {
 
     async function query(name, requested, db, matchedBy) {
       const phase = phases[name], before = memory(), start = performance.now();
+      requestStarted = start;
+      observer?.begin(start);
       Atomics.store(state, ACTIVE_PHASE, phase);
       sample(state, before.rss_bytes);
       let result, elapsed_ms, settled;
@@ -302,11 +328,12 @@ async function run() {
       assert.ok(payload.details.length > 0);
       assert.equal(payload.offline_database.network_requests, false);
       assert.deepEqual(payload.offline_database.databases, [{ecosystem: db.ecosystem, sha256: db.sha256, downloaded_at: db.downloaded_at}]);
-      const stages = observer && (phase === phases.warm || phase === phases.warm_replacement) ? observer.report(phase) : undefined;
+      const stages = tracked.has(phase) ? observer.report(phase) : undefined;
       if (stages) {
         assert.equal(stages[0].count, db.bytes);
         assert.equal(stages[1].count, db.bytes);
-        assert.ok(stages[2].count > 0);
+        if (phase === phases.replace) assert.equal(stages[2].count, db.entries);
+        else assert.ok(stages[2].count > 0);
       }
       return {name, requested_id: requested, database_sha256: db.sha256, elapsed_ms, before, settled, ...(stages && {stages}),
         response_sha256: sha256(JSON.stringify(payload)), ...statistics(state, phase)};

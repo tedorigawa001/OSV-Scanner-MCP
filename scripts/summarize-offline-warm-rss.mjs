@@ -1,4 +1,4 @@
-/** Summarize stage-by-stage RSS observations from the offline index benchmark. */
+/** Summarize indexed lookup or generation replacement stages from the offline index benchmark. */
 import assert from 'node:assert/strict';
 import {readFile, realpath, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
@@ -7,6 +7,7 @@ import {parseArgs} from 'node:util';
 import {buildDigest, buildInventory, memoryBindings} from './compare-offline-index-memory.mjs';
 
 const stages = ['copy', 'sha256', 'indexed_read', 'cleanup'];
+const replacementStages = ['copy', 'sha256', 'full_read_build', 'cleanup'];
 const queries = ['cold', 'warm', 'replace', 'warm_replacement'];
 const budget = 256 * 1024 * 1024;
 const readJson = async file => JSON.parse(await readFile(file, 'utf8'));
@@ -24,12 +25,11 @@ function memory(snapshot) {
   assert.ok(snapshot.rss_bytes > 0 && snapshot.rss_bytes <= snapshot.process_high_water_rss_bytes + 1024);
 }
 
-export function verifyWarmStages(query, databaseBytes) {
-  assert.deepEqual(query.stages?.map(stage => stage.name), stages, 'Missing or misordered warm stages');
+function verifyStages(query, databaseBytes, names, entryCount, badEntryCount) {
+  assert.deepEqual(query.stages?.map(stage => stage.name), names, 'Missing or misordered RSS stages');
   assert.equal(query.stages[0].count, databaseBytes, 'Copy byte count differs from database size');
   assert.equal(query.stages[1].count, databaseBytes, 'Hash byte count differs from database size');
-  // The pinned alias in this benchmark has one indexed match in either npm generation.
-  assert.equal(query.stages[2].count, 1, 'Unexpected indexed record count');
+  assert.equal(query.stages[2].count, entryCount, badEntryCount);
   assert.equal(query.stages[3].count, undefined);
   memory(query.before); memory(query.settled); memory(query.post_gc);
   assert.ok(Number.isFinite(query.elapsed_ms) && query.elapsed_ms > 0);
@@ -52,7 +52,53 @@ export function verifyWarmStages(query, databaseBytes) {
   assert.ok(samples <= query.samples, 'Stage samples exceed request samples');
 }
 
-function summarize(runs, name, i) {
+export function verifyWarmStages(query, databaseBytes) {
+  // The pinned alias has one indexed match in either npm generation.
+  verifyStages(query, databaseBytes, stages, 1, 'Unexpected indexed record count');
+}
+
+export function verifyReplacementStages(query, precedingWarm, db, events, fullReader) {
+  verifyStages(query, db.bytes, replacementStages, db.entries, 'Full-read count differs from database entry count');
+  memory(precedingWarm.settled); memory(precedingWarm.post_gc);
+  const settledPeak = precedingWarm.settled.process_high_water_rss_bytes;
+  const retainedPeak = precedingWarm.post_gc.process_high_water_rss_bytes;
+  assert.ok(settledPeak <= retainedPeak && retainedPeak <= query.before.process_high_water_rss_bytes,
+    'Process high-water RSS regressed before replacement');
+  const [copy, hashStage, build, cleanup] = query.stages;
+  const replacementEvents = events.filter(event => event.phase === 3);
+  assert.deepEqual(replacementEvents.map(event => event.event),
+    ['old_before_drop', 'old_dropped', 'draft_started', 'read_started', 'read_finished', 'before_publish', 'published']);
+  const [oldIndex, dropped, draft, readStart, readEnd, beforePublish, published] = replacementEvents;
+  const offsets = [copy.start_offset_ms, copy.end_offset_ms, hashStage.start_offset_ms, hashStage.end_offset_ms,
+    oldIndex.offset_ms, dropped.offset_ms, build.start_offset_ms, draft.offset_ms, readStart.offset_ms, readEnd.offset_ms,
+    build.end_offset_ms, cleanup.start_offset_ms, cleanup.end_offset_ms, beforePublish.offset_ms, published.offset_ms];
+  assert.ok(offsets.every((offset, i) => Number.isFinite(offset) && offset >= (offsets[i - 1] ?? 0) && offset <= query.elapsed_ms),
+    'Replacement boundary order or request time mismatch');
+  for (const stage of query.stages) {
+    assert.ok(Math.abs(stage.end_offset_ms - stage.start_offset_ms - stage.elapsed_ms) < 0.001, 'Stage duration differs from its offsets');
+  }
+  const reused = events.filter(event => event.phase === 2 && event.event === 'reused');
+  assert.equal(reused.length, 1);
+  assert.ok(reused[0].current);
+  assert.deepEqual(oldIndex.current, reused[0].current, 'Released index differs from the preceding indexed lookup');
+  assert.equal(oldIndex.draft, null);
+  assert.equal(dropped.draft, null);
+  for (const event of [dropped, draft, readStart, readEnd, beforePublish]) assert.equal(event.current, null);
+  for (const event of replacementEvents) {
+    memory(event.memory);
+    assert.ok(event.memory.rss_bytes <= query.sampled_peak_rss_bytes);
+  }
+  for (const event of [draft, readStart, readEnd]) assert.ok(event.memory.rss_bytes <= build.sampled_peak_rss_bytes);
+  assert.equal(readEnd.reader.entries, db.entries);
+  assert.equal(beforePublish.draft.rows, db.entries);
+  assert.deepEqual(published.current, beforePublish.draft);
+  assert.ok(Number.isSafeInteger(fullReader.samples) && fullReader.samples >= 2 && fullReader.samples <= build.samples);
+  assert.ok(Number.isSafeInteger(fullReader.sampled_peak_rss_bytes) && fullReader.sampled_peak_rss_bytes >=
+    Math.max(readStart.memory.rss_bytes, readEnd.memory.rss_bytes) && fullReader.sampled_peak_rss_bytes <= build.sampled_peak_rss_bytes,
+  'Reader loop peak exceeds the build window or misses a boundary');
+}
+
+function summarize(runs, name, i, names = stages) {
   const samples = runs.map(run => run.measurements[i]);
   const summary = {};
   const retained = [];
@@ -72,7 +118,7 @@ function summarize(runs, name, i) {
       (query.sampled_peak_rss_bytes > budget ? 'outside_tracked_stages' : 'under_budget'));
     hits.push(query.stages.filter(stage => stage.sampled_peak_rss_bytes === query.sampled_peak_rss_bytes).map(stage => stage.name));
   }
-  for (const [j, stage] of stages.entries()) {
+  for (const [j, stage] of names.entries()) {
     const evidence = samples.map(query => query.stages[j]);
     summary[stage] = {peak_rss_bytes: range(evidence.map(s => s.sampled_peak_rss_bytes)),
       peak_above_stage_start_bytes: range(evidence.map(s => s.sampled_peak_rss_bytes - s.before.rss_bytes)),
@@ -87,7 +133,8 @@ function summarize(runs, name, i) {
 }
 
 async function main() {
-  const {values} = parseArgs({options: {tree: {type: 'string', default: '.'}, 'runs-dir': {type: 'string'}, output: {type: 'string'}}});
+  const {values} = parseArgs({options: {tree: {type: 'string', default: '.'}, 'runs-dir': {type: 'string'},
+    output: {type: 'string'}, replacement: {type: 'boolean', default: false}}});
   assert.ok(values['runs-dir'] && values.output, 'Supply --runs-dir DIR --output FILE');
   const reference = await readJson(new URL('../docs/validation/offline-npm-early-index-release-2026-11-24.json', import.meta.url));
   const previous = reference.pairs[0].arms.after;
@@ -122,15 +169,26 @@ async function main() {
       const db = run.databases[i < 2 ? 0 : 1];
       assert.equal(query.database_sha256, db.sha256);
       assert.equal(query.response_sha256, reference.common_response_sha256[query.name]);
-      if (i % 2) verifyWarmStages(query, db.bytes);
+      if (values.replacement && i === 2) verifyReplacementStages(query, run.measurements[1], db, run.events, run.full_reader.replace);
+      else if (!values.replacement && i % 2) verifyWarmStages(query, db.bytes);
       else assert.equal(query.stages, undefined);
     }
     runs.push(run);
   }
   const report = {schema: 1, rss_budget_bytes: budget, reference_build_sha256: compiled,
-    warm: summarize(runs, 'warm', 1), warm_replacement: summarize(runs, 'warm_replacement', 3), runs};
+    ...(values.replacement ? {replacement: {
+      ...summarize(runs, 'replace', 2, replacementStages),
+      request_start_rss_bytes: range(runs.map(run => run.measurements[2].before.rss_bytes)),
+      start_over_budget: runs.filter(run => run.measurements[2].before.rss_bytes > budget).length,
+      request_peak_above_start_bytes: range(runs.map(run => run.measurements[2].sampled_peak_rss_bytes - run.measurements[2].before.rss_bytes)),
+      build_peak_above_request_start_bytes: range(runs.map(run => run.measurements[2].stages[2].sampled_peak_rss_bytes - run.measurements[2].before.rss_bytes)),
+      reader_loop_peak_rss_bytes: range(runs.map(run => run.full_reader.replace.sampled_peak_rss_bytes)),
+      preceding_warm_post_gc_rss_bytes: range(runs.map(run => run.measurements[1].post_gc.rss_bytes)),
+      rss_change_since_preceding_warm_post_gc_bytes: range(runs.map(run =>
+        run.measurements[2].before.rss_bytes - run.measurements[1].post_gc.rss_bytes)),
+    }} : {warm: summarize(runs, 'warm', 1), warm_replacement: summarize(runs, 'warm_replacement', 3)}), runs};
   await writeFile(values.output, JSON.stringify(report, null, 2) + '\n');
-  console.log('Verified three processes and six indexed lookups');
+  console.log(values.replacement ? 'Verified three processes and three generation replacements' : 'Verified three processes and six indexed lookups');
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(await realpath(process.argv[1])).href) await main();

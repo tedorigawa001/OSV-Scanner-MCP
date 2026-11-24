@@ -8,7 +8,7 @@ import {expect, it} from 'vitest';
 // @ts-ignore Repository validation artifact, separate from the shipped server.
 import {buildDigest, buildInventory, compareRuns, memoryBindings, recordBufferEdits} from '../../../scripts/compare-offline-index-memory.mjs';
 // @ts-ignore Repository validation artifact, separate from the shipped server.
-import {verifyWarmStages} from '../../../scripts/summarize-offline-warm-rss.mjs';
+import {verifyReplacementStages, verifyWarmStages} from '../../../scripts/summarize-offline-warm-rss.mjs';
 import {recordZip} from '../fixtures/offlineRecords.js';
 
 const mib = 1024 * 1024;
@@ -62,7 +62,7 @@ syncBuiltinESMExports();
 `);
       const digest = buildDigest(await buildInventory(tree));
       for (const profile of ['baseline', 'drop-old']) {
-        const stageArgs = profile === 'baseline' ? ['--warm-stages'] : [];
+        const stageArgs = profile === 'baseline' ? ['--warm-stages', '--replacement-stages'] : [];
         const run = spawnSync(process.execPath, ['--expose-gc', '--import', preload, 'scripts/measure-offline-index-native.mjs',
           '--old-cache', caches[0]!, '--new-cache', caches[1]!, '--tree', aliasedTree, '--identity-map', 'absent',
           '--profile', profile, '--output', output, ...stageArgs], {encoding: 'utf8', timeout: 15_000});
@@ -101,9 +101,30 @@ syncBuiltinESMExports();
             bad.stages[2].sampled_peak_rss_bytes = warm.sampled_peak_rss_bytes + 1024;
             expect(() => verifyWarmStages(bad, bytes)).toThrow('Inconsistent stage RSS peak');
             bad.stages.splice(2, 1);
-            expect(() => verifyWarmStages(bad, bytes)).toThrow('Missing or misordered warm stages');
+            expect(() => verifyWarmStages(bad, bytes)).toThrow('Missing or misordered RSS stages');
           }
-          for (const request of [0, 2]) expect(measured.measurements[request].stages).toBeUndefined();
+          expect(measured.measurements[0].stages).toBeUndefined();
+          const replacement = measured.measurements[2], db = measured.databases[1];
+          const precedingWarm = measured.measurements[1];
+          const events = measured.events, reader = measured.full_reader.replace;
+          expect(() => verifyReplacementStages(replacement, precedingWarm, db, events, reader)).not.toThrow();
+          const wrongWarm = structuredClone(precedingWarm);
+          delete wrongWarm.post_gc.rss_bytes;
+          expect(() => verifyReplacementStages(replacement, wrongWarm, db, events, reader)).toThrow('Invalid memory field: rss_bytes');
+          wrongWarm.post_gc.rss_bytes = precedingWarm.post_gc.rss_bytes;
+          wrongWarm.post_gc.process_high_water_rss_bytes = replacement.before.process_high_water_rss_bytes + 1024;
+          expect(() => verifyReplacementStages(replacement, wrongWarm, db, events, reader)).toThrow('Process high-water RSS regressed');
+          const wrongCount = structuredClone(replacement);
+          wrongCount.stages[2].count--;
+          expect(() => verifyReplacementStages(wrongCount, precedingWarm, db, events, reader)).toThrow('Full-read count');
+          const wrongOrder = structuredClone(events);
+          wrongOrder.find((e: {event: string}) => e.event === 'old_dropped').offset_ms = replacement.stages[2].end_offset_ms;
+          expect(() => verifyReplacementStages(replacement, precedingWarm, db, wrongOrder, reader)).toThrow('Replacement boundary order');
+          const wrongReleased = structuredClone(events);
+          wrongReleased.find((e: {event: string}) => e.event === 'old_before_drop').current.rows--;
+          expect(() => verifyReplacementStages(replacement, precedingWarm, db, wrongReleased, reader)).toThrow('Released index differs');
+          const wrongPeak = {...reader, sampled_peak_rss_bytes: replacement.stages[2].sampled_peak_rss_bytes + 1024};
+          expect(() => verifyReplacementStages(replacement, precedingWarm, db, events, wrongPeak)).toThrow('Reader loop peak exceeds');
         }
       }
     } finally {await rm(root, {recursive: true, force: true});}

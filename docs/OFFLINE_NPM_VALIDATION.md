@@ -385,3 +385,33 @@ Three of six indexed requests exceeded 256 MiB. The hash stage was the first tra
 The next controlled comparison can test a bounded reusable read buffer in the destination ZIP hash loop. It should preserve byte counts, digest checking against the manifest and the private snapshot, and compare both the hash window and the whole indexed request on these same snapshots.
 
 The 161 related tests, type checking and build passed. The loader fixture exercises the real reader through a directory alias, checks all four stages on both indexed requests and zero stage records on full builds, and rejects a wrong hash byte count, an inflated stage peak, and a missing stage. The review added checks for the single expected record read and for the total stage samples fitting within the whole-request sample count. The saved official archive runs passed both checks. The loader fixture controls its network probe. The official archive runs use OS-enforced network denial.
+
+### Generation replacement RSS by operation (2026-11-25)
+
+The harness runs the same four requests in each process and tracks operation windows on the replacement request. It records the RSS immediately before that request, following the old-generation indexed lookup and the harness's two GC calls. It then records copying to the private ZIP, SHA-256 verification, the full read and index build, and snapshot cleanup. The full-read/build window starts after the old cache reference is cleared and before the replacement draft is allocated. It includes ZIP open and close. Reading, validating and adding entries to the draft happen in the same loop, so the reported window includes all three costs. The existing narrower full-reader loop is also recorded. The whole-request peak includes intervals outside the marked windows.
+
+The report records each stage peak relative to its own entry and the replacement peak relative to request entry. A stage can increase RSS relative to its entry and still finish below the earlier request peak. The observer records RSS at both boundaries of each window and samples every 10 ms during the request. Stage elapsed times and the release, draft, read and publish checkpoints use offsets from the replacement request start. The verifier checks their order, independent counts for copied and hashed bytes and ZIP entries, and the reader loop's inclusion in the build window.
+
+```bash
+npm run build
+scratch=$(mktemp -d)
+for round in 1 2 3; do
+  sandbox-exec -p '(version 1)(allow default)(deny network*)' \
+    node --expose-gc scripts/measure-offline-index-native.mjs --replacement-stages \
+    --old-cache /absolute/older-npm-cache --new-cache /absolute/newer-npm-cache \
+    --output "$scratch/run-$round.json" || exit 1
+done
+node scripts/summarize-offline-warm-rss.mjs --replacement --runs-dir "$scratch" --output "$scratch/summary.json"
+```
+
+Three fresh macOS arm64 processes on Node v26.12.1 completed. All loopback probes returned `EPERM` and fetch attempts were zero. The build, two official npm ZIP hashes, all four response hashes, full-reader counts and reused index summaries matched the early-release record. Every replacement copied and hashed 222,050,720 bytes and read and indexed 232,857 entries. The [raw and summarized records](validation/offline-npm-replacement-stage-rss-2026-11-25.json) include all three runs.
+
+| Run | Preceding indexed request after GC, MiB | Replacement start, MiB | Replacement peak, MiB | Full-read/build peak, MiB |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 255.67 | 255.67 | 255.70 | 252.03 |
+| 2 | 284.77 | 284.78 | 285.13 | 282.08 |
+| 3 | 285.02 | 285.02 | 285.09 | 284.31 |
+
+In every run, the request reached its peak during copying. The whole-request peak was just 0.03–0.34 MiB above its starting RSS. The two requests that exceeded 256 MiB had already done so at entry. The full-read/build window added 0.08–3.56 MiB above its own entry but stayed 0.70–3.64 MiB below the request's starting RSS. SHA-256 added 0.45–5.05 MiB above its own entry, and cleanup added 0.02–0.05 MiB. The preceding indexed request's post-GC RSS was within 0.02 MiB of replacement entry in all three runs. For this workload, reducing the resident memory carried over from warm lookups takes priority over another index-build allocation change. The warm-lookup measurements identify the SHA-256 read loop as the next comparison target. The measurements cover sequential requests for one ecosystem.
+
+The 161 related tests, type checking and build passed. The loader fixture checks both stage modes together and rejects an incorrect full-read count, moved release checkpoint, and inner reader peak exceeding the outer build window. Review added validation of the preceding indexed request's post-GC sample, a nondecreasing process RSS high-water mark through replacement entry, and alignment of the released index summary with the preceding reuse event. The saved native data passed the stricter checks and reproduced the same report.
