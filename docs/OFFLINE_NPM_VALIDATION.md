@@ -352,3 +352,36 @@ After the review fixes, all three pairs completed on macOS arm64 with Node v26.1
 The original comparison recorded a lower replacement peak RSS in all three pairs. In the review rerun, peak RSS fell by 22.9 MiB in one pair and rose by 4.7 and 6.3 MiB in the other two. This comparison measures the entire request, including variation in its starting RSS and allocator/GC behavior. The median heap plus ArrayBuffer increase above baseline after GC remained about 29 MiB on both builds. Seven of 12 candidate requests exceeded 256 MiB, including all three replacements. The memory measurements cover one ecosystem and sequential requests.
 
 The 161 related tests, type checking and build passed. Regressions pause an existing indexed read until a new generation is published, verify that restoring the old manifest rebuilds its index, and distinguish capture failure from failure after a verified replacement starts. An isolated run against the previous implementation failed the rebuild check after a failed replacement. An isolated run that reads the global cache between entries failed the in-flight snapshot check. The benchmark fixture checks release before draft creation and the absent overlap window in both the default and legacy diagnostic profiles.
+
+### Indexed lookup RSS by operation (2026-11-24)
+
+The harness observes the unchanged `fe1f15e` product build. In each fresh process, it builds the index, looks up an alias with that index, switches DB generation, then repeats the indexed lookup. The loader marks four disjoint windows during each indexed request. It observes copying to the private ZIP, SHA-256 over that copy, the indexed ZIP open/read/close path, and snapshot removal and untracking. Manifest processing, the gaps between windows, and response construction remain inside the whole-request measurement. Copy and hash byte counts must match the selected ZIP. The indexed window records how many matched entries it reads.
+
+Each window includes RSS samples at entry and exit and uses the same 10 ms worker sampler as the request peak. RSS and the main isolate's heap and ArrayBuffer counters are recorded at stage boundaries, when the response returns, and after two explicit GC calls outside the measured request. RSS measures the entire process, including pages it may retain after JS buffers are reclaimed. Stage differences describe the observed process, with possible contributions from GC, allocation and the observer. They are not isolated allocation sizes and should not be added together as per-stage peak costs.
+
+```bash
+npm run build
+scratch=$(mktemp -d)
+for round in 1 2 3; do
+  sandbox-exec -p '(version 1)(allow default)(deny network*)' \
+    node --expose-gc scripts/measure-offline-index-native.mjs --warm-stages \
+    --old-cache /absolute/older-npm-cache --new-cache /absolute/newer-npm-cache \
+    --output "$scratch/run-$round.json" || exit 1
+done
+node scripts/summarize-offline-warm-rss.mjs --runs-dir "$scratch" --output "$scratch/summary.json"
+```
+
+Three fresh processes completed on macOS arm64 with Node v26.12.1. All loopback probes returned `EPERM` with zero fetch attempts. The comparison binds the build, harness and loaded modules, and checks that the two ZIP hashes, the four response hashes, full-reader counts and reused index summaries match the early-release record. Each indexed lookup read one record and copied and hashed all 222,033,893 or 222,050,720 bytes of its selected archive. The [stage and process records](validation/offline-npm-warm-stage-rss-2026-11-24.json) include all six indexed lookups.
+
+| Stage, across six indexed lookups | Peak RSS above stage entry, MiB | RSS change from entry to exit, MiB |
+| --- | ---: | ---: |
+| Private ZIP copy | 0.02–0.84 | −14.23 to +0.84 |
+| SHA-256 of the private ZIP | 19.20–63.25 | +19.20 to +63.25 |
+| Indexed ZIP open, read and close | 0.02–0.13 | +0.02 to +0.13 |
+| Snapshot cleanup | 0.00–0.03 | 0.00 to +0.03 |
+
+Three of six indexed requests exceeded 256 MiB. The hash stage was the first tracked window above 256 MiB in all three. Whole-request peaks were 209.5–260.1 MiB before replacement and 241.3–270.3 MiB after replacement. The hash window ended with 14.3–25.2 MiB more ArrayBuffer memory than it started with. After two explicit GC calls, ArrayBuffer usage returned to within 0.01 MiB of request entry and combined heap and ArrayBuffer usage was within 0.03 MiB. Process RSS remained 6.2–64.7 MiB above request entry. These observations show a large RSS rise during hashing and a gap between buffer reclamation and resident memory. They leave the exact allocator or native-memory contribution unmeasured.
+
+The next controlled comparison can test a bounded reusable read buffer in the destination ZIP hash loop. It should preserve byte counts, digest checking against the manifest and the private snapshot, and compare both the hash window and the whole indexed request on these same snapshots.
+
+The 161 related tests, type checking and build passed. The loader fixture exercises the real reader through a directory alias, checks all four stages on both indexed requests and zero stage records on full builds, and rejects a wrong hash byte count, an inflated stage peak, and a missing stage. The review added checks for the single expected record read and for the total stage samples fitting within the whole-request sample count. The saved official archive runs passed both checks. The loader fixture controls its network probe. The official archive runs use OS-enforced network denial.

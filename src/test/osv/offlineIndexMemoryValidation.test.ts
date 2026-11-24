@@ -7,6 +7,8 @@ import {dirname, join, resolve} from 'node:path';
 import {expect, it} from 'vitest';
 // @ts-ignore Repository validation artifact, separate from the shipped server.
 import {buildDigest, buildInventory, compareRuns, memoryBindings, recordBufferEdits} from '../../../scripts/compare-offline-index-memory.mjs';
+// @ts-ignore Repository validation artifact, separate from the shipped server.
+import {verifyWarmStages} from '../../../scripts/summarize-offline-warm-rss.mjs';
 import {recordZip} from '../fixtures/offlineRecords.js';
 
 const mib = 1024 * 1024;
@@ -60,9 +62,10 @@ syncBuiltinESMExports();
 `);
       const digest = buildDigest(await buildInventory(tree));
       for (const profile of ['baseline', 'drop-old']) {
+        const stageArgs = profile === 'baseline' ? ['--warm-stages'] : [];
         const run = spawnSync(process.execPath, ['--expose-gc', '--import', preload, 'scripts/measure-offline-index-native.mjs',
           '--old-cache', caches[0]!, '--new-cache', caches[1]!, '--tree', aliasedTree, '--identity-map', 'absent',
-          '--profile', profile, '--output', output], {encoding: 'utf8', timeout: 15_000});
+          '--profile', profile, '--output', output, ...stageArgs], {encoding: 'utf8', timeout: 15_000});
         expect(run.status, run.error?.message ?? run.stderr + run.stdout).toBe(0);
         const measured = JSON.parse(await readFile(output, 'utf8'));
         expect(measured.profile).toBe(profile);
@@ -78,6 +81,30 @@ syncBuiltinESMExports();
         ]);
         expect(measured.overlap).toEqual({sampled_peak_rss_bytes: 0, samples: 0});
         expect(measured.compiled_sha256).toBe(digest);
+        if (profile === 'baseline') {
+          expect(measured.instrumented_cache_sha256).toMatch(/^[a-f0-9]{64}$/);
+          for (const [request, generation] of [[1, 0], [3, 1]] as const) {
+            const warm = measured.measurements[request], bytes = measured.databases[generation].bytes;
+            expect(() => verifyWarmStages(warm, bytes)).not.toThrow();
+            expect(warm.stages[2].count).toBe(1);
+            const bad = structuredClone(warm);
+            bad.stages[1].count--;
+            expect(() => verifyWarmStages(bad, bytes)).toThrow('Hash byte count');
+            bad.stages[1].count++;
+            bad.stages[2].count++;
+            expect(() => verifyWarmStages(bad, bytes)).toThrow('Unexpected indexed record count');
+            bad.stages[2].count--;
+            const originalSamples = bad.stages[2].samples;
+            bad.stages[2].samples = warm.samples;
+            expect(() => verifyWarmStages(bad, bytes)).toThrow('Stage samples exceed request samples');
+            bad.stages[2].samples = originalSamples;
+            bad.stages[2].sampled_peak_rss_bytes = warm.sampled_peak_rss_bytes + 1024;
+            expect(() => verifyWarmStages(bad, bytes)).toThrow('Inconsistent stage RSS peak');
+            bad.stages.splice(2, 1);
+            expect(() => verifyWarmStages(bad, bytes)).toThrow('Missing or misordered warm stages');
+          }
+          for (const request of [0, 2]) expect(measured.measurements[request].stages).toBeUndefined();
+        }
       }
     } finally {await rm(root, {recursive: true, force: true});}
   },
