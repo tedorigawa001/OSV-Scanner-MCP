@@ -135,6 +135,30 @@ it('uses the verified generation index for an alias and a local miss after a col
   expect(readEntry).not.toHaveBeenCalled();
 });
 
+it('reuses positions across a location page boundary and two ZIPs, including row zero', async () => {
+  const alias = 'CVE-2000-0001';
+  const first = record('GO-2000-0001', [alias, alias, 'GO-2000-0001']);
+  const lastOnPage = record('GO-2000-1024', [alias]);
+  const nextPage = record('GO-2000-1025', [alias]);
+  const f = await fixture();
+  const firstZip = [first, ...Array.from({length: 1022}, (_, i) => record(`TEST-${i}`, [])), lastOnPage];
+  await replaceArchive(f.dir, recordZip(firstZip.map(r => ({name: r.id + '.json', body: JSON.stringify(r), method: 0})), true));
+  await prepareOfflineDatabases({dir: f.dir, ecosystems: ['PyPI'], fetchFn: async () =>
+    new Response(recordZip([{name: nextPage.id + '.json', body: JSON.stringify(nextPage), method: 8}]))});
+  const cold = await explain(f, alias);
+  expect(cold.result.isError).not.toBe(true);
+  expect(cold.output.matching_record_ids).toEqual([first.id, lastOnPage.id, nextPage.id]);
+
+  const readEntry = vi.spyOn(actualZip.ZipFile.prototype, 'readEntry');
+  const stream = vi.spyOn(actualZip.ZipFile.prototype, 'openReadStreamLowLevel');
+  const warm = await explain(f, alias);
+  expect(warm.result.isError).not.toBe(true);
+  expect(warm.output).toEqual(cold.output);
+  expect(stream.mock.calls.map(call => call[4])).toEqual([false, false, true]);
+  expect((await explain(f, first.id)).output).toMatchObject({id: first.id, matched_by: 'id', matching_record_ids: [first.id]});
+  expect(readEntry).not.toHaveBeenCalled();
+});
+
 it('keeps an in-flight snapshot consistent and rebuilds the index for the refreshed digest', async () => {
   const f = await fixture();
   const revised = {...record('GO-2000-0001', ['CVE-2000-0002']), summary: 'Refreshed record'};

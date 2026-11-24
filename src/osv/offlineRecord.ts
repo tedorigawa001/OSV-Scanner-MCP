@@ -35,9 +35,42 @@ interface RecordLocation {
   crc: number;
   deflated: boolean;
 }
+
+const LOCATION_PAGE_ROWS = 1024;
+const LOCATION_WORDS = 5;
+
+class RecordLocationTable {
+  readonly ids: string[] = [];
+  private readonly pages: Uint32Array[] = [];
+
+  append(id: string, database: number, start: number, compressedBytes: number, bytes: number, crc: number, deflated: boolean) {
+    // Current ZIPs are bounded to 512 MiB. Fall back to full reads if a position cannot be stored losslessly.
+    if (start !== (start >>> 0) || compressedBytes !== (compressedBytes >>> 0)) return undefined;
+    const row = this.ids.length, inPage = row % LOCATION_PAGE_ROWS;
+    if (inPage === 0) this.pages.push(new Uint32Array(LOCATION_PAGE_ROWS * LOCATION_WORDS));
+    const page = this.pages[this.pages.length - 1]!, offset = inPage * LOCATION_WORDS;
+    page[offset] = start;
+    page[offset + 1] = compressedBytes;
+    page[offset + 2] = bytes;
+    page[offset + 3] = crc;
+    page[offset + 4] = (database << 1) | Number(deflated);
+    this.ids.push(id);
+    return row;
+  }
+
+  get(row: number | undefined): RecordLocation | undefined {
+    if (row === undefined) return undefined;
+    const page = this.pages[Math.floor(row / LOCATION_PAGE_ROWS)]!, offset = (row % LOCATION_PAGE_ROWS) * LOCATION_WORDS;
+    const flags = page[offset + 4]!;
+    return {id: this.ids[row]!, start: page[offset]!, compressedBytes: page[offset + 1]!, bytes: page[offset + 2]!,
+      crc: page[offset + 3]!, database: flags >>> 1, deflated: (flags & 1) !== 0};
+  }
+}
+
 interface RecordIndex {
   generation: string;
-  locations: Map<string, RecordLocation | RecordLocation[]>;
+  records: RecordLocationTable;
+  locations: Map<string, number | number[]>;
   conflicts: Set<string>;
   postings: number;
 }
@@ -48,14 +81,14 @@ const MAX_INDEX_POSTINGS = 1_000_000;
 let cachedIndex: RecordIndex | undefined;
 let buildingIndex = false;
 
-function addLocation(index: RecordIndex, key: string, location: RecordLocation) {
+function addLocation(index: RecordIndex, key: string, location: number) {
   const previous = index.locations.get(key);
   // Copies are appended in scan order. Deduplicate repeated aliases and an alias equal to the ID.
   if (previous === location || (Array.isArray(previous) && previous.at(-1) === location)) return true;
   if (index.postings >= MAX_INDEX_POSTINGS) return false;
   index.postings++;
   if (Array.isArray(previous)) previous.push(location);
-  else if (previous) index.locations.set(key, [previous, location]);
+  else if (previous !== undefined) index.locations.set(key, [previous, location]);
   // Own newly retained keys so a short parsed alias cannot retain the full decoded record string.
   else index.locations.set(Buffer.from(key, 'ascii').toString('ascii'), location);
   return true;
@@ -229,22 +262,23 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
     // Select the index only after re-capturing and hashing every selected object. Ordering is part of the generation.
     const generation = JSON.stringify([config.dir, snapshot.metadata.databases]);
     const defaultLimits = Object.entries(OFFLINE_LOOKUP_LIMITS).every(([key, ceiling]) => limits[key as keyof typeof limits] === ceiling);
-    let indexed: readonly RecordLocation[] | undefined;
+    let indexed: readonly number[] | undefined;
     const current = cachedIndex;
     if (defaultLimits && current?.generation === generation) {
       const locations = current.locations.get(id);
-      const candidates = Array.isArray(locations) ? locations : locations ? [locations] : [];
+      const candidates = Array.isArray(locations) ? locations : locations === undefined ? [] : [locations];
       // On a conflict, use the full reader to preserve the order of limit and conflict failures.
-      if (!candidates.some(location => current.conflicts.has(location.id))) indexed = candidates;
+      if (!candidates.some(row => current.conflicts.has(current.records.ids[row]!))) indexed = candidates;
     } else if (defaultLimits && !buildingIndex) {
       buildingIndex = ownsBuilder = true;
-      draft = {generation, locations: new Map(), conflicts: new Set(), postings: 0};
+      draft = {generation, records: new RecordLocationTable(), locations: new Map(), conflicts: new Set(), postings: 0};
     }
 
     let nextLocation = 0;
+    let location = current?.records.get(indexed?.[0]);
     for (const [database, db] of snapshot.metadata.databases.entries()) {
       fresh();
-      if (indexed && indexed[nextLocation]?.database !== database) continue;
+      if (indexed && location?.database !== database) continue;
       const file = path.join(snapshot.dir, 'osv-scalibr', db.ecosystem, 'all.zip');
       const layout = indexed ? undefined : await directoryLayout(file, guard);
       zip = await openPromise(file,
@@ -255,7 +289,7 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
         guard();
         if (indexed) {
           const archive = zip;
-          for (let location = indexed[nextLocation]; location?.database === database; location = indexed[++nextLocation]) {
+          for (; location?.database === database; location = current!.records.get(indexed[++nextLocation])) {
             guard();
             const {start, compressedBytes, bytes, crc, deflated} = location;
             const stream = new Promise<Readable>((resolve, reject) => {
@@ -313,13 +347,14 @@ async function readOfflineVulnerability(id: string, options: OfflineRecordOption
           if (matching) addMatch(record, bytes);
           if (draft) {
             if (conflicting) draft.conflicts.add(recordId);
-            const location = {database, id: recordId, start: local.fileDataStart, compressedBytes: entry.compressedSize,
-              bytes, crc: entry.crc32, deflated: entry.compressionMethod === 8};
-            if (!addLocation(draft, recordId, location)) draft = undefined;
-            for (const alias of record.aliases ?? []) {
-              guard();
-              if (draft && ID.test(alias) && !addLocation(draft, alias, location)) draft = undefined;
-              if (!draft) break;
+            const row = draft.records.append(recordId, database, local.fileDataStart, entry.compressedSize, bytes,
+              entry.crc32, entry.compressionMethod === 8);
+            if (row === undefined || !addLocation(draft, recordId, row)) draft = undefined;
+            else {
+              for (const alias of record.aliases ?? []) {
+                guard();
+                if (ID.test(alias) && !addLocation(draft, alias, row)) {draft = undefined; break;}
+              }
             }
           }
         }

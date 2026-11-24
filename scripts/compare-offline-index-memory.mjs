@@ -25,6 +25,13 @@ const validationReaderPins = {
   ],
 };
 
+const compactReaderPins = {
+  'src/osv/offlineRecord.ts': [validationReaderPins['src/osv/offlineRecord.ts'][1],
+    '90b5ce9998c83642e10b1be3144ca36caba385709778a1caa2ac3f1021fe20c2'],
+  ['dist/' + readerFile]: [validationReaderPins['dist/' + readerFile][1],
+    'c82b81f4a78829ce1edb61552fa056202a292c2172c56ccebb09ce54b7125908'],
+};
+
 // Approved edits for this experiment, in the source and in the locked compiler's output.
 // Compare whole files after applying only these edits so another change in either reader is rejected.
 const decodeEdit = Object.freeze(['.decode(Buffer.concat(chunks, bytes))));', '.decode(buffer)));']);
@@ -212,8 +219,40 @@ function pairedSummary(before, after) {
   return {before: range(before), after: range(after), paired_before_minus_after: range(before.map((n, i) => n - after[i]))};
 }
 
+function verifyIndexLayout(run, arm, peaks) {
+  const indexes = [];
+  for (const [i, db] of run.databases.entries()) {
+    const phase = 1 + i * 2;
+    const published = event(run, phase, 'before_publish').draft;
+    assert.deepEqual(event(run, phase + 1, 'reused').current, published);
+    const {rows, location_table_bytes, ...logical} = published;
+    assert.ok(Number.isSafeInteger(logical.keys) && logical.keys >= db.entries);
+    assert.ok(Number.isSafeInteger(logical.postings) && logical.postings >= logical.keys && logical.postings <= 1_000_000);
+    assert.equal(logical.conflicts, 0);
+    if (arm === 'after') {
+      assert.equal(rows, db.entries);
+      assert.equal(location_table_bytes, Math.ceil(rows / 1024) * 1024 * 20);
+    } else {
+      assert.equal(rows, undefined);
+      assert.equal(location_table_bytes, undefined);
+    }
+    peaks[`${phases[i * 2]}_location_table_bytes`] = location_table_bytes ?? 0;
+    indexes.push(logical);
+  }
+  for (const {name, post_gc} of run.measurements) {
+    for (const key of ['rss_bytes', 'heap_used_bytes', 'array_buffers_bytes']) {
+      assert.ok(Number.isSafeInteger(post_gc[key]) && post_gc[key] >= 0);
+      assert.ok(Number.isSafeInteger(run.baseline[key]) && run.baseline[key] >= 0);
+    }
+    peaks[`${name}_post_gc_rss`] = post_gc.rss_bytes;
+    peaks[`${name}_post_gc_managed_delta`] = post_gc.heap_used_bytes - run.baseline.heap_used_bytes +
+      post_gc.array_buffers_bytes - run.baseline.array_buffers_bytes;
+  }
+  return indexes;
+}
+
 export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 'digest-table'}) {
-  assert.ok(['digest-table', 'record-buffer', 'record-validation'].includes(comparison), 'Unknown comparison mode');
+  assert.ok(['digest-table', 'record-buffer', 'record-validation', 'compact-index'].includes(comparison), 'Unknown comparison mode');
   const trees = {before: beforeTree, after: afterTree};
   const [before, after] = await Promise.all(arms.map(arm => buildInventory(trees[arm])));
   assert.deepEqual(Object.keys(before), Object.keys(after), 'Different compiled file sets');
@@ -226,9 +265,10 @@ export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 
     ['src/osv/offlineRecord.ts', 'dist/osv/offlineRecord.js'], 'Unexpected bound-file differences');
   const bindings = {before: beforeBindings, after: afterBindings};
   if (comparison === 'record-buffer') await verifyRecordBufferEdits(trees, bindings);
-  if (comparison === 'record-validation') {
-    for (const [path, pins] of Object.entries(validationReaderPins)) {
-      assert.deepEqual(arms.map(arm => bindings[arm][path]), pins, `Unexpected record-validation reader bytes (${path})`);
+  const readerPins = comparison === 'compact-index' ? compactReaderPins : comparison === 'record-validation' ? validationReaderPins : undefined;
+  if (readerPins) {
+    for (const [path, pins] of Object.entries(readerPins)) {
+      assert.deepEqual(arms.map(arm => bindings[arm][path]), pins, `Unexpected ${comparison} reader bytes (${path})`);
     }
   }
   const compiled = {before: buildDigest(before), after: buildDigest(after)};
@@ -246,12 +286,14 @@ export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 
       if (!instrumented.has(arm)) instrumented.set(arm, run.instrumented_reader_sha256);
       assert.equal(run.instrumented_reader_sha256, instrumented.get(arm), `${arm}: instrumented reader changed`);
       const invariant = {databases: checked.databases, responses: checked.responses, counters: checked.counters,
-        runtime: run.runtime, sample_interval_ms: run.sample_interval_ms};
+        runtime: run.runtime, sample_interval_ms: run.sample_interval_ms,
+        ...(comparison === 'compact-index' && {indexes: verifyIndexLayout(run, arm, checked.peaks)})};
       reference ??= invariant;
       assert.deepEqual(invariant.databases, reference.databases, 'Different DB generations');
       assert.deepEqual(invariant.responses, reference.responses, 'Different lookup responses');
       assert.deepEqual(invariant.counters, reference.counters, 'Different full-reader counters');
       assert.deepEqual(invariant.runtime, reference.runtime, 'Different runtimes');
+      assert.deepEqual(invariant.indexes, reference.indexes, 'Different index key or posting counts');
       assert.equal(invariant.sample_interval_ms, reference.sample_interval_ms);
       pair[arm] = checked.peaks;
     }
@@ -260,7 +302,7 @@ export async function compareRuns({beforeTree, afterTree, runsDir, comparison = 
   }
   const summary_bytes = Object.fromEntries(Object.keys(values[0].before).map(name =>
     [name, pairedSummary(...arms.map(arm => values.map(pair => pair[arm][name])))]));
-  const timing = comparison === 'record-validation' ? {summary_elapsed_ms: Object.fromEntries(phases.map((phase, i) => {
+  const timing = readerPins ? {summary_elapsed_ms: Object.fromEntries(phases.map((phase, i) => {
     const elapsed = arms.map(arm => pairs.map(pair => pair.arms[arm].measurements[i].elapsed_ms));
     assert.ok(elapsed.flat().every(ms => Number.isFinite(ms) && ms > 0), `Invalid elapsed time (${phase})`);
     return [phase, pairedSummary(...elapsed)];

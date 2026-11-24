@@ -65,6 +65,9 @@ syncBuiltinESMExports();
       const measured = JSON.parse(await readFile(output, 'utf8'));
       expect(measured.measurements.map((m: {name: string}) => m.name)).toEqual(['cold', 'warm', 'replace', 'warm_replacement']);
       expect(measured.events.filter((e: {event: string}) => e.event === 'read_finished')).toHaveLength(2);
+      const published = measured.events.filter((e: {event: string}) => e.event === 'before_publish');
+      expect(published).toHaveLength(2);
+      for (const {draft} of published) expect(draft).toMatchObject({rows: 513, location_table_bytes: 1024 * 20});
       expect(measured.compiled_sha256).toBe(buildDigest(await buildInventory(tree)));
     } finally {await rm(root, {recursive: true, force: true});}
   },

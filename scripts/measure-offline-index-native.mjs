@@ -104,12 +104,12 @@ async function loadReader(tree, profile, probe) {
   const symbol = 'osv-offline-index-memory-probe';
   const call = (event, detail = 'undefined') => `globalThis[Symbol.for('${symbol}')]('${event}', cachedIndex, draft, ${detail});`;
   // The baseline adds observation only. The other arms alter index retention in this isolated loader.
-  let instrumented = replaceOnce(original, /(draft = \{ generation, locations: new Map\(\), conflicts: new Set\(\), postings: 0 \};)/g,
+  let instrumented = replaceOnce(original, /(draft = \{ generation, (?:records: new RecordLocationTable\(\), )?locations: new Map\(\), conflicts: new Set\(\), postings: 0 \};)/g,
     `$1\n${call('draft_started')}`);
   instrumented = replaceOnce(instrumented, /(if \(draft\)\s+cachedIndex = draft;)/g,
     `if (draft) { ${call('before_publish')} cachedIndex = draft; ${call('published')} }`);
-  instrumented = replaceOnce(instrumented, /if \(!candidates\.some\(location => current\.conflicts\.has\(location\.id\)\)\)\s+indexed = candidates;/g,
-    `if (!candidates.some(location => current.conflicts.has(location.id))) { indexed = candidates; ${call('reused')} }`);
+  instrumented = replaceOnce(instrumented, /if \((!candidates\.some\((?:location => current\.conflicts\.has\(location\.id\)|row => current\.conflicts\.has\(current\.records\.ids\[row\]\))\))\)\s+indexed = candidates;/g,
+    `if ($1) { indexed = candidates; ${call('reused')} }`);
   instrumented = replaceOnce(instrumented, /(const names = new Set\(\);)/g,
     `$1\n${call('read_started')}`);
   instrumented = replaceOnce(instrumented,
@@ -182,7 +182,9 @@ async function run() {
     await writeFile(manifest, old.manifest);
     const evidence = await buildEvidence(tree);
 
-    const summary = index => index ? {keys: index.locations.size, postings: index.postings, conflicts: index.conflicts.size} : null;
+    const summary = index => index ? {keys: index.locations.size, postings: index.postings, conflicts: index.conflicts.size,
+      ...(index.records && {rows: index.records.ids.length,
+        location_table_bytes: index.records.pages.reduce((total, page) => total + page.byteLength, 0)})} : null;
     const {handleExplainVulnerability, instrumented_reader_sha256} = await loadReader(tree, profile, (event, current, draft, reader) => {
       const phase = Atomics.load(state, ACTIVE_PHASE);
       assert.ok(phase > 0);
