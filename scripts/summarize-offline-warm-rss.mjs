@@ -1,4 +1,4 @@
-/** Summarize indexed lookup or generation replacement stages from the offline index benchmark. */
+/** Summarize offline lookup stages and compare the reusable hash buffer experiment. */
 import assert from 'node:assert/strict';
 import {readFile, realpath, writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
@@ -12,6 +12,13 @@ const queries = ['cold', 'warm', 'replace', 'warm_replacement'];
 const budget = 256 * 1024 * 1024;
 const readJson = async file => JSON.parse(await readFile(file, 'utf8'));
 const hash = /^[a-f0-9]{64}$/;
+const cacheFile = 'osv/offlineCache.js';
+const hashBufferPins = {
+  'src/osv/offlineCache.ts': ['b2f7be839a1495988f6b0e0de10df688badceecf1bb87c2ef496a99c7b79c11d',
+    '4b05a1734613a0ea1797f83428f1bfaad86f36cd07569e522d93e886d4ea2ffe'],
+  ['dist/' + cacheFile]: ['410931c21acd33fa9cc5058c9c91f66891b104e9f5438abffd734d73a35c2dac',
+    '049d885474d295904971ecd25d491de0e5b8d9bed38fc367d182f3015c3b3769'],
+};
 
 function range(values) {
   const sorted = [...values].sort((a, b) => a - b);
@@ -132,47 +139,103 @@ function summarize(runs, name, i, names = stages) {
     retained: Object.fromEntries(Object.keys(retained[0]).map(key => [key, range(retained.map(row => row[key]))]))};
 }
 
+async function buildEvidence(tree) {
+  const inventory = await buildInventory(tree);
+  return {inventory, compiled: buildDigest(inventory), bindings: await memoryBindings(tree, inventory)};
+}
+
+function verifyRun(run, reference, {compiled, bindings}, prior, mode) {
+  const previous = reference.pairs[0].arms.after;
+  assert.equal(run.schema, 4);
+  assert.equal(run.profile, 'baseline');
+  assert.equal(run.identity_map, 'absent');
+  assert.equal(run.compiled_sha256, compiled);
+  assert.deepEqual(run.bindings, bindings);
+  assert.match(run.instrumented_reader_sha256, hash);
+  assert.match(run.instrumented_cache_sha256, hash);
+  assert.match(run.run_id, /^[a-f0-9-]{36}$/);
+  for (const key of ['runtime', 'instrumented_reader_sha256', 'instrumented_cache_sha256']) {
+    if (prior) assert.deepEqual(run[key], prior[key]);
+  }
+  assert.equal(run.sample_interval_ms, 10);
+  assert.ok(['EPERM', 'EACCES'].includes(run.network.loopback));
+  assert.equal(run.network.fetch_attempts, 0);
+  assert.deepEqual(run.databases, previous.databases);
+  assert.deepEqual(run.measurements.map(query => query.name), queries);
+  assert.deepEqual(run.events.filter(e => e.event === 'read_finished').map(e => e.reader),
+    previous.events.filter(e => e.event === 'read_finished').map(e => e.reader));
+  assert.deepEqual(run.events.filter(e => e.event === 'reused').map(e => [e.phase, e.current]),
+    previous.events.filter(e => e.event === 'reused').map(e => [e.phase, e.current]));
+  memory(run.baseline);
+  for (const [i, query] of run.measurements.entries()) {
+    const db = run.databases[i < 2 ? 0 : 1];
+    assert.equal(query.database_sha256, db.sha256);
+    assert.equal(query.response_sha256, reference.common_response_sha256[query.name]);
+    if (mode !== 'warm' && i === 2) verifyReplacementStages(query, run.measurements[1], db, run.events, run.full_reader.replace);
+    else if (mode !== 'replacement' && i % 2) verifyWarmStages(query, db.bytes);
+    else assert.equal(query.stages, undefined);
+  }
+}
+
+async function compareHashBuffer(runsDir, beforeTree, reference, after) {
+  const before = await buildEvidence(beforeTree);
+  assert.equal(before.compiled, reference.pairs[0].arms.after.compiled_sha256, 'Different baseline build from the reference');
+  assert.deepEqual(Object.keys(before.inventory), Object.keys(after.inventory));
+  assert.deepEqual(Object.keys(before.inventory).filter(key => before.inventory[key] !== after.inventory[key]), [cacheFile]);
+  assert.deepEqual(Object.keys(before.bindings).filter(key => before.bindings[key] !== after.bindings[key]), Object.keys(hashBufferPins));
+  for (const [key, pins] of Object.entries(hashBufferPins)) {
+    assert.deepEqual([before.bindings[key], after.bindings[key]], pins, `Unexpected hash-buffer source or build bytes (${key})`);
+  }
+  const pairs = [], ids = new Set();
+  for (let round = 1; round <= 3; round++) {
+    const pair = {round};
+    for (const [arm, evidence] of [['before', before], ['after', after]]) {
+      const run = await readJson(join(runsDir, `run-${round}-${arm}.json`));
+      verifyRun(run, reference, evidence, pairs[0]?.[arm], 'all');
+      assert.ok(!ids.has(run.run_id), 'Duplicate process measurement');
+      ids.add(run.run_id);
+      pair[arm] = run;
+    }
+    assert.deepEqual(pair.before.runtime, pair.after.runtime);
+    assert.equal(pair.before.instrumented_reader_sha256, pair.after.instrumented_reader_sha256);
+    assert.notEqual(pair.before.instrumented_cache_sha256, pair.after.instrumented_cache_sha256);
+    pairs.push(pair);
+  }
+  const paired = select => {
+    const baseline = pairs.map(pair => select(pair.before)), candidate = pairs.map(pair => select(pair.after));
+    return {before: range(baseline), after: range(candidate), paired_before_minus_after: range(baseline.map((n, i) => n - candidate[i]))};
+  };
+  const indexed = i => {
+    const stage = r => r.measurements[i].stages[1];
+    return {request_peak_rss_bytes: paired(r => r.measurements[i].sampled_peak_rss_bytes),
+      hash_peak_above_stage_start_bytes: paired(r => stage(r).sampled_peak_rss_bytes - stage(r).before.rss_bytes),
+      hash_array_buffers_change_bytes: paired(r => stage(r).settled.array_buffers_bytes - stage(r).before.array_buffers_bytes),
+      post_gc_rss_bytes: paired(r => r.measurements[i].post_gc.rss_bytes), hash_elapsed_ms: paired(r => stage(r).elapsed_ms)};
+  };
+  return {schema: 1, comparison: 'hash-buffer', rss_budget_bytes: budget, changed_compiled_files: [cacheFile],
+    warm: indexed(1), warm_replacement: indexed(3), replacement_start_rss_bytes: paired(r => r.measurements[2].before.rss_bytes),
+    replacement_peak_rss_bytes: paired(r => r.measurements[2].sampled_peak_rss_bytes), pairs};
+}
+
 async function main() {
   const {values} = parseArgs({options: {tree: {type: 'string', default: '.'}, 'runs-dir': {type: 'string'},
-    output: {type: 'string'}, replacement: {type: 'boolean', default: false}}});
+    output: {type: 'string'}, replacement: {type: 'boolean', default: false}, 'hash-buffer-before-tree': {type: 'string'}}});
   assert.ok(values['runs-dir'] && values.output, 'Supply --runs-dir DIR --output FILE');
+  assert.ok(!values.replacement || !values['hash-buffer-before-tree'], 'Choose one report mode');
   const reference = await readJson(new URL('../docs/validation/offline-npm-early-index-release-2026-11-24.json', import.meta.url));
-  const previous = reference.pairs[0].arms.after;
-  const inventory = await buildInventory(values.tree), bindings = await memoryBindings(values.tree, inventory);
-  const compiled = buildDigest(inventory), runs = [];
+  const evidence = await buildEvidence(values.tree);
+  if (values['hash-buffer-before-tree']) {
+    const report = await compareHashBuffer(values['runs-dir'], values['hash-buffer-before-tree'], reference, evidence);
+    await writeFile(values.output, JSON.stringify(report, null, 2) + '\n');
+    console.log('Verified three hash-buffer pairs');
+    return;
+  }
+  const {compiled} = evidence, runs = [];
+  assert.equal(compiled, reference.pairs[0].arms.after.compiled_sha256, 'Different product build from the reference');
   for (let round = 1; round <= 3; round++) {
     const run = await readJson(join(values['runs-dir'], `run-${round}.json`));
-    assert.equal(run.schema, 4);
-    assert.equal(run.profile, 'baseline');
-    assert.equal(run.identity_map, 'absent');
-    assert.equal(run.compiled_sha256, compiled);
-    assert.equal(run.compiled_sha256, previous.compiled_sha256, 'Different product build from the reference');
-    assert.deepEqual(run.bindings, bindings);
-    assert.match(run.instrumented_reader_sha256, hash);
-    assert.match(run.instrumented_cache_sha256, hash);
-    assert.match(run.run_id, /^[a-f0-9-]{36}$/);
+    verifyRun(run, reference, evidence, runs[0], values.replacement ? 'replacement' : 'warm');
     assert.ok(!runs.some(prior => prior.run_id === run.run_id));
-    for (const key of ['runtime', 'instrumented_reader_sha256', 'instrumented_cache_sha256']) {
-      if (runs.length) assert.deepEqual(run[key], runs[0][key]);
-    }
-    assert.equal(run.sample_interval_ms, 10);
-    assert.ok(['EPERM', 'EACCES'].includes(run.network.loopback));
-    assert.equal(run.network.fetch_attempts, 0);
-    assert.deepEqual(run.databases, previous.databases);
-    assert.deepEqual(run.measurements.map(query => query.name), queries);
-    assert.deepEqual(run.events.filter(e => e.event === 'read_finished').map(e => e.reader),
-      previous.events.filter(e => e.event === 'read_finished').map(e => e.reader));
-    assert.deepEqual(run.events.filter(e => e.event === 'reused').map(e => [e.phase, e.current]),
-      previous.events.filter(e => e.event === 'reused').map(e => [e.phase, e.current]));
-    memory(run.baseline);
-    for (const [i, query] of run.measurements.entries()) {
-      const db = run.databases[i < 2 ? 0 : 1];
-      assert.equal(query.database_sha256, db.sha256);
-      assert.equal(query.response_sha256, reference.common_response_sha256[query.name]);
-      if (values.replacement && i === 2) verifyReplacementStages(query, run.measurements[1], db, run.events, run.full_reader.replace);
-      else if (!values.replacement && i % 2) verifyWarmStages(query, db.bytes);
-      else assert.equal(query.stages, undefined);
-    }
     runs.push(run);
   }
   const report = {schema: 1, rss_budget_bytes: budget, reference_build_sha256: compiled,

@@ -1,7 +1,8 @@
 import {it,expect,afterEach,vi} from 'vitest';
 import {offlineConfig} from '../../osv/offline.js';
-import {prepareOfflineDatabases,captureOfflineDatabases} from '../../osv/offlineCache.js';
+import {prepareOfflineDatabases,captureOfflineDatabases,OFFLINE_LIMITS} from '../../osv/offlineCache.js';
 import {mkdtemp,realpath,rm,readFile,writeFile,readdir,chmod,symlink,mkdir} from 'node:fs/promises';
+import * as fs from 'node:fs/promises';
 import path from 'node:path';import os from 'node:os';import {createHash} from 'node:crypto';
 import {fetchOsvRecord,queryOsvPackageVersion} from '../../osv/osvApi.js';
 import {buildOsvScanArgs,isRemoteResolutionDisabled,runOsvScan,runOsvSbomScan,runOsvArtifactScan} from '../../osv/runner.js';
@@ -9,7 +10,12 @@ import {ensureOsvScannerDownloaded,PINNED_OSV_SCANNER_VERSION} from '../../osv/b
 import {resolveOsvScannerBinary} from '../../osv/binaryManager.js';
 import {handleSuggestFix} from '../../tools/suggestFix.js';
 import {handleExplainVulnerability} from '../../tools/explainVulnerability.js';
-const roots:string[]=[];afterEach(async()=>{vi.unstubAllEnvs();vi.restoreAllMocks();for(const root of roots.splice(0))await rm(root,{recursive:true,force:true});});
+vi.mock('node:fs/promises', async original => {
+ const actual=await original<typeof import('node:fs/promises')>();
+ return {...actual,open:vi.fn(actual.open)};
+});
+const actualFs=await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises');
+const roots:string[]=[];afterEach(async()=>{vi.unstubAllEnvs();vi.restoreAllMocks();vi.mocked(fs.open).mockImplementation(actualFs.open);for(const root of roots.splice(0))await rm(root,{recursive:true,force:true});});
 async function root(){const d=await realpath(await mkdtemp(path.join(os.tmpdir(),'offline-tests-')));roots.push(d);return d;}
 // Transport fixture, deliberately not a real vulnerability DB; real ZIP parsing is exercised by the native harness.
 const zip=Buffer.concat([Buffer.from([0x50,0x4b,0x03,0x04]),Buffer.from('bounded cache transport fixture')]);
@@ -35,6 +41,72 @@ it('publishes immutable DB objects and captures verified private bytes with clea
  expect(s.dir).not.toBe(dir);expect(await readFile(path.join(s.dir,'osv-scalibr/npm/all.zip'))).toEqual(zip);expect(s.metadata.network_requests).toBe(false);
  await writeFile(object,'changed');expect(await readFile(path.join(s.dir,'osv-scalibr/npm/all.zip'))).toEqual(zip);await s.cleanup();await expect(readdir(s.dir)).rejects.toThrow();
 });
+it.each(['valid','changed tail','shorter','longer','read failure'] as const)(
+ 'reuses one hash read buffer and checks the private ZIP after copying (%s)',async mode=>{
+  const dir=await root(),payload=Buffer.alloc(2*64*1024+17,0x5a);
+  zip.copy(payload);payload[payload.length-1]=0x11;
+  await prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:async()=>new Response(payload)});
+  const buffers=new Set<ArrayBufferLike>(),closed=vi.fn();
+  let reads=0,privateZip:string|undefined;
+  vi.mocked(fs.open).mockImplementation(async (file,flags,perms)=>{
+   if(flags!=='r'||typeof file!=='string'||path.basename(file)!=='all.zip')return actualFs.open(file,flags,perms);
+   privateZip=file;
+   if(mode==='changed tail'){
+    const altered=Buffer.from(payload);altered[altered.length-1]=altered.at(-1)!^0xff;await writeFile(file,altered);
+   }else if(mode==='shorter')await writeFile(file,payload.subarray(0,-1));
+   else if(mode==='longer')await writeFile(file,Buffer.concat([payload,Buffer.from([0x12])]));
+   const handle=await actualFs.open(file,flags,perms),read=handle.read.bind(handle),close=handle.close.bind(handle);
+   // Force short reads at arbitrary offsets, including the final partial chunk.
+   vi.spyOn(handle,'read').mockImplementation((async (buffer:Buffer,offset:number,length:number,position:null)=>{
+    buffers.add(buffer.buffer);
+    if(++reads===2&&mode==='read failure')throw Error('controlled read failure');
+    return read(buffer,offset,Math.min(length,16381),position);
+   }) as fs.FileHandle['read']);
+   vi.spyOn(handle,'close').mockImplementation(async()=>{closed();await close();});
+   return handle;
+  });
+  const pending=captureOfflineDatabases({offline:true,offlineDbDir:dir},['npm']);
+  if(mode==='valid'){
+   const captured=await pending;
+   try{expect(await readFile(path.join(captured.dir,'osv-scalibr/npm/all.zip'))).toEqual(payload);}
+   finally{await captured.cleanup();}
+  }else await expect(pending).rejects.toThrow(mode==='read failure'?'controlled read failure':'database digest mismatch');
+  expect(reads).toBeGreaterThan(1);
+  expect(buffers.size).toBe(1);
+  expect([...buffers][0]?.byteLength).toBe(64*1024);
+  expect(closed).toHaveBeenCalledTimes(1);
+  expect(privateZip).toBeDefined();
+  await expect(readFile(privateZip!)).rejects.toMatchObject({code:'ENOENT'});
+ });
+
+it.each([0,1])('checks EOF at the hash size ceiling with %s extra byte',async extra=>{
+ const dir=await cache();
+ const size=OFFLINE_LIMITS.databaseBytes+extra;
+ let remaining=size,lastRead=0,reads=0;
+ const closed=vi.fn();
+ vi.mocked(fs.open).mockImplementation(async (file,flags,perms)=>{
+  const handle=await actualFs.open(file,flags,perms);
+  if(flags!=='r'||typeof file!=='string'||path.basename(file)!=='all.zip')return handle;
+  const close=handle.close.bind(handle);
+  // Simulate a changed destination after the copy without creating a 512 MiB test file.
+  vi.spyOn(handle,'read').mockImplementation((async (buffer:Buffer,_offset:number,length:number)=>{
+   if(reads++===0)buffer.fill(0);
+   lastRead=length;
+   const bytesRead=Math.min(length,remaining);
+   remaining-=bytesRead;
+   return {bytesRead,buffer};
+  }) as fs.FileHandle['read']);
+  vi.spyOn(handle,'close').mockImplementation(async()=>{closed();await close();});
+  return handle;
+ });
+ await expect(captureOfflineDatabases({offline:true,offlineDbDir:dir},['npm'])).rejects.toThrow(
+  extra?'database exceeds the byte limit':'database digest mismatch');
+ expect(remaining).toBe(0);
+ expect(lastRead).toBe(1);
+ expect(reads).toBe(OFFLINE_LIMITS.databaseBytes/(64*1024)+1);
+ expect(closed).toHaveBeenCalledTimes(1);
+});
+
 it.each(['missing','digest','truncated','expired','future','origin','duplicate','unknown','symlink'])('rejects %s cached evidence',async mode=>{
  const dir=await cache(),file=path.join(dir,'manifest.json'),m=JSON.parse(await readFile(file,'utf8')),d=m.databases[0],obj=path.join(dir,'objects',d.sha256+'.zip');
  if(mode==='missing')await rm(obj);if(mode==='digest')await writeFile(obj,Buffer.alloc(zip.length));if(mode==='truncated')await writeFile(obj,'PK');

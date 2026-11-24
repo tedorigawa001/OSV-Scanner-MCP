@@ -1,6 +1,5 @@
 /** Complete ecosystem ZIPs fetched explicitly from OSV; immutable objects and an atomic manifest. */
 import {createHash,randomBytes} from 'node:crypto';
-import {createReadStream} from 'node:fs';
 import {mkdir,chmod,open,opendir,realpath,lstat,rename,rm,mkdtemp} from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -20,7 +19,22 @@ async function load(root:string):Promise<Manifest>{
  const r=await readRegularFile(path.join(root,'manifest.json'),{boundary:root,maxBytes:OFFLINE_LIMITS.manifestBytes});if(!r.ok)throw failure('manifest missing or unreadable');
  try{return manifestSchema.parse(JSON.parse(r.bytes.toString('utf8')));}catch{throw failure('manifest invalid');}
 }
-async function hashFile(file:string){const hash=createHash('sha256');let size=0;for await(const b of createReadStream(file)){size+=b.length;if(size>OFFLINE_LIMITS.databaseBytes)throw failure('database exceeds the byte limit');hash.update(b);}return {sha256:hash.digest('hex'),bytes:size};}
+async function hashFile(file:string){
+ const hash=createHash('sha256'),buffer=Buffer.allocUnsafe(64*1024);
+ const handle=await open(file,'r');
+ let size=0;
+ try{
+  for(;;){
+   const length=Math.min(buffer.length,OFFLINE_LIMITS.databaseBytes-size+1);
+   const {bytesRead}=await handle.read(buffer,0,length,null);
+   if(!bytesRead)break;
+   size+=bytesRead;
+   if(size>OFFLINE_LIMITS.databaseBytes)throw failure('database exceeds the byte limit');
+   hash.update(bytesRead===buffer.length?buffer:buffer.subarray(0,bytesRead));
+  }
+ }finally{await handle.close();}
+ return {sha256:hash.digest('hex'),bytes:size};
+}
 async function safeDirectory(dir:string){
  await mkdir(dir,{recursive:true,mode:0o700});const s=await lstat(dir);if(!s.isDirectory()||s.isSymbolicLink())throw failure('directory must be a real directory');const canonical=await realpath(dir);await chmod(canonical,0o700);return canonical;
 }

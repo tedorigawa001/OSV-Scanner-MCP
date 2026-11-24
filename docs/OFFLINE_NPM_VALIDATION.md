@@ -415,3 +415,45 @@ Three fresh macOS arm64 processes on Node v26.12.1 completed. All loopback probe
 In every run, the request reached its peak during copying. The whole-request peak was just 0.03–0.34 MiB above its starting RSS. The two requests that exceeded 256 MiB had already done so at entry. The full-read/build window added 0.08–3.56 MiB above its own entry but stayed 0.70–3.64 MiB below the request's starting RSS. SHA-256 added 0.45–5.05 MiB above its own entry, and cleanup added 0.02–0.05 MiB. The preceding indexed request's post-GC RSS was within 0.02 MiB of replacement entry in all three runs. For this workload, reducing the resident memory carried over from warm lookups takes priority over another index-build allocation change. The warm-lookup measurements identify the SHA-256 read loop as the next comparison target. The measurements cover sequential requests for one ecosystem.
 
 The 161 related tests, type checking and build passed. The loader fixture checks both stage modes together and rejects an incorrect full-read count, moved release checkpoint, and inner reader peak exceeding the outer build window. Review added validation of the preceding indexed request's post-GC sample, a nondecreasing process RSS high-water mark through replacement entry, and alignment of the released index summary with the preceding reuse event. The saved native data passed the stricter checks and reproduced the same report.
+
+### Reusable ZIP hash read buffer (2026-11-25)
+
+ZIP verification reads from a file handle with one 64 KiB buffer per hash operation. Each read contributes its actual bytes to SHA-256, including the final short read. The byte ceiling applies during reading. Snapshot verification still compares the byte count and digest with the manifest, and the same helper verifies objects reused during cache preparation.
+
+Build the baseline from `git archive 878e17f` using the same locked dependencies as the candidate. Run three before/after pairs with the two official caches above and use before/after, after/before, then before/after order. In each fresh process, enable both stage modes and the default profile. The report verifies the pinned source and compiled cache module for the hash change, the full compiled inventory, DB hashes, responses, read counts and stage boundaries. Its comparison includes execution RSS after the old-generation indexed lookup, RSS at generation replacement entry, and both indexed request and hash-stage peaks.
+
+```bash
+scratch=$(mktemp -d)
+before_tree="$scratch/before"
+mkdir "$before_tree"
+git archive 878e17f src package.json package-lock.json tsconfig.json tsconfig.build.json \
+  | tar -xf - -C "$before_tree"
+ln -s "$PWD/node_modules" "$before_tree/node_modules"
+node node_modules/typescript/bin/tsc -p "$before_tree/tsconfig.build.json"
+npm run build
+for round in 1 2 3; do
+  case "$round" in 2) arms='after before' ;; *) arms='before after' ;; esac
+  for arm in $arms; do
+    if [ "$arm" = before ]; then tree="$before_tree"; else tree="$PWD"; fi
+    sandbox-exec -p '(version 1)(allow default)(deny network*)' \
+      node --expose-gc scripts/measure-offline-index-native.mjs --warm-stages --replacement-stages \
+      --old-cache /absolute/older-npm-cache --new-cache /absolute/newer-npm-cache \
+      --tree "$tree" --output "$scratch/run-$round-$arm.json" || exit 1
+  done
+done
+node scripts/summarize-offline-warm-rss.mjs --hash-buffer-before-tree "$before_tree" \
+  --runs-dir "$scratch" --output "$scratch/summary.json"
+```
+
+All six processes completed on macOS arm64 with Node v26.12.1. Every loopback probe returned `EPERM` and fetch attempts were zero. The two ZIPs, all four response hashes, full-reader counts and reused index summaries matched the prior records. Of 138 compiled files, only `osv/offlineCache.js` differed, with both builds pinned in the comparison. The [measurement record](validation/offline-npm-hash-buffer-rss-2026-11-25.json) contains all six runs and paired statistics.
+
+| RSS measure | Before, MiB | After, MiB | Median paired reduction, MiB |
+| --- | ---: | ---: | ---: |
+| Indexed lookup peak before replacement | 258.4–269.8 | 226.8–282.9 | 10.7 |
+| Indexed lookup peak after replacement | 268.5–285.3 | 234.4–285.6 | −0.3 |
+| Generation replacement entry | 258.4–269.8 | 213.8–282.5 | 32.5 |
+| Generation replacement peak | 263.6–282.8 | 245.6–290.6 | −7.7 |
+
+Across the six indexed lookups in each arm, the hash-window peak above its own entry fell from 7.81–38.91 MiB to 0.00–0.02 MiB. The ArrayBuffer increase during verification fell from 14.31–25.20 MiB to 0.0625 MiB in each run. Hash time was shorter in all six paired indexed lookups. Starting RSS varied across processes. Replacement entry improved by 32.5 and 51.8 MiB in two pairs and increased by 12.6 MiB in the remaining pair. Three of six candidate indexed requests and seven of twelve candidate requests overall still exceeded 256 MiB. The results show lower hash-window memory growth and variable whole-request RSS under sequential npm-only lookups.
+
+The 168 related tests, type checking and build passed. The tests force short reads over a multi-buffer-sized ZIP, assert one 64 KiB backing buffer and handle closure, and reject a changed tail, truncation, appended bytes and an I/O failure on the copied ZIP. Review added checks for private ZIP cleanup and simulated reads at the 512 MiB size ceiling and one byte beyond it. The stricter test coverage applies to the build in the saved native comparison.
