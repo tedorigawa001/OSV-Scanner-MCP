@@ -78,9 +78,26 @@ Each kit includes official Node Linux arm64 executables from archives checked ag
 
 All 36 successful MCP calls used the copied Maven DB and the actual installed executable. On each installation, `scan_project`, `scan_java_project` and `scan_sbom` found the same eight advisories for Log4j Core 2.14.1. `suggest_fix` recommended 2.25.4 after the local candidate check returned `clean` and all eight reported targets were `not_affected`. The `explain_vulnerability` calls for the GHSA ID and CVE alias returned identical detail hashes. The runner also verified native opened-file paths, CRC API availability and SIGTERM cleanup for each installed runtime.
 
-The disconnected container had a read-only system filesystem, a fresh writable `/tmp`, no global Node/npm and no network interface for external traffic. The Linux profile rejected creation of IPv4 and IPv6 sockets, and all eight runtime/artifact pairs got `EPERM` on both TCP controls. The application ran as UID 1000 with no capabilities. The original preparation volume was root-owned with mode `0700` and mounted read-only. The checkout, original npm cache, scanner, npm installation, original kit, Maven cache and original Node executable were confirmed to exist from the preparation side. All seven paths gave `EACCES` to the runner for each kit. Both records use domain labels and passed a recursive check for absolute paths. The execution records cover Debian 12 arm64 and the Maven fixture. Windows and Linux x64 full-package execution remain open. [Docker network isolation](https://docs.docker.com/engine/network/drivers/none/) · [Docker seccomp profiles](https://docs.docker.com/engine/security/seccomp/)
+The disconnected container had a read-only system filesystem, a fresh writable `/tmp`, no global Node/npm and no network interface for external traffic. The Linux profile rejected creation of IPv4 and IPv6 sockets, and all eight runtime/artifact pairs got `EPERM` on both TCP controls. The application ran as UID 1000 with no capabilities. The original preparation volume was root-owned with mode `0700` and mounted read-only. The checkout, original npm cache, scanner, npm installation, original kit, Maven cache and original Node executable were confirmed to exist from the preparation side. All seven paths gave `EACCES` to the runner for each kit. Both records use domain labels and passed a recursive check for absolute paths. The execution records cover Debian 12 arm64 and the Maven fixture. [Docker network isolation](https://docs.docker.com/engine/network/drivers/none/) · [Docker seccomp profiles](https://docs.docker.com/engine/security/seccomp/)
 
 Review added the independent integrity input and required it whenever a tarball is supplied. A Linux preparation run with the published tarball and an incorrect pin was rejected before creation of the consumer lock. The disconnected runner cross-checks the archive and scanner digests against the transferred bytes and probes the scanner version under network denial. Both kits were rebuilt and rerun with the same tarballs, runtimes, scanner and DB. The final source-side report passed 260 tests across seven files, including 49 package-validation cases. Type checking and a Linux build passed.
+
+## Linux x64 package validation (2026-11-25)
+
+The Linux x64 run used Debian 12 `linux/amd64` containers on an arm64 Docker Desktop host with x64 emulation. The connected and disconnected stages ran the official Linux x64 Node executables and the `linux_amd64` OSV-Scanner binary. The four Node archives matched their official SHA-256 lists. OSV-Scanner 2.7.0 matched the repository pin `160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b`. The target image had `libatomic1:amd64` version `12.2.0-14+deb12u1` for official Node 26.12.1. npm 11.16.0 was supplied through the transferred kit.
+
+| Artifact | Verified files | Execution record |
+|---|---:|---|
+| npm registry tarball `osv-scanner-mcp@0.25.0` | 144 | [Registry run](validation/offline-package-linux-x64-registry-2026-11-25.json) |
+| Current checkout `b645b2a` bundled with `npm pack` | 145 | [Checkout run](validation/offline-package-linux-x64-checkout-2026-11-25.json) |
+
+Each tarball matched the corresponding arm64 record byte for byte. Both x64 runs used the original 10,568,619-byte Maven DB with SHA-256 `ea7e02c8b9cef22362b54befc797a8fbf175d7bf615f0bc3edbfb82168a05130` and preserved its acquisition time. Empty-target offline install and all six MCP calls passed on Node 22.13.0, 24.18.0 and 26.12.1. Across 36 successful MCP calls, `scan_project`, `scan_java_project` and `scan_sbom` agreed on all eight advisory IDs for Log4j Core 2.14.1, `suggest_fix` verified 2.25.4 against the local DB, and the GHSA ID and CVE alias returned the same details. The complete MCP evidence matches the arm64 runs. The empty cache and missing `yauzl` controls returned `ENOTCACHED` and `ERR_MODULE_NOT_FOUND`. Node 20.19.6 was rejected with `EBADENGINE`.
+
+With networking disabled and the Linux seccomp profile loaded, IPv4 and IPv6 returned `EPERM` for all eight runtime/artifact combinations. The runner used UID 1000 with zero effective capabilities and `no_new_privs`. The original preparation files were confirmed to exist under the root-owned `0700` volume, and all seven original paths returned `EACCES` for each kit. Both JSON records were exported directly from the runner, checked for absolute paths, and matched to the checked-in harness and lockfile hashes. The source-side report passed 260 tests across seven files on macOS arm64, where type checking also passed. The checkout built successfully on Debian x64 under emulation. Windows full-package validation remains open.
+
+The first transfer encountered host disk exhaustion and a Docker filesystem I/O error. After restarting Docker, a byte comparison detected a damaged transfer copy. The transfer volume was recreated from the prepared kits and both copies were checked before the recorded runs.
+
+Review repeated both disconnected runs using the same transferred kits and isolation settings. Each new record matched its saved record after excluding only the run timestamp. All 49 package-validation regression tests passed during review.
 
 ## Reproduction
 
@@ -114,25 +131,32 @@ sandbox-exec -p '(version 1)(allow default)(deny network*)' \
 
 On macOS, deny reads of original inputs by adding `(deny file-read* (subpath "/absolute/source"))` for each original root. Pass `--denied-path checkout=/absolute/source/package.json` (repeatable, `<domain>=<absolute path>`) for a known original path in each root. Include the original kit, Node, scanner, npm cache and DB roots as well as the checkout. Keep the output/report paths outside the denied roots. The record stores each domain label and its error.
 
-On Linux arm64, prepare separate original and transfer volumes. Give the root-owned original volume mode `0700`. Copy the complete kit to the transfer volume and give the test UID ownership of the transferred files and report directory. Prepare a Debian 12 arm64 runtime image with the system libraries required by the copied binaries, including `libatomic1` for the recorded Node 26.12.1 build. Omit global Node and npm. In the following command, `osv-package-runtime:arm64` is that image, and the source paths under `/original` match the preparation volume. Repeat with each prepared kit. Use the supplied [network-test profile](../scripts/offline-package-linux-seccomp.json) in a disposable container with `--network none`, dropped capabilities and a read-only root filesystem.
+On Linux, prepare separate original and transfer volumes. Give the root-owned original volume mode `0700` and confirm that all seven probe targets exist while running as the preparation UID. Copy each complete kit to the transfer volume, verify it against its original, and give the test UID ownership of the transferred files and report directory. Prepare a Debian 12 runtime image for the target architecture with the system libraries required by the copied binaries, including `libatomic1` for the recorded Node 26.12.1 builds. Omit global Node and npm. Use the supplied [network-test profile](../scripts/offline-package-linux-seccomp.json) in a disposable container with `--network none`, dropped capabilities and a read-only root filesystem.
+
+The following example runs both x64 kits, with prepared directories named `registry-kit` and `checkout-kit`. Mount the original and transferred volumes under `/original` and `/transfer` with the layout shown. To repeat the arm64 run, use `linux/arm64` for `package_platform`, `linux-arm64` for `package_node_archive`, and an arm64 runtime image and scanner. To include the source-side test summary in each record, transfer its JSON report and pass `--test-report /transfer/regressions.json`.
 
 ```bash
-docker run --rm --platform linux/arm64 --network none --read-only \
-  --user 1000:1000 --cap-drop ALL --security-opt no-new-privileges \
-  --security-opt seccomp=scripts/offline-package-linux-seccomp.json \
-  --tmpfs /tmp:rw,exec,nosuid,nodev,size=1g,mode=1777 \
-  --mount type=volume,src=osv-package-prepared,dst=/original,readonly \
-  --mount type=volume,src=osv-package-transferred,dst=/transfer -w /tmp \
-  --entrypoint /transfer/kit/runtimes/v26.12.1/bin/node osv-package-runtime:arm64 \
-  /transfer/kit/validate-offline-package.mjs run \
-  --kit /transfer/kit --output /transfer/out/package-record.json \
-  --denied-path checkout=/original/repo/package.json \
-  --denied-path npm-cache=/original/node-cache/_cacache/index-v5 \
-  --denied-path scanner=/original/source-assets/osv-scanner \
-  --denied-path npm-install=/original/source-npm/bin/npm-cli.js \
-  --denied-path kit=/original/kit/kit.json \
-  --denied-path maven-db=/original/maven-cache/manifest.json \
-  --denied-path node-install=/original/source-assets/node-v22.13.0-linux-arm64/bin/node
+package_platform=linux/amd64
+package_node_archive=linux-x64
+package_runtime_image=osv-package-runtime:amd64
+for artifact in registry checkout; do
+  docker run --rm --platform "$package_platform" --network none --read-only \
+    --user 1000:1000 --cap-drop ALL --security-opt no-new-privileges \
+    --security-opt seccomp=scripts/offline-package-linux-seccomp.json \
+    --tmpfs /tmp:rw,exec,nosuid,nodev,size=1g,mode=1777 \
+    --mount type=volume,src=osv-package-prepared,dst=/original,readonly \
+    --mount type=volume,src=osv-package-transferred,dst=/transfer -w /tmp \
+    --entrypoint "/transfer/$artifact-kit/runtimes/v26.12.1/bin/node" "$package_runtime_image" \
+    "/transfer/$artifact-kit/validate-offline-package.mjs" run \
+    --kit "/transfer/$artifact-kit" --output "/transfer/out/$artifact.json" \
+    --denied-path checkout=/original/repo/package.json \
+    --denied-path npm-cache=/original/node-cache/_cacache/index-v5 \
+    --denied-path scanner=/original/source-assets/osv-scanner \
+    --denied-path npm-install=/original/source-npm/bin/npm-cli.js \
+    --denied-path kit="/original/$artifact-kit/kit.json" \
+    --denied-path maven-db=/original/maven-cache/manifest.json \
+    --denied-path node-install="/original/source-assets/node-v22.13.0-$package_node_archive/bin/node" || exit 1
+done
 ```
 
 For actual deployment, use the kit's consumer manifest/lock and `application.tgz` in their relative layout, and invoke the supplied Node/npm with:
