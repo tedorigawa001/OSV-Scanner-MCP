@@ -22,13 +22,16 @@ if(scope!=='product'&&scope!=='research'&&scope!=='--list'){
 const importPattern=/(?:from\s*|import\s*\(\s*|import\s+)['"]([^'"\n]+)['"]/g;
 const evidencePattern=/docs\/validation|validation\/|check-[a-z0-9-]+\.mjs|analyze-[a-z0-9-]+\.mjs|audit-[a-z0-9-]+\.mjs|scripts\/[A-Za-z0-9_.-]+\.mjs/;
 const read=f=>readFileSync(f,'utf8');
+// Paths are compared with '/' separators. On Windows path.relative/join/normalize return '\\', so test fixtures were
+// taken for modules outside the product and every test importing one was classified as research.
+const posix=p=>p.split(path.sep).join('/');
 function localImports(file){
   const out=[];
   for(const m of read(file).matchAll(importPattern)){
     if(!m[1].startsWith('.'))continue;
     const q=path.resolve(path.dirname(file),m[1]);
     for(const c of [q,q.replace(/\.js$/,'.ts'),q.replace(/\.mjs$/,'.mts'),q+'.ts',q.replace(/\.js$/,'.mjs')]){
-      if(existsSync(c)&&statSync(c).isFile()){out.push(path.relative(process.cwd(),c));break;}
+      if(existsSync(c)&&statSync(c).isFile()){out.push(posix(path.relative(process.cwd(),c)));break;}
     }
   }
   return out;
@@ -44,14 +47,14 @@ function isResearch(file,seen){
   return false;
 }
 const tests=[];
-(function collect(dir){for(const e of readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,e.name);if(e.isDirectory())collect(p);else if(p.endsWith('.test.ts'))tests.push(p);}})('src/test');
+(function collect(dir){for(const e of readdirSync(dir,{withFileTypes:true})){const p=posix(path.join(dir,e.name));if(e.isDirectory())collect(p);else if(p.endsWith('.test.ts'))tests.push(p);}})('src/test');
 const research=tests.sort().filter(t=>isResearch(t,new Set()));
 const researchSet=new Set(research),product=tests.filter(t=>!researchSet.has(t));
 if(scope==='--list'){console.log(JSON.stringify({product,research},null,1));process.exit(0);}
 // Vitest's --exclude does not reach the inline projects of vitest.config.ts, so the scope is passed as file filters.
 // Test files named explicitly are used alone; they must belong to this scope.
 const selected=new Set(scope==='product'?product:research),other=new Set(scope==='product'?research:product);
-const named=vitestArgs.map(a=>path.normalize(a)).filter(a=>selected.has(a)||other.has(a)),misplaced=named.filter(a=>other.has(a));
+const named=vitestArgs.map(a=>posix(path.normalize(a))).filter(a=>selected.has(a)||other.has(a)),misplaced=named.filter(a=>other.has(a));
 if(misplaced.length){console.error(`${misplaced.join(', ')} belongs to the ${scope==='product'?'research':'product'} scope. Run it with: npm run ${scope==='product'?'test:research':'test'} -- ${misplaced.join(' ')}`);process.exit(2);}
 const result=spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',...vitestArgs,...(named.length?[]:[...selected])],{stdio:'inherit'});
 process.exit(result.status??1);
