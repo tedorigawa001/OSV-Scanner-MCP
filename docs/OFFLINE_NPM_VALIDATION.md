@@ -132,7 +132,7 @@ The completed index stays in the server process until a new generation replaces 
 | 232,645 records, 2 aliases each | 697,935 | 85 MiB |
 | 500,000 records (the entry limit) and 500,000 aliases, 64-character keys | 1,000,000 | 188 MiB |
 
-The last row exercises the default limits with 500,000 entries and 1,000,000 retained index entries, using 64-character keys. A generation that would exceed the index limit discards its draft and keeps using full lookups. While a new generation is being indexed, the previous index is still held, so up to two indexes can exist briefly. See the next section for real DB measurements.
+The last row exercises the default limits with 500,000 entries and 1,000,000 retained index entries, using 64-character keys. A generation that would exceed the index limit discards its draft and keeps using full lookups. At `943d3fc` the previous index was held while a new generation was indexed, so up to two indexes could exist briefly. Since `fe1f15e` the builder drops the cached index before building its replacement; only lookups already using the old index keep it until they finish. See the next section for real DB measurements.
 
 ### Index memory with two official npm DB generations (2026-11-22)
 

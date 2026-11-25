@@ -69,7 +69,8 @@ async function lockUpdate(root:string):Promise<() => Promise<void>> {
    finally{await marker.close();}
   }
   return async()=>{
-   try{await rmdir(legacyMarker);}
+   // A marker that is already gone needs no removal. Anything else is left for the operator to inspect.
+   try{await rmdir(legacyMarker).catch(error=>{if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;});}
    finally{await release();}
   };
  }catch(error){
@@ -93,6 +94,7 @@ export async function prepareOfflineDatabases(options:PrepareOfflineOptions){
  const root=await safeDirectory(path.resolve(options.dir)),objects=path.join(root,'objects');await safeDirectory(objects);
  const temp=path.join(objects,'.download-'+randomBytes(12).toString('hex')),manifestTemp=path.join(root,'.manifest-'+randomBytes(12).toString('hex'));
  const releaseUpdate=await lockUpdate(root);
+ let published=false;
  try{
   const present=await lstat(path.join(root,'manifest.json')).catch(e=>{if(e.code==='ENOENT')return null;throw e;});const prior=present?await load(root):{schema:1 as const,databases:[]};
   await collectManifestTemps(root);
@@ -110,11 +112,16 @@ export async function prepareOfflineDatabases(options:PrepareOfflineOptions){
    else{await rename(temp,object);allocated+=bytes;count++;}
    entries.set(ecosystem as typeof OFFLINE_ECOSYSTEMS[number],entry.parse({ecosystem,sha256,bytes,downloaded_at:new Date(options.now??Date.now()).toISOString(),url}));
   }
-  const manifest=manifestSchema.parse({schema:1,databases:[...entries.values()]});const file=await open(manifestTemp,'wx',0o600);try{await file.writeFile(JSON.stringify(manifest,null,2)+'\n');await file.sync();}finally{await file.close();}await rename(manifestTemp,path.join(root,'manifest.json'));return manifest;
+  const manifest=manifestSchema.parse({schema:1,databases:[...entries.values()]});const file=await open(manifestTemp,'wx',0o600);try{await file.writeFile(JSON.stringify(manifest,null,2)+'\n');await file.sync();}finally{await file.close();}await rename(manifestTemp,path.join(root,'manifest.json'));published=true;return manifest;
  }catch(e){if(e instanceof ScanToolError)throw e;throw failure('update failed; the previous manifest remains selected');}
  finally{
-  try{await rm(temp,{force:true});await rm(manifestTemp,{force:true});}
-  finally{await releaseUpdate();}
+  try{
+   try{await rm(temp,{force:true});await rm(manifestTemp,{force:true});}
+   finally{await releaseUpdate();}
+  }catch{
+   // Do not replace the reason of a failed update, and do not report a published manifest as a failed update.
+   if(published)throw failure('the new manifest was published, but cleanup failed; inspect update.lock before the next update');
+  }
  }
 }
 export async function captureOfflineDatabases(options:OfflineOptions,required?:readonly string[],now=Date.now()){

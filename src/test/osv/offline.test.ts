@@ -178,6 +178,27 @@ it('preserves unknown lock directory contents and releases the native lock after
  await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn})).resolves.toBeDefined();
  expect(fetchFn).toHaveBeenCalledOnce();
 });
+it('reports a published manifest separately when its lock marker cannot be removed',async()=>{
+ const dir=await cache(),marker=path.join(dir,'update.lock'),note=path.join(marker,'operator-note');
+ const intrude=async()=>{await writeFile(note,'keep');return new Response(generation(1));};
+ await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:intrude as typeof fetch})).rejects.toThrow('the new manifest was published, but cleanup failed');
+ expect(JSON.parse(await readFile(path.join(dir,'manifest.json'),'utf8')).databases[0].sha256).toBe(createHash('sha256').update(generation(1)).digest('hex'));
+ expect(await readFile(note,'utf8')).toBe('keep');
+ await rm(note);
+ await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:async()=>new Response(generation(2))})).resolves.toBeDefined();
+});
+it('keeps the reason of a failed update when its lock marker cannot be removed',async()=>{
+ const dir=await cache(),marker=path.join(dir,'update.lock'),before=await readFile(path.join(dir,'manifest.json'));
+ const intrude=async()=>{await writeFile(path.join(marker,'operator-note'),'keep');return new Response('',{status:503});};
+ await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:intrude as typeof fetch})).rejects.toThrow('HTTP 503');
+ expect(await readFile(path.join(dir,'manifest.json'))).toEqual(before);
+});
+it('completes when the empty lock marker was already removed',async()=>{
+ const dir=await cache();
+ const remove=async()=>{await fs.rmdir(path.join(dir,'update.lock'));return new Response(generation(1));};
+ await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:remove as typeof fetch})).resolves.toBeDefined();
+ await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:async()=>new Response(generation(2))})).resolves.toBeDefined();
+});
 it('offline blocks preparation and API queries; missing local explanation data never invokes fetch',async()=>{
  vi.stubEnv('OSV_MCP_OFFLINE','1');const f=vi.fn(()=>{throw Error('must not fetch');});
  await expect(prepareOfflineDatabases({dir:await root(),ecosystems:['npm'],fetchFn:f})).rejects.toThrow('Offline mode');

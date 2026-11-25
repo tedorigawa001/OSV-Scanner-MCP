@@ -669,7 +669,12 @@
         "failed": 0,
         "observationsMatched": true,
         "sourceFingerprintsMatched": true,
-        "note": "Before this update the same command already matched the recorded observations and failed only at the package-lock.json fingerprint (package.json also changed). Recorded process observations are unchanged; all adoption flags remain false."
+        "note": "Before this update, two local runs of the same command under unrelated host load (load average about 11) each failed 4 of 8 tests: real-time lease expiry (current_control_grant_revoked) left scenarios out of the observations, in addition to the expected fingerprint mismatch. The recorded observations did not match in those two runs. After the load dropped and the two fingerprints were updated, 3 of 3 runs passed. Recorded process observations are unchanged; all adoption flags remain false."
+      },
+      "noteCorrection": {
+        "date": "2026-11-25",
+        "reason": "The original note was copied from the previous entry and did not describe the runs before this update.",
+        "previousNote": "Before this update the same command already matched the recorded observations and failed only at the package-lock.json fingerprint (package.json also changed). Recorded process observations are unchanged; all adoption flags remain false."
       }
     },
     {

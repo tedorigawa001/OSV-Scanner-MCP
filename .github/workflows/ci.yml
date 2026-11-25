@@ -69,7 +69,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: npm test -- src/test/utils/openedFilePath.test.ts
+      - run: npm test -- src/test/utils/openedFilePath.test.ts src/test/utils/exclusiveFileLock.test.ts src/test/osv/offlineCacheRecovery.test.ts
       - run: npm run build
 
   osv-scan:
