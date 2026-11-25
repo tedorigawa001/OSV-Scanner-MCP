@@ -152,8 +152,31 @@ it('collection never removes unknown entries; they are still rejected',async()=>
 it('serializes updates and never removes the active updater lock for another caller',async()=>{
  const dir=await root();let release!:()=>void,entered!:()=>void;const hold=new Promise<void>(r=>release=r),ready=new Promise<void>(r=>entered=r);
  const f=vi.fn(async()=>{entered();await hold;return new Response(zip);}),pending=prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:f as typeof fetch});await ready;
- try{await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:f as typeof fetch})).rejects.toThrow('update is active');expect(await readFile(path.join(dir,'update.lock'))).toBeDefined();expect(f).toHaveBeenCalledOnce();}finally{release();await pending;}
+ try{await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn:f as typeof fetch})).rejects.toThrow('update is active');expect((await fs.lstat(path.join(dir,'update.lock'))).isDirectory()).toBe(true);expect(f).toHaveBeenCalledOnce();}finally{release();await pending;}
  const s=await captureOfflineDatabases({offline:true,offlineDbDir:dir},['npm']);await s.cleanup();
+});
+it('does not reclaim a legacy update lock even when its file is empty',async()=>{
+ const dir=await cache(),marker=path.join(dir,'update.lock'),before=await readFile(path.join(dir,'manifest.json'));
+ const old=await fs.open(marker,'wx',0o600);
+ const fetchFn=vi.fn(async()=>new Response(generation(1)));
+ try{
+  await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn})).rejects.toThrow('legacy or unexpected update.lock');
+  expect((await fs.lstat(marker)).ino).toBe((await old.stat()).ino);
+  expect(fetchFn).not.toHaveBeenCalled();
+  expect(await readFile(path.join(dir,'manifest.json'))).toEqual(before);
+ }finally{await old.close();await rm(marker);}
+ await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn})).resolves.toBeDefined();
+ expect(fetchFn).toHaveBeenCalledOnce();
+});
+it('preserves unknown lock directory contents and releases the native lock after rejection',async()=>{
+ const dir=await cache(),marker=path.join(dir,'update.lock'),note=path.join(marker,'operator-note');
+ await mkdir(marker);await writeFile(note,'keep');
+ const fetchFn=vi.fn(async()=>new Response(generation(1)));
+ await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn})).rejects.toThrow('update.lock directory is not empty');
+ expect(fetchFn).not.toHaveBeenCalled();expect(await readFile(note,'utf8')).toBe('keep');
+ await rm(note);
+ await expect(prepareOfflineDatabases({dir,ecosystems:['npm'],fetchFn})).resolves.toBeDefined();
+ expect(fetchFn).toHaveBeenCalledOnce();
 });
 it('offline blocks preparation and API queries; missing local explanation data never invokes fetch',async()=>{
  vi.stubEnv('OSV_MCP_OFFLINE','1');const f=vi.fn(()=>{throw Error('must not fetch');});

@@ -1,11 +1,12 @@
 /** Complete ecosystem ZIPs fetched explicitly from OSV; immutable objects and an atomic manifest. */
 import {createHash,randomBytes} from 'node:crypto';
-import {mkdir,chmod,open,opendir,realpath,lstat,rename,rm,mkdtemp} from 'node:fs/promises';
+import {mkdir,chmod,open,opendir,realpath,lstat,rename,rm,mkdtemp,rmdir} from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import {z} from 'zod';
 import {ScanToolError} from '../errors.js';
 import {copyRegularFile,readRegularFile} from '../utils/safeRead.js';
+import {tryExclusiveFileLock} from '../utils/exclusiveFileLock.js';
 import {SNAPSHOT_DIR_PREFIX,trackTempDir} from '../utils/processCleanup.js';
 import {offlineConfig,requireOnline,type OfflineOptions} from './offline.js';
 export const OFFLINE_ECOSYSTEMS=['Maven','npm','PyPI','Go','crates.io','Packagist','NuGet'] as const;
@@ -50,15 +51,51 @@ async function collect(root:string,keep:ReadonlySet<string>){
  finally{await dir.close().catch(()=>{});}
  for(const name of doomed)await rm(path.join(root,name),{force:true});
 }
+
+async function lockUpdate(root:string):Promise<() => Promise<void>> {
+ const legacyMarker=path.join(root,'update.lock');
+ const release=await tryExclusiveFileLock(path.join(root,'.update.guard'))
+  .catch(()=>{throw failure('cannot open or verify the native update lock');});
+ if(!release)throw failure('another update is active or the native update lock is unavailable');
+ try{
+  // Older versions reserve this same name with O_EXCL. An empty directory also blocks them, but
+  // identifies work from the recoverable updater once the OS releases the guard after process exit.
+  try{await mkdir(legacyMarker,{mode:0o700});}
+  catch(error){
+   if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;
+   if(!(await lstat(legacyMarker)).isDirectory())throw failure('legacy or unexpected update.lock remains; stop all updaters before inspecting it');
+   const marker=await opendir(legacyMarker);
+   try{if(await marker.read())throw failure('update.lock directory is not empty');}
+   finally{await marker.close();}
+  }
+  return async()=>{
+   try{await rmdir(legacyMarker);}
+   finally{await release();}
+  };
+ }catch(error){
+  await release();
+  if(error instanceof ScanToolError)throw error;
+  throw failure('cannot reserve update.lock');
+ }
+}
+
+async function collectManifestTemps(root:string){
+ const dir=await opendir(root);
+ for await(const entry of dir){
+  if(entry.isFile()&&/^\.manifest-[a-f0-9]{24}$/.test(entry.name))await rm(path.join(root,entry.name),{force:true});
+ }
+}
+
 export interface PrepareOfflineOptions {dir:string;ecosystems:readonly string[];fetchFn?:typeof fetch;now?:number;timeoutMs?:number}
 export async function prepareOfflineDatabases(options:PrepareOfflineOptions){
  requireOnline();if(!path.isAbsolute(options.dir))throw failure('directory must be absolute');
  const ecosystems=[...new Set(options.ecosystems)];if(!ecosystems.length||ecosystems.some(e=>!(OFFLINE_ECOSYSTEMS as readonly string[]).includes(e)))throw failure(`ecosystems must be selected from ${OFFLINE_ECOSYSTEMS.join(', ')}`);
  const root=await safeDirectory(path.resolve(options.dir)),objects=path.join(root,'objects');await safeDirectory(objects);
- let lock;try{lock=await open(path.join(root,'update.lock'),'wx',0o600);}catch{throw failure('another update is active, or update.lock remains from an interrupted update; stop the updater before removing that lock');}
  const temp=path.join(objects,'.download-'+randomBytes(12).toString('hex')),manifestTemp=path.join(root,'.manifest-'+randomBytes(12).toString('hex'));
+ const releaseUpdate=await lockUpdate(root);
  try{
   const present=await lstat(path.join(root,'manifest.json')).catch(e=>{if(e.code==='ENOENT')return null;throw e;});const prior=present?await load(root):{schema:1 as const,databases:[]};
+  await collectManifestTemps(root);
   await collect(objects,new Set(prior.databases.map(d=>d.sha256+'.zip')));
   const retained=await inventory(objects);let allocated=retained.bytes,count=retained.count;const entries=new Map(prior.databases.map(e=>[e.ecosystem,e]));
   for(const ecosystem of ecosystems){
@@ -75,7 +112,10 @@ export async function prepareOfflineDatabases(options:PrepareOfflineOptions){
   }
   const manifest=manifestSchema.parse({schema:1,databases:[...entries.values()]});const file=await open(manifestTemp,'wx',0o600);try{await file.writeFile(JSON.stringify(manifest,null,2)+'\n');await file.sync();}finally{await file.close();}await rename(manifestTemp,path.join(root,'manifest.json'));return manifest;
  }catch(e){if(e instanceof ScanToolError)throw e;throw failure('update failed; the previous manifest remains selected');}
- finally{await rm(temp,{force:true});await rm(manifestTemp,{force:true});await lock.close();await rm(path.join(root,'update.lock'),{force:true});}
+ finally{
+  try{await rm(temp,{force:true});await rm(manifestTemp,{force:true});}
+  finally{await releaseUpdate();}
+ }
 }
 export async function captureOfflineDatabases(options:OfflineOptions,required?:readonly string[],now=Date.now()){
  const config=offlineConfig(options);if(!config.enabled)throw failure('offline mode is not enabled');

@@ -236,6 +236,18 @@ Refreshes previously never removed DB objects, so the default 168-hour refresh c
 
 The original native record predates collection and binds its own source hashes. The separate 2026-11-18 record above now covers the current collector and fresh complete Go database under network denial; the original record has not been overwritten or rebound to changed sources.
 
+## Interrupted cache update recovery (2026-11-25)
+
+The updater takes a nonblocking OS file lock on the permanent `.update.guard` in the cache root. It keeps the lock through publication and cleanup. The OS releases it on updater termination. While holding it, the updater reserves the `update.lock` name as a directory so earlier versions cannot take their exclusive-create lock. An empty directory can be reused after interruption. A regular file left by an earlier version or a nonempty directory blocks the update and is preserved. The operator should keep the cache on a local filesystem and keep the guard file in place.
+
+The [CLI regression](../src/test/osv/offlineCacheRecovery.test.ts) starts the built `cache` command in a separate process and serves a small ZIP from a controlled local transport. It interrupts updates with a partial download on disk, immediately before renaming a complete staged manifest, and immediately after renaming the manifest but before the command returns. Before terminating each writer, a second CLI process is refused before calling the transport, and the older exclusive-create lock protocol is refused too. After `SIGKILL`, the selected manifest is byte-for-byte identical to the one visible immediately before termination. The original ZIP remains readable in both pre-publication cases, and the newly published ZIP remains readable in the post-publication case. The next invocation publishes the requested generation from that state, clears interrupted staging entries, and retains the ZIP selected at interruption together with the newly downloaded ZIP. The two pre-publication cases reproduced the stranded lock on the previous code. A regular legacy lock and a nonempty lock directory are checked separately.
+
+The three CLI cases and 53 offline unit cases passed on Linux arm64 with Node 24.18.0 in a container with networking disabled. The macOS arm64 product run with Node 26.12.1 included these cases and passed 3,236 tests across 113 files, with 1,378 tests skipped by their existing conditions. Type checking and the build passed. The ZIPs are test fixtures. The test interrupts the updater process while the filesystem remains available. Windows uses a Win32 byte-range lock and still needs a native run. [Win32 LockFile](https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-lockfile)
+
+```bash
+npm test -- src/test/osv/offlineCacheRecovery.test.ts src/test/osv/offline.test.ts --maxWorkers=1
+```
+
 ## Follow-up features
 
 - Commit-level matching, if supported by an independently selected native implementation.
