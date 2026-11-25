@@ -119,11 +119,15 @@ async function loadReader(tree, profile, probe, stageProbe, replacementStages) {
   const file = await realpath(join(tree, 'dist/osv/offlineRecord.js'));
   const original = await readFile(file, 'utf8');
   const symbol = 'osv-offline-index-memory-probe';
-  const call = (event, detail = 'undefined') => `globalThis[Symbol.for('${symbol}')]('${event}', cachedIndex, draft, ${detail});`;
+  const callback = `globalThis[Symbol.for('${symbol}')]`;
+  const call = (event, detail = 'undefined') => `${callback}('${event}', cachedIndex, draft, ${detail});`;
   // The baseline adds observation only. The other arms alter index retention in this isolated loader.
   const draftStart = replacementStages ? stageCall('full_read_build', 'start') : '';
+  const createDraft = `${draftStart}$1\n${call('draft_started')}`;
   let instrumented = replaceOnce(original, /(draft = \{ generation, (?:records: new RecordLocationTable\(\), )?locations: new Map\(\), conflicts: new Set\(\), postings: 0 \};)/g,
-    `${draftStart}$1\n${call('draft_started')}`);
+    profile === 'replacement-reader-only'
+      ? `if (${callback}('should_suppress_draft')) { ${call('draft_suppressed')} } else { ${createDraft} }`
+      : createDraft);
   instrumented = replaceOnce(instrumented, /(if \(draft\)\s+cachedIndex = draft;)/g,
     `if (draft) { ${call('before_publish')} cachedIndex = draft; ${call('published')} }`);
   instrumented = replaceOnce(instrumented, /if \((!candidates\.some\((?:location => current\.conflicts\.has\(location\.id\)|row => current\.conflicts\.has\(current\.records\.ids\[row\]\))\))\)\s+indexed = candidates;/g,
@@ -135,6 +139,7 @@ async function loadReader(tree, profile, probe, stageProbe, replacementStages) {
     `$1\n${call('read_finished', '{entries, expanded_bytes: expanded, names: names.size, identity_map: identities !== undefined, identities: identities?.size ?? 0}')}`);
   const release = /if \(cachedIndex\)\s+cachedIndex = undefined;/g;
   const productionRelease = [...original.matchAll(release)].length !== 0;
+  assert.ok(profile !== 'replacement-reader-only' || productionRelease, 'Replacement control requires production early release');
   if (productionRelease) {
     instrumented = replaceOnce(instrumented, release,
       `if (cachedIndex) { ${call('old_before_drop')} cachedIndex = undefined; ${call('old_dropped')} }`);
@@ -236,7 +241,8 @@ async function run() {
   assert.ok(values['old-cache'] && values['new-cache'] && values.output,
     'Supply --old-cache /old-npm-cache --new-cache /new-npm-cache --output /run.json');
   const {profile} = values;
-  assert.ok(['baseline', 'reader-only', 'drop-old'].includes(profile), 'Use --profile baseline, reader-only or drop-old');
+  assert.ok(['baseline', 'reader-only', 'replacement-reader-only', 'drop-old'].includes(profile), 'Unknown measurement profile');
+  const replacementControl = profile === 'replacement-reader-only';
   assert.ok(['present', 'absent'].includes(values['identity-map']), 'Use --identity-map present or absent');
   assert.ok(!(values['warm-stages'] || values['replacement-stages']) || profile === 'baseline', 'Stage probes require the baseline profile');
   const tree = await realpath(values.tree), expectIdentityMap = values['identity-map'] === 'present';
@@ -287,6 +293,7 @@ async function run() {
     const {handleExplainVulnerability, productionRelease, instrumented_reader_sha256, instrumented_cache_sha256} = await loadReader(tree, profile, (event, current, draft, reader) => {
       const phase = Atomics.load(state, ACTIVE_PHASE);
       assert.ok(phase > 0);
+      if (event === 'should_suppress_draft') return phase === phases.replace;
       const offset = values['replacement-stages'] && phase === phases.replace ? performance.now() - requestStarted : undefined;
       if (event === 'draft_started' && current) Atomics.store(state, OVERLAP_ACTIVE, 1);
       if (event === 'published') Atomics.store(state, OVERLAP_ACTIVE, 0);
@@ -340,10 +347,10 @@ async function run() {
     }
 
     const measurements = [], cold = ['cold', id, old.evidence, 'id'];
-    for (const [name, requested, db, matchedBy] of profile === 'reader-only' ? [cold] : [
-      cold, ['warm', alias, old.evidence, 'alias'],
-      ['replace', id, replacement.evidence, 'id'], ['warm_replacement', alias, replacement.evidence, 'alias'],
-    ]) {
+    const requests = [cold];
+    if (profile !== 'reader-only') requests.push(['warm', alias, old.evidence, 'alias'], ['replace', id, replacement.evidence, 'id']);
+    if (profile !== 'reader-only' && !replacementControl) requests.push(['warm_replacement', alias, replacement.evidence, 'alias']);
+    for (const [name, requested, db, matchedBy] of requests) {
       console.error(`Measuring ${name}`);
       if (name === 'replace') {
         await writeFile(manifest + '.new', replacement.manifest);
@@ -356,8 +363,12 @@ async function run() {
     const readEvents = ['read_started', 'read_finished'];
     const buildEvents = ['draft_started', ...readEvents, 'before_publish', 'published'];
     const releasesOld = profile === 'drop-old' || productionRelease;
-    const expected = profile === 'reader-only' ? [[1, readEvents]] : [[1, buildEvents], [2, ['reused']],
-      [3, releasesOld ? ['old_before_drop', 'old_dropped', ...buildEvents] : buildEvents], [4, ['reused']]];
+    const expected = profile === 'reader-only' ? [[1, readEvents]] : [[1, buildEvents], [2, ['reused']]];
+    if (profile !== 'reader-only') {
+      const replaceEvents = replacementControl ? ['draft_suppressed', ...readEvents] : buildEvents;
+      expected.push([3, releasesOld ? ['old_before_drop', 'old_dropped', ...replaceEvents] : replaceEvents]);
+      if (!replacementControl) expected.push([4, ['reused']]);
+    }
     assert.deepEqual(events.map(e => [e.phase, e.event]), expected.flatMap(([phase, names]) => names.map(name => [phase, name])));
     function verifyRead(phase, db) {
       const {reader} = at(phase, 'read_finished');
@@ -372,17 +383,26 @@ async function run() {
     } else {
       const first = at(1, 'before_publish'), next = at(3, 'before_publish');
       assert.equal(first.current, null);
-      assert.ok(first.draft.postings >= old.evidence.entries && next.draft.postings >= replacement.evidence.entries);
+      assert.ok(first.draft.postings >= old.evidence.entries);
       assert.deepEqual(at(2, 'reused').current, first.draft);
-      assert.deepEqual(at(4, 'reused').current, next.draft);
       verifyRead(3, replacement.evidence);
+      if (replacementControl) {
+        for (const event of ['draft_suppressed', ...readEvents]) {
+          const observed = at(3, event);
+          assert.equal(observed.current, null);
+          assert.equal(observed.draft, null);
+        }
+      } else {
+        assert.ok(next.draft.postings >= replacement.evidence.entries);
+        assert.deepEqual(at(4, 'reused').current, next.draft);
+      }
       if (!releasesOld) {
         assert.ok(next.distinct);
         assert.deepEqual(next.current, first.draft);
       } else {
         assert.deepEqual(at(3, 'old_before_drop').current, first.draft);
         assert.equal(at(3, 'old_dropped').current, null);
-        assert.equal(next.current, null);
+        if (!replacementControl) assert.equal(next.current, null);
       }
     }
     const overlap = statistics(state, phases.overlap);

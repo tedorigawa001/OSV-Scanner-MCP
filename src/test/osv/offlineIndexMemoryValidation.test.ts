@@ -9,6 +9,8 @@ import {expect, it} from 'vitest';
 import {buildDigest, buildInventory, compareRuns, memoryBindings, recordBufferEdits} from '../../../scripts/compare-offline-index-memory.mjs';
 // @ts-ignore Repository validation artifact, separate from the shipped server.
 import {verifyReplacementStages, verifyWarmStages} from '../../../scripts/summarize-offline-warm-rss.mjs';
+// @ts-ignore Repository validation artifact, separate from the shipped server.
+import {verifyBuildControl} from '../../../scripts/summarize-offline-index-build-rss.mjs';
 import {recordZip} from '../fixtures/offlineRecords.js';
 
 const mib = 1024 * 1024;
@@ -61,7 +63,8 @@ createRequire(import.meta.url)('node:net').connect = () => {
 syncBuiltinESMExports();
 `);
       const digest = buildDigest(await buildInventory(tree));
-      for (const profile of ['baseline', 'drop-old']) {
+      let baseline;
+      for (const profile of ['baseline', 'drop-old', 'reader-only', 'replacement-reader-only']) {
         const stageArgs = profile === 'baseline' ? ['--warm-stages', '--replacement-stages'] : [];
         const run = spawnSync(process.execPath, ['--expose-gc', '--import', preload, 'scripts/measure-offline-index-native.mjs',
           '--old-cache', caches[0]!, '--new-cache', caches[1]!, '--tree', aliasedTree, '--identity-map', 'absent',
@@ -69,6 +72,29 @@ syncBuiltinESMExports();
         expect(run.status, run.error?.message ?? run.stderr + run.stdout).toBe(0);
         const measured = JSON.parse(await readFile(output, 'utf8'));
         expect(measured.profile).toBe(profile);
+        expect(measured.compiled_sha256).toBe(digest);
+        if (profile === 'baseline') baseline = measured;
+        if (profile !== 'drop-old') expect(() => verifyBuildControl(measured, profile)).not.toThrow();
+        if (profile.endsWith('reader-only')) {
+          for (const [i, query] of measured.measurements.entries()) {
+            expect(query.response_sha256).toBe(baseline.measurements[i].response_sha256);
+          }
+          const target = profile === 'reader-only' ? 1 : 3;
+          const event = measured.events.find((e: {phase: number; event: string}) => e.phase === target && e.event === 'read_finished');
+          expect(event.reader).toEqual(baseline.events.find((e: {phase: number; event: string}) => e.phase === target && e.event === 'read_finished').reader);
+          const bad = structuredClone(measured);
+          bad.events.find((e: {phase: number; event: string}) => e.phase === target && e.event === 'read_started').draft = {};
+          expect(() => verifyBuildControl(bad, profile)).toThrow('Reader-only control allocated an index draft');
+          const badBoundary = structuredClone(measured);
+          const start = badBoundary.events.find((e: {phase: number; event: string}) => e.phase === target && e.event === 'read_started');
+          start.memory.rss_bytes = String(start.memory.rss_bytes);
+          expect(() => verifyBuildControl(badBoundary, profile)).toThrow('Invalid memory field: rss_bytes');
+          const badHighWater = structuredClone(measured);
+          const request = badHighWater.measurements[target - 1];
+          request.settled.process_high_water_rss_bytes = String(request.settled.process_high_water_rss_bytes);
+          expect(() => verifyBuildControl(badHighWater, profile)).toThrow('Invalid memory field: process_high_water_rss_bytes');
+          continue;
+        }
         expect(measured.measurements.map((m: {name: string}) => m.name)).toEqual(['cold', 'warm', 'replace', 'warm_replacement']);
         expect(measured.events.filter((e: {event: string}) => e.event === 'read_finished')).toHaveLength(2);
         const published = measured.events.filter((e: {event: string}) => e.event === 'before_publish');
@@ -80,7 +106,6 @@ syncBuiltinESMExports();
           {event: 'draft_started', current: null},
         ]);
         expect(measured.overlap).toEqual({sampled_peak_rss_bytes: 0, samples: 0});
-        expect(measured.compiled_sha256).toBe(digest);
         if (profile === 'baseline') {
           expect(measured.instrumented_cache_sha256).toMatch(/^[a-f0-9]{64}$/);
           for (const [request, generation] of [[1, 0], [3, 1]] as const) {

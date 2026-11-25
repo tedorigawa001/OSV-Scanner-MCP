@@ -457,3 +457,43 @@ All six processes completed on macOS arm64 with Node v26.12.1. Every loopback pr
 Across the six indexed lookups in each arm, the hash-window peak above its own entry fell from 7.81–38.91 MiB to 0.00–0.02 MiB. The ArrayBuffer increase during verification fell from 14.31–25.20 MiB to 0.0625 MiB in each run. Hash time was shorter in all six paired indexed lookups. Starting RSS varied across processes. Replacement entry improved by 32.5 and 51.8 MiB in two pairs and increased by 12.6 MiB in the remaining pair. Three of six candidate indexed requests and seven of twelve candidate requests overall still exceeded 256 MiB. The results show lower hash-window memory growth and variable whole-request RSS under sequential npm-only lookups.
 
 The 168 related tests, type checking and build passed. The tests force short reads over a multi-buffer-sized ZIP, assert one 64 KiB backing buffer and handle closure, and reject a changed tail, truncation, appended bytes and an I/O failure on the copied ZIP. Review added checks for private ZIP cleanup and simulated reads at the 512 MiB size ceiling and one byte beyond it. The stricter test coverage applies to the build in the saved native comparison.
+
+### Full-read and index-build RSS controls on the current reader (2026-11-25)
+
+All profiles use the `4f8f8b1` product build, including the reusable ZIP hash buffer and early release of the previous index. The `baseline` profile measures the normal first build and replacement. `reader-only` suppresses the first draft in a fresh process. `replacement-reader-only` builds and reuses the old index and releases it at the same point as the baseline. It suppresses only the new draft and ends after the replacement request. Both controls fully verify the private ZIP and read and validate all records. The test loader applies the controls in memory.
+
+The comparator checks the product build against the hash-buffer experiment, both official DB hashes, response hashes, all full-reader counters, and the index lifecycle. The replacement control must reuse the old index, release it, and have neither a cached index nor a draft during the replacement loop. All profiles run in separate processes, with their order rotated across three rounds. Peak RSS is measured both for the whole request and for the full-reader loop. For each window the report also gives the peak relative to request entry. The paired differences describe the observed effect of building the index under the tested conditions, including allocation, GC and starting RSS variation. They do not measure the exact size of the index objects.
+
+All nine macOS arm64 processes used Node 26.12.1 and verified OS network denial with `EPERM`. Every process reported zero application fetch attempts. Each measured full read validated all 232,850 records in the older archive or all 232,857 in the newer archive. Across profiles the recorded responses and full-reader counters matched the prior measurement for the same database and request. The request peaks include the entry snapshot, and the reader-loop peaks use 10 ms samples and the loop-boundary snapshots. The processes ran without forced GC inside the requests. [Raw runs and paired summaries](validation/offline-npm-index-build-controls-2026-11-25.json)
+
+| Phase and RSS window | With index build, median (range), MiB | Without index build, median (range), MiB | Paired build minus control, median (range), MiB |
+| --- | ---: | ---: | ---: |
+| First request, whole-request peak | 268.6 (234.3–269.0) | 206.2 (206.0–206.3) | +62.3 (+28.1 to +62.9) |
+| First request, full-reader peak | 268.3 (234.3–268.8) | 206.2 (206.0–206.3) | +62.0 (+28.1 to +62.8) |
+| Replacement, request entry | 260.3 (219.0–263.9) | 224.1 (214.5–275.2) | +4.5 (−11.3 to +36.2) |
+| Replacement, whole-request peak | 267.2 (219.0–271.3) | 224.1 (214.6–275.2) | +4.5 (−3.9 to +43.1) |
+| Replacement, full-reader peak | 267.2 (219.0–271.3) | 195.2 (194.9–253.7) | +23.8 (+17.5 to +72.2) |
+| Replacement, full-reader peak relative to request entry | +6.9 (0.0 to +7.4) | −21.5 (−29.1 to −19.3) | +28.8 (+19.3 to +36.0) |
+
+At first build, the usual build exceeded 256 MiB in two of three requests. Every full-read control stayed below 256 MiB. After each measured request and forced GC, the JS heap plus ArrayBuffers above the process baseline was about 29 MiB with a published index, and within 0.2 MiB of baseline without a draft. On replacement, two build requests and one control exceeded 256 MiB. All three were already above 256 MiB at request entry. The replacement control's full-read windows stayed below 256 MiB in all three rounds. These results show two separate costs for the 256 MiB target in this serial npm workload. Index construction increases the first-read peak, and RSS carried into replacement can exceed the target before replacement starts.
+
+The harness regression verifies both controls through the real reader on a small ZIP, checks response and reader counter equality, and rejects a control trace that reports a draft in the full-read loop. Review added strict numeric checks for RSS snapshots and checks that the process high-water mark is monotonic and bounds the sampled peaks. Both controls reject string-valued boundary RSS and process high-water RSS. Rechecking the nine saved runs with these checks produced the same report byte for byte. All 168 related tests, type checking and the build passed.
+
+```bash
+npm run build
+scratch=$(mktemp -d)
+for round in 1 2 3; do
+  case "$round" in
+    1) profiles='baseline reader-only replacement-reader-only' ;;
+    2) profiles='reader-only replacement-reader-only baseline' ;;
+    3) profiles='replacement-reader-only baseline reader-only' ;;
+  esac
+  for profile in $profiles; do
+    sandbox-exec -p '(version 1)(allow default)(deny network*)' \
+      node --expose-gc scripts/measure-offline-index-native.mjs --profile "$profile" \
+      --old-cache /absolute/older-npm-cache --new-cache /absolute/newer-npm-cache \
+      --output "$scratch/run-$round-$profile.json" || exit 1
+  done
+done
+node scripts/summarize-offline-index-build-rss.mjs --runs-dir "$scratch" --output "$scratch/summary.json"
+```
