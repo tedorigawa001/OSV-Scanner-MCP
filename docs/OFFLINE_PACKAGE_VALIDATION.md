@@ -60,6 +60,28 @@ That refreshed kit was then copied again to an independent transfer location. Th
 
 The current record directly contains the seven `{domain, error}` results and the current runner SHA-256 `6aa84682bdc70a60a27c274f48cc508905731707ca2b46e5d68c686b1a33b2f9`. Earlier measurements, including the initially path-redacted record, remain available in Git history; the current record replaces neither source hashes nor results through postprocessing.
 
+## Linux arm64 package validation (2026-11-25)
+
+Two separate kits were prepared on Debian 12 arm64 with npm 11.16.0. The first used the exact published `osv-scanner-mcp@0.25.0` tarball and an expected SHA-512 integrity value obtained separately from the npm registry. The second used `npm pack` on the current product source at `d2ab9d6`. The published tag and the current checkout have identical production lock entries. The runner checks the archive integrity before extraction and checks its package name, version, dependencies, bin, engines and license against the source used for the lock. It also compares every installed application file with the tarball. [Published package](https://www.npmjs.com/package/osv-scanner-mcp/v/0.25.0)
+
+| Artifact | Verified files | SHA-256 and execution record |
+|---|---:|---|
+| npm registry tarball | 144 | [Registry run](validation/offline-package-linux-arm64-registry-2026-11-25.json) |
+| Current checkout tarball | 145 | [Checkout run](validation/offline-package-linux-arm64-checkout-2026-11-25.json) |
+
+Each kit includes official Node Linux arm64 executables from archives checked against their SHA-256 lists. Both use pinned OSV-Scanner 2.7.0 and the same complete Maven DB of 10,568,619 bytes, SHA-256 `ea7e02c8b9cef22362b54befc797a8fbf175d7bf615f0bc3edbfb82168a05130`, acquired at `2026-11-25T03:35:10.675Z`. The scanner hash matches the repository pin. The official Node 26.12.1 Linux arm64 binary requires `libatomic.so.1` on this base. Debian's `libatomic1:arm64` version `12.2.0-14+deb12u1` was provisioned on the target image before disconnecting. [Node archives](https://nodejs.org/dist/) · [OSV-Scanner 2.7.0](https://github.com/google/osv-scanner/releases/tag/v2.7.0)
+
+| Node | Offline install and MCP on both tarballs | Negative controls |
+|---|---|---|
+| 22.13.0, 24.18.0, 26.12.1 | Empty-target `npm ci` and all six MCP calls per installation passed | Empty npm cache returned `ENOTCACHED`; removing `yauzl` returned `ERR_MODULE_NOT_FOUND` |
+| 20.19.6 | Package validation stopped at dependency installation | `EBADENGINE` naming `osv-scanner-mcp` |
+
+All 36 successful MCP calls used the copied Maven DB and the actual installed executable. On each installation, `scan_project`, `scan_java_project` and `scan_sbom` found the same eight advisories for Log4j Core 2.14.1. `suggest_fix` recommended 2.25.4 after the local candidate check returned `clean` and all eight reported targets were `not_affected`. The `explain_vulnerability` calls for the GHSA ID and CVE alias returned identical detail hashes. The runner also verified native opened-file paths, CRC API availability and SIGTERM cleanup for each installed runtime.
+
+The disconnected container had a read-only system filesystem, a fresh writable `/tmp`, no global Node/npm and no network interface for external traffic. The Linux profile rejected creation of IPv4 and IPv6 sockets, and all eight runtime/artifact pairs got `EPERM` on both TCP controls. The application ran as UID 1000 with no capabilities. The original preparation volume was root-owned with mode `0700` and mounted read-only. The checkout, original npm cache, scanner, npm installation, original kit, Maven cache and original Node executable were confirmed to exist from the preparation side. All seven paths gave `EACCES` to the runner for each kit. Both records use domain labels and passed a recursive check for absolute paths. The execution records cover Debian 12 arm64 and the Maven fixture. Windows and Linux x64 full-package execution remain open. [Docker network isolation](https://docs.docker.com/engine/network/drivers/none/) · [Docker seccomp profiles](https://docs.docker.com/engine/security/seccomp/)
+
+Review added the independent integrity input and required it whenever a tarball is supplied. A Linux preparation run with the published tarball and an incorrect pin was rejected before creation of the consumer lock. The disconnected runner cross-checks the archive and scanner digests against the transferred bytes and probes the scanner version under network denial. Both kits were rebuilt and rerun with the same tarballs, runtimes, scanner and DB. The final source-side report passed 260 tests across seven files, including 49 package-validation cases. Type checking and a Linux build passed.
+
 ## Reproduction
 
 Use a fresh kit directory on a connected machine matching the disconnected target's OS/architecture, with the checkout's development dependencies already installed. Provision and verify the desired Node executables and native scanner, then prepare a complete Maven DB with the existing cache command. The preparation runner builds/packs this checkout and downloads only the locked runtime dependency archives; it never runs dependency installation scripts.
@@ -78,7 +100,7 @@ node scripts/validate-offline-package.mjs prepare \
   --rejected-node /absolute/node20/bin/node
 ```
 
-The `prepare` mode requires 22.13.0 plus representative 24/26 executables and a Node 20 negative control. It stores relative paths for the copied executables, a local `file:../application.tgz` dependency, npm itself and all other inputs. `kit.json` records the source/config hashes, expected package files and transfer-input digests. Run mode verifies the transferred runner itself against the prepared source hash, verifies the inputs, and copies the cache into its disposable working directory so repeat runs do not mutate the kit.
+The `prepare` mode requires 22.13.0 plus representative 24/26 executables and a Node 20 negative control. To test a published package archive, obtain it with `npm pack <package>@<version> --ignore-scripts` and obtain the expected SHA-512 value separately with `npm view <package>@<version> dist.integrity --registry https://registry.npmjs.org`. Add `--package-tarball /absolute/package.tgz --package-integrity "$registry_integrity"` to `prepare` using a checkout with the matching production lock. The runner stores relative paths for the copied executables, a local `file:../application.tgz` dependency, npm itself and all other inputs. `kit.json` records the source/config hashes, expected package files and transfer-input digests. Run mode verifies the transferred runner itself against the prepared source hash, verifies the inputs, and copies the cache into its disposable working directory so repeat runs do not mutate the kit.
 
 Copy the entire kit to another location/machine. The standalone runner then needs only the kit; it can run from an unrelated working directory. A regression JSON report is optional and must be separately transferred if `--test-report` is used. The final recorded run supplied the passing source-side report.
 
@@ -90,7 +112,28 @@ sandbox-exec -p '(version 1)(allow default)(deny network*)' \
   --kit /absolute/transferred-kit --output /absolute/package-record.json
 ```
 
-For the stronger original-input-denial reproduction, extend the profile with `(deny file-read* (subpath "/absolute/source"))` for each original root, and pass `--denied-path checkout=/absolute/source/package.json` (repeatable, `<domain>=<absolute path>`) for a known original path in each root. Include the original kit, Node, scanner, npm cache and DB roots as well as the checkout. Keep the output/report paths outside the denied roots. The record stores only each domain label and its error, not the host path. Run on macOS with an effective profile; an equivalent OS policy is needed elsewhere, and these results do not establish Linux/Windows installation or execution.
+On macOS, deny reads of original inputs by adding `(deny file-read* (subpath "/absolute/source"))` for each original root. Pass `--denied-path checkout=/absolute/source/package.json` (repeatable, `<domain>=<absolute path>`) for a known original path in each root. Include the original kit, Node, scanner, npm cache and DB roots as well as the checkout. Keep the output/report paths outside the denied roots. The record stores each domain label and its error.
+
+On Linux arm64, prepare separate original and transfer volumes. Give the root-owned original volume mode `0700`. Copy the complete kit to the transfer volume and give the test UID ownership of the transferred files and report directory. Prepare a Debian 12 arm64 runtime image with the system libraries required by the copied binaries, including `libatomic1` for the recorded Node 26.12.1 build. Omit global Node and npm. In the following command, `osv-package-runtime:arm64` is that image, and the source paths under `/original` match the preparation volume. Repeat with each prepared kit. Use the supplied [network-test profile](../scripts/offline-package-linux-seccomp.json) in a disposable container with `--network none`, dropped capabilities and a read-only root filesystem.
+
+```bash
+docker run --rm --platform linux/arm64 --network none --read-only \
+  --user 1000:1000 --cap-drop ALL --security-opt no-new-privileges \
+  --security-opt seccomp=scripts/offline-package-linux-seccomp.json \
+  --tmpfs /tmp:rw,exec,nosuid,nodev,size=1g,mode=1777 \
+  --mount type=volume,src=osv-package-prepared,dst=/original,readonly \
+  --mount type=volume,src=osv-package-transferred,dst=/transfer -w /tmp \
+  --entrypoint /transfer/kit/runtimes/v26.12.1/bin/node osv-package-runtime:arm64 \
+  /transfer/kit/validate-offline-package.mjs run \
+  --kit /transfer/kit --output /transfer/out/package-record.json \
+  --denied-path checkout=/original/repo/package.json \
+  --denied-path npm-cache=/original/node-cache/_cacache/index-v5 \
+  --denied-path scanner=/original/source-assets/osv-scanner \
+  --denied-path npm-install=/original/source-npm/bin/npm-cli.js \
+  --denied-path kit=/original/kit/kit.json \
+  --denied-path maven-db=/original/maven-cache/manifest.json \
+  --denied-path node-install=/original/source-assets/node-v22.13.0-linux-arm64/bin/node
+```
 
 For actual deployment, use the kit's consumer manifest/lock and `application.tgz` in their relative layout, and invoke the supplied Node/npm with:
 

@@ -1,0 +1,1195 @@
+{
+  "schema": 1,
+  "date": "2026-11-25T04:03:46.240Z",
+  "scope": "Linux-arm64-transfer-kit-offline-npm-install-and-real-MCP-package-runtime",
+  "kit_manifest_sha256": "c8a53e1f0f48669b313ce708d9ede95706d47d0698a0fd069b30bed071d01a1f",
+  "package": {
+    "name": "osv-scanner-mcp",
+    "version": "0.25.0",
+    "engines": {
+      "node": ">=22.13"
+    },
+    "artifact": "supplied_tarball",
+    "tarball_sha256": "0fee351c808e25536bee67c2d70ba67ff5981951b0444a893ef42fd53af3d22a",
+    "integrity": "sha512-UvgpOL4Ln9Dj1cO6AKsT2Gfzl6LCqdhwMmrCO8spOGqnz5C+R5i0WF9YKJyCbILf4VDLnl6jLVCH55OdO9suRw==",
+    "files": {
+      "dist/cache.js": {
+        "sha256": "55101761aa8d11d3ce62ba353296a6a7c389b9ec7c004adbb030000017679859",
+        "bytes": 1729
+      },
+      "dist/cli/e2P0Preflight.js": {
+        "sha256": "631364d13238b4088ddecbff604803d6a3e96c351081815c12c367ec3f7a1b69",
+        "bytes": 4184
+      },
+      "dist/errors.js": {
+        "sha256": "764f2ada1074353f6ea2cfa44a8f715f037971a94a0533ddf684950c2378894c",
+        "bytes": 515
+      },
+      "dist/history/historyDiff.js": {
+        "sha256": "4a0c9177995895af4e9ed8733cf00a5acd32ae1c868ffecf4cd761f475a34c68",
+        "bytes": 6136
+      },
+      "dist/history/historyRecord.js": {
+        "sha256": "5ed6566c2a67c648339202c615036dfb5895c5b0ace4c0eff2e13cac18c90d6b",
+        "bytes": 13460
+      },
+      "dist/history/historyRecorder.js": {
+        "sha256": "9b9e89acbd656b9ca7c87a9edbba7bc2a9de9145111e0874d6c87b570c1a666d",
+        "bytes": 2337
+      },
+      "dist/history/historyStore.js": {
+        "sha256": "74fe7c948615ceb1cb8c5d8b97c3a4641071bd63c206fc5bf71ee6a515073856",
+        "bytes": 7539
+      },
+      "dist/index.js": {
+        "sha256": "4bb711febee187c7520a9a4f19dd6a6c6044f78403a89b363eb39aec2935fa26",
+        "bytes": 24875
+      },
+      "dist/osv/affectedVersions.js": {
+        "sha256": "1eee784ed51d608b3acd7c94915d876e4a56927a6949ce89b54dc1b5b59c76b8",
+        "bytes": 7543
+      },
+      "dist/osv/artifactReport.js": {
+        "sha256": "63190950c23a77e1053e2b316a094719073c15f9e3df8fda4474f13b1e81d49b",
+        "bytes": 6528
+      },
+      "dist/osv/binaryDownloader.js": {
+        "sha256": "c103bd2ac595ee233c22545f541a914916175eb56b47feb2910597dea119978c",
+        "bytes": 8873
+      },
+      "dist/osv/binaryManager.js": {
+        "sha256": "1a133b2b33c05aa47841f3e11eee117b1204bc32f5deb63a5bf1132035b90c39",
+        "bytes": 5820
+      },
+      "dist/osv/candidateCheck.js": {
+        "sha256": "542f503c49c67fe8b7ceb305a1f0a732339a79fc6fa05315303889231c732895",
+        "bytes": 13680
+      },
+      "dist/osv/offline.js": {
+        "sha256": "4c1a91d95720b71c4146bbf11999a0a0f8fc0cc731bd072f555bb43470cfcd2c",
+        "bytes": 1532
+      },
+      "dist/osv/offlineCache.js": {
+        "sha256": "410931c21acd33fa9cc5058c9c91f66891b104e9f5438abffd734d73a35c2dac",
+        "bytes": 12612
+      },
+      "dist/osv/offlineCandidate.js": {
+        "sha256": "bfaf1ad49277c16dff19125cd39cc583edad7840edd8a30b1c6148bc5ab1b742",
+        "bytes": 5780
+      },
+      "dist/osv/offlineRecord.js": {
+        "sha256": "b8b4b0e87e28a4890f8486dbeffbe662d94acc3561a829993530e5c829cd6ea4",
+        "bytes": 21159
+      },
+      "dist/osv/osvApi.js": {
+        "sha256": "ad70363b6e50527503845fdde491b8f3fe70ce1bce923d6b83960f3c7413dbeb",
+        "bytes": 7519
+      },
+      "dist/osv/runner.js": {
+        "sha256": "e196fd83fac4521fb00a208e49cc10999b437da449558ebeaabf12995fb5ff2a",
+        "bytes": 13786
+      },
+      "dist/osv/sbomReport.js": {
+        "sha256": "ee57a66cb8337fa9d40d1b0ecfaf3a8532793c9f67f323d3863c3aeae385b654",
+        "bytes": 3032
+      },
+      "dist/osv/scanReport.js": {
+        "sha256": "69ab4bc8b57ff1f93ad5faadd56596785f0e4cdff6d24f1f1177fc74b6d39975",
+        "bytes": 14460
+      },
+      "dist/osv/suggestFix.js": {
+        "sha256": "6800c44464beb2556d6fb6ceaca5f3ca86dc8016f41f94a231a762ad03594123",
+        "bytes": 26976
+      },
+      "dist/osv/versionScheme.js": {
+        "sha256": "aaff251a3329fd3a7a5d99f7c21deada4f8824dbc8d18b1d9ea99f4f24744f28",
+        "bytes": 8628
+      },
+      "dist/osv/vulnerabilityExplanation.js": {
+        "sha256": "c4d33d5ff1859cde781d228649bd9c490b27311c9cda753fb1d77c465ba596c0",
+        "bytes": 5864
+      },
+      "dist/tools/explainVulnerability.js": {
+        "sha256": "07395dbc484647aca2edcd28d8abd68b8b23469df0497b6a09c78f88c265106c",
+        "bytes": 1819
+      },
+      "dist/tools/scanHistory.js": {
+        "sha256": "68a6d4a4c28e4c2b342746bbdbaebf1e97183e0259934ceb584c7280ca9ccc9e",
+        "bytes": 8201
+      },
+      "dist/tools/scanJavaArtifact.js": {
+        "sha256": "58f8f430fbed5a7c18421222e5dd5abf89e7d743e6baab796386cfe5de42d981",
+        "bytes": 2280
+      },
+      "dist/tools/scanJavaProject.js": {
+        "sha256": "e625fb132643057c68dca9e9d741b205a176df1fc4e92ef8f5bacd09080eb409",
+        "bytes": 8008
+      },
+      "dist/tools/scanProject.js": {
+        "sha256": "aff1ea15acfe6a7e9e5405127642814a040baf70a8782a9385b1d23b85fc3e93",
+        "bytes": 28320
+      },
+      "dist/tools/scanSbom.js": {
+        "sha256": "0cfc4ed854125668ac330dc77f798b0ef2d60fb2c07a4ebc155d974320e2891d",
+        "bytes": 1505
+      },
+      "dist/tools/suggestFix.js": {
+        "sha256": "c8450bfa057aa2b2b2d5e557db8eeeb7acf5bcd6cdfe6b86dbe5395660f9a22e",
+        "bytes": 3193
+      },
+      "dist/tools/toolResult.js": {
+        "sha256": "1d316dccf109262360aa8bc77afc6b2a42cfd848a2cbd1280c6d5ab3a3f04da7",
+        "bytes": 1975
+      },
+      "dist/utils/artifactDetector.js": {
+        "sha256": "a301d387307d96dfae799fcb7806c8ce68be566c4ae2cd23e7e52dcbfb02ea4a",
+        "bytes": 3162
+      },
+      "dist/utils/boundedToml.js": {
+        "sha256": "9d74532c91d82f163ed632d39f8121015fbbee307cca0193ce80ea0fd5ea9fa7",
+        "bytes": 2580
+      },
+      "dist/utils/bunLock.js": {
+        "sha256": "ba0b7b7997c48ff5ddca9fd37ad9c0187c00a8ddc04ce2e70aedc401b69e670a",
+        "bytes": 11288
+      },
+      "dist/utils/bunLockCache.js": {
+        "sha256": "c53c65c31a128ee19ae355b516fbadf5da45435e010de83b5665257f4ea26488",
+        "bytes": 1568
+      },
+      "dist/utils/cargoLock.js": {
+        "sha256": "2495998caa7591ee183528581ea2db1b7d3f50024eb2d1afa2beb4e0e4685840",
+        "bytes": 29339
+      },
+      "dist/utils/composerLock.js": {
+        "sha256": "f5e4c62373c6e47b442f1e277289ae7d9d8a50c7f6adc78eb28f71c20a65d2a5",
+        "bytes": 3021
+      },
+      "dist/utils/composerRelations.js": {
+        "sha256": "525f6e471796075749084422f67a3130c78bca79f454e4e0a252b36852fbe4ac",
+        "bytes": 3985
+      },
+      "dist/utils/composerVersion.js": {
+        "sha256": "f578ffb43882e0ce171dc9c6ebe3f678b0fcbbf366a65c5d9cda8ee06c9e364f",
+        "bytes": 1552
+      },
+      "dist/utils/dependencyRelations.js": {
+        "sha256": "96b93f6727bba708ea53b37cf8ae6b7e9893b2cae29d7c9226c964c877e0dfad",
+        "bytes": 21448
+      },
+      "dist/utils/externalText.js": {
+        "sha256": "467ccc66c1dd7678ef949edb1f41faae9f17d48dbd044702b7d285c5127cb976",
+        "bytes": 3026
+      },
+      "dist/utils/gradleCatalogs.js": {
+        "sha256": "c2bccdd9951b4e523020363d0892879f8bbd3e45d3da7015a9ff847de2fcb377",
+        "bytes": 9230
+      },
+      "dist/utils/gradleDeclarations.js": {
+        "sha256": "3cc1783630d384998ea146ed9a3bcca28ea79d239f89115cb4a3d0e8d719cb02",
+        "bytes": 23502
+      },
+      "dist/utils/gradleExportJson.js": {
+        "sha256": "6fedbca4d5c93405ab440262f7e0be689a1678a4d9c6ff05b81e89fd68b2c7a7",
+        "bytes": 3133
+      },
+      "dist/utils/gradleGraph.js": {
+        "sha256": "75fcc02daf11bbfb9e5b7148d62fedc273e0414e717d7c9e3d1cd5c47b4d5bc3",
+        "bytes": 13274
+      },
+      "dist/utils/gradleGraphCache.js": {
+        "sha256": "8c0c9e07224fec0e48ff203530e8b0f529824b394d71f4ff873a02281e434de5",
+        "bytes": 30531
+      },
+      "dist/utils/gradleJson.js": {
+        "sha256": "5937fd6df9c8ee52dbb600f5962771adff4630748489f8fd20e242e6c25ecaa5",
+        "bytes": 896
+      },
+      "dist/utils/gradleOrigins.js": {
+        "sha256": "db5e705e48224ad0d60585c8f1f355b12aec42e81046eb615fb7f22c1b13cf54",
+        "bytes": 6481
+      },
+      "dist/utils/gradleOwnedAnchorOwner.js": {
+        "sha256": "2dd16b5d0de3d9d577af436fad074d3b80b6e679eb5e4c5535bf05b1f5e52958",
+        "bytes": 11934
+      },
+      "dist/utils/gradleOwnedAuthorityClock.js": {
+        "sha256": "a76e20c1df55d698428e99ef6e122471d6c80917b9109311f8e88227363dba40",
+        "bytes": 1877
+      },
+      "dist/utils/gradleOwnedAuthorityOwner.js": {
+        "sha256": "f09735b9219ef033178dea96ce1d29392da95eddf786b87f884488a997f92682",
+        "bytes": 28543
+      },
+      "dist/utils/gradleOwnedAuthorityOwnerClient.js": {
+        "sha256": "d803b414370f6f5153a2c4c2ec5aafbe7e52869414719643d625ba20de74c22e",
+        "bytes": 6765
+      },
+      "dist/utils/gradleOwnedAuthorityOwnerSchema.js": {
+        "sha256": "add028db9754ba4aee3fbd6744b4fe8cdece9bf11a10b81be77e97a575ff18dd",
+        "bytes": 4237
+      },
+      "dist/utils/gradleOwnedAuthoritySchema.js": {
+        "sha256": "b1001723e6d976bafa2c1f54c10e4babc14d7fc9fbf5e968d21a4ef2406a9bb3",
+        "bytes": 4247
+      },
+      "dist/utils/gradleOwnedAuthoritySnapshot.js": {
+        "sha256": "03ff1752cba0ff8d44d5c8389a87c4b8fce6652c7c3b46f6719e3ded48f9503e",
+        "bytes": 15098
+      },
+      "dist/utils/gradleOwnedBusinessOutcome.js": {
+        "sha256": "01312e0c3ff4e523b1a91f73754baa2d9cb9994edbf1b113c6d64f910ff64652",
+        "bytes": 721
+      },
+      "dist/utils/gradleOwnedConsumerBridge.js": {
+        "sha256": "c467030baf853cc17bfc56defd44aac4f0866123b59ba3c9d7423ff11655288f",
+        "bytes": 7796
+      },
+      "dist/utils/gradleOwnedConsumerClient.js": {
+        "sha256": "4c55b1e84fb77004df1935014c63729e02a3be80a8e5fedfef896bdc7c0b0d2d",
+        "bytes": 3237
+      },
+      "dist/utils/gradleOwnedCurrentAuxiliary.js": {
+        "sha256": "2ddf94c0ced905a510b00b2ac329cc96de7898c9e25cc0db037611032e9f9511",
+        "bytes": 16567
+      },
+      "dist/utils/gradleOwnedCurrentBridge.js": {
+        "sha256": "00eb2c23f4d6f510c64a47ed1ba39ab0c30532bc4dff7408f8619fdd03b17395",
+        "bytes": 17120
+      },
+      "dist/utils/gradleOwnedCurrentClient.js": {
+        "sha256": "3a4ae57537d822e4adc2206d301da4cc3f208213c88fcdb42f7dd6f4e5b14a66",
+        "bytes": 1995
+      },
+      "dist/utils/gradleOwnedCurrentSchema.js": {
+        "sha256": "260ae972c1bd11cb812db1a4c1102d8e8675c817fdfb088acd85205b1fa5d16a",
+        "bytes": 14159
+      },
+      "dist/utils/gradleOwnedDeliverySchema.js": {
+        "sha256": "24552d3524241b8c6e5d29bf422e619ebf5e9ec9a62f9ea6a644c48f41048eb1",
+        "bytes": 2558
+      },
+      "dist/utils/gradleOwnedExecution.js": {
+        "sha256": "1a157fc060872358819d9a1e2be90299f6e4216100b6fbe791dd6785fab939f0",
+        "bytes": 11333
+      },
+      "dist/utils/gradleOwnedJournalV2.js": {
+        "sha256": "3e530bcc6a93760aaef01f6fd3eaed4babfdcc2bdca0e4eceb28e10536039eb0",
+        "bytes": 15885
+      },
+      "dist/utils/gradleOwnedJson.js": {
+        "sha256": "98fd09a9e7cb12f86d169610a80597de34bdf10227ac3f482d0a924357f54173",
+        "bytes": 3704
+      },
+      "dist/utils/gradleOwnedManifest.js": {
+        "sha256": "19027305dcf006f31632c7fcc768905d9008cc5d52783645948a207adb05d21c",
+        "bytes": 21542
+      },
+      "dist/utils/gradleOwnedP0Backend.js": {
+        "sha256": "8428a19317e92d33e1ff84dd8031fce5aeabbd840534a6a2e2665ef5a7f22492",
+        "bytes": 11114
+      },
+      "dist/utils/gradleOwnedP0Contract.js": {
+        "sha256": "e2e835c9d7440fc71a17a77aed9a77689b1b36430c3e66b1d358d7561f5f55cd",
+        "bytes": 22749
+      },
+      "dist/utils/gradleOwnedP0Runner.js": {
+        "sha256": "2acb81486323d6515617735ce14066325c2e93bec0fb3278d48e6c1ddf0b95a1",
+        "bytes": 6390
+      },
+      "dist/utils/gradleOwnedP0Socket.js": {
+        "sha256": "06cf0369a69aee361d022a92bc8c9222242daafdf2c8831b52e2d29050f87a74",
+        "bytes": 3401
+      },
+      "dist/utils/gradleOwnedP0StateCodec.js": {
+        "sha256": "0232fb26caa15cc23a441a7d9af5ea90d6836065ceec6d2fb84469a4f35419e6",
+        "bytes": 17803
+      },
+      "dist/utils/gradleOwnedP0StateContract.js": {
+        "sha256": "383e7ea95f986d6d749e745ba4a6dc0f416161892cfed1f4be67cc430ea320a5",
+        "bytes": 26582
+      },
+      "dist/utils/gradleOwnedP0StateGraph.js": {
+        "sha256": "53da743184d5a702acb4e8dd565eb56a0f4e80a71ce2c190a2287d63ae653e6e",
+        "bytes": 18879
+      },
+      "dist/utils/gradleOwnedP0StateMachine.js": {
+        "sha256": "2fb5938ebba50772dfd0564e48134cec0b53374bd79ada39b058aee6b88a2ca6",
+        "bytes": 6888
+      },
+      "dist/utils/gradleOwnedP1Contract.js": {
+        "sha256": "58018fcb04508bd797e4d2a70fad3a99c6d1a6f6a4a7f25113aad38a8d6a49d2",
+        "bytes": 7388
+      },
+      "dist/utils/gradleOwnedP1Store.js": {
+        "sha256": "b72babdb4213b61fb17a73595e288a02cb9ccdb3914d3840b8cf566836355dbe",
+        "bytes": 20280
+      },
+      "dist/utils/gradleOwnedPolicy.js": {
+        "sha256": "1959d7c886ffef4b22e5672c65317852eb8399625910878c1ec9fd5fa2a1cfb9",
+        "bytes": 10710
+      },
+      "dist/utils/gradleOwnedReadPlan.js": {
+        "sha256": "2a29073a4efd140648584f2d0bf64074639c6c16ca430f73a9cac2595ddba24d",
+        "bytes": 3603
+      },
+      "dist/utils/gradleOwnedRecovery.js": {
+        "sha256": "d4c88801711836f9c5a9c373d3578cca557f23345fd61cc1151e1d998ce0c46f",
+        "bytes": 6121
+      },
+      "dist/utils/gradleOwnedRecoverySchema.js": {
+        "sha256": "f6eb2b28fc9a49ab76425b6ae4951eb3bd4b6b546f9075356b973dd95f0a3501",
+        "bytes": 1209
+      },
+      "dist/utils/gradleOwnedRegistryOwner.js": {
+        "sha256": "4925f1a6cf5b47aaec41cafd32c8c0c1f681d2531e53d0cc719763f0218b0f1f",
+        "bytes": 43685
+      },
+      "dist/utils/gradleOwnedRegistrySchema.js": {
+        "sha256": "345487f70234fb0e0f08bfaa60e246a894567349abfe65832f9bb8b5cde95a01",
+        "bytes": 10990
+      },
+      "dist/utils/gradleOwnedRoleSigner.js": {
+        "sha256": "b458a5c70923a56d2216c29d7291ce3f31cc6acaae7ec02b61e598fcb88c533c",
+        "bytes": 11290
+      },
+      "dist/utils/gradleOwnedSchema.js": {
+        "sha256": "212b7143af0d5efef5b369935803058baf5e291f6156ec220c567cc2743b91b7",
+        "bytes": 10703
+      },
+      "dist/utils/gradleOwnedServiceBudget.js": {
+        "sha256": "9ba2fc865aece094107bba544d79fa302b17f889f1010d833f0f1fe30cd86792",
+        "bytes": 5356
+      },
+      "dist/utils/gradleOwnedServiceDrain.js": {
+        "sha256": "70e743d63dcf07db6c5b60ff0809d6ac54fe0e0058055cc2d986e47fb86c06db",
+        "bytes": 3412
+      },
+      "dist/utils/gradleOwnedServiceOwners.js": {
+        "sha256": "85e16f788b3c8cfc35039dd4ff4b8955ccdf3489dd9db0268e251961b88fed51",
+        "bytes": 16325
+      },
+      "dist/utils/gradleOwnedServiceSession.js": {
+        "sha256": "2514ccc1490c8648d1fc2b18b826c9365e0ffe5304819ea7d0cd28f9676d65bf",
+        "bytes": 17216
+      },
+      "dist/utils/gradleOwnedServiceStages.js": {
+        "sha256": "e966d656743a4441a56b39ca402121e6c15b5cf910da30e404d258cb0485abd0",
+        "bytes": 11353
+      },
+      "dist/utils/gradleOwnedSessionRuntime.js": {
+        "sha256": "0be0dd35c590e03f489501456be65529aa44689b3803227dc468de23321c3e98",
+        "bytes": 43141
+      },
+      "dist/utils/gradleOwnedSourceClient.js": {
+        "sha256": "7a52522baaff058643a10a43457a4d27566499ca7db1789d54ec89b77e7b8adf",
+        "bytes": 3745
+      },
+      "dist/utils/gradleOwnedSourceOwner.js": {
+        "sha256": "151f2c9552be313d8365b9e63316ff2973940e9b336169586dd8583d06f097df",
+        "bytes": 36150
+      },
+      "dist/utils/gradleOwnedSourceSchema.js": {
+        "sha256": "910b5a517398d7f0114f5a557f90b8894cd666e015fab99828c71660c6f39c94",
+        "bytes": 10242
+      },
+      "dist/utils/gradleOwnedStageStore.js": {
+        "sha256": "4be8571bb0979f0340a9994703d6b10c24ea3f8b6a5d0999bb1477de8981e5c9",
+        "bytes": 8563
+      },
+      "dist/utils/gradleOwnedStoreCheckpoint.js": {
+        "sha256": "66af67d1321980bec0ca18d6872a0cdced88af681564acea30b9c6eb3e3c887f",
+        "bytes": 4336
+      },
+      "dist/utils/gradleOwnedStoreDisk.js": {
+        "sha256": "afeeddb214ed4bae8e690bf00ae47e1054c0486d09a602d1fe0bf121adf3f68b",
+        "bytes": 4307
+      },
+      "dist/utils/gradleOwnedStoreFs.js": {
+        "sha256": "5c9ea8e3e3e00ad3d557ef48777af2ae52cdf872fa7b1ed823153238de778d91",
+        "bytes": 18385
+      },
+      "dist/utils/gradleOwnedStoreJournal.js": {
+        "sha256": "d678a3d2c7d65bbab79c94ea52149ebcdee560e012072f4ad77085f20e0711ec",
+        "bytes": 21696
+      },
+      "dist/utils/gradlePluginJar.js": {
+        "sha256": "b8a5ba57fc8ff304d615223b022550049fd4744560f328666d8a2a6a9d3060d0",
+        "bytes": 5998
+      },
+      "dist/utils/gradlePlugins.js": {
+        "sha256": "94973d7f3dc2185de1564cdd95ab7e18898cf136060f1638c0ad36b7f09279d7",
+        "bytes": 27414
+      },
+      "dist/utils/gradlePluginSnapshots.js": {
+        "sha256": "733ab10d103bbd1a968e2e6c8e4e4862e218de6d66bbd43d3c0f7ad384ca9a50",
+        "bytes": 10938
+      },
+      "dist/utils/manifestDetector.js": {
+        "sha256": "e380f81a2384de26d3d858e817ee4a3ef3729fcede3d58f407d833f8304fd8d8",
+        "bytes": 35326
+      },
+      "dist/utils/manifestFormats.js": {
+        "sha256": "dd9e7fc8c98d92c7815e5f994d6e73eca127fe9f695abbed4663cd51979e7b86",
+        "bytes": 1025
+      },
+      "dist/utils/mavenVersion.js": {
+        "sha256": "bad9a7eaa81d53f03dac858681656da37a144376e3e6be6a808bb1263edb6bd2",
+        "bytes": 7285
+      },
+      "dist/utils/npmLockCopy.js": {
+        "sha256": "05114074150692780d50c686399c2dc151b8412d1447fc0f73a8513e5978081c",
+        "bytes": 8092
+      },
+      "dist/utils/nugetDependencyGraph.js": {
+        "sha256": "a1f019ffba781375af2597745ed06a344e08b2102c0aae8b2b7fda9103525c91",
+        "bytes": 8111
+      },
+      "dist/utils/nugetFiles.js": {
+        "sha256": "8a580fbc0023969cfd2fdbf32309df30f8f5e251355f580cdd90eed2b88c1bbd",
+        "bytes": 25908
+      },
+      "dist/utils/nugetProject.js": {
+        "sha256": "25cf7feda117ab166ce48c6e8236bc6ca0532fba70181cd6a9cecea96ce8e41b",
+        "bytes": 21183
+      },
+      "dist/utils/nugetVersion.js": {
+        "sha256": "c9d10d792484e79d89c96d294f4a59e8319490d0d418e99090f732ca8e9c2a02",
+        "bytes": 1850
+      },
+      "dist/utils/openedFilePath.js": {
+        "sha256": "39ddff9bd4bd12122338624781811c061144e99fd66edd6fd4c9f0d223856796",
+        "bytes": 3158
+      },
+      "dist/utils/pdmLock.js": {
+        "sha256": "d981ab0be59546432d47deb1b78a8e7c40bc4bd6c7338ce7ca3e64478e7fe735",
+        "bytes": 22907
+      },
+      "dist/utils/pdmLockCache.js": {
+        "sha256": "62e9e5bef6cb1c5ff167e72751f5bb8fdecc971cbb872f0a838d4eb0d93b45f2",
+        "bytes": 2681
+      },
+      "dist/utils/pep440Version.js": {
+        "sha256": "9bdabed55753575e9c1279d5010a6a5a7663d5d71dea32936faffeb356e794d2",
+        "bytes": 4681
+      },
+      "dist/utils/permissionCheck.js": {
+        "sha256": "3b6dde01a5e7614546b814abaa1ce23b69cf4afe18d6f74abbc39de0ce50db37",
+        "bytes": 3523
+      },
+      "dist/utils/pipenvLock.js": {
+        "sha256": "f5260f69f53a6e9f61c87ffe340f0d6a92cbf282ddfd00a9273845282fd48863",
+        "bytes": 15608
+      },
+      "dist/utils/pipenvLockCache.js": {
+        "sha256": "ea3df23492d541774406d9bbc08f2b8788879282e4b436894a120fba27e30a63",
+        "bytes": 4728
+      },
+      "dist/utils/pnpmLockCache.js": {
+        "sha256": "34b05e482cf4e029f7dec6faa15231fd2ab499b063d085df32768473701c769a",
+        "bytes": 1521
+      },
+      "dist/utils/pnpmRelations.js": {
+        "sha256": "ff58aab50afaff1b7080ba6b71be51036eb916b4badc6207151cdc22912edc7c",
+        "bytes": 12143
+      },
+      "dist/utils/poetryLock.js": {
+        "sha256": "db640a6588731ed26164c474165beebe72a038a96a5ca17f34e5494aaa8e4a7f",
+        "bytes": 14927
+      },
+      "dist/utils/poetryLockCache.js": {
+        "sha256": "183b25f254814a4ba8878288caed9a37f2db834730e9f89dfa02f262f6f896c6",
+        "bytes": 2705
+      },
+      "dist/utils/pomParent.js": {
+        "sha256": "3f29f7b8f959ef5968be8992bed9b4c486c1d8c347b9a8d5e0284c2fed7fd7c8",
+        "bytes": 9012
+      },
+      "dist/utils/processCleanup.js": {
+        "sha256": "69da1146584c89c203080c99451a679da1e752744f3aed749e9d6877988059b2",
+        "bytes": 6099
+      },
+      "dist/utils/projectDetector.js": {
+        "sha256": "d1fc53be1cd331b7046bac30d4963bd1fc09770990a0bef05260b3534c5e0bd9",
+        "bytes": 5835
+      },
+      "dist/utils/projectWalk.js": {
+        "sha256": "67b8350167623796cd99a3857530a038f4802384f80f66be164b2221192d1388",
+        "bytes": 7290
+      },
+      "dist/utils/readResponseBytes.js": {
+        "sha256": "212bf2e4f6635ea8803331f9033a3ebd488c353334877b7aacb548fe22ce9359",
+        "bytes": 1068
+      },
+      "dist/utils/requirementsFile.js": {
+        "sha256": "4cc4d5f237f1295341fdf29ae89027b948afa9685169ebc7d2d1cd79872e10a9",
+        "bytes": 12573
+      },
+      "dist/utils/safeRead.js": {
+        "sha256": "97dbc8599d2e8aef5dadf8c2b24eb8a0bf650f91afb11382ac190dc6358e4952",
+        "bytes": 7036
+      },
+      "dist/utils/sbomInput.js": {
+        "sha256": "bc6b23948663b1515902b59fd7d262a5e4b195a1cd95e6fb75e5986e7f2a780b",
+        "bytes": 5793
+      },
+      "dist/utils/scanSnapshot.js": {
+        "sha256": "7dc47563e1dc0e58f3be4c500a4627887c528bffbd5ec60bd2d987933ac9aa1f",
+        "bytes": 14294
+      },
+      "dist/utils/semverVersion.js": {
+        "sha256": "ce8baa456a1c0972452c25840960e548bc6b9c660ca7eb940fe2c6bc2ae88abe",
+        "bytes": 3005
+      },
+      "dist/utils/startupConfig.js": {
+        "sha256": "462bb6a342a0a1139ea562c17fbac2e1f5aedb3b3601f6680b5fa382766b7f2e",
+        "bytes": 2393
+      },
+      "dist/utils/unknownJson.js": {
+        "sha256": "8d8a9dc836c3fb757d0d166625649515ba158da62d1a317482d2fb15785f1a82",
+        "bytes": 1095
+      },
+      "dist/utils/uvLock.js": {
+        "sha256": "552e13cf4c94b5daa38e98f536ba50953b64077310ee07defaa3082059f57122",
+        "bytes": 11959
+      },
+      "dist/utils/uvLockCache.js": {
+        "sha256": "57a154a609bb9ed0916821ef4c7a8d67d0d4beb85da8ba7a695f719f7174e4e2",
+        "bytes": 1515
+      },
+      "dist/utils/yarnLock.js": {
+        "sha256": "823c2d755fb3c82d50527495c5d6f05b819c921dd47e84adfa732e84eebbd1be",
+        "bytes": 17033
+      },
+      "dist/utils/yarnLockCache.js": {
+        "sha256": "7ca4c25fa22b6dc915dac4fc18ade9be6baf240635e01e7b1782b2d9dfc5ee8b",
+        "bytes": 3197
+      },
+      "gradle/export-dependency-graph.init.gradle": {
+        "sha256": "1a28ee5aaacd526d68f1989fa384ee75e7b4b2760d0cdc4539048c193859e952",
+        "bytes": 13898
+      },
+      "gradle/plugin-provenance.init.gradle": {
+        "sha256": "8a2e356fd397c35a6ac1b63840a309a4532f70bfcdf62560c2e6e45a8bf7f891",
+        "bytes": 24082
+      },
+      "gradle/register-declarations.init.gradle": {
+        "sha256": "c65d9fe5a8f22695b65f57ac6da5a5b63446a9ea071192a45e2ede189a21567e",
+        "bytes": 33486
+      },
+      "LICENSE": {
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+        "bytes": 11358
+      },
+      "package.json": {
+        "sha256": "05ab3568d99d42ce38886435af1982d12d128884f953f7bb7cb05455eec70561",
+        "bytes": 1932
+      },
+      "README.md": {
+        "sha256": "8d3df626461343d81334c8e2088011d16979daf081d8071a10258278d729ee40",
+        "bytes": 142956
+      }
+    }
+  },
+  "runtimes": [
+    {
+      "version": "v22.13.0",
+      "platform": "linux",
+      "arch": "arm64",
+      "node": "runtimes/v22.13.0/bin/node",
+      "sha256": "673aecd783dada5ee5fe6363401607d4380f88065a119c43628cfefe7eb3b876",
+      "supported": true
+    },
+    {
+      "version": "v24.18.0",
+      "platform": "linux",
+      "arch": "arm64",
+      "node": "runtimes/v24.18.0/bin/node",
+      "sha256": "6bf69d0eda41a12030d5f28d958cd09ce323bc0c13f1ab4d8bb426933aa08812",
+      "supported": true
+    },
+    {
+      "version": "v26.12.1",
+      "platform": "linux",
+      "arch": "arm64",
+      "node": "runtimes/v26.12.1/bin/node",
+      "sha256": "7d32bda549eb24395c1d9830731470a0045781b15797d5943591c333a085b2da",
+      "supported": true
+    },
+    {
+      "version": "v20.19.6",
+      "platform": "linux",
+      "arch": "arm64",
+      "node": "runtimes/v20.19.6/bin/node",
+      "sha256": "f1f6371ccca0a678c22c43c6cc05d515439de7ce67c18cd23a45f9cf414a890a",
+      "supported": false
+    }
+  ],
+  "npm": {
+    "version": "11.16.0"
+  },
+  "scanner": {
+    "sha256": "4061ef4c021ed3c47f203b818f337e351336cc5cd67c0274fc36bd1dfc728dd7",
+    "version": "osv-scanner version: 2.7.0"
+  },
+  "database_manifest": {
+    "schema": 1,
+    "databases": [
+      {
+        "ecosystem": "Maven",
+        "sha256": "ea7e02c8b9cef22362b54befc797a8fbf175d7bf615f0bc3edbfb82168a05130",
+        "bytes": 10568619,
+        "downloaded_at": "2026-11-25T03:35:10.675Z",
+        "url": "https://osv-vulnerabilities.storage.googleapis.com/Maven/all.zip"
+      }
+    ]
+  },
+  "prepared_input_digest": "3b818dec6f46fd0a1be6424b0be46e2d265db6d0f3e987befe16e3ee2490d48f",
+  "prepared_file_count": 2673,
+  "denied_original_reads": [
+    {
+      "domain": "checkout",
+      "error": "EACCES"
+    },
+    {
+      "domain": "npm-cache",
+      "error": "EACCES"
+    },
+    {
+      "domain": "scanner",
+      "error": "EACCES"
+    },
+    {
+      "domain": "npm-install",
+      "error": "EACCES"
+    },
+    {
+      "domain": "kit",
+      "error": "EACCES"
+    },
+    {
+      "domain": "maven-db",
+      "error": "EACCES"
+    },
+    {
+      "domain": "node-install",
+      "error": "EACCES"
+    }
+  ],
+  "results": [
+    {
+      "runtime": "v22.13.0",
+      "runtime_sha256": "673aecd783dada5ee5fe6363401607d4380f88065a119c43628cfefe7eb3b876",
+      "status": "verified",
+      "network_control": "EPERM",
+      "network_control_ipv6": "EPERM",
+      "install": {
+        "status": 0,
+        "offline": true,
+        "ignore_scripts": true,
+        "initially_empty": true
+      },
+      "packed_files_verified": 144,
+      "native_opened_file_probe": {
+        "matched": true,
+        "crc32": "function"
+      },
+      "session": {
+        "initialized": {
+          "protocolVersion": "2025-06-18",
+          "capabilities": {
+            "tools": {
+              "listChanged": true
+            }
+          },
+          "serverInfo": {
+            "name": "osv-scanner-mcp",
+            "version": "0.25.0"
+          }
+        },
+        "tools": [
+          "explain_vulnerability",
+          "scan_history",
+          "scan_java_artifact",
+          "scan_java_project",
+          "scan_project",
+          "scan_sbom",
+          "suggest_fix"
+        ],
+        "vulnerability_count": 8,
+        "java_vulnerability_count": 8,
+        "sbom_vulnerability_count": 8,
+        "advisory_ids": [
+          "GHSA-3pxv-7cmr-fjr4",
+          "GHSA-6hg6-v5c8-fphq",
+          "GHSA-7rjr-3q55-vv33",
+          "GHSA-8489-44mv-ggj8",
+          "GHSA-h383-gmxw-35v2",
+          "GHSA-jfh8-c2jp-5v3q",
+          "GHSA-p6xc-xr62-6r2g",
+          "GHSA-vc5p-v9hr-52mj"
+        ],
+        "candidate": {
+          "package": "org.apache.logging.log4j:log4j-core",
+          "current_version": "2.14.1",
+          "ecosystem": "Maven",
+          "dependency_relation": "direct",
+          "recommended_upgrade": "2.25.4",
+          "upgrade_tier": "major_internal",
+          "upgrade_note": "Recommends 2.25.4 within the same major version (2.x). Based on the affected ranges retrieved, it is outside the ranges of all 8 CVEs to fix. It is not guaranteed to be the smallest such published version or free of undetected vulnerabilities. Offline mode: no additional fix-target vulnerabilities were found in the local database snapshot. Newer advisories are not covered; this does not establish safety",
+          "update_hint": "Direct dependency. Update the version in the <dependency> of pom.xml. If the version is managed by <dependencyManagement> in a parent POM, a property, or a BOM, update it there",
+          "candidate_check": "clean",
+          "candidate_check_source": "local_database",
+          "per_cve_detail": [
+            {
+              "id": "GHSA-jfh8-c2jp-5v3q",
+              "cve": "CVE-2021-44228",
+              "severity": "critical",
+              "fixed_in": "2.15.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-7rjr-3q55-vv33",
+              "cve": "CVE-2021-45046",
+              "severity": "critical",
+              "fixed_in": "2.16.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-p6xc-xr62-6r2g",
+              "cve": "CVE-2021-45105",
+              "severity": "high",
+              "fixed_in": "2.17.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-3pxv-7cmr-fjr4",
+              "cve": "CVE-2026-34480",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-h383-gmxw-35v2",
+              "cve": "CVE-2026-34479",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-8489-44mv-ggj8",
+              "cve": "CVE-2021-44832",
+              "severity": "medium",
+              "fixed_in": "2.17.1",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-6hg6-v5c8-fphq",
+              "cve": "CVE-2026-34477",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-vc5p-v9hr-52mj",
+              "cve": "CVE-2025-68161",
+              "severity": "medium",
+              "fixed_in": "2.25.3",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            }
+          ],
+          "verification": "verified"
+        },
+        "explanations": [
+          {
+            "requested_id": "GHSA-jfh8-c2jp-5v3q",
+            "matched_by": "id",
+            "id": "GHSA-jfh8-c2jp-5v3q",
+            "details_sha256": "62a5a77dcbd4a2595b4c6106cc729a7dc83c2cfc5cf861a3e6529e85127305ef"
+          },
+          {
+            "requested_id": "CVE-2021-44228",
+            "matched_by": "alias",
+            "id": "GHSA-jfh8-c2jp-5v3q",
+            "details_sha256": "62a5a77dcbd4a2595b4c6106cc729a7dc83c2cfc5cf861a3e6529e85127305ef"
+          }
+        ],
+        "offline_database": {
+          "mode": "offline",
+          "network_requests": false,
+          "max_age_hours": 168,
+          "databases": [
+            {
+              "ecosystem": "Maven",
+              "downloaded_at": "2026-11-25T03:35:10.675Z",
+              "sha256": "ea7e02c8b9cef22362b54befc797a8fbf175d7bf615f0bc3edbfb82168a05130"
+            }
+          ],
+          "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+        }
+      },
+      "negative_controls": {
+        "missing_dependency": "ERR_MODULE_NOT_FOUND",
+        "empty_npm_cache": "ENOTCACHED"
+      }
+    },
+    {
+      "runtime": "v24.18.0",
+      "runtime_sha256": "6bf69d0eda41a12030d5f28d958cd09ce323bc0c13f1ab4d8bb426933aa08812",
+      "status": "verified",
+      "network_control": "EPERM",
+      "network_control_ipv6": "EPERM",
+      "install": {
+        "status": 0,
+        "offline": true,
+        "ignore_scripts": true,
+        "initially_empty": true
+      },
+      "packed_files_verified": 144,
+      "native_opened_file_probe": {
+        "matched": true,
+        "crc32": "function"
+      },
+      "session": {
+        "initialized": {
+          "protocolVersion": "2025-06-18",
+          "capabilities": {
+            "tools": {
+              "listChanged": true
+            }
+          },
+          "serverInfo": {
+            "name": "osv-scanner-mcp",
+            "version": "0.25.0"
+          }
+        },
+        "tools": [
+          "explain_vulnerability",
+          "scan_history",
+          "scan_java_artifact",
+          "scan_java_project",
+          "scan_project",
+          "scan_sbom",
+          "suggest_fix"
+        ],
+        "vulnerability_count": 8,
+        "java_vulnerability_count": 8,
+        "sbom_vulnerability_count": 8,
+        "advisory_ids": [
+          "GHSA-3pxv-7cmr-fjr4",
+          "GHSA-6hg6-v5c8-fphq",
+          "GHSA-7rjr-3q55-vv33",
+          "GHSA-8489-44mv-ggj8",
+          "GHSA-h383-gmxw-35v2",
+          "GHSA-jfh8-c2jp-5v3q",
+          "GHSA-p6xc-xr62-6r2g",
+          "GHSA-vc5p-v9hr-52mj"
+        ],
+        "candidate": {
+          "package": "org.apache.logging.log4j:log4j-core",
+          "current_version": "2.14.1",
+          "ecosystem": "Maven",
+          "dependency_relation": "direct",
+          "recommended_upgrade": "2.25.4",
+          "upgrade_tier": "major_internal",
+          "upgrade_note": "Recommends 2.25.4 within the same major version (2.x). Based on the affected ranges retrieved, it is outside the ranges of all 8 CVEs to fix. It is not guaranteed to be the smallest such published version or free of undetected vulnerabilities. Offline mode: no additional fix-target vulnerabilities were found in the local database snapshot. Newer advisories are not covered; this does not establish safety",
+          "update_hint": "Direct dependency. Update the version in the <dependency> of pom.xml. If the version is managed by <dependencyManagement> in a parent POM, a property, or a BOM, update it there",
+          "candidate_check": "clean",
+          "candidate_check_source": "local_database",
+          "per_cve_detail": [
+            {
+              "id": "GHSA-jfh8-c2jp-5v3q",
+              "cve": "CVE-2021-44228",
+              "severity": "critical",
+              "fixed_in": "2.15.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-7rjr-3q55-vv33",
+              "cve": "CVE-2021-45046",
+              "severity": "critical",
+              "fixed_in": "2.16.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-p6xc-xr62-6r2g",
+              "cve": "CVE-2021-45105",
+              "severity": "high",
+              "fixed_in": "2.17.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-3pxv-7cmr-fjr4",
+              "cve": "CVE-2026-34480",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-h383-gmxw-35v2",
+              "cve": "CVE-2026-34479",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-8489-44mv-ggj8",
+              "cve": "CVE-2021-44832",
+              "severity": "medium",
+              "fixed_in": "2.17.1",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-6hg6-v5c8-fphq",
+              "cve": "CVE-2026-34477",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-vc5p-v9hr-52mj",
+              "cve": "CVE-2025-68161",
+              "severity": "medium",
+              "fixed_in": "2.25.3",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            }
+          ],
+          "verification": "verified"
+        },
+        "explanations": [
+          {
+            "requested_id": "GHSA-jfh8-c2jp-5v3q",
+            "matched_by": "id",
+            "id": "GHSA-jfh8-c2jp-5v3q",
+            "details_sha256": "62a5a77dcbd4a2595b4c6106cc729a7dc83c2cfc5cf861a3e6529e85127305ef"
+          },
+          {
+            "requested_id": "CVE-2021-44228",
+            "matched_by": "alias",
+            "id": "GHSA-jfh8-c2jp-5v3q",
+            "details_sha256": "62a5a77dcbd4a2595b4c6106cc729a7dc83c2cfc5cf861a3e6529e85127305ef"
+          }
+        ],
+        "offline_database": {
+          "mode": "offline",
+          "network_requests": false,
+          "max_age_hours": 168,
+          "databases": [
+            {
+              "ecosystem": "Maven",
+              "downloaded_at": "2026-11-25T03:35:10.675Z",
+              "sha256": "ea7e02c8b9cef22362b54befc797a8fbf175d7bf615f0bc3edbfb82168a05130"
+            }
+          ],
+          "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+        }
+      },
+      "negative_controls": {
+        "missing_dependency": "ERR_MODULE_NOT_FOUND",
+        "empty_npm_cache": "ENOTCACHED"
+      }
+    },
+    {
+      "runtime": "v26.12.1",
+      "runtime_sha256": "7d32bda549eb24395c1d9830731470a0045781b15797d5943591c333a085b2da",
+      "status": "verified",
+      "network_control": "EPERM",
+      "network_control_ipv6": "EPERM",
+      "install": {
+        "status": 0,
+        "offline": true,
+        "ignore_scripts": true,
+        "initially_empty": true
+      },
+      "packed_files_verified": 144,
+      "native_opened_file_probe": {
+        "matched": true,
+        "crc32": "function"
+      },
+      "session": {
+        "initialized": {
+          "protocolVersion": "2025-06-18",
+          "capabilities": {
+            "tools": {
+              "listChanged": true
+            }
+          },
+          "serverInfo": {
+            "name": "osv-scanner-mcp",
+            "version": "0.25.0"
+          }
+        },
+        "tools": [
+          "explain_vulnerability",
+          "scan_history",
+          "scan_java_artifact",
+          "scan_java_project",
+          "scan_project",
+          "scan_sbom",
+          "suggest_fix"
+        ],
+        "vulnerability_count": 8,
+        "java_vulnerability_count": 8,
+        "sbom_vulnerability_count": 8,
+        "advisory_ids": [
+          "GHSA-3pxv-7cmr-fjr4",
+          "GHSA-6hg6-v5c8-fphq",
+          "GHSA-7rjr-3q55-vv33",
+          "GHSA-8489-44mv-ggj8",
+          "GHSA-h383-gmxw-35v2",
+          "GHSA-jfh8-c2jp-5v3q",
+          "GHSA-p6xc-xr62-6r2g",
+          "GHSA-vc5p-v9hr-52mj"
+        ],
+        "candidate": {
+          "package": "org.apache.logging.log4j:log4j-core",
+          "current_version": "2.14.1",
+          "ecosystem": "Maven",
+          "dependency_relation": "direct",
+          "recommended_upgrade": "2.25.4",
+          "upgrade_tier": "major_internal",
+          "upgrade_note": "Recommends 2.25.4 within the same major version (2.x). Based on the affected ranges retrieved, it is outside the ranges of all 8 CVEs to fix. It is not guaranteed to be the smallest such published version or free of undetected vulnerabilities. Offline mode: no additional fix-target vulnerabilities were found in the local database snapshot. Newer advisories are not covered; this does not establish safety",
+          "update_hint": "Direct dependency. Update the version in the <dependency> of pom.xml. If the version is managed by <dependencyManagement> in a parent POM, a property, or a BOM, update it there",
+          "candidate_check": "clean",
+          "candidate_check_source": "local_database",
+          "per_cve_detail": [
+            {
+              "id": "GHSA-jfh8-c2jp-5v3q",
+              "cve": "CVE-2021-44228",
+              "severity": "critical",
+              "fixed_in": "2.15.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-7rjr-3q55-vv33",
+              "cve": "CVE-2021-45046",
+              "severity": "critical",
+              "fixed_in": "2.16.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-p6xc-xr62-6r2g",
+              "cve": "CVE-2021-45105",
+              "severity": "high",
+              "fixed_in": "2.17.0",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-3pxv-7cmr-fjr4",
+              "cve": "CVE-2026-34480",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-h383-gmxw-35v2",
+              "cve": "CVE-2026-34479",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-8489-44mv-ggj8",
+              "cve": "CVE-2021-44832",
+              "severity": "medium",
+              "fixed_in": "2.17.1",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-6hg6-v5c8-fphq",
+              "cve": "CVE-2026-34477",
+              "severity": "medium",
+              "fixed_in": "2.25.4",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            },
+            {
+              "id": "GHSA-vc5p-v9hr-52mj",
+              "cve": "CVE-2025-68161",
+              "severity": "medium",
+              "fixed_in": "2.25.3",
+              "tier": "major_internal",
+              "recommended_status": "not_affected"
+            }
+          ],
+          "verification": "verified"
+        },
+        "explanations": [
+          {
+            "requested_id": "GHSA-jfh8-c2jp-5v3q",
+            "matched_by": "id",
+            "id": "GHSA-jfh8-c2jp-5v3q",
+            "details_sha256": "62a5a77dcbd4a2595b4c6106cc729a7dc83c2cfc5cf861a3e6529e85127305ef"
+          },
+          {
+            "requested_id": "CVE-2021-44228",
+            "matched_by": "alias",
+            "id": "GHSA-jfh8-c2jp-5v3q",
+            "details_sha256": "62a5a77dcbd4a2595b4c6106cc729a7dc83c2cfc5cf861a3e6529e85127305ef"
+          }
+        ],
+        "offline_database": {
+          "mode": "offline",
+          "network_requests": false,
+          "max_age_hours": 168,
+          "databases": [
+            {
+              "ecosystem": "Maven",
+              "downloaded_at": "2026-11-25T03:35:10.675Z",
+              "sha256": "ea7e02c8b9cef22362b54befc797a8fbf175d7bf615f0bc3edbfb82168a05130"
+            }
+          ],
+          "warning": "Results use a local database snapshot and do not include vulnerabilities published after it was downloaded"
+        }
+      },
+      "negative_controls": {
+        "missing_dependency": "ERR_MODULE_NOT_FOUND",
+        "empty_npm_cache": "ENOTCACHED"
+      }
+    },
+    {
+      "runtime": "v20.19.6",
+      "status": "engine-rejected",
+      "network_control": "EPERM",
+      "network_control_ipv6": "EPERM",
+      "exit_code": 1
+    }
+  ],
+  "sources": {
+    "scripts/validate-offline-package.mjs": "6462eb267988320f6993c5845b9f1fb0becc338dd3f41cb81ea79a31efad69ba",
+    "src/test/osv/offlinePackageValidation.test.ts": "2382fd048b8a545eab420a894c6c1603dd92b8c17de686e66a3286026c9e35d8",
+    "package.json": "05ab3568d99d42ce38886435af1982d12d128884f953f7bb7cb05455eec70561",
+    "package-lock.json": "24d8ef47362b42df45e70c9f8995e1cca816618d55aaa57994698babffbea5cb",
+    ".github/workflows/ci.yml": "f5229f2167dbddf9afea6b03d238e3899e1a94045d0710deb8518aef0ef23746",
+    "scripts/offline-package-linux-seccomp.json": "384075c3138807c8f280e368029684767bcb8014eee9ada36423a6c1764a57b9"
+  },
+  "regressions": {
+    "passed": 260,
+    "failed": 0,
+    "skipped": 0,
+    "files": 7,
+    "report_sha256": "3079861d05e0813bf497a0929024b838878b3e7ae0c81145c7f91208edc594c2"
+  }
+}

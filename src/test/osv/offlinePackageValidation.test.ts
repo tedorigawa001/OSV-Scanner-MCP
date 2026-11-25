@@ -1,6 +1,10 @@
+import {createHash} from 'node:crypto';
+import {mkdtemp, rm, writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join, resolve} from 'node:path';
 import {expect, it} from 'vitest';
 // @ts-ignore Executable validation artifact, separate from the shipped server.
-import {productionConsumerLock, checkInstalledFiles, checkPackageScan, checkMatrix, checkShutdown, main} from '../../../scripts/validate-offline-package.mjs';
+import {productionConsumerLock, checkArchiveIntegrity, checkInstalledFiles, checkPackedMetadata, checkPackageScan, checkMatrix, checkShutdown, main, packageScope} from '../../../scripts/validate-offline-package.mjs';
 
 const copy = <T>(value: T): T => structuredClone(value);
 const pkg = {name: 'osv-scanner-mcp', version: '0.23.0', dependencies: {runtime: '1.0.0'},
@@ -25,6 +29,40 @@ it('preserves exact production/nested/optional dependency pins and binds the pac
 it.each(['format', 'package'])('rejects an unexpected source lock/package (%s)', mode => {
   expect(() => productionConsumerLock(mode === 'format' ? {...source, lockfileVersion: 2} : source,
     mode === 'package' ? {...pkg, name: 'other'} : pkg, 'sha512-application')).toThrow();
+});
+
+it('accepts a supplied archive with the exact version and runtime package metadata', () => {
+  expect(() => checkPackedMetadata(pkg, copy(pkg))).not.toThrow();
+});
+it('rejects changed archive bytes against the supplied SHA-512 pin', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'offline-archive-integrity-'));
+  const file = join(dir, 'application.tgz');
+  const expected = 'sha512-' + createHash('sha512').update('registry bytes').digest('base64');
+  try {
+    await writeFile(file, 'registry bytes');
+    await expect(checkArchiveIntegrity(file, expected)).resolves.toBeUndefined();
+    await writeFile(file, 'changed bytes');
+    await expect(checkArchiveIntegrity(file, expected)).rejects.toThrow('Package tarball differs from the SHA-512 integrity pin');
+  } finally { await rm(dir, {recursive: true, force: true}); }
+});
+it.each(['tarball', 'integrity'])('rejects a supplied %s without the matching archive argument before filesystem access', async mode => {
+  const placeholder = resolve('unused-offline-archive-argument');
+  const args = ['prepare', ...['--directory', '--database-cache', '--scanner', '--rejected-node', '--npm-cli'].flatMap(flag => [flag, placeholder])];
+  if (mode === 'tarball') args.push('--package-tarball', placeholder);
+  else args.push('--package-integrity', 'sha512-' + createHash('sha512').update('registry bytes').digest('base64'));
+  await expect(main(args)).rejects.toThrow('Supply --package-tarball and --package-integrity together');
+});
+it.each(['name', 'version', 'dependencies', 'bin', 'engines', 'license'])('rejects supplied archive metadata that differs in %s', field => {
+  expect(() => checkPackedMetadata(pkg, {...pkg, [field]: null})).toThrow('Packed package does not match the dependency-lock checkout: ' + field);
+});
+it.each([['darwin', 'arm64', 'macOS-arm64'], ['linux', 'arm64', 'Linux-arm64'], ['linux', 'x64', 'Linux-x64']])(
+  'records the measured OS and architecture for %s %s', (platform, arch, prefix) => {
+    expect(packageScope(platform, arch)).toBe(prefix + '-transfer-kit-offline-npm-install-and-real-MCP-package-runtime');
+  },
+);
+it('rejects an unimplemented OS and architecture', () => {
+  expect(() => packageScope('win32', 'x64')).toThrow('Unsupported package validation platform or architecture');
+  expect(() => packageScope('linux', 'ia32')).toThrow('Unsupported package validation platform or architecture');
 });
 
 const files = {'dist/index.js': {sha256: 'a'.repeat(64), bytes: 10}, 'gradle/plugin-provenance.init.gradle': {sha256: 'b'.repeat(64), bytes: 20}};
