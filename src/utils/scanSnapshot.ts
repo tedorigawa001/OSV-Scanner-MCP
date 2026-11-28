@@ -184,13 +184,15 @@ const UNPARSEABLE =
 interface PomContext {
   projectDir: string;
   allowedRootReal: string | undefined;
-  /** Report the Maven-specific restriction when remote resolution is otherwise enabled. */
-  remoteResolution?: boolean;
 }
 
+/**
+ * Mavenのリモート解決を無効にしたことの警告(dependency_resolution.warning)。
+ * 解決しない設定(OSV_MCP_NO_REMOTE_RESOLUTION・オフライン)と同じく応答の先頭付近で伝え、
+ * POMごとのcoverageの理由にはしない(設定によってcoverage.completeが食い違わないように)
+ */
 export const MAVEN_RESOLUTION_WARNING =
   "Maven remote resolution is disabled to restrict repository access. Dependencies that require remote parent POMs, imported BOMs, or transitive resolution may be missing from the results";
-const REPOSITORIES_REMOVED = "Repository declarations were removed from the scanned POM or its local parent copies";
 
 /**
  * pom.xmlと親POMの連鎖をスナップショットへコピーする。
@@ -206,18 +208,8 @@ async function snapshotPom(
   const copied = await snapshot.copyPom(pomPath, context.projectDir);
   if (!copied.ok) return { ok: false, reason: capitalizeReason(copied.message), kind: "unreadable" };
   if (copied.repositories === undefined) return { ok: false, reason: UNPARSEABLE, kind: "unreadable" };
-  let repositories = copied.repositories;
-  const resolutionNote = () => context.remoteResolution === true
-    ? repositories > 0 ? `${MAVEN_RESOLUTION_WARNING}. ${REPOSITORIES_REMOVED}` : MAVEN_RESOLUTION_WARNING
-    : undefined;
-  const done = () => {
-    const note = resolutionNote();
-    return note === undefined ? { ok: true as const, path: copied.path } : { ok: true as const, path: copied.path, incomplete: note };
-  };
-  const partial = (reason: string) => {
-    const note = resolutionNote();
-    return { ok: true as const, path: copied.path, incomplete: note === undefined ? reason : `${reason}. ${note}` };
-  };
+  const done = () => ({ ok: true as const, path: copied.path });
+  const partial = (reason: string) => ({ ...done(), incomplete: reason });
   let current = pomPath;
   let currentCopy = copied.path;
 
@@ -262,7 +254,6 @@ async function snapshotPom(
       );
     }
     if (parent.repositories === undefined) return { ok: false, reason: `Parent POM: ${UNPARSEABLE}`, kind: "unreadable" };
-    repositories += parent.repositories;
     current = candidate;
     currentCopy = parent.path;
   }

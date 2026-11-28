@@ -279,7 +279,7 @@ Both api.osv.dev and deps.dev are operated by Google. In default online mode, na
 
 - Set `OSV_MCP_NO_REMOTE_RESOLUTION=1` to stop sending `requirements.txt` data to deps.dev. Responses report `transitive_resolution: "disabled"` with a warning. OSV vulnerability lookups continue. A lockfile with resolved versions (`gradle.lockfile`, `poetry.lock`, and so on) can still cover transitive dependencies.
 - The server disables OSV-Scanner’s Maven remote resolver, which could follow repository declarations in remotely fetched parents even in deps.dev mode. Remote parent POMs, imported BOMs, and dependencies that require Maven transitive resolution may therefore be absent from the results. The server removes `<repositories>` and `<pluginRepositories>` from private copies, including declarations inside `<profiles>`, and rejects any remaining parent reference to an unverified copy. The original files remain intact.
-- When other remote resolution is enabled, responses identify the Maven restriction with `maven_transitive_resolution: "disabled"` in `dependency_resolution`. Maven POMs are listed with a reason in `coverage.skipped_files` (`incomplete_manifests` for `scan_java_project`). A scan containing both a POM and scannable `requirements.txt` entries can still show `transitive_resolution: "enabled"` for Python.
+- When other remote resolution is enabled, responses identify the Maven restriction with `maven_transitive_resolution: "disabled"` and a warning in `dependency_resolution`, as with `OSV_MCP_NO_REMOTE_RESOLUTION=1`. It does not lower `coverage.complete`. A scan containing both a POM and scannable `requirements.txt` entries can still show `transitive_resolution: "enabled"` for Python.
 
 ## Tools
 
@@ -713,7 +713,6 @@ If an existing parent POM cannot be read (larger than 10 MiB, not a regular file
   "project_dir": "/path/to/project",
   "manifests": ["pom.xml"],
   "dependency_resolution": { "transitive_resolution": "disabled", "maven_transitive_resolution": "disabled", "warning": "…" },
-  "incomplete_manifests": [{ "path": "pom.xml", "reason": "…" }],
   "source_files": ["/path/to/project/pom.xml"],
   "vulnerable_package_count": 4,
   "vulnerability_count": 14,
@@ -816,7 +815,7 @@ For npm, Go, PyPI, and Rust, the "same release line" is the range a caret (`^`) 
   "project_dir": "/path/to/project",
   "manifests": ["pom.xml", "web/package-lock.json"],
   "dependency_resolution": { "transitive_resolution": "disabled", "maven_transitive_resolution": "disabled", "warning": "…" },
-  "coverage": { "complete": false, "manifests": [ ... ], "lockfile_missing": [], "unpinned_requirements": [], "unscannable_requirements": [], "skipped_files": [{ "path": "pom.xml", "reason": "…" }] },
+  "coverage": { "complete": true, "manifests": [ ... ], "lockfile_missing": [], "unpinned_requirements": [], "unscannable_requirements": [], "skipped_files": [] },
   "vulnerable_package_count": 4,
   "unfixed_vulnerability_count": 1,
   "suggestions": [

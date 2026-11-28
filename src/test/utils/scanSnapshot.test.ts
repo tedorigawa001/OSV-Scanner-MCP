@@ -291,7 +291,7 @@ describe("ScanSnapshot", () => {
       const result = await snapshotManifests(snapshot, [
         { path: child, format: "pom.xml" },
         { path: parent, format: "gradle.lockfile" },
-      ], { projectDir: path.join(base, "root"), allowedRootReal: undefined, remoteResolution: true });
+      ], { projectDir: path.join(base, "root"), allowedRootReal: undefined });
       expect(result.targets.map(target => target.format)).toEqual(["gradle.lockfile"]);
       expect(result.skipped).toEqual([{ path: child, kind: "unreadable", reason: expect.stringContaining("repository declaration verification") }]);
       expect(result.incomplete).toEqual([]);
@@ -476,14 +476,14 @@ process.exit(127);`);
 
 describe("リポジトリの宣言の除去(脆弱性チェック、2026-11-28)", () => {
   const repos = (url: string) => `<repositories><repository><id>r</id><url>${url}</url></repository></repositories>`;
-  it.each([true, false])("removes declarations from scanned copies of the POM and its parent (remote resolution: %s)", async (remoteResolution) => {
+  it("removes declarations from scanned copies of the POM and its parent", async () => {
     const parent = `<project>${gav}<packaging>pom</packaging>${repos("http://127.0.0.1:9/parent")}</project>`;
     const child = `<project><parent>${gav}<relativePath>../pom.xml</relativePath></parent><artifactId>c</artifactId>${repos("http://127.0.0.1:9/child")}</project>`;
     const base = await makeTree({ "root/pom.xml": parent, "root/mod/pom.xml": child });
     const snapshot = await ScanSnapshot.create();
     try {
       const { targets, skipped, incomplete } = await snapshotManifests(snapshot, [{ path: path.join(base, "root/mod/pom.xml"), format: "pom.xml" }], {
-        projectDir: path.join(base, "root/mod"), allowedRootReal: undefined, remoteResolution,
+        projectDir: path.join(base, "root/mod"), allowedRootReal: undefined,
       });
       expect(skipped).toEqual([]);
       const copies = [await readFile(targets[0]!.path, "utf8"), await readFile(path.join(path.dirname(targets[0]!.path), "../pom.xml"), "utf8")];
@@ -492,21 +492,22 @@ describe("リポジトリの宣言の除去(脆弱性チェック、2026-11-28)"
       expect(copies[1]).toContain("<packaging>pom</packaging>");
       // 元のファイルは変えない
       expect(await readFile(path.join(base, "root/mod/pom.xml"), "utf8")).toBe(child);
-      expect(incomplete).toEqual(remoteResolution ? [{ path: path.join(base, "root/mod/pom.xml"), reason: expect.stringContaining("Repository declarations") }] : []);
+      // Mavenのリモート解決は無効のため、取り除いた宣言は結果に影響しない(dependency_resolutionで伝える)
+      expect(incomplete).toEqual([]);
     } finally {
       await snapshot.cleanup();
     }
   });
 
-  it("reports the Maven resolution restriction even for a POM without repository declarations", async () => {
+  it("does not add a per-POM coverage note for the Maven resolution restriction", async () => {
     const base = await makeTree({ "root/pom.xml": `<project>${gav}</project>` });
     const snapshot = await ScanSnapshot.create();
     try {
       const result = await snapshotManifests(snapshot, [{ path: path.join(base, "root/pom.xml"), format: "pom.xml" }], {
-        projectDir: path.join(base, "root"), allowedRootReal: undefined, remoteResolution: true,
+        projectDir: path.join(base, "root"), allowedRootReal: undefined,
       });
       expect(result.skipped).toEqual([]);
-      expect(result.incomplete).toEqual([{ path: path.join(base, "root/pom.xml"), reason: expect.stringContaining("Maven remote resolution is disabled") }]);
+      expect(result.incomplete).toEqual([]);
     } finally {
       await snapshot.cleanup();
     }
@@ -548,8 +549,26 @@ console.log(JSON.stringify({results:[]}));`);
       transitive_resolution: mixed ? "enabled" : "disabled",
       maven_transitive_resolution: "disabled",
     });
-    if (tool !== "scan_java_project") expect(payload.coverage.complete).toBe(false);
-    const notes = tool === "scan_java_project" ? payload.incomplete_manifests : payload.coverage.skipped_files;
-    expect(notes).toContainEqual({ path: "pom.xml", reason: expect.stringContaining("Maven remote resolution is disabled") });
+    expect(payload.dependency_resolution.warning).toContain("Maven remote resolution is disabled");
+    // OSV_MCP_NO_REMOTE_RESOLUTION=1と同じく、制限はdependency_resolutionで伝え、coverageは下げない
+    if (tool === "scan_java_project") expect("incomplete_manifests" in payload).toBe(false);
+    else expect(payload.coverage).toMatchObject({ complete: true, skipped_files: [] });
+  });
+
+  it.each([
+    { tool: "scan_project", handler: handleScanProject },
+    { tool: "suggest_fix", handler: handleSuggestFix },
+  ])("$tool does not report a Maven restriction when every POM was excluded", async ({ handler }) => {
+    const base = await makeTree({ "root/pom.xml": `<project><![CDATA[x]]></project>`, "root/requirements.txt": "urllib3==1.26.0\n" });
+    const marker = path.join(base, "args.json");
+    const bin = path.join(base, "scanner.cjs");
+    await writeFile(bin, `#!${process.execPath}
+require("node:fs").writeFileSync(${JSON.stringify(marker)}, JSON.stringify(process.argv.slice(2)));
+console.log(JSON.stringify({results:[]}));`);
+    await chmod(bin, 0o755);
+    const payload = JSON.parse((await handler({ project_path: path.join(base, "root") }, { binaryPath: bin, noRemoteResolution: false })).content[0]!.text);
+    expect(JSON.parse(await readFile(marker, "utf8"))).not.toContain("--experimental-disable-plugins");
+    expect(payload.dependency_resolution).toEqual({ transitive_resolution: "enabled" });
+    expect(payload.coverage.skipped_files).toEqual([{ path: "pom.xml", reason: expect.stringContaining("cannot be interpreted") }]);
   });
 });

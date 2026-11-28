@@ -997,14 +997,15 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 
 - **事象**: osv-scanner 2.7.0・2.7.1は、deps.devで解決する場合(`--data-source deps.dev`)も、親POM・BOM(`<scope>import</scope>`)をMaven Central(`repo.maven.apache.org`)と、pom.xmlの`<repositories>`に書かれたURLから取得する。URLは`http://`・ループバックでもよく、テスト用のHTTPサーバーに`GET /internal-admin/com/mycompany/internal/secret-bom/7.1/secret-bom-7.1.pom`が届いた。スキャン対象のリポジトリを細工すると、スキャンするマシンから任意の内部アドレスへGETを送らせられる。本サーバー経由の`scan_project`・`scan_java_project`・`suggest_fix`で同じ。READMEの通信先の表は`api.osv.dev`・`api.deps.dev`だけとしていた。2.7.0の再監査のフィクスチャには、Maven Centralに無い親POM・BOM・`<repositories>`が無く、見落とした
 - **使われる宣言(2.7.1で確認)**: ルート直下(接頭辞付きを含む)、既定で有効なプロファイル、親POMの`<repositories>`。`<pluginRepositories>`・`<distributionManagement>`・`~/.m2/settings.xml`のミラーとリポジトリ・`<build>`の中の同名の要素は使われなかった。`OSV_MCP_NO_REMOTE_RESOLUTION=1`では、どの場合も`api.osv.dev`だけ
-- **修正**: スナップショットのpom.xmlと親POMのコピーから、ルート直下とプロファイルの中の`<repositories>`・`<pluginRepositories>`を取り除く(`removeRepositoryDeclarations`。親POMの参照の解釈と同じ字句の規則で、CDATA・DOCTYPE等の解釈できない構文は除外)。元のファイルは変えない。deps.devで解決する場合は、取り除いたPOMを`skipped_files`(`scan_java_project`は`incomplete_manifests`)に理由付きで出す(それらのリポジトリにだけある親POM・BOMは解決されない)。Maven Centralへの親POM・BOMの照会は残るため、READMEの通信先の表・SECURITY.mdに記載
+- **修正**: スナップショットのpom.xmlと親POMのコピーから、ルート直下とプロファイルの中の`<repositories>`・`<pluginRepositories>`を取り除く(`removeRepositoryDeclarations`。親POMの参照の解釈と同じ字句の規則で、CDATA・DOCTYPE等の解釈できない構文は除外)。元のファイルは変えない。deps.devで解決する場合は、取り除いたPOMを`skipped_files`(`scan_java_project`は`incomplete_manifests`)に理由付きで出す(それらのリポジトリにだけある親POM・BOMは解決されない)。Maven Centralへの親POM・BOMの照会は残るため、READMEの通信先の表・SECURITY.mdに記載(いずれも`d974783`でMavenのリモート解決ごと無効にし、置き換えた。次項)
 - **確認**: 本サーバー経由で2.7.0・2.7.1とも、`<repositories>`のホストへの接続が無くなった(`api.deps.dev`・`api.osv.dev`・`repo.maven.apache.org`だけ)。追加したテストは、除去を無効にすると失敗する
 
 ### `f5cf770` のレビュー後の対応
 
-- `scan_project`・`scan_java_project`・`suggest_fix`では、`transitivedependency/pomxml`を無効にする。リモート親POM・BOMの取得時に親が指定するリポジトリを登録する経路を止める。ローカル親POMの読取り、Pythonの`requirements.txt`の解決、オンラインの脆弱性照会は引き続き有効。Mavenの推移的依存が欠けることは`dependency_resolution`とカバレッジに示す。
+- `scan_project`・`scan_java_project`・`suggest_fix`では、`transitivedependency/pomxml`を無効にする。リモート親POM・BOMの取得時に親が指定するリポジトリを登録する経路を止める。ローカル親POMの読取り、Pythonの`requirements.txt`の解決、オンラインの脆弱性照会は引き続き有効。Mavenの推移的依存が欠けることは`dependency_resolution`に示す。
 - スナップショットの最終検査では、リポジトリ宣言の除去を正常に完了した親POMコピーのみを受理する。後から別形式の検出対象としてコピーされた親POMを拒否する回帰テストと、全3ツールおよびMaven／Python混在時の引数・応答の回帰テストを追加した。
 - macOS arm64で通信を禁止し、OSV-Scanner 2.4.0・2.7.0・2.7.1に同じ無効化引数と`--offline-vulnerabilities`を渡した。各版でローカル親POMにだけ宣言した依存1件が抽出され、合成Maven DBで照会が完了した。製品テスト3,264件、Mavenオフライン検証ハーネスの回帰テスト55件、型検査とビルドが通過した。
+- `d974783`のレビュー後: 当初はpom.xmlごとに理由を`skipped_files`(`scan_java_project`は`incomplete_manifests`)へ出していたため、既定の設定では`coverage.complete`が常にfalse、`OSV_MCP_NO_REMOTE_RESOLUTION=1`・オフラインでは同じ欠けでもtrueと食い違った。Mavenのリモート解決を無効にした後は、取り除いたリポジトリの宣言も結果に影響しない。理由は`dependency_resolution`の`maven_transitive_resolution`と警告だけで伝え、coverageは下げない。全てのpom.xmlを除外したスキャンでは、Mavenの制限を表示せず無効化の引数も付けないことを回帰テストで確認した
 
 ## osv-scannerのピン留め更新(2.4.0 → 2.7.0)詳細設計メモ(2026-10-15)
 
