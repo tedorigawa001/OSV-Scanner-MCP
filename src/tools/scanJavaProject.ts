@@ -11,7 +11,7 @@ import { isRemoteResolutionDisabled, runOsvScan, type RunOsvScanOptions } from "
 import type { ScanReport } from "../osv/scanReport.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
 import { detectJavaProject, type DetectedJavaProject } from "../utils/projectDetector.js";
-import { ScanSnapshot, snapshotManifests } from "../utils/scanSnapshot.js";
+import { MAVEN_RESOLUTION_WARNING, ScanSnapshot, snapshotManifests } from "../utils/scanSnapshot.js";
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
 const TRANSITIVE_OMITTED_WARNING =
@@ -23,14 +23,18 @@ const TRANSITIVE_OMITTED_WARNING =
  * 推移的依存の解決状態。無効時に「検出0件」を安全と誤読されないよう応答の先頭付近に置く。
  * 無効時は、どのマニフェストを含むかに依らず条件付きの警告を常に返す。
  */
-export function dependencyResolution(noRemoteResolution: boolean, warning = TRANSITIVE_OMITTED_WARNING) {
-  return noRemoteResolution
-    ? { transitive_resolution: "disabled" as const, warning }
-    : { transitive_resolution: "enabled" as const };
+export function dependencyResolution(noRemoteResolution: boolean, warning = TRANSITIVE_OMITTED_WARNING, scansPom = false, scansRequirements = false) {
+  if (noRemoteResolution) return { transitive_resolution: "disabled" as const, warning };
+  if (scansPom) return {
+    transitive_resolution: scansRequirements ? "enabled" as const : "disabled" as const,
+    maven_transitive_resolution: "disabled" as const,
+    warning: MAVEN_RESOLUTION_WARNING,
+  };
+  return { transitive_resolution: "enabled" as const };
 }
 
 const SKIPPED_MANIFESTS_WARNING =
-  "Some manifests were excluded from the scan, or scanned without their parent POM (see skipped_manifests / incomplete_manifests). " +
+  "Some manifests were excluded or could only be scanned for a subset of their dependencies (see skipped_manifests / incomplete_manifests). " +
   "Vulnerabilities in those dependencies are not included, so do not conclude that the project is safe even with zero findings";
 
 type ManifestNote = { path: string; reason: string };
@@ -76,7 +80,7 @@ export async function withScopeNotes<T>(notes: readonly ManifestNote[], scan: ()
 export async function scanJavaManifests(
   project: DetectedJavaProject,
   options: RunOsvScanOptions,
-): Promise<{ manifests: string[]; skipped: ManifestNote[]; incomplete: ManifestNote[]; report: ScanReport; gradleMetadata: GradleMetadata[]; gradleIncomplete: ManifestNote[] }> {
+): Promise<{ manifests: string[]; scansPom: boolean; skipped: ManifestNote[]; incomplete: ManifestNote[]; report: ScanReport; gradleMetadata: GradleMetadata[]; gradleIncomplete: ManifestNote[] }> {
   const snapshot = await ScanSnapshot.create();
   try {
     const { targets, skipped, incomplete } = await snapshotManifests(snapshot, project.targets, {
@@ -111,6 +115,7 @@ export async function scanJavaManifests(
     return {
       gradleMetadata, gradleIncomplete,
       manifests: scanned.map((t) => relative(t.path)),
+      scansPom: targets.some(target => target.format === "pom.xml"),
       skipped: skippedRelative,
       incomplete: incompleteRelative,
       report: { ...report, packages: annotateRelations(report.packages, await buildRelationLookups(sources)), source_files: report.source_files.map((file) => originals.get(file) ?? file) },
@@ -141,7 +146,7 @@ export async function handleScanJavaProject(
       allowedRoot: options.allowedRoot,
     });
     const noRemoteResolution = isRemoteResolutionDisabled(options);
-    const { manifests, skipped, incomplete, report, gradleMetadata, gradleIncomplete } = await scanJavaManifests(project, { ...options, noRemoteResolution });
+    const { manifests, scansPom, skipped, incomplete, report, gradleMetadata, gradleIncomplete } = await scanJavaManifests(project, { ...options, noRemoteResolution });
     return jsonResult({
       project_dir: project.projectDir,
       manifests,
@@ -150,7 +155,7 @@ export async function handleScanJavaProject(
         complete: skipped.length === 0 && incomplete.length === 0 && gradleIncomplete.length === 0,
         dependency_metadata: { gradle: gradleMetadata }, skipped_files: [...skipped, ...incomplete, ...gradleIncomplete].map(note => ({ path: sanitizeExternalText(note.path), reason: sanitizeExternalText(note.reason) })),
       } } : {}),
-      dependency_resolution: dependencyResolution(noRemoteResolution),
+      dependency_resolution: dependencyResolution(noRemoteResolution, undefined, scansPom),
       ...report,
     });
   } catch (error) {

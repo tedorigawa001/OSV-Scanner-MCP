@@ -274,6 +274,33 @@ describe("ScanSnapshot", () => {
     }
   });
 
+  it("rejects a parent copied by a later non-POM target without repository verification", async () => {
+    const parentXml = `<project>${gav}<packaging>pom</packaging><repositories/></project>`;
+    const base = await makeTree({
+      "root/child/pom.xml": childPom("../parent.lock"),
+    });
+    const child = path.join(base, "root/child/pom.xml");
+    const parent = path.join(base, "root/parent.lock");
+    const snapshot = await ScanSnapshot.create();
+    const originalCopy = snapshot.copy.bind(snapshot);
+    const copy = vi.spyOn(snapshot, "copy").mockImplementation(async (file, boundary, maxBytes) => {
+      if (file === parent) await writeFile(parent, parentXml);
+      return originalCopy(file, boundary, maxBytes);
+    });
+    try {
+      const result = await snapshotManifests(snapshot, [
+        { path: child, format: "pom.xml" },
+        { path: parent, format: "gradle.lockfile" },
+      ], { projectDir: path.join(base, "root"), allowedRootReal: undefined, remoteResolution: true });
+      expect(result.targets.map(target => target.format)).toEqual(["gradle.lockfile"]);
+      expect(result.skipped).toEqual([{ path: child, kind: "unreadable", reason: expect.stringContaining("repository declaration verification") }]);
+      expect(result.incomplete).toEqual([]);
+    } finally {
+      copy.mockRestore();
+      await snapshot.cleanup();
+    }
+  });
+
   it("コピーの合計サイズが上限を超えたらscan_input_too_large", async () => {
     const base = await makeTree({ "root/a/package-lock.json": "x".repeat(60), "root/b/package-lock.json": "x".repeat(60) });
     const snapshot = await ScanSnapshot.create(100);
@@ -471,7 +498,7 @@ describe("リポジトリの宣言の除去(脆弱性チェック、2026-11-28)"
     }
   });
 
-  it("does not report anything for a POM without repository declarations", async () => {
+  it("reports the Maven resolution restriction even for a POM without repository declarations", async () => {
     const base = await makeTree({ "root/pom.xml": `<project>${gav}</project>` });
     const snapshot = await ScanSnapshot.create();
     try {
@@ -479,30 +506,50 @@ describe("リポジトリの宣言の除去(脆弱性チェック、2026-11-28)"
         projectDir: path.join(base, "root"), allowedRootReal: undefined, remoteResolution: true,
       });
       expect(result.skipped).toEqual([]);
-      expect(result.incomplete).toEqual([]);
+      expect(result.incomplete).toEqual([{ path: path.join(base, "root/pom.xml"), reason: expect.stringContaining("Maven remote resolution is disabled") }]);
     } finally {
       await snapshot.cleanup();
     }
   });
 
   it.each([
-    { tool: "scan_project", handler: handleScanProject },
-    { tool: "scan_java_project", handler: handleScanJavaProject },
-    { tool: "suggest_fix", handler: handleSuggestFix },
-  ])("$tool passes only copies without repository URLs to the scanner", async ({ handler }) => {
+    { tool: "scan_project", handler: handleScanProject, mixed: false },
+    { tool: "scan_java_project", handler: handleScanJavaProject, mixed: false },
+    { tool: "suggest_fix", handler: handleSuggestFix, mixed: false },
+    { tool: "scan_project", handler: handleScanProject, mixed: true },
+    { tool: "suggest_fix", handler: handleSuggestFix, mixed: true },
+  ])("$tool restricts Maven repositories with Python present=$mixed", async ({ tool, handler, mixed }) => {
     const pom = `<project>${gav}${repos("http://127.0.0.1:9/x")}<profiles><profile><id>p</id>${repos("http://127.0.0.1:9/y")}</profile></profiles></project>`;
-    const base = await makeTree({ "root/pom.xml": pom });
+    const requirements = "urllib3==1.26.0\n";
+    const base = await makeTree({ "root/pom.xml": pom, ...(mixed ? { "root/requirements.txt": requirements } : {}) });
     const marker = path.join(base, "scanned.json");
     const bin = path.join(base, "scanner.cjs");
     await writeFile(bin, `#!${process.execPath}
 const fs = require("node:fs");
 const args = process.argv.slice(2);
 const files = args.filter((a, i) => args[i - 1] === "--lockfile").map(a => a.slice(a.indexOf(":") + 1));
-fs.writeFileSync(${JSON.stringify(marker)}, JSON.stringify(files.map(file => fs.readFileSync(file, "utf8"))));
+fs.writeFileSync(${JSON.stringify(marker)}, JSON.stringify({args, files: files.map(file => fs.readFileSync(file, "utf8"))}));
 console.log(JSON.stringify({results:[]}));`);
     await chmod(bin, 0o755);
     const result = await handler({ project_path: path.join(base, "root") }, { binaryPath: bin, noRemoteResolution: false });
     expect(result.isError).not.toBe(true);
-    expect(JSON.parse(await readFile(marker, "utf8"))).toEqual([`<project>${gav}<profiles><profile><id>p</id></profile></profiles></project>`]);
+    const recorded = JSON.parse(await readFile(marker, "utf8"));
+    const sanitizedPom = `<project>${gav}<profiles><profile><id>p</id></profile></profiles></project>`;
+    expect(recorded.files).toEqual(mixed ? [sanitizedPom, requirements] : [sanitizedPom]);
+    expect(recorded.args.some((arg: string) => arg.startsWith("requirements.txt:"))).toBe(mixed);
+    expect(recorded.args).not.toContain("--no-resolve");
+    const pluginFlag = recorded.args.indexOf("--experimental-disable-plugins");
+    expect(pluginFlag).toBeGreaterThanOrEqual(0);
+    expect(recorded.args.slice(pluginFlag, pluginFlag + 2)).toEqual([
+      "--experimental-disable-plugins", "transitivedependency/pomxml",
+    ]);
+    const payload = JSON.parse(result.content[0]!.text);
+    expect(payload.dependency_resolution).toMatchObject({
+      transitive_resolution: mixed ? "enabled" : "disabled",
+      maven_transitive_resolution: "disabled",
+    });
+    if (tool !== "scan_java_project") expect(payload.coverage.complete).toBe(false);
+    const notes = tool === "scan_java_project" ? payload.incomplete_manifests : payload.coverage.skipped_files;
+    expect(notes).toContainEqual({ path: "pom.xml", reason: expect.stringContaining("Maven remote resolution is disabled") });
   });
 });

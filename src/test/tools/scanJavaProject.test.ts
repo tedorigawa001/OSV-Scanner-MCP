@@ -142,9 +142,10 @@ describe("handleScanJavaProject: 推移的依存の解決状態の伝播", () =>
     }
   }
 
-  it("既定では解決有効と表示し、--no-resolveを付けない", async () => {
+  it("既定ではMavenのリモート解決だけを無効にする", async () => {
     const { payload, args } = await scanWith(undefined, undefined);
-    expect(payload.dependency_resolution).toEqual({ transitive_resolution: "enabled" });
+    expect(payload.dependency_resolution).toMatchObject({ transitive_resolution: "disabled", maven_transitive_resolution: "disabled" });
+    expect(args).toContain("transitivedependency/pomxml");
     expect(args).not.toContain("--no-resolve");
   });
 
@@ -236,9 +237,9 @@ describe("handleScanJavaProject: 親POMが許可ルートの外を参照するpo
     }
   });
 
-  it("外したものが無ければskipped_manifests・scope_warningを出力しない", async () => {
+  it("除外も不完全なマニフェストもなければskipped_manifests・scope_warningを出力しない", async () => {
     const bin = await makeFakeBinary("ok-noskip", `echo '{"results":[]}'; exit 0`);
-    const payload = parsePayload(await handleScanJavaProject({ project_path: projectDir }, { binaryPath: bin }));
+    const payload = parsePayload(await handleScanJavaProject({ project_path: projectDir }, { binaryPath: bin, noRemoteResolution: true }));
     expect("skipped_manifests" in payload).toBe(false);
     expect("scope_warning" in payload).toBe(false);
   });

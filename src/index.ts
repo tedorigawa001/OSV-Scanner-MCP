@@ -13,7 +13,7 @@ import { DECLARATION_TRUST_ENV, startupDeclarationTrust, CATALOG_TRUST_ENV, star
  * - OSV_MCP_MAX_CONCURRENT_SCANS: 同時実行スキャン数の上限(デフォルト2)
  * - OSV_MCP_AUTO_DOWNLOAD: 0/false指定時、バイナリの自動ダウンロードを無効化
  * - OSV_MCP_PREFER_DOWNLOAD: 1/true指定時、PATH上のバイナリを使わず検証済み自動ダウンロードを優先
- * - OSV_MCP_NO_REMOTE_RESOLUTION: 1/true指定時、pom.xmlの推移的依存をdeps.devで解決しない
+ * - OSV_MCP_NO_REMOTE_RESOLUTION: 1/true指定時、requirements.txtの推移的依存をdeps.devで解決しない
  * - OSV_MCP_NO_CANDIDATE_CHECK: 1/true指定時、suggest_fixの推奨先のOSV照会を行わない
  * - OSV_MCP_OFFLINE: 1/true/yes指定時、事前取得したDBだけを使い外部通信を行わない
  * - OSV_MCP_OFFLINE_DB_DIR: 事前取得したDBキャッシュの絶対パス

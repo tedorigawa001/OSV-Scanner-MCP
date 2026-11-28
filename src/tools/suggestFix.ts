@@ -14,11 +14,10 @@ import { suggestUpgrades } from "../osv/suggestFix.js";
 import { sanitizeExternalText } from "../utils/externalText.js";
 import { detectProject } from "../utils/manifestDetector.js";
 import {
-  dependencyResolution,
   type ScanJavaProjectArgs,
   type ScanJavaProjectOptions,
 } from "./scanJavaProject.js";
-import { buildCoverage, markLowerBounds, scanFromSnapshot, TRANSITIVE_OMITTED_WARNING } from "./scanProject.js";
+import { buildCoverage, markLowerBounds, projectDependencyResolution, scanFromSnapshot } from "./scanProject.js";
 import { errorResult, jsonResult, type ToolResult } from "./toolResult.js";
 
 export interface SuggestFixOptions extends ScanJavaProjectOptions {
@@ -51,7 +50,7 @@ export async function handleSuggestFix(
     return jsonResult({
       project_dir: project.projectDir,
       manifests: project.manifests.map((m) => sanitizeExternalText(m.path)),
-      dependency_resolution: dependencyResolution(noRemoteResolution, TRANSITIVE_OMITTED_WARNING),
+      dependency_resolution: projectDependencyResolution(project, noRemoteResolution),
       ...(report.offline_database?{offline_database:report.offline_database}:{}),
       coverage: buildCoverage(project),
       // 情報提供のアドバイザリ(RustSecのunmaintained等)だけのパッケージは数えない

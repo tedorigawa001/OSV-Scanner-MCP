@@ -37,7 +37,7 @@ export interface SnapshotSkip {
   kind: "outside_allowed_root" | "unreadable";
 }
 
-/** スキャンはするが、親POMを再現できず親から継承する依存が欠ける可能性があるpom.xml */
+/** スキャンはするが、親や推移的依存が欠ける可能性があるpom.xml */
 export interface SnapshotIncomplete {
   /** 元のpom.xmlの絶対パス */
   path: string;
@@ -148,6 +148,11 @@ export class ScanSnapshot {
     return this.copiedPaths.has(copyPath);
   }
 
+  /** A generic manifest copy has no proof that repository declarations were stripped. */
+  hasVerifiedPom(copyPath: string): boolean {
+    return this.removedRepositories.get(copyPath) !== undefined;
+  }
+
   /** 本サーバーが生成した内容(requirements.txtの正規化コピー等)を書く */
   async writeGenerated(content: string): Promise<string> {
     const dir = path.join(this.dir, "generated");
@@ -179,13 +184,13 @@ const UNPARSEABLE =
 interface PomContext {
   projectDir: string;
   allowedRootReal: string | undefined;
-  /** deps.devで推移的依存を解決するか。取り除いたリポジトリの宣言が結果に影響しうるのはこの場合だけ */
+  /** Report the Maven-specific restriction when remote resolution is otherwise enabled. */
   remoteResolution?: boolean;
 }
 
-const REPOSITORIES_REMOVED =
-  "Repository declarations (<repositories>) were removed from the scanned copy so that OSV-Scanner does not contact the URLs written in the POM. " +
-  "Parent POMs and imported BOMs available only from those repositories are not resolved, so inherited or managed dependencies may be missing from the results";
+export const MAVEN_RESOLUTION_WARNING =
+  "Maven remote resolution is disabled to restrict repository access. Dependencies that require remote parent POMs, imported BOMs, or transitive resolution may be missing from the results";
+const REPOSITORIES_REMOVED = "Repository declarations were removed from the scanned POM or its local parent copies";
 
 /**
  * pom.xmlと親POMの連鎖をスナップショットへコピーする。
@@ -202,13 +207,15 @@ async function snapshotPom(
   if (!copied.ok) return { ok: false, reason: capitalizeReason(copied.message), kind: "unreadable" };
   if (copied.repositories === undefined) return { ok: false, reason: UNPARSEABLE, kind: "unreadable" };
   let repositories = copied.repositories;
-  const removedNote = () => repositories > 0 && context.remoteResolution === true ? REPOSITORIES_REMOVED : undefined;
+  const resolutionNote = () => context.remoteResolution === true
+    ? repositories > 0 ? `${MAVEN_RESOLUTION_WARNING}. ${REPOSITORIES_REMOVED}` : MAVEN_RESOLUTION_WARNING
+    : undefined;
   const done = () => {
-    const note = removedNote();
+    const note = resolutionNote();
     return note === undefined ? { ok: true as const, path: copied.path } : { ok: true as const, path: copied.path, incomplete: note };
   };
   const partial = (reason: string) => {
-    const note = removedNote();
+    const note = resolutionNote();
     return { ok: true as const, path: copied.path, incomplete: note === undefined ? reason : `${reason}. ${note}` };
   };
   let current = pomPath;
@@ -283,6 +290,9 @@ async function validateCopiedPom(snapshot: ScanSnapshot, copyPath: string, conte
     }
     if (!snapshot.hasCopy(parent)) parent = path.join(parent, "pom.xml");
     if (!snapshot.hasCopy(parent)) return null;
+    if (!snapshot.hasVerifiedPom(parent)) {
+      return { reason: "The copied parent POM did not pass repository declaration verification, so the file was excluded from the scan", kind: "unreadable" };
+    }
     current = parent;
   }
   return { reason: `The parent POM chain exceeds the limit (${MAX_PARENT_DEPTH} levels)`, kind: "unreadable" };

@@ -89,6 +89,16 @@ describe("osv-scannerへの引数", () => {
     expect(buildOsvScanArgs("project", true)).toContain("--no-resolve");
   });
 
+  it("disables only the Maven enricher when an online scan can otherwise resolve dependencies", () => {
+    const option = "--experimental-disable-plugins";
+    expect(buildOsvScanArgs("project", false, false, true).slice(-2)).toEqual([option, "transitivedependency/pomxml"]);
+    expect(buildOsvScanArgs("project", false)).not.toContain(option);
+    for (const args of [buildOsvScanArgs("project", true, false, true), buildOsvScanArgs("project", false, true, true)]) {
+      expect(args).toContain("--no-resolve");
+      expect(args).not.toContain(option);
+    }
+  });
+
   it("projectモードはディレクトリ(-r)を渡さない(requirements.txtの取り込みで範囲外を読むため)", () => {
     for (const noRemoteResolution of [false, true]) {
       expect(buildOsvScanArgs("project", noRemoteResolution)).not.toContain("-r");

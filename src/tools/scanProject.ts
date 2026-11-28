@@ -40,6 +40,12 @@ export const TRANSITIVE_OMITTED_WARNING =
   "but vulnerabilities in the transitive dependencies of the dependencies listed directly in pom.xml or requirements.txt are not included. " +
   "Zero findings does not confirm that the transitive dependencies are safe";
 
+export function projectDependencyResolution(project: DetectedProject, noRemoteResolution: boolean) {
+  return dependencyResolution(noRemoteResolution, TRANSITIVE_OMITTED_WARNING,
+    project.manifests.some(manifest => manifest.format === "pom.xml"),
+    project.requirementsCopies.some(copy => copy.entries.length > 0));
+}
+
 const INCOMPLETE_WARNING =
   "Some dependencies were not scanned, or were scanned at an assumed version " +
   "(see lockfile_missing / unpinned_requirements / unscannable_requirements / unscannable_crates / " +
@@ -473,7 +479,7 @@ export async function handleScanProject(
     const report = await scanFromSnapshot(project, { ...options, noRemoteResolution });
     return jsonResult({
       project_dir: project.projectDir,
-      dependency_resolution: dependencyResolution(noRemoteResolution, TRANSITIVE_OMITTED_WARNING),
+      dependency_resolution: projectDependencyResolution(project, noRemoteResolution),
       ...(report.offline_database?{offline_database:report.offline_database}:{}),
       coverage: buildCoverage(project),
       ecosystem_breakdown: ecosystemBreakdown(project, report.packages),

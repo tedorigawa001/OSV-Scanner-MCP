@@ -80,11 +80,9 @@ export function isRemoteResolutionDisabled(options: RunOsvScanOptions = {}): boo
 /**
  * OSV-Scannerに渡す固定引数。ここに無いオプションは一切使わない(ホワイトリスト)
  *
- * pom.xml/requirements.txtの推移的依存はapi.deps.devで解決される(2.4.0・2.7.0で実機確認)。
- * `--data-source native` はスキャン対象pom.xmlの<repositories>に書かれた任意のURLへ
- * 接続するため使わない。既定値の変更に備えてdeps.devを明示する。
- * ただしdeps.devでも、親POM・BOMはMaven Centralと<repositories>のURLから取得される(2.7.0・2.7.1で実機確認、2026-11-28)。
- * <repositories>はスナップショットのコピーから取り除く(pomParent.tsのremoveRepositoryDeclarations)
+ * requirements.txtの推移的依存はapi.deps.devで解決する。
+ * Mavenのenricherはdeps.dev指定時もリモート親POMが宣言した取得先を登録する。
+ * Mavenだけを無効にして、ローカルPOMのextractorと他形式の解決を保持する。
  */
 const FIXED_SCAN_ARGS = ["scan", "source", "--format", "json", "--data-source", "deps.dev"] as const;
 const NO_RESOLVE_ARG = "--no-resolve";
@@ -120,9 +118,13 @@ export type ScanMode = "project" | "artifact" | "sbom";
 const SCAN_ARGS = { project: FIXED_SCAN_ARGS, artifact: FIXED_ARTIFACT_ARGS, sbom: FIXED_SBOM_ARGS };
 
 /** 外部解決を行うのはマニフェストを読むprojectモードだけ(artifact/sbomはOSV照会のみ) */
-export function buildOsvScanArgs(mode: ScanMode, noRemoteResolution: boolean, offline=false): string[] {
+export function buildOsvScanArgs(mode: ScanMode, noRemoteResolution: boolean, offline=false, scansPom=false): string[] {
   const args: string[] = [...SCAN_ARGS[mode]];
   if (mode === "project" && noRemoteResolution) args.push(NO_RESOLVE_ARG);
+  // The legacy spelling also works with OSV-Scanner 2.4.0.
+  if (mode === "project" && scansPom && !noRemoteResolution && !offline) {
+    args.push("--experimental-disable-plugins", "transitivedependency/pomxml");
+  }
   if (offline) {
     args.push('--offline');
     if (!args.includes(NO_RESOLVE_ARG)) args.push(NO_RESOLVE_ARG);
@@ -245,7 +247,8 @@ export async function runOsvScan(
       }
     }
   }
-  return parseOsvScanOutput(await runScan(buildProjectTargetArgs(targets), options, "project",[...new Set(targets.map(t=>FORMAT_ECOSYSTEM[t.format]))]));
+  return parseOsvScanOutput(await runScan(buildProjectTargetArgs(targets), options, "project",
+    [...new Set(targets.map(t=>FORMAT_ECOSYSTEM[t.format]))], targets.some(target => target.format === "pom.xml")));
 }
 
 /** Accept only the exact absolute files enumerated by detectJavaArtifacts. */
@@ -270,8 +273,9 @@ async function runScan(
   options: RunOsvScanOptions,
   mode: ScanMode,
   ecosystems?:readonly string[],
+  scansPom=false,
 ): Promise<unknown> {
-  return withScanCapacity(options, () => runOsvScanUnguarded(targetArgs, options, mode, ecosystems));
+  return withScanCapacity(options, () => runOsvScanUnguarded(targetArgs, options, mode, ecosystems, scansPom));
 }
 
 /** Shared expensive-work capacity. Offline record searches reserve before copying/reading databases too. */
@@ -296,6 +300,7 @@ async function runOsvScanUnguarded(
   options: RunOsvScanOptions,
   mode: ScanMode,
   ecosystems?:readonly string[],
+  scansPom=false,
 ): Promise<unknown> {
   const offline=offlineEnabled(options);
   const binaryPath = options.binaryPath ?? (await resolveOsvScannerBinary(offline?{...process.env,OSV_MCP_OFFLINE:'1'}:process.env));
@@ -306,7 +311,7 @@ async function runOsvScanUnguarded(
     targetArgs,
     options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
-    buildOsvScanArgs(mode, isRemoteResolutionDisabled(options),offline),
+    buildOsvScanArgs(mode, isRemoteResolutionDisabled(options),offline,scansPom),
     cache?{...process.env,OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY:cache.dir,OSV_SCALIBR_LOCAL_DB_CACHE_DIRECTORY:cache.dir}:process.env,
   );
 

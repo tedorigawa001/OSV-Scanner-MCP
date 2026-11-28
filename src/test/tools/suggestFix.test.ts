@@ -137,13 +137,13 @@ describe("handleSuggestFix: 推移的依存の解決状態の伝播", () => {
     }
   });
 
-  it("既定では解決有効と表示する", async () => {
+  it("Mavenのみのプロジェクトでは既定でリモート解決無効と表示する", async () => {
     const bin = await makeFakeBinary("ok-default", `echo '{"results":[]}'; exit 0`);
     const previous = process.env.OSV_MCP_NO_REMOTE_RESOLUTION;
     delete process.env.OSV_MCP_NO_REMOTE_RESOLUTION;
     try {
       const payload = parsePayload(await handleSuggestFix({ project_path: projectDir }, { candidateCheck: "disabled", binaryPath: bin }));
-      expect(payload.dependency_resolution).toEqual({ transitive_resolution: "enabled" });
+      expect(payload.dependency_resolution).toMatchObject({ transitive_resolution: "disabled", maven_transitive_resolution: "disabled" });
     } finally {
       if (previous !== undefined) process.env.OSV_MCP_NO_REMOTE_RESOLUTION = previous;
     }
