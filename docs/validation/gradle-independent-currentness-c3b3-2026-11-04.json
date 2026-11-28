@@ -30,8 +30,8 @@
     }
   ],
   "sourceSha256": {
-    "package-lock.json": "101a85ed99c3ac07bad129faac336b1eac4857b4caa45e5ce38225aa65591cf5",
-    "package.json": "bc69fe5e52afd60f3a41ef0170cea8fa5b399cd8b65b34299ff941a418a14dbf",
+    "package-lock.json": "e973479be5cd03e6de40f5a14f806fbcae7cde67cfcb26bb7a66e504ae0e9093",
+    "package.json": "1c52efdfd10299c1acf42fd15bd2704608d72d918c9723d9ee52467369dfa9e9",
     "src/errors.ts": "810237c228cf8ed592938e129c3a5cf791f436137cfd0585eb0705c13c223e30",
     "src/test/fixtures/c3b_source_child.mjs": "d45b6cdc9045ab7e7f4efd975f4292bc1c23f8631f9b7eef588df8704f472757",
     "src/test/fixtures/gradleGraphFixture.ts": "455bcfef62f9031aef35f47c36036f51d148455a34e920da4d11777940a30bec",
@@ -766,6 +766,37 @@
         "observationsMatched": true,
         "sourceFingerprintsMatched": true,
         "note": "Before this update one run of the same command on the same machine failed only the two record-comparison tests, both at the package-lock.json fingerprint; the other 6 of 8 tests passed, and package.json also differed. After the update all three runs matched the recorded observations and fingerprints. Recorded process observations are unchanged; all adoption flags remain false."
+      }
+    },
+    {
+      "date": "2026-11-28",
+      "scope": "same recorded local-process scenarios rerun by this test after dependency/version changes to package.json and package-lock.json only; observations must still match and every other source fingerprint is unchanged",
+      "fromCommit": "5a89b44aae7ab9620bb0f349125455c87bb2c168",
+      "toCommit": "793f5be1892461507436d013cf4de01cf9926e8b",
+      "changedSources": [
+        "package-lock.json",
+        "package.json"
+      ],
+      "previousSourceSha256": {
+        "package-lock.json": "101a85ed99c3ac07bad129faac336b1eac4857b4caa45e5ce38225aa65591cf5",
+        "package.json": "bc69fe5e52afd60f3a41ef0170cea8fa5b399cd8b65b34299ff941a418a14dbf"
+      },
+      "sourceFingerprintCount": 73,
+      "reason": "v0.27.0 version bump",
+      "result": {
+        "command": "OSV_REALTIME_PROCESS=1 npm run test:research -- --project real-time-process",
+        "runtime": {
+          "node": "v26.12.1",
+          "platform": "darwin",
+          "arch": "arm64"
+        },
+        "runs": 3,
+        "testFiles": 3,
+        "testsPassedPerRun": 8,
+        "failed": 0,
+        "observationsMatched": true,
+        "sourceFingerprintsMatched": true,
+        "note": "Before this update the same command was run twice on the same machine. The first run, at a load average of about 8 to 15, failed 5 of 8 tests: the two record-comparison tests at the package-lock.json fingerprint and three timing-dependent process tests. The second run, after the load dropped to about 4, failed only the two record-comparison tests at the package-lock.json fingerprint; package.json also differed. After the update all three runs matched the recorded observations and fingerprints. Recorded process observations are unchanged; all adoption flags remain false."
       }
     }
   ],
