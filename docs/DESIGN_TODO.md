@@ -993,6 +993,13 @@ requirements.txtと同じく、元の`Cargo.lock`はosv-scannerに渡さず、**
 - プレリリースへの`cargo update --precise`の実機確認(キャッシュに依存元の揃ったプレリリースのcrateが無い)。案内はCargo公式文書の要求の規則に基づく
 - crates.ioでyankされた版を推奨する可能性(OSVはyankを知らない。crates.ioのAPI照会は通信先を増やすため行わない。注記で触れる)
 
+## pom.xmlのリポジトリの宣言への接続(v0.26.0まで、2026-11-28 修正)
+
+- **事象**: osv-scanner 2.7.0・2.7.1は、deps.devで解決する場合(`--data-source deps.dev`)も、親POM・BOM(`<scope>import</scope>`)をMaven Central(`repo.maven.apache.org`)と、pom.xmlの`<repositories>`に書かれたURLから取得する。URLは`http://`・ループバックでもよく、テスト用のHTTPサーバーに`GET /internal-admin/com/mycompany/internal/secret-bom/7.1/secret-bom-7.1.pom`が届いた。スキャン対象のリポジトリを細工すると、スキャンするマシンから任意の内部アドレスへGETを送らせられる。本サーバー経由の`scan_project`・`scan_java_project`・`suggest_fix`で同じ。READMEの通信先の表は`api.osv.dev`・`api.deps.dev`だけとしていた。2.7.0の再監査のフィクスチャには、Maven Centralに無い親POM・BOM・`<repositories>`が無く、見落とした
+- **使われる宣言(2.7.1で確認)**: ルート直下(接頭辞付きを含む)、既定で有効なプロファイル、親POMの`<repositories>`。`<pluginRepositories>`・`<distributionManagement>`・`~/.m2/settings.xml`のミラーとリポジトリ・`<build>`の中の同名の要素は使われなかった。`OSV_MCP_NO_REMOTE_RESOLUTION=1`では、どの場合も`api.osv.dev`だけ
+- **修正**: スナップショットのpom.xmlと親POMのコピーから、ルート直下とプロファイルの中の`<repositories>`・`<pluginRepositories>`を取り除く(`removeRepositoryDeclarations`。親POMの参照の解釈と同じ字句の規則で、CDATA・DOCTYPE等の解釈できない構文は除外)。元のファイルは変えない。deps.devで解決する場合は、取り除いたPOMを`skipped_files`(`scan_java_project`は`incomplete_manifests`)に理由付きで出す(それらのリポジトリにだけある親POM・BOMは解決されない)。Maven Centralへの親POM・BOMの照会は残るため、READMEの通信先の表・SECURITY.mdに記載
+- **確認**: 本サーバー経由で2.7.0・2.7.1とも、`<repositories>`のホストへの接続が無くなった(`api.deps.dev`・`api.osv.dev`・`repo.maven.apache.org`だけ)。追加したテストは、除去を無効にすると失敗する
+
 ## osv-scannerのピン留め更新(2.4.0 → 2.7.0)詳細設計メモ(2026-10-15)
 
 本サーバーの境界の検証・関係の判定・出力の解釈は、ピン留めした版の実挙動に合わせている(`binaryDownloader.ts`の注記)。更新は版を書き換えるだけでなく、実バイナリでの再監査を伴う。

@@ -446,3 +446,63 @@ process.exit(127);`);
     expect(payload.scope_warning).toEqual(expect.stringContaining("incomplete_manifests"));
   });
 });
+
+describe("リポジトリの宣言の除去(脆弱性チェック、2026-11-28)", () => {
+  const repos = (url: string) => `<repositories><repository><id>r</id><url>${url}</url></repository></repositories>`;
+  it.each([true, false])("removes declarations from scanned copies of the POM and its parent (remote resolution: %s)", async (remoteResolution) => {
+    const parent = `<project>${gav}<packaging>pom</packaging>${repos("http://127.0.0.1:9/parent")}</project>`;
+    const child = `<project><parent>${gav}<relativePath>../pom.xml</relativePath></parent><artifactId>c</artifactId>${repos("http://127.0.0.1:9/child")}</project>`;
+    const base = await makeTree({ "root/pom.xml": parent, "root/mod/pom.xml": child });
+    const snapshot = await ScanSnapshot.create();
+    try {
+      const { targets, skipped, incomplete } = await snapshotManifests(snapshot, [{ path: path.join(base, "root/mod/pom.xml"), format: "pom.xml" }], {
+        projectDir: path.join(base, "root/mod"), allowedRootReal: undefined, remoteResolution,
+      });
+      expect(skipped).toEqual([]);
+      const copies = [await readFile(targets[0]!.path, "utf8"), await readFile(path.join(path.dirname(targets[0]!.path), "../pom.xml"), "utf8")];
+      expect(copies.join("")).not.toContain("127.0.0.1");
+      expect(copies[0]).toContain("<artifactId>c</artifactId>");
+      expect(copies[1]).toContain("<packaging>pom</packaging>");
+      // 元のファイルは変えない
+      expect(await readFile(path.join(base, "root/mod/pom.xml"), "utf8")).toBe(child);
+      expect(incomplete).toEqual(remoteResolution ? [{ path: path.join(base, "root/mod/pom.xml"), reason: expect.stringContaining("Repository declarations") }] : []);
+    } finally {
+      await snapshot.cleanup();
+    }
+  });
+
+  it("does not report anything for a POM without repository declarations", async () => {
+    const base = await makeTree({ "root/pom.xml": `<project>${gav}</project>` });
+    const snapshot = await ScanSnapshot.create();
+    try {
+      const result = await snapshotManifests(snapshot, [{ path: path.join(base, "root/pom.xml"), format: "pom.xml" }], {
+        projectDir: path.join(base, "root"), allowedRootReal: undefined, remoteResolution: true,
+      });
+      expect(result.skipped).toEqual([]);
+      expect(result.incomplete).toEqual([]);
+    } finally {
+      await snapshot.cleanup();
+    }
+  });
+
+  it.each([
+    { tool: "scan_project", handler: handleScanProject },
+    { tool: "scan_java_project", handler: handleScanJavaProject },
+    { tool: "suggest_fix", handler: handleSuggestFix },
+  ])("$tool passes only copies without repository URLs to the scanner", async ({ handler }) => {
+    const pom = `<project>${gav}${repos("http://127.0.0.1:9/x")}<profiles><profile><id>p</id>${repos("http://127.0.0.1:9/y")}</profile></profiles></project>`;
+    const base = await makeTree({ "root/pom.xml": pom });
+    const marker = path.join(base, "scanned.json");
+    const bin = path.join(base, "scanner.cjs");
+    await writeFile(bin, `#!${process.execPath}
+const fs = require("node:fs");
+const args = process.argv.slice(2);
+const files = args.filter((a, i) => args[i - 1] === "--lockfile").map(a => a.slice(a.indexOf(":") + 1));
+fs.writeFileSync(${JSON.stringify(marker)}, JSON.stringify(files.map(file => fs.readFileSync(file, "utf8"))));
+console.log(JSON.stringify({results:[]}));`);
+    await chmod(bin, 0o755);
+    const result = await handler({ project_path: path.join(base, "root") }, { binaryPath: bin, noRemoteResolution: false });
+    expect(result.isError).not.toBe(true);
+    expect(JSON.parse(await readFile(marker, "utf8"))).toEqual([`<project>${gav}<profiles><profile><id>p</id></profile></profiles></project>`]);
+  });
+});

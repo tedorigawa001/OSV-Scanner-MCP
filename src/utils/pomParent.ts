@@ -148,6 +148,90 @@ export function parentRelativePath(source: string): string | null | undefined {
   return trimmed === "" ? DEFAULT_RELATIVE_PATH : trimmed;
 }
 
+/** osv-scannerが親POM・BOMの取得先に使うリポジトリの宣言(ルート直下と、プロファイルの中) */
+const REPOSITORY_ELEMENTS = new Set(["repositories", "pluginRepositories"]);
+
+/**
+ * スナップショットのコピーから、リポジトリの宣言(`<repositories>`・`<pluginRepositories>`)を取り除く。
+ * 取り除けた数を返し、Goと同じ解釈を保証できない構文はundefined(parentRelativePathと同じ規則)。
+ *
+ * osv-scanner 2.7.0・2.7.1は、deps.devで解決する場合も、親POM・BOM(`import`)をMaven Centralと、
+ * pom.xmlの`<repositories>`に書かれたURLから取得する(2026-11-28 実機確認)。URLは`http://`・ループバックでもよく、
+ * スキャン対象のリポジトリを細工すると、スキャンするマシンから任意の内部アドレスへGETを送らせられる。
+ * 使われたのはルート直下(接頭辞付きを含む)・既定で有効なプロファイル・親POMの宣言で、
+ * `<pluginRepositories>`・`<distributionManagement>`・`~/.m2/settings.xml`・`<build>`の中の同名の要素は使われなかった。
+ * 有効化の条件を評価しないよう、プロファイルの宣言は全て取り除く。`<pluginRepositories>`は将来の版に備えて取り除く
+ */
+export function removeRepositoryDeclarations(source: string): { xml: string; removed: number } | undefined {
+  const xml = source.replace(/\r\n?/g, "\n");
+  const stack: string[] = [];
+  const localName = (qname: string) => qname.slice(qname.lastIndexOf(":") + 1);
+  let output = "";
+  let copiedUpTo = 0;
+  let cutStart = -1;
+  let cutDepth = -1;
+  let removed = 0;
+  let pos = 0;
+
+  while (pos < xml.length) {
+    const lt = xml.indexOf("<", pos);
+    if (lt === -1) break;
+    if (xml.startsWith("<!--", lt)) {
+      const end = xml.indexOf("-->", lt + 4);
+      if (end === -1) return undefined;
+      pos = end + 3;
+      continue;
+    }
+    if (xml.startsWith("<!", lt)) return undefined; // CDATA・DOCTYPE・ENTITY宣言
+    if (xml.startsWith("<?", lt)) {
+      const end = xml.indexOf("?>", lt + 2);
+      if (end === -1) return undefined;
+      pos = end + 2;
+      continue;
+    }
+    let i = lt + 1;
+    let quote: string | null = null;
+    for (; i < xml.length; i++) {
+      const c = xml[i];
+      if (quote !== null) {
+        if (c === quote) quote = null;
+      } else if (c === '"' || c === "'") quote = c;
+      else if (c === ">") break;
+    }
+    if (i >= xml.length) return undefined;
+    const raw = xml.slice(lt + 1, i);
+    pos = i + 1;
+
+    if (raw.startsWith("/")) {
+      if (stack.pop() !== raw.slice(1).trim()) return undefined; // 対応しない終了タグ
+      if (cutStart !== -1 && stack.length === cutDepth) {
+        output += xml.slice(copiedUpTo, cutStart);
+        copiedUpTo = pos;
+        cutStart = -1;
+        removed++;
+      }
+      continue;
+    }
+    const qname = /^[^\s/]+/.exec(raw)?.[0];
+    if (qname === undefined) return undefined;
+    const selfClosing = raw.endsWith("/");
+    const depth = stack.length; // 0=ルート
+    const declaration = cutStart === -1 && REPOSITORY_ELEMENTS.has(localName(qname)) &&
+      (depth === 1 || (depth === 3 && localName(stack[1]!) === "profiles" && localName(stack[2]!) === "profile"));
+    if (declaration && selfClosing) {
+      output += xml.slice(copiedUpTo, lt);
+      copiedUpTo = pos;
+      removed++;
+    } else if (declaration) {
+      cutStart = lt;
+      cutDepth = depth;
+    }
+    if (!selfClosing) stack.push(qname);
+  }
+  if (stack.length !== 0) return undefined; // 閉じていないタグ
+  return { xml: output + xml.slice(copiedUpTo), removed };
+}
+
 /** UTF-8として厳密に読む。不正なバイト列・NULを含む場合はnull(Goと同じ解釈を保証できない) */
 export function decodePomBytes(bytes: Uint8Array): string | null {
   let text: string;

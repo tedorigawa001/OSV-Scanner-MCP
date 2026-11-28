@@ -360,6 +360,7 @@ export async function scanFromSnapshot(project: DetectedProject, options: RunOsv
     const { targets, skipped, incomplete } = await snapshotManifests(snapshot, project.targets, {
       projectDir: project.projectDir,
       allowedRootReal: project.allowedRootReal,
+      remoteResolution: !isRemoteResolutionDisabled(options),
     });
     // コピーと元のファイルの対応(snapshotManifestsは外したもの以外を入力の順に返す)
     const skippedOriginals = new Set(skipped.map((s) => s.path));

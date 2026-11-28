@@ -83,6 +83,8 @@ export function isRemoteResolutionDisabled(options: RunOsvScanOptions = {}): boo
  * pom.xml/requirements.txtの推移的依存はapi.deps.devで解決される(2.4.0・2.7.0で実機確認)。
  * `--data-source native` はスキャン対象pom.xmlの<repositories>に書かれた任意のURLへ
  * 接続するため使わない。既定値の変更に備えてdeps.devを明示する。
+ * ただしdeps.devでも、親POM・BOMはMaven Centralと<repositories>のURLから取得される(2.7.0・2.7.1で実機確認、2026-11-28)。
+ * <repositories>はスナップショットのコピーから取り除く(pomParent.tsのremoveRepositoryDeclarations)
  */
 const FIXED_SCAN_ARGS = ["scan", "source", "--format", "json", "--data-source", "deps.dev"] as const;
 const NO_RESOLVE_ARG = "--no-resolve";

@@ -17,7 +17,7 @@ import os from "node:os";
 import path from "node:path";
 import { ScanToolError } from "../errors.js";
 import type { ManifestTarget } from "./manifestFormats.js";
-import { decodePomBytes, parentRelativePath } from "./pomParent.js";
+import { decodePomBytes, parentRelativePath, removeRepositoryDeclarations } from "./pomParent.js";
 import { SNAPSHOT_DIR_PREFIX, trackTempDir } from "./processCleanup.js";
 import { isInsideDir } from "./projectWalk.js";
 import { capitalizeReason, copyRegularFile, type SafeReadError } from "./safeRead.js";
@@ -48,6 +48,8 @@ export class ScanSnapshot {
   private readonly copied = new Map<string, string>();
   private readonly copiedPaths = new Set<string>();
   private readonly parentCache = new Map<string, string | null | undefined>();
+  /** コピーしたPOMから取り除いたリポジトリの宣言の数。undefinedは解釈できず、取り除けなかったPOM */
+  private readonly removedRepositories = new Map<string, number | undefined>();
   /** 再現した配置のルートごとのディレクトリ → 元のルート("/"等) */
   private readonly mirroredRoots = new Map<string, string>();
   private used = 0;
@@ -125,6 +127,22 @@ export class ScanSnapshot {
     return { ok: true, path: dest };
   }
 
+  /**
+   * POMをコピーし、コピーからリポジトリの宣言を取り除く(removeRepositoryDeclarationsの注記)。
+   * 解釈できないPOMはコピーに宣言が残りうるため、呼び出し側で除外する(repositories: undefined)
+   */
+  async copyPom(absolute: string, boundary: string | undefined): Promise<({ ok: true; path: string; repositories: number | undefined }) | SafeReadError> {
+    const copied = await this.copy(absolute, boundary, MAX_POM_BYTES);
+    if (!copied.ok) return copied;
+    if (!this.removedRepositories.has(copied.path)) {
+      const xml = decodePomBytes(await readFile(copied.path));
+      const stripped = xml === null ? undefined : removeRepositoryDeclarations(xml);
+      if (stripped !== undefined && stripped.removed > 0) await writeFile(copied.path, stripped.xml, { mode: 0o600 });
+      this.removedRepositories.set(copied.path, stripped?.removed);
+    }
+    return { ...copied, repositories: this.removedRepositories.get(copied.path) };
+  }
+
   /** Only completed private copies can be followed during the final parent-chain check. */
   hasCopy(copyPath: string): boolean {
     return this.copiedPaths.has(copyPath);
@@ -161,7 +179,13 @@ const UNPARSEABLE =
 interface PomContext {
   projectDir: string;
   allowedRootReal: string | undefined;
+  /** deps.devで推移的依存を解決するか。取り除いたリポジトリの宣言が結果に影響しうるのはこの場合だけ */
+  remoteResolution?: boolean;
 }
+
+const REPOSITORIES_REMOVED =
+  "Repository declarations (<repositories>) were removed from the scanned copy so that OSV-Scanner does not contact the URLs written in the POM. " +
+  "Parent POMs and imported BOMs available only from those repositories are not resolved, so inherited or managed dependencies may be missing from the results";
 
 /**
  * pom.xmlと親POMの連鎖をスナップショットへコピーする。
@@ -174,16 +198,25 @@ async function snapshotPom(
   pomPath: string,
   context: PomContext,
 ): Promise<{ ok: true; path: string; incomplete?: string } | { ok: false; reason: string; kind: SnapshotSkip["kind"] }> {
-  const copied = await snapshot.copy(pomPath, context.projectDir, MAX_POM_BYTES);
+  const copied = await snapshot.copyPom(pomPath, context.projectDir);
   if (!copied.ok) return { ok: false, reason: capitalizeReason(copied.message), kind: "unreadable" };
-  const first = { ok: true as const, path: copied.path };
-  const partial = (reason: string) => ({ ...first, incomplete: reason });
+  if (copied.repositories === undefined) return { ok: false, reason: UNPARSEABLE, kind: "unreadable" };
+  let repositories = copied.repositories;
+  const removedNote = () => repositories > 0 && context.remoteResolution === true ? REPOSITORIES_REMOVED : undefined;
+  const done = () => {
+    const note = removedNote();
+    return note === undefined ? { ok: true as const, path: copied.path } : { ok: true as const, path: copied.path, incomplete: note };
+  };
+  const partial = (reason: string) => {
+    const note = removedNote();
+    return { ok: true as const, path: copied.path, incomplete: note === undefined ? reason : `${reason}. ${note}` };
+  };
   let current = pomPath;
-  let currentCopy = first.path;
+  let currentCopy = copied.path;
 
   for (let depth = 0; depth < MAX_PARENT_DEPTH; depth++) {
     const relativePath = await snapshot.parentOf(currentCopy);
-    if (relativePath === null || relativePath === "") return first;
+    if (relativePath === null || relativePath === "") return done();
     if (relativePath === undefined) {
       return { ok: false, reason: UNPARSEABLE, kind: "unreadable" };
     }
@@ -200,10 +233,10 @@ async function snapshotPom(
     } catch (error) {
       // 参照先が無い: 元の配置でもosv-scannerは親を読まないため、欠落ではない
       const code = (error as NodeJS.ErrnoException).code;
-      if (code === "ENOENT" || code === "ENOTDIR") return first;
+      if (code === "ENOENT" || code === "ENOTDIR") return done();
       return partial(`The parent POM (relativePath: ${relativePath}) could not be checked, so the file was scanned without it. Dependencies inherited from the parent may be missing from the results`);
     }
-    const parent = await snapshot.copy(candidate, context.allowedRootReal, MAX_POM_BYTES);
+    const parent = await snapshot.copyPom(candidate, context.allowedRootReal);
     if (!parent.ok) {
       if (parent.failure === "outside") {
         return {
@@ -221,6 +254,8 @@ async function snapshotPom(
           "Dependencies inherited from the parent may be missing from the results (a parent whose GAV does not match is not read anyway)",
       );
     }
+    if (parent.repositories === undefined) return { ok: false, reason: `Parent POM: ${UNPARSEABLE}`, kind: "unreadable" };
+    repositories += parent.repositories;
     current = candidate;
     currentCopy = parent.path;
   }

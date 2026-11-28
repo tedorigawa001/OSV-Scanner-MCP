@@ -82,6 +82,7 @@ export async function scanJavaManifests(
     const { targets, skipped, incomplete } = await snapshotManifests(snapshot, project.targets, {
       projectDir: project.projectDir,
       allowedRootReal: project.allowedRootReal,
+      remoteResolution: !isRemoteResolutionDisabled(options),
     });
     const skippedPaths = new Set(skipped.map((s) => s.path));
     const scanned = project.targets.filter((t) => !skippedPaths.has(t.path));

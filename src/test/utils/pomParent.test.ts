@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { decodeEntities, parentRelativePath } from "../../utils/pomParent.js";
+import { decodeEntities, parentRelativePath, removeRepositoryDeclarations } from "../../utils/pomParent.js";
 import { ScanSnapshot, snapshotManifests } from "../../utils/scanSnapshot.js";
 
 /** pom.xmlをスナップショットへコピーし、除外されれば理由、されなければnullを返す */
@@ -224,5 +224,32 @@ describe("decodeEntities", () => {
     const pom = "<project><parent><groupId>g</groupId><artifactId>p</artifactId><version>1</version>" +
       "<relativePath>../&#x110000;/pom.xml</relativePath></parent></project>";
     expect(parentRelativePath(pom)).toBeUndefined();
+  });
+});
+
+describe("removeRepositoryDeclarations(脆弱性チェック、2026-11-28)", () => {
+  const repo = (url: string) => `<repository><id>r</id><url>${url}</url></repository>`;
+  it.each([
+    ["root", `<project><repositories>${repo("http://127.0.0.1:1/a")}</repositories><artifactId>a</artifactId></project>`, "<project><artifactId>a</artifactId></project>", 1],
+    ["prefixed", `<m:project xmlns:m="x"><m:repositories>${repo("http://h/a")}</m:repositories></m:project>`, `<m:project xmlns:m="x"></m:project>`, 1],
+    ["profile", `<project><profiles><profile><id>p</id><repositories>${repo("http://h/p")}</repositories><pluginRepositories><pluginRepository><url>http://h/q</url></pluginRepository></pluginRepositories></profile></profiles></project>`, "<project><profiles><profile><id>p</id></profile></profiles></project>", 2],
+    ["self-closing and plugin", "<project><repositories/><pluginRepositories>x</pluginRepositories></project>", "<project></project>", 2],
+    ["CRLF", "<project>\r\n<repositories>\r\n</repositories>\r\n</project>", "<project>\n\n</project>", 1],
+  ])("removes repository declarations (%s)", (_name, input, expected, removed) => {
+    expect(removeRepositoryDeclarations(input)).toEqual({ xml: expected, removed });
+  });
+
+  it("keeps elements osv-scanner does not use as repositories, and comments", () => {
+    const xml = `<project><!-- <repositories> --><build><repositories>${repo("http://h/b")}</repositories></build><distributionManagement>${repo("http://h/d")}</distributionManagement></project>`;
+    expect(removeRepositoryDeclarations(xml)).toEqual({ xml, removed: 0 });
+  });
+
+  it.each([
+    ["CDATA", `<project><repositories><![CDATA[x]]></repositories></project>`],
+    ["DOCTYPE", `<!DOCTYPE project><project/>`],
+    ["unclosed", `<project><repositories>`],
+    ["mismatched", `<project><repositories></project></repositories>`],
+  ])("returns undefined for syntax it cannot interpret like Go (%s)", (_name, xml) => {
+    expect(removeRepositoryDeclarations(xml)).toBeUndefined();
   });
 });
